@@ -477,7 +477,12 @@ public class IntervalTaskSchedulerTest {
     }
 
     private ScheduleContext getContext(DateTime endsOn) {
-        return new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn, null, events, null);
+        return new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn)
+            .withHealthCode("AAA")
+            .withEvents(events).build();
     }
     
     private Schedule createScheduleWith(ScheduleType type) {

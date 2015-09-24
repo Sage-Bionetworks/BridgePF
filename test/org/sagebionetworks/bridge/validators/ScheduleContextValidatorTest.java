@@ -8,7 +8,6 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class ScheduleContextValidatorTest {
 
@@ -16,7 +15,7 @@ public class ScheduleContextValidatorTest {
     
     @Test
     public void studyIdentifierTimeZoneHealthCodeAndEndsOnAlwaysRequired() {
-        ScheduleContext context = new ScheduleContext(null, null, null, null, null, null);
+        ScheduleContext context = new ScheduleContext.Builder().build();
         try {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
@@ -30,7 +29,9 @@ public class ScheduleContextValidatorTest {
 
     @Test
     public void endsOnAfterNow() {
-        ScheduleContext context = new ScheduleContext(new StudyIdentifierImpl("study-id"), DateTimeZone.UTC, DateTime.now().minusHours(1), "healthCode", null, null);
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier("study-id").withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(DateTime.now().minusHours(1)).withHealthCode("healthCode").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
@@ -46,7 +47,9 @@ public class ScheduleContextValidatorTest {
         DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).withHourOfDay(23)
                         .withMinuteOfHour(59).withSecondOfMinute(59);
         
-        ScheduleContext context = new ScheduleContext(new StudyIdentifierImpl("study-id"), DateTimeZone.UTC, endsOn, "healthCode", null, null);
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier("study-id").withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn).withHealthCode("healthCode").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");

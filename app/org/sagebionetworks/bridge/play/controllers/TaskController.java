@@ -53,8 +53,11 @@ public class TaskController extends BaseController {
         } else {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
         }
-        ScheduleContext context = new ScheduleContext(session.getStudyIdentifier(), zone, endsOn, 
-            session.getUser().getHealthCode(), null, null);
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(session.getStudyIdentifier())
+            .withTimeZone(zone)
+            .withEndsOn(endsOn)
+            .withHealthCode(session.getUser().getHealthCode()).build();
         List<Task> tasks = taskService.getTasks(session.getUser(), context);
         return okResult(tasks);
     }

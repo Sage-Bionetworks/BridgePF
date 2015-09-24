@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -26,32 +27,15 @@ public final class ScheduleContext {
     private final String healthCode;
     private final DateTime now;
     
-    public ScheduleContext(StudyIdentifier studyId, DateTimeZone zone, DateTime endsOn, String healthCode, Map<String,DateTime> events, String schedulePlanGuid) {
+    private ScheduleContext(StudyIdentifier studyId, DateTimeZone zone, DateTime endsOn, String healthCode,
+                    Map<String, DateTime> events, String schedulePlanGuid, DateTime now) {
         this.studyId = studyId;
         this.zone = zone;
         this.endsOn = endsOn;
         this.healthCode = healthCode;
-        this.events = (events == null) ? null : ImmutableMap.copyOf(events);
+        this.events = events;
         this.schedulePlanGuid = schedulePlanGuid;
-        this.now = (zone == null) ? DateTime.now() : DateTime.now(zone);
-    }
-    
-    /**
-     * Copy method to copy existing values, augmenting the context with an event map.
-     * @param events
-     * @return
-     */
-    public ScheduleContext withEvents(Map<String,DateTime> events) {
-        return new ScheduleContext(this.studyId, this.zone, this.endsOn, this.healthCode, events, this.schedulePlanGuid);
-    }
-    
-    /**
-     * Copy method to copy existing values, augmenting the context with a schedule plan GUID.
-     * @param schedulePlanGuid
-     * @return
-     */
-    public ScheduleContext withSchedulePlan(String schedulePlanGuid) {
-        return new ScheduleContext(this.studyId, this.zone, this.endsOn, this.healthCode, this.events, schedulePlanGuid);
+        this.now = now;
     }
     
     /**
@@ -147,4 +131,70 @@ public final class ScheduleContext {
         return "ScheduleContext [studyId=" + studyId + ", zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + 
             ", schedulePlanGuid=" + schedulePlanGuid + "]";
     }
+    
+    public static class Builder {
+        private StudyIdentifier studyId;
+        private DateTimeZone zone;
+        private DateTime endsOn;
+        private Map<String,DateTime> events;
+        private String schedulePlanGuid;
+        private String healthCode;
+        private DateTime now;
+        
+        public Builder withStudyIdentifier(String studyId) {
+            if (studyId != null) {
+                this.studyId = new StudyIdentifierImpl(studyId);    
+            }
+            return this;
+        }
+        public Builder withStudyIdentifier(StudyIdentifier studyId) {
+            this.studyId = studyId;
+            return this;
+        }
+        public Builder withTimeZone(DateTimeZone zone) {
+            this.zone = zone;
+            return this;
+        }
+        public Builder withEndsOn(DateTime endsOn) {
+            this.endsOn = endsOn;
+            return this;
+        }
+        public Builder withEvents(Map<String,DateTime> events) {
+            if (events != null) {
+                this.events = ImmutableMap.copyOf(events);    
+            }
+            return this;
+        }
+        public Builder withSchedulePlanGuid(String schedulePlanGuid) {
+            this.schedulePlanGuid = schedulePlanGuid;
+            return this;
+        }
+        public Builder withHealthCode(String healthCode) {
+            this.healthCode = healthCode;
+            return this;
+        }
+        public Builder withContext(ScheduleContext context) {
+            this.studyId = context.studyId;
+            this.zone = context.zone;
+            this.endsOn = context.endsOn;
+            this.events = context.events;
+            this.schedulePlanGuid = context.schedulePlanGuid;
+            this.healthCode = context.healthCode;
+            this.now = context.now;
+            return this;
+        }
+        
+        public ScheduleContext build() {
+            if (now == null) {
+                now = (zone == null) ? DateTime.now() : DateTime.now(zone);
+            }
+            ScheduleContext context = new ScheduleContext(studyId, zone, endsOn, healthCode, events, schedulePlanGuid, now);
+            // Not validating here. There are many tests to confirm that the scheduler will work with different 
+            // time windows, but the validator ensures the context object is within the declared allowable
+            // time window. This is validated in TaskService.
+            //Validate.nonEntityThrowingException(VALIDATOR, context);
+            return context;
+        }
+    }
+    
 }

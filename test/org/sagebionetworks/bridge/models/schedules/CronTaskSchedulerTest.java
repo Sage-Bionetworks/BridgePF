@@ -112,7 +112,11 @@ public class CronTaskSchedulerTest {
     }
     
     private ScheduleContext getContext(DateTime endsOn) {
-        return new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn, null, events, null);
+        return new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn)
+            .withEvents(events).build();
     }
     
     private Schedule createScheduleWith(ScheduleType type) {

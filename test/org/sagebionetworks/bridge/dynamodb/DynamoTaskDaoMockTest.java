@@ -25,8 +25,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -107,7 +105,12 @@ public class DynamoTaskDaoMockTest {
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
-        ScheduleContext context = new ScheduleContext(TEST_STUDY, PACIFIC_TIME_ZONE, endsOn, HEALTH_CODE, events, null);
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(PACIFIC_TIME_ZONE)
+            .withEndsOn(endsOn)
+            .withHealthCode(HEALTH_CODE)
+            .withEvents(events).build();
 
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         mockQuery(tasks);
@@ -133,7 +136,12 @@ public class DynamoTaskDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
 
-        ScheduleContext context = new ScheduleContext(TEST_STUDY, PACIFIC_TIME_ZONE, endsOn, HEALTH_CODE, events, null);
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(PACIFIC_TIME_ZONE)
+            .withEndsOn(endsOn)
+            .withHealthCode(HEALTH_CODE)
+            .withEvents(events).build();
 
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         mockQuery(tasks);

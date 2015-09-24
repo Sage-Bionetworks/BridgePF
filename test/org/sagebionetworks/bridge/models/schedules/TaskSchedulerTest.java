@@ -65,11 +65,18 @@ public class TaskSchedulerTest {
         
         Map<String,DateTime> empty = Maps.newHashMap();
         
-        ScheduleContext context = new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, NOW.plusWeeks(1), null, empty, null);
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(NOW.plusWeeks(1))
+            .withEvents(empty).build();
         tasks = schedule.getScheduler().getTasks(context);
         assertEquals(0, tasks.size());
         
-        context = new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, NOW.plusWeeks(1), null, null, null);
+        context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(NOW.plusWeeks(1)).build();
         tasks = schedule.getScheduler().getTasks(context);
         assertEquals(0, tasks.size());
     }
@@ -289,7 +296,8 @@ public class TaskSchedulerTest {
     }
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
-        return new ScheduleContext(TEST_STUDY, zone, endsOn, "AAA", events, null);
+        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
     }
     
 }

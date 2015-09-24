@@ -94,7 +94,10 @@ public class TaskService {
         
         // Get tasks from the scheduler. None of these tasks have been saved, some may be new,
         // and some may have already been persisted. They are identified by their runKey.
-        Multimap<String,Task> scheduledTasks = scheduleTasksForPlans(user, context.withEvents(events));
+        ScheduleContext newContext = new ScheduleContext.Builder()
+            .withContext(context)
+            .withEvents(events).build();
+        Multimap<String,Task> scheduledTasks = scheduleTasksForPlans(user, newContext);
         
         List<Task> tasksToSave = Lists.newArrayList();
         for (String runKey : scheduledTasks.keySet()) {
@@ -173,7 +176,9 @@ public class TaskService {
         
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);
-            ScheduleContext context = oldContext.withSchedulePlan(plan.getGuid());
+            ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(oldContext)
+                .withSchedulePlanGuid(plan.getGuid()).build();
             
             List<Task> tasks = schedule.getScheduler().getTasks(context);
             for (Task task : tasks) {

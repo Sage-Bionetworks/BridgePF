@@ -45,9 +45,13 @@ public class TaskControllerTest {
     
     @Before
     public void before() throws Exception {
-        ScheduleContext scheduleContext = new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, null, null, null, BridgeUtils.generateGuid());
+        ScheduleContext scheduleContext = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC)
+            .withSchedulePlanGuid(BridgeUtils.generateGuid()).build();
         
         DynamoTask task = new DynamoTask();
+        task.setTimeZone(DateTimeZone.UTC);
         task.setGuid(BridgeUtils.generateGuid());
         task.setScheduledOn(DateTime.now(DateTimeZone.UTC).minusDays(1));
         task.setActivity(TestConstants.TEST_ACTIVITY);

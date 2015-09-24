@@ -112,34 +112,29 @@ public class DynamoTaskTest {
      * then the DateTime scheduledOn and expiresOn values are null.
      */
     @Test
-    public void dealsWithLackOfTimeZoneAppropriately() {
+    public void dealsTimeZoneAppropriately() {
         DateTime dateTime = DateTime.parse("2010-10-15T00:00:00.001+06:00");
+        DateTime dateTimeInZone = DateTime.parse("2010-10-15T00:00:00.001Z");
         
+        // Task with datetime and zone (which is different)
         DynamoTask task = new DynamoTask();
-        task.setScheduledOn(dateTime);
-        assertEquals(dateTime, task.getScheduledOn());
-        
-        task = new DynamoTask();
+        // Without a time zone, getStatus() works
         assertEquals(TaskStatus.AVAILABLE, task.getStatus());
-        
-        // setting time zone doesn't change anything
+        // Now set some values
+        task.setScheduledOn(dateTime);
         task.setTimeZone(DateTimeZone.UTC);
-        assertEquals(TaskStatus.AVAILABLE, task.getStatus());
         
-        // again, setting any datetime updates the zone.
-        task.setScheduledOn(dateTime);
-        assertEquals(dateTime.getZone(), task.getScheduledOn().getZone());
+        // Scheduled time should be in the time zone that is set
+        assertEquals(DateTimeZone.UTC, task.getScheduledOn().getZone());
+        // But the datetime does not itself change (this is one way to test this)
+        assertEquals(dateTimeInZone.toLocalDateTime(), task.getScheduledOn().toLocalDateTime());
         
-        // And this is correctly derived.
-        LocalDateTime localDateTime = LocalDateTime.parse("2010-10-15T00:00:00.001");
-        DateTimeZone zone = DateTimeZone.forOffsetHours(-6);
-        
-        task = new DynamoTask();
-        task.setTimeZone(zone);
-        task.setLocalScheduledOn(localDateTime);
-        task.setLocalExpiresOn(localDateTime);
-        assertEquals(localDateTime.toDateTime(zone), task.getScheduledOn());
-        assertEquals(localDateTime.toDateTime(zone), task.getExpiresOn());
+        // setting new time zone everything shifts only in zone, not date or time
+        DateTimeZone newZone = DateTimeZone.forOffsetHours(3);
+        task.setTimeZone(newZone);
+        LocalDateTime copy = task.getScheduledOn().toLocalDateTime();
+        assertEquals(newZone, task.getScheduledOn().getZone());
+        assertEquals(dateTimeInZone.toLocalDateTime(), copy);
     }
     
 }

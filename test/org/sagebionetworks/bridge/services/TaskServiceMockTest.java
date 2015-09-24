@@ -117,13 +117,17 @@ public class TaskServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
-        service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, DateTime.now().minusSeconds(1), null, null, null));
+        service.getTasks(user, new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC).withEndsOn(DateTime.now().minusSeconds(1)).build());
     }
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
-        service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, 
-            DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).plusSeconds(1), null, null, null));
+        service.getTasks(user, new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).plusSeconds(1)).build());
     }
 
     @Test(expected = BadRequestException.class)
@@ -165,7 +169,11 @@ public class TaskServiceMockTest {
     @SuppressWarnings({"unchecked","rawtypes","deprecation"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
-        service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn.plusDays(2), HEALTH_CODE, null, null));
+        service.getTasks(user, new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn.plusDays(2))
+            .withHealthCode(HEALTH_CODE).build());
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(taskDao).saveTasks(argument.capture());
@@ -187,7 +195,8 @@ public class TaskServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn, HEALTH_CODE, events, null);
+        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn).withHealthCode(HEALTH_CODE).withEvents(events).build();
     }
     
 }

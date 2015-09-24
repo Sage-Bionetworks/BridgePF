@@ -96,7 +96,13 @@ public class DynamoTaskDaoTest {
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
-        ScheduleContext context = new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn, user.getHealthCode(), events, null);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn)
+            .withHealthCode(user.getHealthCode())
+            .withEvents(events).build();
         
         List<Task> tasksToSchedule = TestUtils.runSchedulerForTasks(user, context);
         taskDao.saveTasks(tasksToSchedule);

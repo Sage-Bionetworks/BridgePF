@@ -158,8 +158,12 @@ public class TaskServiceTest {
     
     private ScheduleContext getContext(DateTimeZone zone) {
         // Setting the endsOn value to the end of the day, as we do in the controller.
-        return new ScheduleContext(TEST_STUDY, zone, DateTime.now(zone).plusDays(2).withHourOfDay(23).withMinuteOfHour(59)
-            .withSecondOfMinute(59), testUser.getUser().getHealthCode(), null, null);
+        DateTime endsOn = DateTime.now(zone).plusDays(2).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
+        return new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withTimeZone(zone)
+            .withEndsOn(endsOn)
+            .withHealthCode(testUser.getUser().getHealthCode()).build();
     }
     
 }
