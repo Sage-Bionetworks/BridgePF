@@ -176,8 +176,8 @@ public class TaskService {
             ScheduleContext context = oldContext.withSchedulePlan(plan.getGuid());
             
             List<Task> tasks = schedule.getScheduler().getTasks(context);
-            if (!tasks.isEmpty()) {
-                scheduledTasks.putAll(tasks.get(0).getRunKey(), tasks);
+            for (Task task : tasks) {
+                scheduledTasks.put(task.getRunKey(), task);
             }
         }
         return scheduledTasks;

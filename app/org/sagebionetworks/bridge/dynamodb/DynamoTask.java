@@ -73,12 +73,13 @@ public final class DynamoTask implements Task, BridgeEntity {
     }
     
     @DynamoDBIgnore
-    public void setTimeZone(DateTimeZone zone) {
-        this.timeZone = zone;
-    }
-    
+    @JsonIgnore
     public DateTimeZone getTimeZone() {
         return timeZone;
+    }
+    
+    public void setTimeZone(DateTimeZone zone) {
+        this.timeZone = zone;
     }
     
     @Override
@@ -89,7 +90,6 @@ public final class DynamoTask implements Task, BridgeEntity {
     
     @Override
     public void setScheduledOn(DateTime scheduledOn) {
-        this.timeZone = (scheduledOn == null) ? null : scheduledOn.getZone();
         this.localScheduledOn = (scheduledOn == null) ? null : scheduledOn.toLocalDateTime();
     }
     
@@ -101,14 +101,10 @@ public final class DynamoTask implements Task, BridgeEntity {
     
     @Override
     public void setExpiresOn(DateTime expiresOn) {
-        this.timeZone = (expiresOn == null) ? null : expiresOn.getZone();
         this.localExpiresOn = (expiresOn == null) ? null : expiresOn.toLocalDateTime();
     }
     
     private DateTime getInstant(LocalDateTime localDateTime) {
-        /* if (localDateTime != null && timeZone == null) {
-            throw new IllegalStateException("DynamoTask improperly constructed: it has no DateTimeZone and cannot calculate DateTime values.");
-        }*/
         return (localDateTime == null || timeZone == null) ? null : localDateTime.toDateTime(timeZone);
     }
 
@@ -119,11 +115,11 @@ public final class DynamoTask implements Task, BridgeEntity {
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
     @JsonIgnore
-    LocalDateTime getLocalScheduledOn() {
+    public LocalDateTime getLocalScheduledOn() {
         return localScheduledOn;
     }
 
-    void setLocalScheduledOn(LocalDateTime localScheduledOn) {
+    public void setLocalScheduledOn(LocalDateTime localScheduledOn) {
         this.localScheduledOn = localScheduledOn;
     }
 
@@ -134,11 +130,11 @@ public final class DynamoTask implements Task, BridgeEntity {
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
     @JsonIgnore
-    LocalDateTime getLocalExpiresOn() {
+    public LocalDateTime getLocalExpiresOn() {
         return localExpiresOn;
     }
 
-    void setLocalExpiresOn(LocalDateTime localExpiresOn) {
+    public void setLocalExpiresOn(LocalDateTime localExpiresOn) {
         this.localExpiresOn = localExpiresOn;
     }
 

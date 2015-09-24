@@ -51,7 +51,6 @@ public class ScheduleContextValidatorTest {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
-            System.out.println(e.getMessage());
             assertTrue(e.getMessage().contains("endsOn must be 5 days or less"));
         }
     }

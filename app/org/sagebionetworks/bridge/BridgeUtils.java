@@ -65,9 +65,10 @@ public class BridgeUtils {
      */
     public static String generateTaskRunKey(Task task, ScheduleContext context) {
         checkNotNull(task);
+        checkNotNull(task.getScheduledOn());
         checkNotNull(context);
         checkNotNull(context.getSchedulePlanGuid());
-        return String.format("%s:%s", context.getSchedulePlanGuid(), task.getScheduledOn().getMillis());
+        return String.format("%s:%s", context.getSchedulePlanGuid(), task.getScheduledOn().toLocalDateTime());
     }
     
     /**

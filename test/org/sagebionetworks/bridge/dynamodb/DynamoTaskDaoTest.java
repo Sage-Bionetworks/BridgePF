@@ -111,7 +111,7 @@ public class DynamoTaskDaoTest {
 
         // Have tasks gotten injected time zone? We have to do this during construction using the time zone
         // sent with this call/request.
-        assertEquals(endsOn.getZone(), ((DynamoTask)tasks.get(0)).getTimeZone());
+        assertEquals(DateTimeZone.UTC, ((DynamoTask)tasks.get(0)).getTimeZone());
         
         // Delete most information in tasks and delete one by finishing it
         cleanTasks(tasks);

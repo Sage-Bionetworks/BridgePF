@@ -58,14 +58,15 @@ public abstract class TaskScheduler {
         // Assert that the scheduledTime was constructed by subclass implementation with the correct time zone.
         checkArgument(context.getZone().equals(scheduledTime.getZone()), 
             "Scheduled DateTime does not have requested time zone: " + scheduledTime.getZone());
-        
+
         // If this time point is outside of the schedule's active window, skip it.
         if (isInWindow(scheduledTime)) {
             // As long at the tasks are not already expired, add them.
             DateTime expiresOn = getExpiresOn(scheduledTime);
             if (expiresOn == null || expiresOn.isAfter(context.getNow())) {
                 for (Activity activity : schedule.getActivities()) {
-                    Task task = new DynamoTask();
+                    DynamoTask task = new DynamoTask();
+                    task.setTimeZone(context.getZone());
                     task.setHealthCode(context.getHealthCode());
                     task.setActivity(activity);
                     task.setScheduledOn(scheduledTime);

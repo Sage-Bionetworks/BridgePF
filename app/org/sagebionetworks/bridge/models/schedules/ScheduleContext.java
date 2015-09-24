@@ -126,7 +126,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, zone, endsOn, healthCode, events, schedulePlanGuid);
+        return Objects.hash(studyId, zone, endsOn, healthCode, events, schedulePlanGuid, now);
     }
 
     @Override
@@ -139,7 +139,7 @@ public final class ScheduleContext {
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
                 Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
                 Objects.equals(schedulePlanGuid, other.schedulePlanGuid) &&
-                Objects.equals(studyId, other.studyId));
+                Objects.equals(studyId, other.studyId) && Objects.equals(now, other.now));
     }
 
     @Override

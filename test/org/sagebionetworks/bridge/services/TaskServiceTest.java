@@ -88,8 +88,10 @@ public class TaskServiceTest {
     
     @Test
     public void retrievalTasksAcrossTimeAndTimeZones() throws Exception {
-        // We start this test in the early morning in Russia
-        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-09-23T03:39:57.779+03:00").getMillis());
+        // We start this test in the early morning in Russia, in the future so the new user's
+        // enrollment doesn't screw up the test.
+        int year = DateTime.now().getYear();
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-23T03:39:57.779+03:00").getMillis());
 
         // These time zones are far apart and for our chosen time, Dave will be teleporting to the 
         // previous day. Our scheduler must do something rational.
@@ -97,6 +99,7 @@ public class TaskServiceTest {
         DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
 
         // Anticipated schedule times in Russia (exact seconds not important)
+        String msk0 = DateTime.now(MSK).minusDays(1).toLocalDate().toString(); // this is yesterdays task, not expired yet 
         String msk1 = DateTime.now(MSK).toLocalDate().toString();
         String msk2 = DateTime.now(MSK).plusDays(1).toLocalDate().toString();
         String msk3 = DateTime.now(MSK).plusDays(2).toLocalDate().toString();
@@ -109,11 +112,15 @@ public class TaskServiceTest {
         String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
         
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
-        List<Task> tasks = service.getTasks(testUser.getUser(), getContext(MSK));
-        assertEquals(3, tasks.size());
-        assertEquals(msk1+"T10:00:00.000+03:00", tasks.get(0).getScheduledOn().toString());
-        assertEquals(msk2+"T10:00:00.000+03:00", tasks.get(1).getScheduledOn().toString());
-        assertEquals(msk3+"T10:00:00.000+03:00", tasks.get(2).getScheduledOn().toString());
+        // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
+        // 23rd, 24th and 25th
+        ScheduleContext context = getContext(MSK);
+        List<Task> tasks = service.getTasks(testUser.getUser(), context);
+        assertEquals(4, tasks.size());
+        assertEquals(msk0+"T10:00:00.000+03:00", tasks.get(0).getScheduledOn().toString());
+        assertEquals(msk1+"T10:00:00.000+03:00", tasks.get(1).getScheduledOn().toString());
+        assertEquals(msk2+"T10:00:00.000+03:00", tasks.get(2).getScheduledOn().toString());
+        assertEquals(msk3+"T10:00:00.000+03:00", tasks.get(3).getScheduledOn().toString());
         
         // Dave teleports to California, where it's still the prior day. He gets 4 tasks 
         // (yesterday, today in Russia, tomorrow and the next day). One task was created beyond
@@ -126,7 +133,7 @@ public class TaskServiceTest {
         assertEquals(pst4+"T10:00:00.000-07:00", tasks.get(3).getScheduledOn().toString());
         
         // Dave returns to the Moscow and we move time forward a day.
-        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-09-24T03:39:57.779+03:00").getMillis());
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-24T03:39:57.779+03:00").getMillis());
         
         // He hasn't finished any tasks. The 22nd expires but it's too early in the day 
         // for the 23rd to expire (earlier than 10am), so, 4 tasks, but with different dates.
