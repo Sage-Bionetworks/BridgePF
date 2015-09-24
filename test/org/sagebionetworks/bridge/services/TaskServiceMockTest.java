@@ -168,7 +168,7 @@ public class TaskServiceMockTest {
         service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn.plusDays(2), HEALTH_CODE, null, null));
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
-        verify(taskDao).saveTasks(anyString(), argument.capture());
+        verify(taskDao).saveTasks(argument.capture());
 
         boolean foundTask3 = false;
         for (Task task : (List<Task>)argument.getValue()) {

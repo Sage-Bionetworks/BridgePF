@@ -17,7 +17,6 @@ import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -48,11 +47,13 @@ public class DynamoIndexHelperTest {
     private static class TestDynamoIndexHelper extends DynamoIndexHelper {
         private final String expectedKey;
         private final String expectedValue;
+        private final RangeKeyCondition expectedRangeKeyCondition;
         private final Iterable<Item> itemIterable;
 
-        TestDynamoIndexHelper(String expectedKey, String expectedValue, Iterable<Item> itemIterable) {
+        TestDynamoIndexHelper(String expectedKey, String expectedValue, RangeKeyCondition rangeKeyCondition, Iterable<Item> itemIterable) {
             this.expectedKey = expectedKey;
             this.expectedValue = expectedValue;
+            this.expectedRangeKeyCondition = rangeKeyCondition;
             this.itemIterable = itemIterable;
         }
 
@@ -60,17 +61,17 @@ public class DynamoIndexHelperTest {
         protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
             assertEquals(expectedKey, indexKeyName);
             assertEquals(expectedValue, indexKeyValue);
+            assertEquals(expectedRangeKeyCondition, rangeKeyCondition);
             return itemIterable;
         }
     }
     
-    @Before
-    public void mockResultsOfQuery() {
+    public void mockResultsOfQuery(RangeKeyCondition condition) {
         // mock index
         List<Item> mockItemList = ImmutableList.of(new Item().with("key", "foo key"),
                 new Item().with("key", "bar key"), new Item().with("key", "asdf key"),
                 new Item().with("key", "jkl; key"));
-        helper = new TestDynamoIndexHelper("test key", "test value", mockItemList);
+        helper = new TestDynamoIndexHelper("test key", "test value", condition, mockItemList);
 
         // mock mapper result
         Map<String, List<Object>> mockMapperResultMap = new HashMap<>();
@@ -88,12 +89,15 @@ public class DynamoIndexHelperTest {
 
     @Test
     public void test() {
+        RangeKeyCondition rangeKeyCondition = new RangeKeyCondition("antwerp").eq("belgium");
+        mockResultsOfQuery(rangeKeyCondition);
+        
         // execute query keys and validate
-        List<Thing> keyList = helper.queryKeys(Thing.class, "test key", "test value", null);
+        List<Thing> keyList = helper.queryKeys(Thing.class, "test key", "test value", rangeKeyCondition);
         validateKeyObjects(keyList);
 
         // execute
-        List<Thing> resultList = helper.query(Thing.class, "test key", "test value");
+        List<Thing> resultList = helper.query(Thing.class, "test key", "test value", rangeKeyCondition);
 
         // Validate intermediate "key objects". This is a List<Object>, but because of type erasure, this should work,
         // at least in the test context.
@@ -116,7 +120,8 @@ public class DynamoIndexHelperTest {
     
     @Test
     public void testCount() {
-        int count = helper.queryKeyCount("test key", "test value", new RangeKeyCondition("baz"));
+        mockResultsOfQuery(null);
+        int count = helper.queryKeyCount("test key", "test value", null);
         // There are two lists of two items each
         assertEquals(4, count);
     }

@@ -33,9 +33,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 
 @Component
 public class TaskService {
@@ -92,21 +94,23 @@ public class TaskService {
         
         // Get tasks from the scheduler. None of these tasks have been saved, some may be new,
         // and some may have already been persisted. They are identified by their runKey.
-        List<Task> scheduledTasks = scheduleTasksForPlans(user, context.withEvents(events));
+        Multimap<String,Task> scheduledTasks = scheduleTasksForPlans(user, context.withEvents(events));
         
         List<Task> tasksToSave = Lists.newArrayList();
-        for (Task task : scheduledTasks) {
-            if (taskDao.taskRunHasNotOccurred(context.getHealthCode(), task.getRunKey())) {
-                // If they have not been persisted yet, get each task one by one, create a survey 
-                // response for survey tasks, and add the tasks to the list of tasks to save.
-                Activity activity = createResponseActivityIfNeeded(
-                    context.getStudyIdentifier(), context.getHealthCode(), task.getActivity());
-                task.setActivity(activity);
-                tasksToSave.add(task);
+        for (String runKey : scheduledTasks.keySet()) {
+            if (taskDao.taskRunHasNotOccurred(context.getHealthCode(), runKey)) {
+                for (Task task : scheduledTasks.get(runKey)) {
+                    // If they have not been persisted yet, get each task one by one, create a survey 
+                    // response for survey tasks, and add the tasks to the list of tasks to save.
+                    Activity activity = createResponseActivityIfNeeded(
+                        context.getStudyIdentifier(), context.getHealthCode(), task.getActivity());
+                    task.setActivity(activity);
+                    tasksToSave.add(task);
+                }
             }
         }
         // Finally, save these new tasks
-        taskDao.saveTasks(context.getHealthCode(), tasksToSave);
+        taskDao.saveTasks(tasksToSave);
         
         // Now read back the tasks from the database to pick up persisted startedOn, finishedOn values
         return taskDao.getTasks(context);
@@ -161,10 +165,10 @@ public class TaskService {
         return newEvents;
     }
    
-    private List<Task> scheduleTasksForPlans(User user, ScheduleContext oldContext) {
+    private Multimap<String,Task> scheduleTasksForPlans(User user, ScheduleContext oldContext) {
         StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
         
-        List<Task> scheduledTasks = Lists.newArrayList();
+        Multimap<String,Task> scheduledTasks = ArrayListMultimap.create();
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
         
         for (SchedulePlan plan : plans) {
@@ -173,7 +177,7 @@ public class TaskService {
             
             List<Task> tasks = schedule.getScheduler().getTasks(context);
             if (!tasks.isEmpty()) {
-                scheduledTasks.addAll(tasks);
+                scheduledTasks.putAll(tasks.get(0).getRunKey(), tasks);
             }
         }
         return scheduledTasks;

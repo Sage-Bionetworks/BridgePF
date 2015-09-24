@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.Iterator;
 import java.util.List;
 
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
 import org.sagebionetworks.bridge.models.backfill.BackfillStatus;
@@ -32,14 +33,14 @@ public class DynamoBackfillDao implements BackfillDao {
     private DynamoDBMapper recordMapper;
 
     @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
+    public void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
         DynamoDBMapperConfig taskMapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoBackfillTask.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoBackfillTask.class, bridgeConfig)).build();
         taskMapper = new DynamoDBMapper(client, taskMapperConfig);
         DynamoDBMapperConfig recordMapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoBackfillRecord.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoBackfillRecord.class, bridgeConfig)).build();
         recordMapper = new DynamoDBMapper(client, recordMapperConfig);
     }
 

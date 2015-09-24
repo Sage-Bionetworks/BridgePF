@@ -107,4 +107,39 @@ public class DynamoTaskTest {
         assertEquals(TaskStatus.AVAILABLE, task.getStatus());
     }
     
+    /**
+     * If a timestamp is not derived from a DateTime value passed into DynamoTask, or set after construction, 
+     * then the DateTime scheduledOn and expiresOn values are null.
+     */
+    @Test
+    public void dealsWithLackOfTimeZoneAppropriately() {
+        DateTime dateTime = DateTime.parse("2010-10-15T00:00:00.001+06:00");
+        
+        DynamoTask task = new DynamoTask();
+        task.setScheduledOn(dateTime);
+        assertEquals(dateTime, task.getScheduledOn());
+        
+        task = new DynamoTask();
+        assertEquals(TaskStatus.AVAILABLE, task.getStatus());
+        
+        // setting time zone doesn't change anything
+        task.setTimeZone(DateTimeZone.UTC);
+        assertEquals(TaskStatus.AVAILABLE, task.getStatus());
+        
+        // again, setting any datetime updates the zone.
+        task.setScheduledOn(dateTime);
+        assertEquals(dateTime.getZone(), task.getScheduledOn().getZone());
+        
+        // And this is correctly derived.
+        LocalDateTime localDateTime = LocalDateTime.parse("2010-10-15T00:00:00.001");
+        DateTimeZone zone = DateTimeZone.forOffsetHours(-6);
+        
+        task = new DynamoTask();
+        task.setTimeZone(zone);
+        task.setLocalScheduledOn(localDateTime);
+        task.setLocalExpiresOn(localDateTime);
+        assertEquals(localDateTime.toDateTime(zone), task.getScheduledOn());
+        assertEquals(localDateTime.toDateTime(zone), task.getExpiresOn());
+    }
+    
 }

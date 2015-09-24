@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.List;
 import java.util.Map;
 
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -26,10 +27,10 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     private DynamoDBMapper mapper;
 
     @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
+    public void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoParticipantOptions.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoParticipantOptions.class, bridgeConfig)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
     

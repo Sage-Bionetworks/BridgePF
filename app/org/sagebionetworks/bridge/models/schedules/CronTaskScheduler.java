@@ -25,14 +25,14 @@ class CronTaskScheduler extends TaskScheduler {
             
             while (scheduledTime.isBefore(context.getEndsOn())) {
                 Date next = trigger.getFireTimeAfter(scheduledTime.toDate());
-                scheduledTime = new DateTime(next, scheduledTime.getZone());
+                scheduledTime = new DateTime(next, context.getZone());
                 
                 if (scheduledTime.isBefore(context.getEndsOn())) {
                     addTaskForEachTime(tasks, context, scheduledTime);    
                 }
             }
         }
-        return trimTasks(tasks, schedule);
+        return trimTasks(tasks);
     }
     
     private MutableTrigger parseTrigger(Schedule schedule, DateTime scheduledTime) {

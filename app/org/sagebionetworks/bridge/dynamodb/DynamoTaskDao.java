@@ -67,10 +67,6 @@ public class DynamoTaskDao implements TaskDao {
     /** {@inheritDoc} */
     @Override
     public boolean taskRunHasNotOccurred(String healthCode, String runKey) {
-        DynamoTask hashKey = new DynamoTask();
-        hashKey.setHealthCode(healthCode);
-        hashKey.setRunKey(runKey);
-        
         RangeKeyCondition rangeKeyCondition = new RangeKeyCondition("runKey").eq(runKey);
         int count = index.queryKeyCount("healthCode", healthCode, rangeKeyCondition);
         return (count == 0);
@@ -78,7 +74,7 @@ public class DynamoTaskDao implements TaskDao {
     
     /** {@inheritDoc} */
     @Override
-    public void saveTasks(String healthCode, List<Task> tasks) {
+    public void saveTasks(List<Task> tasks) {
         if (!tasks.isEmpty()) {
             // Health code is (now) set during construction in the scheduler.
             List<FailedBatch> failures = mapper.batchSave(tasks);

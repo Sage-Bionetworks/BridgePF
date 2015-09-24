@@ -57,7 +57,7 @@ public class TaskServiceTest {
     @Before
     public void before() {
         study = studyService.getStudy(TEST_STUDY.getIdentifier());
-        testUser = helper.createUser(ParticipantOptionsServiceImplTest.class);
+        testUser = helper.createUser(TaskServiceTest.class);
         
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule Label");

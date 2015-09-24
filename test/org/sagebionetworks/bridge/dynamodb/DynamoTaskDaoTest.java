@@ -99,7 +99,7 @@ public class DynamoTaskDaoTest {
         ScheduleContext context = new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn, user.getHealthCode(), events, null);
         
         List<Task> tasksToSchedule = TestUtils.runSchedulerForTasks(user, context);
-        taskDao.saveTasks(user.getHealthCode(), tasksToSchedule);
+        taskDao.saveTasks(tasksToSchedule);
         
         List<Task> tasks = taskDao.getTasks(context);
         int collectionSize = tasks.size();
@@ -109,6 +109,10 @@ public class DynamoTaskDaoTest {
         tasks = taskDao.getTasks(context);
         assertEquals("tasks did not grow afer repeated getTask()", collectionSize, tasks.size());
 
+        // Have tasks gotten injected time zone? We have to do this during construction using the time zone
+        // sent with this call/request.
+        assertEquals(endsOn.getZone(), ((DynamoTask)tasks.get(0)).getTimeZone());
+        
         // Delete most information in tasks and delete one by finishing it
         cleanTasks(tasks);
         Task task = tasks.get(1);

@@ -149,7 +149,16 @@ public class DateUtilsTest {
     }
     
     @Test
-    public void emptyOrNullReturnUll() {
+    public void canParseHoursOnlyAbbreviation() {
+        DateTimeZone compareTo = DateTimeZone.forOffsetHours(7);
+        DateTimeZone zone = DateUtils.parseZoneFromOffsetString("7");
+        assertEquals(compareTo, zone);
+        
+        zone = DateUtils.parseZoneFromOffsetString("+7");
+    }
+    
+    @Test
+    public void emptyOrNullReturnNull() {
         DateTimeZone zone = DateUtils.parseZoneFromOffsetString(null);
         assertNull(zone);
         
@@ -163,10 +172,10 @@ public class DateUtilsTest {
     @Test
     public void anyDeviationThrowsCorrectException() {
         try {
-            DateUtils.parseZoneFromOffsetString("7");
+            DateUtils.parseZoneFromOffsetString("Z");
             fail("Should have thrown exception");
         } catch(IllegalArgumentException e) {
-            assertEquals("Cannot not parse timezone offset '7' (use format ±HH:MM)", e.getMessage()); 
+            assertEquals("Cannot not parse timezone offset 'Z' (use format ±HH:MM)", e.getMessage()); 
         }
     }
 }

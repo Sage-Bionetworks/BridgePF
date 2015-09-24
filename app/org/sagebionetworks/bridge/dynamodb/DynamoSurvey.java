@@ -76,7 +76,7 @@ public class DynamoSurvey implements Survey {
     @JsonIgnore
     @DynamoDBAttribute(attributeName = "studyKey")
     @DynamoDBIndexHashKey(attributeName="studyKey", globalSecondaryIndexName = "studyKey-index")
-    @DynamoDBProjection(projectionType=ProjectionType.ALL, globalSecondaryIndexName = "studyKey-index")
+    @DynamoProjection(projectionType=ProjectionType.ALL, globalSecondaryIndexName = "studyKey-index")
     public String getStudyIdentifier() {
         return studyKey;
     }

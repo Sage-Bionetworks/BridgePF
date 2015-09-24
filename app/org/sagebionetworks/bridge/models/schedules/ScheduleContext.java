@@ -24,6 +24,7 @@ public final class ScheduleContext {
     private final Map<String,DateTime> events;
     private final String schedulePlanGuid;
     private final String healthCode;
+    private final DateTime now;
     
     public ScheduleContext(StudyIdentifier studyId, DateTimeZone zone, DateTime endsOn, String healthCode, Map<String,DateTime> events, String schedulePlanGuid) {
         this.studyId = studyId;
@@ -31,7 +32,8 @@ public final class ScheduleContext {
         this.endsOn = endsOn;
         this.healthCode = healthCode;
         this.events = (events == null) ? null : ImmutableMap.copyOf(events);
-        this.schedulePlanGuid = schedulePlanGuid; 
+        this.schedulePlanGuid = schedulePlanGuid;
+        this.now = (zone == null) ? DateTime.now() : DateTime.now(zone);
     }
     
     /**
@@ -119,7 +121,7 @@ public final class ScheduleContext {
      * @return
      */
     public DateTime getNow() {
-        return DateTime.now(zone);
+        return now;
     }
     
     @Override

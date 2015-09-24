@@ -83,7 +83,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
     /** {@inheritDoc} */
     @Override
     public List<HealthDataRecord> getRecordsForUploadDate(@Nonnull String uploadDate) {
-        return uploadDateIndex.query(HealthDataRecord.class, "uploadDate", uploadDate);
+        return uploadDateIndex.query(HealthDataRecord.class, "uploadDate", uploadDate, null);
     }
 
     /** {@inheritDoc} */

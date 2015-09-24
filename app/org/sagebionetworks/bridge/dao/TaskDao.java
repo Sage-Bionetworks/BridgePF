@@ -27,14 +27,14 @@ public interface TaskDao {
     
     /**
      * Save tasks (tasks will only be saved if they are not in the database).
-     * @param healthCode
      * @param tasks
      */
-    public void saveTasks(String healthCode, List<Task> tasks);
+    public void saveTasks(List<Task> tasks);
     
     /**
      * Update the startedOn or finishedOn timestamps of the tasks in the collection. Tasks in this 
-     * collection should also have a GUID. All other fields are ignored. 
+     * collection should also have a GUID. All other fields are ignored. Health code is supplied 
+     * here because these tasks come from the client and the client does not provide it. 
      * 
      * @param healthCode
      * @param tasks

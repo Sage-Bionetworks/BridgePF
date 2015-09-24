@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -83,13 +84,15 @@ public class TaskSchedulerTest {
         schedule.setExpires("P3Y");
         
         tasks = schedule.getScheduler().getTasks(getContext(NOW.plusWeeks(1)));
-        Task task = tasks.get(0);
+        DynamoTask task = (DynamoTask)tasks.get(0);
 
         assertNotNull(task.getGuid());
         assertEquals("Label", task.getActivity().getLabel());
         assertEquals("tapTest", task.getActivity().getRef());
         assertNotNull(task.getScheduledOn());
         assertNotNull(task.getExpiresOn());
+        assertNotNull(task.getHealthCode());
+        assertNotNull(task.getTimeZone());
     }
     
     /**

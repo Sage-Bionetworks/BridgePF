@@ -341,7 +341,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     /** {@inheritDoc} */
     @Override
     public @Nonnull List<UploadSchema> getUploadSchemasForStudy(@Nonnull StudyIdentifier studyId) {
-        List<UploadSchema> allSchemasAllRevisions = studyIdIndex.query(UploadSchema.class, "studyId", studyId.getIdentifier());
+        List<UploadSchema> allSchemasAllRevisions = studyIdIndex.query(UploadSchema.class, "studyId", studyId.getIdentifier(), null);
         
         // Find the most recent version of each schema with a unique schemaId
         Map<String,UploadSchema> schemaMap = new HashMap<>();

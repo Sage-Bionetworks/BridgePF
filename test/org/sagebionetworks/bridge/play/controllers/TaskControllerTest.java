@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -14,9 +15,9 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -40,13 +41,15 @@ public class TaskControllerTest {
     
     private TaskController controller;
     
+    ArgumentCaptor<ScheduleContext> argument = ArgumentCaptor.forClass(ScheduleContext.class);
+    
     @Before
     public void before() throws Exception {
         ScheduleContext scheduleContext = new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, null, null, null, BridgeUtils.generateGuid());
         
         DynamoTask task = new DynamoTask();
         task.setGuid(BridgeUtils.generateGuid());
-        task.setLocalScheduledOn(LocalDateTime.now(DateTimeZone.UTC).minusDays(1));
+        task.setScheduledOn(DateTime.now(DateTimeZone.UTC).minusDays(1));
         task.setActivity(TestConstants.TEST_ACTIVITY);
         task.setRunKey(BridgeUtils.generateTaskRunKey(task, scheduleContext));
         List<Task> list = Lists.newArrayList(task);
@@ -69,10 +72,30 @@ public class TaskControllerTest {
     }
     
     @Test
-    public void getTasks() throws Exception {
-        controller.getTasks(DateTime.now().toString(), null, null);
-        verify(taskService).getTasks(any(User.class), any(ScheduleContext.class));
+    public void getTasksWithUntil() throws Exception {
+        // Until value is simply passed along as is to the scheduler.
+        DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
+        
+        controller.getTasks(now.toString(), null, null);
+        verify(taskService).getTasks(any(User.class), argument.capture());
         verifyNoMoreInteractions(taskService);
+        assertEquals(now, argument.getValue().getEndsOn());
+        assertEquals(now.getZone(), argument.getValue().getZone());
+    }
+    
+    @Test
+    public void getTasksWithDaysAheadAndTimeZone() throws Exception {
+        // We expect the endsOn value to be three days from now at the end of the day 
+        // (set millis to 0 so the values match at the end of the test).
+        DateTime expectedEndsOn = DateTime.now()
+            .withZone(DateTimeZone.forOffsetHours(3)).plusDays(3)
+            .withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59).withMillisOfSecond(0);
+        
+        controller.getTasks(null, "+03:00", "3");
+        verify(taskService).getTasks(any(User.class), argument.capture());
+        verifyNoMoreInteractions(taskService);
+        assertEquals(expectedEndsOn, argument.getValue().getEndsOn().withMillisOfSecond(0));
+        assertEquals(expectedEndsOn.getZone(), argument.getValue().getZone());
     }
     
     @SuppressWarnings("unchecked")

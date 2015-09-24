@@ -1,16 +1,22 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+import com.amazonaws.services.dynamodbv2.document.Table;
 
+import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -20,6 +26,18 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
  * encapsulates logic to re-query tables to get full table entries.
  */
 public class DynamoIndexHelper {
+
+    public static DynamoIndexHelper create(final Class<?> dynamoTable, final String indexName,
+            final Config config, final AmazonDynamoDB client) {
+        final DynamoDB ddb = new DynamoDB(client);
+        final Table ddbTable = ddb.getTable(DynamoUtils.getFullyQualifiedTableName(dynamoTable, config));
+        final Index ddbIndex = ddbTable.getIndex(indexName);
+        final DynamoIndexHelper indexHelper = new DynamoIndexHelper();
+        indexHelper.setIndex(ddbIndex);
+        indexHelper.setMapper(DynamoUtils.getMapper(dynamoTable, config, client));
+        return indexHelper;
+    }
+
     private Index index;
     private DynamoDBMapper mapper;
 
@@ -79,12 +97,11 @@ public class DynamoIndexHelper {
      *         range condition for query on range portion of key (optional)
      * @return count of records in the table
      */
-    @SuppressWarnings("unused")
     public int queryKeyCount(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue,
                     RangeKeyCondition rangeKeyCondition) {
         int count = 0;
         Iterable<Item> itemIter = queryHelper(indexKeyName, indexKeyValue, rangeKeyCondition);
-        for (Item item : itemIter) {
+        for(Iterator<Item> i = itemIter.iterator(); i.hasNext(); i.next()) {
             count++;
         }
         return count;
@@ -101,19 +118,21 @@ public class DynamoIndexHelper {
      *         index key name to query on
      * @param indexKeyValue
      *         index key value to query on
+     * @param rangeKeyCondition
+     *         condition for query on range portion of key (optional)
      * @param <T>
      *         expected result type
      * @return list of query results
      */
     @SuppressWarnings("unchecked")
     public <T> List<T> query(@Nonnull Class<? extends T> clazz, @Nonnull String indexKeyName,
-            @Nonnull Object indexKeyValue) {
+            @Nonnull Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
         // In general, we only project keys onto global secondary indices, to save storage space. This means the
         // objects we get back aren't full fledged objects. However, we can use them as "key objects" to re-query
         // the DDB table to get full results.
         //
         // First step is to query the index to get these "key objects".
-        List<T> recordKeyList = queryKeys(clazz, indexKeyName, indexKeyValue, null);
+        List<T> recordKeyList = queryKeys(clazz, indexKeyName, indexKeyValue, rangeKeyCondition);
 
         // Using the "key objects", batch query DDB to get full records. For some reason, batchLoad() returns a map.
         // Flatten that map into a list.
@@ -143,7 +162,8 @@ public class DynamoIndexHelper {
      * Iterable, it overrides iterator() to return an IteratorSupport, which is not publicly exposed. This makes
      * index.query() nearly impossible to mock. So we abstract it away into a method that we can mock.
      */
-    protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
+    protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue,
+                    @Nullable RangeKeyCondition rangeKeyCondition) {
         if (rangeKeyCondition != null) {
             return index.query(indexKeyName, indexKeyValue, rangeKeyCondition);
         } else {

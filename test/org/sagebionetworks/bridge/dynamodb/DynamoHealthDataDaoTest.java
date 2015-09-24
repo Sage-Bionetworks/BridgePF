@@ -116,7 +116,7 @@ public class DynamoHealthDataDaoTest {
         // mock index helper
         List<HealthDataRecord> mockResult = Collections.emptyList();
         DynamoIndexHelper mockIndex = mock(DynamoIndexHelper.class);
-        when(mockIndex.query(HealthDataRecord.class, "uploadDate", "2015-02-11")).thenReturn(mockResult);
+        when(mockIndex.query(HealthDataRecord.class, "uploadDate", "2015-02-11", null)).thenReturn(mockResult);
 
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
         dao.setUploadDateIndex(mockIndex);

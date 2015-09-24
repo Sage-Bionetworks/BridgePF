@@ -70,11 +70,9 @@ public class DynamoTaskDaoMockTest {
 
         // This is the part that will need to be expanded per test.
         mapper = mock(DynamoDBMapper.class);
-        when(
-                        mapper.query((Class<DynamoTask>) any(Class.class),
-                                        (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class)))
-                        .thenReturn(null);
-
+        when(mapper.query((Class<DynamoTask>) any(Class.class),
+            (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class)))
+            .thenReturn(null);
         taskDao = new DynamoTaskDao();
         taskDao.setDdbMapper(mapper);
     }
@@ -86,19 +84,14 @@ public class DynamoTaskDaoMockTest {
 
     @SuppressWarnings("unchecked")
     private void mockQuery(final List<Task> tasks) {
-        when(mapper.load(any())).thenAnswer(new Answer<DynamoTask>() {
-            @Override
-            public DynamoTask answer(InvocationOnMock invocation) throws Throwable {
-                DynamoTask thisTask = (DynamoTask) invocation.getArguments()[0];
-                for (Task task : tasks) {
-                    if (thisTask.getGuid().equals(task.getGuid())
-                                    && thisTask.getHealthCode().equals(task.getHealthCode())) {
-                        return thisTask;
-                    }
+        when(mapper.load(any())).thenAnswer(invocation -> {
+            DynamoTask thisTask = invocation.getArgumentAt(0, DynamoTask.class);
+            for (Task task : tasks) {
+                if (thisTask.getGuid().equals(task.getGuid()) && thisTask.getHealthCode().equals(task.getHealthCode())) {
+                    return thisTask;
                 }
-                return null;
             }
-
+            return null;
         });
         final PaginatedQueryList<DynamoTask> queryResults = (PaginatedQueryList<DynamoTask>) mock(PaginatedQueryList.class);
         when(queryResults.iterator()).thenReturn(((List<DynamoTask>)(List<?>)tasks).iterator());

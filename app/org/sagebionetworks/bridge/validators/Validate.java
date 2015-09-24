@@ -39,7 +39,7 @@ public class Validate {
      * @param object
      * @throws BadRequestException
      */
-    public static void nonEntityThrowingException(Validator validator, Object object) {
+    public static void nonEntityThrowingException(Validator validator, Object object) throws BadRequestException {
         checkNotNull(validator);
         checkArgument(validator.supports(object.getClass()), "Invalid validator");
         checkNotNull(object);
@@ -60,8 +60,9 @@ public class Validate {
      * InvalidEntityException when validation fails.
      * @param validator
      * @param object
+     * @throws InvalidEntityException
      */
-    public static void entityThrowingException(Validator validator, Object object) {
+    public static void entityThrowingException(Validator validator, Object object) throws InvalidEntityException {
         checkNotNull(validator);
         checkArgument(object instanceof BridgeEntity);
         checkArgument(validator.supports(object.getClass()), "Invalid validator");

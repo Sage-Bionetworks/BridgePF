@@ -10,12 +10,12 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
+import org.sagebionetworks.bridge.models.schedules.Task;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -60,14 +60,14 @@ public class BridgeUtils {
     /**
      * Identifies a set of tasks from a single run of a schedule. 
      * @param task
+     * @param context
      * @return
      */
-    public static String generateTaskRunKey(DynamoTask task, ScheduleContext context) {
+    public static String generateTaskRunKey(Task task, ScheduleContext context) {
         checkNotNull(task);
-        checkNotNull(task.getLocalScheduledOn());
         checkNotNull(context);
         checkNotNull(context.getSchedulePlanGuid());
-        return String.format("%s:%s", context.getSchedulePlanGuid(), task.getLocalScheduledOn());
+        return String.format("%s:%s", context.getSchedulePlanGuid(), task.getScheduledOn().getMillis());
     }
     
     /**

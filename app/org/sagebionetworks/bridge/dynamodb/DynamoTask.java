@@ -49,16 +49,6 @@ public final class DynamoTask implements Task, BridgeEntity {
         setHidesOn(new Long(Long.MAX_VALUE));
     }
     
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DateTimeZone getTimeZone() {
-        return timeZone;
-    }
-    
-    public void setTimeZone(DateTimeZone timeZone) {
-        this.timeZone = timeZone;
-    }
-
     @Override
     @DynamoDBIgnore
     public TaskStatus getStatus() {
@@ -71,13 +61,24 @@ public final class DynamoTask implements Task, BridgeEntity {
         }
         if (timeZone != null) {
             DateTime now = DateTime.now(timeZone);
-            if (localExpiresOn != null && now.isAfter(getExpiresOn())) {
+            DateTime expiresOn = getExpiresOn();
+            DateTime scheduledOn = getScheduledOn();
+            if (expiresOn != null && now.isAfter(expiresOn)) {
                 return TaskStatus.EXPIRED;
-            } else if (localScheduledOn != null && now.isBefore(getScheduledOn())) {
+            } else if (scheduledOn != null && now.isBefore(scheduledOn)) {
                 return TaskStatus.SCHEDULED;
             }
         }
         return TaskStatus.AVAILABLE;
+    }
+    
+    @DynamoDBIgnore
+    public void setTimeZone(DateTimeZone zone) {
+        this.timeZone = zone;
+    }
+    
+    public DateTimeZone getTimeZone() {
+        return timeZone;
     }
     
     @Override
@@ -87,13 +88,28 @@ public final class DynamoTask implements Task, BridgeEntity {
     }
     
     @Override
+    public void setScheduledOn(DateTime scheduledOn) {
+        this.timeZone = (scheduledOn == null) ? null : scheduledOn.getZone();
+        this.localScheduledOn = (scheduledOn == null) ? null : scheduledOn.toLocalDateTime();
+    }
+    
+    @Override
     @DynamoDBIgnore
     public DateTime getExpiresOn() {
         return getInstant(getLocalExpiresOn());
     }
     
+    @Override
+    public void setExpiresOn(DateTime expiresOn) {
+        this.timeZone = (expiresOn == null) ? null : expiresOn.getZone();
+        this.localExpiresOn = (expiresOn == null) ? null : expiresOn.toLocalDateTime();
+    }
+    
     private DateTime getInstant(LocalDateTime localDateTime) {
-        return (localDateTime == null) ? null : localDateTime.toDateTime(timeZone);
+        /* if (localDateTime != null && timeZone == null) {
+            throw new IllegalStateException("DynamoTask improperly constructed: it has no DateTimeZone and cannot calculate DateTime values.");
+        }*/
+        return (localDateTime == null || timeZone == null) ? null : localDateTime.toDateTime(timeZone);
     }
 
     /**
@@ -103,11 +119,11 @@ public final class DynamoTask implements Task, BridgeEntity {
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
     @JsonIgnore
-    public LocalDateTime getLocalScheduledOn() {
+    LocalDateTime getLocalScheduledOn() {
         return localScheduledOn;
     }
 
-    public void setLocalScheduledOn(LocalDateTime localScheduledOn) {
+    void setLocalScheduledOn(LocalDateTime localScheduledOn) {
         this.localScheduledOn = localScheduledOn;
     }
 
@@ -118,11 +134,11 @@ public final class DynamoTask implements Task, BridgeEntity {
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
     @JsonIgnore
-    public LocalDateTime getLocalExpiresOn() {
+    LocalDateTime getLocalExpiresOn() {
         return localExpiresOn;
     }
 
-    public void setLocalExpiresOn(LocalDateTime localExpiresOn) {
+    void setLocalExpiresOn(LocalDateTime localExpiresOn) {
         this.localExpiresOn = localExpiresOn;
     }
 
