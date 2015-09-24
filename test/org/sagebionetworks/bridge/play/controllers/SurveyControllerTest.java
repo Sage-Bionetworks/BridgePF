@@ -637,6 +637,7 @@ public class SurveyControllerTest {
             verifyNoMoreInteractions(service);
         }
     }    
+    
     private Survey getSurvey(boolean makeNew) {
         Survey survey = new TestSurvey(makeNew);
         survey.setName("bloodpressure " + survey.getGuid());

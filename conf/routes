@@ -37,7 +37,7 @@ POST   /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.control
 POST   /v3/users/self/dataSharing       @org.sagebionetworks.bridge.play.controllers.ConsentController.changeSharingScope
 
 # Surveys
-GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion
+GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion(format: String ?= null)
 POST   /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.createSurvey
 GET    /v3/surveys/recent                                    @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion2
 GET    /v3/surveys/published                                 @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion

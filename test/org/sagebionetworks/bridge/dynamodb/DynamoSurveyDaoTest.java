@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -474,6 +475,33 @@ public class DynamoSurveyDaoTest {
         assertEquals(Sets.newHashSet(surveys), Sets.newHashSet(firstSurvey, secondSurvey));
     }
 
+    @Test
+    public void canGetSummarySurvey() throws Exception {
+        // Add some information screens so we can verify they are removed.
+        DynamoSurveyInfoScreen info = new DynamoSurveyInfoScreen();
+        info.setIdentifier("info");
+        info.setPrompt("This is the prompt.");
+        info.setPromptDetail("This is the prompt detail.");
+        info.setTitle("This is a title.");
+        
+        Survey survey = new TestSurvey(true);
+        survey.getElements().add(info);
+        survey = createSurvey(survey);
+        survey = publishSurvey(studyIdentifier, survey);
+        
+        survey = new TestSurvey(true);
+        survey.getElements().add(info);
+        survey = createSurvey(survey);
+        survey = publishSurvey(studyIdentifier, survey);
+        
+        List<Survey> surveys = surveyDao.getSurveysSummary(studyIdentifier);
+        assertEquals(2, surveys.size());
+        
+        Survey returnedSurvey = surveys.get(0);
+        int len = returnedSurvey.getElements().size();
+        assertFalse(returnedSurvey.getElements().get(len-1) instanceof SurveyInfoScreen);
+    }
+    
     @Test
     public void canGetAllSurveys() throws Exception {
         Set<GuidCreatedOnVersionHolderImpl> mostRecentVersionSurveys = new HashSet<>();

@@ -5,14 +5,16 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
+
 import org.joda.time.DateTime;
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -23,6 +25,11 @@ import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 @SuppressWarnings("unchecked")
 public class DynamoSurveyTest {
@@ -131,8 +138,34 @@ public class DynamoSurveyTest {
     }
 
     @Test
+    public void canFilterSurveyForSummary() throws Exception {
+        List<Survey> surveys = Lists.newArrayList(makeTestSurvey());
+        
+        String json = Survey.SUMMARY_LIST_WRITER.writeValueAsString(surveys);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        ObjectNode survey = (ObjectNode)node.get(0);
+        Set<String> surveyFieldNames = getFieldNames(survey);
+        
+        ObjectNode question = (ObjectNode)survey.get("elements").get(0);
+        Set<String> questionFieldNames = getFieldNames(question);
+        
+        assertEquals(Sets.newHashSet("identifier","elements","name","guid","type","createdOn"), surveyFieldNames);
+        assertEquals(Sets.newHashSet("guid","identifier","fireEvent"), questionFieldNames);
+    }
+    
+    @Test
     public void equalsVerifier() {
         EqualsVerifier.forClass(DynamoSurvey.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
+    
+    private Set<String> getFieldNames(ObjectNode object) {
+        Set<String> set = Sets.newHashSet();
+        Iterator<String> i = object.fieldNames();
+        while(i.hasNext()) {
+            set.add(i.next());
+        }
+        return set;
     }
 
     private static void assertEqualsSurveyElement(SurveyElement expected, SurveyElement actual) {

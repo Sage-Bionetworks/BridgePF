@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -339,6 +341,21 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid) {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted().getOne(true);
+    }
+    
+    // secondary index query (not survey GUID)
+    @SuppressWarnings("unchecked")
+    @Override
+    public List<Survey> getSurveysSummary(StudyIdentifier studyIdentifier) {
+        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isPublished().isNotDeleted().getAll(false);
+        surveys = findMostRecentVersions(surveys);
+        // get the questions for each survey by retrieving the whole survey, then copying over only the 
+        // questions.
+        for (int i=0; i < surveys.size(); i++) {
+            Survey updated = getSurvey(surveys.get(i));
+            surveys.get(i).setElements((List<SurveyElement>)(List<?>)updated.getUnmodifiableQuestionList());
+        }
+        return surveys;
     }
     
     // secondary index query (not survey GUID) 

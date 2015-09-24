@@ -51,6 +51,17 @@ public interface SurveyService {
     public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier);
     
     /**
+     * Get a list of all surveys published in this survey, using the most recent published version. 
+     * These surveys will include questions with their identifiers (not other type of elements, like 
+     * info screens). This is a slower call, and we only expose it in the API with most JSON properties 
+     * removed (all but identifiers).
+     *   
+     * @param studyIdentifier
+     * @return
+     */
+    public List<Survey> getSurveysSummary(StudyIdentifier studyIdentifier);
+    
+    /**
      * Get one instance of a survey. This method will return a survey regardless of whether or not it has been 
      * published. It will return a survey even if it has been deleted.
      * @param keys

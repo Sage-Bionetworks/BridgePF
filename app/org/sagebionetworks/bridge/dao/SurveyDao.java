@@ -106,4 +106,12 @@ public interface SurveyDao {
      */
     public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier);
     
+    /**
+     * Get a list of all surveys published in this survey, using the most recent published version. 
+     * These surveys will include questions with their identifiers.  
+     * @param studyIdentifier
+     * @return
+     */
+    public List<Survey> getSurveysSummary(StudyIdentifier studyIdentifier);
+    
 }
