@@ -100,6 +100,8 @@ public class TaskSchedulerTest {
         assertNotNull(task.getExpiresOn());
         assertNotNull(task.getHealthCode());
         assertNotNull(task.getTimeZone());
+        assertNotNull(task.getRunKey());
+        assertNotNull(task.getTimeZone());
     }
     
     /**

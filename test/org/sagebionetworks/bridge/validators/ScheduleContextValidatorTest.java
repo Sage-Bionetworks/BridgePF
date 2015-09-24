@@ -42,11 +42,8 @@ public class ScheduleContextValidatorTest {
     
     @Test
     public void endsOnBeforeMaxNumDays() {
-        // We document 4 days because we're going to move the time to the end of the day and that 
-        // effectively means you can only ask for one day less than the MAX_EXPIRES_ON_DAYS.
-        DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).withHourOfDay(23)
-                        .withMinuteOfHour(59).withSecondOfMinute(59);
-        
+        // Setting this two days past the maximum. Will always fail.
+        DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS+2);
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier("study-id").withTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn).withHealthCode("healthCode").build();
