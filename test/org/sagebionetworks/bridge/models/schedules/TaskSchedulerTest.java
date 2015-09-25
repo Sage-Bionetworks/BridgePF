@@ -89,7 +89,7 @@ public class TaskSchedulerTest {
         schedule.setLabel("This is a label");
         schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setExpires("P3Y");
-        
+
         tasks = schedule.getScheduler().getTasks(getContext(NOW.plusWeeks(1)));
         DynamoTask task = (DynamoTask)tasks.get(0);
 
@@ -299,7 +299,7 @@ public class TaskSchedulerTest {
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
         return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
+            .withTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withSchedulePlanGuid("BBB").withEvents(events).build();
     }
     
 }
