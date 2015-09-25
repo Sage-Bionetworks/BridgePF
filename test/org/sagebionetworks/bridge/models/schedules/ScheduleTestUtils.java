@@ -22,7 +22,7 @@ public class ScheduleTestUtils {
      * @param string
      * @return
      */
-    public static Long asLong(String string) {
+    public static long asLong(String string) {
         return asDT(string).getMillis();
     }
     
@@ -35,7 +35,7 @@ public class ScheduleTestUtils {
     public static void assertDates(List<Task> tasks, String... output) {
         assertEquals(output.length, tasks.size());
         for (int i=0; i < tasks.size(); i++) {
-            assertEquals(asLong(output[i]), tasks.get(i).getScheduledOn());
+            assertEquals(asLong(output[i]), tasks.get(i).getScheduledOn().getMillis());
         }
     }
 }

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.json;
 
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -9,7 +11,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.ISOPeriodFormat;
 import org.joda.time.format.PeriodFormatter;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 
 public final class DateUtils {
@@ -17,6 +18,9 @@ public final class DateUtils {
     private static final DateTimeFormatter dateFmt = ISODateTimeFormat.date();
     private static final DateTimeFormatter dateTimeFmt = ISODateTimeFormat.dateTime();
     private static final PeriodFormatter periodFmt = ISOPeriodFormat.standard();
+    private static final Pattern OFFSET_PATTERN_HOURS_ONLY = Pattern.compile("^[+-]?\\d+$");
+    private static final Pattern OFFSET_PATTERN = Pattern.compile("^[+-]\\d{1,2}:\\d{2}$");
+    private static final String TIMEZONE_OFFSET_FORMAT_ERROR = "Cannot not parse timezone offset '%s' (use format ±HH:MM)";
 
     /** Returns current time as a Joda DateTime object. */
     public static DateTime getCurrentDateTime() {
@@ -158,4 +162,34 @@ public final class DateUtils {
         return null;
     }
 
+    /**
+     * Convert at 8601 time zone offset string (e.g. "-07:00") to a DateTimeZone 
+     * object. 
+     * @param offsetString
+     * @return
+     */
+    public static DateTimeZone parseZoneFromOffsetString(String offsetString) {
+        DateTimeZone zone = null;
+        if (StringUtils.isNotBlank(offsetString)) {
+            try {
+                if (OFFSET_PATTERN_HOURS_ONLY.matcher(offsetString).matches()) {
+                    int hours = Integer.parseInt(offsetString);
+                    zone = DateTimeZone.forOffsetHours(hours);
+                } else if (OFFSET_PATTERN.matcher(offsetString).matches()) {
+                    String[] zoneParts = offsetString.split(":");
+                    int hours = Integer.parseInt(zoneParts[0]);
+                    int minutes = Integer.parseInt(zoneParts[1]);
+                    zone = DateTimeZone.forOffsetHoursMinutes(hours, minutes);
+                }
+            } catch(RuntimeException throwable) {
+                // Do nothing, throw exception one time below whether pattern was not matched 
+                // or there was an error in parsing, e.g. an offset of -1000 or something.
+            }
+            if (zone == null) {
+                throw new IllegalArgumentException(String.format(TIMEZONE_OFFSET_FORMAT_ERROR, offsetString));
+            }
+        }
+        return zone;
+    }
+    
 }

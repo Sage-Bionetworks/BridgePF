@@ -326,6 +326,12 @@ public class BridgeSpringConfig {
     public DynamoDBMapper taskDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
         return DynamoUtils.getMapper(DynamoTask.class, bridgeConfig, client);
     }
+    
+    @Bean(name = "taskIndex")
+    @Autowired
+    public DynamoIndexHelper taskIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoIndexHelper.create(DynamoTask.class, "hashKey-runKey-index", bridgeConfig, client);
+    }
 
     @Bean(name = "surveyResponseDdbMapper")
     @Autowired

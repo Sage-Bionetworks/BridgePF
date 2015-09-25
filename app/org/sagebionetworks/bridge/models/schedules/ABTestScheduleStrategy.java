@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
@@ -96,15 +95,6 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             perc -= group.getPercentage();
         }
         return group.getSchedule();
-    }
-    @Override
-    public boolean doesScheduleSurvey(GuidCreatedOnVersionHolder keys) {
-        for (ScheduleGroup group : groups) {
-            if (group.getSchedule().isScheduleFor(keys)) {
-                return true;
-            }
-        }
-        return false;
     }
     @Override
     public void validate(Errors errors) {

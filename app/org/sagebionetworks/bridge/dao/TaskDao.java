@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 
 public interface TaskDao {
@@ -12,11 +12,10 @@ public interface TaskDao {
      * or finished, as well as future tasks that are scheduled but should not be started yet. Tasks are 
      * not necessarily saved in the database, however.
      * 
-     * @param healthCode
-     * @param endsOn
+     * @param context
      * @return
      */
-    public List<Task> getTasks(String healthCode, DateTime endsOn);
+    public List<Task> getTasks(ScheduleContext context);
     
     /**
      * Have any of the tasks for this run key been created?
@@ -28,14 +27,14 @@ public interface TaskDao {
     
     /**
      * Save tasks (tasks will only be saved if they are not in the database).
-     * @param healthCode
      * @param tasks
      */
-    public void saveTasks(String healthCode, List<Task> tasks);
+    public void saveTasks(List<Task> tasks);
     
     /**
      * Update the startedOn or finishedOn timestamps of the tasks in the collection. Tasks in this 
-     * collection should also have a GUID. All other fields are ignored. 
+     * collection should also have a GUID. All other fields are ignored. Health code is supplied 
+     * here because these tasks come from the client and the client does not provide it. 
      * 
      * @param healthCode
      * @param tasks

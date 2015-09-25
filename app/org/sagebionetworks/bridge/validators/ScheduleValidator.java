@@ -36,13 +36,16 @@ public class ScheduleValidator implements Validator {
         Schedule schedule = (Schedule)object;
         
         if (schedule.getScheduleType() == null) {
-            errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, CANNOT_BE_NULL);
+            errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, "is required");
         }
-        if (oneTimeScheduleHasInterval(schedule)) {
-            errors.reject("executing once should not have an interval");
+        if (oneTimeScheduleHasIntervalOrCronExpression(schedule)) {
+            errors.reject("that executes once should not have an interval and/or cron expression");
         }
         if (recurringScheduleLacksRepeatingInfo(schedule)) {
-            errors.reject("recurring schedules should have either a cron expression, or an interval, but not both");
+            errors.reject("that repeats should have either a cron expression, or an interval, but not both");
+        }
+        if (recurringScheduleLacksExpirationPeriod(schedule)) {
+            errors.reject("that repeats should have an expiration period");
         }
         if (cronExpressionInvalid(schedule)) {
             errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
@@ -64,21 +67,53 @@ public class ScheduleValidator implements Validator {
         }
         validateActivities(schedule, errors);
     }
-
-    private boolean oneTimeScheduleHasInterval(Schedule schedule) {
-        return (schedule.getScheduleType() == ScheduleType.ONCE && schedule.getInterval() != null);
+    
+    /**
+     * A one time schedule should not have an interval. (Although currently it is legal to have a cron 
+     * expression, I don't know why I decided to do this). 
+     * @param schedule
+     * @return
+     */
+    private boolean oneTimeScheduleHasIntervalOrCronExpression(Schedule schedule) {
+        boolean repeats = (schedule.getInterval() != null || schedule.getCronTrigger() != null);
+        return (schedule.getScheduleType() == ScheduleType.ONCE && repeats);
     }
     
+    /**
+     * A recurring schedule must either have an interval with times, or a cron expression. Otherwise we don't
+     * know how to repeat it.
+     * @param schedule
+     * @return
+     */
     private boolean recurringScheduleLacksRepeatingInfo(Schedule schedule) {
         boolean bothOrNeither = (schedule.getInterval() != null && isNotBlank(schedule.getCronTrigger()) || 
                                 (schedule.getInterval() == null && isBlank(schedule.getCronTrigger())) );
         return (schedule.getScheduleType() == ScheduleType.RECURRING) && bothOrNeither;
     }        
 
+    /**
+     * Schedules that repeat without expiring tasks can stack those tasks all the way back to the first event 
+     * that triggers the task sequence. The most common problem this causes is adding a schedule that then 
+     * creates tasks all the way back to enrollment, dumping 100s of tasks on the client. Expires is required 
+     * for recurring schedules.
+     * @param schedule
+     * @return
+     */
+    private boolean recurringScheduleLacksExpirationPeriod(Schedule schedule) {
+        return (schedule.getScheduleType() == ScheduleType.RECURRING && schedule.getExpires() == null);
+    }
+    
     private boolean cronExpressionInvalid(Schedule schedule) {
         return schedule.getCronTrigger() != null && !CronExpression.isValidExpression(schedule.getCronTrigger());
     }
     
+    /**
+     * Interval scheduling requires that a time of the day must be provided (since the interval itself cannot 
+     * be less than a day, so we don't know the time of day to start the task). If more than one time is provided, 
+     * we schedule a task for each time, so beware, this can add up quickly. 
+     * @param schedule
+     * @return
+     */
     private boolean intervalMissingTimes(Schedule schedule) {
         return schedule.getInterval() != null && (schedule.getTimes() == null || schedule.getTimes().isEmpty());
     }
@@ -100,6 +135,11 @@ public class ScheduleValidator implements Validator {
         return dur.isBefore(oneDay);
     }
     
+    /**
+     * The expires period must be at least one hour.
+     * @param period
+     * @return
+     */
     private boolean periodTooShort(Period period) {
         if (period == null) {
             return false;
@@ -127,6 +167,10 @@ public class ScheduleValidator implements Validator {
         return !times.isEmpty() && dur.isBefore(hours24);
     }
     
+    /**
+     * The scheduling window (startsOn, endsOn) must be in a chronologically correct 
+     * order with at least an hour between the two times (if both are present).
+     */
     private boolean timesNotOrderedChronologically(Schedule schedule) {
         if (schedule.getStartsOn() != null && schedule.getEndsOn() != null) {
             DateTime oneHourLater = schedule.getStartsOn().plusHours(1);
@@ -139,7 +183,7 @@ public class ScheduleValidator implements Validator {
 
     private void validateActivities(Schedule schedule, Errors errors) {
         if (schedule.getActivities() == null || schedule.getActivities().isEmpty()) {
-            errors.rejectValue(ACTIVITIES_PROPERTY, CANNOT_BE_NULL);
+            errors.rejectValue(ACTIVITIES_PROPERTY, "are required");
         } else {
             for (int i=0; i < schedule.getActivities().size(); i++) {
                 Activity activity = schedule.getActivities().get(i);

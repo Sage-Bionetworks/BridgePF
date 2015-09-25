@@ -10,11 +10,11 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -57,10 +57,18 @@ public class BridgeUtils {
         return UUID.randomUUID().toString();
     }
     
-    public static String generateTaskRunKey(Task task) {
-        checkNotNull(task.getSchedulePlanGuid());
+    /**
+     * Identifies a set of tasks from a single run of a schedule. 
+     * @param task
+     * @param context
+     * @return
+     */
+    public static String generateTaskRunKey(Task task, ScheduleContext context) {
+        checkNotNull(task);
         checkNotNull(task.getScheduledOn());
-        return String.format("%s:%s", task.getSchedulePlanGuid(), Long.toString(task.getScheduledOn()));
+        checkNotNull(context);
+        checkNotNull(context.getSchedulePlanGuid());
+        return String.format("%s:%s", context.getSchedulePlanGuid(), task.getScheduledOn().toLocalDateTime());
     }
     
     /**
@@ -131,10 +139,6 @@ public class BridgeUtils {
         }
     }
 
-    public static String toString(Long datetime) {
-        return (datetime == null) ? null : new DateTime(datetime).toString();
-    }
-    
     public static Set<Roles> convertRolesQuietly(GroupList groups) {
         Set<Roles> roleSet = new HashSet<>();
         if (groups != null) {

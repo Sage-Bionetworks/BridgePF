@@ -687,7 +687,7 @@ public class DynamoUploadSchemaDaoTest {
 
         // mock study ID index
         DynamoIndexHelper mockStudyIdIndex = mock(DynamoIndexHelper.class);
-        when(mockStudyIdIndex.query(UploadSchema.class, "studyId", "test-study")).thenReturn(mockResult);
+        when(mockStudyIdIndex.query(UploadSchema.class, "studyId", "test-study", null)).thenReturn(mockResult);
 
         // set up test dao
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
@@ -712,7 +712,7 @@ public class DynamoUploadSchemaDaoTest {
 
         // mock study ID index
         DynamoIndexHelper mockStudyIdIndex = mock(DynamoIndexHelper.class);
-        when(mockStudyIdIndex.query(UploadSchema.class, "studyId", "test-study")).thenReturn(mockResult);
+        when(mockStudyIdIndex.query(UploadSchema.class, "studyId", "test-study", null)).thenReturn(mockResult);
 
         // set up test dao
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
