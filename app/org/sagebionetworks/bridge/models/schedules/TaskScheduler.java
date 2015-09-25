@@ -65,7 +65,7 @@ public abstract class TaskScheduler {
             DateTime expiresOn = getExpiresOn(scheduledTime);
             if (expiresOn == null || expiresOn.isAfter(context.getNow())) {
                 for (Activity activity : schedule.getActivities()) {
-                    Task task = new DynamoTask();
+                    DynamoTask task = new DynamoTask();
                     task.setTimeZone(context.getZone());
                     task.setHealthCode(context.getHealthCode());
                     task.setActivity(activity);
