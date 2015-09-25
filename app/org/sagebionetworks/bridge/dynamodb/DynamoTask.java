@@ -74,10 +74,12 @@ public final class DynamoTask implements Task, BridgeEntity {
     
     @DynamoDBIgnore
     @JsonIgnore
+    @Override
     public DateTimeZone getTimeZone() {
         return timeZone;
     }
     
+    @Override
     public void setTimeZone(DateTimeZone zone) {
         this.timeZone = zone;
     }

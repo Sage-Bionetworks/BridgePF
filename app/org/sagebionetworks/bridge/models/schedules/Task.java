@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.Comparator;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -34,6 +35,17 @@ public interface Task {
     };
     
     public TaskStatus getStatus();
+    
+    /**
+     * Get the time zone for this request. Currently this is a field on the task and must be set to 
+     * get DateTime values from other fields in the class. This forces one method of converting schedule 
+     * times to local times in order to satisfy the API's delivery of times in the user's time zone, and 
+     * may change when we convert closer to the service layer and remove this as a consideration from 
+     * task construction.
+     * @return
+     */
+    public DateTimeZone getTimeZone();
+    public void setTimeZone(DateTimeZone timeZone);
     
     public String getGuid();
     public void setGuid(String guid);
