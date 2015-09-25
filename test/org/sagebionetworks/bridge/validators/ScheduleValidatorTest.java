@@ -185,6 +185,21 @@ public class ScheduleValidatorTest {
         }
     }
     
+    @Test 
+    public void rejectOneTimeTaskWithCronTrigger() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setCronTrigger("0 0 8 ? * TUE,THU *");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            System.out.println(e.getMessage());
+            assertEquals("Schedule that executes once should not have an interval and/or cron expression", e.getErrors().get("Schedule").get(0));
+        }
+    }
+    
     @Test
     public void schedulesWithIntervalsShouldHaveTimesOfDay() {
         Schedule schedule = new Schedule();
