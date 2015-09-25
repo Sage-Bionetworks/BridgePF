@@ -178,4 +178,10 @@ public class DateUtilsTest {
             assertEquals("Cannot not parse timezone offset 'Z' (use format ±HH:MM)", e.getMessage()); 
         }
     }
+    
+    @Test
+    public void canParsePositiveHourValue() {
+        DateTimeZone zone = DateUtils.parseZoneFromOffsetString("+00:00");
+        assertEquals(DateTimeZone.UTC, zone);
+    }
 }
