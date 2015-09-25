@@ -37,10 +37,9 @@ public class TaskTest {
         List<Task> tasks = Lists.newArrayList(task1, task2, task3);
         Collections.sort(tasks, Task.TASK_COMPARATOR);
         
-        // Most recent sorted alphabetically, then the older one.
-        assertEquals(task2, tasks.get(0));
+        assertEquals(task1, tasks.get(0));
         assertEquals(task3, tasks.get(1));
-        assertEquals(task1, tasks.get(2));
+        assertEquals(task2, tasks.get(2));
     }
     
     @Test

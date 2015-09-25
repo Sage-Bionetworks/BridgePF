@@ -21,12 +21,12 @@ public interface Task {
             if (task2.getScheduledOn() == null) {
                 return -1;
             }
-            int result = task2.getScheduledOn().compareTo(task1.getScheduledOn());
+            int result = task1.getScheduledOn().compareTo(task2.getScheduledOn());
             if (result == 0) {
                 Activity act1 = task1.getActivity();
                 Activity act2 = task2.getActivity();
                 if (act1 != null && act1.getLabel() != null && act2 != null && act2.getLabel() != null) {
-                    result = task2.getActivity().getLabel().compareTo(task1.getActivity().getLabel());    
+                    result = task1.getActivity().getLabel().compareTo(task2.getActivity().getLabel());    
                 }
             }
             return result;
