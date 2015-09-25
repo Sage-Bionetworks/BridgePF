@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as = DynamoTask.class)
 public interface Task {
     
+    // Sorts in reverse order.
     public static final Comparator<Task> TASK_COMPARATOR = new Comparator<Task>() {
         @Override 
         public int compare(Task task1, Task task2) {
@@ -20,9 +21,13 @@ public interface Task {
             if (task2.getScheduledOn() == null) {
                 return -1;
             }
-            int result = task1.getScheduledOn().compareTo(task2.getScheduledOn());
+            int result = task2.getScheduledOn().compareTo(task1.getScheduledOn());
             if (result == 0) {
-                result = task1.getActivity().getLabel().compareTo(task2.getActivity().getLabel());
+                Activity act1 = task1.getActivity();
+                Activity act2 = task2.getActivity();
+                if (act1 != null && act1.getLabel() != null && act2 != null && act2.getLabel() != null) {
+                    result = task2.getActivity().getLabel().compareTo(task1.getActivity().getLabel());    
+                }
             }
             return result;
         }
