@@ -51,10 +51,10 @@ public interface SurveyService {
     public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier);
     
     /**
-     * Get a list of all surveys published in this survey, using the most recent published version. 
-     * These surveys will include questions with their identifiers (not other type of elements, like 
-     * info screens). This is a slower call, and we only expose it in the API with most JSON properties 
-     * removed (all but identifiers).
+     * Get a list of all published surveys in this study, using the most recently published version 
+     * of each survey. These surveys will include questions (not other type of elements, like 
+     * info screens). Most properties beyond identifiers will be removed from these surveys as they are 
+     * returned in the API.
      *   
      * @param studyIdentifier
      * @return
