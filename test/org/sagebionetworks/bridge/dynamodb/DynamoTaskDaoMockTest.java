@@ -118,11 +118,11 @@ public class DynamoTaskDaoMockTest {
 
         // These also show that stuff is getting sorted by label
         // Expired tasks are not returned, so this starts on the 12th */
-        assertTask("2015-04-12T13:00:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
-        assertTask("2015-04-13T13:00:00", TestConstants.ACTIVITY_2_REF, tasks2.get(1));
+        assertTask("2015-04-12T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
+        assertTask("2015-04-13T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(1));
         assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(2));
-        assertTask("2015-04-14T13:00:00", TestConstants.ACTIVITY_2_REF, tasks2.get(3));
-        assertTask("2015-04-14T13:00:00", TestConstants.ACTIVITY_1_REF, tasks2.get(4));
+        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(3));
+        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(4));
 
         verify(mapper).query((Class<DynamoTask>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class));
@@ -250,10 +250,7 @@ public class DynamoTaskDaoMockTest {
             assertEquals(ref, task.getActivity().getRef());
             return;
         }
-        // DateTime.parse() keeps the time but changes the timezone to system time zone, not the time zone of the 
-        // DateTime string (unless I've got the format wrong, but it throws no errors and looks right to me). 
-        // This approach to parsing the strings honors the time zone.
-        DateTime date = ISODateTimeFormat.dateOptionalTimeParser().withZone(PACIFIC_TIME_ZONE).parseDateTime(dateString);
+        DateTime date = DateTime.parse(dateString);
         assertTrue(date.isEqual(task.getScheduledOn()));
         assertEquals(ref, task.getActivity().getRef());
     }
