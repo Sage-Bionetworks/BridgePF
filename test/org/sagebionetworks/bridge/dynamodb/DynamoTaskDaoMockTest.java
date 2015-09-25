@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -21,6 +20,7 @@ import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.Period;
+import org.joda.time.format.ISODateTimeFormat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +49,7 @@ public class DynamoTaskDaoMockTest {
 
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("mock-study");
 
-    private static final DateTimeZone PACIFIC_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
+    private static final DateTimeZone PACIFIC_TIME_ZONE = DateTimeZone.forOffsetHours(-7);
 
     private User user;
 
@@ -250,7 +250,10 @@ public class DynamoTaskDaoMockTest {
             assertEquals(ref, task.getActivity().getRef());
             return;
         }
-        DateTime date = DateTime.parse(dateString);
+        // DateTime.parse() keeps the time but changes the timezone to system time zone, not the time zone of the 
+        // DateTime string (unless I've got the format wrong, but it throws no errors and looks right to me). 
+        // This approach to parsing the strings honors the time zone.
+        DateTime date = ISODateTimeFormat.dateOptionalTimeParser().withZone(PACIFIC_TIME_ZONE).parseDateTime(dateString);
         assertTrue(date.isEqual(task.getScheduledOn()));
         assertEquals(ref, task.getActivity().getRef());
     }
