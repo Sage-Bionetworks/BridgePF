@@ -137,4 +137,28 @@ public class DynamoTaskTest {
         assertEquals(dateTimeInZone.toLocalDateTime(), copy);
     }
     
+    @Test
+    public void dateTimesConvertedTest() {
+        DateTimeZone timeZone = DateTimeZone.forOffsetHours(3);
+        DateTime now = DateTime.now();
+        DateTime then = DateTime.now().minusDays(1);
+        
+        DynamoTask task = new DynamoTask();
+        task.setTimeZone(timeZone);
+        task.setScheduledOn(now);
+        task.setExpiresOn(then);
+        assertEquals(task.getLocalScheduledOn(), now.toLocalDateTime());
+        assertEquals(task.getLocalExpiresOn(), then.toLocalDateTime());
+        
+        LocalDateTime local1 = LocalDateTime.parse("2010-01-01T10:10:10");
+        LocalDateTime local2 = LocalDateTime.parse("2010-02-02T10:10:10");
+        
+        task = new DynamoTask();
+        task.setTimeZone(timeZone);
+        task.setLocalScheduledOn(local1);
+        task.setLocalExpiresOn(local2);
+        assertEquals(task.getScheduledOn(), local1.toDateTime(timeZone));
+        assertEquals(task.getExpiresOn(), local2.toDateTime(timeZone));
+    }
+    
 }
