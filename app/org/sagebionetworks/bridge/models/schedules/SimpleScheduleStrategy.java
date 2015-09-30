@@ -32,7 +32,7 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     @Override
     public void validate(Errors errors) {
         if (schedule == null) {
-            errors.reject("simple schedule plan is missing a schedule");
+            errors.rejectValue("schedule", "is required");
         } else {
             errors.pushNestedPath("schedule");
             new ScheduleValidator().validate(schedule, errors);

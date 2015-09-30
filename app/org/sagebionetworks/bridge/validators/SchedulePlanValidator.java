@@ -25,7 +25,7 @@ public class SchedulePlanValidator implements Validator {
             errors.rejectValue("label", "cannot be missing, null, or blank");
         }
         if (plan.getStrategy() == null) {
-            errors.rejectValue("strategy", "cannot be null");
+            errors.rejectValue("strategy", "is required");
         } else {
             errors.pushNestedPath("strategy");
             plan.getStrategy().validate(errors);
