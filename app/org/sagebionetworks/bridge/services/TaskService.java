@@ -18,31 +18,33 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.SchedulerFactory;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
+import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 
 @Component
 public class TaskService {
-
-    public static final int DEFAULT_EXPIRES_ON_DAYS = 2;
-    public static final int MAX_EXPIRES_ON_DAYS = 4;
     
     private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
+    
+    private static final ScheduleContextValidator VALIDATOR = new ScheduleContextValidator();
     private static final List<SurveyAnswer> EMPTY_ANSWERS = ImmutableList.of();
     
     private TaskDao taskDao;
@@ -82,33 +84,39 @@ public class TaskService {
         this.surveyResponseService = surveyResponseService;
     }
     
-    public List<Task> getTasks(User user, DateTime endsOn) {
+    public List<Task> getTasks(User user, ScheduleContext context) {
         checkNotNull(user);
-        checkNotNull(endsOn);
+        checkNotNull(context);
         
-        DateTime now = DateTime.now();
-        if (endsOn.isBefore(now)) {
-            throw new BadRequestException("End timestamp must be after the time of the request");
-        } else if (endsOn.minusDays(MAX_EXPIRES_ON_DAYS).isAfter(now)) {
-            throw new BadRequestException("Task request window must be "+MAX_EXPIRES_ON_DAYS+" days or less");
-        }
+        Validate.nonEntityThrowingException(VALIDATOR, context);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
+        Map<String, DateTime> events = createEventsMap(context);
+        
+        // Get tasks from the scheduler. None of these tasks have been saved, some may be new,
+        // and some may have already been persisted. They are identified by their runKey.
+        ScheduleContext newContext = new ScheduleContext.Builder()
+            .withContext(context)
+            .withEvents(events).build();
+        Multimap<String,Task> scheduledTasks = scheduleTasksForPlans(user, newContext);
+        
         List<Task> tasksToSave = Lists.newArrayList();
-
-        Map<String,List<Task>> scheduledTasks = scheduleTasksForPlans(user, endsOn);
         for (String runKey : scheduledTasks.keySet()) {
-            if (taskDao.taskRunHasNotOccurred(user.getHealthCode(), runKey)) {
+            if (taskDao.taskRunHasNotOccurred(context.getHealthCode(), runKey)) {
                 for (Task task : scheduledTasks.get(runKey)) {
+                    // If they have not been persisted yet, get each task one by one, create a survey 
+                    // response for survey tasks, and add the tasks to the list of tasks to save.
                     Activity activity = createResponseActivityIfNeeded(
-                        studyId, user.getHealthCode(), task.getActivity());
+                        context.getStudyIdentifier(), context.getHealthCode(), task.getActivity());
                     task.setActivity(activity);
                     tasksToSave.add(task);
                 }
             }
         }
-        taskDao.saveTasks(user.getHealthCode(), tasksToSave);
-        return taskDao.getTasks(user.getHealthCode(), endsOn);
+        // Finally, save these new tasks
+        taskDao.saveTasks(tasksToSave);
+        
+        // Now read back the tasks from the database to pick up persisted startedOn, finishedOn values
+        return taskDao.getTasks(context);
     }
     
     public void updateTasks(String healthCode, List<Task> tasks) {
@@ -136,35 +144,48 @@ public class TaskService {
      * @param user
      * @return
      */
-    private Map<String, DateTime> createEventsMap(User user) {
-        Map<String,DateTime> events = taskEventService.getTaskEventMap(user.getHealthCode());
+    private Map<String, DateTime> createEventsMap(ScheduleContext context) {
+        Map<String,DateTime> events = taskEventService.getTaskEventMap(context.getHealthCode());
         if (!events.containsKey("enrollment")) {
-            UserConsent consent = userConsentDao.getUserConsent(user.getHealthCode(), new StudyIdentifierImpl(user.getStudyKey()));
-            Map<String,DateTime> newEvents = Maps.newHashMap();
-            newEvents.putAll(events);
-            newEvents.put("enrollment", new DateTime(consent.getSignedOn()));
-            logger.info("Enrollment missing from task event table, pulling from consent record");
-            return newEvents;
+            return createEnrollmentEventFromConsent(context, events);
         }
         return events;
     }
+    
+    /**
+     * No events have been recorded for this participant, so get an enrollment event from the consent records.
+     * We have back-filled this event, so this should no longer be needed, but is left here just in case.
+     * @param user
+     * @param events
+     * @return
+     */
+    private Map<String, DateTime> createEnrollmentEventFromConsent(ScheduleContext context, Map<String, DateTime> events) {
+        UserConsent consent = userConsentDao.getUserConsent(context.getHealthCode(), context.getStudyIdentifier());
+        Map<String,DateTime> newEvents = Maps.newHashMap();
+        newEvents.putAll(events);
+        newEvents.put("enrollment", new DateTime(consent.getSignedOn()));
+        logger.warn("Enrollment missing from task event table, pulling from consent record");
+        return newEvents;
+    }
    
-    private Map<String,List<Task>> scheduleTasksForPlans(User user, DateTime endsOn) {
-        Map<String,List<Task>> map = Maps.newHashMap();
-        Map<String, DateTime> events = createEventsMap(user);
+    private Multimap<String,Task> scheduleTasksForPlans(User user, ScheduleContext oldContext) {
         StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
-
+        
+        Multimap<String,Task> scheduledTasks = ArrayListMultimap.create();
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
+        
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);
-            TaskScheduler scheduler = SchedulerFactory.getScheduler(plan.getGuid(), schedule);
-
-            List<Task> tasks = scheduler.getTasks(events, endsOn);
-            if (!tasks.isEmpty()) {
-                map.put(tasks.get(0).getRunKey(), tasks);
+            ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(oldContext)
+                .withSchedulePlanGuid(plan.getGuid()).build();
+            
+            List<Task> tasks = schedule.getScheduler().getTasks(context);
+            for (Task task : tasks) {
+                scheduledTasks.put(task.getRunKey(), task);
             }
         }
-        return map;
+        return scheduledTasks;
     }
     
     private Activity createResponseActivityIfNeeded(StudyIdentifier studyIdentifier, String healthCode, Activity activity) {

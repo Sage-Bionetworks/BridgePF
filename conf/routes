@@ -59,7 +59,7 @@ POST   /v3/surveyresponses/:identifier @org.sagebionetworks.bridge.play.controll
 GET    /v3/schedules   @org.sagebionetworks.bridge.play.controllers.ScheduleController.getSchedules
 
 # Tasks
-GET    /v3/tasks       @org.sagebionetworks.bridge.play.controllers.TaskController.getTasks(until: java.lang.String ?= null)
+GET    /v3/tasks       @org.sagebionetworks.bridge.play.controllers.TaskController.getTasks(until: String ?= null, offset: String ?= null, daysAhead: String ?= null)
 POST   /v3/tasks       @org.sagebionetworks.bridge.play.controllers.TaskController.updateTasks()
 
 # Uploads

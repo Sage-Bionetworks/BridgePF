@@ -65,7 +65,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
     public int deleteRecordsForHealthCode(@Nonnull String healthCode) {
         // query for the keys we need to delete
         List<HealthDataRecord> keysToDelete = healthCodeIndex.queryKeys(HealthDataRecord.class, "healthCode",
-                healthCode);
+                healthCode, null);
 
         // and then delete
         List<DynamoDBMapper.FailedBatch> failureList = mapper.batchDelete(keysToDelete);
@@ -83,7 +83,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
     /** {@inheritDoc} */
     @Override
     public List<HealthDataRecord> getRecordsForUploadDate(@Nonnull String uploadDate) {
-        return uploadDateIndex.query(HealthDataRecord.class, "uploadDate", uploadDate);
+        return uploadDateIndex.query(HealthDataRecord.class, "uploadDate", uploadDate, null);
     }
 
     /** {@inheritDoc} */

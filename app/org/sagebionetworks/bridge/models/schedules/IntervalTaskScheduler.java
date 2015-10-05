@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
-import java.util.Map;
 
 import org.joda.time.DateTime;
 
@@ -14,17 +13,17 @@ import com.google.common.collect.Lists;
  */
 class IntervalTaskScheduler extends TaskScheduler {
     
-    IntervalTaskScheduler(String schedulePlanGuid, Schedule schedule) {
-        super(schedulePlanGuid, schedule);
+    IntervalTaskScheduler(Schedule schedule) {
+        super(schedule);
     }
     
     @Override
-    public List<Task> getTasks(Map<String, DateTime> events, DateTime until) {
+    public List<Task> getTasks(ScheduleContext context) {
         List<Task> tasks = Lists.newArrayList();
-        DateTime datetime = getScheduledTimeBasedOnEvent(schedule, events);
+        DateTime datetime = getScheduledTimeBasedOnEvent(context);
         if (datetime != null) {
-            while(datetime.isBefore(until)) {
-                addTaskForEachTime(tasks, datetime);
+            while(datetime.isBefore(context.getEndsOn())) {
+                addTaskForEachTime(tasks, context, datetime);
                 // A one-time task with no interval (for example); don't loop
                 if (schedule.getInterval() == null) {
                     return trimTasks(tasks);

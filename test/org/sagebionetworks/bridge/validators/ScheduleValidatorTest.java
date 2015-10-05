@@ -32,8 +32,8 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("activities cannot be null", e.getErrors().get("activities").get(0));
-            assertEquals("scheduleType cannot be null", e.getErrors().get("scheduleType").get(0));
+            assertEquals("activities are required", e.getErrors().get("activities").get(0));
+            assertEquals("scheduleType is required", e.getErrors().get("scheduleType").get(0));
         }
     }
     
@@ -71,7 +71,7 @@ public class ScheduleValidatorTest {
     }
     
     @Test
-    public void rejectsScheduleWithTwoBothCronTriggerAndInterval() {
+    public void rejectsScheduleWithBothCronTriggerAndInterval() {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setInterval("P2D");
@@ -81,7 +81,7 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule recurring schedules should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
+            assertEquals("Schedule that repeats should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
         }
     }
     
@@ -89,11 +89,12 @@ public class ScheduleValidatorTest {
     public void recurringSchedulesHasNeitherCronTriggerNorInterval() {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setExpires("P1D");
         try {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule recurring schedules should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
+            assertEquals("Schedule that repeats should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
         }
         
         schedule.setInterval("P1D");
@@ -117,6 +118,25 @@ public class ScheduleValidatorTest {
         } catch(InvalidEntityException e) {
             assertEquals("expires must be at least one hour", e.getErrors().get("expires").get(0));
         }
+    }
+    
+    @Test
+    public void rejectsRepeatingScheduleWithNoExpiration() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 0 12 1/1 * ? *");
+        Activity activity = TestConstants.TEST_ACTIVITY;
+        schedule.addActivity(activity);
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("Schedule is invalid: Schedule that repeats should have an expiration period", e.getMessage());
+        }
+        
+        schedule.setExpires("P1D");
+        Validate.entityThrowingException(validator, schedule);
     }
     
     @Test
@@ -161,7 +181,22 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule executing once should not have an interval", e.getErrors().get("Schedule").get(0));
+            assertEquals("Schedule that executes once should not have an interval and/or cron expression", e.getErrors().get("Schedule").get(0));
+        }
+    }
+    
+    @Test 
+    public void rejectOneTimeTaskWithCronTrigger() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setCronTrigger("0 0 8 ? * TUE,THU *");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            System.out.println(e.getMessage());
+            assertEquals("Schedule that executes once should not have an interval and/or cron expression", e.getErrors().get("Schedule").get(0));
         }
     }
     
@@ -206,6 +241,30 @@ public class ScheduleValidatorTest {
         } catch(InvalidEntityException e) {
             assertEquals("delay is less than one day, and times of day are also set for this schedule, which is ambiguous", e.getErrors().get("delay").get(0));
         }
+    }
+    
+    @Test
+    public void cronScheduleValid() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setExpires("P1D");
+        schedule.setCronTrigger("0 0 8 1/1 * ? *");
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
+        
+        Validate.entityThrowingException(validator, schedule);
+    }
+    
+    @Test
+    public void intervalScheduleValid() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("P1D");
+        schedule.setExpires("P1D");
+        schedule.addTimes("08:00");
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
+        
+        Validate.entityThrowingException(validator, schedule);
+        
     }
     
 }

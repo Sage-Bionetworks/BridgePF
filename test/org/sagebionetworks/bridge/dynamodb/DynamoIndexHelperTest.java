@@ -13,13 +13,19 @@ import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class DynamoIndexHelperTest {
+    
+    private DynamoIndexHelper helper;
+    private ArgumentCaptor<List> arg;
+    
     // test class to be used solely for mock testing
     public static class Thing {
         final String key;
@@ -41,29 +47,31 @@ public class DynamoIndexHelperTest {
     private static class TestDynamoIndexHelper extends DynamoIndexHelper {
         private final String expectedKey;
         private final String expectedValue;
+        private final RangeKeyCondition expectedRangeKeyCondition;
         private final Iterable<Item> itemIterable;
 
-        TestDynamoIndexHelper(String expectedKey, String expectedValue, Iterable<Item> itemIterable) {
+        TestDynamoIndexHelper(String expectedKey, String expectedValue, RangeKeyCondition rangeKeyCondition, Iterable<Item> itemIterable) {
             this.expectedKey = expectedKey;
             this.expectedValue = expectedValue;
+            this.expectedRangeKeyCondition = rangeKeyCondition;
             this.itemIterable = itemIterable;
         }
 
         @Override
-        protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue) {
+        protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
             assertEquals(expectedKey, indexKeyName);
             assertEquals(expectedValue, indexKeyValue);
+            assertEquals(expectedRangeKeyCondition, rangeKeyCondition);
             return itemIterable;
         }
     }
-
-    @Test
-    public void test() {
+    
+    public void mockResultsOfQuery(RangeKeyCondition condition) {
         // mock index
         List<Item> mockItemList = ImmutableList.of(new Item().with("key", "foo key"),
                 new Item().with("key", "bar key"), new Item().with("key", "asdf key"),
                 new Item().with("key", "jkl; key"));
-        DynamoIndexHelper helper = new TestDynamoIndexHelper("test key", "test value", mockItemList);
+        helper = new TestDynamoIndexHelper("test key", "test value", condition, mockItemList);
 
         // mock mapper result
         Map<String, List<Object>> mockMapperResultMap = new HashMap<>();
@@ -74,16 +82,22 @@ public class DynamoIndexHelperTest {
 
         // mock mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        ArgumentCaptor<List> arg = ArgumentCaptor.forClass(List.class);
+        arg = ArgumentCaptor.forClass(List.class);
         when(mockMapper.batchLoad(arg.capture())).thenReturn(mockMapperResultMap);
         helper.setMapper(mockMapper);
+    }
 
+    @Test
+    public void test() {
+        RangeKeyCondition rangeKeyCondition = new RangeKeyCondition("antwerp").eq("belgium");
+        mockResultsOfQuery(rangeKeyCondition);
+        
         // execute query keys and validate
-        List<Thing> keyList = helper.queryKeys(Thing.class, "test key", "test value");
+        List<Thing> keyList = helper.queryKeys(Thing.class, "test key", "test value", rangeKeyCondition);
         validateKeyObjects(keyList);
 
         // execute
-        List<Thing> resultList = helper.query(Thing.class, "test key", "test value");
+        List<Thing> resultList = helper.query(Thing.class, "test key", "test value", rangeKeyCondition);
 
         // Validate intermediate "key objects". This is a List<Object>, but because of type erasure, this should work,
         // at least in the test context.
@@ -102,6 +116,14 @@ public class DynamoIndexHelperTest {
         assertEquals("bar value", thingMap.get("bar key"));
         assertEquals("asdf value", thingMap.get("asdf key"));
         assertEquals("jkl; value", thingMap.get("jkl; key"));
+    }
+    
+    @Test
+    public void testCount() {
+        mockResultsOfQuery(null);
+        int count = helper.queryKeyCount("test key", "test value", null);
+        // There are two lists of two items each
+        assertEquals(4, count);
     }
 
     private static void validateKeyObjects(List<Thing> keyList) {

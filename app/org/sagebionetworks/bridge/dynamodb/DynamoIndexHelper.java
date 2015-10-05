@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +13,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.Table;
 
 import org.sagebionetworks.bridge.config.Config;
@@ -19,8 +22,8 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 /**
  * This class is a wrapper around a DynamoDB Index object, to enable easy testing and easy mocking. This class is used
- * to query global secondary indices, since DynamoDB mappers don't support querying on global secondary indices. This
- * class also encapsulates logic to re-query tables to get full table entries.
+ * to query secondary indices, since DynamoDB mappers don't support querying on secondary indices. This class also 
+ * encapsulates logic to re-query tables to get full table entries.
  */
 public class DynamoIndexHelper {
 
@@ -38,7 +41,7 @@ public class DynamoIndexHelper {
     private Index index;
     private DynamoDBMapper mapper;
 
-    /** DynamoDB index. THis is used to query the global secondary index. This is configured by Spring. */
+    /** DynamoDB index. This is used to query the secondary index. This is configured by Spring. */
     public void setIndex(Index index) {
         this.index = index;
     }
@@ -52,9 +55,10 @@ public class DynamoIndexHelper {
     }
 
     /**
-     * Queries the global secondary index with the specified key name and value. Only the attributes projected onto the
-     * index will be returned. (Generally, this is only the table index keys and the index keys.) This is generally
-     * used to re-query the table to get the full list of results, or to batch update or batch delete rows.
+     * Queries the secondary index with the specified key name and value, and an optional range key condition. Only 
+     * the attributes projected onto the index will be returned. (Generally, this is only the table index keys 
+     * and the index keys.) This is generally used to re-query the table to get the full list of results, or to 
+     * batch update or batch delete rows.
      *
      * @param clazz
      *         expected result class
@@ -62,14 +66,16 @@ public class DynamoIndexHelper {
      *         index key name to query on
      * @param indexKeyValue
      *         index key value to query on
+     * @param rangeKeyCondition
+     *         range condition for query on range portion of key (optional)
      * @param <T>
      *         expected result type
      * @return list of key objects returned by the query
      */
     public <T> List<T> queryKeys(@Nonnull Class<? extends T> clazz, @Nonnull String indexKeyName,
-            @Nonnull Object indexKeyValue) {
+            @Nonnull Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
         // query the index
-        Iterable<Item> itemIter = queryHelper(indexKeyName, indexKeyValue);
+        Iterable<Item> itemIter = queryHelper(indexKeyName, indexKeyValue, rangeKeyCondition);
 
         // convert items to the specified class
         List<T> recordKeyList = new ArrayList<>();
@@ -79,9 +85,30 @@ public class DynamoIndexHelper {
         }
         return recordKeyList;
     }
-
+    
     /**
-     * Queries the global secondary index with the specified key name and value. Results will be returned as a list of
+     * Query via a secondary index to return the count of matching items in the table.
+     *  
+     * @param indexKeyName
+     *         index key name to query on
+     * @param indexKeyValue
+     *         index key value to query on
+     * @param rangeKeyCondition
+     *         range condition for query on range portion of key (optional)
+     * @return count of records in the table
+     */
+    public int queryKeyCount(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue,
+                    RangeKeyCondition rangeKeyCondition) {
+        int count = 0;
+        Iterable<Item> itemIter = queryHelper(indexKeyName, indexKeyValue, rangeKeyCondition);
+        for(Iterator<Item> i = itemIter.iterator(); i.hasNext(); i.next()) {
+            count++;
+        }
+        return count;
+    }
+    
+    /**
+     * Queries the secondary index with the specified key name and value. Results will be returned as a list of
      * the specified class. Unlike {@link #queryKeys}, this method re-queries DynamoDB to get the full rows of the
      * DynamoDB rows.
      *
@@ -91,19 +118,21 @@ public class DynamoIndexHelper {
      *         index key name to query on
      * @param indexKeyValue
      *         index key value to query on
+     * @param rangeKeyCondition
+     *         condition for query on range portion of key (optional)
      * @param <T>
      *         expected result type
      * @return list of query results
      */
     @SuppressWarnings("unchecked")
     public <T> List<T> query(@Nonnull Class<? extends T> clazz, @Nonnull String indexKeyName,
-            @Nonnull Object indexKeyValue) {
+            @Nonnull Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
         // In general, we only project keys onto global secondary indices, to save storage space. This means the
         // objects we get back aren't full fledged objects. However, we can use them as "key objects" to re-query
         // the DDB table to get full results.
         //
         // First step is to query the index to get these "key objects".
-        List<T> recordKeyList = queryKeys(clazz, indexKeyName, indexKeyValue);
+        List<T> recordKeyList = queryKeys(clazz, indexKeyName, indexKeyValue, rangeKeyCondition);
 
         // Using the "key objects", batch query DDB to get full records. For some reason, batchLoad() returns a map.
         // Flatten that map into a list.
@@ -133,7 +162,13 @@ public class DynamoIndexHelper {
      * Iterable, it overrides iterator() to return an IteratorSupport, which is not publicly exposed. This makes
      * index.query() nearly impossible to mock. So we abstract it away into a method that we can mock.
      */
-    protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue) {
-        return index.query(indexKeyName, indexKeyValue);
-    }
+    protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue,
+                    @Nullable RangeKeyCondition rangeKeyCondition) {
+        if (rangeKeyCondition != null) {
+            return index.query(indexKeyName, indexKeyValue, rangeKeyCondition);
+        } else {
+            return index.query(indexKeyName, indexKeyValue);
+        }
+    }    
+
 }

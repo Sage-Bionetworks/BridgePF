@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
@@ -98,28 +97,19 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         return group.getSchedule();
     }
     @Override
-    public boolean doesScheduleSurvey(GuidCreatedOnVersionHolder keys) {
-        for (ScheduleGroup group : groups) {
-            if (group.getSchedule().isScheduleFor(keys)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    @Override
     public void validate(Errors errors) {
         int percentage = 0;
         for (ScheduleGroup group : groups) {
             percentage += group.getPercentage();
         }
         if (percentage != 100) {
-            errors.reject(String.format("groups in AB test plan add up to %s\u0025 and not 100\u0025 (give 20\u0025 as 20, for example)", percentage));
+        	errors.rejectValue("scheduleGroups", "groups must add up to 100% (not "+percentage+"%; give 20% as 20, for example)");
         }
         for (int i=0; i < groups.size(); i++) {
             ScheduleGroup group = groups.get(i);
-            errors.pushNestedPath("group[" + i + "]");
+            errors.pushNestedPath("scheduleGroups"+i);
             if (group.getSchedule() == null){
-                errors.reject("at least one AB test plan group is missing a schedule");
+                errors.rejectValue("schedule", "is required");
                 errors.popNestedPath();
                 return;
             } else {
