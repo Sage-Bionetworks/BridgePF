@@ -7,6 +7,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -15,6 +17,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -156,6 +159,12 @@ public abstract class BaseController extends Controller {
         return session[0];
     }
 
+    ClientInfo getUserAgent() {
+    	System.out.println(request().getHeader(BridgeConstants.USER_AGENT_HEADER));
+    	return ClientInfo.fromUserAgentCache(
+			request().getHeader(BridgeConstants.USER_AGENT_HEADER));
+    }
+    
     Result okResult(String message) {
         return ok(Json.toJson(new StatusMessage(message)));
     }
