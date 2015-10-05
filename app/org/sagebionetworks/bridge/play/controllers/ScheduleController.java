@@ -37,7 +37,7 @@ public class ScheduleController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         Study study = studyService.getStudy(studyId);
-        ClientInfo clientInfo = getUserAgent();
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());

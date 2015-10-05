@@ -159,8 +159,7 @@ public abstract class BaseController extends Controller {
         return session[0];
     }
 
-    ClientInfo getUserAgent() {
-    	System.out.println(request().getHeader(BridgeConstants.USER_AGENT_HEADER));
+    ClientInfo getClientInfoFromUserAgentHeader() {
     	return ClientInfo.fromUserAgentCache(
 			request().getHeader(BridgeConstants.USER_AGENT_HEADER));
     }

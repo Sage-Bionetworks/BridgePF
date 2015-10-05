@@ -85,7 +85,7 @@ public class BaseControllerTest {
         when(context.request()).thenReturn(mockRequest);
         Http.Context.current.set(context);
         
-        ClientInfo info = new SchedulePlanController().getUserAgent();
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
         assertEquals("Unknown iPhone", info.getOsName());
@@ -104,7 +104,7 @@ public class BaseControllerTest {
         when(context.request()).thenReturn(mockRequest);
         Http.Context.current.set(context);
         
-        ClientInfo info = new SchedulePlanController().getUserAgent();
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertNull(info.getAppName());
         assertNull(info.getAppVersion());
         assertNull(info.getOsName());

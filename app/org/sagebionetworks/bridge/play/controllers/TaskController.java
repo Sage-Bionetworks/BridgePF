@@ -55,7 +55,7 @@ public class TaskController extends BaseController {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
         }
         // The ClientInfo will be added to the scheduling context.
-        ClientInfo clientInfo = getUserAgent();
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(session.getStudyIdentifier())
             .withTimeZone(zone)
