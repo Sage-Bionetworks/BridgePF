@@ -79,37 +79,37 @@ public class BaseControllerTest {
     public void canRetrieveClientInfoObject() throws Exception {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-        	.thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
-    	Http.Context context = mockPlayContext();
-    	when(context.request()).thenReturn(mockRequest);
-    	Http.Context.current.set(context);
-    	
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
         ClientInfo info = new SchedulePlanController().getUserAgent();
-		assertEquals("Asthma", info.getAppName());
-		assertEquals(26, info.getAppVersion().intValue());
-		assertEquals("Unknown iPhone", info.getOsName());
-		assertEquals("iPhone OS 9.0.2", info.getOsVersion());
-		assertEquals("BridgeSDK", info.getSdkName());
-		assertEquals(4, info.getSdkVersion().intValue());
+        assertEquals("Asthma", info.getAppName());
+        assertEquals(26, info.getAppVersion().intValue());
+        assertEquals("Unknown iPhone", info.getOsName());
+        assertEquals("iPhone OS 9.0.2", info.getOsVersion());
+        assertEquals("BridgeSDK", info.getSdkName());
+        assertEquals(4, info.getSdkVersion().intValue());
     }
     
     @Test
     public void doesNotThrowErrorWhenUserAgentStringInvalid() throws Exception {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-        	.thenReturn("Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
+            .thenReturn("Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
         
-    	Http.Context context = mockPlayContext();
-    	when(context.request()).thenReturn(mockRequest);
-    	Http.Context.current.set(context);
-    	
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
         ClientInfo info = new SchedulePlanController().getUserAgent();
-		assertNull(info.getAppName());
-		assertNull(info.getAppVersion());
-		assertNull(info.getOsName());
-		assertNull(info.getOsVersion());
-		assertNull(info.getSdkName());
-		assertNull(info.getSdkVersion());
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
     }
 }
