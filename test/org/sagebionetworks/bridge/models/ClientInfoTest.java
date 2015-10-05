@@ -16,6 +16,7 @@ public class ClientInfoTest {
     private static final String INVALID_UA_1 = "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi";
     private static final String INVALID_UA_2 = "Integration Tests (Linux/3.13.0-36-generic) BridgeJavaSDK/3";
     private static final String INVALID_UA_3 = "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2224.3 Safari/537.36";
+    private static final String INVALID_UA_4 = "Mozilla/5 (Windows NT 5.1) Safari/537"; // Purposefully very ambiguous; still fails.
     
     @Test
     public void hashEquals() {
@@ -48,6 +49,7 @@ public class ClientInfoTest {
         assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.parseUserAgentString(INVALID_UA_1));
         assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.parseUserAgentString(INVALID_UA_2));
         assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.parseUserAgentString(INVALID_UA_3));
+        assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.parseUserAgentString(INVALID_UA_4));
     }
     
     @Test
