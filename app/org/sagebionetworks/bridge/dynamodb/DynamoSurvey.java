@@ -20,6 +20,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -27,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 @DynamoDBTable(tableName = "Survey")
+@JsonFilter("filter")
 public class DynamoSurvey implements Survey {
     private String studyKey;
     private String guid;

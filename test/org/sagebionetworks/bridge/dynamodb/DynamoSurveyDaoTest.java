@@ -31,6 +31,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -475,6 +477,33 @@ public class DynamoSurveyDaoTest {
     }
 
     @Test
+    public void canGetSummarySurvey() throws Exception {
+        // Add an information screen so we can verify it is removed.
+        DynamoSurveyInfoScreen info = new DynamoSurveyInfoScreen();
+        info.setIdentifier("info");
+        info.setPrompt("This is the prompt.");
+        info.setPromptDetail("This is the prompt detail.");
+        info.setTitle("This is a title.");
+        
+        // Create and publish a couple of surveys
+        Survey survey = new TestSurvey(true);
+        survey.getElements().add(info);
+        survey = createSurvey(survey);
+        survey = publishSurvey(studyIdentifier, survey);
+        
+        survey = new TestSurvey(true);
+        survey.getElements().add(info);
+        survey = createSurvey(survey);
+        survey = publishSurvey(studyIdentifier, survey);
+        
+        List<Survey> surveys = surveyDao.getSurveysSummary(studyIdentifier);
+        assertTrue(surveys.size() >= 2);
+        for (Survey aSurvey : surveys) {
+            assertTrue(doesNotContainSurveyInfoScreen(aSurvey));    
+        }
+    }
+    
+    @Test
     public void canGetAllSurveys() throws Exception {
         Set<GuidCreatedOnVersionHolderImpl> mostRecentVersionSurveys = new HashSet<>();
         mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
@@ -610,5 +639,14 @@ public class DynamoSurveyDaoTest {
             }
             assertTrue("Found survey " + oneExpected, found);
         }
+    }
+    
+    private boolean doesNotContainSurveyInfoScreen(Survey survey) {
+        for (SurveyElement element : survey.getElements()) {
+            if (element instanceof SurveyInfoScreen) {
+                return false;
+            }
+        }
+        return true;
     }
 }

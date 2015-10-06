@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +33,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -105,11 +105,7 @@ public class DynamoSurveyDao implements SurveyDao {
             if (exceptionIfEmpty && dynamoSurveys.size() == 0) {
                 throw new EntityNotFoundException(DynamoSurvey.class);
             }
-            List<Survey> surveys = Lists.newArrayListWithCapacity(dynamoSurveys.size());
-            for (DynamoSurvey s : dynamoSurveys) {
-                surveys.add((Survey)s);
-            }
-            return surveys;
+            return ImmutableList.copyOf(dynamoSurveys);
         }
         
         Survey getOne(boolean exceptionIfEmpty) {
@@ -341,6 +337,20 @@ public class DynamoSurveyDao implements SurveyDao {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted().getOne(true);
     }
     
+    // This is a slower call. There's no getting around it. But not as slow as calling all of these separately
+    // from the Researcher UI.
+    // secondary index query (via getAllSurveysMostRecentlyPublishedVersion)
+    @Override
+    public List<Survey> getSurveysSummary(StudyIdentifier studyIdentifier) {
+        List<Survey> surveys = getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
+        // get the questions for each survey from the whole survey, then copy over only the questions
+        for (int i=0; i < surveys.size(); i++) {
+            Survey updated = getSurvey(surveys.get(i));
+            surveys.get(i).setElements(ImmutableList.copyOf(updated.getUnmodifiableQuestionList()));
+        }
+        return surveys;
+    }
+    
     // secondary index query (not survey GUID) 
     @Override
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
@@ -382,7 +392,7 @@ public class DynamoSurveyDao implements SurveyDao {
                 map.put(survey.getGuid(), survey);
             }
         }
-        return new ArrayList<Survey>(map.values());
+        return ImmutableList.copyOf(map.values());
     }
     
     private Survey saveSurvey(Survey survey) {
