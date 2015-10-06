@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import play.Logger;
 import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
@@ -160,8 +161,11 @@ public abstract class BaseController extends Controller {
     }
 
     ClientInfo getClientInfoFromUserAgentHeader() {
-    	return ClientInfo.fromUserAgentCache(
-			request().getHeader(BridgeConstants.USER_AGENT_HEADER));
+        String userAgentHeader = request().getHeader(BridgeConstants.USER_AGENT_HEADER);
+        ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
+        
+        Logger.debug("User agent: '"+userAgentHeader+"' converted to " + info);
+    	return info;
     }
     
     Result okResult(String message) {
