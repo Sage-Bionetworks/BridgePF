@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import java.util.Map;
 
@@ -10,8 +12,10 @@ import org.junit.Test;
 
 import play.mvc.Http;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.play.controllers.BaseController;
 
 /** Test class for basic utility functions in BaseController. */
@@ -69,5 +73,43 @@ public class BaseControllerTest {
 
         // execute and validate
         BaseController.parseJson(mockRequest, Map.class);
+    }
+    
+    @Test
+    public void canRetrieveClientInfoObject() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+        assertEquals("Asthma", info.getAppName());
+        assertEquals(26, info.getAppVersion().intValue());
+        assertEquals("Unknown iPhone", info.getOsName());
+        assertEquals("iPhone OS 9.0.2", info.getOsVersion());
+        assertEquals("BridgeSDK", info.getSdkName());
+        assertEquals(4, info.getSdkVersion().intValue());
+    }
+    
+    @Test
+    public void doesNotThrowErrorWhenUserAgentStringInvalid() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
     }
 }

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import java.util.Collections;
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -36,6 +37,7 @@ public class ScheduleController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         Study study = studyService.getStudy(studyId);
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
