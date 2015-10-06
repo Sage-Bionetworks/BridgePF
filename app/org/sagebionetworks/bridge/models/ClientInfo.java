@@ -6,7 +6,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -51,6 +54,8 @@ import com.google.common.cache.LoadingCache;
  *
  */
 public final class ClientInfo {
+
+    private static Logger logger = LoggerFactory.getLogger(ClientInfo.class);
 
     /**
      * A cache of ClientInfo objects that have already been parsed from user agent strings. 
@@ -224,7 +229,8 @@ public final class ClientInfo {
                 return userAgents.get(userAgent);    
             } catch(ExecutionException e) {
                 // This should not happen, the CacheLoader doesn't throw exceptions
-                throw new BridgeServiceException(e);
+                // Log it and return UNKNOWN_CLIENT
+                logger.error(e.getMessage(), e);
             }
         }
         return UNKNOWN_CLIENT;
