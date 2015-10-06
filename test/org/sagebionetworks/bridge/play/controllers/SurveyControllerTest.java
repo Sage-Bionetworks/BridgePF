@@ -188,7 +188,6 @@ public class SurveyControllerTest {
         verifyNoMoreInteractions(service);
         
         String output = Helpers.contentAsString(result);
-        System.out.println(output);
         JsonNode node = BridgeObjectMapper.get().readTree(output);
         
         // Should only include key felds.
