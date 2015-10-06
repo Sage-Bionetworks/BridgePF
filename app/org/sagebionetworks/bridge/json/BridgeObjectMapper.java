@@ -55,6 +55,7 @@ public class BridgeObjectMapper extends ObjectMapper {
         return INSTANCE;
     }
 
+    @SuppressWarnings("deprecation")
     public BridgeObjectMapper() {
         super();
         this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

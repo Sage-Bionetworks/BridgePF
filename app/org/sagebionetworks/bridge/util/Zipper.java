@@ -59,7 +59,6 @@ public class Zipper {
      * @throws ZipOverflowException 
      * @throws DuplicateZipEntryException 
      */
-    @SuppressWarnings("resource")
     public Map<String, byte[]> unzip(@Nonnull byte[] bytes)
             throws IOException, ZipOverflowException, DuplicateZipEntryException {
         final Map<String, byte[]> dataMap = new HashMap<>();

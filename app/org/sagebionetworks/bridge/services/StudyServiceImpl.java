@@ -163,7 +163,7 @@ public class StudyServiceImpl implements StudyService {
 
             // do not create certs for whitelisted studies (legacy studies)
             if (!studyWhitelist.contains(study.getIdentifier())) {
-                uploadCertService.createCmsKeyPair(study.getIdentifier());
+                uploadCertService.createCmsKeyPair(study.getStudyIdentifier());
             }
 
             study = studyDao.createStudy(study);
