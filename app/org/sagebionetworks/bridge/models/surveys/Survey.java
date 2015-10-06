@@ -19,7 +19,7 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
 
     public static final ObjectWriter SUMMARY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
-        SimpleBeanPropertyFilter.filterOutAllExcept("elements", "name", "guid", "createdOn", "identifier", "fireEvent")));
+        SimpleBeanPropertyFilter.filterOutAllExcept("elements", "name", "guid", "createdOn", "identifier", "fireEvent", "type")));
     
     public String getStudyIdentifier();
     public void setStudyIdentifier(String studyIdentifier);
