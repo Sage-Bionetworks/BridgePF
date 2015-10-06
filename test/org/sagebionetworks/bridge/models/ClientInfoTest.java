@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
 
 public class ClientInfoTest {
 
@@ -20,7 +19,7 @@ public class ClientInfoTest {
     
     @Test
     public void hashEquals() {
-        EqualsVerifier.forClass(ClientInfo.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(ClientInfo.class).allFieldsShouldBeUsed().verify();
     }
     
     @Test

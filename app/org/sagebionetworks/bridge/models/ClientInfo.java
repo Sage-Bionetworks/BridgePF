@@ -6,8 +6,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -52,8 +50,6 @@ import com.google.common.cache.LoadingCache;
  *
  */
 public final class ClientInfo {
-
-    private static Logger logger = LoggerFactory.getLogger(ClientInfo.class);
 
     /**
      * A cache of ClientInfo objects that have already been parsed from user agent strings. 
@@ -173,7 +169,7 @@ public final class ClientInfo {
                 + osVersion + ", sdkName=" + sdkName + ", sdkVersion=" + sdkVersion + "]";
     }
 
-    public static class Builder {
+    static class Builder {
         private String appName;
         private Integer appVersion;
         private String osName;
@@ -226,7 +222,8 @@ public final class ClientInfo {
             try {
                 return userAgents.get(userAgent);    
             } catch(ExecutionException e) {
-                logger.debug(e.getMessage(), e);
+                // This should not happen, the CacheLoader doesn't throw exceptions
+                throw new RuntimeException(e);
             }
         }
         return UNKNOWN_CLIENT;
