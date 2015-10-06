@@ -478,10 +478,6 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void canGetSummarySurvey() throws Exception {
-        // First, it returns no responses without error
-        List<Survey> surveys = surveyDao.getSurveysSummary(studyIdentifier);
-        assertEquals(0, surveys.size());
-        
         // Add an information screen so we can verify it is removed.
         DynamoSurveyInfoScreen info = new DynamoSurveyInfoScreen();
         info.setIdentifier("info");
@@ -494,16 +490,19 @@ public class DynamoSurveyDaoTest {
         survey.getElements().add(info);
         survey = createSurvey(survey);
         survey = publishSurvey(studyIdentifier, survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         
         survey = new TestSurvey(true);
         survey.getElements().add(info);
         survey = createSurvey(survey);
         survey = publishSurvey(studyIdentifier, survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         
-        surveys = surveyDao.getSurveysSummary(studyIdentifier);
-        assertEquals(2, surveys.size());
-        assertTrue(doesNotContainSurveyInfoScreen(surveys.get(0)));
-        assertTrue(doesNotContainSurveyInfoScreen(surveys.get(1)));
+        List<Survey> surveys = surveyDao.getSurveysSummary(studyIdentifier);
+        assertTrue(surveys.size() >= 2);
+        for (Survey aSurvey : surveys) {
+            assertTrue(doesNotContainSurveyInfoScreen(aSurvey));    
+        }
     }
     
     @Test
