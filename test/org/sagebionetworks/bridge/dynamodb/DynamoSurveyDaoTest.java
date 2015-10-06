@@ -490,13 +490,11 @@ public class DynamoSurveyDaoTest {
         survey.getElements().add(info);
         survey = createSurvey(survey);
         survey = publishSurvey(studyIdentifier, survey);
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         
         survey = new TestSurvey(true);
         survey.getElements().add(info);
         survey = createSurvey(survey);
         survey = publishSurvey(studyIdentifier, survey);
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         
         List<Survey> surveys = surveyDao.getSurveysSummary(studyIdentifier);
         assertTrue(surveys.size() >= 2);
