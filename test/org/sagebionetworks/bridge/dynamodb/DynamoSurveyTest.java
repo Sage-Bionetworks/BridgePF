@@ -151,7 +151,7 @@ public class DynamoSurveyTest {
         Set<String> questionFieldNames = getFieldNames(question);
         
         assertEquals(Sets.newHashSet("identifier","elements","name","guid","type","createdOn"), surveyFieldNames);
-        assertEquals(Sets.newHashSet("guid","identifier","fireEvent"), questionFieldNames);
+        assertEquals(Sets.newHashSet("guid","identifier","fireEvent","type"), questionFieldNames);
     }
     
     @Test
