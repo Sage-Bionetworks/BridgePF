@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -223,7 +224,7 @@ public final class ClientInfo {
                 return userAgents.get(userAgent);    
             } catch(ExecutionException e) {
                 // This should not happen, the CacheLoader doesn't throw exceptions
-                throw new RuntimeException(e);
+                throw new BridgeServiceException(e);
             }
         }
         return UNKNOWN_CLIENT;
