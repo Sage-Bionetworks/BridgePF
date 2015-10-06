@@ -17,6 +17,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -73,6 +74,7 @@ public class TaskServiceTest {
         schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setLabel("Label");
         schedulePlan.setStudyKey(TEST_STUDY.getIdentifier());
+        schedulePlan.setMinAppVersion(10);
         schedulePlan.setStrategy(strategy);
         schedulePlan = schedulePlanService.createSchedulePlan(schedulePlan);
     }
@@ -154,6 +156,39 @@ public class TaskServiceTest {
         assertEquals(2, tasks.size());
         assertEquals(msk3+"T10:00:00.000+03:00", tasks.get(0).getScheduledOn().toString());
         assertEquals(msk4+"T10:00:00.000+03:00", tasks.get(1).getScheduledOn().toString());
+        
+        // Now finally, create a ClientInfo context with an app version that doesn't match v10+ (the 
+        // setting for the plan). No tasks should be returned.
+        /*
+        @Test
+        public void tasksAreFilteredByAppVersion() {
+            // Plans from which tasks are derived must match version 4 of the application. Only two of the 
+            // 3 schedule plans in the mock match version 4, and should be returned.
+            ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Test App/4 BridgeSDK/5");
+            ScheduleContext context = new ScheduleContext.Builder()
+                    .withStudyIdentifier(TEST_STUDY)
+                    .withClientInfo(clientInfo)
+                    .withTimeZone(DateTimeZone.UTC)
+                    .withEndsOn(endsOn.plusDays(2))
+                    .withHealthCode(HEALTH_CODE).build();
+            
+            List<Task> tasks = service.getTasks(user, context);
+            System.out.println(tasks);
+            assertEquals(2, tasks.size());
+        }
+*/
+        
+    }
+    
+    private ScheduleContext getContextWithAppVersion(DateTimeZone zone, Integer version) {
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Test App/"+version.toString()+" BridgeSDK/5");
+        DateTime endsOn = DateTime.now(zone).plusDays(2).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
+        return new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(clientInfo)
+            .withTimeZone(zone)
+            .withEndsOn(endsOn)
+            .withHealthCode(testUser.getUser().getHealthCode()).build();
     }
     
     private ScheduleContext getContext(DateTimeZone zone) {
@@ -161,6 +196,7 @@ public class TaskServiceTest {
         DateTime endsOn = DateTime.now(zone).plusDays(2).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
         return new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(zone)
             .withEndsOn(endsOn)
             .withHealthCode(testUser.getUser().getHealthCode()).build();

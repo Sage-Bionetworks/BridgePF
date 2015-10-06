@@ -172,7 +172,7 @@ public class TaskService {
         StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
         
         Multimap<String,Task> scheduledTasks = ArrayListMultimap.create();
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(oldContext.getClientInfo(), studyId);
         
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);

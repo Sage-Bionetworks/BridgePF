@@ -39,7 +39,7 @@ public class ScheduleController extends BaseController {
         Study study = studyService.getStudy(studyId);
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
             // Cast seems unnecessary, but we are getting NoSuchMethodError when deployed

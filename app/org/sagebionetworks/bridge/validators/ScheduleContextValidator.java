@@ -33,6 +33,9 @@ public class ScheduleContextValidator implements Validator {
         if (context.getHealthCode() == null) {
             errors.rejectValue("healthCode", "is required");
         }
+        if (context.getClientInfo() == null) {
+            errors.rejectValue("clientInfo", "is required");
+        }
         // Very the ending timestamp is not invalid.
         DateTime now = context.getNow();
         if (context.getEndsOn() == null) {

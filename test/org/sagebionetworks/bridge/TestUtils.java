@@ -99,6 +99,8 @@ public class TestUtils {
         
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
+        plan.setMinAppVersion(2);
+        plan.setMaxAppVersion(8);
         plan.setStrategy(getStrategy("3", "P3D", "AAA", null));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
@@ -111,6 +113,8 @@ public class TestUtils {
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
+        plan.setMinAppVersion(10);
+        plan.setMaxAppVersion(15);
         plan.setStrategy(getStrategy("2", "P2D", "CCC", TestConstants.TEST_ACTIVITY));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);

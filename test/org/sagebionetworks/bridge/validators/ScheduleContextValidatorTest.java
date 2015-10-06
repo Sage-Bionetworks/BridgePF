@@ -7,6 +7,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 
 public class ScheduleContextValidatorTest {
@@ -18,12 +19,29 @@ public class ScheduleContextValidatorTest {
         // The minimum you need to have a valid schedule context.
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier("test-id")
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withEndsOn(DateTime.now().plusDays(2))
             .withTimeZone(DateTimeZone.forOffsetHours(-3))
             .withHealthCode("AAA")
             .build();
         
         Validate.nonEntityThrowingException(validator, context);
+    }
+    
+    @Test
+    public void clientInfoRequired() {
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier("test-id")
+                .withEndsOn(DateTime.now().plusDays(2))
+                .withTimeZone(DateTimeZone.forOffsetHours(-3))
+                .withHealthCode("AAA")
+                .build();
+        try {
+            Validate.nonEntityThrowingException(validator, context);
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+            assertTrue(e.getMessage().contains("clientInfo is required"));
+        }
     }
     
     @Test
