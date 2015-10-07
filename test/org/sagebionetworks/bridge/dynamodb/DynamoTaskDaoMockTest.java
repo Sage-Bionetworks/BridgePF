@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskStatus;
@@ -122,14 +123,48 @@ public class DynamoTaskDaoMockTest {
         assertTask("2015-04-12T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
         assertTask("2015-04-13T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(1));
         assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(2));
-        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(3));
-        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(4));
+        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(3));
+        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(4));
 
         verify(mapper).query((Class<DynamoTask>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class));
         verifyNoMoreInteractions(mapper);
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void taskSchedulerFiltersTasks() throws Exception {
+        DateTime endsOn = NOW.plus(Period.parse("P4D"));
+        Map<String, DateTime> events = Maps.newHashMap();
+        events.put("enrollment", ENROLLMENT);
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.fromUserAgentCache("App/5"))
+            .withTimeZone(PACIFIC_TIME_ZONE)
+            .withEndsOn(endsOn)
+            .withHealthCode(HEALTH_CODE)
+            .withEvents(events).build();
+
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
+        mockQuery(tasks);
+        List<Task> tasks2 = taskDao.getTasks(context);
+
+        // The test schedules have these appVersions applied to them
+        // SchedulePlan DDD/Activity 1: version 2-5
+        // SchedulePlan BBB/Activity 2: version 9+
+        // SchedulePlan CCC/Activity 3: version 5-8
+        // Activity_1 and Activity_3 will match v5, Activity_2 will not. These results are 
+        // just like the next test of 4 days, but without the Activity_2 tasks:
+        assertEquals(3, tasks2.size());
+        assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(0));
+        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(1));
+        assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(2));
+
+        verify(mapper).query((Class<DynamoTask>) any(Class.class),
+                        (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class));
+        verifyNoMoreInteractions(mapper);
+    }
+    
     @SuppressWarnings("unchecked")
     @Test
     public void testOfSecondPeriodWithDifferentStartTime() throws Exception {
@@ -150,12 +185,12 @@ public class DynamoTaskDaoMockTest {
 
         List<Task> tasks2 = taskDao.getTasks(context);
 
-        // These also show that stuff is getting sorted by label
+        // These also show that stuff is getting sorted by label, 1 before 2.
         assertTask("2015-04-12T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
         assertTask("2015-04-13T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(1));
         assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(2));
-        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(3));
-        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(4));
+        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(3));
+        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(4));
         assertTask("2015-04-15T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(5));
         assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(6));
         assertTask("2015-04-16T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(7));
@@ -169,14 +204,14 @@ public class DynamoTaskDaoMockTest {
     @Test
     public void canDeleteTasks() {
         DynamoTask task1 = new DynamoTask();
-        task1.setActivity(TestConstants.TEST_ACTIVITY);
+        task1.setActivity(TestConstants.TEST_3_ACTIVITY);
         task1.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         task1.setLocalExpiresOn(LocalDateTime.parse("2015-04-12T23:00:00"));
         task1.setStartedOn(DateTime.parse("2015-04-12T18:30:23").getMillis());
         task1.setGuid(BridgeUtils.generateGuid());
 
         DynamoTask task2 = new DynamoTask();
-        task2.setActivity(TestConstants.TEST_ACTIVITY);
+        task2.setActivity(TestConstants.TEST_3_ACTIVITY);
         task2.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         task2.setLocalExpiresOn(LocalDateTime.parse("2015-04-12T23:00:00"));
         task2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01").getMillis());
@@ -204,13 +239,13 @@ public class DynamoTaskDaoMockTest {
 
         DynamoTask task1 = new DynamoTask();
         task1.setHealthCode(HEALTH_CODE);
-        task1.setActivity(TestConstants.TEST_ACTIVITY);
+        task1.setActivity(TestConstants.TEST_3_ACTIVITY);
         task1.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         task1.setGuid(guid1);
 
         DynamoTask task2 = new DynamoTask();
         task2.setHealthCode(HEALTH_CODE);
-        task2.setActivity(TestConstants.TEST_ACTIVITY);
+        task2.setActivity(TestConstants.TEST_3_ACTIVITY);
         task2.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         task2.setStartedOn(DateTime.parse("2015-04-12T18:30:23").getMillis());
         task2.setGuid(guid2);
@@ -218,13 +253,13 @@ public class DynamoTaskDaoMockTest {
         mockQuery(Lists.newArrayList(task1, task2));
 
         Task task3 = new DynamoTask();
-        task3.setActivity(TestConstants.TEST_ACTIVITY);
+        task3.setActivity(TestConstants.TEST_3_ACTIVITY);
         task3.setStartedOn(DateTime.parse("2015-04-13T14:23:12.000-07:00").getMillis());
         task3.setGuid(guid1);
 
         DynamoTask task4 = new DynamoTask();
         task4.setHealthCode(HEALTH_CODE);
-        task4.setActivity(TestConstants.TEST_ACTIVITY);
+        task4.setActivity(TestConstants.TEST_3_ACTIVITY);
         task4.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         task4.setStartedOn(DateTime.parse("2015-04-13T18:05:23.000-07:00").getMillis());
         task4.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());
@@ -251,15 +286,14 @@ public class DynamoTaskDaoMockTest {
         
     }
     
-    @SuppressWarnings("deprecation")
     private void assertTask(String dateString, String ref, Task task) {
-        if ("tapTest".equals(dateString)) {
-            assertEquals(ref, task.getActivity().getRef());
-            return;
+        if (task.getActivity().getActivityType() == ActivityType.TASK) {
+            assertEquals(ref, task.getActivity().getTask().getIdentifier());            
+        } else {
+            DateTime date = DateTime.parse(dateString);
+            assertTrue(date.isEqual(task.getScheduledOn()));
+            assertEquals(ref, task.getActivity().getSurvey().getHref());
         }
-        DateTime date = DateTime.parse(dateString);
-        assertTrue(date.isEqual(task.getScheduledOn()));
-        assertEquals(ref, task.getActivity().getRef());
     }
 
 }

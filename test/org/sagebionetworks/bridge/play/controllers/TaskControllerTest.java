@@ -53,7 +53,7 @@ public class TaskControllerTest {
         task.setTimeZone(DateTimeZone.UTC);
         task.setGuid(BridgeUtils.generateGuid());
         task.setScheduledOn(DateTime.now(DateTimeZone.UTC).minusDays(1));
-        task.setActivity(TestConstants.TEST_ACTIVITY);
+        task.setActivity(TestConstants.TEST_3_ACTIVITY);
         task.setRunKey(BridgeUtils.generateTaskRunKey(task, BridgeUtils.generateGuid()));
         List<Task> list = Lists.newArrayList(task);
         

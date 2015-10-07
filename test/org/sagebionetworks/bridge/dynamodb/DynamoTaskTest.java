@@ -33,7 +33,7 @@ public class DynamoTaskTest {
         
         DynamoTask task = new DynamoTask();
         task.setTimeZone(DateTimeZone.UTC);
-        task.setActivity(TestConstants.TEST_ACTIVITY);
+        task.setActivity(TestConstants.TEST_3_ACTIVITY);
         task.setLocalScheduledOn(scheduledOn);
         task.setLocalExpiresOn(expiresOn);
         task.setGuid("AAA-BBB-CCC");

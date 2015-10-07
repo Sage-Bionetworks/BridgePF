@@ -88,7 +88,7 @@ public class SchedulePlanValidatorTest {
 		Schedule schedule = new Schedule();
 		schedule.setScheduleType(ScheduleType.ONCE);
 		schedule.setLabel("a label");
-		schedule.addActivity(TestConstants.TEST_ACTIVITY);
+		schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
 		return schedule;
 	}
 

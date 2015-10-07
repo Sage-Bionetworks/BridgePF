@@ -49,7 +49,7 @@ public class IntervalTaskSchedulerTest {
     @Test
     public void oneWeekAfterEnrollmentAt8amExpireAfter24hours() throws Exception {
         Schedule schedule = new Schedule();
-        schedule.addActivity(TestConstants.TEST_ACTIVITY);
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay("P1W");
         schedule.addTimes("08:00");
@@ -492,7 +492,7 @@ public class IntervalTaskSchedulerTest {
     private Schedule createScheduleWith(ScheduleType type) {
         Schedule schedule = new Schedule();
         schedule.addTimes("09:40", "13:40");
-        schedule.getActivities().add(TestConstants.TEST_ACTIVITY);
+        schedule.getActivities().add(TestConstants.TEST_3_ACTIVITY);
         schedule.setScheduleType(type);
         if (type == RECURRING) {
             schedule.setInterval("P2D");

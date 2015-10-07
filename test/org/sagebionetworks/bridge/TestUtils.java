@@ -99,32 +99,33 @@ public class TestUtils {
         
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
-        plan.setStrategy(getStrategy("3", "P3D", "AAA", null));
+        plan.setStrategy(getStrategy("P3D", TestConstants.TEST_1_ACTIVITY));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        plan.setMinAppVersion(2);
+        plan.setMaxAppVersion(5);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
-        plan.setStrategy(getStrategy("1", "P1D", "BBB", null));
+        plan.setStrategy(getStrategy("P1D", TestConstants.TEST_2_ACTIVITY));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        plan.setMinAppVersion(9);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
-        plan.setStrategy(getStrategy("2", "P2D", "CCC", TestConstants.TEST_ACTIVITY));
+        plan.setStrategy(getStrategy("P2D", TestConstants.TEST_3_ACTIVITY));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        plan.setMinAppVersion(5);
+        plan.setMaxAppVersion(8);
         plans.add(plan);
 
         return plans;
     }
     
-    private static ScheduleStrategy getStrategy(String label, String interval, String guid, Activity activity) {
-        if (activity == null) {
-            activity = new Activity.Builder().withLabel("Activity " + label).withPublishedSurvey("identifier", guid)
-                            .build();
-        }
+    private static ScheduleStrategy getStrategy(String interval, Activity activity) {
         Schedule schedule = new Schedule();
-        schedule.setLabel("Schedule " + label);
+        schedule.setLabel("Schedule " + activity.getLabel());
         schedule.setInterval(interval);
         schedule.setDelay("P1D");
         schedule.addTimes("13:00");

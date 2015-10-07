@@ -64,7 +64,7 @@ public class DynamoTaskDaoTest {
         schedule.setInterval("P1D");
         schedule.setExpires("PT6H");
         schedule.addTimes("10:00", "14:00");
-        schedule.addActivity(TestConstants.TEST_ACTIVITY);
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);

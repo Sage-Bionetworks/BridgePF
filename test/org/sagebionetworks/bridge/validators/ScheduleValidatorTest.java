@@ -40,7 +40,7 @@ public class ScheduleValidatorTest {
     @Test
     public void datesMustBeChronologicallyOrdered() {
         // make it valid except for the dates....
-        schedule.addActivity(TestConstants.TEST_ACTIVITY);
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
         schedule.setScheduleType(ScheduleType.ONCE);
 
         DateTime startsOn = DateUtils.getCurrentDateTime();
@@ -59,7 +59,7 @@ public class ScheduleValidatorTest {
     
     @Test
     public void surveyRelativePathIsTreatedAsTaskId() {
-        Activity activity = TestConstants.TEST_ACTIVITY;
+        Activity activity = TestConstants.TEST_3_ACTIVITY;
         schedule.addActivity(activity);
         schedule.setScheduleType(ScheduleType.ONCE);
         
@@ -125,7 +125,7 @@ public class ScheduleValidatorTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 12 1/1 * ? *");
-        Activity activity = TestConstants.TEST_ACTIVITY;
+        Activity activity = TestConstants.TEST_3_ACTIVITY;
         schedule.addActivity(activity);
         
         try {
@@ -249,7 +249,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setExpires("P1D");
         schedule.setCronTrigger("0 0 8 1/1 * ? *");
-        schedule.addActivity(TestConstants.TEST_ACTIVITY);
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
         
         Validate.entityThrowingException(validator, schedule);
     }
@@ -261,7 +261,7 @@ public class ScheduleValidatorTest {
         schedule.setInterval("P1D");
         schedule.setExpires("P1D");
         schedule.addTimes("08:00");
-        schedule.addActivity(TestConstants.TEST_ACTIVITY);
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
         
         Validate.entityThrowingException(validator, schedule);
         
