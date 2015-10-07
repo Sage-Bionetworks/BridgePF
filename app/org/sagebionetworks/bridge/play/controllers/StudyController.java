@@ -42,12 +42,12 @@ public class StudyController extends BaseController {
     private UploadCertificateService uploadCertificateService;
 
     @Autowired
-    public void setUserProfileService(UserProfileService userProfileService) {
+    public final void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
 
     @Autowired
-    public void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
+    public final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
         this.uploadCertificateService = uploadCertificateService;
     }
 

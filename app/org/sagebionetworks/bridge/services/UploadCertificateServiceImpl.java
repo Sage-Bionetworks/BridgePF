@@ -11,7 +11,6 @@ import java.security.cert.X509Certificate;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.io.IOUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.BcCertificateFactory;
@@ -19,13 +18,13 @@ import org.sagebionetworks.bridge.crypto.CertificateFactory;
 import org.sagebionetworks.bridge.crypto.CertificateInfo;
 import org.sagebionetworks.bridge.crypto.KeyPairFactory;
 import org.sagebionetworks.bridge.crypto.PemUtils;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.s3.S3Helper;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
 
 @Component("uploadCertificateService")
 public class UploadCertificateServiceImpl implements UploadCertificateService {
@@ -36,14 +35,20 @@ public class UploadCertificateServiceImpl implements UploadCertificateService {
 
     private final CertificateFactory certificateFactory;
     private AmazonS3 s3CmsClient;
+    private S3Helper s3CmsHelper;
 
     public UploadCertificateServiceImpl() {
         certificateFactory = new BcCertificateFactory();
     }
 
     @Resource(name = "s3CmsClient")
-    public void setS3CmsClient(AmazonS3 s3CmsClient) {
+    public final void setS3CmsClient(AmazonS3 s3CmsClient) {
         this.s3CmsClient = s3CmsClient;
+    }
+
+    @Resource(name = "s3CmsHelper")
+    public final void setS3CmsHelper(S3Helper s3CmsHelper) {
+        this.s3CmsHelper = s3CmsHelper;
     }
 
     @Override
@@ -63,19 +68,16 @@ public class UploadCertificateServiceImpl implements UploadCertificateService {
             s3Put(PRIVATE_KEY_BUCKET, name, PemUtils.toPem(keyPair.getPrivate()));
             s3Put(CERT_BUCKET, name, PemUtils.toPem(cert));
         } catch (CertificateEncodingException e) {
-            throw new RuntimeException(e);
+            throw new BridgeServiceException(e);
         }
     }
 
     @Override
     public String getPublicKeyAsPem(StudyIdentifier studyIdentifier) {
         try {
-            GetObjectRequest request = new GetObjectRequest(CERT_BUCKET, studyIdentifier.getIdentifier() + ".pem");
-            S3Object object = s3CmsClient.getObject(request);
-
-            return IOUtils.toString(object.getObjectContent(), "UTF-8");
+            return s3CmsHelper.readS3FileAsString(CERT_BUCKET, studyIdentifier.getIdentifier() + ".pem");
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new BridgeServiceException(e);
         }
     }
 
@@ -86,7 +88,7 @@ public class UploadCertificateServiceImpl implements UploadCertificateService {
             metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
             s3CmsClient.putObject(bucket, name, bais, metadata);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new BridgeServiceException(e);
         }
     }
 }
