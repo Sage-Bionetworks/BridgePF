@@ -69,7 +69,7 @@ public class BridgeObjectMapper extends ObjectMapper {
         // This suppresses a failure if a class is found with a "filter" filter declared on it,
         // when you are trying to serialize without the filter. It's a Jackson oddity they may fix.
         FilterProvider filter = new SimpleFilterProvider().setFailOnUnknownId(false);
-        this.setFilters(filter);
+        this.setFilterProvider(filter);
         this.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.registerModule(new TypeModule());
         this.registerModule(new JodaModule());

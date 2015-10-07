@@ -21,6 +21,8 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.BcCmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.PemUtils;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -61,7 +63,9 @@ public class UploadCertificateServiceImplTest {
 
     @Test
     public void test() throws Exception {
-        uploadCertificateService.createCmsKeyPair(STUDY_ID);
+        StudyIdentifier studyId = new StudyIdentifierImpl(STUDY_ID);
+        
+        uploadCertificateService.createCmsKeyPair(studyId);
         S3Object certObject = s3Client.getObject(CERT_BUCKET, STUDY_ID + ".pem");
         assertNotNull(certObject);
         String certPem = readPem(certObject);
@@ -78,6 +82,10 @@ public class UploadCertificateServiceImplTest {
         CmsEncryptor encryptor = new BcCmsEncryptor(cert, privateKey);
         assertNotNull(encryptor);
         assertEquals("something", new String(encryptor.decrypt(encryptor.encrypt("something".getBytes()))));
+        
+        String pem = uploadCertificateService.getPublicKeyAsPem(studyId);
+        assertTrue(pem.contains("-----BEGIN CERTIFICATE-----"));
+        assertTrue(pem.contains("-----END CERTIFICATE-----"));
     }
 
     private String readPem(S3Object s3Obj) {
