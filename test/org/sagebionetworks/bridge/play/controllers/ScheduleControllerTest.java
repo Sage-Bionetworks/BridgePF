@@ -69,15 +69,4 @@ public class ScheduleControllerTest {
         assertEquals(1, node.get("total").asInt());
         
     }
-    
-    /*
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
-        List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
-        for (SchedulePlan plan : plans) {
-            // Cast seems unnecessary, but we are getting NoSuchMethodError when deployed
-            Schedule schedule = plan.getStrategy().getScheduleForUser((StudyIdentifier)study, plan, session.getUser());
-            schedules.add(schedule);
-        }
-        return okResult(schedules);
-     */
 }

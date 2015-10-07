@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * of the ScheduleStrategy object, which implements specific algorithms for assigning users their schedules. 
  */
 @DynamoDBTable(tableName = "SchedulePlan")
-public class DynamoSchedulePlan implements SchedulePlan {
+public final class DynamoSchedulePlan implements SchedulePlan {
 
     private static final String GUID_PROPERTY = "guid";
     private static final String LABEL_PROPERTY = "label";
@@ -184,6 +184,7 @@ public class DynamoSchedulePlan implements SchedulePlan {
         result = prime * result + Objects.hashCode(studyKey);
         result = prime * result + Objects.hashCode(minAppVersion);
         result = prime * result + Objects.hashCode(maxAppVersion);
+        result = prime * result + Objects.hashCode(version);
         return result;
     }
 
@@ -199,7 +200,7 @@ public class DynamoSchedulePlan implements SchedulePlan {
         return (Objects.equals(guid, other.guid) && Objects.equals(label, other.label)
                 && Objects.equals(modifiedOn, other.modifiedOn) && Objects.equals(strategy, other.strategy)
                 && Objects.equals(label, other.label) && Objects.equals(studyKey, other.studyKey)
-                && Objects.equals(minAppVersion, other.minAppVersion)
+                && Objects.equals(version,  other.version) && Objects.equals(minAppVersion, other.minAppVersion)
                 && Objects.equals(maxAppVersion, other.maxAppVersion));
     }
 

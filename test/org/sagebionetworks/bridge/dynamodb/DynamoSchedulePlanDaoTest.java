@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -26,6 +27,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -50,24 +52,24 @@ public class DynamoSchedulePlanDaoTest {
     
     @Test
     public void canSerializeAndDeserializeSchedulePlan() throws Exception {
-        TestABSchedulePlan abPlan = new TestABSchedulePlan();
+        SchedulePlan abPlan = TestABSchedulePlan.create();
         String output = mapping.writeValueAsString(abPlan);
         
-        TestABSchedulePlan newPlan = mapping.readValue(output, TestABSchedulePlan.class);
+        SchedulePlan newPlan = mapping.readValue(output, SchedulePlan.class);
         
         assertEquals("Schedule plans are equal", abPlan.hashCode(), newPlan.hashCode());
     }
     
     @Test
     public void canCrudOneSchedulePlan() {
-        TestABSchedulePlan abPlan = new TestABSchedulePlan();
+        SchedulePlan abPlan = TestABSchedulePlan.create();
         
         SchedulePlan savedPlan = schedulePlanDao.createSchedulePlan(abPlan);
         assertNotNull("Creates and returns a GUID", abPlan.getGuid());
         assertEquals("GUID is the same", savedPlan.getGuid(), abPlan.getGuid());
         
         // Update the plan... to a simple strategy
-        TestSimpleSchedulePlan simplePlan = new TestSimpleSchedulePlan();
+        SchedulePlan simplePlan = TestSimpleSchedulePlan.create();
         abPlan.setStrategy(simplePlan.getStrategy());
         schedulePlanDao.updateSchedulePlan(abPlan);
         
@@ -88,30 +90,55 @@ public class DynamoSchedulePlanDaoTest {
     
     @Test
     public void getAllSchedulePlans() {
-        TestABSchedulePlan abPlan = new TestABSchedulePlan();
-        TestSimpleSchedulePlan simplePlan = new TestSimpleSchedulePlan();
+        SchedulePlan abPlan = TestABSchedulePlan.create();
+        SchedulePlan simplePlan = TestSimpleSchedulePlan.create();
         
-        schedulePlanDao.createSchedulePlan(abPlan);
-        schedulePlanDao.createSchedulePlan(simplePlan);
+        SchedulePlan plan1 = schedulePlanDao.createSchedulePlan(abPlan);
+        SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(simplePlan);
         
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
-        assertEquals("2 plans exist", 2, plans.size());
+        assertEquals(getSchedulePlanGuids(plan1, plan2), getSchedulePlanGuids(plans));
     }
     
     @Test
     public void filtersSchedulePlans() {
-        for (SchedulePlan plan : TestUtils.getSchedulePlans()) {
-            schedulePlanDao.createSchedulePlan(plan);
-        }
+        Set<String> guids = Sets.newHashSet();
+        Set<String> oneGuid = Sets.newHashSet();
+        
+        List<SchedulePlan> plans = TestUtils.getSchedulePlans();
+        SchedulePlan plan = schedulePlanDao.createSchedulePlan(plans.get(0));
+        guids.add(plan.getGuid());
+        
+        plan = schedulePlanDao.createSchedulePlan(plans.get(1));
+        guids.add(plan.getGuid());
+        oneGuid.add(plan.getGuid());
+
+        plan = schedulePlanDao.createSchedulePlan(plans.get(2));
+        guids.add(plan.getGuid());
+        
+        // No known client, all the guids are returned
+        plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
+        assertEquals(guids, getSchedulePlanGuids(plans));
         
         // Only one schedule plan matches v9
-        ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app/9");
-        
-        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
-        assertEquals(3, plans.size());
-        
-        plans = schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier);
-        assertEquals(1, plans.size());
+        plans = schedulePlanDao.getSchedulePlans(ClientInfo.fromUserAgentCache("app/9"), studyIdentifier);
+        assertEquals(oneGuid, getSchedulePlanGuids(plans));
     }
 
+    
+    private Set<String> getSchedulePlanGuids(SchedulePlan... plans) {
+        Set<String> set = Sets.newHashSet();
+        for (SchedulePlan plan : plans) {
+            set.add(plan.getGuid());
+        }
+        return set;
+    }
+    
+    private Set<String> getSchedulePlanGuids(List<SchedulePlan> plans) {
+        Set<String> set = Sets.newHashSet();
+        for (SchedulePlan plan : plans) {
+            set.add(plan.getGuid());
+        }
+        return set;
+    }
 }

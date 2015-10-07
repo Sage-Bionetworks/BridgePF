@@ -118,13 +118,13 @@ public class DynamoTaskDaoMockTest {
         mockQuery(tasks);
         List<Task> tasks2 = taskDao.getTasks(context);
 
-        // These also show that stuff is getting sorted by label
-        // Expired tasks are not returned, so this starts on the 12th */
-        assertTask("2015-04-12T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
-        assertTask("2015-04-13T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(1));
-        assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(2));
-        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(3));
-        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(4));
+        // Tasks are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
+        // Expired tasks are not returned, so this starts on the 12th
+        assertTask(tasks2.get(0), TestConstants.ACTIVITY_2_REF, "2015-04-12T13:00:00-07:00");
+        assertTask(tasks2.get(1), TestConstants.ACTIVITY_2_REF, "2015-04-13T13:00:00-07:00");
+        assertTask(tasks2.get(2), TestConstants.ACTIVITY_3_REF, "2015-04-13T13:00:00-07:00");
+        assertTask(tasks2.get(3), TestConstants.ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
+        assertTask(tasks2.get(4), TestConstants.ACTIVITY_2_REF, "2015-04-14T13:00:00-07:00");
 
         verify(mapper).query((Class<DynamoTask>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class));
@@ -154,11 +154,12 @@ public class DynamoTaskDaoMockTest {
         // SchedulePlan BBB/Activity 2: version 9+
         // SchedulePlan CCC/Activity 3: version 5-8
         // Activity_1 and Activity_3 will match v5, Activity_2 will not. These results are 
-        // just like the next test of 4 days, but without the Activity_2 tasks:
+        // just like the next test of 4 days, but without the Activity_2 tasks
+        // Tasks are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
         assertEquals(3, tasks2.size());
-        assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(0));
-        assertTask("2015-04-14T13:00:00-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(1));
-        assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(2));
+        assertTask(tasks2.get(0), TestConstants.ACTIVITY_3_REF, "2015-04-13T13:00:00-07:00");
+        assertTask(tasks2.get(1), TestConstants.ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
+        assertTask(tasks2.get(2), TestConstants.ACTIVITY_3_REF, "2015-04-15T13:00:00-07:00");
 
         verify(mapper).query((Class<DynamoTask>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class));
@@ -185,15 +186,15 @@ public class DynamoTaskDaoMockTest {
 
         List<Task> tasks2 = taskDao.getTasks(context);
 
-        // These also show that stuff is getting sorted by label, 1 before 2.
-        assertTask("2015-04-12T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
-        assertTask("2015-04-13T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(1));
-        assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(2));
-        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(3));
-        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(4));
-        assertTask("2015-04-15T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(5));
-        assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(6));
-        assertTask("2015-04-16T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(7));
+        // Tasks are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
+        assertTask(tasks2.get(0), TestConstants.ACTIVITY_2_REF, "2015-04-12T13:00:00.000-07:00");
+        assertTask(tasks2.get(1), TestConstants.ACTIVITY_2_REF, "2015-04-13T13:00:00.000-07:00");
+        assertTask(tasks2.get(2), TestConstants.ACTIVITY_3_REF, "2015-04-13T13:00:00.000-07:00");
+        assertTask(tasks2.get(3), TestConstants.ACTIVITY_1_REF, "2015-04-14T13:00:00.000-07:00");
+        assertTask(tasks2.get(4), TestConstants.ACTIVITY_2_REF, "2015-04-14T13:00:00.000-07:00");
+        assertTask(tasks2.get(5), TestConstants.ACTIVITY_2_REF, "2015-04-15T13:00:00.000-07:00");
+        assertTask(tasks2.get(6), TestConstants.ACTIVITY_3_REF, "2015-04-15T13:00:00.000-07:00");
+        assertTask(tasks2.get(7), TestConstants.ACTIVITY_2_REF, "2015-04-16T13:00:00.000-07:00");
 
         verify(mapper).query((Class<DynamoTask>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class));
@@ -281,8 +282,10 @@ public class DynamoTaskDaoMockTest {
         assertEquals(TaskStatus.FINISHED, savedTask2.getStatus());
     }
     
-    private void assertTask(String dateString, String ref, Task task) {
+    private void assertTask(Task task, String ref, String dateString) {
         if (task.getActivity().getActivityType() == ActivityType.TASK) {
+            DateTime date = DateTime.parse(dateString);
+            assertTrue(date.isEqual(task.getScheduledOn()));
             assertEquals(ref, task.getActivity().getTask().getIdentifier());            
         } else {
             DateTime date = DateTime.parse(dateString);

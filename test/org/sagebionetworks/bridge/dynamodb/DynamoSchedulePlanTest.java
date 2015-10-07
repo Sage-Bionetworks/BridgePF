@@ -9,7 +9,15 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 public class DynamoSchedulePlanTest {
+    
+    @Test
+    public void hashEquals() {
+        EqualsVerifier.forClass(DynamoSchedulePlan.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
 
     @Test
     public void canSerializeDynamoSchedulePlan() throws Exception {

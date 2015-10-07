@@ -32,7 +32,7 @@ public class SchedulePlanServiceTest {
     
     @Test(expected = EntityAlreadyExistsException.class)
     public void cannotCreateExistingSchedulePlan() {
-        TestABSchedulePlan plan = new TestABSchedulePlan();
+        SchedulePlan plan = TestABSchedulePlan.create();
         // It's rejected because it has a GUID... this doesn't even get to DDB.
         schedulePlanService.createSchedulePlan(plan);
     }
@@ -42,7 +42,7 @@ public class SchedulePlanServiceTest {
         StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
         SchedulePlan savedPlan = null;
         try {
-            TestABSchedulePlan plan = new TestABSchedulePlan();
+            SchedulePlan plan = TestABSchedulePlan.create();
             plan.setGuid(null);
             plan.setVersion(null);
             plan.setMinAppVersion(14);
@@ -80,7 +80,7 @@ public class SchedulePlanServiceTest {
     public void canSaveSchedulePlan() throws Exception {
         SchedulePlan savedPlan = null;
         try {
-            TestABSchedulePlan plan = new TestABSchedulePlan();
+            SchedulePlan plan = TestABSchedulePlan.create();
             plan.setGuid(null);
             plan.setVersion(null);
             savedPlan = schedulePlanService.createSchedulePlan(plan);

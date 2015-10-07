@@ -9,7 +9,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 
@@ -24,6 +23,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -41,14 +41,12 @@ public class TaskControllerTest {
     
     private TaskController controller;
     
+    private ClientInfo clientInfo;
+    
     ArgumentCaptor<ScheduleContext> argument = ArgumentCaptor.forClass(ScheduleContext.class);
     
     @Before
     public void before() throws Exception {
-        ScheduleContext scheduleContext = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(DateTimeZone.UTC).build();
-        
         DynamoTask task = new DynamoTask();
         task.setTimeZone(DateTimeZone.UTC);
         task.setGuid(BridgeUtils.generateGuid());
@@ -72,6 +70,9 @@ public class TaskControllerTest {
         controller = spy(new TaskController());
         controller.setTaskService(taskService);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        clientInfo = ClientInfo.fromUserAgentCache("App Name/4 SDK/2");
+        doReturn(clientInfo).when(controller).getClientInfoFromUserAgentHeader();
     }
     
     @Test
@@ -99,6 +100,7 @@ public class TaskControllerTest {
         verifyNoMoreInteractions(taskService);
         assertEquals(expectedEndsOn, argument.getValue().getEndsOn().withMillisOfSecond(0));
         assertEquals(expectedEndsOn.getZone(), argument.getValue().getZone());
+        assertEquals(clientInfo, argument.getValue().getClientInfo());
     }
     
     @SuppressWarnings("unchecked")

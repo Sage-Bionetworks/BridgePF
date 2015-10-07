@@ -45,6 +45,8 @@ public class TaskSchedulerTest {
     @Before
     public void before() {
         plan.setGuid("BBB");
+        plan.setMinAppVersion(0);
+        plan.setMaxAppVersion(1000);
         
         // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
         DateTimeUtils.setCurrentMillisFixed(1428340210000L);
@@ -101,12 +103,13 @@ public class TaskSchedulerTest {
         assertNotNull(task.getGuid());
         assertEquals("Activity3", task.getActivity().getLabel());
         assertEquals("tapTest", task.getActivity().getRef());
+        assertEquals(0, task.getMinAppVersion().intValue());
+        assertEquals(1000, task.getMaxAppVersion().intValue());
         assertNotNull(task.getScheduledOn());
         assertNotNull(task.getExpiresOn());
-        assertNotNull(task.getHealthCode());
-        assertNotNull(task.getTimeZone());
+        assertEquals("AAA", task.getHealthCode());
+        assertEquals(DateTimeZone.UTC, task.getTimeZone());
         assertNotNull(task.getRunKey());
-        assertNotNull(task.getTimeZone());
     }
     
     /**
