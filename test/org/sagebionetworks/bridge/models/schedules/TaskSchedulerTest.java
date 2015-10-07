@@ -99,7 +99,7 @@ public class TaskSchedulerTest {
         DynamoTask task = (DynamoTask)tasks.get(0);
 
         assertNotNull(task.getGuid());
-        assertEquals("Label", task.getActivity().getLabel());
+        assertEquals("Activity3", task.getActivity().getLabel());
         assertEquals("tapTest", task.getActivity().getRef());
         assertNotNull(task.getScheduledOn());
         assertNotNull(task.getExpiresOn());

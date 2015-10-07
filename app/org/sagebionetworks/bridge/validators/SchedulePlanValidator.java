@@ -24,6 +24,11 @@ public class SchedulePlanValidator implements Validator {
         if (isBlank(plan.getLabel())) {
             errors.rejectValue("label", "cannot be missing, null, or blank");
         }
+        if ((plan.getMinAppVersion() != null && plan.getMaxAppVersion() != null) && 
+            (plan.getMaxAppVersion() < plan.getMinAppVersion())) {
+            errors.rejectValue("maxAppVersion", "cannot be greater than minAppVersion");
+            
+        }
         if (plan.getStrategy() == null) {
             errors.rejectValue("strategy", "is required");
         } else {
