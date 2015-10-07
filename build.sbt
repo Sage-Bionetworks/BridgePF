@@ -66,3 +66,10 @@ lazy val root = (project in file(".")).enablePlugins(PlayJava)
 routesGenerator := InjectedRoutesGenerator
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-a")
+
+// Compile before generating eclipse files
+EclipseKeys.preTasks := Seq(compile in Compile)
+// Java project files only
+EclipseKeys.projectFlavor := EclipseProjectFlavor.Java
+EclipseKeys.createSrc := EclipseCreateSrc.ValueSet(EclipseCreateSrc.ManagedClasses, EclipseCreateSrc.ManagedResources)  // Use .class files instead 
+

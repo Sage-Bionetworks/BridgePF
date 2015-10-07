@@ -9,6 +9,7 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
@@ -53,6 +54,8 @@ public class TaskController extends BaseController {
         } else {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
         }
+        // The ClientInfo will be added to the scheduling context.
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(session.getStudyIdentifier())
             .withTimeZone(zone)

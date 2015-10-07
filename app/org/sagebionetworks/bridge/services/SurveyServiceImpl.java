@@ -132,4 +132,11 @@ public class SurveyServiceImpl implements SurveyService {
         return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
     }
 
+    @Override
+    public List<Survey> getSurveysSummary(StudyIdentifier studyIdentifier) {
+        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
+        
+        return surveyDao.getSurveysSummary(studyIdentifier);
+    }
+    
 }

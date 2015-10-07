@@ -8,10 +8,12 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @DynamoDBTable(tableName = SurveyElementConstants.SURVEY_ELEMENT_TYPE)
+@JsonFilter("filter")
 public class DynamoSurveyElement implements SurveyElement {
 
     private String surveyCompoundKey;

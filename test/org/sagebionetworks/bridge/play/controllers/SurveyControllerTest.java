@@ -1,7 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.any;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -14,8 +15,11 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -43,7 +47,10 @@ import org.sagebionetworks.bridge.play.controllers.SurveyController;
 import org.sagebionetworks.bridge.services.SurveyService;
 
 import play.mvc.Http;
+import play.mvc.Result;
+import play.test.Helpers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -168,6 +175,36 @@ public class SurveyControllerTest {
         
         verify(service).getAllSurveysMostRecentlyPublishedVersion(any(StudyIdentifier.class));
         verifyNoMoreInteractions(service);
+    }
+    
+    @Test
+    public void getSurveysSummary() throws Exception {
+        setContext();
+        when(service.getSurveysSummary(any(StudyIdentifier.class))).thenReturn(getSurveys(3, false));
+     
+        Result result = controller.getAllSurveysMostRecentVersion("summary");
+        verify(service).getSurveysSummary(any(StudyIdentifier.class));
+        verifyNoMoreInteractions(service);
+        
+        String output = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(output);
+        
+        // Should only include key felds.
+        // Survey node
+        Set<String> fields = fieldNamesAsSet(node.get("items").get(0));
+        assertEquals(Sets.newHashSet("name","type","guid","identifier","createdOn","elements"), fields);
+        
+        // Element node
+        fields = fieldNamesAsSet(node.get("items").get(0).get("elements").get(0));
+        assertEquals(Sets.newHashSet("guid","fireEvent","identifier","type"), fields);
+    }
+    
+    private Set<String> fieldNamesAsSet(JsonNode node) {
+        HashSet<String> set = new HashSet<>();
+        for (Iterator<String> i = node.fieldNames(); i.hasNext(); ) {
+            set.add(i.next());
+        }
+        return set;
     }
     
     @Test
@@ -637,6 +674,7 @@ public class SurveyControllerTest {
             verifyNoMoreInteractions(service);
         }
     }    
+    
     private Survey getSurvey(boolean makeNew) {
         Survey survey = new TestSurvey(makeNew);
         survey.setName("bloodpressure " + survey.getGuid());
