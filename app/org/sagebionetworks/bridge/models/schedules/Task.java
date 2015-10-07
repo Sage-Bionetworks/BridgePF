@@ -91,5 +91,14 @@ public interface Task {
     public boolean getPersistent();
 
     public void setPersistent(boolean persistent);
+    
+    public void setMinAppVersion(Integer minAppVersion);
+    
+    public Integer getMinAppVersion();
+    
+    public void setMaxAppVersion(Integer maxAppVersion);
+    
+    public Integer getMaxAppVersion();
+    
 
 }

@@ -47,15 +47,14 @@ public class TaskControllerTest {
     public void before() throws Exception {
         ScheduleContext scheduleContext = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(DateTimeZone.UTC)
-            .withSchedulePlanGuid(BridgeUtils.generateGuid()).build();
+            .withTimeZone(DateTimeZone.UTC).build();
         
         DynamoTask task = new DynamoTask();
         task.setTimeZone(DateTimeZone.UTC);
         task.setGuid(BridgeUtils.generateGuid());
         task.setScheduledOn(DateTime.now(DateTimeZone.UTC).minusDays(1));
         task.setActivity(TestConstants.TEST_ACTIVITY);
-        task.setRunKey(BridgeUtils.generateTaskRunKey(task, scheduleContext));
+        task.setRunKey(BridgeUtils.generateTaskRunKey(task, BridgeUtils.generateGuid()));
         List<Task> list = Lists.newArrayList(task);
         
         String json = BridgeObjectMapper.get().writeValueAsString(list);

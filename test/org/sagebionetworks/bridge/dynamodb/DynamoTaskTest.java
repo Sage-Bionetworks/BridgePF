@@ -39,6 +39,8 @@ public class DynamoTaskTest {
         task.setGuid("AAA-BBB-CCC");
         task.setHealthCode("FFF-GGG-HHH");
         task.setPersistent(true);
+        task.setMinAppVersion(1);
+        task.setMaxAppVersion(3);
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = BridgeObjectMapper.get().writeValueAsString(task);
@@ -49,6 +51,8 @@ public class DynamoTaskTest {
         assertEquals(expiresOnString, node.get("expiresOn").asText());
         assertEquals("scheduled", node.get("status").asText());
         assertEquals("Task", node.get("type").asText());
+        assertEquals(1, node.get("minAppVersion").asInt());
+        assertEquals(3, node.get("maxAppVersion").asInt());
         assertTrue(node.get("persistent").asBoolean());
         
         JsonNode activityNode = node.get("activity");

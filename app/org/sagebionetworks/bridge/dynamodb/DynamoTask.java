@@ -44,6 +44,8 @@ public final class DynamoTask implements Task, BridgeEntity {
     private Long hidesOn;
     private boolean persistent;
     private DateTimeZone timeZone;
+    private Integer minAppVersion;
+    private Integer maxAppVersion;
 
     public DynamoTask() {
         setHidesOn(new Long(Long.MAX_VALUE));
@@ -247,11 +249,31 @@ public final class DynamoTask implements Task, BridgeEntity {
     public void setPersistent(boolean persistent) {
         this.persistent = persistent;
     }
+    
+    @Override
+    public Integer getMinAppVersion() {
+        return minAppVersion;
+    }
 
+    @Override
+    public void setMinAppVersion(Integer minAppVersion) {
+        this.minAppVersion = minAppVersion;
+    }
+    
+    @Override
+    public Integer getMaxAppVersion() {
+        return maxAppVersion;
+    }
+
+    @Override
+    public void setMaxAppVersion(Integer maxAppVersion) {
+        this.maxAppVersion = maxAppVersion;
+    }
+    
     @Override
     public int hashCode() {
         return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, 
-            finishedOn, healthCode, runKey, hidesOn, persistent, timeZone);
+            finishedOn, healthCode, runKey, hidesOn, persistent, timeZone, minAppVersion, maxAppVersion);
     }
 
     @Override
@@ -266,12 +288,13 @@ public final class DynamoTask implements Task, BridgeEntity {
             && Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn)
             && Objects.equals(healthCode, other.healthCode) && Objects.equals(hidesOn, other.hidesOn)
             && Objects.equals(runKey, other.runKey) && Objects.equals(persistent, other.persistent)
-            && Objects.equals(timeZone, other.timeZone));
+            && Objects.equals(timeZone, other.timeZone) && Objects.equals(minAppVersion, other.minAppVersion)
+            && Objects.equals(maxAppVersion, other.maxAppVersion));
     }
 
     @Override
     public String toString() {
-        return String.format("DynamoTask [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s]",
-            healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, timeZone, activity);
+        return String.format("DynamoTask [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, minAppVersion=%s, maxAppVersion=%s, activity=%s]",
+            healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, timeZone, minAppVersion, maxAppVersion, activity);
     }
 }

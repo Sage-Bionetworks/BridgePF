@@ -428,6 +428,8 @@ public class DynamoSurveyDaoTest {
     
     @Test
     public void getAllSurveysMostRecentlyPublishedVersion() throws Exception {
+        int initialCount = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier).size();
+        
         // Get all surveys (complete set of the GUIDS, most recently published (if never published, GUID isn't included)
         Survey firstSurvey = createSurvey(new SimpleSurvey("First Survey"));
         firstSurvey = versionSurvey(firstSurvey);
@@ -448,13 +450,18 @@ public class DynamoSurveyDaoTest {
         Thread.sleep(GSI_WAIT_DURATION);
         // This should include firstVersion and nextVersion.
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-
-        assertEquals(2, surveys.size());
-        assertEquals(Sets.newHashSet(surveys), Sets.newHashSet(firstSurvey, secondSurvey));
+        for (Survey survey : surveys) {
+            System.out.println(survey);
+        }
+        assertEquals(initialCount+2, surveys.size());
+        assertTrue(surveys.indexOf(firstSurvey) > -1);
+        assertTrue(surveys.indexOf(secondSurvey) > -1);
     }
     
     @Test
     public void getAllSurveysMostRecentVersion() throws Exception {
+        int initialCount = surveyDao.getAllSurveysMostRecentVersion(studyIdentifier).size();
+        
         // Get all surveys (complete set of the GUIDS, most recent (published or unpublished)
         Survey firstSurvey = createSurvey(new SimpleSurvey("First Survey"));
         firstSurvey = versionSurvey(firstSurvey);
@@ -472,8 +479,9 @@ public class DynamoSurveyDaoTest {
         // This should include firstVersion and nextVersion.
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
         
-        assertEquals(2, surveys.size());
-        assertEquals(Sets.newHashSet(surveys), Sets.newHashSet(firstSurvey, secondSurvey));
+        assertEquals(initialCount + 2, surveys.size());
+        assertTrue(surveys.indexOf(firstSurvey) > -1);
+        assertTrue(surveys.indexOf(secondSurvey) > -1);
     }
 
     @Test

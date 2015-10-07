@@ -18,6 +18,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 
 import com.google.common.collect.Maps;
 
@@ -25,11 +26,14 @@ public class IntervalTaskSchedulerTest {
 
     private Map<String, DateTime> events;
     private List<Task> tasks;
+    private SchedulePlan plan = new DynamoSchedulePlan();
     
     private DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     
     @Before
     public void before() {
+        plan.setGuid("BBB");
+        
         // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
         DateTimeUtils.setCurrentMillisFixed(1428340210000L);
         events = Maps.newHashMap();
@@ -51,11 +55,11 @@ public class IntervalTaskSchedulerTest {
         schedule.addTimes("08:00");
         schedule.setExpires("PT24H");
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertEquals(0, tasks.size());
         
         schedule.setExpires("P1M");
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-03-30 08:00");
     }
     
@@ -63,7 +67,7 @@ public class IntervalTaskSchedulerTest {
     public void onceScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(1)));
         assertDates(tasks, "2015-03-23 09:40");
     }
     @Test
@@ -71,7 +75,7 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setStartsOn("2015-04-10T09:00:00Z");
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(1)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -80,11 +84,11 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn("2015-03-21T10:00:00Z");
         
         // In this case the endsOn date is before the enrollment. No tasks
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertEquals(0, tasks.size());
         
         schedule.setEndsOn("2015-04-23T13:40:00Z");
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-03-23 09:40");
     }
     @Test
@@ -94,7 +98,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn("2015-03-26T10:00:00Z");
         
         // Should get the second of the tasks scheduled on day of enrollment
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-03-23 13:40");
     }
     @Test
@@ -102,7 +106,7 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setDelay("P2D");
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(3)));
         assertDates(tasks, "2015-03-25 09:40");
     }
     @Test
@@ -112,7 +116,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setStartsOn("2015-03-27T00:00:00Z");
         
         // Again, it happens before the start date, so it doesn't happen.
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(3)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -121,12 +125,12 @@ public class IntervalTaskSchedulerTest {
         schedule.setDelay("P2D");
         schedule.setEndsOn(asDT("2015-04-04 10:00"));
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(3)));
         assertDates(tasks, "2015-03-25 09:40");
         
         // With a delay *after* the end date, nothing happens
         schedule.setDelay("P2M");
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(3)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -137,12 +141,12 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn(asDT("2015-06-01 10:00"));
         
         // Schedules in the window without any issue
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(3)));
         assertDates(tasks, "2015-05-23 09:40");
         
         schedule.setDelay("P6M");
         schedule.setStartsOn(asDT("2015-05-01 00:00"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(9)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(9)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -151,7 +155,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setExpires("P1W");
         schedule.setDelay("P1M");
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(3)));
         assertEquals(asLong("2015-04-23 09:40"), tasks.get(0).getScheduledOn().getMillis());
         assertEquals(asLong("2015-04-30 09:40"), tasks.get(0).getExpiresOn().getMillis());
     }
@@ -160,7 +164,7 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setExpires("P1W");
 
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(3)));
         // No tasks. Created on 3/23, it expired by 3/30, today is 4/6
         assertEquals(0, tasks.size());
     }
@@ -170,11 +174,11 @@ public class IntervalTaskSchedulerTest {
         schedule.setEventId("survey:AAA:completedOn");
         events.put("survey:AAA:completedOn", asDT("2015-04-10 11:40"));
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-10 09:40");
         
         schedule.getTimes().clear();
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-10 11:40");
     }
     @Test
@@ -185,7 +189,7 @@ public class IntervalTaskSchedulerTest {
         events.put("survey:AAA:completedOn", asDT("2015-03-29 11:40"));
 
         // Goes to the event window day and takes the afternoon slot, after 10am
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -196,7 +200,7 @@ public class IntervalTaskSchedulerTest {
         events.put("survey:AAA:completedOn", asDT("2015-04-02 00:00"));
         
         // No task, the event happened after the end of the window
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -207,11 +211,11 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn(asDT("2015-05-01 10:00"));
 
         // No event... select the startsOn window
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertEquals(0, tasks.size());
         
         events.put("survey:AAA:completedOn", asDT("2015-04-10 00:00"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-10 09:40");
     }
     @Test
@@ -221,17 +225,17 @@ public class IntervalTaskSchedulerTest {
         schedule.setDelay("P4D");
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-06 09:40");
         
         // This delays after the event by ~2 days, but then uses the supplied times
         schedule.setDelay("PT50H");
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-04 09:40");
         
         // If we delete the times, it delays exactly 50 hours. (2 days, 2 hours)
         schedule.getTimes().clear();
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-04 11:22");
     }
     @Test
@@ -242,12 +246,12 @@ public class IntervalTaskSchedulerTest {
         schedule.setStartsOn(asDT("2015-03-29 00:00"));
 
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-06 09:40");
         
         // This should not return a task.
         schedule.setStartsOn(asDT("2015-04-15 00:00"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -258,7 +262,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn(asDT("2015-04-29 00:00"));
         
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-06 09:40");
     }
     @Test
@@ -271,7 +275,7 @@ public class IntervalTaskSchedulerTest {
         schedule.getTimes().clear();
         
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(6)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(6)));
         assertDates(tasks, "2015-04-02 12:22");
     }
     @Test
@@ -288,11 +292,11 @@ public class IntervalTaskSchedulerTest {
         
         // Given even, it would be on 4/2 at 12:22, expiring 4/5, today is 4/6
         // It's in the window but still doesn't appear
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(6)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(6)));
         assertEquals(0, tasks.size());
         
         events.put("survey:AAA:completedOn", asDT("2015-04-06 09:22"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(6)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(6)));
         assertEquals(asLong("2015-04-06 12:22"), tasks.get(0).getScheduledOn().getMillis());
         assertEquals(asLong("2015-04-09 12:22"), tasks.get(0).getExpiresOn().getMillis());
     }
@@ -300,7 +304,7 @@ public class IntervalTaskSchedulerTest {
     public void recurringScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(3)));
         
         assertDates(tasks, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40");
     }
@@ -309,7 +313,7 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setStartsOn("2015-03-20T09:00:00Z");
 
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(4)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(4)));
         assertDates(tasks, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40");
     }
     @Test
@@ -318,11 +322,11 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn("2015-03-25T10:00:00Z"); // between the two times
         
         // In this case the endsOn date is before the enrollment. No tasks
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(11)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(11)));
         assertDates(tasks, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40");
         
         schedule.setEndsOn("2015-03-27T13:50:00Z");
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(11)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(11)));
         assertDates(tasks, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40",
                         "2015-03-27 09:40", "2015-03-27 13:40");
     }
@@ -333,7 +337,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn("2015-03-27T20:00:00Z");
         
         // Should get the second of the tasks scheduled on day of enrollment
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40", "2015-03-27 09:40", "2015-03-27 13:40");
     }
     @Test
@@ -341,7 +345,7 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setDelay("P2D");
 
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(5)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(5)));
         assertDates(tasks, "2015-03-25 09:40", "2015-03-25 13:40", "2015-03-27 09:40", "2015-03-27 13:40");
     }
     @Test
@@ -350,7 +354,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setDelay("P2D");
         schedule.setStartsOn("2015-03-22T23:49:00Z");
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(5)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(5)));
         assertDates(tasks, "2015-03-25 09:40", "2015-03-25 13:40", "2015-03-27 09:40", "2015-03-27 13:40");
     }
     @Test
@@ -359,13 +363,13 @@ public class IntervalTaskSchedulerTest {
         schedule.setDelay("P2D");
         schedule.setEndsOn(asDT("2015-04-05 10:00"));
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusWeeks(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusWeeks(1)));
         assertDates(tasks, "2015-03-25 09:40", "2015-03-25 13:40", "2015-03-27 09:40", "2015-03-27 13:40",
                         "2015-03-29 09:40", "2015-03-29 13:40");
         
         // With a delay *after* the end date, nothing happens
         schedule.setDelay("P2M");
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(3)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -376,14 +380,14 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn(asDT("2015-03-30 10:00"));
         
         // Schedules in the window without any issue
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(9)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(9)));
         assertDates(tasks, "2015-03-24 09:40", "2015-03-24 13:40", "2015-03-26 09:40", "2015-03-26 13:40",
                         "2015-03-28 09:40", "2015-03-28 13:40", "2015-03-30 09:40");
         
         // Schedule before, rolls forward
         schedule.setDelay("P1M");
         schedule.setStartsOn(asDT("2015-03-30 09:00"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(3)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -392,7 +396,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setEventId("survey:AAA:completedOn");
         events.put("survey:AAA:completedOn", asDT("2015-04-10 11:40"));
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusWeeks(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusWeeks(3)));
         assertDates(tasks, "2015-04-10 09:40", "2015-04-10 13:40", "2015-04-12 09:40", "2015-04-12 13:40");
     }
     @Test
@@ -402,7 +406,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setStartsOn(asDT("2015-04-11 00:00"));
         events.put("survey:AAA:completedOn", asDT("2015-04-12 11:40"));
 
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusWeeks(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusWeeks(3)));
         assertDates(tasks, "2015-04-12 09:40", "2015-04-12 13:40");
     }
     @Test
@@ -413,7 +417,7 @@ public class IntervalTaskSchedulerTest {
         events.put("survey:AAA:completedOn", asDT("2015-04-02 00:00"));
         
         // No task, the event happened after the end of the window
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertEquals(0, tasks.size());
     }
     @Test
@@ -424,7 +428,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn(asDT("2015-04-05 10:00"));
         events.put("survey:AAA:completedOn", asDT("2015-04-02 00:00"));
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         
         assertDates(tasks, "2015-04-02 09:40", "2015-04-02 13:40", "2015-04-04 09:40", "2015-04-04 13:40");
     }
@@ -435,7 +439,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setDelay("P4D");
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusDays(16)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusDays(16)));
         assertDates(tasks, "2015-04-06 09:40", "2015-04-06 13:40", "2015-04-08 09:40", "2015-04-08 13:40");
     }
     @Test
@@ -447,7 +451,7 @@ public class IntervalTaskSchedulerTest {
 
         // The delay doesn't mean the schedule fires on this event
         events.put("survey:AAA:completedOn", asDT("2015-04-01 09:22"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusWeeks(2)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusWeeks(2)));
 
         assertEquals(0, tasks.size());
     }
@@ -459,7 +463,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn(asDT("2015-04-08 00:00"));
         
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusMonths(1)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(tasks, "2015-04-06 09:40", "2015-04-06 13:40");
     }
     @Test
@@ -472,7 +476,7 @@ public class IntervalTaskSchedulerTest {
         
         // This is outside the window, so when this happens, even if it recurs, it shouldn't fire
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
-        tasks = schedule.getScheduler().getTasks(getContext(ENROLLMENT.plusWeeks(3)));
+        tasks = schedule.getScheduler().getTasks(plan, getContext(ENROLLMENT.plusWeeks(3)));
         assertEquals(0, tasks.size());
     }
 

@@ -27,6 +27,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
@@ -106,6 +107,7 @@ public class DynamoTaskDaoMockTest {
         events.put("enrollment", ENROLLMENT);
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
@@ -137,6 +139,7 @@ public class DynamoTaskDaoMockTest {
 
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
@@ -243,6 +246,11 @@ public class DynamoTaskDaoMockTest {
         assertEquals(TaskStatus.FINISHED, savedTask2.getStatus());
     }
 
+    @Test
+    public void tasksAreFilteredByAppVersion() {
+        
+    }
+    
     @SuppressWarnings("deprecation")
     private void assertTask(String dateString, String ref, Task task) {
         if ("tapTest".equals(dateString)) {

@@ -168,19 +168,16 @@ public class TaskService {
         return newEvents;
     }
    
-    private Multimap<String,Task> scheduleTasksForPlans(User user, ScheduleContext oldContext) {
+    private Multimap<String,Task> scheduleTasksForPlans(User user, ScheduleContext context) {
         StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
         
         Multimap<String,Task> scheduledTasks = ArrayListMultimap.create();
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(oldContext.getClientInfo(), studyId);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getClientInfo(), studyId);
         
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);
-            ScheduleContext context = new ScheduleContext.Builder()
-                .withContext(oldContext)
-                .withSchedulePlanGuid(plan.getGuid()).build();
             
-            List<Task> tasks = schedule.getScheduler().getTasks(context);
+            List<Task> tasks = schedule.getScheduler().getTasks(plan, context);
             for (Task task : tasks) {
                 scheduledTasks.put(task.getRunKey(), task);
             }

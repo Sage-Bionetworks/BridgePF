@@ -18,12 +18,12 @@ class IntervalTaskScheduler extends TaskScheduler {
     }
     
     @Override
-    public List<Task> getTasks(ScheduleContext context) {
+    public List<Task> getTasks(SchedulePlan plan, ScheduleContext context) {
         List<Task> tasks = Lists.newArrayList();
         DateTime datetime = getScheduledTimeBasedOnEvent(context);
         if (datetime != null) {
             while(datetime.isBefore(context.getEndsOn())) {
-                addTaskForEachTime(tasks, context, datetime);
+                addTaskForEachTime(tasks, plan, context, datetime);
                 // A one-time task with no interval (for example); don't loop
                 if (schedule.getInterval() == null) {
                     return trimTasks(tasks);
