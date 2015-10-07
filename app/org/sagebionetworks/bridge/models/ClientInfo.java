@@ -24,19 +24,20 @@ import com.google.common.cache.LoadingCache;
  * </p>
  * 
  * <p>
- * osName and osVersion are optional, and punctuation is removed when they are
- * not present. Some examples:
+ * OS name and version are optional. SDK name and version are also optional, if clients are 
+ * built against the REST API directly. Punctuation is removed as appropriate. Some examples:
  * </p>
  * 
  * <ul>
- *     <li>Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4</li>
- *     <li>CardioHealth/1 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4</li>
+ *     <li>Melanoma Challenge Application/1</li>
  *     <li>Unknown Client/14 BridgeJavaSDK/10</li>
+ *     <li>Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4</li>
+ *     <li>CardioHealth/1 (iPhone 6.0; iPhone OS 9.0.2) BridgeSDK/10</li>
  * </ul>
  * 
  * <p>
- * Other clients with more typical browser user agent strings will be represented by ClientInfo that 
- * have all empty fields. Some examples of these headers, from our logs:
+ * Other clients with more typical browser user agent strings will be represented by ClientInfo.UNKNOWN_CLIENT. This is a 
+ * "null" object with all empty fields. Some examples of these headers, from our logs:
  * </p>
  * 
  * <ul>
@@ -46,8 +47,8 @@ import com.google.common.cache.LoadingCache;
  * 
  * <p>
  * ClientInfo is not the end result of a generic user agent string parser. Those are very complicated and we 
- * do not need all this information (we log the user agent string from the client but only use these strings from 
- * when they are in a given format in order to filter some API responses).
+ * do not need all this information (we always log the user agent string as we receive it from the client, but only use 
+ * these strings in our system when they are in format specified above).
  * </p>
  *
  */
@@ -73,20 +74,24 @@ public final class ClientInfo {
     /**
      * A User-Agent string that does not follow our format is simply an unknown
      * client, and no filtering will be done for such a client. It is represented with 
-     * a null object that is the ClientInfo object with all null fields. It is still
-     * logged as we find it in the request.
+     * a null object that is the ClientInfo object with all null fields. The User-Agent header 
+     * is still logged exactly as it is retrieved from the request.
      */
     public static final ClientInfo UNKNOWN_CLIENT = new ClientInfo.Builder().build();
 
     /**
+     * For example, "App Name/14".
+     */
+    private static final Pattern SHORT_STRING = Pattern.compile("^([^/]+)\\/(\\d{1,9})($)");
+    /**
      * For example, "Unknown Client/14 BridgeJavaSDK/10".
      */
-    private static final Pattern SHORT_STRING = Pattern.compile("^([^/]+)\\/(\\d+)\\s([^/\\(]*)\\/(\\d+)($)");
+    private static final Pattern MEDIUM_STRING = Pattern.compile("^([^/]+)\\/(\\d{1,9})\\s([^/\\(]*)\\/(\\d{1,9})($)");
     /**
      * For example, "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4".
      */
     private static final Pattern LONG_STRING = Pattern
-            .compile("^([^/]+)\\/(\\d+)\\s\\(([^;]+);([^\\)]*)\\)\\s([^/]*)\\/(\\d+)($)");
+            .compile("^([^/]+)\\/(\\d{1,9})\\s\\(([^;]+);([^\\)]*)\\)\\s([^/]*)\\/(\\d{1,9})($)");
 
     private final String appName;
     private final Integer appVersion;
@@ -239,6 +244,9 @@ public final class ClientInfo {
         if (!StringUtils.isBlank(ua)) {
             info = parseLongUserAgent(ua);
             if (info == UNKNOWN_CLIENT) {
+                info = parseMediumUserAgent(ua);
+            }
+            if (info == UNKNOWN_CLIENT) {
                 info = parseShortUserAgent(ua);
             }
         }
@@ -259,8 +267,8 @@ public final class ClientInfo {
         return UNKNOWN_CLIENT;
     }
 
-    private static ClientInfo parseShortUserAgent(String ua) {
-        Matcher matcher = SHORT_STRING.matcher(ua);
+    private static ClientInfo parseMediumUserAgent(String ua) {
+        Matcher matcher = MEDIUM_STRING.matcher(ua);
         if (matcher.matches()) {
             return new ClientInfo.Builder()
                 .withAppName(matcher.group(1).trim())
@@ -271,4 +279,13 @@ public final class ClientInfo {
         return UNKNOWN_CLIENT;
     }
 
+    private static ClientInfo parseShortUserAgent(String ua) {
+        Matcher matcher = SHORT_STRING.matcher(ua);
+        if (matcher.matches()) {
+            return new ClientInfo.Builder()
+                .withAppName(matcher.group(1).trim())
+                .withAppVersion(Integer.parseInt(matcher.group(2).trim())).build();
+        }
+        return UNKNOWN_CLIENT;
+    }
 }
