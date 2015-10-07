@@ -12,6 +12,7 @@ import javax.annotation.Resource;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -95,6 +96,22 @@ public class DynamoSchedulePlanDaoTest {
         
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
         assertEquals("2 plans exist", 2, plans.size());
+    }
+    
+    @Test
+    public void filtersSchedulePlans() {
+        for (SchedulePlan plan : TestUtils.getSchedulePlans()) {
+            schedulePlanDao.createSchedulePlan(plan);
+        }
+        
+        // Only one schedule plan matches v9
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app/9");
+        
+        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
+        assertEquals(3, plans.size());
+        
+        plans = schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier);
+        assertEquals(1, plans.size());
     }
 
 }
