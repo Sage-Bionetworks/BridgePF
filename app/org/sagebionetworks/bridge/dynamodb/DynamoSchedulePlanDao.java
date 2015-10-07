@@ -54,8 +54,9 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         query.withScanIndexForward(false);
         query.withHashKeyValues(plan);
         
-        ArrayList<SchedulePlan> plans = Lists.newArrayList();
         List<DynamoSchedulePlan> dynamoPlans = mapper.queryPage(DynamoSchedulePlan.class, query).getResults();
+        
+        ArrayList<SchedulePlan> plans = Lists.newArrayListWithCapacity(dynamoPlans.size());
         for(DynamoSchedulePlan dynamoPlan : dynamoPlans) {
             if (clientInfo.isTargetedAppVersion(dynamoPlan.getMinAppVersion(), dynamoPlan.getMaxAppVersion())) {
                 plans.add(dynamoPlan);

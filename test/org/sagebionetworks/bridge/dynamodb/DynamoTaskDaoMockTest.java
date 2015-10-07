@@ -280,11 +280,6 @@ public class DynamoTaskDaoMockTest {
         assertEquals(TaskStatus.STARTED, savedTask1.getStatus());
         assertEquals(TaskStatus.FINISHED, savedTask2.getStatus());
     }
-
-    @Test
-    public void tasksAreFilteredByAppVersion() {
-        
-    }
     
     private void assertTask(String dateString, String ref, Task task) {
         if (task.getActivity().getActivityType() == ActivityType.TASK) {
