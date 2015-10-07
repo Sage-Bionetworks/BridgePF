@@ -6,8 +6,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
