@@ -73,7 +73,7 @@ public class TaskServiceMockTest {
         service = new TaskService();
         
         schedulePlanService = mock(SchedulePlanService.class);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, STUDY_IDENTIFIER)).thenReturn(TestUtils.getSchedulePlans());
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, STUDY_IDENTIFIER)).thenReturn(TestUtils.getSchedulePlans(STUDY_IDENTIFIER));
         
         UserConsent consent = mock(DynamoUserConsent2.class);
         when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 

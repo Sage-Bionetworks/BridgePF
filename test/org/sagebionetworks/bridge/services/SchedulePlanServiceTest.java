@@ -9,7 +9,8 @@ import javax.annotation.Resource;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -17,7 +18,6 @@ import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy.ScheduleGroup;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -32,7 +32,7 @@ public class SchedulePlanServiceTest {
     
     @Test(expected = EntityAlreadyExistsException.class)
     public void cannotCreateExistingSchedulePlan() {
-        SchedulePlan plan = TestABSchedulePlan.create();
+        SchedulePlan plan = TestUtils.getABTestSchedulePlan(TestConstants.TEST_STUDY);
         // It's rejected because it has a GUID... this doesn't even get to DDB.
         schedulePlanService.createSchedulePlan(plan);
     }
@@ -42,7 +42,7 @@ public class SchedulePlanServiceTest {
         StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
         SchedulePlan savedPlan = null;
         try {
-            SchedulePlan plan = TestABSchedulePlan.create();
+            SchedulePlan plan = TestUtils.getABTestSchedulePlan(TestConstants.TEST_STUDY);
             plan.setGuid(null);
             plan.setVersion(null);
             plan.setMinAppVersion(14);
@@ -80,7 +80,7 @@ public class SchedulePlanServiceTest {
     public void canSaveSchedulePlan() throws Exception {
         SchedulePlan savedPlan = null;
         try {
-            SchedulePlan plan = TestABSchedulePlan.create();
+            SchedulePlan plan = TestUtils.getABTestSchedulePlan(new StudyIdentifierImpl("test-study"));
             plan.setGuid(null);
             plan.setVersion(null);
             savedPlan = schedulePlanService.createSchedulePlan(plan);
@@ -93,7 +93,7 @@ public class SchedulePlanServiceTest {
     
     @Test
     public void canRoundTripSchedulePlan() throws Exception {
-        SchedulePlan plan = TestABSchedulePlan.create();
+        SchedulePlan plan = TestUtils.getABTestSchedulePlan(TestConstants.TEST_STUDY);
         
         String json = BridgeObjectMapper.get().writeValueAsString(plan);
         

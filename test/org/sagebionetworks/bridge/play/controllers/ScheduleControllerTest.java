@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.mock;
@@ -31,20 +30,23 @@ public class ScheduleControllerTest {
 
     private ScheduleController controller;
     
+    private StudyIdentifier studyId;
+    
     @Before
     public void before() {
+        studyId = new StudyIdentifierImpl(TestUtils.randomName(ScheduleControllerTest.class));
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app name/9");
         
         // This filer is done in the bowels of the DAO; tested elsewhere
         List<SchedulePlan> plans = Lists.newArrayList();
-        for (SchedulePlan plan : TestUtils.getSchedulePlans()) {
+        for (SchedulePlan plan : TestUtils.getSchedulePlans(studyId)) {
             if (clientInfo.isTargetedAppVersion(plan.getMinAppVersion(), plan.getMaxAppVersion())) {
                 plans.add(plan);
             }
         }
         
         SchedulePlanService schedulePlanService = mock(SchedulePlanService.class);
-        when(schedulePlanService.getSchedulePlans(any(ClientInfo.class), any(StudyIdentifier.class))).thenReturn(plans);
+        when(schedulePlanService.getSchedulePlans(clientInfo, studyId)).thenReturn(plans);
         
         controller = spy(new ScheduleController());
         controller.setSchedulePlanService(schedulePlanService);
@@ -52,7 +54,7 @@ public class ScheduleControllerTest {
         User user = new User();
         
         UserSession session = mock(UserSession.class);
-        when(session.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("study-key"));
+        when(session.getStudyIdentifier()).thenReturn(studyId);
         when(session.getUser()).thenReturn(user);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -67,6 +69,5 @@ public class ScheduleControllerTest {
         JsonNode node = BridgeObjectMapper.get().readTree(content);
         
         assertEquals(1, node.get("total").asInt());
-        
     }
 }
