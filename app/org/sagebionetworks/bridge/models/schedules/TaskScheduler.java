@@ -17,7 +17,7 @@ public abstract class TaskScheduler {
         this.schedule = schedule;
     }
     
-    public abstract List<Task> getTasks(ScheduleContext context);
+    public abstract List<Task> getTasks(SchedulePlan plan, ScheduleContext context);
     
     protected DateTime getScheduledTimeBasedOnEvent(ScheduleContext context) {
         if (!context.hasEvents()) {
@@ -41,19 +41,19 @@ public abstract class TaskScheduler {
         return eventTime;
     }
     
-    protected void addTaskForEachTime(List<Task> tasks, ScheduleContext context, DateTime scheduledTime) {
+    protected void addTaskForEachTime(List<Task> tasks, SchedulePlan plan, ScheduleContext context, DateTime scheduledTime) {
         if (schedule.getTimes().isEmpty()) {
             // We're using whatever hour/minute/seconds were in the original event.
-            addTaskForEachActivityAtTime(tasks, context, scheduledTime);
+            addTaskForEachActivityAtTime(tasks, plan, context, scheduledTime);
         } else {
             for (LocalTime time : schedule.getTimes()) {
                 scheduledTime = new DateTime(scheduledTime, context.getZone()).withTime(time);
-                addTaskForEachActivityAtTime(tasks, context, scheduledTime);
+                addTaskForEachActivityAtTime(tasks, plan, context, scheduledTime);
             }
         }
     }
     
-    private void addTaskForEachActivityAtTime(List<Task> tasks, ScheduleContext context, DateTime scheduledTime) {
+    private void addTaskForEachActivityAtTime(List<Task> tasks, SchedulePlan plan, ScheduleContext context, DateTime scheduledTime) {
         // Assert that the scheduledTime was constructed by subclass implementation with the correct time zone.
         checkArgument(context.getZone().equals(scheduledTime.getZone()), 
             "Scheduled DateTime does not have requested time zone: " + scheduledTime.getZone());
@@ -75,9 +75,9 @@ public abstract class TaskScheduler {
                         task.setExpiresOn(expiresOn);
                         task.setHidesOn(expiresOn.getMillis());
                     }
-                    if (context.getSchedulePlanGuid() != null) {
-                        task.setRunKey(BridgeUtils.generateTaskRunKey(task, context));
-                    }
+                    task.setRunKey(BridgeUtils.generateTaskRunKey(task, plan.getGuid()));
+                    task.setMinAppVersion(plan.getMinAppVersion());
+                    task.setMaxAppVersion(plan.getMaxAppVersion());
                     tasks.add(task);
                 }
             }

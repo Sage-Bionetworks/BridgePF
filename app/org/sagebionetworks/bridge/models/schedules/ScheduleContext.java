@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -20,21 +21,21 @@ import com.google.common.collect.ImmutableMap;
 public final class ScheduleContext {
     
     private final StudyIdentifier studyId;
+    private final ClientInfo clientInfo;
     private final DateTimeZone zone;
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
-    private final String schedulePlanGuid;
     private final String healthCode;
     private final DateTime now;
     
-    private ScheduleContext(StudyIdentifier studyId, DateTimeZone zone, DateTime endsOn, String healthCode,
-                    Map<String, DateTime> events, String schedulePlanGuid, DateTime now) {
+    private ScheduleContext(StudyIdentifier studyId, ClientInfo clientInfo, DateTimeZone zone, DateTime endsOn, String healthCode,
+                    Map<String, DateTime> events, DateTime now) {
         this.studyId = studyId;
+        this.clientInfo = clientInfo;
         this.zone = zone;
         this.endsOn = endsOn;
         this.healthCode = healthCode;
         this.events = events;
-        this.schedulePlanGuid = schedulePlanGuid;
         this.now = now;
     }
     
@@ -44,6 +45,14 @@ public final class ScheduleContext {
      */
     public StudyIdentifier getStudyIdentifier() {
         return studyId;
+    }
+    
+    /**
+     * Client information based on the supplied User-Agent header.
+     * @return
+     */
+    public ClientInfo getClientInfo() {
+        return clientInfo;
     }
     
     /**
@@ -69,15 +78,6 @@ public final class ScheduleContext {
      */
     public String getHealthCode() {
         return healthCode;
-    }
-    
-    /**
-     * The schedule plan providing the schedule, used to keep track of individual runs of the 
-     * scheduler to generate a set of tasks.
-     * @return
-     */
-    public String getSchedulePlanGuid() {
-        return schedulePlanGuid;
     }
     
     /**
@@ -110,7 +110,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, zone, endsOn, healthCode, events, schedulePlanGuid, now);
+        return Objects.hash(studyId, clientInfo, zone, endsOn, healthCode, events, now);
     }
 
     @Override
@@ -121,23 +121,23 @@ public final class ScheduleContext {
             return false;
         ScheduleContext other = (ScheduleContext) obj;
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
+                Objects.equals(clientInfo, other.clientInfo) && 
                 Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
-                Objects.equals(schedulePlanGuid, other.schedulePlanGuid) &&
                 Objects.equals(studyId, other.studyId) && Objects.equals(now, other.now));
     }
 
     @Override
     public String toString() {
-        return "ScheduleContext [studyId=" + studyId + ", zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + 
-            ", schedulePlanGuid=" + schedulePlanGuid + "]";
+        return "ScheduleContext [studyId=" + studyId + ", clientInfo=" + clientInfo + ", zone=" + zone + ", endsOn=" + 
+                endsOn + ", events=" + events + "]";
     }
     
     public static class Builder {
         private StudyIdentifier studyId;
+        private ClientInfo clientInfo;
         private DateTimeZone zone;
         private DateTime endsOn;
         private Map<String,DateTime> events;
-        private String schedulePlanGuid;
         private String healthCode;
         private DateTime now;
         
@@ -145,6 +145,10 @@ public final class ScheduleContext {
             if (studyId != null) {
                 this.studyId = new StudyIdentifierImpl(studyId);    
             }
+            return this;
+        }
+        public Builder withClientInfo(ClientInfo clientInfo) {
+            this.clientInfo = clientInfo;
             return this;
         }
         public Builder withStudyIdentifier(StudyIdentifier studyId) {
@@ -165,20 +169,16 @@ public final class ScheduleContext {
             }
             return this;
         }
-        public Builder withSchedulePlanGuid(String schedulePlanGuid) {
-            this.schedulePlanGuid = schedulePlanGuid;
-            return this;
-        }
         public Builder withHealthCode(String healthCode) {
             this.healthCode = healthCode;
             return this;
         }
         public Builder withContext(ScheduleContext context) {
             this.studyId = context.studyId;
+            this.clientInfo = context.clientInfo;
             this.zone = context.zone;
             this.endsOn = context.endsOn;
             this.events = context.events;
-            this.schedulePlanGuid = context.schedulePlanGuid;
             this.healthCode = context.healthCode;
             this.now = context.now;
             return this;
@@ -188,7 +188,7 @@ public final class ScheduleContext {
             if (now == null) {
                 now = (zone == null) ? DateTime.now() : DateTime.now(zone);
             }
-            ScheduleContext context = new ScheduleContext(studyId, zone, endsOn, healthCode, events, schedulePlanGuid, now);
+            ScheduleContext context = new ScheduleContext(studyId, clientInfo, zone, endsOn, healthCode, events, now);
             // Not validating here. There are many tests to confirm that the scheduler will work with different 
             // time windows, but the validator ensures the context object is within the declared allowable
             // time window. This is validated in TaskService.

@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
@@ -72,7 +73,7 @@ public class TaskServiceMockTest {
         service = new TaskService();
         
         schedulePlanService = mock(SchedulePlanService.class);
-        when(schedulePlanService.getSchedulePlans(STUDY_IDENTIFIER)).thenReturn(TestUtils.getSchedulePlans());
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, STUDY_IDENTIFIER)).thenReturn(TestUtils.getSchedulePlans(STUDY_IDENTIFIER));
         
         UserConsent consent = mock(DynamoUserConsent2.class);
         when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 
@@ -171,6 +172,7 @@ public class TaskServiceMockTest {
     public void changePublishedAndAbsoluteSurveyActivity() {
         service.getTasks(user, new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn.plusDays(2))
             .withHealthCode(HEALTH_CODE).build());

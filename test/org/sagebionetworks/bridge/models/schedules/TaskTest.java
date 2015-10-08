@@ -20,13 +20,13 @@ public class TaskTest {
         DynamoTask task1 = new DynamoTask();
         task1.setTimeZone(DateTimeZone.UTC);
         task1.setScheduledOn(DateTime.parse("2010-10-10T01:01:01.000Z"));
-        task1.setActivity(TestConstants.TEST_ACTIVITY);
+        task1.setActivity(TestConstants.TEST_3_ACTIVITY);
         
         // Definitely later
         DynamoTask task2 = new DynamoTask();
         task2.setTimeZone(DateTimeZone.UTC);
         task2.setScheduledOn(DateTime.parse("2011-10-10T01:01:01.000Z"));
-        task2.setActivity(TestConstants.TEST_ACTIVITY);
+        task2.setActivity(TestConstants.TEST_3_ACTIVITY);
         
         // The same as 2 in all respects but activity label comes earlier in alphabet
         DynamoTask task3 = new DynamoTask();
@@ -47,12 +47,12 @@ public class TaskTest {
         // No time zone
         DynamoTask task1 = new DynamoTask();
         task1.setScheduledOn(DateTime.parse("2010-10-10T01:01:01.000Z"));
-        task1.setActivity(TestConstants.TEST_ACTIVITY);
+        task1.setActivity(TestConstants.TEST_3_ACTIVITY);
         
         // scheduledOn
         DynamoTask task2 = new DynamoTask();
         task2.setTimeZone(DateTimeZone.UTC);
-        task2.setActivity(TestConstants.TEST_ACTIVITY);
+        task2.setActivity(TestConstants.TEST_3_ACTIVITY);
         
         // This one is okay
         DynamoTask task3 = new DynamoTask();

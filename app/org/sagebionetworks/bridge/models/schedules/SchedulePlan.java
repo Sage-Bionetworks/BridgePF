@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 @BridgeTypeName("SchedulePlan")
+@JsonDeserialize(as = DynamoSchedulePlan.class)
 public interface SchedulePlan extends BridgeEntity {
 
     public String getGuid();
@@ -24,4 +28,9 @@ public interface SchedulePlan extends BridgeEntity {
     public ScheduleStrategy getStrategy();
     public void setStrategy(ScheduleStrategy strategy);
     
+    public Integer getMinAppVersion();
+    public void setMinAppVersion(Integer minAppVersion);
+    
+    public Integer getMaxAppVersion();
+    public void setMaxAppVersion(Integer maxAppVersion);
 }

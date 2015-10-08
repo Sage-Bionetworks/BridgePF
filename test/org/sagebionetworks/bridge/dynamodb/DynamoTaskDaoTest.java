@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -63,7 +64,7 @@ public class DynamoTaskDaoTest {
         schedule.setInterval("P1D");
         schedule.setExpires("PT6H");
         schedule.addTimes("10:00", "14:00");
-        schedule.addActivity(TestConstants.TEST_ACTIVITY);
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
@@ -99,6 +100,7 @@ public class DynamoTaskDaoTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn)
             .withHealthCode(user.getHealthCode())

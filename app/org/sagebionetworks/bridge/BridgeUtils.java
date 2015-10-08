@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -63,12 +62,11 @@ public class BridgeUtils {
      * @param context
      * @return
      */
-    public static String generateTaskRunKey(Task task, ScheduleContext context) {
+    public static String generateTaskRunKey(Task task, String schedulePlanGuid) {
         checkNotNull(task);
         checkNotNull(task.getScheduledOn());
-        checkNotNull(context);
-        checkNotNull(context.getSchedulePlanGuid());
-        return String.format("%s:%s", context.getSchedulePlanGuid(), task.getScheduledOn().toLocalDateTime());
+        checkNotNull(schedulePlanGuid);
+        return String.format("%s:%s", schedulePlanGuid, task.getScheduledOn().toLocalDateTime());
     }
     
     /**

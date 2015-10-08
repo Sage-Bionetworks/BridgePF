@@ -32,6 +32,14 @@ public class SchedulePlanValidatorTest {
 	}
 
 	@Test
+	public void cannotSetMaxUnderMinAppVersion() {
+	    SchedulePlan plan = getValidSimpleStrategy();
+	    plan.setMinAppVersion(3);
+	    plan.setMaxAppVersion(2);
+	    assertMessage(plan, "maxAppVersion cannot be greater than minAppVersion", "maxAppVersion");
+	}
+	
+	@Test
 	public void studyKeyRequired() {
 		SchedulePlan plan = getValidSimpleStrategy();
 		plan.setStudyKey(null);
@@ -88,7 +96,7 @@ public class SchedulePlanValidatorTest {
 		Schedule schedule = new Schedule();
 		schedule.setScheduleType(ScheduleType.ONCE);
 		schedule.setLabel("a label");
-		schedule.addActivity(TestConstants.TEST_ACTIVITY);
+		schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
 		return schedule;
 	}
 

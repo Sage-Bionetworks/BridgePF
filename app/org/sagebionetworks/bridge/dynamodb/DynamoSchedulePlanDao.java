@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.Lists;
 
 @Component
 public class DynamoSchedulePlanDao implements SchedulePlanDao {
@@ -41,7 +43,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public List<SchedulePlan> getSchedulePlans(StudyIdentifier studyIdentifier) {
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier) {
+        checkNotNull(clientInfo, "clientInfo is null");
         checkNotNull(studyIdentifier, "studyIdentifier is null");
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
@@ -51,7 +54,15 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         query.withScanIndexForward(false);
         query.withHashKeyValues(plan);
         
-        return new ArrayList<SchedulePlan>(mapper.queryPage(DynamoSchedulePlan.class, query).getResults());
+        List<DynamoSchedulePlan> dynamoPlans = mapper.queryPage(DynamoSchedulePlan.class, query).getResults();
+        
+        ArrayList<SchedulePlan> plans = Lists.newArrayListWithCapacity(dynamoPlans.size());
+        for(DynamoSchedulePlan dynamoPlan : dynamoPlans) {
+            if (clientInfo.isTargetedAppVersion(dynamoPlan.getMinAppVersion(), dynamoPlan.getMaxAppVersion())) {
+                plans.add(dynamoPlan);
+            }
+        }
+        return plans;
     }
     
     @Override

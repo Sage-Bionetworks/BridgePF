@@ -16,7 +16,7 @@ class CronTaskScheduler extends TaskScheduler {
     }
     
     @Override
-    public List<Task> getTasks(ScheduleContext context) {
+    public List<Task> getTasks(SchedulePlan plan, ScheduleContext context) {
         List<Task> tasks = Lists.newArrayList();
         DateTime scheduledTime = getScheduledTimeBasedOnEvent(context);
         
@@ -28,7 +28,7 @@ class CronTaskScheduler extends TaskScheduler {
                 scheduledTime = new DateTime(next, context.getZone());
                 
                 if (scheduledTime.isBefore(context.getEndsOn())) {
-                    addTaskForEachTime(tasks, context, scheduledTime);    
+                    addTaskForEachTime(tasks, plan, context, scheduledTime);    
                 }
             }
         }

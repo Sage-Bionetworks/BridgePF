@@ -17,6 +17,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -73,6 +74,7 @@ public class TaskServiceTest {
         schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setLabel("Label");
         schedulePlan.setStudyKey(TEST_STUDY.getIdentifier());
+        schedulePlan.setMinAppVersion(10);
         schedulePlan.setStrategy(strategy);
         schedulePlan = schedulePlanService.createSchedulePlan(schedulePlan);
     }
@@ -156,11 +158,30 @@ public class TaskServiceTest {
         assertEquals(msk4+"T10:00:00.000+03:00", tasks.get(1).getScheduledOn().toString());
     }
     
+    @Test
+    public void tasksAreFilteredBasedOnAppVersion() throws Exception {
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(getContext(DateTimeZone.UTC))
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/5")).build();
+        
+        // Ask for version 5, nothing is created
+        List<Task> tasks = service.getTasks(testUser.getUser(), context);
+        assertEquals(0, tasks.size());
+        
+        // Ask for version 11, normal tasks are created.
+        context = new ScheduleContext.Builder()
+                .withContext(context)
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/11")).build();
+        tasks = service.getTasks(testUser.getUser(), context);
+        assertEquals(3, tasks.size());
+    }
+    
     private ScheduleContext getContext(DateTimeZone zone) {
         // Setting the endsOn value to the end of the day, as we do in the controller.
         DateTime endsOn = DateTime.now(zone).plusDays(2).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
         return new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(zone)
             .withEndsOn(endsOn)
             .withHealthCode(testUser.getUser().getHealthCode()).build();

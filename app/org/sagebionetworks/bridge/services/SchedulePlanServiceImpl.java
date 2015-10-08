@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
@@ -29,8 +30,8 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     }
 
     @Override
-    public List<SchedulePlan> getSchedulePlans(StudyIdentifier studyIdentifier) {
-        return schedulePlanDao.getSchedulePlans(studyIdentifier);
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier) {
+        return schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier);
     }
 
     @Override

@@ -7,7 +7,6 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,14 +35,12 @@ public class ScheduleController extends BaseController {
     public Result getSchedules() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
-        Study study = studyService.getStudy(studyId);
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
-            // Cast seems unnecessary, but we are getting NoSuchMethodError when deployed
-            Schedule schedule = plan.getStrategy().getScheduleForUser((StudyIdentifier)study, plan, session.getUser());
+            Schedule schedule = plan.getStrategy().getScheduleForUser(session.getStudyIdentifier(), plan, session.getUser());
             schedules.add(schedule);
         }
         return okResult(schedules);

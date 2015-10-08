@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -29,7 +30,8 @@ public class SchedulePlanController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
-        List<SchedulePlan> plans =  schedulePlanService.getSchedulePlans(studyId);
+        // We don't filter plans when we return a list of all of them for developers.
+        List<SchedulePlan> plans =  schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
         return okResult(plans);
     }
 

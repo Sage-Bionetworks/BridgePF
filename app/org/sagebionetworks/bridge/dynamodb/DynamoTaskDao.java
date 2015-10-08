@@ -57,8 +57,14 @@ public class DynamoTaskDao implements TaskDao {
         
         List<Task> tasks = Lists.newArrayList();
         for (DynamoTask task : queryResults) {
-            task.setTimeZone(context.getZone());
-            tasks.add(task);
+            // Although we don't create tasks for applications that are of the wrong version for a schedule,
+            // we do create tasks into the future, and that means tasks can get out of sync with the version 
+            // of the app requesting tasks. We must filter here, as well as when we retrieve schedule plans for 
+            // scheduling.
+            if (context.getClientInfo().isTargetedAppVersion(task.getMinAppVersion(), task.getMaxAppVersion())) {
+                task.setTimeZone(context.getZone());
+                tasks.add(task);
+            }
         }
         Collections.sort(tasks, Task.TASK_COMPARATOR);
         return tasks;
