@@ -93,11 +93,11 @@ public class SchedulePlanServiceTest {
     
     @Test
     public void canRoundTripSchedulePlan() throws Exception {
-        TestABSchedulePlan plan = new TestABSchedulePlan();
+        SchedulePlan plan = TestABSchedulePlan.create();
         
         String json = BridgeObjectMapper.get().writeValueAsString(plan);
         
-        SchedulePlan retrieved = BridgeObjectMapper.get().readValue(json, DynamoSchedulePlan.class);
+        SchedulePlan retrieved = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         assertEquals("Test A/B Schedule", retrieved.getLabel());
         
         // Walk down the object graph and verify that data is there.
