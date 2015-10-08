@@ -44,15 +44,16 @@ public class SchedulePlanValidatorTest {
 	    SchedulePlan plan = getValidSimpleStrategy();
 	    plan.setMinAppVersion(0);
 	    plan.setMaxAppVersion(-1);
-	    assertMessage(plan, "maxAppVersion cannot be smaller than minAppVersion", "maxAppVersion");
+	    assertMessage(plan, "maxAppVersion cannot be less than minAppVersion", "maxAppVersion");
 	}
 	
 	@Test
     public void cannotSetMinLessThanZero() {
         SchedulePlan plan = getValidSimpleStrategy();
         plan.setMinAppVersion(-2);
-        plan.setMaxAppVersion(0);
+        plan.setMaxAppVersion(-1);
         assertMessage(plan, "minAppVersion cannot be negative", "minAppVersion");
+        assertMessage(plan, "maxAppVersion cannot be negative", "maxAppVersion");
     }
 	
 	
