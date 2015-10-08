@@ -23,7 +23,6 @@ public class ConsentControllerMockedTest {
 
     @Test
     public void testChangeSharingScope() {
-
         UserSession session = mock(UserSession.class);
         StudyIdentifier studyId = mock(StudyIdentifier.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);

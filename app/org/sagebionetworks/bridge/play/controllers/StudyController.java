@@ -11,11 +11,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UserProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -31,15 +33,22 @@ public class StudyController extends BaseController {
             return study1.getName().compareToIgnoreCase(study2.getName());
         }
     };
-    
-    private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(BridgeConfigFactory
-                    .getConfig().getPropertyAsList("study.whitelist")));
+
+    private final Set<String> studyWhitelist = Collections
+            .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
     private UserProfileService userProfileService;
 
+    private UploadCertificateService uploadCertificateService;
+
     @Autowired
-    public void setUserProfileService(UserProfileService userProfileService) {
+    public final void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
+    }
+
+    @Autowired
+    public final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
+        this.uploadCertificateService = uploadCertificateService;
     }
 
     @Deprecated
@@ -97,7 +106,7 @@ public class StudyController extends BaseController {
             return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
         }
         getAuthenticatedSession(ADMIN);
-        
+
         return ok(Study.STUDY_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
     }
 
@@ -116,5 +125,13 @@ public class StudyController extends BaseController {
         }
         studyService.deleteStudy(identifier);
         return okResult("Study deleted.");
+    }
+
+    public Result getStudyPublicKeyAsPem() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+
+        String pem = uploadCertificateService.getPublicKeyAsPem(session.getStudyIdentifier());
+
+        return okResult(new CmsPublicKey(pem));
     }
 }
