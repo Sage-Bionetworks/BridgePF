@@ -26,8 +26,10 @@ public class SchedulePlanValidator implements Validator {
         }
         if ((plan.getMinAppVersion() != null && plan.getMaxAppVersion() != null) && 
             (plan.getMaxAppVersion() < plan.getMinAppVersion())) {
-            errors.rejectValue("maxAppVersion", "cannot be greater than minAppVersion");
-            
+            errors.rejectValue("maxAppVersion", "cannot be smaller than minAppVersion");
+        }
+        if (plan.getMinAppVersion() != null && plan.getMinAppVersion() < 0) {
+            errors.rejectValue("minAppVersion", "cannot be negative");
         }
         if (plan.getStrategy() == null) {
             errors.rejectValue("strategy", "is required");
