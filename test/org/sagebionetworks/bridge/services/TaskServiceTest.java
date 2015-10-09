@@ -117,7 +117,7 @@ public class TaskServiceTest {
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
         // 23rd, 24th and 25th
-        ScheduleContext context = getContext(MSK);
+        ScheduleContext context = getContextWith2DayWindow(MSK);
         List<Task> tasks = service.getTasks(testUser.getUser(), context);
         assertEquals(4, tasks.size());
         assertEquals(msk0+"T10:00:00.000+03:00", tasks.get(0).getScheduledOn().toString());
@@ -129,7 +129,7 @@ public class TaskServiceTest {
         // (yesterday, today in Russia, tomorrow and the next day). One task was created beyond
         // the window, over in Moscow... that is not returned because although it exists, we 
         // filter it out from the persisted tasks retrieved from the db.
-        tasks = service.getTasks(testUser.getUser(), getContext(PST));
+        tasks = service.getTasks(testUser.getUser(), getContextWith2DayWindow(PST));
         assertEquals(3, tasks.size());
         assertEquals(pst1+"T10:00:00.000-07:00", tasks.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", tasks.get(1).getScheduledOn().toString());
@@ -140,7 +140,7 @@ public class TaskServiceTest {
         
         // He hasn't finished any tasks. The 22nd expires but it's too early in the day 
         // for the 23rd to expire (earlier than 10am), so, 4 tasks, but with different dates.
-        tasks = service.getTasks(testUser.getUser(), getContext(MSK));
+        tasks = service.getTasks(testUser.getUser(), getContextWith2DayWindow(MSK));
         assertEquals(4, tasks.size());
         assertEquals(msk1+"T10:00:00.000+03:00", tasks.get(0).getScheduledOn().toString());
         assertEquals(msk2+"T10:00:00.000+03:00", tasks.get(1).getScheduledOn().toString());
@@ -153,7 +153,7 @@ public class TaskServiceTest {
         service.updateTasks(testUser.getUser().getHealthCode(), tasks);
         
         // This is easy, Dave has the later tasks and that's it, at this point.
-        tasks = service.getTasks(testUser.getUser(), getContext(MSK));
+        tasks = service.getTasks(testUser.getUser(), getContextWith2DayWindow(MSK));
         assertEquals(2, tasks.size());
         assertEquals(msk3+"T10:00:00.000+03:00", tasks.get(0).getScheduledOn().toString());
         assertEquals(msk4+"T10:00:00.000+03:00", tasks.get(1).getScheduledOn().toString());
@@ -162,7 +162,7 @@ public class TaskServiceTest {
     @Test
     public void tasksAreFilteredBasedOnAppVersion() throws Exception {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withContext(getContext(DateTimeZone.UTC))
+                .withContext(getContextWith2DayWindow(DateTimeZone.UTC))
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/5")).build();
         
         // Ask for version 5, nothing is created
@@ -194,10 +194,8 @@ public class TaskServiceTest {
         assertTrue(tasks2.size() < tasks.size());
     }
     
-    private ScheduleContext getContext(DateTimeZone zone) {
-        // Setting the endsOn value to the end of the day, as we do in the controller.
-        DateTime endsOn = DateTime.now(zone).plusDays(2);
-        return getContext(zone, endsOn);
+    private ScheduleContext getContextWith2DayWindow(DateTimeZone zone) {
+        return getContext(zone, DateTime.now(zone).plusDays(2));
     }
     
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
@@ -206,6 +204,7 @@ public class TaskServiceTest {
             .withStudyIdentifier(TEST_STUDY)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(zone)
+            // Setting the endsOn value to the end of the day, as we do in the controller.
             .withEndsOn(endsOn.withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
             .withHealthCode(testUser.getUser().getHealthCode()).build();
     }
