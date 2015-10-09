@@ -6,6 +6,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.TaskDao;
@@ -115,8 +116,15 @@ public class TaskService {
         // Finally, save these new tasks
         taskDao.saveTasks(tasksToSave);
         
-        // Now read back the tasks from the database to pick up persisted startedOn, finishedOn values
-        return taskDao.getTasks(context);
+        // Now read back the tasks from the database to pick up persisted startedOn, finishedOn values, 
+        // but filter based on the endsOn time from the query. If the client dynamically adjusts the 
+        // lookahead window from a large number of days to a small number of days, the client will still 
+        // get back all the tasks scheduled into the longer time period. This is counter-intuitive , 
+        // so hide them.
+        return taskDao.getTasks(context).stream().filter(task -> {
+            return (task.getScheduledOn().isBefore(context.getEndsOn()) || 
+                    task.getScheduledOn().isEqual(context.getEndsOn()));
+        }).collect(Collectors.toList());
     }
     
     public void updateTasks(String healthCode, List<Task> tasks) {
