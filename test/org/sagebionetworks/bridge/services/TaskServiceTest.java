@@ -128,13 +128,12 @@ public class TaskServiceTest {
         // Dave teleports to California, where it's still the prior day. He gets 4 tasks 
         // (yesterday, today in Russia, tomorrow and the next day). One task was created beyond
         // the window, over in Moscow... that is not returned because although it exists, we 
-        // filter it out from the tasks retrieved from the db.
+        // filter it out from the persisted tasks retrieved from the db.
         tasks = service.getTasks(testUser.getUser(), getContext(PST));
         assertEquals(3, tasks.size());
         assertEquals(pst1+"T10:00:00.000-07:00", tasks.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", tasks.get(1).getScheduledOn().toString());
         assertEquals(pst3+"T10:00:00.000-07:00", tasks.get(2).getScheduledOn().toString());
-        //assertEquals(pst4+"T10:00:00.000-07:00", tasks.get(3).getScheduledOn().toString());
         
         // Dave returns to the Moscow and we move time forward a day.
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-24T03:39:57.779+03:00").getMillis());
