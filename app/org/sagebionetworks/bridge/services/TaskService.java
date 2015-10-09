@@ -122,8 +122,7 @@ public class TaskService {
         // get back all the tasks scheduled into the longer time period. This is counter-intuitive, 
         // so hide them.
         return taskDao.getTasks(context).stream().filter(task -> {
-            return (task.getScheduledOn().isBefore(context.getEndsOn()) || 
-                    task.getScheduledOn().isEqual(context.getEndsOn()));
+            return !task.getScheduledOn().isAfter(context.getEndsOn());
         }).collect(Collectors.toList());
     }
     

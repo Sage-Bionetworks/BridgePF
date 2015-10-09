@@ -13,6 +13,7 @@ public class ClientInfoTest {
     private static final String VALID_MEDIUM_UA_1 = "Unknown Client/14 BridgeJavaSDK/10";
     private static final String VALID_LONG_UA_1 = "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4";
     private static final String VALID_LONG_UA_2 = "Cardio Health/1 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4";
+    private static final String VALID_LONG_UA_3 = "Belgium/2 (Motorola Flip-Phone; Android 14) BridgeJavaSDK/10";
     
     private static final String INVALID_UA_1 = "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi";
     private static final String INVALID_UA_2 = "Integration Tests (Linux/3.13.0-36-generic) BridgeJavaSDK/3";
@@ -118,6 +119,14 @@ public class ClientInfoTest {
         assertEquals("iPhone OS 9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
+        
+        info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3);
+        assertEquals("Belgium", info.getAppName());
+        assertEquals(2, info.getAppVersion().intValue());
+        assertEquals("Motorola Flip-Phone", info.getOsName());
+        assertEquals("Android 14", info.getOsVersion());
+        assertEquals("BridgeJavaSDK", info.getSdkName());
+        assertEquals(10, info.getSdkVersion().intValue());
     }
     
     @Test
