@@ -276,6 +276,18 @@ public class TaskSchedulerTest {
         assertEquals("Bar", task2.getActivity().getLabel());
         assertFalse(task2.getPersistent());
         assertFalse(task2.getActivity().isPersistentlyRescheduledBy(schedule));
+        
+        schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setEventId("activity:AAA:finished,enrollment");
+        schedule.setLabel("Test");
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        tasks = schedule.getScheduler().getTasks(plan, getContext(NOW.plusDays(1)));
+        assertTrue(tasks.size() > 0);
+        for (Task task : tasks) {
+            assertTrue(task.getPersistent());
+            assertTrue(task.getGuid().contains(TestConstants.TEST_3_ACTIVITY.getGuid()));
+        }
     }
     
     

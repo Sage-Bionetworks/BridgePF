@@ -71,8 +71,10 @@ public final class Activity implements BridgeEntity {
         return response;
     }
     public boolean isPersistentlyRescheduledBy(Schedule schedule) {
+        String activityFinishedEventId = "activity:"+getGuid()+":finished";
         return schedule.schedulesImmediatelyAfterEvent() && 
-               schedule.getEventId().contains(getSelfFinishedEventId());
+               (schedule.getEventId().contains(getSelfFinishedEventId()) || 
+                schedule.getEventId().contains(activityFinishedEventId));
     }
     private String getSelfFinishedEventId() {
         return (getActivityType() == ActivityType.SURVEY) ?

@@ -31,7 +31,7 @@ public class TestConstants {
     
     public static final Activity TEST_1_ACTIVITY = new Activity.Builder().withLabel("Activity1").withPublishedSurvey("identifier1","AAA").build();
     public static final Activity TEST_2_ACTIVITY = new Activity.Builder().withLabel("Activity2").withPublishedSurvey("identifier2","BBB").build();
-    public static final Activity TEST_3_ACTIVITY = new Activity.Builder().withLabel("Activity3").withTask("tapTest").build();
+    public static final Activity TEST_3_ACTIVITY = new Activity.Builder().withLabel("Activity3").withGuid("AAA").withTask("tapTest").build();
     
     public static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
     public static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
