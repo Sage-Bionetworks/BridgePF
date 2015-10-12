@@ -215,12 +215,19 @@ public class ActivityTest {
     }
     
     @Test
-    public void createAGuidIfNoneIsSet() {
+    public void createAGuidIfNoneIsSet() throws Exception {
         Activity activity = new Activity.Builder().withGuid("AAA").withTask("task").withLabel("Label").build();
-        assertEquals("AAA", activity.getGuid());
         
         activity = new Activity.Builder().withTask("task").withLabel("Label").build();
         assertNotNull(activity.getGuid());
+    }
+    
+    @Test
+    public void activityFieldsAreDeserialized() throws Exception {
+        String activityJSON = "{\"label\":\"Label\",\"guid\":\"AAA\",\"task\":{\"identifier\":\"task\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"ref\":\"task\",\"type\":\"Activity\"}";
+        
+        Activity activity = BridgeObjectMapper.get().readValue(activityJSON, Activity.class);
+        assertEquals("AAA", activity.getGuid());
     }
 
 }
