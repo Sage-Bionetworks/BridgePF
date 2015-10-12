@@ -116,12 +116,12 @@ public class DynamoTaskDao implements TaskDao {
                         dbTask.setHidesOn(task.getFinishedOn());
                         isFinishing = true;
                     }
-                    // Not transactional. This is what can happen:
-                    // task saved, event saved, np
-                    // task fails, event fails, np
+                    // Not transactional, so we need to do these one-by-one, not in the batch API which
+                    // returns incomprehensibly low-level errors. This is what can happen:
+                    // both succeed, both fail, np
                     // task saved, event fails, no further scheduled tasks. So don't allow that
-                    // task failed, event succeeds, second task scheduled while first task still needs 
-                    //          to be finished. This is acceptable, so do this and save event first 
+                    // event saved, task fails, 2nd future task created, existing task still needs to be saved 
+                    //          This is acceptable, so do this and save event first 
                     if (isFinishing) {
                         taskEventService.publishTaskFinishedEvent(dbTask);
                     }
