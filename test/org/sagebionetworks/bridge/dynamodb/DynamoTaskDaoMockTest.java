@@ -25,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -107,6 +108,13 @@ public class DynamoTaskDaoMockTest {
         Task task = taskDao.getTask("AAA", "BBB");
         assertEquals(testTask, task);
         
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getTaskThrowsException() throws Exception {
+        when(mapper.load(any(DynamoTask.class))).thenReturn(null);
+        
+        taskDao.getTask("AAA", "BBB");
     }
 
     @SuppressWarnings("unchecked")
