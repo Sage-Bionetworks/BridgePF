@@ -73,16 +73,21 @@ public class TaskEventService {
     public void publishTaskFinishedEvent(Task task) {
         checkNotNull(task);
         
-        String activityGuid = task.getGuid().split(":")[0];
-        
-        TaskEvent event = new DynamoTaskEvent.Builder()
-            .withHealthCode(task.getHealthCode())
-            .withObjectType(TaskEventObjectType.TASK)
-            .withObjectId(activityGuid)
-            .withEventType(TaskEventType.FINISHED)
-            .withTimestamp(task.getFinishedOn())
-            .build();
-        taskEventDao.publishEvent(event);
+        // If there's no colon, this is an existing task and it cannot fire an 
+        // activity event. Quietly ignore this until we have migrated tasks.
+        if (task.getGuid().contains(":")) {
+            String activityGuid = task.getGuid().split(":")[0];
+            
+            TaskEvent event = new DynamoTaskEvent.Builder()
+                .withHealthCode(task.getHealthCode())
+                .withObjectType(TaskEventObjectType.TASK)
+                .withObjectId(activityGuid)
+                .withEventType(TaskEventType.FINISHED)
+                .withTimestamp(task.getFinishedOn())
+                .build();
+
+            taskEventDao.publishEvent(event);
+        }
     }
     
     /**

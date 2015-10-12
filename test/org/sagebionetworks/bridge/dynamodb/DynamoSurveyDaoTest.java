@@ -136,7 +136,7 @@ public class DynamoSurveyDaoTest {
         assertTrue("Question #2 has a guid", survey.getElements().get(1).getGuid() != null);
         assertNull(survey.getSchemaRevision());
 
-        // These fields are updatable.
+        // These fields are updateable.
         survey.setIdentifier("newIdentifier");
         survey.setName("New Name");
 
