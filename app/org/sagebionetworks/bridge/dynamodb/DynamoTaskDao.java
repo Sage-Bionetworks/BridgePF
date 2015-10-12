@@ -7,9 +7,9 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.services.TaskEventService;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -27,21 +27,29 @@ public class DynamoTaskDao implements TaskDao {
     
     private DynamoDBMapper mapper;
     private DynamoIndexHelper index;
-    private TaskEventService taskEventService;
     
     @Resource(name = "taskDdbMapper")
-    public void setDdbMapper(DynamoDBMapper mapper) {
+    public final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
     
     @Resource(name = "taskIndex")
-    public void setTaskIndex(DynamoIndexHelper index) {
+    public final void setTaskIndex(DynamoIndexHelper index) {
         this.index = index;
     }
     
-    @Resource(name = "taskEventService")
-    public void setTaskEventService(TaskEventService taskEventService) {
-        this.taskEventService = taskEventService;
+    /** {@inheritDoc} */
+    @Override
+    public Task getTask(String healthCode, String guid) {
+        DynamoTask hashKey = new DynamoTask();
+        hashKey.setHealthCode(healthCode);
+        hashKey.setGuid(guid);
+        
+        Task dbTask = mapper.load(hashKey);
+        if (dbTask == null) {
+            throw new EntityNotFoundException(Task.class);
+        }
+        return dbTask;
     }
     
     /** {@inheritDoc} */
@@ -98,36 +106,9 @@ public class DynamoTaskDao implements TaskDao {
     /** {@inheritDoc} */
     @Override
     public void updateTasks(String healthCode, List<Task> tasks) {
-        for (Task task : tasks) {
-            if (task != null && (task.getStartedOn() != null || task.getFinishedOn() != null)) {
-                DynamoTask hashKey = new DynamoTask();
-                hashKey.setHealthCode(healthCode);
-                hashKey.setGuid(task.getGuid());
-                DynamoTask dbTask = mapper.load(hashKey);
-                
-                if (dbTask != null) {
-                    boolean isFinishing = false;
-                    if (task.getStartedOn() != null) {
-                        dbTask.setStartedOn(task.getStartedOn());
-                        dbTask.setHidesOn(new Long(Long.MAX_VALUE));
-                    }
-                    if (task.getFinishedOn() != null) {
-                        dbTask.setFinishedOn(task.getFinishedOn());
-                        dbTask.setHidesOn(task.getFinishedOn());
-                        isFinishing = true;
-                    }
-                    // Not transactional, so we need to do these one-by-one, not in the batch API which
-                    // returns incomprehensibly low-level errors. This is what can happen:
-                    // both succeed, both fail, np
-                    // task saved, event fails, no further scheduled tasks. So don't allow that
-                    // event saved, task fails, 2nd future task created, existing task still needs to be saved 
-                    //          This is acceptable, so do this and save event first 
-                    if (isFinishing) {
-                        taskEventService.publishTaskFinishedEvent(dbTask);
-                    }
-                    mapper.save(dbTask);
-                }
-            }
+        if (!tasks.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchSave(tasks);
+            BridgeUtils.ifFailuresThrowException(failures);
         }
     }
     

@@ -61,27 +61,27 @@ public class TaskService {
     private SurveyResponseService surveyResponseService;
     
     @Autowired
-    public void setTaskDao(TaskDao taskDao) {
+    public final void setTaskDao(TaskDao taskDao) {
         this.taskDao = taskDao;
     }
     @Autowired
-    public void setTaskEventService(TaskEventService taskEventService) {
+    public final void setTaskEventService(TaskEventService taskEventService) {
         this.taskEventService = taskEventService;
     }
     @Autowired
-    public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
+    public final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
     }
     @Autowired
-    public void setUserConsentDao(UserConsentDao userConsentDao) {
+    public final void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
     @Autowired
-    public void setSurveyService(SurveyService surveyService) {
+    public final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
     }
     @Autowired
-    public void setSurveyResponseService(SurveyResponseService surveyResponseService) {
+    public final void setSurveyResponseService(SurveyResponseService surveyResponseService) {
         this.surveyResponseService = surveyResponseService;
     }
     
@@ -128,6 +128,8 @@ public class TaskService {
     public void updateTasks(String healthCode, List<Task> tasks) {
         checkArgument(isNotBlank(healthCode));
         checkNotNull(tasks);
+        
+        List<Task> tasksToSave = Lists.newArrayListWithCapacity(tasks.size());
         for (int i=0; i < tasks.size(); i++) {
             Task task = tasks.get(i);
             if (task == null) {
@@ -136,8 +138,23 @@ public class TaskService {
             if (task.getGuid() == null) {
                 throw new BadRequestException(String.format("Task #%s has no GUID", i));
             }
+            if (task.getStartedOn() != null || task.getFinishedOn() != null) {
+                Task dbTask = taskDao.getTask(healthCode, task.getGuid());
+                if (task.getStartedOn() != null) {
+                    dbTask.setStartedOn(task.getStartedOn());
+                    dbTask.setHidesOn(new Long(Long.MAX_VALUE));
+                }
+                if (task.getFinishedOn() != null) {
+                    dbTask.setFinishedOn(task.getFinishedOn());
+                    dbTask.setHidesOn(task.getFinishedOn());
+                    taskEventService.publishTaskFinishedEvent(dbTask);
+                }
+                tasksToSave.add(dbTask);
+            }
         }
-        taskDao.updateTasks(healthCode, tasks);
+        if (!tasksToSave.isEmpty()) {
+            taskDao.updateTasks(healthCode, tasksToSave);    
+        }
     }
     
     public void deleteTasks(String healthCode) {

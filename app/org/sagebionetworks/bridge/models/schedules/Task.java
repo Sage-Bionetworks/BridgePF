@@ -5,11 +5,12 @@ import java.util.Comparator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as = DynamoTask.class)
-public interface Task {
+public interface Task extends BridgeEntity {
 
     public static Task create() {
         return new DynamoTask();

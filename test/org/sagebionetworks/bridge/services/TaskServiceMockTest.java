@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -17,6 +19,8 @@ import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -26,6 +30,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -59,6 +64,8 @@ public class TaskServiceMockTest {
     
     private TaskDao taskDao;
     
+    private TaskEventService taskEventService;
+    
     private DateTime endsOn;
     
     @SuppressWarnings("unchecked")
@@ -82,16 +89,26 @@ public class TaskServiceMockTest {
         when(userConsentDao.getUserConsent(any(String.class), any(StudyIdentifier.class))).thenReturn(consent);
         
         Map<String,DateTime> map = Maps.newHashMap();
-        TaskEventService taskEventService = mock(TaskEventService.class);
+        taskEventService = mock(TaskEventService.class);
         when(taskEventService.getTaskEventMap(anyString())).thenReturn(map);
         
         ScheduleContext context = createScheduleContext(endsOn);
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
-
+        
         taskDao = mock(DynamoTaskDao.class);
+        when(taskDao.getTask(anyString(), anyString())).thenAnswer(new Answer<Task>() {
+            @Override
+            public Task answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+                DynamoTask task = new DynamoTask();
+                task.setHealthCode((String)args[0]);
+                task.setGuid((String)args[1]);
+                return task;
+            }
+        });
         when(taskDao.getTasks(context)).thenReturn(tasks);
         when(taskDao.taskRunHasNotOccurred(anyString(), anyString())).thenReturn(true);
-
+        
         Survey survey = new DynamoSurvey();
         survey.setGuid("guid");
         survey.setIdentifier("identifier");
@@ -149,14 +166,50 @@ public class TaskServiceMockTest {
         service.updateTasks("AAA", tasks);
     }
     
+    @SuppressWarnings("unchecked")
     @Test
     public void updateTasksWorks() {
         ScheduleContext context = createScheduleContext(endsOn);
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         
+        // 4 tasks, finish two, these should publish events, the third with a startedOn 
+        // timestamp will be saved, so 3 tasks sent to the DAO
+        assertEquals(4, tasks.size());
+        tasks.get(0).setStartedOn(DateTime.now().getMillis());
+        tasks.get(1).setFinishedOn(DateTime.now().getMillis());
+        tasks.get(2).setFinishedOn(DateTime.now().getMillis());
+        
+        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
+        
         service.updateTasks("BBB", tasks);
-        verify(taskDao).updateTasks("BBB", tasks);
-        verifyNoMoreInteractions(taskDao);
+        
+        verify(taskDao).updateTasks(anyString(), argument.capture());
+        verify(taskDao, times(3)).getTask(anyString(), anyString());
+        verify(taskEventService, times(2)).publishTaskFinishedEvent(any());
+        
+        List<DynamoTask> dbTasks = (List<DynamoTask>)argument.getValue();
+        assertEquals(3, dbTasks.size());
+        assertEquals(tasks.get(0).getGuid(), dbTasks.get(0).getGuid());
+        assertEquals(tasks.get(1).getGuid(), dbTasks.get(1).getGuid());
+        assertEquals(tasks.get(2).getGuid(), dbTasks.get(2).getGuid());
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void taskListWithNullsRejected() {
+        ScheduleContext context = createScheduleContext(endsOn);
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
+        tasks.set(0, null);
+        
+        service.updateTasks("BBB", tasks);
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void taskListWithNullGuidRejected() {
+        ScheduleContext context = createScheduleContext(endsOn);
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
+        tasks.get(1).setGuid(null);
+        
+        service.updateTasks("BBB", tasks);
     }
     
     @Test
