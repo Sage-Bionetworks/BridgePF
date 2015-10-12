@@ -281,13 +281,11 @@ public class TaskSchedulerTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setEventId("activity:AAA:finished,enrollment");
         schedule.setLabel("Test");
+        schedule.addActivity(new Activity.Builder().withGuid("BBB").withLabel("Bar").withTask("bar").build());
         schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
         tasks = schedule.getScheduler().getTasks(plan, getContext(NOW.plusDays(1)));
-        assertTrue(tasks.size() > 0);
-        for (Task task : tasks) {
-            assertTrue(task.getPersistent());
-            assertTrue(task.getGuid().contains(TestConstants.TEST_3_ACTIVITY.getGuid()));
-        }
+        assertFalse(tasks.get(0).getPersistent());
+        assertTrue(tasks.get(1).getPersistent());
     }
     
     
