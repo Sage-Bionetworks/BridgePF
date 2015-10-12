@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -32,9 +31,9 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.services.TaskEventService;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -57,6 +56,8 @@ public class DynamoTaskDaoMockTest {
     private DynamoDBMapper mapper;
 
     private DynamoTaskDao taskDao;
+    
+    private TaskEventService taskEventService;
 
     @SuppressWarnings("unchecked")
     @Before
@@ -67,6 +68,8 @@ public class DynamoTaskDaoMockTest {
         user.setHealthCode(HEALTH_CODE);
         user.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
 
+        taskEventService = mock(TaskEventService.class);
+        
         // This is the part that will need to be expanded per test.
         mapper = mock(DynamoDBMapper.class);
         when(mapper.query((Class<DynamoTask>) any(Class.class),
@@ -74,6 +77,7 @@ public class DynamoTaskDaoMockTest {
             .thenReturn(null);
         taskDao = new DynamoTaskDao();
         taskDao.setDdbMapper(mapper);
+        taskDao.setTaskEventService(taskEventService);
     }
 
     @After
@@ -232,7 +236,6 @@ public class DynamoTaskDaoMockTest {
         assertEquals(2, argument.getValue().size());
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     public void canUpdateTasks() {
         String guid1 = BridgeUtils.generateGuid();
@@ -266,20 +269,19 @@ public class DynamoTaskDaoMockTest {
         task4.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());
         task4.setGuid(guid2);
 
-        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<Task> taskEventServiceArgument = ArgumentCaptor.forClass(Task.class);
+
         List<Task> tasks = Lists.newArrayList(task3, task4);
         taskDao.updateTasks(HEALTH_CODE, tasks);
 
-        // So yeah, those tasks have been updated. Capture them and verify that they were updated
+        // These tasks have been updated.
         verify(mapper, times(2)).load(any());
-        verify(mapper).batchSave(argument.capture());
+        verify(mapper, times(2)).save(any());
+        // Only task 4 was finished, so this should happen once, and be task 4
+        verify(taskEventService).publishTaskFinishedEvent(taskEventServiceArgument.capture());
         verifyNoMoreInteractions(mapper);
 
-        List<DynamoTask> list = new ArrayList<>(argument.getValue());
-        DynamoTask savedTask1 = list.get(0);
-        DynamoTask savedTask2 = list.get(1);
-        assertEquals(TaskStatus.STARTED, savedTask1.getStatus());
-        assertEquals(TaskStatus.FINISHED, savedTask2.getStatus());
+        assertEquals(task4.getGuid(), taskEventServiceArgument.getValue().getGuid());
     }
     
     private void assertTask(Task task, String ref, String dateString) {

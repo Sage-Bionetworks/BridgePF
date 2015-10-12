@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.models.schedules.ActivityType.TASK;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.ActivityValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -28,6 +29,7 @@ public final class Activity implements BridgeEntity {
     
     private String label;
     private String labelDetail;
+    private String guid;
     private TaskReference task;
     private SurveyReference survey;
     private SurveyResponseReference response;
@@ -35,10 +37,12 @@ public final class Activity implements BridgeEntity {
 
     @JsonCreator
     private Activity(@JsonProperty("label") String label, @JsonProperty("labelDetail") String labelDetail, 
-        @JsonProperty("task") TaskReference task, @JsonProperty("survey") SurveyReference survey, 
+        @JsonProperty("guid") String guid, @JsonProperty("task") TaskReference task, 
+        @JsonProperty("survey") SurveyReference survey, 
         @JsonProperty("surveyResponse") SurveyResponseReference response) {
         this.label = label;
         this.labelDetail = labelDetail;
+        this.guid = guid;
         this.survey = survey;
         this.task = task;
         this.response = response;
@@ -50,6 +54,9 @@ public final class Activity implements BridgeEntity {
     }
     public String getLabelDetail() {
         return labelDetail;
+    }
+    public String getGuid() {
+        return guid;
     }
     public ActivityType getActivityType() {
         return activityType;
@@ -92,6 +99,7 @@ public final class Activity implements BridgeEntity {
     public static class Builder {
         private String label;
         private String labelDetail;
+        private String guid;
         private TaskReference task;
         private SurveyReference survey;
         private SurveyResponseReference response;
@@ -102,6 +110,10 @@ public final class Activity implements BridgeEntity {
         }
         public Builder withLabelDetail(String labelDetail) {
             this.labelDetail = labelDetail;
+            return this;
+        }
+        public Builder withGuid(String guid) {
+            this.guid = guid;
             return this;
         }
         public Builder withTask(String taskId) {
@@ -121,7 +133,10 @@ public final class Activity implements BridgeEntity {
             return this;
         }
         public Activity build() {
-            Activity activity = new Activity(label, labelDetail, task, survey, response);
+            if (guid == null) {
+                guid = BridgeUtils.generateGuid();
+            }
+            Activity activity = new Activity(label, labelDetail, guid, task, survey, response);
             Validate.entityThrowingException(VALIDATOR, activity);
             return activity;
         }
@@ -134,6 +149,7 @@ public final class Activity implements BridgeEntity {
         result = prime * result + Objects.hashCode(activityType);
         result = prime * result + Objects.hashCode(label);
         result = prime * result + Objects.hashCode(labelDetail);
+        result = prime * result + Objects.hashCode(guid);
         result = prime * result + Objects.hashCode(response);
         result = prime * result + Objects.hashCode(survey);
         result = prime * result + Objects.hashCode(task);
@@ -149,14 +165,13 @@ public final class Activity implements BridgeEntity {
         Activity other = (Activity) obj;
         return (Objects.equals(activityType, other.activityType) && 
             Objects.equals(label, other.label) && Objects.equals(labelDetail, other.labelDetail) &&
-            Objects.equals(response, other.response) && Objects.equals(survey, other.survey) &&
-            Objects.equals(task, other.task));
-                        
+            Objects.equals(guid,  other.guid) && Objects.equals(response, other.response) && 
+            Objects.equals(survey, other.survey) && Objects.equals(task, other.task));
     }
 
     @Override
     public String toString() {
-        return String.format("Activity [label=%s, labelDetail=%s, ref=%s, task=%s, survey=%s, response=%s, activityType=%s]",
-            label, labelDetail, getRef(), task, survey, response, activityType);
+        return String.format("Activity [label=%s, labelDetail=%s, guid=%s, ref=%s, task=%s, survey=%s, response=%s, activityType=%s]",
+            label, labelDetail, guid, getRef(), task, survey, response, activityType);
     }
 }

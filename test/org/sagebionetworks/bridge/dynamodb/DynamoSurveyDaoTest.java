@@ -448,9 +448,6 @@ public class DynamoSurveyDaoTest {
         Thread.sleep(GSI_WAIT_DURATION);
         // This should include firstVersion and nextVersion.
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-        for (Survey survey : surveys) {
-            System.out.println(survey);
-        }
         assertEquals(initialCount+2, surveys.size());
         assertTrue(surveys.indexOf(firstSurvey) > -1);
         assertTrue(surveys.indexOf(secondSurvey) > -1);

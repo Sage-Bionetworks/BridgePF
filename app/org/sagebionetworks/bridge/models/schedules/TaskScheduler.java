@@ -69,7 +69,7 @@ public abstract class TaskScheduler {
                     task.setHealthCode(context.getHealthCode());
                     task.setActivity(activity);
                     task.setScheduledOn(scheduledTime);
-                    task.setGuid(BridgeUtils.generateGuid());
+                    task.setGuid(activity.getGuid() + ":" + scheduledTime.toLocalDateTime().toString());
                     task.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
                     if (expiresOn != null) {
                         task.setExpiresOn(expiresOn);

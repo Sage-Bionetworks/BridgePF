@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -26,6 +27,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.Sets;
 import com.newrelic.agent.deps.com.google.common.collect.Maps;
 
 /**
@@ -300,6 +302,26 @@ public class TaskSchedulerTest {
         tasks = schedule.getScheduler().getTasks(plan, getContext(zone, DateTime.now().plusDays(1)));
         assertEquals("2015-04-06T10:00:00.000-07:00", tasks.get(0).getScheduledOn().toString());
         assertEquals("2015-04-07T10:00:00.000-07:00", tasks.get(1).getScheduledOn().toString());
+    }
+    
+    @Test
+    public void tasksContainActivityGuidButAllAreUnique() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("P1D");
+        schedule.setExpires("P1D");
+        schedule.addTimes("10:00");
+        schedule.addActivity(new Activity.Builder().withLabel("Foo").withTask("foo").build());
+        Validate.entityThrowingException(new ScheduleValidator(), schedule);
+        
+        List<Task> tasks = schedule.getScheduler().getTasks(plan, getContext(DateTimeZone.UTC, DateTime.now().plusDays(4)));
+        Set<String> allGuids = Sets.newHashSet();
+        for (Task task : tasks) {
+            String activityGuidInTaskGuid = task.getGuid().split(":")[0];
+            assertEquals(task.getActivity().getGuid(), activityGuidInTaskGuid);
+            allGuids.add(task.getGuid());
+        }
+        assertEquals(tasks.size(), allGuids.size());
     }
     
     private ScheduleContext getContext(DateTime endsOn) {

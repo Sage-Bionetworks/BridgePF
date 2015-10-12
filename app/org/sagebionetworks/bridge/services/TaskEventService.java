@@ -8,6 +8,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.tasks.TaskEventType;
@@ -61,6 +62,25 @@ public class TaskEventService {
             .withObjectType(TaskEventObjectType.SURVEY)
             .withObjectId(response.getSurveyGuid())
             .withEventType(TaskEventType.FINISHED)
+            .build();
+        taskEventDao.publishEvent(event);
+    }
+    
+    /**
+     * This should become an ActivityFinishedEvent, ending the confusing in naming 
+     * between tasks and... tasks.
+     */
+    public void publishTaskFinishedEvent(Task task) {
+        checkNotNull(task);
+        
+        String activityGuid = task.getGuid().split(":")[0];
+        
+        TaskEvent event = new DynamoTaskEvent.Builder()
+            .withHealthCode(task.getHealthCode())
+            .withObjectType(TaskEventObjectType.TASK)
+            .withObjectId(activityGuid)
+            .withEventType(TaskEventType.FINISHED)
+            .withTimestamp(task.getFinishedOn())
             .build();
         taskEventDao.publishEvent(event);
     }

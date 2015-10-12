@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
+import org.sagebionetworks.bridge.services.TaskEventService;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -26,6 +27,7 @@ public class DynamoTaskDao implements TaskDao {
     
     private DynamoDBMapper mapper;
     private DynamoIndexHelper index;
+    private TaskEventService taskEventService;
     
     @Resource(name = "taskDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
@@ -35,6 +37,11 @@ public class DynamoTaskDao implements TaskDao {
     @Resource(name = "taskIndex")
     public void setTaskIndex(DynamoIndexHelper index) {
         this.index = index;
+    }
+    
+    @Resource(name = "taskEventService")
+    public void setTaskEventService(TaskEventService taskEventService) {
+        this.taskEventService = taskEventService;
     }
     
     /** {@inheritDoc} */
@@ -91,7 +98,6 @@ public class DynamoTaskDao implements TaskDao {
     /** {@inheritDoc} */
     @Override
     public void updateTasks(String healthCode, List<Task> tasks) {
-        List<Task> tasksToSave = Lists.newArrayList();
         for (Task task : tasks) {
             if (task != null && (task.getStartedOn() != null || task.getFinishedOn() != null)) {
                 DynamoTask hashKey = new DynamoTask();
@@ -100,6 +106,7 @@ public class DynamoTaskDao implements TaskDao {
                 DynamoTask dbTask = mapper.load(hashKey);
                 
                 if (dbTask != null) {
+                    boolean isFinishing = false;
                     if (task.getStartedOn() != null) {
                         dbTask.setStartedOn(task.getStartedOn());
                         dbTask.setHidesOn(new Long(Long.MAX_VALUE));
@@ -107,14 +114,20 @@ public class DynamoTaskDao implements TaskDao {
                     if (task.getFinishedOn() != null) {
                         dbTask.setFinishedOn(task.getFinishedOn());
                         dbTask.setHidesOn(task.getFinishedOn());
+                        isFinishing = true;
                     }
-                    tasksToSave.add(dbTask);
+                    // Not transactional. This is what can happen:
+                    // task saved, event saved, np
+                    // task fails, event fails, np
+                    // task saved, event fails, no further scheduled tasks. So don't allow that
+                    // task failed, event succeeds, second task scheduled while first task still needs 
+                    //          to be finished. This is acceptable, so do this and save event first 
+                    if (isFinishing) {
+                        taskEventService.publishTaskFinishedEvent(dbTask);
+                    }
+                    mapper.save(dbTask);
                 }
             }
-        }
-        if (!tasksToSave.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchSave(tasksToSave);
-            BridgeUtils.ifFailuresThrowException(failures);
         }
     }
     

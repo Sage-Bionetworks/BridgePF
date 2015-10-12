@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.tasks;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -42,6 +43,7 @@ public class ActivityTest {
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("task", node.get("activityType").asText());
         assertEquals("taskId", node.get("ref").asText());
+        assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
         JsonNode taskRef = node.get("task");
@@ -69,6 +71,7 @@ public class ActivityTest {
         assertEquals("survey", node.get("activityType").asText());
         String refString = node.get("ref").asText();
         assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/2015-01-01T10:10:10.000Z"));
+        assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
         JsonNode ref = node.get("survey");
@@ -105,6 +108,7 @@ public class ActivityTest {
         assertEquals("survey", node.get("activityType").asText());
         String refString = node.get("ref").asText();
         assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
+        assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
         JsonNode ref = node.get("survey");
@@ -141,6 +145,7 @@ public class ActivityTest {
         assertEquals("survey", node.get("activityType").asText());
         String refString = node.get("ref").asText();
         assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
+        assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
         JsonNode ref = node.get("survey");
@@ -207,6 +212,15 @@ public class ActivityTest {
         Activity activity = new Activity.Builder().withSurvey("identifier", "guid", null).withLabel("Label").build();
         
         assertTrue(activity.getSurvey().getHref().matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
+    }
+    
+    @Test
+    public void createAGuidIfNoneIsSet() {
+        Activity activity = new Activity.Builder().withGuid("AAA").withTask("task").withLabel("Label").build();
+        assertEquals("AAA", activity.getGuid());
+        
+        activity = new Activity.Builder().withTask("task").withLabel("Label").build();
+        assertNotNull(activity.getGuid());
     }
 
 }
