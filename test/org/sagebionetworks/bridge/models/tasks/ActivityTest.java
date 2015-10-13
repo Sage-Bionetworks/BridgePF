@@ -182,7 +182,7 @@ public class ActivityTest {
     @SuppressWarnings("deprecation")
     @Test
     public void olderPublishedActivitiesCanBeDeserialized() throws Exception {
-        String oldJson = "{\"label\":\"Personal Health Survey\",\"ref\":\"https://webservices-staging.sagebridge.org/api/v2/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published\",\"activityType\":\"survey\",\"survey\":{\"guid\":\"ac1e57fd-5e8e-473f-b82f-bac7547b6783\",\"type\":\"GuidCreatedOnVersionHolder\"},\"type\":\"Activity\"}";
+        String oldJson = "{\"label\":\"Personal Health Survey\",\"ref\":\"https://webservices-staging.sagebridge.org/api/v2/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published\",\"activityType\":\"survey\",\"survey\":{\"guid\":\"ac1e57fd-5e8e-473f-b82f-bac7547b6783\",\"identifier\":\"identifier\",\"type\":\"GuidCreatedOnVersionHolder\"},\"type\":\"Activity\"}";
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         Activity activity = mapper.readValue(oldJson, Activity.class);
@@ -192,8 +192,7 @@ public class ActivityTest {
         assertEquals(ActivityType.SURVEY, activity.getActivityType());
         
         SurveyReference ref = activity.getSurvey();
-        // This would be the issue... no identifier
-        assertNull("identifier is null", ref.getIdentifier());
+        assertEquals("identifier", ref.getIdentifier());
         assertNull("createdOn null", ref.getCreatedOn());
         assertEquals("guid set", "ac1e57fd-5e8e-473f-b82f-bac7547b6783", ref.getGuid());
         assertTrue(ref.getHref().matches("http[s]?://.*/v3/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published"));
@@ -201,7 +200,7 @@ public class ActivityTest {
     
     @Test
     public void submittingJsonWithHrefWillNotBreak() throws Exception {
-        String oldJson = "{\"label\":\"Personal Health Survey\",\"ref\":\"https://webservices-staging.sagebridge.org/api/v2/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published\",\"activityType\":\"survey\",\"survey\":{\"guid\":\"ac1e57fd-5e8e-473f-b82f-bac7547b6783\",\"href\":\"junk\",\"type\":\"SurveyReference\"},\"type\":\"Activity\"}";
+        String oldJson = "{\"label\":\"Personal Health Survey\",\"ref\":\"https://webservices-staging.sagebridge.org/api/v2/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published\",\"activityType\":\"survey\",\"survey\":{\"guid\":\"ac1e57fd-5e8e-473f-b82f-bac7547b6783\",\"href\":\"junk\",\"identifier\":\"identifier\",\"type\":\"SurveyReference\"},\"type\":\"Activity\"}";
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         Activity activity = mapper.readValue(oldJson, Activity.class);
