@@ -53,12 +53,14 @@ public class DynamoStudyTest {
         assertEquals(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
         assertEquals(study.getStormpathHref(), node.get("stormpathHref").asText());
         assertEquals(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEquals(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
+        assertEquals(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate",
+                EmailTemplate.class));
         assertEquals(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
         assertEquals(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
-        assertEquals(study.getConsentHTML(), JsonUtils.asText(node,  "consentHTML"));
-        assertEquals(study.getConsentPDF(), JsonUtils.asText(node,  "consentPDF"));
+        assertEquals(study.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
+        assertEquals(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
         assertEquals((Long)study.getVersion(), (Long)node.get("version").asLong());
+        assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertEquals("Study", node.get("type").asText());
         
         String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.html";
@@ -79,6 +81,9 @@ public class DynamoStudyTest {
         study = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
         assertNull(study.getStormpathHref());
         assertEquals("Study", node.get("type").asText());
+
+        // Deserialize back to a POJO and verify.
+        DynamoStudy deserStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
+        assertEquals(study, deserStudy);
     }
-    
 }

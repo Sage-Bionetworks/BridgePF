@@ -171,6 +171,7 @@ public class TestUtils {
         study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
         study.setSupportEmail("bridge-testing+support@sagebase.org");
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
+        study.setStrictUploadValidationEnabled(true);
         return study;
     }
     
