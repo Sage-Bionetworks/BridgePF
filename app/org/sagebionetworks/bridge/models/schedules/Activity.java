@@ -11,8 +11,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.ActivityValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * An activity we wish a study participant to do. The two main types of activities are 
@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * to a specific survey, and a survey response object is also added to the activity. This includes 
  * an endpoint where answers to the survey can be submitted.
  */
+@JsonDeserialize(builder=Activity.Builder.class)
 public final class Activity implements BridgeEntity {
     
     private static final ActivityValidator VALIDATOR = new ActivityValidator();
@@ -35,6 +36,17 @@ public final class Activity implements BridgeEntity {
     private SurveyResponseReference response;
     private ActivityType activityType;
 
+    private Activity(String label, String labelDetail, String guid, 
+        TaskReference task, SurveyReference survey, SurveyResponseReference response) {
+        this.label = label;
+        this.labelDetail = labelDetail;
+        this.guid = guid;
+        this.survey = survey;
+        this.task = task;
+        this.response = response;
+        this.activityType = (task != null) ? TASK : SURVEY;
+    }
+    /*
     @JsonCreator
     private Activity(@JsonProperty("label") String label, @JsonProperty("labelDetail") String labelDetail, 
         @JsonProperty("guid") String guid, @JsonProperty("task") TaskReference task, 
@@ -47,7 +59,7 @@ public final class Activity implements BridgeEntity {
         this.task = task;
         this.response = response;
         this.activityType = (task != null) ? TASK : SURVEY;
-    }
+    }*/
     
     public String getLabel() { 
         return label;
@@ -120,6 +132,11 @@ public final class Activity implements BridgeEntity {
             this.guid = guid;
             return this;
         }
+        @JsonSetter
+        public Builder withTask(TaskReference reference) {
+            this.task = reference;
+            return this;
+        }
         public Builder withTask(String taskId) {
             this.task = new TaskReference(taskId);
             return this;
@@ -128,8 +145,18 @@ public final class Activity implements BridgeEntity {
             this.survey = new SurveyReference(identifier, guid, null);
             return this;
         }
+        @JsonSetter
+        public Builder withSurvey(SurveyReference reference) {
+            this.survey = reference;
+            return this;
+        }
         public Builder withSurvey(String identifier, String guid, DateTime createdOn) {
             this.survey = new SurveyReference(identifier, guid, createdOn);
+            return this;
+        }
+        @JsonSetter
+        public Builder withSurveyResponse(SurveyResponseReference reference) { 
+            this.response = reference;
             return this;
         }
         public Builder withSurveyResponse(String identifier) {

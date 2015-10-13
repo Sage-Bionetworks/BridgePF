@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
 
 public class ActivityValidatorTest {
 
@@ -38,7 +39,7 @@ public class ActivityValidatorTest {
     @Test
     public void rejectsTaskWithoutIdentifier() {
         try {
-            new Activity.Builder().withLabel("Label").withTask(null).build();
+            new Activity.Builder().withLabel("Label").withTask((String)null).build();
         } catch(InvalidEntityException e) {
             assertEquals("task.identifier cannot be missing, null, or blank", e.getErrors().get("task.identifier").get(0));
         }
@@ -47,7 +48,7 @@ public class ActivityValidatorTest {
     @Test
     public void rejectsSurveyResponseWithoutSurvey() {
         try {
-            new Activity.Builder().withLabel("Label").withSurveyResponse(null).build();
+            new Activity.Builder().withLabel("Label").withSurveyResponse((String)null).build();
         } catch(InvalidEntityException e) {
             assertEquals("Activity has a survey response, so it must also reference the survey", e.getErrors().get("Activity").get(0));
         }
@@ -56,7 +57,7 @@ public class ActivityValidatorTest {
     @Test
     public void rejectsSurveyResponseWithoutIdentifier() {
         try {
-            new Activity.Builder().withLabel("Label").withSurveyResponse(null).withPublishedSurvey("identifier", "guid").build();
+            new Activity.Builder().withLabel("Label").withSurveyResponse((SurveyResponseReference)null).withPublishedSurvey("identifier", "guid").build();
         } catch(InvalidEntityException e) {
             assertEquals("surveyResponse.identifier cannot be missing, null, or blank", e.getErrors().get("surveyResponse.identifier").get(0));
         }
