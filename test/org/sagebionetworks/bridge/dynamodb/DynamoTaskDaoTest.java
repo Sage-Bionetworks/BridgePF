@@ -90,6 +90,7 @@ public class DynamoTaskDaoTest {
     @After
     public void after() {
         schedulePlanService.deleteSchedulePlan(TestConstants.TEST_STUDY, plan.getGuid());
+        taskDao.deleteTasks(user.getHealthCode());
     }
 
     @Test
@@ -125,6 +126,8 @@ public class DynamoTaskDaoTest {
         cleanTasks(tasks);
         Task task = tasks.get(1);
         task.setFinishedOn(context.getNow().getMillis());
+        // This logic is now in the service, but essential for the task to be "deleted"
+        task.setHidesOn(context.getNow().getMillis());
         assertEquals("task deleted", TaskStatus.DELETED, task.getStatus());
         taskDao.updateTasks(user.getHealthCode(), Lists.newArrayList(task));
         
@@ -138,7 +141,7 @@ public class DynamoTaskDaoTest {
 
     private void cleanTasks(List<Task> tasks) {
         for (Task task : tasks) {
-            task.setActivity(null);
+            //task.setActivity(null);
             task.setStartedOn(null);
             task.setFinishedOn(null);
         }
