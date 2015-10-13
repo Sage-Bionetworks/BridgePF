@@ -19,8 +19,6 @@ import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -163,7 +161,7 @@ public class TaskServiceMockTest {
         service.updateTasks("AAA", tasks);
     }
     
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     @Test
     public void updateTasksWorks() {
         ScheduleContext context = createScheduleContext(endsOn);
