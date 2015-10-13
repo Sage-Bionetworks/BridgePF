@@ -35,12 +35,12 @@ public class DynamoStudyTest {
 
     @Test
     public void studyFullySerializesForCaching() throws Exception {
-        DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         study.setVersion(2L);
         study.setStormpathHref("test");
         
-        String json = BridgeObjectMapper.get().writeValueAsString(study);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        final String json = BridgeObjectMapper.get().writeValueAsString(study);
+        final JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertEquals(study.getSupportEmail(), node.get("supportEmail").asText());
@@ -73,17 +73,13 @@ public class DynamoStudyTest {
         // Negates the need for a view wrapper object, is contextually adjustable, unlike @JsonIgnore.
         // You do need to create a new instance of the writer from a new mapper, SFAICT. This is stored as 
         // Study.STUDY_WRITER.
-        json = Study.STUDY_WRITER.writeValueAsString(study);
-        node = BridgeObjectMapper.get().readTree(json);
-        assertNull(node.get("stormpathHref"));
-        assertNull(node.get("active"));
-        
-        study = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
-        assertNull(study.getStormpathHref());
-        assertEquals("Study", node.get("type").asText());
+        final String filteredJson = Study.STUDY_WRITER.writeValueAsString(study);
+        final JsonNode filteredNode = BridgeObjectMapper.get().readTree(filteredJson);
+        assertNull(filteredNode.get("stormpathHref"));
+        assertNull(filteredNode.get("active"));
 
         // Deserialize back to a POJO and verify.
-        DynamoStudy deserStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
+        final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
         assertEquals(study, deserStudy);
     }
 }
