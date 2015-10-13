@@ -16,10 +16,12 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 /**
@@ -48,7 +50,14 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
     private static final Joiner ERROR_MESSAGE_JOINER = Joiner.on("; ");
 
+    private StudyService studyService;
     private UploadSchemaService uploadSchemaService;
+
+    /** Study service, used to fetch configuration for if strict validation is enabled for the given study. */
+    @Autowired
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
 
     /** Upload Schema Service, used to get the schema to validate against the upload. */
     @Autowired
@@ -118,20 +127,15 @@ public class StrictValidationHandler implements UploadValidationHandler {
     }
 
     /**
-     * <p>
      * Returns whether strict validation should throw exceptions, based on study configs.
-     * </p>
-     * <p>
-     * This is protected so that unit tests can mock this out. (Until we implement the actual study config lookup.)
-     * </p>
      *
      * @param studyIdentifier
      *         study ID of the current data record we're validating
      * @return true if we should throw an exception, false otherwise
      */
-    // TODO: implement this
-    protected boolean shouldThrow(StudyIdentifier studyIdentifier) {
-        return false;
+    private boolean shouldThrow(StudyIdentifier studyIdentifier) {
+        Study study = studyService.getStudy(studyIdentifier);
+        return study.isStrictUploadValidationEnabled();
     }
 
     /**

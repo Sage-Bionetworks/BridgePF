@@ -3,10 +3,7 @@ package org.sagebionetworks.bridge.upload;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.notNull;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -17,6 +14,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
@@ -24,14 +22,15 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class StrictValidationHandlerTest {
@@ -42,10 +41,7 @@ public class StrictValidationHandlerTest {
 
     @Before
     public void setup() {
-        // Mock out shouldThrow to always return true. This forces strict validation in tests, which is what we want.
-        // TODO: replace this when we implement per-study config lookup
-        handler = spy(new StrictValidationHandler());
-        doReturn(true).when(handler).shouldThrow(notNull(StudyIdentifier.class));
+        handler = new StrictValidationHandler();
 
         // Set up common context attributes.
         context = new UploadValidationContext();
@@ -57,7 +53,7 @@ public class StrictValidationHandlerTest {
     }
 
     private void test(List<UploadFieldDefinition> additionalFieldDefList, Map<String, byte[]> additionalAttachmentMap,
-            JsonNode additionalJsonNode, List<String> expectedErrorList) throws Exception {
+            JsonNode additionalJsonNode, List<String> expectedErrorList, boolean shouldThrow) throws Exception {
         // Basic schema with a basic attachment, basic field, and additional fields.
         DynamoUploadSchema testSchema = new DynamoUploadSchema();
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -75,6 +71,14 @@ public class StrictValidationHandlerTest {
         when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "test-schema", 1)).thenReturn(
                 testSchema);
         handler.setUploadSchemaService(mockSchemaService);
+
+        // mock study service - this is to get the shouldThrow (strictUploadValidationEnabled) flag
+        DynamoStudy testStudy = new DynamoStudy();
+        testStudy.setStrictUploadValidationEnabled(shouldThrow);
+
+        StudyService mockStudyService = mock(StudyService.class);
+        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(testStudy);
+        handler.setStudyService(mockStudyService);
 
         // set up attachments map
         Map<String, byte[]> attachmentsMap = new HashMap<>();
@@ -103,11 +107,7 @@ public class StrictValidationHandlerTest {
                 .withSchemaId("test-schema").withSchemaRevision(1);
         context.setHealthDataRecordBuilder(recordBuilder);
 
-        if (expectedErrorList == null || expectedErrorList.isEmpty()) {
-            // execute - If this succeeds, then we won't get an exception and context.getMessageList() will be empty
-            handler.handle(context);
-            assertTrue(context.getMessageList().isEmpty());
-        } else {
+        if (shouldThrow) {
             // execute - Catch the exception and make sure the exception message contains our expected error messages.
             Exception thrownEx = null;
             try {
@@ -119,6 +119,19 @@ public class StrictValidationHandlerTest {
             assertFalse(context.getMessageList().isEmpty());
             for (String oneExpectedError : expectedErrorList) {
                 assertTrue("Expected error: " + oneExpectedError, thrownEx.getMessage().contains(oneExpectedError));
+            }
+        } else {
+            handler.handle(context);
+
+            if (expectedErrorList == null || expectedErrorList.isEmpty()) {
+                assertTrue(context.getMessageList().isEmpty());
+            } else {
+                // We don't want to do string matching. Instead, the quickest way to verify this is to concatenate the
+                // context message list together and make sure our expected strings are in there.
+                String concatMessage = Joiner.on('\n').join(context.getMessageList());
+                for (String oneExpectedError : expectedErrorList) {
+                    assertTrue("Expected error: " + oneExpectedError, concatMessage.contains(oneExpectedError));
+                }
             }
         }
     }
@@ -184,7 +197,7 @@ public class StrictValidationHandlerTest {
         JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
 
         // execute and validate
-        test(additionalFieldDefList, additionalAttachmentsMap, additionalJsonNode, null);
+        test(additionalFieldDefList, additionalAttachmentsMap, additionalJsonNode, null, false);
     }
 
     @Test
@@ -198,7 +211,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("missing required attachment");
 
         // execute and validate
-        test(additionalFieldDefList, null, null, expectedErrorList);
+        test(additionalFieldDefList, null, null, expectedErrorList, true);
     }
 
     @Test
@@ -212,7 +225,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("missing required field");
 
         // execute and validate
-        test(additionalFieldDefList, null, null, expectedErrorList);
+        test(additionalFieldDefList, null, null, expectedErrorList, true);
     }
 
     @Test
@@ -232,7 +245,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("optional string");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -252,7 +265,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("null required field");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -272,7 +285,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("invalid boolean");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -292,7 +305,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("non-string calendar date");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -312,7 +325,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("malformatted calendar date");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -332,7 +345,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("invalid float");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -352,7 +365,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("invalid int");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -372,7 +385,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("invalid string");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -392,7 +405,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("malformatted timestamp");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -412,7 +425,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("wrong type timestamp");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
     }
 
     @Test
@@ -434,6 +447,20 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("missing required attachment", "invalid int");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
+    }
+
+    @Test
+    public void studyConfiguredToNotThrow() throws Exception {
+        // additional field defs
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
+                new DynamoUploadFieldDefinition.Builder().withName("missing required field")
+                        .withType(UploadFieldType.STRING).build());
+
+        // expected errors
+        List<String> expectedErrorList = ImmutableList.of("missing required field");
+
+        // execute and validate
+        test(additionalFieldDefList, null, null, expectedErrorList, false);
     }
 }

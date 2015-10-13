@@ -44,6 +44,7 @@ public final class DynamoStudy implements Study {
     private PasswordPolicy passwordPolicy;
     private EmailTemplate verifyEmailTemplate;
     private EmailTemplate resetPasswordTemplate;
+    private boolean strictUploadValidationEnabled;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
@@ -245,7 +246,19 @@ public final class DynamoStudy implements Study {
     public String getConsentPDF() {
         return String.format("http://%s/%s/consent.pdf", DOCS_HOST, identifier);
     }
-    
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isStrictUploadValidationEnabled() {
+        return strictUploadValidationEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setStrictUploadValidationEnabled(boolean enabled) {
+        this.strictUploadValidationEnabled = enabled;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -265,6 +278,7 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(verifyEmailTemplate);
         result = prime * result + Objects.hashCode(resetPasswordTemplate);
         result = prime * result + Objects.hashCode(active);
+        result = prime * result + Objects.hashCode(strictUploadValidationEnabled);
         return result;
     }
 
@@ -287,7 +301,8 @@ public final class DynamoStudy implements Study {
                         && Objects.equals(version, other.version)
                         && Objects.equals(profileAttributes, other.profileAttributes)
                         && Objects.equals(sponsorName, other.sponsorName)
-                        && Objects.equals(technicalEmail, other.technicalEmail);
+                        && Objects.equals(technicalEmail, other.technicalEmail)
+                        && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled);
     }
 
     @Override
@@ -295,10 +310,10 @@ public final class DynamoStudy implements Study {
         return String.format(
                         "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
                                         + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
-                                        + "version=%s, userProfileAttributes=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s]",
+                                        + "version=%s, userProfileAttributes=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s]"
+                                        + "strictUploadValidationEnabled=%s",
                         name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
                         supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes,
-                        passwordPolicy, verifyEmailTemplate, resetPasswordTemplate);
+                        passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled);
     }
-
 }
