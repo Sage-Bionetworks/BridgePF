@@ -55,9 +55,6 @@ public class DynamoTaskDaoTest {
     
     @Before
     public void before() {
-        DynamoInitializer.init(DynamoTask.class);
-        DynamoTestUtil.clearTable(DynamoTask.class);
-        
         Schedule schedule = new Schedule();
         schedule.setLabel("This is a schedule");
         schedule.setScheduleType(ScheduleType.RECURRING);
@@ -141,7 +138,6 @@ public class DynamoTaskDaoTest {
 
     private void cleanTasks(List<Task> tasks) {
         for (Task task : tasks) {
-            //task.setActivity(null);
             task.setStartedOn(null);
             task.setFinishedOn(null);
         }
