@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.tasks;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -13,6 +14,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
 
@@ -229,5 +231,30 @@ public class ActivityTest {
         Activity activity = BridgeObjectMapper.get().readValue(activityJSON, Activity.class);
         assertEquals("AAA", activity.getGuid());
     }
+    
+    /**
+     * Many of these cases should go away. The only thing we'll be interested in is the completion of an activity.
+     * But it all works during the transition. 
+     * @throws Exception
+     */
+    @Test
+    public void activityKnowsWhenItIsPersistentlyScheduled() throws Exception {
+        // This is persistently scheduled due to an activity
+        Schedule schedule = BridgeObjectMapper.get().readValue("{\"scheduleType\":\"once\",\"eventId\":\"activity:HHH:finished\",\"activities\":[{\"label\":\"Label\",\"labelDetail\":\"Label Detail\",\"guid\":\"HHH\",\"task\":{\"identifier\":\"foo\"},\"activityType\":\"task\"}]}", Schedule.class);
+        assertTrue(schedule.getActivities().get(0).isPersistentlyRescheduledBy(schedule));
+        
+        // This is persistently schedule due to a task completion. We actually never generate this event, and it will go away.
+        schedule = BridgeObjectMapper.get().readValue("{\"scheduleType\":\"once\",\"eventId\":\"task:foo:finished\",\"activities\":[{\"label\":\"Label\",\"labelDetail\":\"Label Detail\",\"guid\":\"HHH\",\"task\":{\"identifier\":\"foo\"},\"activityType\":\"task\"}]}", Schedule.class);
+        assertTrue(schedule.getActivities().get(0).isPersistentlyRescheduledBy(schedule));
+        
+        // This is persistently schedule due to a survey completion. This should not match (it's not a survey)
+        schedule = BridgeObjectMapper.get().readValue("{\"scheduleType\":\"once\",\"eventId\":\"survey:HHH:finished\",\"activities\":[{\"label\":\"Label\",\"labelDetail\":\"Label Detail\",\"guid\":\"HHH\",\"task\":{\"identifier\":\"foo\"},\"activityType\":\"task\"}]}", Schedule.class);
+        assertFalse(schedule.getActivities().get(0).isPersistentlyRescheduledBy(schedule));
+        
+        // Wrong activity, not persistent
+        schedule = BridgeObjectMapper.get().readValue("{\"scheduleType\":\"once\",\"eventId\":\"survey:HHH:finished\",\"activities\":[{\"label\":\"Label\",\"labelDetail\":\"Label Detail\",\"guid\":\"III\",\"task\":{\"identifier\":\"foo\"},\"activityType\":\"task\"}]}", Schedule.class);
+        assertFalse(schedule.getActivities().get(0).isPersistentlyRescheduledBy(schedule));
+    }
+    
 
 }
