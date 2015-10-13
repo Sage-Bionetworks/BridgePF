@@ -7,6 +7,7 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.springframework.stereotype.Component;
@@ -28,13 +29,27 @@ public class DynamoTaskDao implements TaskDao {
     private DynamoIndexHelper index;
     
     @Resource(name = "taskDdbMapper")
-    public void setDdbMapper(DynamoDBMapper mapper) {
+    public final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
     
     @Resource(name = "taskIndex")
-    public void setTaskIndex(DynamoIndexHelper index) {
+    public final void setTaskIndex(DynamoIndexHelper index) {
         this.index = index;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Task getTask(String healthCode, String guid) {
+        DynamoTask hashKey = new DynamoTask();
+        hashKey.setHealthCode(healthCode);
+        hashKey.setGuid(guid);
+        
+        Task dbTask = mapper.load(hashKey);
+        if (dbTask == null) {
+            throw new EntityNotFoundException(Task.class);
+        }
+        return dbTask;
     }
     
     /** {@inheritDoc} */
@@ -91,29 +106,8 @@ public class DynamoTaskDao implements TaskDao {
     /** {@inheritDoc} */
     @Override
     public void updateTasks(String healthCode, List<Task> tasks) {
-        List<Task> tasksToSave = Lists.newArrayList();
-        for (Task task : tasks) {
-            if (task != null && (task.getStartedOn() != null || task.getFinishedOn() != null)) {
-                DynamoTask hashKey = new DynamoTask();
-                hashKey.setHealthCode(healthCode);
-                hashKey.setGuid(task.getGuid());
-                DynamoTask dbTask = mapper.load(hashKey);
-                
-                if (dbTask != null) {
-                    if (task.getStartedOn() != null) {
-                        dbTask.setStartedOn(task.getStartedOn());
-                        dbTask.setHidesOn(new Long(Long.MAX_VALUE));
-                    }
-                    if (task.getFinishedOn() != null) {
-                        dbTask.setFinishedOn(task.getFinishedOn());
-                        dbTask.setHidesOn(task.getFinishedOn());
-                    }
-                    tasksToSave.add(dbTask);
-                }
-            }
-        }
-        if (!tasksToSave.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchSave(tasksToSave);
+        if (!tasks.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchSave(tasks);
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }

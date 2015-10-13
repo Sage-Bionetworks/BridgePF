@@ -14,11 +14,13 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent.Builder;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.tasks.TaskEventObjectType;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
@@ -160,5 +162,35 @@ public class TaskEventServiceTest {
         assertEquals("healthCode", argument.getValue().getHealthCode());
     }
     
+    @Test
+    public void doesNotPublishTaskFinishedEventForOldTask() {
+        Task task = Task.create();
+        task.setGuid("AAA");
+        
+        service.publishTaskFinishedEvent(task);
+        verifyNoMoreInteractions(taskEventDao);
+    }
     
+    @Test
+    public void canPublishTaskFinishedEvents() {
+        long finishedOn = DateTime.now().getMillis();
+        
+        Task task = Task.create();
+        task.setGuid("AAA:"+DateTime.now().toLocalDateTime());
+        task.setActivity(TestConstants.TEST_1_ACTIVITY);
+        task.setExpiresOn(DateTime.now().plusDays(1));
+        task.setStartedOn(DateTime.now().getMillis());
+        task.setFinishedOn(finishedOn);
+        task.setHealthCode("BBB");
+        
+        
+        service.publishTaskFinishedEvent(task);
+        ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
+        verify(taskEventDao).publishEvent(argument.capture());
+
+        TaskEvent event = argument.getValue();
+        assertEquals("BBB", event.getHealthCode());
+        assertEquals("task:AAA:finished", event.getEventId());
+        assertEquals(finishedOn, event.getTimestamp().longValue());
+    }
 }

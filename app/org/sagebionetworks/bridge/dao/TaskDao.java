@@ -8,6 +8,14 @@ import org.sagebionetworks.bridge.models.schedules.Task;
 public interface TaskDao {
     
     /**
+     * Load an individual task.
+     * @param healthCode
+     * @param guid
+     * @return
+     */
+    public Task getTask(String healthCode, String guid);
+    
+    /**
      * Get a user's tasks up to a target timestamp. This returns all tasks that are not expired, deleted 
      * or finished, as well as future tasks that are scheduled but should not be started yet. Tasks are 
      * not necessarily saved in the database, however.

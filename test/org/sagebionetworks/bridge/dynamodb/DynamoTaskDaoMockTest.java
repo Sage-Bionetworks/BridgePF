@@ -4,14 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,12 +25,12 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -57,7 +55,9 @@ public class DynamoTaskDaoMockTest {
     private DynamoDBMapper mapper;
 
     private DynamoTaskDao taskDao;
-
+    
+    private DynamoTask testTask;
+    
     @SuppressWarnings("unchecked")
     @Before
     public void before() {
@@ -67,11 +67,14 @@ public class DynamoTaskDaoMockTest {
         user.setHealthCode(HEALTH_CODE);
         user.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
 
+        testTask = new DynamoTask();
+        
         // This is the part that will need to be expanded per test.
         mapper = mock(DynamoDBMapper.class);
         when(mapper.query((Class<DynamoTask>) any(Class.class),
             (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class)))
             .thenReturn(null);
+        when(mapper.load(any(DynamoTask.class))).thenReturn(testTask);
         taskDao = new DynamoTaskDao();
         taskDao.setDdbMapper(mapper);
     }
@@ -80,7 +83,7 @@ public class DynamoTaskDaoMockTest {
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
     }
-
+    
     @SuppressWarnings("unchecked")
     private void mockQuery(final List<Task> tasks) {
         when(mapper.load(any())).thenAnswer(invocation -> {
@@ -98,6 +101,20 @@ public class DynamoTaskDaoMockTest {
         when(mapper.query((Class<DynamoTask>) any(Class.class),
             (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class)))
             .thenReturn(queryResults);
+    }
+    
+    @Test
+    public void getTask() throws Exception {
+        Task task = taskDao.getTask("AAA", "BBB");
+        assertEquals(testTask, task);
+        
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getTaskThrowsException() throws Exception {
+        when(mapper.load(any(DynamoTask.class))).thenReturn(null);
+        
+        taskDao.getTask("AAA", "BBB");
     }
 
     @SuppressWarnings("unchecked")
@@ -232,54 +249,29 @@ public class DynamoTaskDaoMockTest {
         assertEquals(2, argument.getValue().size());
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings("unchecked")
     @Test
     public void canUpdateTasks() {
-        String guid1 = BridgeUtils.generateGuid();
-        String guid2 = BridgeUtils.generateGuid();
-
         DynamoTask task1 = new DynamoTask();
         task1.setHealthCode(HEALTH_CODE);
         task1.setActivity(TestConstants.TEST_3_ACTIVITY);
         task1.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
-        task1.setGuid(guid1);
+        task1.setGuid(BridgeUtils.generateGuid());
 
         DynamoTask task2 = new DynamoTask();
         task2.setHealthCode(HEALTH_CODE);
         task2.setActivity(TestConstants.TEST_3_ACTIVITY);
         task2.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
-        task2.setStartedOn(DateTime.parse("2015-04-12T18:30:23").getMillis());
-        task2.setGuid(guid2);
-
-        mockQuery(Lists.newArrayList(task1, task2));
-
-        Task task3 = new DynamoTask();
-        task3.setActivity(TestConstants.TEST_3_ACTIVITY);
-        task3.setStartedOn(DateTime.parse("2015-04-13T14:23:12.000-07:00").getMillis());
-        task3.setGuid(guid1);
-
-        DynamoTask task4 = new DynamoTask();
-        task4.setHealthCode(HEALTH_CODE);
-        task4.setActivity(TestConstants.TEST_3_ACTIVITY);
-        task4.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
-        task4.setStartedOn(DateTime.parse("2015-04-13T18:05:23.000-07:00").getMillis());
-        task4.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());
-        task4.setGuid(guid2);
-
-        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
-        List<Task> tasks = Lists.newArrayList(task3, task4);
+        task2.setStartedOn(DateTime.parse("2015-04-13T18:05:23.000-07:00").getMillis());
+        task2.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());
+        task2.setGuid(BridgeUtils.generateGuid());
+        
+        List<Task> tasks = Lists.newArrayList(task1, task2);
         taskDao.updateTasks(HEALTH_CODE, tasks);
 
-        // So yeah, those tasks have been updated. Capture them and verify that they were updated
-        verify(mapper, times(2)).load(any());
-        verify(mapper).batchSave(argument.capture());
+        // These tasks have been updated.
+        verify(mapper).batchSave(any(List.class));
         verifyNoMoreInteractions(mapper);
-
-        List<DynamoTask> list = new ArrayList<>(argument.getValue());
-        DynamoTask savedTask1 = list.get(0);
-        DynamoTask savedTask2 = list.get(1);
-        assertEquals(TaskStatus.STARTED, savedTask1.getStatus());
-        assertEquals(TaskStatus.FINISHED, savedTask2.getStatus());
     }
     
     private void assertTask(Task task, String ref, String dateString) {

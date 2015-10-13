@@ -8,6 +8,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.tasks.TaskEventType;
@@ -63,6 +64,30 @@ public class TaskEventService {
             .withEventType(TaskEventType.FINISHED)
             .build();
         taskEventDao.publishEvent(event);
+    }
+    
+    /**
+     * This should become an ActivityFinishedEvent, ending the confusing in naming 
+     * between tasks and... tasks.
+     */
+    public void publishTaskFinishedEvent(Task task) {
+        checkNotNull(task);
+        
+        // If there's no colon, this is an existing task and it cannot fire an 
+        // activity event. Quietly ignore this until we have migrated tasks.
+        if (task.getGuid().contains(":")) {
+            String activityGuid = task.getGuid().split(":")[0];
+            
+            TaskEvent event = new DynamoTaskEvent.Builder()
+                .withHealthCode(task.getHealthCode())
+                .withObjectType(TaskEventObjectType.TASK)
+                .withObjectId(activityGuid)
+                .withEventType(TaskEventType.FINISHED)
+                .withTimestamp(task.getFinishedOn())
+                .build();
+
+            taskEventDao.publishEvent(event);
+        }
     }
     
     /**
