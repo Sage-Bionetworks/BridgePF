@@ -46,20 +46,6 @@ public final class Activity implements BridgeEntity {
         this.response = response;
         this.activityType = (task != null) ? TASK : SURVEY;
     }
-    /*
-    @JsonCreator
-    private Activity(@JsonProperty("label") String label, @JsonProperty("labelDetail") String labelDetail, 
-        @JsonProperty("guid") String guid, @JsonProperty("task") TaskReference task, 
-        @JsonProperty("survey") SurveyReference survey, 
-        @JsonProperty("surveyResponse") SurveyResponseReference response) {
-        this.label = label;
-        this.labelDetail = labelDetail;
-        this.guid = guid;
-        this.survey = survey;
-        this.task = task;
-        this.response = response;
-        this.activityType = (task != null) ? TASK : SURVEY;
-    }*/
     
     public String getLabel() { 
         return label;
