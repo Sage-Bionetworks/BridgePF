@@ -96,15 +96,12 @@ public class TaskServiceMockTest {
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         
         taskDao = mock(DynamoTaskDao.class);
-        when(taskDao.getTask(anyString(), anyString())).thenAnswer(new Answer<Task>() {
-            @Override
-            public Task answer(InvocationOnMock invocation) throws Throwable {
-                Object[] args = invocation.getArguments();
-                DynamoTask task = new DynamoTask();
-                task.setHealthCode((String)args[0]);
-                task.setGuid((String)args[1]);
-                return task;
-            }
+        when(taskDao.getTask(anyString(), anyString())).thenAnswer(invocation -> {
+            Object[] args = invocation.getArguments();
+            DynamoTask task = new DynamoTask();
+            task.setHealthCode((String)args[0]);
+            task.setGuid((String)args[1]);
+            return task;
         });
         when(taskDao.getTasks(context)).thenReturn(tasks);
         when(taskDao.taskRunHasNotOccurred(anyString(), anyString())).thenReturn(true);
@@ -179,19 +176,30 @@ public class TaskServiceMockTest {
         tasks.get(1).setFinishedOn(DateTime.now().getMillis());
         tasks.get(2).setFinishedOn(DateTime.now().getMillis());
         
-        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List> updateCapture = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<Task> publishCapture = ArgumentCaptor.forClass(Task.class);
         
         service.updateTasks("BBB", tasks);
         
-        verify(taskDao).updateTasks(anyString(), argument.capture());
+        verify(taskDao).updateTasks(anyString(), updateCapture.capture());
+        // Three tasks have timestamp updates and need to be persisted
         verify(taskDao, times(3)).getTask(anyString(), anyString());
-        verify(taskEventService, times(2)).publishTaskFinishedEvent(any());
+        // Two tasks have been finished and generate activity finished events
+        verify(taskEventService, times(2)).publishTaskFinishedEvent(publishCapture.capture());
         
-        List<DynamoTask> dbTasks = (List<DynamoTask>)argument.getValue();
+        List<DynamoTask> dbTasks = (List<DynamoTask>)updateCapture.getValue();
         assertEquals(3, dbTasks.size());
+        // Correct saved tasks
         assertEquals(tasks.get(0).getGuid(), dbTasks.get(0).getGuid());
         assertEquals(tasks.get(1).getGuid(), dbTasks.get(1).getGuid());
         assertEquals(tasks.get(2).getGuid(), dbTasks.get(2).getGuid());
+        
+        // Correct published tasks
+        Task publishedTask1 = publishCapture.getAllValues().get(0);
+        assertEquals(tasks.get(1).getGuid(), publishedTask1.getGuid());
+        Task publishedTask2 = publishCapture.getAllValues().get(1);
+        assertEquals(tasks.get(2).getGuid(), publishedTask2.getGuid());
+        
     }
     
     @Test(expected = BridgeServiceException.class)
