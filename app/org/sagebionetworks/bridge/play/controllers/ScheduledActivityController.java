@@ -35,6 +35,8 @@ public class ScheduledActivityController extends BaseController {
         this.scheduledActivityService = scheduledActivityService;
     }
 
+    // This annotation adds a deprecation header to the REST API method.
+    @Deprecated
     public Result getTasks(String untilString, String offset, String daysAhead) throws Exception {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead);
         return okResult(scheduledActivities, "Task");

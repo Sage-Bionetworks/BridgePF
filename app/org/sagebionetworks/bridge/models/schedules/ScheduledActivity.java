@@ -5,7 +5,6 @@ import java.util.Comparator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

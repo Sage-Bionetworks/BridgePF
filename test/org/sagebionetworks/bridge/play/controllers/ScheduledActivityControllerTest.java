@@ -79,6 +79,7 @@ public class ScheduledActivityControllerTest {
         doReturn(clientInfo).when(controller).getClientInfoFromUserAgentHeader();
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivitiesAsTasksReturnsCorrectType() throws Exception {
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
