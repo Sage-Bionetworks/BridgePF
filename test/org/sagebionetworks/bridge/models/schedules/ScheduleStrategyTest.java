@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -17,8 +18,11 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -39,6 +43,18 @@ public class ScheduleStrategyTest {
             users.add(user);
         }
         study = TestUtils.getValidStudy(ScheduleStrategyTest.class);
+    }
+    
+    @Test
+    public void verifyStrategyDoesNotSerializeGetAllPossibleSchedules() throws Exception {
+        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
+        ScheduleStrategy strategy = TestUtils.getABTestSchedulePlan(studyId).getStrategy();
+        
+        String output = new BridgeObjectMapper().writeValueAsString(strategy);
+        JsonNode node = mapper.readTree(output);
+        assertNull(node.get("allPossibleSchedules"));
+        assertEquals("ABTestScheduleStrategy", node.get("type").asText());
+        assertEquals(3, ((ArrayNode)node.get("scheduleGroups")).size());
     }
 
     @Test

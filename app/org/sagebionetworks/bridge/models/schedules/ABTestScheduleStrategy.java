@@ -3,15 +3,14 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.List;
 import java.util.UUID;
 
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.springframework.validation.Errors;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-@BridgeTypeName("ABTestScheduleStrategy")
 public class ABTestScheduleStrategy implements ScheduleStrategy {
     
     public static class ScheduleGroup {
@@ -131,6 +130,17 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             }
         }
     }
+
+    @Override
+    public List<Schedule> getAllPossibleSchedules() {
+        List<Schedule> lists = Lists.newArrayListWithCapacity(groups.size());
+        for (ScheduleGroup group : groups) {
+            lists.add(group.getSchedule());
+        }
+        // The list is immutable, the contents are not. We use this to fix up activities, for example.
+        return ImmutableList.copyOf(lists);
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;

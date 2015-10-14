@@ -1,10 +1,14 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.springframework.validation.Errors;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Each schedule plan has a strategy for creating schedules that can take contextual 
@@ -40,6 +44,11 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
         }
     }
 
+    @Override
+    public List<Schedule> getAllPossibleSchedules() {
+        return ImmutableList.of(schedule);
+    }
+    
     @Override
     public int hashCode() {
         final int prime = 31;

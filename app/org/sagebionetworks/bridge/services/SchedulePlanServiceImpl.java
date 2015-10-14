@@ -6,8 +6,15 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +25,21 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     
     private SchedulePlanDao schedulePlanDao;
     private SchedulePlanValidator validator;
+    private SurveyService surveyService;
 
     @Autowired
-    public void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
+    public final void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
         this.schedulePlanDao = schedulePlanDao;
     }
     
     @Autowired
-    public void setValidator(SchedulePlanValidator validator) {
+    public final void setValidator(SchedulePlanValidator validator) {
         this.validator = validator;
+    }
+    
+    @Autowired
+    public final void setSurveyService(SurveyService surveyService) {
+        this.surveyService = surveyService;
     }
 
     @Override
@@ -45,12 +58,17 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         checkNewEntity(plan, plan.getGuid(), "Schedule plan has a GUID; it may already exist");
         checkNewEntity(plan, plan.getVersion(), "Schedule plan has a version value; it may already exist");
         
+        StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
+        lookupSurveyReferenceIdentifiers(studyId, plan);
         return schedulePlanDao.createSchedulePlan(plan);
     }
-
+    
     @Override
     public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
         Validate.entityThrowingException(validator, plan);
+        
+        StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
+        lookupSurveyReferenceIdentifiers(studyId, plan);
         return schedulePlanDao.updateSchedulePlan(plan);
     }
 
@@ -58,5 +76,41 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
     }
-    
+
+    /**
+     * If the activity has a survey reference, look up the survey's identifier. Don't trust the client to 
+     * supply the correct one for the survey's primary keys. We're adding this when writing schedules because 
+     * the clients have come to depend on it, and this is more efficient than looking it up on every read.
+     * 
+     * @param studyId
+     * @param activity
+     * @return
+     */
+    private void lookupSurveyReferenceIdentifiers(StudyIdentifier studyId, SchedulePlan plan) {
+        for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
+            for (int i=0; i < schedule.getActivities().size(); i++) {
+                Activity activity = schedule.getActivities().get(i);
+                activity = updateActivityWithSurveyIdentifier(studyId, activity);
+                schedule.getActivities().set(i, activity);
+            }
+        }
+    }
+
+    private Activity updateActivityWithSurveyIdentifier(StudyIdentifier studyId, Activity activity) {
+        if (activity.getSurvey() != null) {
+            SurveyReference ref = activity.getSurvey();
+            
+            if (ref.getCreatedOn() == null) { // pointer to most recently published survey
+                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, ref.getGuid());
+                return new Activity.Builder().withActivity(activity)
+                        .withPublishedSurvey(survey.getIdentifier(), survey.getGuid()).build();
+            } else {
+                GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref.getGuid(), ref.getCreatedOn().getMillis());
+                Survey survey = surveyService.getSurvey(keys);
+                return new Activity.Builder().withActivity(activity)
+                        .withSurvey(survey.getIdentifier(), ref.getGuid(), ref.getCreatedOn()).build();
+            }
+        }
+        return activity;
+    }
 }

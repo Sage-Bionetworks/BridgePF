@@ -255,5 +255,23 @@ public class ActivityTest {
         assertFalse(schedule.getActivities().get(0).isPersistentlyRescheduledBy(schedule));
     }
     
+    @Test
+    public void activityBuilder() {
+        // Not valid in that it has three reference objects, but good for a test
+        Activity activity1 = new Activity.Builder().withGuid("AAA").withLabel("Label").withLabelDetail("LabelDetail")
+                .withTask("TaskId")
+                .withPublishedSurvey("identifier", "BBB")
+                .withSurveyResponse("CCC")
+                .build();
+        
+        Activity activity2 = new Activity.Builder().withActivity(activity1).build();
+        assertEquals("AAA", activity2.getGuid());
+        assertEquals("Label", activity2.getLabel());
+        assertEquals("LabelDetail", activity2.getLabelDetail());
+        assertEquals("TaskId", activity2.getTask().getIdentifier());
+        assertEquals("BBB", activity2.getSurvey().getGuid());
+        assertEquals("identifier", activity2.getSurvey().getIdentifier());
+        assertEquals("CCC", activity2.getSurveyResponse().getIdentifier());
+    }
 
 }
