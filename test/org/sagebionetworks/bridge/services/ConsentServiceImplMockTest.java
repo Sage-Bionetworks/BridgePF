@@ -34,7 +34,7 @@ public class ConsentServiceImplMockTest {
     private SendMailService sendMailService;
     private StudyConsentService studyConsentService;
     private UserConsentDao userConsentDao;
-    private TaskEventService taskEventService;
+    private ActivityEventService activityEventService;
 
     private Study study;
     private User user;
@@ -47,7 +47,7 @@ public class ConsentServiceImplMockTest {
         optionsService = mock(ParticipantOptionsService.class);
         sendMailService = mock(SendMailService.class);
         userConsentDao = mock(UserConsentDao.class);
-        taskEventService = mock(TaskEventService.class);
+        activityEventService = mock(ActivityEventService.class);
         studyConsentService = mock(StudyConsentService.class);
 
         consentService = new ConsentServiceImpl();
@@ -56,7 +56,7 @@ public class ConsentServiceImplMockTest {
         consentService.setOptionsService(optionsService);
         consentService.setSendMailService(sendMailService);
         consentService.setUserConsentDao(userConsentDao);
-        consentService.setTaskEventService(taskEventService);
+        consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
         
         study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
@@ -69,7 +69,7 @@ public class ConsentServiceImplMockTest {
     }
     
     @Test
-    public void taskEventFiredOnConsent() {
+    public void activityEventFiredOnConsent() {
         UserConsent consent = mock(UserConsent.class);
         when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class))).thenReturn(consent);
         
@@ -78,11 +78,11 @@ public class ConsentServiceImplMockTest {
         
         consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
         
-        verify(taskEventService).publishEnrollmentEvent(user.getHealthCode(), consent);
+        verify(activityEventService).publishEnrollmentEvent(user.getHealthCode(), consent);
     }
 
     @Test
-    public void notTaskEventIfTooYoung() {
+    public void noActivityEventIfTooYoung() {
         consentSignature = ConsentSignature.create("Test User", "2014-01-01", null, null);
         study.setMinAgeOfConsent(30); // Test is good until 2044. So there.
         
@@ -90,31 +90,31 @@ public class ConsentServiceImplMockTest {
             consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch(InvalidEntityException e) {
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     
     @Test
-    public void noTaskEventIfAlreadyConsented() {
+    public void noActivityEventIfAlreadyConsented() {
         user.setConsent(true);
         
         try {
             consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch(EntityAlreadyExistsException e) {
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     
     @Test
-    public void noTaskEventIfDaoFails() {
+    public void noActivityEventIfDaoFails() {
         when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class))).thenThrow(new RuntimeException());
         
         try {
             consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch(Throwable e) {
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     

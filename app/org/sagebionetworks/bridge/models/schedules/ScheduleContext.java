@@ -12,7 +12,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * All the information necessary to convert a schedule into a set of tasks, on a given request. 
+ * All the information necessary to convert a schedule into a set of activities, on a given request. 
  * Because some of these values derive from the user, there is a validator that is run on this object 
  * that verifies the four required values (studyId, zone, endsOn and healthCode) are present.
  * 
@@ -65,7 +65,7 @@ public final class ScheduleContext {
     }
     
     /**
-     * The current request is asking for tasks up to a given end date.
+     * The current request is asking for activities up to a given end date.
      * @return
      */
     public DateTime getEndsOn() {
@@ -191,7 +191,7 @@ public final class ScheduleContext {
             ScheduleContext context = new ScheduleContext(studyId, clientInfo, zone, endsOn, healthCode, events, now);
             // Not validating here. There are many tests to confirm that the scheduler will work with different 
             // time windows, but the validator ensures the context object is within the declared allowable
-            // time window. This is validated in TaskService.
+            // time window. This is validated in ScheduledActivityService.
             //Validate.nonEntityThrowingException(VALIDATOR, context);
             return context;
         }

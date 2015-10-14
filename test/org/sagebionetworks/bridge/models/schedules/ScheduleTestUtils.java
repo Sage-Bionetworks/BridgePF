@@ -27,15 +27,15 @@ public class ScheduleTestUtils {
     }
     
     /**
-     * Assert that a list of tasks has the list of startsOn dates, in the 
+     * Assert that a list of activities has the list of startsOn dates, in the 
      * order specified.
-     * @param tasks
+     * @param activities
      * @param output
      */
-    public static void assertDates(List<Task> tasks, String... output) {
-        assertEquals(output.length, tasks.size());
-        for (int i=0; i < tasks.size(); i++) {
-            assertEquals(asLong(output[i]), tasks.get(i).getScheduledOn().getMillis());
+    public static void assertDates(List<ScheduledActivity> activities, String... output) {
+        assertEquals(output.length, activities.size());
+        for (int i=0; i < activities.size(); i++) {
+            assertEquals(asLong(output[i]), activities.get(i).getScheduledOn().getMillis());
         }
     }
 }

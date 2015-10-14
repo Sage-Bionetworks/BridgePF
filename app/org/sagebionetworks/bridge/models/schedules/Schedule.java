@@ -149,10 +149,10 @@ public final class Schedule implements BridgeEntity {
         this.eventId = eventId;
     }
     /**
-     * A persistent schedule is one that keeps a task alive in the list of tasks, 
-     * recreating it every time it is completed. Persistent schedules are scheduled to 
-     * occur one time, but have an event ID that immediately triggers re-scheduling when 
-     * one of the activities assigned by the schedule is completed.
+     * A persistent schedule is one that keeps a scheduled activity alive in the list of 
+     * activities, recreating it every time it is completed. Persistent schedules are 
+     * scheduled to occur one time, but have an event ID that immediately triggers 
+     * re-scheduling when one of the activities assigned by the schedule is completed.
      * @return
      */
     public boolean getPersistent() {
@@ -167,11 +167,11 @@ public final class Schedule implements BridgeEntity {
     }
     @JsonIgnore
     @DynamoDBIgnore
-    public TaskScheduler getScheduler() {
+    public ActivityScheduler getScheduler() {
         if (getCronTrigger() != null) {
-            return new CronTaskScheduler(this);
+            return new CronActivityScheduler(this);
         }
-        return new IntervalTaskScheduler(this);
+        return new IntervalActivityScheduler(this);
     }
     public boolean schedulesImmediatelyAfterEvent() {
         return getEventId() != null && 

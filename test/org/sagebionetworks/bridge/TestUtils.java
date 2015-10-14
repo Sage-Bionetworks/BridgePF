@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.schedules.Task;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -83,16 +83,16 @@ public class TestUtils {
         return "test-" + midFix + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
 
-    public static List<Task> runSchedulerForTasks(User user, ScheduleContext context) {
+    public static List<ScheduledActivity> runSchedulerForActivities(User user, ScheduleContext context) {
         List<SchedulePlan> plans = getSchedulePlans(context.getStudyIdentifier());
         
-        List<Task> tasks = Lists.newArrayList();
+        List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(context.getStudyIdentifier(), plan, user);
-            tasks.addAll(schedule.getScheduler().getTasks(plan, context));
+            scheduledActivities.addAll(schedule.getScheduler().getScheduledActivities(plan, context));
         }
-        Collections.sort(tasks, Task.TASK_COMPARATOR);
-        return tasks;
+        Collections.sort(scheduledActivities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
+        return scheduledActivities;
     }
     
     public static List<SchedulePlan> getSchedulePlans(StudyIdentifier studyId) {

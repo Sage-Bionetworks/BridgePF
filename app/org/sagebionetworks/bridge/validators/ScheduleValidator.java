@@ -92,9 +92,9 @@ public class ScheduleValidator implements Validator {
     }        
 
     /**
-     * Schedules that repeat without expiring tasks can stack those tasks all the way back to the first event 
-     * that triggers the task sequence. The most common problem this causes is adding a schedule that then 
-     * creates tasks all the way back to enrollment, dumping 100s of tasks on the client. Expires is required 
+     * Schedules that repeat without expiring activities can stack those activities all the way back to the first event 
+     * that triggers the activity sequence. The most common problem this causes is adding a schedule that then 
+     * creates activities all the way back to enrollment, dumping 100s of activities on the client. Expires is required 
      * for recurring schedules.
      * @param schedule
      * @return
@@ -109,8 +109,8 @@ public class ScheduleValidator implements Validator {
     
     /**
      * Interval scheduling requires that a time of the day must be provided (since the interval itself cannot 
-     * be less than a day, so we don't know the time of day to start the task). If more than one time is provided, 
-     * we schedule a task for each time, so beware, this can add up quickly. 
+     * be less than a day, so we don't know the time of day to start the activity). If more than one time is provided, 
+     * we schedule a activity for each time, so beware, this can add up quickly. 
      * @param schedule
      * @return
      */
