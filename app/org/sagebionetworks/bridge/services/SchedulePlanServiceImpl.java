@@ -4,9 +4,10 @@ import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -98,11 +99,14 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     private Activity updateActivityWithSurveyIdentifier(StudyIdentifier studyId, Activity activity) {
         if (activity.getSurvey() != null) {
             SurveyReference ref = activity.getSurvey();
-            Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, ref.getGuid());
+            
             if (ref.getCreatedOn() == null) { // pointer to most recently published survey
+                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, ref.getGuid());
                 return new Activity.Builder().withActivity(activity)
-                        .withPublishedSurvey(survey.getIdentifier(), ref.getGuid()).build();
+                        .withPublishedSurvey(survey.getIdentifier(), survey.getGuid()).build();
             } else {
+                GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref.getGuid(), ref.getCreatedOn().getMillis());
+                Survey survey = surveyService.getSurvey(keys);
                 return new Activity.Builder().withActivity(activity)
                         .withSurvey(survey.getIdentifier(), ref.getGuid(), ref.getCreatedOn()).build();
             }

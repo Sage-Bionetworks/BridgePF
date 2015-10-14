@@ -140,10 +140,6 @@ public final class Activity implements BridgeEntity {
             this.survey = new SurveyReference(identifier, guid, null);
             return this;
         }
-        public Builder withPublishedSurvey(String guid) {
-            this.survey = new SurveyReference(null, guid, null);
-            return this;
-        }
         @JsonSetter
         public Builder withSurvey(SurveyReference reference) {
             this.survey = reference;
@@ -151,10 +147,6 @@ public final class Activity implements BridgeEntity {
         }
         public Builder withSurvey(String identifier, String guid, DateTime createdOn) {
             this.survey = new SurveyReference(identifier, guid, createdOn);
-            return this;
-        }
-        public Builder withSurvey(String guid, DateTime createdOn) {
-            this.survey = new SurveyReference(null, guid, createdOn);
             return this;
         }
         @JsonSetter

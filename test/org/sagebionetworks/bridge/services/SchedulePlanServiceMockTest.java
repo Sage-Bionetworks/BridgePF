@@ -9,6 +9,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -25,7 +28,8 @@ import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 
 public class SchedulePlanServiceMockTest {
 
-    private String surveyGuid;
+    private String surveyGuid1;
+    private String surveyGuid2;
     private SchedulePlanServiceImpl service;
     
     private SchedulePlanDao mockSchedulePlanDao;
@@ -41,9 +45,14 @@ public class SchedulePlanServiceMockTest {
         service.setSurveyService(mockSurveyService);
         service.setValidator(new SchedulePlanValidator());
         
-        Survey survey = TestUtils.getSurvey(false);
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(), any())).thenReturn(survey);
-        surveyGuid = survey.getGuid();
+        Survey survey1 = TestUtils.getSurvey(false);
+        survey1.setIdentifier("identifier1");
+        Survey survey2 = TestUtils.getSurvey(false);
+        survey2.setIdentifier("identifier2");
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(), any())).thenReturn(survey1);
+        when(mockSurveyService.getSurvey(any())).thenReturn(survey2);
+        surveyGuid1 = survey1.getGuid();
+        surveyGuid2 = survey2.getGuid();
     }
     
     @Test
@@ -54,11 +63,13 @@ public class SchedulePlanServiceMockTest {
         
         service.createSchedulePlan(plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService).getSurvey(any());
         verify(mockSchedulePlanDao).createSchedulePlan(spCaptor.capture());
         
-        String identifier = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities().get(0)
-                .getSurvey().getIdentifier();
-        assertNotNull(identifier);
+        List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
+        assertEquals("identifier1", activities.get(0).getSurvey().getIdentifier());
+        assertNotNull(activities.get(1).getTask());
+        assertEquals("identifier2", activities.get(2).getSurvey().getIdentifier());
     }
     
     @Test
@@ -69,11 +80,13 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService).getSurvey(any());
         verify(mockSchedulePlanDao).updateSchedulePlan(spCaptor.capture());
         
-        String identifier = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities().get(0)
-                .getSurvey().getIdentifier();
-        assertNotNull(identifier);
+        List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
+        assertEquals("identifier1", activities.get(0).getSurvey().getIdentifier());
+        assertNotNull(activities.get(1).getTask());
+        assertEquals("identifier2", activities.get(2).getSurvey().getIdentifier());
     }
 
     @Test
@@ -81,7 +94,7 @@ public class SchedulePlanServiceMockTest {
         // The survey GUID/createdOn identify a survey, but the identifier from the client can just be 
         // mismatched by the client, so ignore it and look it up from the DB using the primary keys.
         Activity activity = new Activity.Builder().withLabel("A survey activity")
-                .withPublishedSurvey("junkIdentifier", surveyGuid).build();
+                .withPublishedSurvey("junkIdentifier", surveyGuid1).build();
         SchedulePlan plan = createSchedulePlan();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, activity);
         
@@ -94,6 +107,7 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService).getSurvey(any());
         verify(mockSchedulePlanDao).updateSchedulePlan(spCaptor.capture());
         
         // It was not used.
@@ -108,7 +122,10 @@ public class SchedulePlanServiceMockTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         // No identifier, which is the key here. This is valid, but we fill it out during saves as a convenience 
         // for the client. No longer required in the API.
-        schedule.addActivity(new Activity.Builder().withLabel("A survey activity").withPublishedSurvey(surveyGuid).build());
+        // Create a schedule plan with 3 activities to verify all activities are processed.
+        schedule.addActivity(new Activity.Builder().withLabel("Activity 1").withPublishedSurvey(null, surveyGuid1).build());
+        schedule.addActivity(new Activity.Builder().withLabel("Activity 2").withTask("taskGuid").build());
+        schedule.addActivity(new Activity.Builder().withLabel("Activity 3").withSurvey(null, surveyGuid2, DateTime.now()).build());
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);

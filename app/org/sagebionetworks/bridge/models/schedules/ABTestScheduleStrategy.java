@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.List;
 import java.util.UUID;
 
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
@@ -12,7 +11,6 @@ import org.springframework.validation.Errors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-@BridgeTypeName("ABTestScheduleStrategy")
 public class ABTestScheduleStrategy implements ScheduleStrategy {
     
     public static class ScheduleGroup {
