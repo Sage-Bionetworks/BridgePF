@@ -106,6 +106,15 @@ public final class Activity implements BridgeEntity {
         private SurveyReference survey;
         private SurveyResponseReference response;
         
+        public Builder withActivity(Activity activity) {
+            this.label = activity.label;
+            this.labelDetail = activity.labelDetail;
+            this.guid = activity.guid;
+            this.task = activity.task;
+            this.survey = activity.survey;
+            this.response = activity.response;
+            return this;
+        }
         public Builder withLabel(String label) {
             this.label = label;
             return this;

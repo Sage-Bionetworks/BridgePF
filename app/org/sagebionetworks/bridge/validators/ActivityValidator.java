@@ -53,9 +53,6 @@ public class ActivityValidator implements Validator {
     
     private void validate(Errors errors, SurveyReference ref) {
         errors.pushNestedPath("survey");
-        if (isBlank(ref.getIdentifier())) {
-            errors.rejectValue("identifier", CANNOT_BE_BLANK);
-        }
         if (isBlank(ref.getGuid())) {
             errors.rejectValue("guid", CANNOT_BE_BLANK);
         }

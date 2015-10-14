@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -13,24 +14,22 @@ public class ActivityValidatorTest {
     public void rejectsWithoutLabel() {
         try {
             new Activity.Builder().withPublishedSurvey("identifier", "BBB").build();
+            fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("label cannot be missing, null, or blank", e.getErrors().get("label").get(0));
         }
     }
     
     @Test
-    public void rejectsSurveyWithoutIdentifier() {
-        try {
-            new Activity.Builder().withLabel("Label").withSurvey(null, "BBB", null).build();
-        } catch(InvalidEntityException e) {
-            assertEquals("survey.identifier cannot be missing, null, or blank", e.getErrors().get("survey.identifier").get(0));
-        }
+    public void surveyWithoutIdentifierIsOk() {
+        new Activity.Builder().withLabel("Label").withSurvey(null, "BBB", null).build();
     }
     
     @Test
     public void rejectsSurveyWithoutGuid() {
         try {
             new Activity.Builder().withLabel("Label").withSurvey("identifier", null, null).build();
+            fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("survey.guid cannot be missing, null, or blank", e.getErrors().get("survey.guid").get(0));
         }
@@ -40,6 +39,7 @@ public class ActivityValidatorTest {
     public void rejectsTaskWithoutIdentifier() {
         try {
             new Activity.Builder().withLabel("Label").withTask((String)null).build();
+            fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("task.identifier cannot be missing, null, or blank", e.getErrors().get("task.identifier").get(0));
         }
@@ -49,17 +49,14 @@ public class ActivityValidatorTest {
     public void rejectsSurveyResponseWithoutSurvey() {
         try {
             new Activity.Builder().withLabel("Label").withSurveyResponse((String)null).build();
+            fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("Activity has a survey response, so it must also reference the survey", e.getErrors().get("Activity").get(0));
         }
     }
     
     @Test
-    public void rejectsSurveyResponseWithoutIdentifier() {
-        try {
-            new Activity.Builder().withLabel("Label").withSurveyResponse((SurveyResponseReference)null).withPublishedSurvey("identifier", "guid").build();
-        } catch(InvalidEntityException e) {
-            assertEquals("surveyResponse.identifier cannot be missing, null, or blank", e.getErrors().get("surveyResponse.identifier").get(0));
-        }
+    public void surveyResponseWithoutIdentifierIsOK() {
+        new Activity.Builder().withLabel("Label").withSurveyResponse((SurveyResponseReference)null).withPublishedSurvey("identifier", "guid").build();
     }
 }
