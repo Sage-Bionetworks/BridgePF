@@ -40,8 +40,8 @@ public class UserAdminServiceImpl implements UserAdminService {
     private HealthIdDao healthIdDao;
     private StudyService studyService;
     private SurveyResponseService surveyResponseService;
-    private TaskService taskService;
-    private TaskEventService taskEventService;
+    private ScheduledActivityService scheduledActivityService;
+    private ActivityEventService activityEventService;
     private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
 
@@ -74,12 +74,12 @@ public class UserAdminServiceImpl implements UserAdminService {
         this.healthIdDao = healthIdDao;
     }
     @Autowired
-    public void setTaskService(TaskService taskService) {
-        this.taskService = taskService;
+    public void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
+        this.scheduledActivityService = scheduledActivityService;
     }
     @Autowired
-    public void setTaskEventService(TaskEventService taskEventService) {
-        this.taskEventService = taskEventService;
+    public void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
     }
     @Autowired
     public void setSurveyResponseService(SurveyResponseService surveyResponseService) {
@@ -201,8 +201,8 @@ public class UserAdminServiceImpl implements UserAdminService {
                     consentService.withdrawConsent(study, user);
                     
                     healthDataService.deleteRecordsForHealthCode(healthCode);
-                    taskService.deleteTasks(healthCode);
-                    taskEventService.deleteTaskEvents(healthCode);
+                    scheduledActivityService.deleteActivities(healthCode);
+                    activityEventService.deleteActivityEvents(healthCode);
                     surveyResponseService.deleteSurveyResponses(healthCode);
                 }
             }

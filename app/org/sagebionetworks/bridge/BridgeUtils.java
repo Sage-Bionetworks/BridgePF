@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.schedules.Task;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -57,16 +57,16 @@ public class BridgeUtils {
     }
     
     /**
-     * Identifies a set of tasks from a single run of a schedule. 
-     * @param task
+     * Identifies a set of scheduled activities from a single run of a schedule. 
+     * @param scheduledActivity
      * @param context
      * @return
      */
-    public static String generateTaskRunKey(Task task, String schedulePlanGuid) {
-        checkNotNull(task);
-        checkNotNull(task.getScheduledOn());
+    public static String generateScheduledActivityRunKey(ScheduledActivity scheduledActivity, String schedulePlanGuid) {
+        checkNotNull(scheduledActivity);
+        checkNotNull(scheduledActivity.getScheduledOn());
         checkNotNull(schedulePlanGuid);
-        return String.format("%s:%s", schedulePlanGuid, task.getScheduledOn().toLocalDateTime());
+        return String.format("%s:%s", schedulePlanGuid, scheduledActivity.getScheduledOn().toLocalDateTime());
     }
     
     /**

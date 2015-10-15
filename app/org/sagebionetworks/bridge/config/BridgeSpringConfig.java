@@ -48,8 +48,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
-import org.sagebionetworks.bridge.dynamodb.DynamoTask;
-import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
+import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
+import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
@@ -262,10 +262,10 @@ public class BridgeSpringConfig {
         return DynamoUtils.getMapper(DynamoHealthDataRecord.class, bridgeConfig, client);
     }
 
-    @Bean(name = "taskEventDdbMapper")
+    @Bean(name = "activityEventDdbMapper")
     @Autowired
-    public DynamoDBMapper taskEventDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoTaskEvent.class, bridgeConfig, client);
+    public DynamoDBMapper activityEventDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoActivityEvent.class, bridgeConfig, client);
     }
 
     @Bean(name = "studyConsentDdbMapper")
@@ -321,16 +321,16 @@ public class BridgeSpringConfig {
         return DynamoUtils.getMapper(DynamoUploadSchema.class, bridgeConfig, client);
     }
 
-    @Bean(name = "taskDdbMapper")
+    @Bean(name = "activityDdbMapper")
     @Autowired
-    public DynamoDBMapper taskDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoTask.class, bridgeConfig, client);
+    public DynamoDBMapper activityDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoScheduledActivity.class, bridgeConfig, client);
     }
     
-    @Bean(name = "taskIndex")
+    @Bean(name = "activityIndex")
     @Autowired
-    public DynamoIndexHelper taskIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
-        return DynamoIndexHelper.create(DynamoTask.class, "hashKey-runKey-index", bridgeConfig, client);
+    public DynamoIndexHelper activityIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoIndexHelper.create(DynamoScheduledActivity.class, "hashKey-runKey-index", bridgeConfig, client);
     }
 
     @Bean(name = "surveyResponseDdbMapper")

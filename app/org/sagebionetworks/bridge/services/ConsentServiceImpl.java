@@ -43,7 +43,7 @@ public class ConsentServiceImpl implements ConsentService {
     private SendMailService sendMailService;
     private StudyConsentService studyConsentService;
     private UserConsentDao userConsentDao;
-    private TaskEventService taskEventService;
+    private ActivityEventService activityEventService;
     private String consentTemplate;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
@@ -76,8 +76,8 @@ public class ConsentServiceImpl implements ConsentService {
         this.userConsentDao = userConsentDao;
     }
     @Autowired
-    public void setTaskEventService(TaskEventService taskEventService) {
-        this.taskEventService = taskEventService;
+    public void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
     }
     
     @Override
@@ -119,7 +119,7 @@ public class ConsentServiceImpl implements ConsentService {
         try {
             UserConsent userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent.getStudyConsent());
             if (userConsent != null){
-                taskEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
+                activityEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
             }
         } catch (Throwable e) {
             decrementStudyEnrollment(study);

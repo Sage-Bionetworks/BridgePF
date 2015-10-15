@@ -146,8 +146,8 @@
         <property name="targetName" value="emailController"/>
     </bean>
 
-    <bean id="TaskControllerProxied" parent="proxiedController">
-        <property name="targetName" value="taskController"/>
+    <bean id="ScheduledActivityControllerProxied" parent="proxiedController">
+        <property name="targetName" value="scheduledActivityController"/>
     </bean>
 
 </beans>

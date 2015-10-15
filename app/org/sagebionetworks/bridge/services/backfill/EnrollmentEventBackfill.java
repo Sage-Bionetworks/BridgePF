@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
-import org.sagebionetworks.bridge.services.TaskEventService;
+import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +25,7 @@ import com.google.common.collect.Maps;
 @Component("enrollmentEventBackfill")
 public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
     private AccountDao accountDao;
-    private TaskEventService taskEventService;
+    private ActivityEventService activityEventService;
     private UserConsentDao userConsentDao;
     private HealthCodeService healthCodeService;
     private SortedMap<Integer,BridgeEncryptor> encryptors = Maps.newTreeMap();
@@ -35,8 +35,8 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
         this.accountDao = accountDao;
     }
     @Autowired
-    public void setTaskEventService(TaskEventService taskEventService) {
-        this.taskEventService = taskEventService;
+    public void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
     }
     @Autowired
     public void setUserConsentDao(UserConsentDao userConsentDao) {
@@ -77,7 +77,7 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
                 
                 consent = userConsentDao.getUserConsent(healthCode, study.getStudyIdentifier());
                 if (consent != null) {
-                    taskEventService.publishEnrollmentEvent(healthCode, consent);
+                    activityEventService.publishEnrollmentEvent(healthCode, consent);
                     callback.newRecords(
                         getBackfillRecordFactory().createAndSave(task, study, account, "enrollment event created"));
                 }

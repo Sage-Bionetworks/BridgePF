@@ -33,7 +33,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
 
     private SurveyResponseDao surveyResponseDao;
     private DynamoSurveyDao surveyDao;
-    private TaskEventService taskEventService;
+    private ActivityEventService activityEventService;
 
     @Autowired
     public void setSurveyResponseDao(SurveyResponseDao surveyResponseDao) {
@@ -46,8 +46,8 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
 
     @Autowired
-    public void setTaskEventService(TaskEventService taskEventService) {
-        this.taskEventService = taskEventService;
+    public void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
     }
     
     @Override
@@ -118,16 +118,16 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     
     private void fireEvents(Survey survey, SurveyResponse response, List<SurveyAnswer> answers) {
         Map<String, SurveyQuestion> questions = getQuestionsMap(survey.getUnmodifiableQuestionList());
-        // It's safe to fire an event with the same timestamp more than once. The taskEventDao already 
+        // It's safe to fire an event with the same timestamp more than once. The activityEventDao already 
         // prevents "backtracking" if the timestamp is earlier than the timestamp that's stored.
         for (SurveyAnswer answer : answers) {
             SurveyQuestion question = questions.get(answer.getQuestionGuid());
             if (question != null && question.getFireEvent()) {
-                taskEventService.publishQuestionAnsweredEvent(response.getHealthCode(), answer);
+                activityEventService.publishQuestionAnsweredEvent(response.getHealthCode(), answer);
             }
         }
         if (response.getStatus() == SurveyResponse.Status.FINISHED) {
-            taskEventService.publishSurveyFinishedEvent(response);
+            activityEventService.publishSurveyFinishedEvent(response);
         }
     }
 

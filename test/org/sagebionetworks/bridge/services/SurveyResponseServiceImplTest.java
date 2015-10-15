@@ -44,7 +44,7 @@ public class SurveyResponseServiceImplTest {
     
     private DynamoSurveyDao surveyDao;
     
-    private TaskEventService taskEventService;
+    private ActivityEventService activityEventService;
     
     private Survey survey;
 
@@ -59,8 +59,8 @@ public class SurveyResponseServiceImplTest {
         when(surveyDao.getSurvey(any(GuidCreatedOnVersionHolder.class))).thenReturn(survey);
         service.setSurveyDao(surveyDao);
 
-        taskEventService = mock(TaskEventService.class);
-        service.setTaskEventService(taskEventService);
+        activityEventService = mock(ActivityEventService.class);
+        service.setActivityEventService(activityEventService);
         
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setSurveyKey(survey);
@@ -83,7 +83,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     
@@ -104,7 +104,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     
@@ -116,7 +116,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     
@@ -130,7 +130,7 @@ public class SurveyResponseServiceImplTest {
             fail("Should have thrown exception");
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     
@@ -150,8 +150,8 @@ public class SurveyResponseServiceImplTest {
         assertEquals("healthCode", response.getResponse().getHealthCode());
         assertEquals((Long)2L, (Long)response.getVersion());
         
-        verify(taskEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
-        verifyNoMoreInteractions(taskEventService);
+        verify(activityEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
+        verifyNoMoreInteractions(activityEventService);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verify(surveyResponseDao).createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class));
@@ -175,8 +175,8 @@ public class SurveyResponseServiceImplTest {
         assertEquals("belgium", response.getIdentifier());
         assertEquals((Long)2L, (Long)response.getVersion());
 
-        verify(taskEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
-        verifyNoMoreInteractions(taskEventService);
+        verify(activityEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
+        verifyNoMoreInteractions(activityEventService);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verify(surveyResponseDao).createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class));
@@ -192,7 +192,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     
@@ -204,7 +204,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     
@@ -216,7 +216,7 @@ public class SurveyResponseServiceImplTest {
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
-        verifyNoMoreInteractions(taskEventService);
+        verifyNoMoreInteractions(activityEventService);
     }
     
     @Test
@@ -227,7 +227,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable throwable) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     @Test
@@ -238,7 +238,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable throwable) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }
     }
     @Test
@@ -254,7 +254,7 @@ public class SurveyResponseServiceImplTest {
             verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
+            verifyNoMoreInteractions(activityEventService);
         }        
     }
     @Test
@@ -266,8 +266,8 @@ public class SurveyResponseServiceImplTest {
         
         verify(surveyResponseDao).appendSurveyAnswers(response, answers);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
-        verify(taskEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
-        verifyNoMoreInteractions(taskEventService);
+        verify(activityEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
+        verifyNoMoreInteractions(activityEventService);
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
     }
@@ -279,7 +279,7 @@ public class SurveyResponseServiceImplTest {
         verify(surveyResponseDao).deleteSurveyResponses("healthCode");
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
-        verifyNoMoreInteractions(taskEventService);
+        verifyNoMoreInteractions(activityEventService);
     }
     
     @Test
@@ -292,7 +292,7 @@ public class SurveyResponseServiceImplTest {
         }
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
-        verifyNoMoreInteractions(taskEventService);
+        verifyNoMoreInteractions(activityEventService);
     }
     
     @SuppressWarnings("unchecked")
@@ -306,8 +306,8 @@ public class SurveyResponseServiceImplTest {
         List<SurveyAnswer> answers = response.getAnswers();
         
         service.appendSurveyAnswers(response, answers);
-        verify(taskEventService).publishSurveyFinishedEvent(any(SurveyResponse.class));
-        verifyNoMoreInteractions(taskEventService);
+        verify(activityEventService).publishSurveyFinishedEvent(any(SurveyResponse.class));
+        verifyNoMoreInteractions(activityEventService);
     }
     
     private DynamoSurveyResponse getSurveyResponse() {

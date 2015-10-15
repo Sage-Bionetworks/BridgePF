@@ -172,7 +172,7 @@ public class ScheduleValidatorTest {
     }
     
     @Test 
-    public void rejectOneTimeTaskWithInterval() {
+    public void rejectOneTimeActivityWithInterval() {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setInterval("P2D");
@@ -186,7 +186,7 @@ public class ScheduleValidatorTest {
     }
     
     @Test 
-    public void rejectOneTimeTaskWithCronTrigger() {
+    public void rejectOneTimeActivityWithCronTrigger() {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setCronTrigger("0 0 8 ? * TUE,THU *");

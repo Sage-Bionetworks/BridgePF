@@ -38,6 +38,8 @@ import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
 
 public abstract class BaseController extends Controller {
@@ -180,6 +182,15 @@ public abstract class BaseController extends Controller {
         return ok((JsonNode)mapper.valueToTree(new ResourceList<T>(list)));
     }
 
+    <T> Result okResult(List<T> list, String typeName) {
+        JsonNode node = mapper.valueToTree(new ResourceList<T>(list));
+        ArrayNode items = (ArrayNode)node.get("items");
+        for (int i=0; i < items.size(); i++) {
+            ((ObjectNode)items.get(0)).put("type", typeName);
+        }
+        return ok(node);
+    }
+    
     Result createdResult(String message) throws Exception {
         return created(Json.toJson(new StatusMessage(message)));
     }

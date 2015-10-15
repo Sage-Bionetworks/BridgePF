@@ -162,7 +162,7 @@ public class AuthenticationControllerTest {
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         
-        // Create a schedule plan for a task that we can look for in this study...
+        // Create a schedule plan for an activity that we can look for in this study...
         plan = new DynamoSchedulePlan();
         plan.setLabel("Required schedule plan label");
         plan.setStudyKey(id);
