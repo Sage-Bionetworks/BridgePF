@@ -186,7 +186,7 @@ public abstract class BaseController extends Controller {
         JsonNode node = mapper.valueToTree(new ResourceList<T>(list));
         ArrayNode items = (ArrayNode)node.get("items");
         for (int i=0; i < items.size(); i++) {
-            ((ObjectNode)items.get(0)).put("type", typeName);
+            ((ObjectNode)items.get(i)).put("type", typeName);
         }
         return ok(node);
     }
