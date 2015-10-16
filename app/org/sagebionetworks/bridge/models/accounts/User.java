@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -158,7 +159,11 @@ public class User implements BridgeEntity {
     }
 
     public boolean isInRole(Roles role) {
-        return this.roles.contains(role);
+        return (role != null && this.roles.contains(role));
+    }
+    
+    public boolean isInRole(Set<Roles> roleSet) {
+        return roleSet != null && !Collections.disjoint(roles, roleSet);
     }
 
     @Override

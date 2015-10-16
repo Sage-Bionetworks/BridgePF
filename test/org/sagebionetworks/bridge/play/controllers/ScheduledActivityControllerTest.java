@@ -46,7 +46,7 @@ public class ScheduledActivityControllerTest {
     private ScheduledActivityController controller;
     
     private ClientInfo clientInfo;
-    
+
     ArgumentCaptor<ScheduleContext> argument = ArgumentCaptor.forClass(ScheduleContext.class);
     
     @Before
