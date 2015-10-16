@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULED_ACTIVITIES_API;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULES_API;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_OUT_URL;
@@ -24,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
@@ -47,6 +49,7 @@ import play.libs.ws.WSRequest;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -141,6 +144,40 @@ public class AuthenticationControllerTest {
                             schedulePlanService.deleteSchedulePlan(secondStudy.getStudyIdentifier(), plan.getGuid());        
                         }
                         studyService.deleteStudy(secondStudy.getIdentifier());
+                    }
+                }
+            }
+        });
+    }
+    
+    @Test
+    public void adminUserGetsExceptionAccessingParticipantAPI() {
+        TestUser dev = helper.createUser(AuthenticationControllerTest.class, false, false, Sets.newHashSet(Roles.DEVELOPER));
+        
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                try {
+                    ObjectNode node = JsonNodeFactory.instance.objectNode();
+                    node.put(STUDY_PROPERTY, dev.getStudy().getIdentifier());
+                    node.put(USERNAME, dev.getUsername());
+                    node.put(PASSWORD, dev.getPassword());
+                    
+                    WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
+                    WSResponse response = request.post(node).get(TIMEOUT);
+                    WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+
+                    // Now, try and access scheduled activities ,this should throw exception.
+                    request = WS.url(TEST_BASE_URL + SCHEDULED_ACTIVITIES_API);
+                    request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
+                    response = request.get().get(TIMEOUT);
+                    
+                    String bodyString = response.getBody();
+                    assertEquals(412, response.getStatus());
+                    assertTrue(bodyString.contains("\"authenticated\":true"));
+                    assertTrue(bodyString.contains("\"consented\":false"));
+                } finally {
+                    if (dev != null) {
+                        helper.deleteUser(dev);    
                     }
                 }
             }

@@ -1,14 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -125,7 +122,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Account account = accountDao.authenticate(study, signIn);
             UserSession session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session);
-            if (!session.getUser().doesConsent()) {
+
+            // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2) 
+            // you've consented to research.
+            if (!session.getUser().doesConsent() && !session.getUser().isInRole(Roles.ADMINISTRATIVE_ROLES)) {
                 throw new ConsentRequiredException(session);
             }
             return session;
@@ -243,18 +243,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setSharingScope(optionsService.getSharingScope(healthCode));
         user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(study, user));
         user.setConsent(consentService.hasUserConsentedToResearch(study, user));
-
-        // And now for some exceptions...
-        // All administrators and all researchers are assumed to consent when using any API.
-        // This is needed so they can sign in without facing a 412 exception.
-        if (user.isInRole(ADMIN) || user.isInRole(RESEARCHER) || user.isInRole(DEVELOPER)) {
-            user.setConsent(true);
-        }
-        // And then we set *any* account that has the admin email to be consented as well
-        String adminUser = BridgeConfigFactory.getConfig().getProperty("admin.email");
-        if (adminUser != null && adminUser.equals(account.getEmail())) {
-            user.setConsent(true);
-        }
 
         session.setUser(user);
         return session;
