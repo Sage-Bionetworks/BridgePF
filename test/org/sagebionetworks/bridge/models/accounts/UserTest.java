@@ -37,11 +37,17 @@ public class UserTest {
         user.setRoles(Sets.newHashSet(Roles.ADMIN, Roles.DEVELOPER));
 
         assertTrue(user.isInRole(Roles.DEVELOPER));
-        assertTrue(user.isInRole(Roles.ADMINISTRATIVE_ROLES));
         assertFalse(user.isInRole((Roles)null));
+    }
+    
+    @Test
+    public void userIsInRoleSet() {
+        User user = new User();
+        user.setRoles(Sets.newHashSet(Roles.ADMIN, Roles.DEVELOPER));
+        assertTrue(user.isInRole(Roles.ADMINISTRATIVE_ROLES));
+        assertFalse(user.isInRole((Set<Roles>)null));
         
         user = new User();
         assertFalse(user.isInRole(Roles.ADMINISTRATIVE_ROLES));
-        assertFalse(user.isInRole((Set<Roles>)null));
     }
 }
