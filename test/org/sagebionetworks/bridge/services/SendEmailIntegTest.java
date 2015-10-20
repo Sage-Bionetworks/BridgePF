@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -49,7 +50,8 @@ public class SendEmailIntegTest {
     
     @Test
     public void test() {
-        final ConsentSignature signature = ConsentSignature.create("Eggplant McTester", "1970-05-01", IMG, "image/png");
+        final ConsentSignature signature = ConsentSignature.create("Eggplant McTester", "1970-05-01", IMG, "image/png",
+                DateUtils.getCurrentMillisFromEpoch());
         final User user = new User();
         user.setEmail("bridge-testing@sagebase.org");
         final Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);

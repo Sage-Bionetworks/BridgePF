@@ -9,6 +9,10 @@ import com.google.common.base.Strings;
 
 @Component
 public class ConsentSignatureValidator implements Validator {
+    
+    private static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
+    private static final String CANNOT_BE_EMPTY_STRING = "cannot be an empty string";
+    
     @Override
     public boolean supports(Class<?> clazz) {
         return ConsentSignature.class.isAssignableFrom(clazz);
@@ -18,21 +22,23 @@ public class ConsentSignatureValidator implements Validator {
     public void validate(Object target, Errors errors) {
         ConsentSignature sig = (ConsentSignature) target;
         if (Strings.isNullOrEmpty(sig.getName())) {
-            errors.rejectValue("name", Validate.CANNOT_BE_BLANK);
+            errors.rejectValue("name", CANNOT_BE_BLANK);
         }
         if (Strings.isNullOrEmpty(sig.getBirthdate())) {
-            errors.rejectValue("birthdate", Validate.CANNOT_BE_BLANK);
+            errors.rejectValue("birthdate", CANNOT_BE_BLANK);
         }
-
+        if (sig.getSignedOn() <= 0L) {
+            errors.rejectValue("signedOn", "must be a valid signature timestamp");
+        }
         // Signature image is currently optional. Some studies may collect a signature, but some may not. It's okay
         // to let the client validate this until we're sure this 100% required for all consents.
         String imageData = sig.getImageData();
         String imageMimeType = sig.getImageMimeType();
         if (imageData != null && imageData.isEmpty()) {
-            errors.rejectValue("imageData", Validate.CANNOT_BE_EMPTY_STRING);
+            errors.rejectValue("imageData", CANNOT_BE_EMPTY_STRING);
         }
         if (imageMimeType != null && imageMimeType.isEmpty()) {
-            errors.rejectValue("imageMimeType", Validate.CANNOT_BE_EMPTY_STRING);
+            errors.rejectValue("imageMimeType", CANNOT_BE_EMPTY_STRING);
         }
 
         // if one of them is not null, but not both

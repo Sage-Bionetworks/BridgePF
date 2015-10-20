@@ -26,6 +26,8 @@ import com.stormpath.sdk.directory.CustomData;
 
 public class StormpathAccountTest {
     
+    private static final long UNIX_TIMESTAMP = 1445379638893L;
+    
     @SuppressWarnings("serial")
     private class StubCustomData extends HashMap<String,Object> implements CustomData {
         @Override public String getHref() { return null; }
@@ -42,6 +44,8 @@ public class StormpathAccountTest {
     private StormpathAccount acct;
     
     private String legacySignature;
+    
+    private ConsentSignature sig;
     
     @Before
     public void setUp() throws Exception {
@@ -69,7 +73,7 @@ public class StormpathAccountTest {
         // StormpathAccount, we're going to put a legacy state in the map that's stubbing out
         // The CustomData element, and then verify that we can retrieve and deserialize the consent
         // even without a version attribute.
-        ConsentSignature sig = ConsentSignature.create("Test", "1970-01-01", "test", "image/png");
+        sig = ConsentSignature.create("Test", "1970-01-01", "test", "image/png", UNIX_TIMESTAMP);
         legacySignature = new ObjectMapper().writeValueAsString(sig);
         encryptDecryptValues(encryptor2, legacySignature, legacySignature);
         
@@ -133,8 +137,6 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignatureStoredAndEncrypted() {
-        ConsentSignature sig = ConsentSignature.create("Test", "1970-01-01", "test", "image/png");
-        
         acct.setConsentSignature(sig);
         
         ConsentSignature restoredSig = acct.getConsentSignature();
@@ -142,6 +144,7 @@ public class StormpathAccountTest {
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());
         assertEquals("image/png", restoredSig.getImageMimeType());
+        assertEquals(UNIX_TIMESTAMP, restoredSig.getSignedOn());
     }
     
     @Test

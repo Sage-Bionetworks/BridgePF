@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -82,7 +83,8 @@ public class SendMailViaAmazonServiceConsentTest {
     public void whenNoStudySupportEmailUsesDefaultSupportEmail() {
         study.setSupportEmail(""); // just a blank string, tricky
 
-        ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);
+        ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null,
+                DateUtils.getCurrentMillisFromEpoch());
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
@@ -98,7 +100,8 @@ public class SendMailViaAmazonServiceConsentTest {
 
     @Test
     public void sendConsentEmail() {
-        ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);
+        ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null,
+                DateUtils.getCurrentMillisFromEpoch());
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
@@ -130,7 +133,7 @@ public class SendMailViaAmazonServiceConsentTest {
     @Test
     public void sendConsentEmailWithSignatureImage() {
         ConsentSignature consent = ConsentSignature.create("Eggplant McTester", "1970-05-01",
-                TestConstants.DUMMY_IMAGE_DATA, "image/fake");
+                TestConstants.DUMMY_IMAGE_DATA, "image/fake", DateUtils.getCurrentMillisFromEpoch());
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         

@@ -117,7 +117,8 @@ public class ConsentServiceImpl implements ConsentService {
 
         incrementStudyEnrollment(study);
         try {
-            UserConsent userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent.getStudyConsent());
+            UserConsent userConsent = userConsentDao.giveConsent(
+                user.getHealthCode(), studyConsent.getStudyConsent(), consentSignature.getSignedOn());
             if (userConsent != null){
                 activityEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
             }

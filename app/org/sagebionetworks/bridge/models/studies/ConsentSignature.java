@@ -27,15 +27,19 @@ public final class ConsentSignature implements BridgeEntity {
     private final @Nonnull String birthdate;
     private final @Nullable String imageData;
     private final @Nullable String imageMimeType;
+    private final @Nonnull long signedOn;
 
     /** Private constructor. Instances should be constructed using factory methods create() or createFromJson(). */
     @JsonCreator
     private ConsentSignature(@JsonProperty("name") String name, @JsonProperty("birthdate") String birthdate,
-            @JsonProperty("imageData") String imageData, @JsonProperty("imageMimeType") String imageMimeType) {
+            @JsonProperty("imageData") String imageData, @JsonProperty("imageMimeType") String imageMimeType, 
+            @JsonProperty("signedOn") long signedOn) {
+
         this.name = name;
         this.birthdate = birthdate;
         this.imageData = imageData;
         this.imageMimeType = imageMimeType;
+        this.signedOn = signedOn;
     }
 
     /**
@@ -54,16 +58,27 @@ public final class ConsentSignature implements BridgeEntity {
      * @param imageData
      *         image data as a Base64 encoded string, optional
      * @param imageMimeType
-     *         image MIME type (ex: image/png), optioanl
+     *         image MIME type (ex: image/png), optional
      * @return validated ConsentSignature
      * @throws InvalidEntityException
      *         if called with invalid fields
      */
     public static ConsentSignature create(@Nonnull String name, @Nonnull String birthdate, @Nullable String imageData,
-            @Nullable String imageMimeType) throws InvalidEntityException {
-        ConsentSignature sig = new ConsentSignature(name, birthdate, imageData, imageMimeType);
+            @Nullable String imageMimeType, @Nonnull long signedOn) throws InvalidEntityException {
+        ConsentSignature sig = new ConsentSignature(name, birthdate, imageData, imageMimeType, signedOn);
         Validate.entityThrowingException(VALIDATOR, sig);
         return sig;
+    }
+    
+    /**
+     * A copy constructor that will return a new consent signature with an updates signedOn value. Used to migrate
+     * older versions of the signature object to an updated value that includes the signing date. 
+     * @param sig
+     * @param signedOn
+     * @return
+     */
+    public static ConsentSignature create(ConsentSignature sig, long signedOn) {
+        return create(sig.name, sig.birthdate, sig.imageData, sig.imageMimeType, signedOn);
     }
 
     /**
@@ -71,16 +86,18 @@ public final class ConsentSignature implements BridgeEntity {
      *
      * @param node
      *         JSON node to parse
+     * @param signedOn
+     *         the date and time recorded for this signature (Unix timestamp)
      * @return validated ConsentSignature
      * @throws InvalidEntityException
      *         if the JSON contains invalid fields
      */
-    public static ConsentSignature createFromJson(JsonNode node) throws InvalidEntityException {
+    public static ConsentSignature createFromJson(JsonNode node, long signedOn) throws InvalidEntityException {
         String name = JsonUtils.asText(node, NAME_FIELD);
         String birthdate = JsonUtils.asText(node, BIRTHDATE_FIELD);
         String imageData = JsonUtils.asText(node, IMAGE_DATA_FIELD);
         String imageMimeType = JsonUtils.asText(node, IMAGE_MIME_TYPE);
-        return create(name, birthdate, imageData, imageMimeType);
+        return create(name, birthdate, imageData, imageMimeType, signedOn);
     }
 
     /** Name of the user giving consent. */
@@ -102,6 +119,11 @@ public final class ConsentSignature implements BridgeEntity {
     public @Nullable String getImageMimeType() {
         return imageMimeType;
     }
+    
+    /** The date and time recorded for this signature. */
+    public long getSignedOn() {
+        return signedOn;
+    }
 
     @Override
     public int hashCode() {
@@ -111,6 +133,7 @@ public final class ConsentSignature implements BridgeEntity {
         result = prime * result + Objects.hashCode(imageData);
         result = prime * result + Objects.hashCode(imageMimeType);
         result = prime * result + Objects.hashCode(name);
+        result = prime * result + Objects.hashCode(signedOn);
         return result;
     }
 
@@ -122,12 +145,13 @@ public final class ConsentSignature implements BridgeEntity {
             return false;
         ConsentSignature other = (ConsentSignature) obj;
         return Objects.equals(birthdate, other.birthdate) && Objects.equals(imageData, other.imageData)
-                && Objects.equals(imageMimeType, other.imageMimeType) && Objects.equals(name, other.name);
+                && Objects.equals(imageMimeType, other.imageMimeType) && Objects.equals(name, other.name) 
+                && Objects.equals(signedOn, other.signedOn);
     }
 
     @Override
     public String toString() {
-        return String.format("ConsentSignature [name=%s, birthdate=%s, imageData=%s, imageMimeType=%s]", 
-                name, birthdate, imageData, imageMimeType);
+        return String.format("ConsentSignature [name=%s, birthdate=%s, imageData=%s, imageMimeType=%s, signedOn=%s]", 
+                name, birthdate, imageData, imageMimeType, signedOn);
     }
 }

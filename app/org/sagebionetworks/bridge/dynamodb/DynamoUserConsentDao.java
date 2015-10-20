@@ -44,7 +44,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public UserConsent giveConsent(String healthCode, StudyConsent studyConsent) {
+    public UserConsent giveConsent(String healthCode, StudyConsent studyConsent, long signedOn) {
         checkArgument(isNotBlank(healthCode), "Health code is blank or null");
         checkNotNull(studyConsent);
         DynamoUserConsent2 consent = null;

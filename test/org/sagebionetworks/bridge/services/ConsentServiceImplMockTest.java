@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
@@ -26,6 +27,8 @@ import org.sagebionetworks.bridge.redis.JedisOps;
 
 public class ConsentServiceImplMockTest {
 
+    private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
+    
     private ConsentServiceImpl consentService;
 
     private AccountDao accountDao;
@@ -62,7 +65,7 @@ public class ConsentServiceImplMockTest {
         study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
         user = new User();
         user.setHealthCode("BBB");
-        consentSignature = ConsentSignature.create("Test User", "1990-01-01", null, null);
+        consentSignature = ConsentSignature.create("Test User", "1990-01-01", null, null, UNIX_TIMESTAMP);
         
         Account account = mock(Account.class);
         when(accountDao.getAccount(any(Study.class), any(String.class))).thenReturn(account);
@@ -71,7 +74,7 @@ public class ConsentServiceImplMockTest {
     @Test
     public void activityEventFiredOnConsent() {
         UserConsent consent = mock(UserConsent.class);
-        when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class))).thenReturn(consent);
+        when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class), any(Long.class))).thenReturn(consent);
         
         StudyConsentView view = mock(StudyConsentView.class);
         when(studyConsentService.getActiveConsent(any(Study.class))).thenReturn(view);
@@ -83,7 +86,7 @@ public class ConsentServiceImplMockTest {
 
     @Test
     public void noActivityEventIfTooYoung() {
-        consentSignature = ConsentSignature.create("Test User", "2014-01-01", null, null);
+        consentSignature = ConsentSignature.create("Test User", "2014-01-01", null, null, UNIX_TIMESTAMP);
         study.setMinAgeOfConsent(30); // Test is good until 2044. So there.
         
         try {
@@ -108,7 +111,7 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void noActivityEventIfDaoFails() {
-        when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class))).thenThrow(new RuntimeException());
+        when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class), any(Long.class))).thenThrow(new RuntimeException());
         
         try {
             consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
