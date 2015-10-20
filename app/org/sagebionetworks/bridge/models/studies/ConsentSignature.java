@@ -6,17 +6,27 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.ConsentSignatureValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
+@JsonFilter("filter")
 public final class ConsentSignature implements BridgeEntity {
 
+    public static final ObjectWriter SIGNATURE_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter", 
+            SimpleBeanPropertyFilter.serializeAllExcept("signedOn")));
+    
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
     private static final String IMAGE_DATA_FIELD = "imageData";

@@ -37,7 +37,7 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
         ConsentSignature sig = consentService.getConsentSignature(study, session.getUser());
-        return okResult(sig);
+        return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
     }
 
     @Deprecated
