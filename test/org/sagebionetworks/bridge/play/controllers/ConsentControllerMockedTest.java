@@ -95,6 +95,7 @@ public class ConsentControllerMockedTest {
         assertEquals("ConsentSignature", node.get("type").asText());
         assertEquals("data:asdf", node.get("imageData").asText());
         assertEquals("image/png", node.get("imageMimeType").asText());
+        // no signedOn value
     }
     
     private int fieldNameCount(JsonNode node) {

@@ -164,7 +164,6 @@ public class ConsentSignatureTest {
     public void jsonNoBirthdate() throws Exception {
         String jsonStr = "{\"name\":\"test name\"}";
         JsonNode jsonNode = JSON_OBJECT_MAPPER.readTree(jsonStr);
-        
         try {
             ConsentSignature.createFromJson(jsonNode, UNIX_TIMESTAMP);
             fail("Should have thrown an exception");
@@ -177,7 +176,6 @@ public class ConsentSignatureTest {
     public void jsonNullBirthdate() throws Exception {
         String jsonStr = "{\"name\":\"test name\", \"birthdate\":null}";
         JsonNode jsonNode = JSON_OBJECT_MAPPER.readTree(jsonStr);
-        
         try {
             ConsentSignature.createFromJson(jsonNode, UNIX_TIMESTAMP);
             fail("Should have thrown an exception");
@@ -190,7 +188,6 @@ public class ConsentSignatureTest {
     public void jsonEmptyBirthdate() throws Exception {
         String jsonStr = "{\"name\":\"test name\", \"birthdate\":\"\"}";
         JsonNode jsonNode = JSON_OBJECT_MAPPER.readTree(jsonStr);
-        
         try {
             ConsentSignature.createFromJson(jsonNode, UNIX_TIMESTAMP);
             fail("Should have thrown an exception");
@@ -208,7 +205,6 @@ public class ConsentSignatureTest {
                 "   \"imageMimeType\":\"image/fake\"\n" +
                 "}";
         JsonNode jsonNode = JSON_OBJECT_MAPPER.readTree(jsonStr);
-        
         try {
             ConsentSignature.createFromJson(jsonNode, UNIX_TIMESTAMP);
             fail("Should have thrown an exception");

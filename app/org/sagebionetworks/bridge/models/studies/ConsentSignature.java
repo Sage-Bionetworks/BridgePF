@@ -81,14 +81,19 @@ public final class ConsentSignature implements BridgeEntity {
     }
     
     /**
-     * A copy constructor that will return a new consent signature with an updates signedOn value. Used to migrate
-     * older versions of the signature object to an updated value that includes the signing date. 
-     * @param sig
+     * A copy constructor that will return a new consent signature with an updated signedOn value. 
+     * Used to migrate older versions of the signature object to an updated value that includes the 
+     * signing date. 
+     * @param signature
+     *      the base signature from which to derive this signature
      * @param signedOn
-     * @return
+     *      the date and time stamp of the signing
+     * @return validated ConsentSignature
+     * @throws InvalidEntityException
+     *         if called with invalid fields
      */
-    public static ConsentSignature create(ConsentSignature sig, long signedOn) {
-        return create(sig.name, sig.birthdate, sig.imageData, sig.imageMimeType, signedOn);
+    public static ConsentSignature create(ConsentSignature signature, long signedOn) {
+        return create(signature.name, signature.birthdate, signature.imageData, signature.imageMimeType, signedOn);
     }
 
     /**
