@@ -21,7 +21,7 @@ public class DynamoUserConsentTest {
         DynamoStudyConsent1 studyConsent = new DynamoStudyConsent1();
         studyConsent.setStudyKey(studyKey);
         studyConsent.setCreatedOn(consentTimestamp);
-        userConsent = new DynamoUserConsent2(healthCode, studyConsent);
+        userConsent = new DynamoUserConsent2(healthCode, studyConsent.getStudyKey());
         assertEquals(healthCode + ":" + studyKey, userConsent.getHealthCodeStudy());
         assertEquals(healthCode, userConsent.getHealthCode());
         assertEquals(studyKey, userConsent.getStudyKey());

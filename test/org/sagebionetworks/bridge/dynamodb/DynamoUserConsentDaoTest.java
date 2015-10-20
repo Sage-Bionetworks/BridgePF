@@ -28,14 +28,21 @@ public class DynamoUserConsentDaoTest {
     @Before
     public void before() {
         DynamoInitializer.init(DynamoUserConsent2.class);
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
+        DynamoInitializer.init(DynamoUserConsent3.class);
+        userConsentDao.deleteConsentRecords(HEALTH_CODE, STUDY_IDENTIFIER);
+        for (int i=1; i < 6; i++) {
+            userConsentDao.deleteConsentRecords(HEALTH_CODE+i, STUDY_IDENTIFIER);
+        }
     }
 
     @After
     public void after() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
+        userConsentDao.deleteConsentRecords(HEALTH_CODE, STUDY_IDENTIFIER);
+        for (int i=1; i < 6; i++) {
+            userConsentDao.deleteConsentRecords(HEALTH_CODE+i, STUDY_IDENTIFIER);
+        }
     }
-
+    
     @Test
     public void canConsentToStudy() {
         // Not consented yet
