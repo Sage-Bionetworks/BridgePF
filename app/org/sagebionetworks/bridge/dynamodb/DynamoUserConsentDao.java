@@ -64,7 +64,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         // consent record if it exists. Throw an exception if it does.
         DynamoUserConsent2 consent2 = getUserConsent2(healthCode, studyConsent.getStudyKey());
         if (consent2 != null) {
-            throw new EntityAlreadyExistsException(consent2);
+            throw new EntityAlreadyExistsException(null, "Consent already exists.");
         }
         
         // save 3 then do 2, undo 3 if 2 fails
@@ -201,7 +201,10 @@ public class DynamoUserConsentDao implements UserConsentDao {
     private List<DynamoUserConsent3> getAllUserConsentRecords3(String healthCode, String studyIdentifier) {
         DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier);
 
+        // Currently this is only one record. In the next phase of migration, remove scanIndexForward (maybe) and the limit.
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
+                .withScanIndexForward(false)
+                .withLimit(1)
                 .withHashKeyValues(hashKey);
 
         return mapperV3.query(DynamoUserConsent3.class, query);

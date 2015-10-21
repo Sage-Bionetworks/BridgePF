@@ -27,7 +27,7 @@ public class UserConsentBackfill extends AsyncBackfillTemplate {
         this.userConsentDao = userConsentDao;
     }
     @Autowired
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
+    public final void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
     

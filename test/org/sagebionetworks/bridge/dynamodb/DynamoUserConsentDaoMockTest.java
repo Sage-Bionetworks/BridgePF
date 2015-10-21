@@ -126,6 +126,8 @@ public class DynamoUserConsentDaoMockTest {
             userConsentDao.giveConsent("AAA", studyConsent);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
+            assertNull(e.getEntity());
+            assertEquals("Consent already exists.", e.getMessage());
         }
         verify(mapper2).load(any());
         verifyNoMoreInteractions(mapper2);
