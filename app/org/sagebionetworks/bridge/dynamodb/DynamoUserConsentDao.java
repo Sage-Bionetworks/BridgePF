@@ -6,14 +6,14 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -28,6 +28,14 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.Sets;
 
+/**
+ * Currently migrating to a new consent table. The options for keeping the two tables in sync:
+ * 
+ *  table3 succeeds, table2 succeeds - fine
+ *  table3 fails,    --              - fine, return error
+ *  table3 succeeds, table2 fails    - we can fix this in migration, or undo the table3 record.
+ *                                     Also, return an error
+ */
 @Component
 public class DynamoUserConsentDao implements UserConsentDao {
 
@@ -49,7 +57,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
         checkArgument(isNotBlank(healthCode), "Health code is blank or null");
         checkNotNull(studyConsent);
 
-        long signedOn = DateTime.now(DateTimeZone.UTC).getMillis();
+        // This will be passed in to the method when we coordinate Stormpath and DDB operations
+        long signedOn = DateUtils.getCurrentMillisFromEpoch();
 
         // The logic is being changed here. You cannot update the signing date on an active
         // consent record if it exists. Throw an exception if it does.
@@ -58,21 +67,25 @@ public class DynamoUserConsentDao implements UserConsentDao {
             throw new EntityAlreadyExistsException(consent2);
         }
         
-        // save 3 first because 2 is the active record. If 3 fails that's not a problem and can 
-        // be fixed in migration, but if 2 fails, consent didn't occur.
+        // save 3 then do 2, undo 3 if 2 fails
         DynamoUserConsent3 consent3 = getUserConsent3(healthCode, studyConsent.getStudyKey());
         if (consent3 == null) {
-            consent3 = new DynamoUserConsent3();
-            consent3.setHealthCodeStudy(healthCode, studyConsent.getStudyKey());
+            consent3 = new DynamoUserConsent3(healthCode, studyConsent.getStudyKey());
             consent3.setConsentCreatedOn(studyConsent.getCreatedOn());
             consent3.setSignedOn(signedOn);
             mapperV3.save(consent3);
         }
         if (consent2 == null) {
-            consent2 = new DynamoUserConsent2(healthCode, studyConsent.getStudyKey());
-            consent2.setConsentCreatedOn(studyConsent.getCreatedOn());
-            consent2.setSignedOn(signedOn);
-            mapperV2.save(consent2);
+            try {
+                consent2 = new DynamoUserConsent2(healthCode, studyConsent.getStudyKey());
+                consent2.setConsentCreatedOn(studyConsent.getCreatedOn());
+                consent2.setSignedOn(signedOn);
+                mapperV2.save(consent2);
+            } catch(Exception e) {
+                // compensate and then rethrow exception
+                mapperV3.delete(consent3);
+                throw e;
+            }
         }
         return consent2;
     }
@@ -86,17 +99,24 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent2 = getUserConsent2(healthCode, studyIdentifier.getIdentifier());
         DynamoUserConsent3 consent3 = getUserConsent3(healthCode, studyIdentifier.getIdentifier());
         
-        // Again delete 3 first since it's not the table of record.
-        boolean deleted = false;
+        if (consent2 == null && consent3 == null) {
+            return false;
+        }
+        // delete 3 then delete 2, re-save 3 if 2 fails
         if (consent3 != null) {
             mapperV3.delete(consent3);
-            deleted = true;
         }
         if (consent2 != null) {
-            mapperV2.delete(consent2);
-            deleted = true;
+            try {
+                mapperV2.delete(consent2);    
+            } catch(Exception e) {
+                // compensate for delete failure. Need to vacate the version attribute
+                consent3.setVersion(null);
+                mapperV3.save(consent3);
+                throw e;
+            }
         }
-        return deleted;
+        return true;
     }
 
     @Override
@@ -136,7 +156,17 @@ public class DynamoUserConsentDao implements UserConsentDao {
         }
         DynamoUserConsent2 consentV2 = getUserConsent2(healthCode, studyIdentifier.getIdentifier());
         if (consentV2 != null) {
-            mapperV2.delete(consentV2);    
+            try {
+                mapperV2.delete(consentV2);    
+            } catch(Exception e) {
+                // vacate the versions
+                List<DynamoUserConsent3> consents = consentsV3.stream().map(consent -> {
+                    consent.setVersion(null);
+                    return consent;
+                }).collect(Collectors.toList());
+                mapperV3.batchSave(consents);
+                throw e;
+            }
         }
     }
     
@@ -146,9 +176,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent3 consent3 = getUserConsent3(healthCode, studyIdentifier.getIdentifier());
 
         if (consent2 != null && consent3 == null) {
-            DynamoUserConsent3 newConsent = new DynamoUserConsent3();
+            DynamoUserConsent3 newConsent = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
             newConsent.setConsentCreatedOn(consent2.getConsentCreatedOn());
-            newConsent.setHealthCodeStudy(healthCode, studyIdentifier.getIdentifier());
             newConsent.setSignedOn(consent2.getSignedOn());
             mapperV3.save(newConsent);
             return true;
@@ -170,8 +199,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
     
     private List<DynamoUserConsent3> getAllUserConsentRecords3(String healthCode, String studyIdentifier) {
-        DynamoUserConsent3 hashKey = new DynamoUserConsent3();
-        hashKey.setHealthCodeStudy(healthCode, studyIdentifier);
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier);
 
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
                 .withHashKeyValues(hashKey);

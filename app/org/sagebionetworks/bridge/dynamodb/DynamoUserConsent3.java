@@ -7,11 +7,10 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * This version of the consent will accept a withdrewOn timestamp, and the range key is set to the signedOn 
@@ -19,17 +18,20 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *
  */
 @DynamoDBTable(tableName = "UserConsent3")
-@BridgeTypeName("UserConsent")
 public class DynamoUserConsent3 implements UserConsent {
 
     // The only timestamp that can be null is withdrewOn.
     private String healthCodeStudy;
-    private String healthCode;
-    private String studyIdentifier;
     private long consentCreatedOn;
     private long signedOn;
     private Long withdrewOn;
     private Long version;
+    
+    public DynamoUserConsent3() {}
+    
+    public DynamoUserConsent3(String healthCode, String studyIdentifier) {
+        setHealthCodeStudy(healthCode + ":" + studyIdentifier);
+    }
     
     @DynamoDBHashKey
     public String getHealthCodeStudy() {
@@ -38,47 +40,33 @@ public class DynamoUserConsent3 implements UserConsent {
     public void setHealthCodeStudy(String healthCodeStudy) {
         this.healthCodeStudy = healthCodeStudy;
     }
-    public void setHealthCodeStudy(String healthCode, String studyIdentifier) {
-        this.healthCode = healthCode;
-        this.studyIdentifier = studyIdentifier;
-        this.healthCodeStudy = healthCode + ":" + studyIdentifier;
-    }
-    
-    @DynamoDBAttribute
+    @DynamoDBIgnore
     public String getHealthCode() {
-        return healthCode;
+        return getValue(0);
     }
-    public void setHealthCode(String healthCode) {
-        setHealthCodeStudy(healthCode, getStudyIdentifier());
-    }
-
     @Override
-    @DynamoDBAttribute
+    @DynamoDBIgnore
     public String getStudyIdentifier() {
-        return studyIdentifier;
+        return getValue(1);
     }
-    public void setStudyIdentifier(String studyIdentifier) {
-        setHealthCodeStudy(getHealthCode(), studyIdentifier);
+    private String getValue(int index) {
+        return (healthCodeStudy != null && healthCodeStudy.contains(":")) ?
+                healthCodeStudy.split(":")[index] : null;
     }
-
     @Override
     @DynamoDBAttribute
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getConsentCreatedOn() {
         return consentCreatedOn;
     }
-    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setConsentCreatedOn(long consentCreatedOn) {
         this.consentCreatedOn = consentCreatedOn;
     }
 
     @Override
     @DynamoDBRangeKey
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getSignedOn() {
         return signedOn;
     }
-    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setSignedOn(long signedOn) {
         this.signedOn = signedOn;
     }
@@ -102,8 +90,8 @@ public class DynamoUserConsent3 implements UserConsent {
     
     @Override
     public String toString() {
-        return String.format("DynamoUserConsent3 [healthCode=%s, studyIdentifier=%s, consentCreatedOn=%s, version=%s, signedOn=%s, withdrewOn=%s]",
-                healthCode, studyIdentifier, consentCreatedOn, version, signedOn, withdrewOn);
+        return String.format("DynamoUserConsent3 [healthCodeStudy=%s, consentCreatedOn=%s, version=%s, signedOn=%s, withdrewOn=%s]",
+                healthCodeStudy, consentCreatedOn, version, signedOn, withdrewOn);
     }
     
 }

@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -98,6 +99,7 @@ public class DynamoUserConsent2 implements UserConsent {
         this.studyKey = studyKey;
     }
     @Override
+    @DynamoDBIgnore
     public String getStudyIdentifier() {
         return studyKey;
     }
