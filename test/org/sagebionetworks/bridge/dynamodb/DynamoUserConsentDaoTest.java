@@ -28,7 +28,6 @@ public class DynamoUserConsentDaoTest {
 
     @BeforeClass
     public static void beforeClass() {
-        System.out.println("beforeClass fired");
         DynamoInitializer.init(DynamoUserConsent2.class);
         DynamoInitializer.init(DynamoUserConsent3.class);
     }

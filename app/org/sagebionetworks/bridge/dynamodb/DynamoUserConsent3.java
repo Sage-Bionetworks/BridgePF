@@ -19,6 +19,7 @@ public class DynamoUserConsent3 implements UserConsent {
 
     // The only timestamp that can be null is withdrewOn.
     private String healthCodeStudy;
+    private String studyIdentifier;
     private long consentCreatedOn;
     private long signedOn;
     private Long withdrewOn;
@@ -28,6 +29,7 @@ public class DynamoUserConsent3 implements UserConsent {
     
     public DynamoUserConsent3(String healthCode, String studyIdentifier) {
         setHealthCodeStudy(healthCode + ":" + studyIdentifier);
+        this.studyIdentifier = studyIdentifier;
     }
     
     @DynamoDBHashKey
@@ -42,9 +44,12 @@ public class DynamoUserConsent3 implements UserConsent {
         return getValue(0);
     }
     @Override
-    @DynamoDBIgnore
+    @DynamoDBAttribute
     public String getStudyIdentifier() {
-        return getValue(1);
+        return studyIdentifier;
+    }
+    public void setStudyIdentifier(String studyIdentifier) {
+        this.studyIdentifier = studyIdentifier;
     }
     private String getValue(int index) {
         return (healthCodeStudy != null && healthCodeStudy.contains(":")) ?
@@ -87,8 +92,8 @@ public class DynamoUserConsent3 implements UserConsent {
     
     @Override
     public String toString() {
-        return String.format("DynamoUserConsent3 [healthCodeStudy=%s, consentCreatedOn=%s, version=%s, signedOn=%s, withdrewOn=%s]",
-                healthCodeStudy, consentCreatedOn, version, signedOn, withdrewOn);
+        return String.format("DynamoUserConsent3 [healthCodeStudy=%s, studyIdentifier=%s, consentCreatedOn=%s, version=%s, signedOn=%s, withdrewOn=%s]",
+                healthCodeStudy, studyIdentifier, consentCreatedOn, version, signedOn, withdrewOn);
     }
     
 }
