@@ -5,6 +5,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.ConsentSignatureValidator;
@@ -133,12 +134,12 @@ public final class ConsentSignature implements BridgeEntity {
         private String imageMimeType;
         private long signedOn;
         
-        public Builder withConsentSignature(ConsentSignature signature, long signedOn) {
+        public Builder withConsentSignature(ConsentSignature signature) {
             this.name = signature.name;
             this.birthdate = signature.birthdate;
             this.imageData = signature.imageData;
             this.imageMimeType = signature.imageMimeType;
-            this.signedOn = signedOn;
+            this.signedOn = signature.signedOn;
             return this;
         }
         public Builder withName(String name) {
@@ -162,7 +163,8 @@ public final class ConsentSignature implements BridgeEntity {
             return this;
         }
         public ConsentSignature build() {
-            ConsentSignature signature = new ConsentSignature(name, birthdate, imageData, imageMimeType, signedOn);
+            long signatureTime = (signedOn > 0L) ? signedOn : DateTime.now().getMillis();
+            ConsentSignature signature = new ConsentSignature(name, birthdate, imageData, imageMimeType, signatureTime);
             Validate.entityThrowingException(VALIDATOR, signature);
             return signature;
         }

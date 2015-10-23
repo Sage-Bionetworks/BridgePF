@@ -11,22 +11,25 @@ import java.util.HashMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
 public class StormpathAccountTest {
     
-    private static final long UNIX_TIMESTAMP = 1445379638893L;
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
+    
+    private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
     
     @SuppressWarnings("serial")
     private class StubCustomData extends HashMap<String,Object> implements CustomData {
@@ -75,7 +78,7 @@ public class StormpathAccountTest {
         // even without a version attribute.
         sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test")
                 .withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
-        legacySignature = new ObjectMapper().writeValueAsString(sig);
+        legacySignature = MAPPER.writeValueAsString(sig);
         encryptDecryptValues(encryptor2, legacySignature, legacySignature);
         
         SortedMap<Integer, BridgeEncryptor> encryptors = new TreeMap<>();

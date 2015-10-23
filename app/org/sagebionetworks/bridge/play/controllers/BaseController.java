@@ -244,13 +244,14 @@ public abstract class BaseController extends Controller {
             if (jsonNode != null) {
                 return mapper.convertValue(jsonNode, clazz);
             }
+            throw new InvalidEntityException("Expected JSON in the request body is missing");
+            
         } catch (Throwable ex) {
             if (Throwables.getRootCause(ex) instanceof InvalidEntityException) {
                 throw (InvalidEntityException)Throwables.getRootCause(ex);
             }
             throw new InvalidEntityException("Error parsing JSON in request body: " + ex.getMessage());    
         }
-        throw new InvalidEntityException("Expected JSON in the request body is missing");
     }
     
     /**

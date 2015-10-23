@@ -5,14 +5,17 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.joda.time.DateTime;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
+
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 public class ConsentSignatureTest {
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
@@ -133,7 +136,8 @@ public class ConsentSignatureTest {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
 
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertMessage(e, "name", "name cannot be missing, null, or blank");
         }
     }
@@ -144,7 +148,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertMessage(e, "name", "name cannot be missing, null, or blank");
         }
     }
@@ -155,7 +160,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertMessage(e, "name", "name cannot be missing, null, or blank");
         }
     }
@@ -166,7 +172,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertMessage(e, "birthdate", "birthdate cannot be missing, null, or blank");
         }
     }
@@ -177,7 +184,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertMessage(e, "birthdate", "birthdate cannot be missing, null, or blank");
         }
     }
@@ -188,7 +196,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertMessage(e, "birthdate", "birthdate cannot be missing, null, or blank");
         }
     }
@@ -204,7 +213,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertMessage(e, "imageData", "imageData cannot be an empty string");
         }
     }
@@ -220,7 +230,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertMessage(e, "imageMimeType", "imageMimeType cannot be an empty string");
         }
     }
@@ -235,7 +246,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertTrue(e.getMessage().contains(
                 "ConsentSignature If you specify one of imageData or imageMimeType, you must specify both"));
         }
@@ -251,7 +263,8 @@ public class ConsentSignatureTest {
         try {
             BridgeObjectMapper.get().readValue(jsonStr, ConsentSignature.class);
             fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+        } catch(JsonMappingException jme) {
+            InvalidEntityException e = (InvalidEntityException)jme.getCause();
             assertTrue(e.getMessage().contains(
                     "ConsentSignature If you specify one of imageData or imageMimeType, you must specify both"));
         }
@@ -302,7 +315,7 @@ public class ConsentSignatureTest {
         String json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\"}";
 
         ConsentSignature sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
-        assertEquals(UNIX_TIMESTAMP, sig.getSignedOn());
+        assertTrue(sig.getSignedOn() > UNIX_TIMESTAMP);
     }
     
     @Test
@@ -311,7 +324,7 @@ public class ConsentSignatureTest {
         ConsentSignature sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
         assertEquals("test name", sig.getName());
         assertEquals("1970-01-01", sig.getBirthdate());
-        assertEquals(0, sig.getSignedOn());
+        assertTrue(sig.getSignedOn() > UNIX_TIMESTAMP);
     }
     
     @Test
@@ -319,13 +332,13 @@ public class ConsentSignatureTest {
         String json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\"}";
         ConsentSignature sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
 
-        ConsentSignature updated = new ConsentSignature.Builder().withConsentSignature(sig, UNIX_TIMESTAMP).build();
+        ConsentSignature updated = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(UNIX_TIMESTAMP).build();
         assertEquals("test name", updated.getName());
         assertEquals("1970-01-01", updated.getBirthdate());
         assertEquals(UNIX_TIMESTAMP, updated.getSignedOn());
         
         try {
-            new ConsentSignature.Builder().withConsentSignature(sig, -1L).build();
+            new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(DateTime.now().minusHours(4).getMillis()).build();
         } catch(InvalidEntityException e) {
             assertMessage(e, "signedOn", "signedOn must be a valid signature timestamp");
         }
@@ -333,6 +346,6 @@ public class ConsentSignatureTest {
     
     @Test
     public void equalsAndHashCodeAreCorrect() {
-        EqualsVerifier.forClass(ConsentSignature.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(ConsentSignature.class).allFieldsShouldBeUsed().verify();
     }
 }

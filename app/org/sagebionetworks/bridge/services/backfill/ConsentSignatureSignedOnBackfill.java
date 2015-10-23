@@ -1,12 +1,7 @@
 package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.SortedMap;
 
-import javax.annotation.Resource;
-
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -20,8 +15,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Maps;
-
 @Component("signedOnBackfill")
 public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
 
@@ -29,33 +22,25 @@ public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
     private StudyService studyService;
     private UserConsentDao userConsentDao;
     private HealthCodeService healthCodeService;
-    private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Autowired
-    public void setAccountDao(AccountDao accountDao) {
+    public final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
 
     @Autowired
-    public void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
 
     @Autowired
-    public void setUserConsentDao(UserConsentDao userConsentDao) {
+    public final void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
 
     @Autowired
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
+    public final void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
-    }
-
-    @Resource(name = "encryptorList")
-    public void setEncryptors(List<BridgeEncryptor> list) {
-        for (BridgeEncryptor encryptor : list) {
-            encryptors.put(encryptor.getVersion(), encryptor);
-        }
     }
 
     @Override
@@ -82,7 +67,7 @@ public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
                     UserConsent consent = userConsentDao.getUserConsent(healthCode, account.getStudyIdentifier());
                     if (consent != null) {
                         Study study = studyService.getStudy(account.getStudyIdentifier());
-                        sig = new ConsentSignature.Builder().withConsentSignature(sig, consent.getSignedOn()).build();
+                        sig = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(consent.getSignedOn()).build();
                         account.setConsentSignature(sig);
 
                         accountDao.updateAccount(study, account);

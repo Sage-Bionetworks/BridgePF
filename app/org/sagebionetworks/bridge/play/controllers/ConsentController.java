@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -88,10 +87,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final JsonNode node = requestToJSON(request());
-        
-        final long signedOn = DateUtils.getCurrentMillisFromEpoch();
-        ConsentSignature signature = parseJson(request(), ConsentSignature.class);
-        final ConsentSignature consent = new ConsentSignature.Builder().withConsentSignature(signature, signedOn).build();
+        final ConsentSignature consent = parseJson(request(), ConsentSignature.class);
         
         final SharingOption sharing = SharingOption.fromJson(node, version);
         final User user = consentService.consentToResearch(study, session.getUser(), consent,
