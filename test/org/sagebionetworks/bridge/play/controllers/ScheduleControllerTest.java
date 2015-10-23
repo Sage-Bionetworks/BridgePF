@@ -80,6 +80,7 @@ public class ScheduleControllerTest {
         assertEquals(1, node.get("total").asInt());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getSchedulesV3AdjustsScheduleTypes() throws Exception {
         List<SchedulePlan> plans = Lists.newArrayList();
