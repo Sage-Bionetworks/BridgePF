@@ -41,7 +41,8 @@ public class DynamoUserConsent3 implements UserConsent {
     }
     @DynamoDBIgnore
     public String getHealthCode() {
-        return getValue(0);
+        return (healthCodeStudy != null && healthCodeStudy.contains(":")) ?
+                healthCodeStudy.split(":")[0] : null;
     }
     @Override
     @DynamoDBAttribute
@@ -50,10 +51,6 @@ public class DynamoUserConsent3 implements UserConsent {
     }
     public void setStudyIdentifier(String studyIdentifier) {
         this.studyIdentifier = studyIdentifier;
-    }
-    private String getValue(int index) {
-        return (healthCodeStudy != null && healthCodeStudy.contains(":")) ?
-                healthCodeStudy.split(":")[index] : null;
     }
     @Override
     @DynamoDBAttribute

@@ -9,9 +9,10 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -56,7 +57,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         // if a record exists.
         UserConsent existingConsent = getUserConsent(healthCode, new StudyIdentifierImpl(studyConsent.getStudyKey()));
         if (existingConsent != null) {
-            throw new EntityAlreadyExistsException(null, "Consent already exists.");
+            throw new BridgeServiceException("Consent already exists.", HttpStatus.SC_CONFLICT);
         }
         
         DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, studyConsent.getStudyKey());
