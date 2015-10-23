@@ -36,6 +36,7 @@ import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
 
+import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -198,7 +199,7 @@ public abstract class BaseController extends Controller {
     Result createdResult(Object obj) throws Exception {
         return created((JsonNode)mapper.valueToTree(obj));
     }
-
+    
     // This is needed or tests fail. It appears to be a bug in Play Framework,
     // that the asJson() method doesn't return a node in that context, possibly
     // because the root object in the JSON is an array (which is legal). 
@@ -210,6 +211,9 @@ public abstract class BaseController extends Controller {
             }
             return node;
         } catch(Throwable e) {
+            if (Throwables.getRootCause(e) instanceof InvalidEntityException) {
+                throw (InvalidEntityException)Throwables.getRootCause(e);
+            }
             throw new InvalidEntityException("Expected JSON in the request body is missing or malformed");
         }
     }
@@ -241,7 +245,10 @@ public abstract class BaseController extends Controller {
                 return mapper.convertValue(jsonNode, clazz);
             }
         } catch (Throwable ex) {
-            throw new InvalidEntityException("Error parsing JSON in request body: " + ex.getMessage());
+            if (Throwables.getRootCause(ex) instanceof InvalidEntityException) {
+                throw (InvalidEntityException)Throwables.getRootCause(ex);
+            }
+            throw new InvalidEntityException("Error parsing JSON in request body: " + ex.getMessage());    
         }
         throw new InvalidEntityException("Expected JSON in the request body is missing");
     }

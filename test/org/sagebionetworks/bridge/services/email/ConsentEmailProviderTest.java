@@ -48,7 +48,8 @@ public class ConsentEmailProviderTest {
         User user = new User();
         user.setEmail("user@user.com");
         
-        ConsentSignature sig = ConsentSignature.create("Test Person", "1980-06-06", null, null, UNIX_TIMESTAMP);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("Test Person").withBirthdate("1980-06-06")
+                .withSignedOn(UNIX_TIMESTAMP).build();
         studyConsentService = mock(StudyConsentService.class);
         
         provider = new ConsentEmailProvider(study, user, sig, SharingScope.NO_SHARING, 

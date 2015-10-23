@@ -24,30 +24,34 @@ import com.google.common.collect.Maps;
 
 @Component("signedOnBackfill")
 public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
-    
+
     private AccountDao accountDao;
     private StudyService studyService;
     private UserConsentDao userConsentDao;
     private HealthCodeService healthCodeService;
-    private SortedMap<Integer,BridgeEncryptor> encryptors = Maps.newTreeMap();
+    private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
+
     @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
+
     @Autowired
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
+
     @Autowired
     public void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
-    @Resource(name="encryptorList")
+
+    @Resource(name = "encryptorList")
     public void setEncryptors(List<BridgeEncryptor> list) {
         for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
@@ -62,13 +66,13 @@ public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
         callback.newRecords(getBackfillRecordFactory().createOnly(task, "Starting to examine accounts"));
-        
+
         Iterator<Account> i = accountDao.getAllAccounts();
         while (i.hasNext()) {
             Account account = i.next();
-            
+
             callback.newRecords(getBackfillRecordFactory().createOnly(task, "Examining account: " + account.getId()));
-            
+
             HealthId mapping = healthCodeService.getMapping(account.getHealthId());
             if (mapping != null) {
                 String healthCode = mapping.getCode();
@@ -78,19 +82,20 @@ public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
                     UserConsent consent = userConsentDao.getUserConsent(healthCode, account.getStudyIdentifier());
                     if (consent != null) {
                         Study study = studyService.getStudy(account.getStudyIdentifier());
-                        sig = ConsentSignature.create(sig, consent.getSignedOn());
+                        sig = new ConsentSignature.Builder().withConsentSignature(sig, consent.getSignedOn()).build();
                         account.setConsentSignature(sig);
-                        
+
                         accountDao.updateAccount(study, account);
-                        callback.newRecords(
-                            getBackfillRecordFactory().createAndSave(task, study, account, "account updated with signature"));
+                        callback.newRecords(getBackfillRecordFactory().createAndSave(task, study, account,
+                                "account updated with signature"));
                     } else {
-                        callback.newRecords(getBackfillRecordFactory().createOnly(task, "user consent not found (signature not updated)"));        
+                        callback.newRecords(getBackfillRecordFactory().createOnly(task,
+                                "user consent not found (signature not updated)"));
                     }
                 } else {
                     callback.newRecords(getBackfillRecordFactory().createOnly(task, "signature not found"));
                 }
-            }  else {
+            } else {
                 callback.newRecords(getBackfillRecordFactory().createOnly(task, "Health code record not found"));
             }
         }

@@ -33,17 +33,17 @@ import play.test.Helpers;
 
 public class ConsentControllerMockedTest {
 
-    private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch(); 
-    
+    private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
+
     private UserSession session;
     private User user;
     private Study study;
     private ConsentController controller;
-    
+
     private StudyService studyService;
     private ConsentService consentService;
     ParticipantOptionsService optionsService;
-    
+
     @Before
     public void before() {
         session = mock(UserSession.class);
@@ -52,15 +52,16 @@ public class ConsentControllerMockedTest {
         user = mock(User.class);
         when(user.getHealthCode()).thenReturn("healthCode");
         when(session.getUser()).thenReturn(user);
-        
+
         controller = spy(new ConsentController());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        
+        doReturn(session).when(controller).getAuthenticatedSession();
+
         studyService = mock(StudyService.class);
         study = mock(Study.class);
         when(studyService.getStudy(studyId)).thenReturn(study);
         controller.setStudyService(studyService);
-        
+
         consentService = mock(ConsentService.class);
         controller.setConsentService(consentService);
 
@@ -69,26 +70,28 @@ public class ConsentControllerMockedTest {
 
         controller.setCacheProvider(mock(CacheProvider.class));
     }
-    
+
     @Test
     public void testChangeSharingScope() {
         controller.changeSharingScope(SharingScope.NO_SHARING, "message");
-        
+
         InOrder inOrder = inOrder(optionsService, consentService);
         inOrder.verify(optionsService).setOption(study, "healthCode", SharingScope.NO_SHARING);
         inOrder.verify(consentService).emailConsentAgreement(study, user);
     }
-    
+
     @Test
     public void consentSignatureCorrect() throws Exception {
-        ConsentSignature sig = ConsentSignature.create("Jack Aubrey", "1970-10-10", "data:asdf", "image/png", UNIX_TIMESTAMP);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
+                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+
         when(consentService.getConsentSignature(study, user)).thenReturn(sig);
-        
+
         Result result = controller.getConsentSignature();
-        
+
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
-        
+
         assertEquals(5, fieldNameCount(node));
         assertEquals("Jack Aubrey", node.get("name").asText());
         assertEquals("1970-10-10", node.get("birthdate").asText());
@@ -97,7 +100,7 @@ public class ConsentControllerMockedTest {
         assertEquals("image/png", node.get("imageMimeType").asText());
         // no signedOn value
     }
-    
+
     private int fieldNameCount(JsonNode node) {
         int count = 0;
         for (Iterator<String> i = node.fieldNames(); i.hasNext();) {

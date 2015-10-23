@@ -73,7 +73,8 @@ public class StormpathAccountTest {
         // StormpathAccount, we're going to put a legacy state in the map that's stubbing out
         // The CustomData element, and then verify that we can retrieve and deserialize the consent
         // even without a version attribute.
-        sig = ConsentSignature.create("Test", "1970-01-01", "test", "image/png", UNIX_TIMESTAMP);
+        sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test")
+                .withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
         legacySignature = new ObjectMapper().writeValueAsString(sig);
         encryptDecryptValues(encryptor2, legacySignature, legacySignature);
         

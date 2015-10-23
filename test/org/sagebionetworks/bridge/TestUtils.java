@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge;
 
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.Period;
@@ -33,6 +35,7 @@ import play.mvc.Http;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class TestUtils {
@@ -55,7 +58,15 @@ public class TestUtils {
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(node);
 
+        Map<String,String[]> headers = Maps.newHashMap();
+        headers.put("Content-Type", new String[] {"text/json; charset=UTF-8"});
         Http.Request request = mock(Http.Request.class);
+
+        when(request.getHeader(anyString())).thenAnswer(invocation -> {
+            Object[] args = invocation.getArguments();
+            return headers.get(args[0])[0];
+        });
+        when(request.headers()).thenReturn(headers);
         when(request.body()).thenReturn(body);
 
         Http.Context context = mock(Http.Context.class);

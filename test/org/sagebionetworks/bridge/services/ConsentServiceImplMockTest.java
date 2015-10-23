@@ -65,7 +65,8 @@ public class ConsentServiceImplMockTest {
         study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
         user = new User();
         user.setHealthCode("BBB");
-        consentSignature = ConsentSignature.create("Test User", "1990-01-01", null, null, UNIX_TIMESTAMP);
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1990-01-01")
+                .withSignedOn(UNIX_TIMESTAMP).build();
         
         Account account = mock(Account.class);
         when(accountDao.getAccount(any(Study.class), any(String.class))).thenReturn(account);
@@ -86,7 +87,8 @@ public class ConsentServiceImplMockTest {
 
     @Test
     public void noActivityEventIfTooYoung() {
-        consentSignature = ConsentSignature.create("Test User", "2014-01-01", null, null, UNIX_TIMESTAMP);
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(UNIX_TIMESTAMP).build();
         study.setMinAgeOfConsent(30); // Test is good until 2044. So there.
         
         try {

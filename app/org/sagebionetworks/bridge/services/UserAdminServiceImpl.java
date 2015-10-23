@@ -105,9 +105,9 @@ public class UserAdminServiceImpl implements UserAdminService {
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
-                String sig = String.format("[Signature for %s]", signUp.getEmail());;
-                ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null,
-                        DateUtils.getCurrentMillisFromEpoch());
+                String name = String.format("[Signature for %s]", signUp.getEmail());
+                ConsentSignature consent = new ConsentSignature.Builder().withName(name)
+                        .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 consentService.consentToResearch(study, newUserSession.getUser(), consent,
                         SharingScope.NO_SHARING, false);
             }

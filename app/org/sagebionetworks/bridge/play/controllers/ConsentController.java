@@ -88,8 +88,11 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final JsonNode node = requestToJSON(request());
+        
         final long signedOn = DateUtils.getCurrentMillisFromEpoch();
-        final ConsentSignature consent = ConsentSignature.createFromJson(node, signedOn);
+        ConsentSignature signature = parseJson(request(), ConsentSignature.class);
+        final ConsentSignature consent = new ConsentSignature.Builder().withConsentSignature(signature, signedOn).build();
+        
         final SharingOption sharing = SharingOption.fromJson(node, version);
         final User user = consentService.consentToResearch(study, session.getUser(), consent,
                 sharing.getSharingScope(), true);

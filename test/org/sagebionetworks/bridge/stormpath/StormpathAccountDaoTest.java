@@ -130,7 +130,8 @@ public class StormpathAccountDaoTest {
         Account account = null;
         try {
             long signedOn = DateUtils.getCurrentMillisFromEpoch();
-            ConsentSignature sig = ConsentSignature.create("Test Test", "1970-01-01", null, null, signedOn);
+            ConsentSignature sig = new ConsentSignature.Builder().withName("Test Test").withBirthdate("1970-01-01")
+                    .withSignedOn(signedOn).build();
             
             SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS));
             

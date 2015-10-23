@@ -83,8 +83,8 @@ public class SendMailViaAmazonServiceConsentTest {
     public void whenNoStudySupportEmailUsesDefaultSupportEmail() {
         study.setSupportEmail(""); // just a blank string, tricky
 
-        ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null,
-                DateUtils.getCurrentMillisFromEpoch());
+        ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
+                .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
@@ -100,8 +100,8 @@ public class SendMailViaAmazonServiceConsentTest {
 
     @Test
     public void sendConsentEmail() {
-        ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null,
-                DateUtils.getCurrentMillisFromEpoch());
+        ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
+                .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
@@ -132,8 +132,9 @@ public class SendMailViaAmazonServiceConsentTest {
 
     @Test
     public void sendConsentEmailWithSignatureImage() {
-        ConsentSignature consent = ConsentSignature.create("Eggplant McTester", "1970-05-01",
-                TestConstants.DUMMY_IMAGE_DATA, "image/fake", DateUtils.getCurrentMillisFromEpoch());
+        ConsentSignature consent = new ConsentSignature.Builder().withName("Eggplant McTester")
+                .withBirthdate("1970-05-01").withImageData(TestConstants.DUMMY_IMAGE_DATA)
+                .withImageMimeType("image/fake").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
