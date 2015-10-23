@@ -3,10 +3,13 @@ package org.sagebionetworks.bridge.play.controllers;
 import java.util.Collections;
 import java.util.List;
 
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +17,9 @@ import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 @Controller
@@ -32,6 +38,30 @@ public class ScheduleController extends BaseController {
         return okResult(Collections.emptyList());
     }
     
+    @Deprecated
+    public Result getSchedulesV3() throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+        
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
+        List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
+        for (SchedulePlan plan : plans) {
+            Schedule schedule = plan.getStrategy().getScheduleForUser(session.getStudyIdentifier(), plan, session.getUser());
+            schedules.add(schedule);
+        }
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(new ResourceList<Schedule>(schedules));
+        ArrayNode items = (ArrayNode)node.get("items");
+        for (int i=0; i < items.size(); i++) {
+            Schedule schedule = plans.get(i).getStrategy().getAllPossibleSchedules().get(0);
+            if (schedule.getPersistent()) {
+                ((ObjectNode)items.get(i)).put("scheduleType", ScheduleType.RECURRING.name().toLowerCase());
+            }
+        }
+        return ok(node);
+    }
+    
     public Result getSchedules() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
@@ -45,5 +75,4 @@ public class ScheduleController extends BaseController {
         }
         return okResult(schedules);
     }
-    
 }
