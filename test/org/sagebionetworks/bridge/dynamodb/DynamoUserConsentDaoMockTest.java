@@ -105,10 +105,9 @@ public class DynamoUserConsentDaoMockTest {
         
         assertTrue(cons3.getConsentCreatedOn() > 0);
         assertTrue(cons3.getSignedOn() > 0);
-        assertNotNull(cons3.getHealthCode());
-        assertNotNull(cons3.getHealthCodeStudy());
-        assertNotNull(cons3.getStudyIdentifier());
-        assertTrue(cons3.getHealthCodeStudy().contains(cons3.getHealthCode()));
+        assertEquals(HEALTH_CODE, cons3.getHealthCode());
+        assertEquals(HEALTH_CODE+":"+studyConsent.getStudyKey(), cons3.getHealthCodeStudy());
+        assertEquals(studyConsent.getStudyKey(), cons3.getStudyIdentifier());
     }
     
     @Test
