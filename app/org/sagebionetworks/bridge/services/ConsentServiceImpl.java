@@ -157,9 +157,7 @@ public class ConsentServiceImpl implements ConsentService {
         StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(studyIdentifier);
 
         if (mostRecentConsent != null && userConsent != null) {
-            // If the user signed the StudyConsent after the time the most recent StudyConsent was created, then the
-            // user has signed the most recent StudyConsent.
-            return userConsent.getSignedOn() > mostRecentConsent.getCreatedOn();
+            return userConsent.getConsentCreatedOn() == mostRecentConsent.getCreatedOn();
         } else {
             return false;
         }

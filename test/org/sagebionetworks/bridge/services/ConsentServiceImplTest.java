@@ -41,8 +41,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentServiceImplTest {
 
-    private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
-    
     @Resource
     private JedisOps jedisOps;
     
@@ -106,7 +104,7 @@ public class ConsentServiceImplTest {
     public void canConsent() {
         // Consent and verify.
         ConsentSignature researchConsent = new ConsentSignature.Builder().withName("John Smith")
-                .withBirthdate("1990-11-11").withSignedOn(UNIX_TIMESTAMP).build();
+                .withBirthdate("1990-11-11").build();
         consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent, 
                 SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
         
@@ -134,16 +132,20 @@ public class ConsentServiceImplTest {
         // Consent and verify.
         ConsentSignature signature = new ConsentSignature.Builder().withName("Eggplant McTester")
                 .withBirthdate("1970-01-01").withImageData(TestConstants.DUMMY_IMAGE_DATA)
-                .withImageMimeType("image/fake").withSignedOn(UNIX_TIMESTAMP).build();
+                .withImageMimeType("image/fake").build();
+        
+        long signedOn = signature.getSignedOn();
+        
         consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), signature, SharingScope.NO_SHARING, false);
         assertTrue(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
-        
+
         ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
         
         assertEquals("Eggplant McTester", returnedSig.getName());
         assertEquals("1970-01-01", returnedSig.getBirthdate());
         assertEquals(TestConstants.DUMMY_IMAGE_DATA, returnedSig.getImageData());
         assertEquals("image/fake", returnedSig.getImageMimeType());
+        assertEquals(signedOn, returnedSig.getSignedOn());
 
         // Withdraw consent and verify.
         consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
@@ -165,23 +167,21 @@ public class ConsentServiceImplTest {
 
         // This will work
         ConsentSignature sig = new ConsentSignature.Builder().withName("Test User")
-                .withBirthdate(DateUtils.getCalendarDateString(today18YearsAgo)).withSignedOn(UNIX_TIMESTAMP).build();
+                .withBirthdate(DateUtils.getCalendarDateString(today18YearsAgo)).build();
         consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
         
         consentService.withdrawConsent(study, testUser.getUser());
 
         // Also okay
         sig = new ConsentSignature.Builder().withName("Test User")
-                .withBirthdate(DateUtils.getCalendarDateString(yesterday18YearsAgo)).withSignedOn(UNIX_TIMESTAMP)
-                .build();
+                .withBirthdate(DateUtils.getCalendarDateString(yesterday18YearsAgo)).build();
         consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
         consentService.withdrawConsent(study, testUser.getUser());
 
         // But this is not, one day to go
         try {
             sig = new ConsentSignature.Builder().withName("Test User")
-                    .withBirthdate(DateUtils.getCalendarDateString(tomorrow18YearsAgo)).withSignedOn(UNIX_TIMESTAMP)
-                    .build();
+                    .withBirthdate(DateUtils.getCalendarDateString(tomorrow18YearsAgo)).build();
             consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
             fail("This should throw an exception");
         } catch (InvalidEntityException e) {
@@ -223,9 +223,10 @@ public class ConsentServiceImplTest {
 
     @Test
     public void checkConsentUpToDate() {
-        ConsentSignature researchConsent = new ConsentSignature.Builder().withName("John Smith")
-                .withBirthdate("1990-11-11").withSignedOn(UNIX_TIMESTAMP).build();
-        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent,
+        ConsentSignature consent = new ConsentSignature.Builder().withName("John Smith")
+                .withBirthdate("1990-11-11").build();
+
+        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
 
         assertTrue("Should be consented",
@@ -251,7 +252,7 @@ public class ConsentServiceImplTest {
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
         consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
-        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent,
+        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
 
         assertTrue("Should still be consented.",

@@ -7,8 +7,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.List;
 import java.util.Set;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -53,7 +51,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
             if (consent == null) {
                 consent = new DynamoUserConsent2(healthCode, studyConsent);
             }
-            consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
+            consent.setSignedOn(signedOn);
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
             throw new EntityAlreadyExistsException(consent);
