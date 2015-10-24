@@ -54,9 +54,10 @@ public class ScheduleController extends BaseController {
         JsonNode node = BridgeObjectMapper.get().valueToTree(new ResourceList<Schedule>(schedules));
         ArrayNode items = (ArrayNode)node.get("items");
         for (int i=0; i < items.size(); i++) {
-            // If it's marked persistent it's also a once-time schedule. Hack this to make it a recurring schedule.
-            if (schedules.get(i).getPersistent()) {
+            // If the schedule has this cron string, make it a recurring, "persistent" schedule
+            if ("0 0 12 1/1 * ? *".equals(schedules.get(i).getCronTrigger())) {
                 ((ObjectNode)items.get(i)).put("scheduleType", ScheduleType.RECURRING.name().toLowerCase());
+                ((ObjectNode)items.get(i)).put("persistent", true);
             }
         }
         return ok(node);
