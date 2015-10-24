@@ -26,11 +26,7 @@ public final class ConsentSignature implements BridgeEntity {
     public static final ObjectWriter SIGNATURE_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter", 
             SimpleBeanPropertyFilter.serializeAllExcept("signedOn")));
-    /*
-    private static final String NAME_FIELD = "name";
-    private static final String BIRTHDATE_FIELD = "birthdate";
-    private static final String IMAGE_DATA_FIELD = "imageData";
-    private static final String IMAGE_MIME_TYPE = "imageMimeType";*/
+
     private static final ConsentSignatureValidator VALIDATOR = new ConsentSignatureValidator();
 
     private final @Nonnull String name;
@@ -51,26 +47,6 @@ public final class ConsentSignature implements BridgeEntity {
         this.imageMimeType = imageMimeType;
         this.signedOn = signedOn;
     }
-
-    /*
-    public static ConsentSignature create(@Nonnull String name, @Nonnull String birthdate, @Nullable String imageData,
-            @Nullable String imageMimeType, @Nonnull long signedOn) throws InvalidEntityException {
-        ConsentSignature sig = new ConsentSignature(name, birthdate, imageData, imageMimeType, signedOn);
-        Validate.entityThrowingException(VALIDATOR, sig);
-        return sig;
-    }
-    
-    public static ConsentSignature create(ConsentSignature signature, long signedOn) {
-        return create(signature.name, signature.birthdate, signature.imageData, signature.imageMimeType, signedOn);
-    }
-
-    public static ConsentSignature createFromJson(JsonNode node, long signedOn) throws InvalidEntityException {
-        String name = JsonUtils.asText(node, NAME_FIELD);
-        String birthdate = JsonUtils.asText(node, BIRTHDATE_FIELD);
-        String imageData = JsonUtils.asText(node, IMAGE_DATA_FIELD);
-        String imageMimeType = JsonUtils.asText(node, IMAGE_MIME_TYPE);
-        return create(name, birthdate, imageData, imageMimeType, signedOn);
-    }*/
 
     /** Name of the user giving consent. */
     public @Nonnull String getName() {

@@ -28,9 +28,7 @@ public class ConsentSignatureValidator implements Validator {
         if (Strings.isNullOrEmpty(sig.getBirthdate())) {
             errors.rejectValue("birthdate", CANNOT_BE_BLANK);
         }
-        // Just verify that the signature timestamp is close to the current time...
-        long oneHourAgo = DateTime.now().minusHours(1).getMillis();
-        if (sig.getSignedOn() > oneHourAgo) {
+        if (sig.getSignedOn() > 0L) {
             errors.rejectValue("signedOn", "must be a valid signature timestamp");
         }
         // Signature image is currently optional. Some studies may collect a signature, but some may not. It's okay
