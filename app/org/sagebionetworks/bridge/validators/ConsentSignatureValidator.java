@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
@@ -28,7 +27,7 @@ public class ConsentSignatureValidator implements Validator {
         if (Strings.isNullOrEmpty(sig.getBirthdate())) {
             errors.rejectValue("birthdate", CANNOT_BE_BLANK);
         }
-        if (sig.getSignedOn() > 0L) {
+        if (sig.getSignedOn() <= 0L) {
             errors.rejectValue("signedOn", "must be a valid signature timestamp");
         }
         // Signature image is currently optional. Some studies may collect a signature, but some may not. It's okay
