@@ -87,8 +87,8 @@ public class ScheduleControllerTest {
 
         Schedule schedule = new Schedule();
         schedule.addActivity(new Activity.Builder().withLabel("Label").withTask("foo").build());
-        schedule.setEventId("activity:"+schedule.getActivities().get(0).getGuid()+":finished");
-        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 0 12 1/1 * ? *");
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         
@@ -101,8 +101,8 @@ public class ScheduleControllerTest {
 
         schedule = new Schedule();
         schedule.addActivity(new Activity.Builder().withLabel("Label").withTask("foo").build());
-        schedule.setEventId("activity:"+schedule.getActivities().get(0).getGuid()+":finished");
-        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 0 12 1/1 * ? *");
         strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         
