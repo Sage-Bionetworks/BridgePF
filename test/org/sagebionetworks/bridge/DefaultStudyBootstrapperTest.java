@@ -27,7 +27,7 @@ public class DefaultStudyBootstrapperTest {
     public void createsDefaultStudyWhenMissing() {
         DefaultStudyBootstrapper bootstrapper = new DefaultStudyBootstrapper();
         bootstrapper.setStudyService(studyService);
-        bootstrapper.setupDefaultStudy();
+        bootstrapper.initializeDatabase();
 
         ArgumentCaptor<Study> argument = ArgumentCaptor.forClass(Study.class);
         verify(studyService).createStudy(argument.capture());

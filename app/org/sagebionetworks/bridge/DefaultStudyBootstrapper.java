@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge;
 
 import javax.annotation.PostConstruct;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -19,12 +21,13 @@ public class DefaultStudyBootstrapper {
     public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-    
+
     @PostConstruct
-    public void setupDefaultStudy() {
+    public void initializeDatabase() {
+        DynamoInitializer.init(DynamoUserConsent3.class);
         try {
             studyService.getStudy("api");
-        } catch(EntityNotFoundException e) {
+        } catch (EntityNotFoundException e) {
             Study study = new DynamoStudy();
             study.setName("Test Study");
             study.setIdentifier("api");
