@@ -7,17 +7,12 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.List;
 import java.util.Set;
 
-<<<<<<< HEAD
-import org.sagebionetworks.bridge.config.BridgeConfig;
-=======
 import javax.annotation.Resource;
 
 import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
->>>>>>> 117ef4e4e06cefe32b61a0598e506f9d6588660d
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
