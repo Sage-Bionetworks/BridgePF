@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -24,7 +25,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
@@ -36,6 +36,7 @@ import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -43,6 +44,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -102,17 +105,27 @@ public class SurveyServiceTest {
         surveyService.createSurvey(testSurvey);
     }
 
-    @Test(expected = BridgeServiceException.class)
-    public void createPreventsRecreatingASurvey() {
+    @Test
+    public void createChangesAllGUIDs() {
+        Set<String> originalGuids = Sets.newHashSet();
+        
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
-
-        surveyService.createSurvey(testSurvey);
-    }
-
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void cannotCreateAnExistingSurvey() {
-        surveyService.createSurvey(new TestSurvey(false));
+        
+        // Save all the identifiers
+        originalGuids.add(survey.getGuid());
+        for (SurveyElement element : survey.getElements()) {
+            originalGuids.add(element.getGuid());
+        }
+        
+        Survey alteredSurvey = surveyService.createSurvey(testSurvey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(alteredSurvey));
+        
+        // verify all the identifiers
+        assertFalse(originalGuids.contains(alteredSurvey.getGuid()));
+        for (SurveyElement element : alteredSurvey.getElements()) {
+            assertFalse(originalGuids.contains(element.getGuid()));
+        }
     }
 
     @Test

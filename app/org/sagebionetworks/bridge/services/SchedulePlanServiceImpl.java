@@ -1,9 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -19,6 +20,7 @@ import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 
 @Component
 public class SchedulePlanServiceImpl implements SchedulePlanService {
@@ -54,9 +56,11 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
 
     @Override
     public SchedulePlan createSchedulePlan(SchedulePlan plan) {
+        checkNotNull(plan);
+        
+        // Delete existing GUIDs so this is a new object (or recreate them)
+        updateGuids(plan);
         Validate.entityThrowingException(validator, plan);
-        checkNewEntity(plan, plan.getGuid(), "Schedule plan has a GUID; it may already exist");
-        checkNewEntity(plan, plan.getVersion(), "Schedule plan has a version value; it may already exist");
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
@@ -75,6 +79,18 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     @Override
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
+    }
+    
+    private void updateGuids(SchedulePlan plan) {
+        plan.setVersion(null);
+        plan.setGuid(BridgeUtils.generateGuid());
+        for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
+            for (int i=0; i < schedule.getActivities().size(); i++) {
+                Activity activity = schedule.getActivities().get(i);
+                schedule.getActivities().set(i, new Activity.Builder()
+                    .withActivity(activity).withGuid(BridgeUtils.generateGuid()).build());
+            }
+        }
     }
 
     /**

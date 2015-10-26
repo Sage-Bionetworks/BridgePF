@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -25,6 +27,8 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
+
+import com.google.common.collect.Sets;
 
 public class SchedulePlanServiceMockTest {
 
@@ -114,6 +118,34 @@ public class SchedulePlanServiceMockTest {
         identifier = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities().get(0)
                 .getSurvey().getIdentifier();
         assertNotEquals("junkIdentifier", identifier);
+        
+    }
+    
+    @Test
+    public void verifyCreateDoesNotUseProvidedGUIDs() throws Exception {
+        SchedulePlan plan = createSchedulePlan();
+        plan.setVersion(2L);
+        plan.setGuid("AAA");
+        Set<String> existingActivityGUIDs = Sets.newHashSet();
+        for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
+            for (Activity activity : schedule.getActivities()) {
+                existingActivityGUIDs.add(activity.getGuid());
+            }
+        }
+        
+        ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
+        service.createSchedulePlan(plan);
+        
+        verify(mockSchedulePlanDao).createSchedulePlan(spCaptor.capture());
+        
+        SchedulePlan updatedPlan = spCaptor.getValue();
+        assertNotEquals("AAA", updatedPlan.getGuid());
+        assertNotEquals(new Long(2L), updatedPlan.getVersion());
+        for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
+            for (Activity activity : schedule.getActivities()) {
+                assertFalse( existingActivityGUIDs.contains(activity.getGuid()) );
+            }
+        }
         
     }
     
