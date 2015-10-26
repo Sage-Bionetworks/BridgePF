@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -9,9 +11,12 @@ import static org.mockito.Mockito.when;
 
 import java.util.Iterator;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -28,6 +33,8 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import play.mvc.Http.Context;
+import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -81,7 +88,7 @@ public class ConsentControllerMockedTest {
     }
 
     @Test
-    public void consentSignatureCorrect() throws Exception {
+    public void consentSignatureJSONCorrect() throws Exception {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
@@ -98,7 +105,33 @@ public class ConsentControllerMockedTest {
         assertEquals("ConsentSignature", node.get("type").asText());
         assertEquals("data:asdf", node.get("imageData").asText());
         assertEquals("image/png", node.get("imageMimeType").asText());
-        // no signedOn value
+        // no signedOn value when serializing
+    }
+    
+    @Test
+    public void consentSignatureHasSignedOnValue() throws Exception {
+        // This signedOn value should be ignored, it is always set on the server
+        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":123,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        
+        Context context = TestUtils.mockPlayContextWithJson(json);
+        Http.Context.current.set(context);
+        
+        ArgumentCaptor<ConsentSignature> captor = ArgumentCaptor.forClass(ConsentSignature.class);
+        when(consentService.consentToResearch(any(Study.class), any(User.class), captor.capture(),
+                any(SharingScope.class), any(Boolean.class))).thenReturn(user);
+        
+        Result result = controller.giveV2();
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("Consent to research has been recorded.", node.get("message").asText());
+        
+        ConsentSignature signature = captor.getValue();
+        // This will be much higher than 123L
+        assertTrue(signature.getSignedOn() > DateTime.now().minusMinutes(1).getMillis());
+        assertEquals("Jack Aubrey", signature.getName());
+        assertEquals("1970-10-10", signature.getBirthdate());
+        assertEquals("data:asdf", signature.getImageData());
+        assertEquals("image/png", signature.getImageMimeType());
     }
 
     private int fieldNameCount(JsonNode node) {

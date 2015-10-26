@@ -74,11 +74,11 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void activityEventFiredOnConsent() {
-        UserConsent consent = mock(UserConsent.class);
-        when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class), any(Long.class))).thenReturn(consent);
-        
         StudyConsentView view = mock(StudyConsentView.class);
         when(studyConsentService.getActiveConsent(any(Study.class))).thenReturn(view);
+        
+        UserConsent consent = mock(UserConsent.class);
+        when(userConsentDao.giveConsent(user.getHealthCode(), view.getStudyConsent(), UNIX_TIMESTAMP)).thenReturn(consent);
         
         consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
         
@@ -113,7 +113,8 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void noActivityEventIfDaoFails() {
-        when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class), any(Long.class))).thenThrow(new RuntimeException());
+        StudyConsent consent = mock(StudyConsent.class);
+        when(userConsentDao.giveConsent(user.getHealthCode(), consent, UNIX_TIMESTAMP)).thenThrow(new RuntimeException());
         
         try {
             consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);

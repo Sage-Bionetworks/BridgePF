@@ -61,6 +61,7 @@ public class TestUtils {
         Map<String,String[]> headers = Maps.newHashMap();
         headers.put("Content-Type", new String[] {"text/json; charset=UTF-8"});
         Http.Request request = mock(Http.Request.class);
+        Http.Response response = mock(Http.Response.class);
 
         when(request.getHeader(anyString())).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
@@ -71,6 +72,7 @@ public class TestUtils {
 
         Http.Context context = mock(Http.Context.class);
         when(context.request()).thenReturn(request);
+        when(context.response()).thenReturn(response);
 
         return context;
     }
