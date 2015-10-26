@@ -108,34 +108,38 @@ public class ConsentServiceImpl implements ConsentService {
         ConsentAgeValidator validator = new ConsentAgeValidator(study);
         Validate.entityThrowingException(validator, consentSignature);
 
-        Account account = accountDao.getAccount(study, user.getEmail());
+        final StudyConsentView studyConsent = studyConsentService.getActiveConsent(study);
+        final Account account = accountDao.getAccount(study, user.getEmail());
 
+        // Throws exception if we have exceeded enrollment limit.
+        incrementStudyEnrollment(study);
+        
         account.setConsentSignature(consentSignature);
         accountDao.updateAccount(study, account);
         
-        final StudyConsentView studyConsent = studyConsentService.getActiveConsent(study);
-
-        incrementStudyEnrollment(study);
+        UserConsent userConsent = null;
         try {
-            UserConsent userConsent = userConsentDao.giveConsent(
-                user.getHealthCode(), studyConsent.getStudyConsent(), consentSignature.getSignedOn());
-            if (userConsent != null){
-                activityEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
-            }
+            userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent.getStudyConsent(),
+                    consentSignature.getSignedOn());
         } catch (Throwable e) {
+            // If we can't save consent record, decrement and remove the signature before rethrowing
             decrementStudyEnrollment(study);
+            account.setConsentSignature(null);
+            accountDao.updateAccount(study, account);
             throw e;
         }
-
+        
+        // Save supplemental records, fire events, etc.
+        if (userConsent != null){
+            activityEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
+        }
         optionsService.setOption(study, user.getHealthCode(), sharingScope);
-
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, 
                 consentSignature, sharingScope, studyConsentService, consentTemplate);
 
             sendMailService.sendEmail(consentEmail);
         }
-
         user.setConsent(true);
         return user;
     }

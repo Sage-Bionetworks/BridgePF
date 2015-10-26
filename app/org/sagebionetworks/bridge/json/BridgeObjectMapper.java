@@ -104,11 +104,6 @@ public class BridgeObjectMapper extends ObjectMapper {
      *
      */
     public class TypeBeanSerializer extends BeanSerializer {
-        // Objects that have a filtered writer, that are serialized with and without the filter, can end 
-        // up with two type properties in the JSON. To prevent this, we keep track and only write the 
-        // type property once.
-        private boolean hasWrittenTypeProperty = false;
-        
         public TypeBeanSerializer(BeanSerializerBase src) {
             super(src);
         }
@@ -128,11 +123,10 @@ public class BridgeObjectMapper extends ObjectMapper {
         }
 
         private void addTypeProperty(Object bean, JsonGenerator jgen) throws IOException {
-            if (!hasWrittenTypeProperty && noTypeProperty(bean)) {
+            if (noTypeProperty(bean)) {
                 String typeName = BridgeUtils.getTypeName(bean.getClass());
                 if (typeName != null) {
                     jgen.writeStringField("type", typeName);
-                    hasWrittenTypeProperty = true;
                 }
             }
         }

@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 public final class ConsentSignature implements BridgeEntity {
 
     public static final ObjectWriter SIGNATURE_WRITER = new BridgeObjectMapper().writer(
-            new SimpleFilterProvider().addFilter("filter", 
+            new SimpleFilterProvider().addFilter("filter",
             SimpleBeanPropertyFilter.serializeAllExcept("signedOn")));
 
     private static final ConsentSignatureValidator VALIDATOR = new ConsentSignatureValidator();
