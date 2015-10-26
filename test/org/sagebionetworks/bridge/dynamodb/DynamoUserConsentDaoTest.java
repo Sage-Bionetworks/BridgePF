@@ -9,6 +9,7 @@ import javax.annotation.Resource;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -26,17 +27,28 @@ public class DynamoUserConsentDaoTest {
     @Resource
     private DynamoUserConsentDao userConsentDao;
 
+    @BeforeClass
+    public static void beforeClass() {
+        DynamoInitializer.init(DynamoUserConsent2.class);
+        DynamoInitializer.init(DynamoUserConsent3.class);
+    }
+    
     @Before
     public void before() {
-        DynamoInitializer.init(DynamoUserConsent2.class);
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
+        userConsentDao.deleteConsentRecords(HEALTH_CODE, STUDY_IDENTIFIER);
+        for (int i=1; i < 6; i++) {
+            userConsentDao.deleteConsentRecords(HEALTH_CODE+i, STUDY_IDENTIFIER);
+        }
     }
 
     @After
     public void after() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
+        userConsentDao.deleteConsentRecords(HEALTH_CODE, STUDY_IDENTIFIER);
+        for (int i=1; i < 6; i++) {
+            userConsentDao.deleteConsentRecords(HEALTH_CODE+i, STUDY_IDENTIFIER);
+        }
     }
-
+    
     @Test
     public void canConsentToStudy() {
         // Not consented yet

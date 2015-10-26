@@ -4,10 +4,12 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 public interface UserConsent extends BridgeEntity {
     
-    public long getSignedOn();
-
-    public String getStudyKey();
+    public String getStudyIdentifier();
 
     public long getConsentCreatedOn();
+    
+    public long getSignedOn();
+    
+    public Long getWithdrewOn();
 
 }

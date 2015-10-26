@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.exceptions;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -8,19 +10,19 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @NoStackTraceException
 public class EntityNotFoundException extends BridgeServiceException {
     
-    private Class<? extends BridgeEntity> clazz; 
+    private Class<? extends BridgeEntity> entity; 
     
-    public EntityNotFoundException(Class<? extends BridgeEntity> clazz) {
-        this(clazz, BridgeUtils.getTypeName(clazz) + " not found.");
+    public EntityNotFoundException(Class<? extends BridgeEntity> entity) {
+        this(entity, BridgeUtils.getTypeName(entity) + " not found.");
     }
     
-    public EntityNotFoundException(Class<? extends BridgeEntity> clazz, String message) {
+    public EntityNotFoundException(Class<? extends BridgeEntity> entity, String message) {
         super(message, HttpStatus.SC_NOT_FOUND);
-        this.clazz = clazz;
+        this.entity = checkNotNull(entity);
     }
     
     public Class<? extends BridgeEntity> getEntityClass() {
-        return clazz;
+        return entity;
     }
 
 }

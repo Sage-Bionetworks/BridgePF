@@ -45,4 +45,17 @@ public interface UserConsentDao {
      * @return
      */
     long getNumberOfParticipants(StudyIdentifier studyIdentifier);
+    
+    /**
+     * Delete all consent records for a user, in order to clean up after tests. If withdrawing a user, 
+     * call <code>withDrawConsent()</code> instead.
+     */
+    void deleteConsentRecords(String healthCode, StudyIdentifier studyIdentifier);
+    
+    /**
+     * Copy existing consent record over from consent 2 table to consent 3 table.
+     * @param healthCode
+     * @param studyIdentifier
+     */
+    boolean migrateConsent(String healthCode, StudyIdentifier studyIdentifier);
 }

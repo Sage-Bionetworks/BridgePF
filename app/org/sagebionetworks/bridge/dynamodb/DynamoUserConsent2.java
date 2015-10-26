@@ -4,10 +4,10 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -39,13 +39,6 @@ public class DynamoUserConsent2 implements UserConsent {
         healthCodeStudy = healthCode + ":" + studyKey;
     }
 
-    // Constructor to create a hash-key object
-    DynamoUserConsent2(String healthCode, StudyConsent consent) {
-        this(healthCode, consent.getStudyKey());
-        consentCreatedOn = consent.getCreatedOn();
-    }
-
-    // Copy constructor
     DynamoUserConsent2(DynamoUserConsent2 consent) {
         healthCodeStudy = consent.healthCodeStudy;
         signedOn = consent.signedOn;
@@ -53,6 +46,14 @@ public class DynamoUserConsent2 implements UserConsent {
         healthCode = consent.healthCode;
         studyKey = consent.studyKey;
         consentCreatedOn = consent.consentCreatedOn;
+    }
+
+    // We're not going to use this value until after we migrate to UserConsent3, 
+    // so it does not need to be implemented, except so that UserConsent2 and 
+    // UserConsent3 share the same interface.
+    @Override
+    public Long getWithdrewOn() {
+        return null;
     }
 
     @DynamoDBHashKey
@@ -96,6 +97,14 @@ public class DynamoUserConsent2 implements UserConsent {
     }
     public void setStudyKey(String studyKey) {
         this.studyKey = studyKey;
+    }
+    @Override
+    @DynamoDBIgnore
+    public String getStudyIdentifier() {
+        return studyKey;
+    }
+    public void setStudyIdentifier(String studyIdentifier) {
+        this.studyKey = studyIdentifier;
     }
 
     @DynamoDBAttribute
