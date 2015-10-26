@@ -6,9 +6,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -22,6 +25,16 @@ public class ConsentSignatureTest {
     
     private void assertMessage(InvalidEntityException e, String fieldName, String message) {
         assertEquals(message, e.getErrors().get(fieldName).get(0));
+    }
+    
+    @Before
+    public void before() {
+        DateTimeUtils.setCurrentMillisFixed(UNIX_TIMESTAMP);
+    }
+    
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
@@ -308,14 +321,7 @@ public class ConsentSignatureTest {
         assertEquals("1970-01-01", sig.getBirthdate());
         assertEquals(TestConstants.DUMMY_IMAGE_DATA, sig.getImageData());
         assertEquals("image/fake", sig.getImageMimeType());
-    }
-    
-    @Test
-    public void signatureContainsSignedOnValue() throws Exception {
-        String json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\"}";
-
-        ConsentSignature sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
-        assertTrue(sig.getSignedOn() > UNIX_TIMESTAMP);
+        assertEquals(UNIX_TIMESTAMP, sig.getSignedOn());
     }
     
     @Test
@@ -324,7 +330,7 @@ public class ConsentSignatureTest {
         ConsentSignature sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
         assertEquals("test name", sig.getName());
         assertEquals("1970-01-01", sig.getBirthdate());
-        assertTrue(sig.getSignedOn() > UNIX_TIMESTAMP);
+        assertEquals(UNIX_TIMESTAMP, sig.getSignedOn());
     }
     
     @Test
@@ -337,11 +343,9 @@ public class ConsentSignatureTest {
         assertEquals("1970-01-01", updated.getBirthdate());
         assertEquals(UNIX_TIMESTAMP, updated.getSignedOn());
         
-        try {
-            new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(DateTime.now().minusHours(4).getMillis()).build();
-        } catch(InvalidEntityException e) {
-            assertMessage(e, "signedOn", "signedOn must be a valid signature timestamp");
-        }
+        json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\",\"signedOn\":-10}";
+        sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
+        assertEquals(UNIX_TIMESTAMP, sig.getSignedOn());
     }
     
     @Test

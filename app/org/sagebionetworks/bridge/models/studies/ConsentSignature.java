@@ -36,11 +36,7 @@ public final class ConsentSignature implements BridgeEntity {
     private final @Nonnull long signedOn;
 
     /** Private constructor. Instances should be constructed using factory methods create() or createFromJson(). */
-    @JsonCreator
-    private ConsentSignature(@JsonProperty("name") String name, @JsonProperty("birthdate") String birthdate,
-            @JsonProperty("imageData") String imageData, @JsonProperty("imageMimeType") String imageMimeType, 
-            @JsonProperty("signedOn") long signedOn) {
-
+    private ConsentSignature(String name, String birthdate, String imageData, String imageMimeType, long signedOn) {
         this.name = name;
         this.birthdate = birthdate;
         this.imageData = imageData;
