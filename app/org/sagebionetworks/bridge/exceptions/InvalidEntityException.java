@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.exceptions;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 import java.util.Map;
 
@@ -20,12 +22,12 @@ public class InvalidEntityException extends BridgeServiceException {
     
     public InvalidEntityException(BridgeEntity entity, String message) {
         super(message, HttpStatus.SC_BAD_REQUEST);
-        this.entity = entity;
+        this.entity = checkNotNull(entity);
     }
     
     public InvalidEntityException(BridgeEntity entity, String message, Map<String,List<String>> errors) {
         super(message, HttpStatus.SC_BAD_REQUEST);
-        this.entity = entity;
+        this.entity = checkNotNull(entity);
         this.errors = errors;
     }
     

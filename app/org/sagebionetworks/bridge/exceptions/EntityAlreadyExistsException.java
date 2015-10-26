@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.exceptions;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -16,7 +18,7 @@ public class EntityAlreadyExistsException extends BridgeServiceException {
     
     public EntityAlreadyExistsException(BridgeEntity entity, String message) {
         super(message, HttpStatus.SC_CONFLICT);
-        this.entity = entity;
+        this.entity = checkNotNull(entity);
     }
     
     public Class<? extends BridgeEntity> getEntityClass() {

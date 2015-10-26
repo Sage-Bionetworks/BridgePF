@@ -18,10 +18,8 @@ public class DynamoUserConsentTest {
 
         // Test constructor 2
         long consentTimestamp = 789L;
-        DynamoStudyConsent1 studyConsent = new DynamoStudyConsent1();
-        studyConsent.setStudyKey(studyKey);
-        studyConsent.setCreatedOn(consentTimestamp);
-        userConsent = new DynamoUserConsent2(healthCode, studyConsent);
+        userConsent = new DynamoUserConsent2(healthCode, studyKey);
+        userConsent.setConsentCreatedOn(consentTimestamp);
         assertEquals(healthCode + ":" + studyKey, userConsent.getHealthCodeStudy());
         assertEquals(healthCode, userConsent.getHealthCode());
         assertEquals(studyKey, userConsent.getStudyKey());
