@@ -12,6 +12,8 @@ import static org.mockito.Mockito.when;
 import java.util.Iterator;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -53,6 +55,8 @@ public class ConsentControllerMockedTest {
 
     @Before
     public void before() {
+        DateTimeUtils.setCurrentMillisFixed(UNIX_TIMESTAMP);
+        
         session = mock(UserSession.class);
         StudyIdentifier studyId = mock(StudyIdentifier.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);
@@ -78,6 +82,11 @@ public class ConsentControllerMockedTest {
         controller.setCacheProvider(mock(CacheProvider.class));
     }
 
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
+    }
+    
     @Test
     public void testChangeSharingScope() {
         controller.changeSharingScope(SharingScope.NO_SHARING, "message");
@@ -107,27 +116,51 @@ public class ConsentControllerMockedTest {
         assertEquals("image/png", node.get("imageMimeType").asText());
         // no signedOn value when serializing
     }
+
+    @Test
+    public void consentSignatureHasServerSignedOnValue() throws Exception {
+        // signedOn will be set on the server
+        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        
+        ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
+        
+        Result result = controller.giveV2();
+        
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("Consent to research has been recorded.", node.get("message").asText());
+        
+        validateSignature(captor.getValue());
+    }
     
     @Test
-    public void consentSignatureHasSignedOnValue() throws Exception {
-        // This signedOn value should be ignored, it is always set on the server
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":123,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+    public void consentSignatureHasServerGeneratedSignedOnValue() throws Exception {
+        // This signedOn property should be ignored, it is always set on the server
+        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":0,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         
+        ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
+        
+        Result result = controller.giveV2();
+        
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("Consent to research has been recorded.", node.get("message").asText());
+        
+        validateSignature(captor.getValue());
+    }
+    
+    private ArgumentCaptor<ConsentSignature> setUpContextWithJson(String json) throws Exception{
         Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
         
         ArgumentCaptor<ConsentSignature> captor = ArgumentCaptor.forClass(ConsentSignature.class);
         when(consentService.consentToResearch(any(Study.class), any(User.class), captor.capture(),
                 any(SharingScope.class), any(Boolean.class))).thenReturn(user);
-        
-        Result result = controller.giveV2();
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("Consent to research has been recorded.", node.get("message").asText());
-        
-        ConsentSignature signature = captor.getValue();
-        // This will be much higher than 123L
-        assertTrue(signature.getSignedOn() > DateTime.now().minusMinutes(1).getMillis());
+        return captor;
+    }
+    
+    private void validateSignature(ConsentSignature signature) {
+        assertEquals(UNIX_TIMESTAMP, signature.getSignedOn());
         assertEquals("Jack Aubrey", signature.getName());
         assertEquals("1970-10-10", signature.getBirthdate());
         assertEquals("data:asdf", signature.getImageData());
