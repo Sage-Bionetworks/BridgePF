@@ -7,9 +7,9 @@ import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULED_ACTIVITIES_API;
-import static org.sagebionetworks.bridge.TestConstants.SCHEDULES_API;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_OUT_URL;
+import static org.sagebionetworks.bridge.TestConstants.STUDIES_URL;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static org.sagebionetworks.bridge.TestConstants.USERNAME;
@@ -121,7 +121,7 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 try {
-                    saveSecondStudyWithSchedulePlan();
+                    saveSecondStudy();
                     
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
                     node.put(STUDY_PROPERTY, testUser.getStudy().getIdentifier());
@@ -133,10 +133,11 @@ public class AuthenticationControllerTest {
                     WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
                     // Now, try and access schedules in the wrong study (one with a plan), you do not get it.
-                    request = WS.url(TEST_BASE_URL + SCHEDULES_API);
+                    // There's actually no easy way to request another study at this point...
+                    request = WS.url(TEST_BASE_URL + STUDIES_URL + secondStudy.getIdentifier());
                     request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
                     response = request.get().get(TIMEOUT);
-                    assertEquals("{\"items\":[],\"total\":0,\"type\":\"ResourceList\"}", response.getBody());
+                    assertEquals("{\"message\":\"Caller does not have permission to access this service.\"}", response.getBody());
                     
                 } finally {
                     if (secondStudy != null) {
@@ -184,28 +185,11 @@ public class AuthenticationControllerTest {
         });
     }
     
-    private void saveSecondStudyWithSchedulePlan() {
+    private void saveSecondStudy() {
         String id = RandomStringUtils.randomAlphabetic(7).toLowerCase();
         secondStudy = TestUtils.getValidStudy(AuthenticationControllerTest.class);
         secondStudy.setIdentifier(id);
         studyService.createStudy(secondStudy);
-        
-        Schedule schedule = new Schedule();
-        schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.setLabel("Schedule label");
-        schedule.setDelay("P1D");
-        schedule.addTimes("08:00");
-        schedule.getActivities().add(TestConstants.TEST_3_ACTIVITY);
-        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
-        strategy.setSchedule(schedule);
-        
-        // Create a schedule plan for an activity that we can look for in this study...
-        plan = new DynamoSchedulePlan();
-        plan.setLabel("Required schedule plan label");
-        plan.setStudyKey(id);
-        plan.setStrategy(strategy);
-        
-        plan = schedulePlanService.createSchedulePlan(plan);
     }
     
 }

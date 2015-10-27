@@ -18,6 +18,7 @@ public class TestConstants {
     public static final String SIGN_IN_URL = API_URL + "/auth/signIn";
     public static final String SCHEDULES_API = API_URL + "/schedules";
     public static final String SCHEDULED_ACTIVITIES_API = API_URL + "/activities";
+    public static final String STUDIES_URL = API_URL + "/studies/";
 
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";
