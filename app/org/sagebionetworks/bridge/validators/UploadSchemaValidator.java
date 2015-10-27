@@ -88,7 +88,7 @@ public class UploadSchemaValidator implements Validator {
                             errors.rejectValue("name", "is required");
                         } else {
                             if (fieldNameSet.contains(fieldName)) {
-                                errors.rejectValue("name", "duplicate name " + fieldName);
+                                errors.rejectValue("name", "cannot use " + fieldName + " (used by another field)");
                             }
                             fieldNameSet.add(fieldName);
                         }

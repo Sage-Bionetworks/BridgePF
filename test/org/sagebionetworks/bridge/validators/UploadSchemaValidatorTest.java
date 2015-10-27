@@ -352,6 +352,6 @@ public class UploadSchemaValidatorTest {
         } catch (InvalidEntityException ex) {
             thrownEx = ex;
         }
-        assertTrue(thrownEx.getMessage().contains("foo-field"));
+        assertTrue(thrownEx.getMessage().contains("cannot use foo-field (used by another field)"));
     }
 }
