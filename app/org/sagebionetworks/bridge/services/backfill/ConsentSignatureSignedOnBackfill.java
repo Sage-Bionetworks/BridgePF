@@ -66,13 +66,18 @@ public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
                 if (sig != null) {
                     UserConsent consent = userConsentDao.getUserConsent(healthCode, account.getStudyIdentifier());
                     if (consent != null) {
-                        Study study = studyService.getStudy(account.getStudyIdentifier());
-                        sig = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(consent.getSignedOn()).build();
-                        account.setConsentSignature(sig);
+                        if (sig.getSignedOn() != consent.getSignedOn()) {
+                            Study study = studyService.getStudy(account.getStudyIdentifier());
+                            sig = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(consent.getSignedOn()).build();
+                            account.setConsentSignature(sig);
 
-                        accountDao.updateAccount(study, account);
-                        callback.newRecords(getBackfillRecordFactory().createAndSave(task, study, account,
-                                "account updated with signature"));
+                            accountDao.updateAccount(study, account);
+                            callback.newRecords(getBackfillRecordFactory().createAndSave(task, study, account,
+                                    "account updated with signature"));
+                        } else {
+                            callback.newRecords(getBackfillRecordFactory().createOnly(task,
+                                "consent has already been updated with the signedOn date & time"));
+                        }
                     } else {
                         callback.newRecords(getBackfillRecordFactory().createOnly(task,
                                 "user consent not found (signature not updated)"));
