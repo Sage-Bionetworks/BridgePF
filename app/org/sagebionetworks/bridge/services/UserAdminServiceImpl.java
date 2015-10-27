@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
@@ -104,8 +105,9 @@ public class UserAdminServiceImpl implements UserAdminService {
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
-                String sig = String.format("[Signature for %s]", signUp.getEmail());;
-                ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null);
+                String name = String.format("[Signature for %s]", signUp.getEmail());
+                ConsentSignature consent = new ConsentSignature.Builder().withName(name)
+                        .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 consentService.consentToResearch(study, newUserSession.getUser(), consent,
                         SharingScope.NO_SHARING, false);
             }

@@ -13,7 +13,6 @@ import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -46,12 +45,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public UserConsent giveConsent(String healthCode, StudyConsent studyConsent) {
+    public UserConsent giveConsent(String healthCode, StudyConsent studyConsent, long signedOn) {
         checkArgument(isNotBlank(healthCode), "Health code is blank or null");
         checkNotNull(studyConsent);
-
-        // This will be passed in to the method when we coordinate Stormpath and DDB operations
-        long signedOn = DateUtils.getCurrentMillisFromEpoch();
 
         // It doesn't currently matter which table your consent is in, you can't consent again 
         // if a record exists.

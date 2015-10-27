@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -55,7 +56,7 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Give consent
-        userConsentDao.giveConsent(HEALTH_CODE, consent);
+        userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
         assertTrue(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Withdraw
@@ -63,7 +64,7 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Can give consent again if the previous consent is withdrawn
-        userConsentDao.giveConsent(HEALTH_CODE, consent);
+        userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
         assertTrue(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Withdraw again
@@ -75,7 +76,7 @@ public class DynamoUserConsentDaoTest {
     public void canCountStudyParticipants() throws Exception {
         final DynamoStudyConsent1 consent = createStudyConsent();
         for (int i=1; i < 6; i++) {
-            userConsentDao.giveConsent(HEALTH_CODE+i, consent);
+            userConsentDao.giveConsent(HEALTH_CODE+i, consent, DateTime.now().getMillis());
         }
         
         long count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
@@ -85,7 +86,7 @@ public class DynamoUserConsentDaoTest {
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 4, count);
         
-        userConsentDao.giveConsent(HEALTH_CODE+"5", consent);
+        userConsentDao.giveConsent(HEALTH_CODE+"5", consent, DateTime.now().getMillis());
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);
     }

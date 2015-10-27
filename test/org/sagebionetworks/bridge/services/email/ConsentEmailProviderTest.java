@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -25,6 +26,8 @@ import org.sagebionetworks.bridge.services.StudyConsentService;
 
 public class ConsentEmailProviderTest {
 
+    private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
+    
     private static final String LEGACY_DOCUMENT = "<html><head></head><body>Passed through as is. |@@name@@|@@signing.date@@|@@email@@|@@sharing@@|</body></html>";
     
     private static final String NEW_DOCUMENT_FRAGMENT = "<p>This is a consent agreement body</p>";
@@ -45,7 +48,8 @@ public class ConsentEmailProviderTest {
         User user = new User();
         user.setEmail("user@user.com");
         
-        ConsentSignature sig = ConsentSignature.create("Test Person", "1980-06-06", null, null);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("Test Person").withBirthdate("1980-06-06")
+                .withSignedOn(UNIX_TIMESTAMP).build();
         studyConsentService = mock(StudyConsentService.class);
         
         provider = new ConsentEmailProvider(study, user, sig, SharingScope.NO_SHARING, 

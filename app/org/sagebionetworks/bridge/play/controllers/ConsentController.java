@@ -13,8 +13,6 @@ import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 @Controller
 public class ConsentController extends BaseController {
 
@@ -36,7 +34,7 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
         ConsentSignature sig = consentService.getConsentSignature(study, session.getUser());
-        return okResult(sig);
+        return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
     }
 
     @Deprecated
@@ -84,12 +82,12 @@ public class ConsentController extends BaseController {
     }
 
     private Result giveConsentForVersion(int version) throws Exception {
-
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-        final JsonNode node = requestToJSON(request());
-        final ConsentSignature consent = ConsentSignature.createFromJson(node);
-        final SharingOption sharing = SharingOption.fromJson(node, version);
+
+        final ConsentSignature consent = parseJson(request(), ConsentSignature.class);
+        final SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), version);
+        
         final User user = consentService.consentToResearch(study, session.getUser(), consent,
                 sharing.getSharingScope(), true);
 

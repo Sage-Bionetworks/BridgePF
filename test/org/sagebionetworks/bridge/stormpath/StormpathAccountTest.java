@@ -11,20 +11,25 @@ import java.util.HashMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
 public class StormpathAccountTest {
+    
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
+    
+    private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
     
     @SuppressWarnings("serial")
     private class StubCustomData extends HashMap<String,Object> implements CustomData {
@@ -42,6 +47,8 @@ public class StormpathAccountTest {
     private StormpathAccount acct;
     
     private String legacySignature;
+    
+    private ConsentSignature sig;
     
     @Before
     public void setUp() throws Exception {
@@ -69,8 +76,9 @@ public class StormpathAccountTest {
         // StormpathAccount, we're going to put a legacy state in the map that's stubbing out
         // The CustomData element, and then verify that we can retrieve and deserialize the consent
         // even without a version attribute.
-        ConsentSignature sig = ConsentSignature.create("Test", "1970-01-01", "test", "image/png");
-        legacySignature = new ObjectMapper().writeValueAsString(sig);
+        sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test")
+                .withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+        legacySignature = MAPPER.writeValueAsString(sig);
         encryptDecryptValues(encryptor2, legacySignature, legacySignature);
         
         SortedMap<Integer, BridgeEncryptor> encryptors = new TreeMap<>();
@@ -133,8 +141,6 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignatureStoredAndEncrypted() {
-        ConsentSignature sig = ConsentSignature.create("Test", "1970-01-01", "test", "image/png");
-        
         acct.setConsentSignature(sig);
         
         ConsentSignature restoredSig = acct.getConsentSignature();
@@ -142,6 +148,7 @@ public class StormpathAccountTest {
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());
         assertEquals("image/png", restoredSig.getImageMimeType());
+        assertEquals(UNIX_TIMESTAMP, restoredSig.getSignedOn());
     }
     
     @Test

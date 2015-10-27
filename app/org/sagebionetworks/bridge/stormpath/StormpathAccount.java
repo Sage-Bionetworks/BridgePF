@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
@@ -33,11 +34,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @BridgeTypeName("Account")
 class StormpathAccount implements Account {
     
-    // private static Logger logger = LoggerFactory.getLogger(StormpathAccount.class);
-    
     static final String PLACEHOLDER_STRING = "<EMPTY>";
     
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final String PHONE_ATTRIBUTE = "phone";
     public static final String HEALTH_CODE_SUFFIX = "_code";
     public static final String CONSENT_SIGNATURE_SUFFIX = "_consent_signature";

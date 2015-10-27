@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -23,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -91,7 +91,7 @@ public class DynamoUserConsentDaoMockTest {
     
     @Test
     public void giveConsent() {
-        userConsentDao.giveConsent(HEALTH_CODE, studyConsent);
+        userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());
         
         ArgumentCaptor<DynamoUserConsent3> argCaptor3 = ArgumentCaptor.forClass(DynamoUserConsent3.class);
         
@@ -114,7 +114,7 @@ public class DynamoUserConsentDaoMockTest {
     public void giveConsentWhenConsentExists() {
         mockMapperResults();
         try {
-            userConsentDao.giveConsent(HEALTH_CODE, studyConsent);
+            userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());
             fail("Should have thrown exception");
         } catch(BridgeServiceException e) {
             assertEquals("Consent already exists.", e.getMessage());
@@ -130,7 +130,7 @@ public class DynamoUserConsentDaoMockTest {
         when(mapper2.load(any())).thenReturn(null);
         
         try {
-            userConsentDao.giveConsent(HEALTH_CODE, studyConsent);    
+            userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());    
         } catch(BridgeServiceException e) {
             assertEquals("Consent already exists.", e.getMessage());
         }
@@ -145,7 +145,7 @@ public class DynamoUserConsentDaoMockTest {
         when(mapper2.load(any())).thenReturn(existingConsent2);
         
         try {
-            userConsentDao.giveConsent(HEALTH_CODE, studyConsent);    
+            userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());    
         } catch(BridgeServiceException e) {
             assertEquals("Consent already exists.", e.getMessage());
             assertEquals(HttpStatus.SC_CONFLICT, e.getStatusCode());

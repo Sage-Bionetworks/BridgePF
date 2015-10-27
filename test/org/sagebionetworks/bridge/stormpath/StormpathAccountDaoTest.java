@@ -20,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
@@ -128,7 +129,9 @@ public class StormpathAccountDaoTest {
         String email = "bridge-testing+"+random+"@sagebridge.org";
         Account account = null;
         try {
-            ConsentSignature sig = ConsentSignature.create("Test Test", "1970-01-01", null, null);
+            long signedOn = DateUtils.getCurrentMillisFromEpoch();
+            ConsentSignature sig = new ConsentSignature.Builder().withName("Test Test").withBirthdate("1970-01-01")
+                    .withSignedOn(signedOn).build();
             
             SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS));
             
@@ -154,6 +157,8 @@ public class StormpathAccountDaoTest {
             assertEquals(account.getHealthId(), newAccount.getHealthId());
             assertEquals(account.getUsername(), newAccount.getUsername());
             assertEquals(account.getConsentSignature(), newAccount.getConsentSignature());
+            assertEquals(account.getConsentSignature().getSignedOn(), newAccount.getConsentSignature().getSignedOn());
+            assertEquals(signedOn, newAccount.getConsentSignature().getSignedOn());
             assertEquals(1, newAccount.getRoles().size());
             assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
             assertEquals("value of attribute one", account.getAttribute("attribute_one"));

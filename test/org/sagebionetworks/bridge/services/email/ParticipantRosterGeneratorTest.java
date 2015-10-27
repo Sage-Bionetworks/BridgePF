@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
@@ -120,7 +121,8 @@ public class ParticipantRosterGeneratorTest {
         when(account.getAttribute("phone")).thenReturn(phone);
         when(account.getAttribute("can_recontact")).thenReturn("true");
         if (hasConsented) {
-            ConsentSignature sig = ConsentSignature.create(firstName + " " + lastName, "1970-02-02", null, null);
+            ConsentSignature sig = new ConsentSignature.Builder().withName(firstName + " " + lastName)
+                    .withBirthdate("1970-02-02").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
             when(account.getConsentSignature()).thenReturn(sig);
         }
         return account;
