@@ -26,15 +26,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.SchedulePlanServiceImpl;
@@ -70,8 +64,6 @@ public class AuthenticationControllerTest {
     private TestUser testUser;
     
     private Study secondStudy;
-    
-    private SchedulePlan plan;
     
     @Before
     public void before() {
@@ -141,9 +133,6 @@ public class AuthenticationControllerTest {
                     
                 } finally {
                     if (secondStudy != null) {
-                        if (plan != null) {
-                            schedulePlanService.deleteSchedulePlan(secondStudy.getStudyIdentifier(), plan.getGuid());        
-                        }
                         studyService.deleteStudy(secondStudy.getIdentifier());
                     }
                 }
