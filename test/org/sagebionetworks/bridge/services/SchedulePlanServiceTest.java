@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
@@ -29,13 +28,6 @@ public class SchedulePlanServiceTest {
 
     @Resource
     SchedulePlanServiceImpl schedulePlanService;
-    
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void cannotCreateExistingSchedulePlan() {
-        SchedulePlan plan = TestUtils.getABTestSchedulePlan(TestConstants.TEST_STUDY);
-        // It's rejected because it has a GUID... this doesn't even get to DDB.
-        schedulePlanService.createSchedulePlan(plan);
-    }
     
     @Test
     public void schedulePlansAreFilteredByAppVersion() {
