@@ -4,6 +4,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ConsentService;
@@ -68,6 +69,16 @@ public class ConsentController extends BaseController {
     public Result changeSharingScope() throws Exception {
         SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), 2);
         return changeSharingScope(sharing.getSharingScope(), "Data sharing has been changed.");
+    }
+    
+    public Result withdrawConsent() throws Exception {
+        final UserSession session = getAuthenticatedAndConsentedSession();
+        final Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        //consentService.withdrawConsent(study, session.getUser(), withdrawal);
+        
+        return okResult("You have withdrawn from the study.");
     }
 
     Result changeSharingScope(SharingScope sharingScope, String message) {

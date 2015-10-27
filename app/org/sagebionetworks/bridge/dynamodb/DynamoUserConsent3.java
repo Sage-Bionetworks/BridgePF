@@ -17,6 +17,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 @DynamoDBTable(tableName = "UserConsent3")
 public class DynamoUserConsent3 implements UserConsent {
 
+    public static boolean isNotWithdrawn(UserConsent consent) {
+        return consent.getWithdrewOn() == null;
+    }
+    
     // The only timestamp that can be null is withdrewOn.
     private String healthCodeStudy;
     private String studyIdentifier;

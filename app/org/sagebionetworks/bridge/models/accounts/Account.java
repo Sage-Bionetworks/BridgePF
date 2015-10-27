@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.Roles;
@@ -30,6 +31,9 @@ public interface Account extends BridgeEntity {
     
     public ConsentSignature getConsentSignature();
     public void setConsentSignature(ConsentSignature signature);
+    
+    public List<ConsentSignature> getConsentSignatureHistory();
+    public void setConsentSignatureHistory(List<ConsentSignature> signatures);
     
     public String getHealthId();
     public void setHealthId(String healthId);

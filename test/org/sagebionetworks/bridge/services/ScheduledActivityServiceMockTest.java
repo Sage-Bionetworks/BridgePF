@@ -84,7 +84,7 @@ public class ScheduledActivityServiceMockTest {
         when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 
         
         userConsentDao = mock(UserConsentDao.class);
-        when(userConsentDao.getUserConsent(any(String.class), any(StudyIdentifier.class))).thenReturn(consent);
+        when(userConsentDao.getActiveUserConsent(any(String.class), any(StudyIdentifier.class))).thenReturn(consent);
         
         Map<String,DateTime> map = Maps.newHashMap();
         activityEventService = mock(ActivityEventService.class);

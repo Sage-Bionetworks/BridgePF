@@ -2,7 +2,12 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.List;
 
 import javax.annotation.Resource;
 
@@ -12,6 +17,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -29,23 +36,22 @@ public class DynamoUserConsentDaoTest {
 
     @BeforeClass
     public static void beforeClass() {
-        DynamoInitializer.init(DynamoUserConsent2.class);
         DynamoInitializer.init(DynamoUserConsent3.class);
     }
     
     @Before
     public void before() {
-        userConsentDao.deleteConsentRecords(HEALTH_CODE, STUDY_IDENTIFIER);
+        userConsentDao.deleteAllConsents(HEALTH_CODE, STUDY_IDENTIFIER);
         for (int i=1; i < 6; i++) {
-            userConsentDao.deleteConsentRecords(HEALTH_CODE+i, STUDY_IDENTIFIER);
+            userConsentDao.deleteAllConsents(HEALTH_CODE+i, STUDY_IDENTIFIER);
         }
     }
 
     @After
     public void after() {
-        userConsentDao.deleteConsentRecords(HEALTH_CODE, STUDY_IDENTIFIER);
+        userConsentDao.deleteAllConsents(HEALTH_CODE, STUDY_IDENTIFIER);
         for (int i=1; i < 6; i++) {
-            userConsentDao.deleteConsentRecords(HEALTH_CODE+i, STUDY_IDENTIFIER);
+            userConsentDao.deleteAllConsents(HEALTH_CODE+i, STUDY_IDENTIFIER);
         }
     }
     
@@ -62,11 +68,27 @@ public class DynamoUserConsentDaoTest {
         // Withdraw
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
         assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
+        
+        // There should be no consent
+        try {
+            userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+            fail("Should have thrown exception");
+        } catch(BridgeServiceException e) {
+            assertEquals(404, e.getStatusCode());
+            assertEquals("Consent not found.", e.getMessage());
+        }
+        
+        UserConsent existingConsent = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertNull(existingConsent);
 
         // Can give consent again if the previous consent is withdrawn
         userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
         assertTrue(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
+        // Now we can find it
+        existingConsent = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertNotNull(existingConsent);
+        
         // Withdraw again
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
         assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
@@ -89,6 +111,24 @@ public class DynamoUserConsentDaoTest {
         userConsentDao.giveConsent(HEALTH_CODE+"5", consent, DateTime.now().getMillis());
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);
+    }
+    
+    @Test
+    public void canGetAllConsentsInHistory() throws Exception {
+        final DynamoStudyConsent1 consent = createStudyConsent();
+        final StudyIdentifier studyId = new StudyIdentifierImpl(consent.getStudyKey());
+        for (int i=0; i < 5; i++) {
+            userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
+            userConsentDao.withdrawConsent(HEALTH_CODE, studyId);
+        }
+        userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
+        
+        List<UserConsent> consents = userConsentDao.getUserConsentHistory(HEALTH_CODE, studyId);
+        assertEquals(6, consents.size());
+        for (int i=0; i < 5; i++) {
+            assertNotNull(consents.get(i).getWithdrewOn());
+        }
+        assertNull(consents.get(consents.size()-1).getWithdrewOn());
     }
 
     private DynamoStudyConsent1 createStudyConsent() {

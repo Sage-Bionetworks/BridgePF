@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 
@@ -40,6 +41,7 @@ class StormpathAccount implements Account {
     private static final String PHONE_ATTRIBUTE = "phone";
     public static final String HEALTH_CODE_SUFFIX = "_code";
     public static final String CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
+    public static final String CONSENT_SIGNATURE_HISTORY_SUFFIX = "_consent_signature_history";
     public static final String VERSION_SUFFIX = "_version";
     public static final String OLD_VERSION_SUFFIX = "version";
     
@@ -48,6 +50,7 @@ class StormpathAccount implements Account {
     private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final String healthIdKey;
     private final String consentSignatureKey;
+    private final String consentSignatureHistoryKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
     private final Set<Roles> roles;
@@ -65,6 +68,7 @@ class StormpathAccount implements Account {
         this.encryptors = encryptors;
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
         this.consentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
+        this.consentSignatureHistoryKey = studyId + CONSENT_SIGNATURE_HISTORY_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.roles = BridgeUtils.convertRolesQuietly(acct.getGroups());
@@ -139,6 +143,14 @@ class StormpathAccount implements Account {
     @Override
     public void setConsentSignature(ConsentSignature signature) {
         encryptJSONTo(consentSignatureKey, signature);
+    }
+    @Override
+    public List<ConsentSignature> getConsentSignatureHistory() {
+        return decryptJSONFrom(consentSignatureHistoryKey, ConsentSignature.class);
+    }
+    @Override
+    public void setConsentSignatureHistory(List<ConsentSignature> signatures) {
+        encryptJSONTo(consentSignatureHistoryKey, signatures);
     }
     @Override
     public StudyIdentifier getStudyIdentifier() {

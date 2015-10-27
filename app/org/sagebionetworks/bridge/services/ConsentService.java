@@ -19,6 +19,8 @@ public interface ConsentService {
     boolean hasUserConsentedToResearch(StudyIdentifier studyIdentifier, User user);
 
     void withdrawConsent(Study study, User user);
+    
+    void deleteAllConsents(Study study, User user);
 
     void emailConsentAgreement(Study study, User user);
 

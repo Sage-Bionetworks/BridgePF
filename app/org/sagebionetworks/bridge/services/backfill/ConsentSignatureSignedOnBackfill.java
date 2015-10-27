@@ -64,7 +64,7 @@ public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
 
                 ConsentSignature sig = account.getConsentSignature();
                 if (sig != null) {
-                    UserConsent consent = userConsentDao.getUserConsent(healthCode, account.getStudyIdentifier());
+                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, account.getStudyIdentifier());
                     if (consent != null) {
                         if (sig.getSignedOn() != consent.getSignedOn()) {
                             Study study = studyService.getStudy(account.getStudyIdentifier());

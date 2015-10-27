@@ -75,7 +75,7 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
                 Study study = new DynamoStudy();
                 study.setIdentifier(account.getStudyIdentifier().getIdentifier());
                 
-                consent = userConsentDao.getUserConsent(healthCode, study.getStudyIdentifier());
+                consent = userConsentDao.getActiveUserConsent(healthCode, study.getStudyIdentifier());
                 if (consent != null) {
                     activityEventService.publishEnrollmentEvent(healthCode, consent);
                     callback.newRecords(

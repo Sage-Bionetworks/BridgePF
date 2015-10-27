@@ -52,31 +52,31 @@ public class ConsentServiceImpl implements ConsentService {
     }
     
     @Autowired
-    public void setStringOps(JedisOps jedisOps) {
+    public final void setStringOps(JedisOps jedisOps) {
         this.jedisOps = jedisOps;
     }
     @Resource(name="stormpathAccountDao")
-    public void setAccountDao(AccountDao accountDao) {
+    public final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     @Autowired
-    public void setOptionsService(ParticipantOptionsService optionsService) {
+    public final void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
     @Autowired
-    public void setSendMailService(SendMailService sendMailService) {
+    public final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
     @Autowired
-    public void setStudyConsentService(StudyConsentService studyConsentService) {
+    public final void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
     }
     @Autowired
-    public void setUserConsentDao(UserConsentDao userConsentDao) {
+    public final void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
     @Autowired
-    public void setActivityEventService(ActivityEventService activityEventService) {
+    public final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
     
@@ -157,7 +157,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
-        UserConsent userConsent = userConsentDao.getUserConsent(user.getHealthCode(), studyIdentifier);
+        UserConsent userConsent = userConsentDao.getActiveUserConsent(user.getHealthCode(), studyIdentifier);
         StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(studyIdentifier);
 
         if (mostRecentConsent != null && userConsent != null) {
@@ -171,16 +171,23 @@ public class ConsentServiceImpl implements ConsentService {
     public void withdrawConsent(Study study, User user) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
-        if (userConsentDao.withdrawConsent(user.getHealthCode(), study)) {
-            decrementStudyEnrollment(study);
-            Account account = accountDao.getAccount(study, user.getEmail());
-            account.setConsentSignature(null);
-            accountDao.updateAccount(study, account);
-            user.setConsent(false);
-        }
-        optionsService.deleteAllParticipantOptions(user.getHealthCode());
+        
+        userConsentDao.withdrawConsent(user.getHealthCode(), study);
+        decrementStudyEnrollment(study);
+        Account account = accountDao.getAccount(study, user.getEmail());
+        account.setConsentSignature(null);
+        accountDao.updateAccount(study, account);
+        user.setConsent(false);
     }
 
+    @Override
+    public void deleteAllConsents(Study study, User user) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
+
+        userConsentDao.deleteAllConsents(user.getHealthCode(), study.getStudyIdentifier());
+    }
+    
     @Override
     public void emailConsentAgreement(final Study study, final User user) {
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
