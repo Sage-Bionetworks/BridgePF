@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.base.Strings;
 
@@ -72,19 +74,30 @@ public class UploadSchemaValidator implements Validator {
             if (fieldDefList == null || fieldDefList.isEmpty()) {
                 errors.rejectValue("fieldDefinitions", "requires at least one definition");
             } else {
+                Set<String> fieldNameSet = new HashSet<>();
+
                 for (int i=0; i < fieldDefList.size(); i++) {
                     UploadFieldDefinition fieldDef = fieldDefList.get(i);
                     if (fieldDef == null) {
                         errors.rejectValue("fieldDefinitions" + i, "is required");
                     } else {
                         errors.pushNestedPath("fieldDefinitions" + i);
-                        if (Strings.isNullOrEmpty(fieldDef.getName())) {
+
+                        String fieldName = fieldDef.getName();
+                        if (Strings.isNullOrEmpty(fieldName)) {
                             errors.rejectValue("name", "is required");
+                        } else {
+                            if (fieldNameSet.contains(fieldName)) {
+                                errors.rejectValue("name", "duplicate name " + fieldName);
+                            }
+                            fieldNameSet.add(fieldName);
                         }
+
+                        //noinspection ConstantConditions
                         if (fieldDef.getType() == null) {
                             errors.rejectValue("type", "is required");
                         }
-                        // type, being a boolean, will default to false
+
                         errors.popNestedPath();
                     }
                     
