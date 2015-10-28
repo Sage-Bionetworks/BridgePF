@@ -303,14 +303,6 @@ public class UploadSchemaValidatorTest {
         UploadSchema schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
         assertWillGenerateValidationError(schema, "fieldDefinitions0.type is required", "fieldDefinitions0.type");
         
-        // empty property
-        /* This throws an exception because type is an enumeration. This comes from Jackson, it's a whole
-         * separate project to change that behavior
-        json = "{\"name\":\"Upload Test iOS Survey\",\"schemaId\":\"upload-test-ios-survey\",\"schemaType\":\"ios_survey\",\"revision\":1,\"fieldDefinitions\":[{\"name\":\"foo\",\"required\":true,\"type\":\"\"}]}";
-        schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
-        assertWillGenerateValidationError(schema, "fieldDefinitions0.type is required", "fieldDefinitions0.type");
-        */
-        
         // null property
         json = "{\"name\":\"Upload Test iOS Survey\",\"schemaId\":\"upload-test-ios-survey\",\"schemaType\":\"ios_survey\",\"revision\":1,\"fieldDefinitions\":[{\"name\":\"foo\",\"required\":true,\"type\":null}]}";
         schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
@@ -334,5 +326,32 @@ public class UploadSchemaValidatorTest {
         schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
         assertWillGenerateValidationError(schema, "fieldDefinitions0.name is required", "fieldDefinitions0.name");
     }
-    
+
+    @Test
+    public void duplicateFieldName() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("Dupe Fields");
+        schema.setSchemaId("dupe-field-schema");
+        schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("foo-field")
+                .withType(UploadFieldType.STRING).build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("foo-field")
+                .withType(UploadFieldType.INT).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Exception thrownEx = null;
+        try {
+            Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+            fail("expected exception");
+        } catch (InvalidEntityException ex) {
+            thrownEx = ex;
+        }
+        assertTrue(thrownEx.getMessage().contains("cannot use foo-field (used by another field)"));
+    }
 }
