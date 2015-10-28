@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.annotation.Resource;
 
@@ -31,6 +32,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.google.common.collect.Lists;
 
 @Component
 public class ConsentServiceImpl implements ConsentService {
@@ -175,11 +178,36 @@ public class ConsentServiceImpl implements ConsentService {
         userConsentDao.withdrawConsent(user.getHealthCode(), study);
         decrementStudyEnrollment(study);
         Account account = accountDao.getAccount(study, user.getEmail());
+        
+        ConsentSignature signature = account.getConsentSignature();
+        List<ConsentSignature> history = account.getConsentSignatureHistory();
+        if (history == null) {
+            history = Lists.newArrayListWithCapacity(1);
+        }
+        history.add(signature);
+        account.setConsentSignatureHistory(history);
         account.setConsentSignature(null);
         accountDao.updateAccount(study, account);
         user.setConsent(false);
     }
 
+    // Note: this doesn't include the withdrawal dates, as these are only recorded
+    // in DDB, and it doesn't include a pointer to the version of the consent that 
+    // was signed. We probably need this for auditing, but not at the moment.
+    @Override
+    public List<ConsentSignature> getUserConsentHistory(Study study, User user) {
+        List<ConsentSignature> history = Lists.newArrayList();
+        
+        Account account = accountDao.getAccount(study, user.getEmail());
+        if (account.getConsentSignatureHistory() != null) {
+            history.addAll(account.getConsentSignatureHistory());
+        }
+        if (account.getConsentSignature() != null) {
+            history.add(account.getConsentSignature());
+        }
+        return history;
+    }
+    
     @Override
     public void deleteAllConsents(Study study, User user) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");

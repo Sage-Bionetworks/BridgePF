@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -36,6 +37,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 class StormpathAccount implements Account {
     
     static final String PLACEHOLDER_STRING = "<EMPTY>";
+    
+    private static final TypeReference<List<ConsentSignature>> CONSENT_HISTORY_TYPE = new TypeReference<List<ConsentSignature>>() {};
     
     private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final String PHONE_ATTRIBUTE = "phone";
@@ -146,7 +149,7 @@ class StormpathAccount implements Account {
     }
     @Override
     public List<ConsentSignature> getConsentSignatureHistory() {
-        return decryptJSONFrom(consentSignatureHistoryKey, ConsentSignature.class);
+        return decryptJSONFrom(consentSignatureHistoryKey, CONSENT_HISTORY_TYPE);
     }
     @Override
     public void setConsentSignatureHistory(List<ConsentSignature> signatures) {
@@ -197,6 +200,19 @@ class StormpathAccount implements Account {
         }
     }
     
+    private <T> T decryptJSONFrom(String key, TypeReference<T> reference) {
+        try {
+            String jsonString = decryptFrom(key);
+            if (jsonString == null) {
+                return null;
+            }
+            return MAPPER.readValue(jsonString, reference);
+        } catch(IOException e) {
+            String message = String.format("Could not retrieve %s due to malformed JSON: %s", key, e.getMessage());
+            throw new BridgeServiceException(message);
+        }
+    }
+    
     private <T> T decryptJSONFrom(String key, Class<T> clazz) {
         try {
             String jsonString = decryptFrom(key);
@@ -213,6 +229,7 @@ class StormpathAccount implements Account {
     private void encryptTo(String key, String value) {
         if (value == null) {
             acct.getCustomData().remove(key);
+            acct.getCustomData().remove(key+VERSION_SUFFIX);
             return;
         }
         // Encryption is always done with the most recent encryptor, which is last in the list (most revent version #)

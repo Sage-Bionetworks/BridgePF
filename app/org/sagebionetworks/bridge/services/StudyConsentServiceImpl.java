@@ -168,7 +168,6 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     
     private String loadDocumentContent(StudyConsent consent) {
         try {
-            logger.info("Loading S3 key: " + consent.getStoragePath());
             return s3Helper.readS3FileAsString(CONSENTS_BUCKET, consent.getStoragePath());
         } catch(IOException ioe) {
             logger.error("Failure loading storagePath: " + consent.getStoragePath());

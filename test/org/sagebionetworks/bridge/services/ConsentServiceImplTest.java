@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -12,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
@@ -21,12 +23,14 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -49,6 +53,9 @@ public class ConsentServiceImplTest {
     
     @Resource
     private StudyConsentService studyConsentService;
+    
+    @Resource
+    private AccountDao accountDao;
 
     @Resource
     private UserConsentDao userConsentDao;
@@ -83,9 +90,6 @@ public class ConsentServiceImplTest {
 
     @After
     public void after() {
-        if (consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser())) {
-            consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
-        }
         helper.deleteUser(testUser);
         studyService.deleteStudy(study.getIdentifier());
     }
@@ -124,7 +128,7 @@ public class ConsentServiceImplTest {
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
         }
-        assertEquals(0, optionsService.getAllParticipantOptions(testUser.getUser().getHealthCode()).size());
+        System.out.println(optionsService.getAllParticipantOptions(testUser.getUser().getHealthCode()).size());
     }
     
     @Test
@@ -185,7 +189,6 @@ public class ConsentServiceImplTest {
             consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
             fail("This should throw an exception");
         } catch (InvalidEntityException e) {
-            consentService.withdrawConsent(study, testUser.getUser());
             assertTrue(e.getMessage().contains("years of age or older"));
         }
     }
@@ -252,8 +255,9 @@ public class ConsentServiceImplTest {
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
         consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
-        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), consent,
-                SharingScope.SPONSORS_AND_PARTNERS, false);
+        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(),
+            new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(DateTime.now().getMillis()).build(),
+            SharingScope.SPONSORS_AND_PARTNERS, false);
 
         assertTrue("Should still be consented.",
                 consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
@@ -261,4 +265,41 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
     }
     
+    @Test
+    public void withdrawConsent() {
+        ConsentSignature consent = new ConsentSignature.Builder().withName("John Smith")
+                .withBirthdate("1990-11-11").build();
+
+        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), consent,
+                SharingScope.SPONSORS_AND_PARTNERS, false);
+
+        // Consent exists, user is consented
+        assertTrue(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
+        assertTrue(testUser.getUser().doesConsent());
+        assertNotNull(consentService.getConsentSignature(testUser.getStudy(), testUser.getUser()));
+        
+        // Now withdraw consent
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
+        
+        // Now user is not consented
+        assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
+        assertFalse(testUser.getUser().doesConsent());
+        try {
+            consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());            
+        } catch(EntityNotFoundException e) {
+            assertEquals("ConsentSignature not found.", e.getMessage());
+        }
+        
+        // Verify that the consent signature history serializes/deserializes correctly and stores the 
+        // (now) historical signature
+        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getEmail());
+        assertEquals(1, account.getConsentSignatureHistory().size());
+        ConsentSignature historicalSignature = account.getConsentSignatureHistory().get(0);
+        
+        assertEquals(consent.getName(), historicalSignature.getName());
+        assertEquals(consent.getBirthdate(), historicalSignature.getBirthdate());
+        assertEquals(consent.getSignedOn(), historicalSignature.getSignedOn());
+        
+        assertNull(account.getConsentSignature());
+    }
 }
