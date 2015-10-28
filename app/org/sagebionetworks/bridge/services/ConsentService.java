@@ -5,7 +5,7 @@ import java.util.List;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -21,7 +21,7 @@ public interface ConsentService {
 
     boolean hasUserConsentedToResearch(StudyIdentifier studyIdentifier, User user);
 
-    void withdrawConsent(Study study, User user);
+    void withdrawConsent(Study study, User user, Withdrawal withdrawal);
     
     List<ConsentSignature> getUserConsentHistory(Study study, User user);
     

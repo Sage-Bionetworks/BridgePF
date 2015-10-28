@@ -25,11 +25,13 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.redis.JedisOps;
+import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
 import com.google.common.collect.Lists;
 
@@ -140,15 +142,17 @@ public class ConsentServiceImplMockTest {
         when(account.getConsentSignatureHistory()).thenReturn(signatures);
         when(account.getConsentSignature()).thenReturn(consentSignature);
         
-        consentService.withdrawConsent(study, user);
+        consentService.withdrawConsent(study, user, new Withdrawal("For reasons."));
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         ArgumentCaptor<ConsentSignature> setterCaptor = ArgumentCaptor.forClass(ConsentSignature.class);
+        ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         
         verify(userConsentDao).withdrawConsent(user.getHealthCode(), study);
         verify(accountDao).getAccount(study, user.getEmail());
         verify(accountDao).updateAccount(any(Study.class), captor.capture());
         verify(account).setConsentSignature(setterCaptor.capture());
+        verify(sendMailService).sendEmail(emailCaptor.capture());
         verifyNoMoreInteractions(userConsentDao);
         verifyNoMoreInteractions(accountDao);
         
@@ -159,6 +163,9 @@ public class ConsentServiceImplMockTest {
         assertEquals(consentSignature, account.getConsentSignatureHistory().get(0));
         assertNull(setterCaptor.getValue()); // should be nullified
         assertFalse(user.isConsent());
+        
+        MimeTypeEmailProvider provider = emailCaptor.getValue();
+        System.out.println(provider);
     }
     
 }

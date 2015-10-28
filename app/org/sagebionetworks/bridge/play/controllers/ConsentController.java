@@ -76,7 +76,7 @@ public class ConsentController extends BaseController {
         final Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        //consentService.withdrawConsent(study, session.getUser(), withdrawal);
+        consentService.withdrawConsent(study, session.getUser(), withdrawal);
         
         return okResult("You have withdrawn from the study.");
     }

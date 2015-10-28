@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -44,6 +45,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentServiceImplTest {
+    
+    private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
 
     @Resource
     private JedisOps jedisOps;
@@ -121,7 +124,7 @@ public class ConsentServiceImplTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, optionsService.getSharingScope(testUser.getUser().getHealthCode()));
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         try {
             consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
@@ -152,7 +155,7 @@ public class ConsentServiceImplTest {
         assertEquals(signedOn, returnedSig.getSignedOn());
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         try {
             consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
@@ -174,13 +177,13 @@ public class ConsentServiceImplTest {
                 .withBirthdate(DateUtils.getCalendarDateString(today18YearsAgo)).build();
         consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
         
-        consentService.withdrawConsent(study, testUser.getUser());
+        consentService.withdrawConsent(study, testUser.getUser(), WITHDRAWAL);
 
         // Also okay
         sig = new ConsentSignature.Builder().withName("Test User")
                 .withBirthdate(DateUtils.getCalendarDateString(yesterday18YearsAgo)).build();
         consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
-        consentService.withdrawConsent(study, testUser.getUser());
+        consentService.withdrawConsent(study, testUser.getUser(), WITHDRAWAL);
 
         // But this is not, one day to go
         try {
@@ -254,7 +257,7 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
-        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
         consentService.consentToResearch(testUser.getStudy(), testUser.getUser(),
             new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(DateTime.now().getMillis()).build(),
             SharingScope.SPONSORS_AND_PARTNERS, false);
@@ -279,7 +282,7 @@ public class ConsentServiceImplTest {
         assertNotNull(consentService.getConsentSignature(testUser.getStudy(), testUser.getUser()));
         
         // Now withdraw consent
-        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
         
         // Now user is not consented
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));

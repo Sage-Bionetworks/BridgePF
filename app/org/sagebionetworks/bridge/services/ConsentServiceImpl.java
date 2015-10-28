@@ -9,6 +9,7 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -18,6 +19,7 @@ import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -27,6 +29,7 @@ import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
+import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -171,9 +174,10 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public void withdrawConsent(Study study, User user) {
+    public void withdrawConsent(Study study, User user, Withdrawal withdrawal) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "withdrawal");
         
         userConsentDao.withdrawConsent(user.getHealthCode(), study);
         decrementStudyEnrollment(study);
@@ -188,6 +192,11 @@ public class ConsentServiceImpl implements ConsentService {
         account.setConsentSignatureHistory(history);
         account.setConsentSignature(null);
         accountDao.updateAccount(study, account);
+        
+        if (StringUtils.isNotBlank(withdrawal.getReason())) {
+            MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider();
+            sendMailService.sendEmail(consentEmail);
+        }
         user.setConsent(false);
     }
 
