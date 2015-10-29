@@ -52,7 +52,7 @@ public class WithdrawConsentEmailProviderTest {
         assertEquals("Notification of consent withdrawal for Study Name", email.getSubject());
         
         MimeBodyPart body = email.getMessageParts().get(0);
-        assertEquals("<p>User   &lgt;d@d.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p><i>No reason given.</i></p>", (String)body.getContent());
+        assertEquals("<p>User   &lt;d@d.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p><i>No reason given.</i></p>", (String)body.getContent());
     }
 
     @Test
@@ -79,7 +79,7 @@ public class WithdrawConsentEmailProviderTest {
         assertEquals("Notification of consent withdrawal for Study Name", email.getSubject());
         
         MimeBodyPart body = email.getMessageParts().get(0);
-        assertEquals("<p>User Jack Aubrey &lgt;d@d.com&gt; (external ID: AAA)  withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>Because, reasons.</p>", (String)body.getContent());
+        assertEquals("<p>User Jack Aubrey &lt;d@d.com&gt; (external ID: AAA)  withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>Because, reasons.</p>", (String)body.getContent());
     }
     
 }

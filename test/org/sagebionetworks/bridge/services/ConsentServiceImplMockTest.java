@@ -179,7 +179,7 @@ public class ConsentServiceImplMockTest {
         assertEquals("\"Test Study [ConsentServiceImplMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
         assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
         assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceImplMockTest]", email.getSubject());
-        assertEquals("<p>User   &lgt;bbb@bbb.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>", 
+        assertEquals("<p>User   &lt;bbb@bbb.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>", 
                     email.getMessageParts().get(0).getContent());
     }
     

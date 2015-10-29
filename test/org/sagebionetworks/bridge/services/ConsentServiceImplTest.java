@@ -334,7 +334,5 @@ public class ConsentServiceImplTest {
         assertEquals(originalSignedOn, historyItem.getSignedOn());
         assertEquals(userConsent.getWithdrewOn(), historyItem.getWithdrewOn());
         assertEquals(true, historyItem.isHasSignedActiveConsent());
-        
-        System.out.println(history);
     }
 }
