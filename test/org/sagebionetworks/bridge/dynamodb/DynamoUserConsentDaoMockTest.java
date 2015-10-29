@@ -29,6 +29,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 
 public class DynamoUserConsentDaoMockTest {
 
+    private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
     private static final String HEALTH_CODE = "AAA";
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("test-study");
     
@@ -145,7 +146,7 @@ public class DynamoUserConsentDaoMockTest {
     public void withdrawConsent() {
         mockMapperResponse();
 
-        userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, UNIX_TIMESTAMP);
 
         ArgumentCaptor<DynamoUserConsent3> captor = ArgumentCaptor.forClass(DynamoUserConsent3.class);
         
@@ -160,7 +161,7 @@ public class DynamoUserConsentDaoMockTest {
     @Test
     public void withdrawConsentWithNoConsent() {
         try {
-            userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+            userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, UNIX_TIMESTAMP);
             fail("Should have thrown exception.");
         } catch(BridgeServiceException e) {
             assertEquals("Consent not found.", e.getMessage());

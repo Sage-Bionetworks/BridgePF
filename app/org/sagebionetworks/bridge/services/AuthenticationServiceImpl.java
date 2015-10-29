@@ -241,7 +241,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setHealthCode(healthCode);
 
         user.setSharingScope(optionsService.getSharingScope(healthCode));
-        user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(study, user));
+        user.setSignedMostRecentConsent(consentService.hasUserSignedActiveConsent(study, user));
         user.setConsent(consentService.hasUserConsentedToResearch(study, user));
 
         session.setUser(user);

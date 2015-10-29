@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Iterator;
@@ -23,6 +25,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -145,6 +148,40 @@ public class ConsentControllerMockedTest {
         assertEquals("Consent to research has been recorded.", node.get("message").asText());
         
         validateSignature(captor.getValue());
+    }
+    
+    @Test
+    public void canWithdrawConsent() throws Exception {
+        String json = "{\"reason\":\"Because, reasons.\"}";
+        Context context = TestUtils.mockPlayContextWithJson(json);
+        Http.Context.current.set(context);
+        
+        ArgumentCaptor<Withdrawal> captor = ArgumentCaptor.forClass(Withdrawal.class);
+        
+        Result result = controller.withdrawConsent();
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        
+        verify(consentService).withdrawConsent(any(Study.class), any(User.class), captor.capture());
+        assertEquals("Because, reasons.", captor.getValue().getReason());
+    }
+
+    @Test
+    public void canWithdrawConsentWithNoReason() throws Exception {
+        String json = "{}";
+        Context context = TestUtils.mockPlayContextWithJson(json);
+        Http.Context.current.set(context);
+        
+        ArgumentCaptor<Withdrawal> captor = ArgumentCaptor.forClass(Withdrawal.class);
+        
+        Result result = controller.withdrawConsent();
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        
+        verify(consentService).withdrawConsent(any(Study.class), any(User.class), captor.capture());
+        assertNull(captor.getValue().getReason());
     }
     
     private ArgumentCaptor<ConsentSignature> setUpContextWithJson(String json) throws Exception{

@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import org.apache.http.HttpStatus;
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -40,8 +39,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public UserConsent giveConsent(String healthCode, StudyConsent studyConsent, long signedOn) {
-        checkArgument(isNotBlank(healthCode), "Health code is blank or null");
+        checkArgument(isNotBlank(healthCode));
         checkNotNull(studyConsent);
+        checkArgument(signedOn > 0L);
 
         // It doesn't currently matter which table your consent is in, you can't consent again 
         // if a record exists.
@@ -59,22 +59,32 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void withdrawConsent(String healthCode, StudyIdentifier studyIdentifier) {
+    public void withdrawConsent(String healthCode, StudyIdentifier studyIdentifier, long withdrewOn) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        checkArgument(withdrewOn > 0L);
+        
         DynamoUserConsent3 existingConsent = (DynamoUserConsent3)getActiveUserConsent(healthCode, studyIdentifier);
         if (existingConsent == null) {
             throw new BridgeServiceException("Consent not found.", HttpStatus.SC_NOT_FOUND);
         }
-        existingConsent.setWithdrewOn(DateTime.now().getMillis());
+        existingConsent.setWithdrewOn(withdrewOn);
         mapper.save(existingConsent);
     }
 
     @Override
     public boolean hasConsented(String healthCode, StudyIdentifier studyIdentifier) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        
         return getActiveUserConsent(healthCode, studyIdentifier) != null;
     }
 
     @Override
     public UserConsent getActiveUserConsent(String healthCode, StudyIdentifier studyIdentifier) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        
         DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
 
         Condition condition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
@@ -87,7 +97,26 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
     
     @Override
+    public UserConsent getUserConsent(String healthCode, StudyIdentifier studyIdentifier, long signedOn) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        checkArgument(signedOn > 0L);
+        
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
+        hashKey.setSignedOn(signedOn);
+        
+        DynamoUserConsent3 consent = mapper.load(hashKey);
+        if (consent == null) {
+            throw new BridgeServiceException("Consent not found.", HttpStatus.SC_NOT_FOUND);   
+        }
+        return consent;
+    }
+    
+    @Override
     public List<UserConsent> getUserConsentHistory(String healthCode, StudyIdentifier studyIdentifier) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        
         DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
         
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
@@ -100,17 +129,18 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
-        Condition cond1 = new Condition();
-        cond1.withComparisonOperator(ComparisonOperator.EQ);
-        cond1.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
+        checkNotNull(studyIdentifier);
         
-        Condition cond2 = new Condition();
-        cond2.withComparisonOperator(ComparisonOperator.NULL);
+        Condition studyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
+        
+        Condition withdrewCondition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
         
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
         scan.setConsistentRead(true);
-        scan.addFilterCondition("studyIdentifier", cond1);
-        scan.addFilterCondition("withdrewOn", cond2);
+        scan.addFilterCondition("studyIdentifier", studyCondition);
+        scan.addFilterCondition("withdrewOn", withdrewCondition);
         
         return mapper.scan(DynamoUserConsent3.class, scan).stream().map(consent -> {
             return consent.getHealthCode();
@@ -119,6 +149,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public void deleteAllConsents(String healthCode, StudyIdentifier studyIdentifier) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        
         List<UserConsent> consents = getUserConsentHistory(healthCode, studyIdentifier);
         if (!consents.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(consents);

@@ -78,7 +78,7 @@ public class ConsentController extends BaseController {
         
         consentService.withdrawConsent(study, session.getUser(), withdrawal);
         
-        return okResult("You have withdrawn from the study.");
+        return okResult("User has been withdrawn from the study.");
     }
 
     Result changeSharingScope(SharingScope sharingScope, String message) {

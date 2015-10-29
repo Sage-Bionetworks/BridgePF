@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.annotation.Resource;
 
@@ -31,6 +32,8 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -131,7 +134,6 @@ public class ConsentServiceImplTest {
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
         }
-        System.out.println(optionsService.getAllParticipantOptions(testUser.getUser().getHealthCode()).size());
     }
     
     @Test
@@ -238,7 +240,7 @@ public class ConsentServiceImplTest {
         assertTrue("Should be consented",
                 consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         assertTrue("Should have signed most recent consent.",
-                consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
+                consentService.hasUserSignedActiveConsent(testUser.getStudy(), testUser.getUser()));
 
         // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
         StudyConsent newStudyConsent = studyConsentService.addConsent(testUser.getStudyIdentifier(), defaultConsentDocument).getStudyConsent();
@@ -246,7 +248,7 @@ public class ConsentServiceImplTest {
         assertTrue("Should be consented.",
                 consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         assertTrue("Should have signed most recent consent, even though new consent is added.",
-                consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
+                consentService.hasUserSignedActiveConsent(testUser.getStudy(), testUser.getUser()));
 
         // Activate new study consent. User is consented and but has not signed most recent consent.
         newStudyConsent = studyConsentService.publishConsent(study, newStudyConsent.getCreatedOn()).getStudyConsent();
@@ -254,7 +256,7 @@ public class ConsentServiceImplTest {
         assertTrue("Should still be consented.",
                 consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         assertFalse("New consent activated. Should no longer have signed most recent consent. ",
-                consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
+                consentService.hasUserSignedActiveConsent(testUser.getStudy(), testUser.getUser()));
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
         consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
@@ -265,13 +267,15 @@ public class ConsentServiceImplTest {
         assertTrue("Should still be consented.",
                 consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         assertTrue("Should again have signed most recent consent.",
-                consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
+                consentService.hasUserSignedActiveConsent(testUser.getStudy(), testUser.getUser()));
     }
     
     @Test
     public void withdrawConsent() {
+        long originalSignedOn = DateTime.now().getMillis();
         ConsentSignature consent = new ConsentSignature.Builder().withName("John Smith")
-                .withBirthdate("1990-11-11").build();
+                .withImageData("data").withImageMimeType("image/png").withBirthdate("1990-11-11")
+                .withSignedOn(originalSignedOn).build();
 
         consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
@@ -304,5 +308,33 @@ public class ConsentServiceImplTest {
         assertEquals(consent.getSignedOn(), historicalSignature.getSignedOn());
         
         assertNull(account.getConsentSignature());
+        
+        long newSignedOn = DateTime.now().getMillis();
+        consent = new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(newSignedOn).build();
+        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), consent,
+                SharingScope.SPONSORS_AND_PARTNERS, false);
+        
+        // Finally, verify there is a history for this user.
+        List<UserConsentHistory> history = consentService.getUserConsentHistory(testUser.getStudy(), testUser.getUser());
+        assertEquals(2, history.size());
+        assertNotNull(history.get(0).getWithdrewOn());
+        assertNull(history.get(1).getWithdrewOn());
+        
+        StudyConsent studyConsent = studyConsentService.getActiveConsent(study).getStudyConsent();
+        UserConsent userConsent = userConsentDao.getUserConsent(testUser.getUser().getHealthCode(), study, originalSignedOn);
+        
+        UserConsentHistory historyItem = history.get(0);
+        assertEquals(testUser.getUser().getHealthCode(), historyItem.getHealthCode());
+        assertEquals(study.getIdentifier(), historyItem.getStudyIdentifier());
+        assertEquals(studyConsent.getCreatedOn(), historyItem.getConsentCreatedOn());
+        assertEquals(consent.getName(), historyItem.getName());
+        assertEquals(consent.getBirthdate(), historyItem.getBirthdate());
+        assertEquals(consent.getImageData(), historyItem.getImageData());
+        assertEquals(consent.getImageMimeType(), historyItem.getImageMimeType());
+        assertEquals(originalSignedOn, historyItem.getSignedOn());
+        assertEquals(userConsent.getWithdrewOn(), historyItem.getWithdrewOn());
+        assertEquals(true, historyItem.isHasSignedActiveConsent());
+        
+        System.out.println(history);
     }
 }

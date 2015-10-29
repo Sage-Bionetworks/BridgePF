@@ -9,8 +9,8 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -159,7 +160,7 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public boolean hasUserSignedMostRecentConsent(StudyIdentifier studyIdentifier, User user) {
+    public boolean hasUserSignedActiveConsent(StudyIdentifier studyIdentifier, User user) {
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
@@ -179,40 +180,57 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "withdrawal");
         
-        userConsentDao.withdrawConsent(user.getHealthCode(), study);
-        decrementStudyEnrollment(study);
+        String externalId = optionsService.getOption(user.getHealthCode(), ParticipantOption.EXTERNAL_IDENTIFIER);
+        
         Account account = accountDao.getAccount(study, user.getEmail());
-        
-        ConsentSignature signature = account.getConsentSignature();
-        List<ConsentSignature> history = account.getConsentSignatureHistory();
-        if (history == null) {
-            history = Lists.newArrayListWithCapacity(1);
-        }
-        history.add(signature);
-        account.setConsentSignatureHistory(history);
-        account.setConsentSignature(null);
+        signatureToHistory(account);
         accountDao.updateAccount(study, account);
-        
-        if (StringUtils.isNotBlank(withdrawal.getReason())) {
-            MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider();
-            sendMailService.sendEmail(consentEmail);
+
+        try {
+            userConsentDao.withdrawConsent(user.getHealthCode(), study, withdrawal.getWithdrewOn());    
+        } catch(Exception e) {
+            // Could not record the consent, compensate and rethrow the exception
+            signatureFromHistory(account);
+            accountDao.updateAccount(study, account);
+            throw e;
         }
+        decrementStudyEnrollment(study);
+        
+        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal);
+        sendMailService.sendEmail(consentEmail);
+        
         user.setConsent(false);
     }
-
-    // Note: this doesn't include the withdrawal dates, as these are only recorded
-    // in DDB, and it doesn't include a pointer to the version of the consent that 
-    // was signed. We probably need this for auditing, but not at the moment.
+    
     @Override
-    public List<ConsentSignature> getUserConsentHistory(Study study, User user) {
-        List<ConsentSignature> history = Lists.newArrayList();
-        
+    public List<UserConsentHistory> getUserConsentHistory(Study study, User user) {
+        List<ConsentSignature> signatures = Lists.newArrayList();
         Account account = accountDao.getAccount(study, user.getEmail());
         if (account.getConsentSignatureHistory() != null) {
-            history.addAll(account.getConsentSignatureHistory());
+            signatures.addAll(account.getConsentSignatureHistory());
         }
         if (account.getConsentSignature() != null) {
-            history.add(account.getConsentSignature());
+            signatures.add(account.getConsentSignature());
+        }
+        
+        List<UserConsentHistory> history = Lists.newArrayListWithCapacity(signatures.size());
+        for (ConsentSignature signature : signatures) {
+            
+            UserConsent consent = userConsentDao.getUserConsent(user.getHealthCode(), study, signature.getSignedOn());
+            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(study, user);
+            
+            UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
+            builder.withName(signature.getName())
+                .withStudyIdentifier(study.getIdentifier())
+                .withBirthdate(signature.getBirthdate())
+                .withImageData(signature.getImageData())
+                .withImageMimeType(signature.getImageMimeType())
+                .withSignedOn(signature.getSignedOn())
+                .withHealthCode(user.getHealthCode())
+                .withWithdrewOn(consent.getWithdrewOn())
+                .withConsentCreatedOn(consent.getConsentCreatedOn())
+                .withHasSignedActiveConsent(hasSignedActiveConsent);
+            history.add(builder.build());
         }
         return history;
     }
@@ -265,8 +283,7 @@ public class ConsentServiceImpl implements ConsentService {
         return (count >= study.getMaxNumOfParticipants());
     }
 
-    @Override
-    public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException {
+    void incrementStudyEnrollment(Study study) throws StudyLimitExceededException {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
@@ -277,8 +294,7 @@ public class ConsentServiceImpl implements ConsentService {
         jedisOps.incr(key);
     }
 
-    @Override
-    public void decrementStudyEnrollment(Study study) {
+    void decrementStudyEnrollment(Study study) {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
@@ -287,5 +303,25 @@ public class ConsentServiceImpl implements ConsentService {
         if (count != null && Long.parseLong(count) > 0) {
             jedisOps.decr(key);
         }
+    }
+
+    private void signatureToHistory(Account account) {
+        ConsentSignature signature = account.getConsentSignature();
+        account.setConsentSignature(null);
+        
+        List<ConsentSignature> history = account.getConsentSignatureHistory();
+        if (history == null) {
+            history = Lists.newArrayListWithCapacity(1);
+        }
+        history.add(signature);
+        account.setConsentSignatureHistory(history);
+    }
+    
+    private void signatureFromHistory(Account account) {
+        List<ConsentSignature> history = account.getConsentSignatureHistory();
+        int lastIndex = history.size()-1;
+        account.setConsentSignature(history.get(lastIndex));
+        history.remove(lastIndex);
+        account.setConsentSignatureHistory(history);
     }
 }

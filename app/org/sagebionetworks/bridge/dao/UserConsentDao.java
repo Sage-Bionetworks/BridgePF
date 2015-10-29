@@ -22,8 +22,9 @@ public interface UserConsentDao {
      * Withdraws consent to the specified study.
      * @param healthCode
      * @param studyIdentifier
+     * @param withdrewOn
      */
-    void withdrawConsent(String healthCode, StudyIdentifier studyIdentifier);
+    void withdrawConsent(String healthCode, StudyIdentifier studyIdentifier, long withdrewOn);
 
     /**
      * Whether the user has consented to the specified study.
@@ -42,6 +43,16 @@ public interface UserConsentDao {
      */
     UserConsent getActiveUserConsent(String healthCode, StudyIdentifier studyIdentifier);
 
+    /**
+     * Get a specific consent signature by the signing date. These are retrieved when reconstructing 
+     * the users consent history.
+     * @param healthCode
+     * @param studyIdentifier
+     * @param signedOn
+     * @return
+     */
+    UserConsent getUserConsent(String healthCode, StudyIdentifier studyIdentifier, long signedOn);
+    
     /**
      * Get the entire history of user consent records (including withdrawn consents, if any).
      * @param healthCode
