@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
@@ -11,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.http.HttpStatus;
@@ -26,6 +29,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
 
 public class DynamoUserConsentDaoMockTest {
 
@@ -49,14 +53,14 @@ public class DynamoUserConsentDaoMockTest {
         
         mapper = mock(DynamoDBMapper.class);
         
-        mockMapperResponse(null);
+        mockMapperQueryResponse(null);
         
         userConsentDao = new DynamoUserConsentDao();
         userConsentDao.setDdbMapper(mapper);
     }
     
     @SuppressWarnings("unchecked")
-    private void mockMapperResponse(DynamoUserConsent3 consent) {
+    private void mockMapperQueryResponse(DynamoUserConsent3 consent) {
         PaginatedQueryList<DynamoUserConsent3> pqList = mock(PaginatedQueryList.class);
         if (consent == null) {
             when(pqList.isEmpty()).thenReturn(true);
@@ -69,12 +73,25 @@ public class DynamoUserConsentDaoMockTest {
         doReturn(pqList).when(mapper).query(any(), any());
     }
     
+    private void mockMapperScanResponse(DynamoUserConsent3 consent) {
+        PaginatedScanList<DynamoUserConsent3> psList = mock(PaginatedScanList.class);
+        if (consent == null) {
+            when(psList.isEmpty()).thenReturn(true);
+            when(psList.stream()).thenReturn(Stream.of());
+        } else {
+            when(psList.isEmpty()).thenReturn(false);
+            when(psList.get(0)).thenReturn(consent);
+            when(psList.stream()).thenReturn(Stream.of(consent));
+        }
+        doReturn(psList).when(mapper).scan(any(), any());
+    }
+    
     private DynamoUserConsent3 mockMapperResponse() {
         DynamoUserConsent3 consent = new DynamoUserConsent3(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
         consent.setConsentCreatedOn(studyConsent.getCreatedOn());
         consent.setSignedOn(DateTime.now().getMillis());
         
-        mockMapperResponse(consent);
+        mockMapperQueryResponse(consent);
         return consent;
     }
     
@@ -170,5 +187,37 @@ public class DynamoUserConsentDaoMockTest {
         verify(mapper).query(any(), any());
         verifyNoMoreInteractions(mapper);
     }
+    
+    // These are basic, more extensive tests can be found in DynamoUserConsentDaoTest.
+    
+    @Test
+    public void getActiveUserConsent() {
+        mockMapperResponse();
+        
+        UserConsent consent = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertNotNull(consent);
+        assertNull(consent.getWithdrewOn());
+    }
+    
+    @Test
+    public void getUserConsentHistory() {
+        List<UserConsent> history = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertTrue(history.isEmpty());
+        
+        mockMapperResponse();
+        history = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertEquals(1, history.size());
+    }
 
+    @Test
+    public void getNumberOfParticipants() {
+        DynamoUserConsent3 consent = new DynamoUserConsent3(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
+        consent.setConsentCreatedOn(studyConsent.getCreatedOn());
+        consent.setSignedOn(DateTime.now().getMillis());
+        
+        mockMapperScanResponse(consent);
+        
+        long count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
+        assertEquals(1L, count);
+    }
 }

@@ -309,6 +309,8 @@ public class ConsentServiceImpl implements ConsentService {
         ConsentSignature signature = account.getConsentSignature();
         account.setConsentSignature(null);
         
+        // This order matters, you have to set the list on the account object after you modify
+        // it, or it will not be serialized an encrypted correctly.
         List<ConsentSignature> history = account.getConsentSignatureHistory();
         if (history == null) {
             history = Lists.newArrayListWithCapacity(1);
@@ -322,6 +324,8 @@ public class ConsentServiceImpl implements ConsentService {
         int lastIndex = history.size()-1;
         account.setConsentSignature(history.get(lastIndex));
         history.remove(lastIndex);
+        // This order matters, you have to set the list on the account object after you modify
+        // it, or it will not be serialized an encrypted correctly.
         account.setConsentSignatureHistory(history);
     }
 }

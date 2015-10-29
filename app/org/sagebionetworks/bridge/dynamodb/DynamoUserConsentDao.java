@@ -43,10 +43,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
         checkNotNull(studyConsent);
         checkArgument(signedOn > 0L);
 
-        // It doesn't currently matter which table your consent is in, you can't consent again 
-        // if a record exists.
-        UserConsent existingConsent = getActiveUserConsent(healthCode, new StudyIdentifierImpl(studyConsent.getStudyKey()));
-        if (existingConsent != null) {
+        UserConsent activeConsent = getActiveUserConsent(healthCode, new StudyIdentifierImpl(studyConsent.getStudyKey()));
+        if (activeConsent != null) {
             throw new BridgeServiceException("Consent already exists.", HttpStatus.SC_CONFLICT);
         }
         
@@ -64,12 +62,12 @@ public class DynamoUserConsentDao implements UserConsentDao {
         checkNotNull(studyIdentifier);
         checkArgument(withdrewOn > 0L);
         
-        DynamoUserConsent3 existingConsent = (DynamoUserConsent3)getActiveUserConsent(healthCode, studyIdentifier);
-        if (existingConsent == null) {
+        DynamoUserConsent3 activeConsent = (DynamoUserConsent3)getActiveUserConsent(healthCode, studyIdentifier);
+        if (activeConsent == null) {
             throw new BridgeServiceException("Consent not found.", HttpStatus.SC_NOT_FOUND);
         }
-        existingConsent.setWithdrewOn(withdrewOn);
-        mapper.save(existingConsent);
+        activeConsent.setWithdrewOn(withdrewOn);
+        mapper.save(activeConsent);
     }
 
     @Override

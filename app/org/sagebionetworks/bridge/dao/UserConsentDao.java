@@ -23,6 +23,7 @@ public interface UserConsentDao {
      * @param healthCode
      * @param studyIdentifier
      * @param withdrewOn
+     * @return
      */
     void withdrawConsent(String healthCode, StudyIdentifier studyIdentifier, long withdrewOn);
 
