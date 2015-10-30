@@ -59,8 +59,8 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         checkNotNull(plan);
         
         // Delete existing GUIDs so this is a new object (or recreate them)
-        updateGuids(plan);
         Validate.entityThrowingException(validator, plan);
+        updateGuids(plan);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
