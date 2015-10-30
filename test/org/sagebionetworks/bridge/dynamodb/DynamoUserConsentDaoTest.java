@@ -56,7 +56,7 @@ public class DynamoUserConsentDaoTest {
     }
     
     @Test
-    public void canConsentToStudy() {
+    public void canConsentAndWithdrawFromStudy() {
         final DynamoStudyConsent1 consent = createStudyConsent();
         verifyActiveConsentAbsent();
         verifyConsentAbsentAt(DateTime.now().getMillis()); // some random time will fail
@@ -114,14 +114,13 @@ public class DynamoUserConsentDaoTest {
     @Test
     public void canGetAllConsentsInHistory() throws Exception {
         final DynamoStudyConsent1 consent = createStudyConsent();
-        final StudyIdentifier studyId = new StudyIdentifierImpl(consent.getStudyKey());
         for (int i=0; i < 5; i++) {
             userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
-            userConsentDao.withdrawConsent(HEALTH_CODE, studyId, DateTime.now().getMillis());
+            userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, DateTime.now().getMillis());
         }
         userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
         
-        List<UserConsent> consents = userConsentDao.getUserConsentHistory(HEALTH_CODE, studyId);
+        List<UserConsent> consents = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
         assertEquals(6, consents.size());
         for (int i=0; i < 5; i++) {
             assertNotNull(consents.get(i).getWithdrewOn());
@@ -131,14 +130,14 @@ public class DynamoUserConsentDaoTest {
 
     @Test
     public void singleUserCanSignMultipleConsents() {
-        DynamoStudyConsent1 consent = createStudyConsent(DateTime.now().getMillis());
+        DynamoStudyConsent1 secondConsent = createStudyConsent(DateTime.now().getMillis());
 
         long signedOn = DateTime.now().getMillis();
-        userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn);
+        userConsentDao.giveConsent(HEALTH_CODE, secondConsent, signedOn);
         
-        // But you cannot sign the same study a second time
+        // You cannot sign the same study a second time
         try {
-            userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn);
+            userConsentDao.giveConsent(HEALTH_CODE, secondConsent, signedOn);
         } catch(BridgeServiceException e) {
             assertEquals(409, e.getStatusCode());
             assertEquals("Consent already exists.", e.getMessage());
@@ -146,18 +145,18 @@ public class DynamoUserConsentDaoTest {
         
         // Now create a different study consent, you should be able to consent again.
         long secondConsentCreatedOn = DateTime.now().getMillis();
-        consent = createStudyConsent(secondConsentCreatedOn);
-        long signedOn2 = signedOn + (100000);
-        userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn2);
+        secondConsent = createStudyConsent(secondConsentCreatedOn);
+        long signedOnAgain = signedOn + (100000);
+        userConsentDao.giveConsent(HEALTH_CODE, secondConsent, signedOnAgain);
         
         List<UserConsent> consents = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
         assertEquals(2, consents.size());
         assertEquals(signedOn, consents.get(0).getSignedOn());
-        assertEquals(signedOn2, consents.get(1).getSignedOn());
+        assertEquals(signedOnAgain, consents.get(1).getSignedOn());
         
-        // The active consent is the second signed consent.
+        // The active consent was signed against the second study consent.
         UserConsent activeConsent = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertEquals(signedOn2, activeConsent.getSignedOn());
+        assertEquals(signedOnAgain, activeConsent.getSignedOn());
         assertEquals(secondConsentCreatedOn, activeConsent.getConsentCreatedOn());
     }
     
@@ -184,8 +183,13 @@ public class DynamoUserConsentDaoTest {
     }
     
     private void verifyActiveConsentExists() {
-        assertNotNull(userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER));
+        UserConsent active = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertNotNull(active);
         assertTrue(userConsentDao.hasConsented(HEALTH_CODE, STUDY_IDENTIFIER));
+        
+        // Active consent should always be the last consent
+        List<UserConsent> history = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertEquals(active, history.get(history.size()-1));
     }
     
     private void verifyActiveConsentAbsent() {
@@ -197,6 +201,14 @@ public class DynamoUserConsentDaoTest {
         UserConsent consent = userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER, signedOn);
         assertNotNull(consent);
         assertEquals(signedOn, consent.getSignedOn());
+        
+        List<UserConsent> history = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
+        for (UserConsent aConsent : history) {
+            if (aConsent.getSignedOn() == signedOn) {
+                return;
+            }
+        }
+        fail("Could not find the consent in the history");
     }
     
     private void verifyConsentAbsentAt(long signedOn) {

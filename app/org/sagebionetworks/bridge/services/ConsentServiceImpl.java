@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.redis.JedisOps;
@@ -248,11 +247,6 @@ public class ConsentServiceImpl implements ConsentService {
     public void emailConsentAgreement(final Study study, final User user) {
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "studyIdentifier");
-
-        final StudyConsentView consent = studyConsentService.getActiveConsent(study);
-        if (consent == null) {
-            throw new EntityNotFoundException(StudyConsent.class);
-        }
 
         final ConsentSignature consentSignature = getConsentSignature(study, user);
         if (consentSignature == null) {
