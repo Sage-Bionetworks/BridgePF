@@ -44,7 +44,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         checkArgument(signedOn > 0L);
 
         UserConsent activeConsent = getActiveUserConsent(healthCode, new StudyIdentifierImpl(studyConsent.getStudyKey()));
-        if (activeConsent != null) {
+        if (activeConsent != null && activeConsent.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
             throw new BridgeServiceException("Consent already exists.", HttpStatus.SC_CONFLICT);
         }
         
@@ -87,6 +87,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
         Condition condition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
+            .withScanIndexForward(false)
             .withQueryFilterEntry("withdrewOn", condition)
             .withHashKeyValues(hashKey);
         
@@ -120,9 +121,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
             .withHashKeyValues(hashKey);
 
-        return mapper.query(DynamoUserConsent3.class, query).stream().map(consent -> {
-            return (UserConsent)consent;
-        }).collect(Collectors.toList());
+        return mapper.query(DynamoUserConsent3.class, query).stream()
+                .map(consent -> (UserConsent)consent).collect(Collectors.toList());
     }
 
     @Override
@@ -140,9 +140,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
         scan.addFilterCondition("studyIdentifier", studyCondition);
         scan.addFilterCondition("withdrewOn", withdrewCondition);
         
-        return mapper.scan(DynamoUserConsent3.class, scan).stream().map(consent -> {
-            return consent.getHealthCode();
-        }).collect(Collectors.toSet()).size();
+        return mapper.scan(DynamoUserConsent3.class, scan).stream()
+                .map(consent -> consent.getHealthCode()).collect(Collectors.toSet()).size();
     }
 
     @Override

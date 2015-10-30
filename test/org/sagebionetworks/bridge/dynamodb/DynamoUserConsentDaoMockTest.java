@@ -73,6 +73,7 @@ public class DynamoUserConsentDaoMockTest {
         doReturn(pqList).when(mapper).query(any(), any());
     }
     
+    @SuppressWarnings("unchecked")
     private void mockMapperScanResponse(DynamoUserConsent3 consent) {
         PaginatedScanList<DynamoUserConsent3> psList = mock(PaginatedScanList.class);
         if (consent == null) {

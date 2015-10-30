@@ -69,6 +69,10 @@ public class DynamoUserConsentDaoTest {
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, DateTime.now().getMillis());
         assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
         
+        // Cannot be retrieved (it's "not there")
+        UserConsent found = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertNull(found);
+        
         // There should be no consent
         try {
             userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, DateTime.now().getMillis());
@@ -132,6 +136,40 @@ public class DynamoUserConsentDaoTest {
     }
 
     @Test
+    public void singleUserCanSignMultipleConsents() {
+        // Interestingly, you could sign the same study consent more than once.
+        DynamoStudyConsent1 consent = createStudyConsent(DateTime.now().getMillis());
+        StudyIdentifier studyId = new StudyIdentifierImpl(consent.getStudyKey());
+
+        long signedOn = DateTime.now().getMillis();
+        userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn);
+        
+        // But you cannot sign the same study a second time
+        try {
+            userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn);
+        } catch(BridgeServiceException e) {
+            assertEquals(409, e.getStatusCode());
+            assertEquals("Consent already exists.", e.getMessage());
+        }
+        
+        // Now create a different study consent, you should be able to consent again.
+        long secondConsentCreatedOn = DateTime.now().getMillis();
+        consent = createStudyConsent(secondConsentCreatedOn);
+        long signedOn2 = signedOn + (100000);
+        userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn2);
+        
+        List<UserConsent> consents = userConsentDao.getUserConsentHistory(HEALTH_CODE, studyId);
+        assertEquals(2, consents.size());
+        assertEquals(signedOn, consents.get(0).getSignedOn());
+        assertEquals(signedOn2, consents.get(1).getSignedOn());
+        
+        // The active consent is the second signed consent.
+        UserConsent activeConsent = userConsentDao.getActiveUserConsent(HEALTH_CODE, studyId);
+        assertEquals(signedOn2, activeConsent.getSignedOn());
+        assertEquals(secondConsentCreatedOn, activeConsent.getConsentCreatedOn());
+    }
+    
+    @Test
     public void getConsentBySignedOnDate() throws Exception {
         final DynamoStudyConsent1 studyConsent = createStudyConsent();
         final long signedOn = DateTime.now().getMillis();
@@ -154,10 +192,14 @@ public class DynamoUserConsentDaoTest {
         assertEquals((Long)withdrewOn, consent.getWithdrewOn());
     }
     
-    private DynamoStudyConsent1 createStudyConsent() {
+    private DynamoStudyConsent1 createStudyConsent(long createdOn) {
         final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
-        consent.setCreatedOn(123L);
+        consent.setCreatedOn(createdOn);
         return consent;
+    }
+    
+    private DynamoStudyConsent1 createStudyConsent() {
+        return createStudyConsent(123L);
     }
 }

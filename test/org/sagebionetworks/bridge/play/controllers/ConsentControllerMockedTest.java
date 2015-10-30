@@ -163,7 +163,7 @@ public class ConsentControllerMockedTest {
         JsonNode node = BridgeObjectMapper.get().readTree(response);
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
-        verify(consentService).withdrawConsent(any(Study.class), any(User.class), captor.capture());
+        verify(consentService).withdrawConsent(any(Study.class), any(User.class), captor.capture(), any(Long.class));
         assertEquals("Because, reasons.", captor.getValue().getReason());
     }
 
@@ -180,7 +180,7 @@ public class ConsentControllerMockedTest {
         JsonNode node = BridgeObjectMapper.get().readTree(response);
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
-        verify(consentService).withdrawConsent(any(Study.class), any(User.class), captor.capture());
+        verify(consentService).withdrawConsent(any(Study.class), any(User.class), captor.capture(), any(Long.class));
         assertNull(captor.getValue().getReason());
     }
     

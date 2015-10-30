@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
@@ -175,19 +176,18 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public void withdrawConsent(Study study, User user, Withdrawal withdrawal) {
+    public void withdrawConsent(Study study, User user, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
-        checkNotNull(user, Validate.CANNOT_BE_NULL, "withdrawal");
-        
-        String externalId = optionsService.getOption(user.getHealthCode(), ParticipantOption.EXTERNAL_IDENTIFIER);
+        checkNotNull(withdrawal, Validate.CANNOT_BE_NULL, "withdrawal");
+        checkArgument(withdrewOn > 0L, "withdrewOn not a valid timestamp");
         
         Account account = accountDao.getAccount(study, user.getEmail());
         signatureToHistory(account);
         accountDao.updateAccount(study, account);
 
         try {
-            userConsentDao.withdrawConsent(user.getHealthCode(), study, withdrawal.getWithdrewOn());    
+            userConsentDao.withdrawConsent(user.getHealthCode(), study, withdrewOn);    
         } catch(Exception e) {
             // Could not record the consent, compensate and rethrow the exception
             signatureFromHistory(account);
@@ -195,8 +195,11 @@ public class ConsentServiceImpl implements ConsentService {
             throw e;
         }
         decrementStudyEnrollment(study);
+
+        optionsService.setOption(study, user.getHealthCode(), SharingScope.NO_SHARING);
         
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal);
+        String externalId = optionsService.getOption(user.getHealthCode(), ParticipantOption.EXTERNAL_IDENTIFIER);
+        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
         
         user.setConsent(false);

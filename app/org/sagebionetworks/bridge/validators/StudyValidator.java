@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -85,7 +86,7 @@ public class StudyValidator implements Validator {
     }
     
     private void validateEmails(Errors errors, String value, String fieldName) {
-        Set<String> emails = commaListToSet(value);
+        Set<String> emails = BridgeUtils.commaListToSet(value);
         if (!emails.isEmpty()) {
             for (String email : emails) {
                 if (!EmailValidator.getInstance().isValid(email)) {
@@ -114,7 +115,4 @@ public class StudyValidator implements Validator {
         }
     }
 
-    private Set<String> commaListToSet(String commaList) {
-        return org.springframework.util.StringUtils.commaDelimitedListToSet(commaList);
-    }
 }

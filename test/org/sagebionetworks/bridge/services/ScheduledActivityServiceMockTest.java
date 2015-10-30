@@ -26,7 +26,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivityDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -80,7 +80,7 @@ public class ScheduledActivityServiceMockTest {
         schedulePlanService = mock(SchedulePlanService.class);
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, STUDY_IDENTIFIER)).thenReturn(TestUtils.getSchedulePlans(STUDY_IDENTIFIER));
         
-        UserConsent consent = mock(DynamoUserConsent2.class);
+        UserConsent consent = mock(DynamoUserConsent3.class);
         when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 
         
         userConsentDao = mock(UserConsentDao.class);

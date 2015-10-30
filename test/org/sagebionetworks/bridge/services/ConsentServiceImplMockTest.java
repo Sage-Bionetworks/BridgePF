@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,8 +43,8 @@ import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.collect.Maps;
 
 public class ConsentServiceImplMockTest {
 
@@ -150,7 +151,7 @@ public class ConsentServiceImplMockTest {
     @Test
     public void withdrawCopiesSignatureToHistory() throws Exception {
         account.setConsentSignature(consentSignature);
-        consentService.withdrawConsent(study, user, new Withdrawal("For reasons.", UNIX_TIMESTAMP));
+        consentService.withdrawConsent(study, user, new Withdrawal("For reasons."), UNIX_TIMESTAMP);
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         ArgumentCaptor<ConsentSignature> setterCaptor = ArgumentCaptor.forClass(ConsentSignature.class);
@@ -188,7 +189,7 @@ public class ConsentServiceImplMockTest {
         when(accountDao.getAccount(any(), any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
         
         try {
-            consentService.withdrawConsent(study, user, new Withdrawal("For reasons."));
+            consentService.withdrawConsent(study, user, new Withdrawal("For reasons."), DateTime.now().getMillis());
             fail("Should have thrown an exception");
         } catch(BridgeServiceException e) {
         }
@@ -208,7 +209,7 @@ public class ConsentServiceImplMockTest {
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         
         try {
-            consentService.withdrawConsent(study, user, new Withdrawal("For reasons.", UNIX_TIMESTAMP));
+            consentService.withdrawConsent(study, user, new Withdrawal("For reasons."), UNIX_TIMESTAMP);
             fail("Should have thrown an exception");
         } catch(BridgeServiceException e) {
         }

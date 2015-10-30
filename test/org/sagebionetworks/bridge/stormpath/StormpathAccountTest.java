@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -8,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -22,6 +24,7 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
+import com.newrelic.agent.deps.com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
@@ -58,28 +61,20 @@ public class StormpathAccountTest {
         data = new StubCustomData(); 
         when(account.getCustomData()).thenReturn(data);
 
-        String json = "{\"name\":\"Test\",\"birthdate\":\"1970-01-01\",\"imageData\":\"test\",\"imageMimeType\":\"image/png\"}";
-
         BridgeEncryptor encryptor1 = mock(BridgeEncryptor.class);
         when(encryptor1.getVersion()).thenReturn(1);
-        encryptDecryptValues(encryptor1, "111-222-3333", "111-222-3333-encryptor1encrypted");
-        encryptDecryptValues(encryptor1, "aHealthId", "aHealthId-encryptor1encrypted");
-        encryptDecryptValues(encryptor1, json, "json-encryptor1encrypted");
+        encryptDecryptValues(encryptor1, "1");
         
         BridgeEncryptor encryptor2 = mock(BridgeEncryptor.class);
         when(encryptor2.getVersion()).thenReturn(2);
-        encryptDecryptValues(encryptor2, "111-222-3333", "111-222-3333-encryptor2encrypted");
-        encryptDecryptValues(encryptor2, json, "json-encryptor2encrypted");
-        encryptDecryptValues(encryptor2, "555-555-5555", "555-555-5555-encryptor2encrypted");
+        encryptDecryptValues(encryptor2, "2");
         
         // This must be a passthrough because we're not going to set the signature through
         // StormpathAccount, we're going to put a legacy state in the map that's stubbing out
         // The CustomData element, and then verify that we can retrieve and deserialize the consent
         // even without a version attribute.
-        sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test")
-                .withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+        sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
         legacySignature = MAPPER.writeValueAsString(sig);
-        encryptDecryptValues(encryptor2, legacySignature, legacySignature);
         
         SortedMap<Integer, BridgeEncryptor> encryptors = new TreeMap<>();
         encryptors.put(1, encryptor1);
@@ -88,9 +83,27 @@ public class StormpathAccountTest {
         acct = new StormpathAccount(studyId, account, encryptors);
     }
     
-    private void encryptDecryptValues(Encryptor encryptor, String value, String encryptedValue) {
-        when(encryptor.encrypt(value)).thenReturn(encryptedValue);
-        when(encryptor.decrypt(encryptedValue)).thenReturn(value);
+    private void encryptDecryptValues(final Encryptor encryptor, final String version) {
+        when(encryptor.encrypt(any())).thenAnswer(invocation -> {
+            return "encrypted-" + version + "-" + invocation.getArgumentAt(0, String.class);
+        });
+        when(encryptor.decrypt(any())).thenAnswer(invocation -> {
+            String encValue = invocation.getArgumentAt(0, String.class);
+            return (encValue == null) ? encValue : encValue.replace("encrypted-"+version+"-", "");
+        });
+    }
+    
+    @Test
+    public void consentSignaturesEncrypted() throws Exception {
+        List<ConsentSignature> signatures = Lists.newArrayList();
+        signatures.add(new ConsentSignature.Builder().withName("Another Name").withBirthdate("1983-05-10").build());
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(signatures);
+        
+        acct.setConsentSignatureHistory(signatures);
+        
+        assertEquals("encrypted-2-"+json, data.get("foo_consent_signature_history"));
+        assertEquals(signatures, acct.getConsentSignatureHistory());
     }
     
     @Test
@@ -117,8 +130,18 @@ public class StormpathAccountTest {
     public void newSensitiveValueIsEncryptedWithLastEncryptor() {
         acct.setAttribute("phone", "111-222-3333");
         
-        assertEquals("111-222-3333-encryptor2encrypted", data.get("phone"));
+        assertEquals("encrypted-2-111-222-3333", data.get("phone"));
         assertEquals("111-222-3333", acct.getAttribute("phone"));
+    }
+    
+    @Test
+    public void sensitiveValueWhenClearedRemovesVersionKey() {
+        acct.setAttribute("phone", "111-222-3333");
+        assertEquals(2, data.get("phone_version"));
+        
+        acct.setAttribute("phone", null);
+        assertNull(data.get("phone"));
+        assertNull(data.get("phone_version"));
     }
     
     @Test
@@ -128,14 +151,14 @@ public class StormpathAccountTest {
     
     @Test
     public void oldValuesDecryptedWithOldDecryptorAndEncryptedWithNewDecryptor() {
-        data.put("phone", "111-222-3333-encryptor1encrypted");
+        data.put("phone", "encrypted-1-111-222-3333");
         data.put("phone_version", 1);
 
         assertEquals("111-222-3333", acct.getAttribute("phone"));
         
         acct.setAttribute("phone", acct.getAttribute("phone"));
         
-        assertEquals("111-222-3333-encryptor2encrypted", data.get("phone"));
+        assertEquals("encrypted-2-111-222-3333", data.get("phone"));
         assertEquals("111-222-3333", acct.getAttribute("phone"));
     }
     
@@ -161,7 +184,7 @@ public class StormpathAccountTest {
     
     @Test
     public void healthIdRetrievedWithNewVersion() {
-        data.put("foo_code", "aHealthId-encryptor1encrypted");
+        data.put("foo_code", "encrypted-1-aHealthId");
         data.put("foo_code_version", 1);
         
         String healthId = acct.getHealthId();
@@ -170,11 +193,11 @@ public class StormpathAccountTest {
     
     @Test
     public void healthIdRetrievedWithOldVersion() {
-        data.put("foo_code", "aHealthId-encryptor1encrypted");
+        data.put("foo_code", "encrypted-1-HealthId");
         data.put("fooversion", 1);
         
         String healthId = acct.getHealthId();
-        assertEquals("aHealthId", healthId);
+        assertEquals("HealthId", healthId);
     }
     
     @Test
@@ -203,7 +226,7 @@ public class StormpathAccountTest {
     
     @Test
     public void phoneRetrievedWithNoVersion() {
-        data.put("phone", "555-555-5555-encryptor2encrypted");
+        data.put("phone", "encrypted-2-555-555-5555");
         
         // This must use version 2, there's no version listed.
         String phone = acct.getAttribute("phone");
@@ -212,7 +235,7 @@ public class StormpathAccountTest {
     
     @Test
     public void phoneRetrievedWithCorrect() {
-        data.put("phone", "555-555-5555-encryptor2encrypted");
+        data.put("phone", "encrypted-2-555-555-5555");
         data.put("phone_version", 2);
         
         // This must use version 2, there's no version listed.

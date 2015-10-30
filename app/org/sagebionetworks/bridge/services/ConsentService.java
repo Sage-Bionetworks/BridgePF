@@ -63,8 +63,9 @@ public interface ConsentService {
      * @param study
      * @param user
      * @param withdrawal
+     * @param withdrewOn
      */
-    void withdrawConsent(Study study, User user, Withdrawal withdrawal);
+    void withdrawConsent(Study study, User user, Withdrawal withdrawal, long withdrewOn);
     
     /**
      * Get a history of all consent records, whether withdrawn or not, including information from the 

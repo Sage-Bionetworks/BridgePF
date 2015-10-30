@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -75,8 +76,9 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
         final Study study = studyService.getStudy(session.getStudyIdentifier());
+        final long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawConsent(study, session.getUser(), withdrawal);
+        consentService.withdrawConsent(study, session.getUser(), withdrawal, withdrewOn);
         
         return okResult("User has been withdrawn from the study.");
     }

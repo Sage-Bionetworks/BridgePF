@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 public class WithdrawConsentEmailProviderTest {
 
     private static long UNIX_TIMESTAMP = 1446073435148L;
-    private static Withdrawal WITHDRAWAL = new Withdrawal("Because, reasons.", UNIX_TIMESTAMP);
+    private static Withdrawal WITHDRAWAL = new Withdrawal("Because, reasons.");
     private static String EXTERNAL_ID = "AAA";
     
     private WithdrawConsentEmailProvider provider;
@@ -28,12 +28,12 @@ public class WithdrawConsentEmailProviderTest {
     public void before() {
         study = mock(Study.class);
         user = mock(User.class);
-        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, user, WITHDRAWAL);
+        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, user, WITHDRAWAL, UNIX_TIMESTAMP);
     }
     
     @Test
     public void canGenerateMinimalEmail() throws Exception {
-        provider = new WithdrawConsentEmailProvider(study, null, user, new Withdrawal(null, UNIX_TIMESTAMP));
+        provider = new WithdrawConsentEmailProvider(study, null, user, new Withdrawal(null), UNIX_TIMESTAMP);
         
         when(study.getConsentNotificationEmail()).thenReturn("a@a.com");
         when(study.getName()).thenReturn("Study Name");
@@ -57,7 +57,7 @@ public class WithdrawConsentEmailProviderTest {
 
     @Test
     public void canGenerateMaximalEmail() throws Exception {
-        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, user, WITHDRAWAL);
+        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, user, WITHDRAWAL, UNIX_TIMESTAMP);
         
         when(study.getConsentNotificationEmail()).thenReturn("a@a.com, b@b.com");
         when(study.getName()).thenReturn("Study Name");

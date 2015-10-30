@@ -49,6 +49,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentServiceImplTest {
     
+    private static final Long UNIX_TIMESTAMP = DateTime.now().getMillis();
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
 
     @Resource
@@ -127,7 +128,7 @@ public class ConsentServiceImplTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, optionsService.getSharingScope(testUser.getUser().getHealthCode()));
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         try {
             consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
@@ -157,7 +158,7 @@ public class ConsentServiceImplTest {
         assertEquals(signedOn, returnedSig.getSignedOn());
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         try {
             consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
@@ -179,13 +180,13 @@ public class ConsentServiceImplTest {
                 .withBirthdate(DateUtils.getCalendarDateString(today18YearsAgo)).build();
         consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
         
-        consentService.withdrawConsent(study, testUser.getUser(), WITHDRAWAL);
+        consentService.withdrawConsent(study, testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
 
         // Also okay
         sig = new ConsentSignature.Builder().withName("Test User")
                 .withBirthdate(DateUtils.getCalendarDateString(yesterday18YearsAgo)).build();
         consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
-        consentService.withdrawConsent(study, testUser.getUser(), WITHDRAWAL);
+        consentService.withdrawConsent(study, testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
 
         // But this is not, one day to go
         try {
@@ -259,7 +260,7 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedActiveConsent(testUser.getStudy(), testUser.getUser()));
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
-        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
         consentService.consentToResearch(testUser.getStudy(), testUser.getUser(),
             new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(DateTime.now().getMillis()).build(),
             SharingScope.SPONSORS_AND_PARTNERS, false);
@@ -286,7 +287,7 @@ public class ConsentServiceImplTest {
         assertNotNull(consentService.getConsentSignature(testUser.getStudy(), testUser.getUser()));
         
         // Now withdraw consent
-        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL);
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
         
         // Now user is not consented
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));

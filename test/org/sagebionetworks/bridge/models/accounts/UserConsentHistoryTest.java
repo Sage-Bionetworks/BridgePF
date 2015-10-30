@@ -38,6 +38,9 @@ public class UserConsentHistoryTest {
        
         // Do not print the healthCode in any loging that is done.
         assertTrue(history.toString().contains("healthCode=[REDACTED]"));
+        assertTrue(history.toString().contains("name=[REDACTED]"));
+        assertTrue(history.toString().contains("birthdate=[REDACTED]"));
+        assertTrue(history.toString().contains("imageData=[REDACTED]"));
         
         String json = BridgeObjectMapper.get().writeValueAsString(history);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -45,9 +48,6 @@ public class UserConsentHistoryTest {
         assertEquals("AAA", node.get("healthCode").asText());
         assertEquals("BBB", node.get("studyIdentifier").asText());
         assertEquals("2015-10-29T16:29:24.293Z", node.get("consentCreatedOn").asText());
-        assertEquals("CCC", node.get("name").asText());
-        assertEquals("1980-04-02", node.get("birthdate").asText());
-        assertEquals("imageData", node.get("imageData").asText());
         assertEquals("image/png", node.get("imageMimeType").asText());
         assertEquals("2015-10-29T16:29:42.504Z", node.get("signedOn").asText());
         assertEquals("2015-10-29T16:29:56.168Z", node.get("withdrewOn").asText());
