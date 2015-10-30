@@ -29,11 +29,9 @@ public interface Account extends BridgeEntity {
     public String getEmail();
     public void setEmail(String email);
     
-    public ConsentSignature getConsentSignature();
-    public void setConsentSignature(ConsentSignature signature);
+    public ConsentSignature getActiveConsentSignature();
     
-    public List<ConsentSignature> getConsentSignatureHistory();
-    public void setConsentSignatureHistory(List<ConsentSignature> signatures);
+    public List<ConsentSignature> getConsentSignatures();
     
     public String getHealthId();
     public void setHealthId(String healthId);

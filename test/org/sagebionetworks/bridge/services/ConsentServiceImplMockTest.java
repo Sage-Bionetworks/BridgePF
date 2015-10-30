@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -43,6 +44,7 @@ import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -149,29 +151,27 @@ public class ConsentServiceImplMockTest {
     }
     
     @Test
-    public void withdrawCopiesSignatureToHistory() throws Exception {
-        account.setConsentSignature(consentSignature);
+    public void withdrawConsent() throws Exception {
+        account.getConsentSignatures().add(consentSignature);
         consentService.withdrawConsent(study, user, new Withdrawal("For reasons."), UNIX_TIMESTAMP);
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
-        ArgumentCaptor<ConsentSignature> setterCaptor = ArgumentCaptor.forClass(ConsentSignature.class);
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         
         verify(userConsentDao).withdrawConsent(user.getHealthCode(), study, UNIX_TIMESTAMP);
         verify(accountDao).getAccount(study, user.getEmail());
         verify(accountDao).updateAccount(any(Study.class), captor.capture());
         // It happens twice because we do it the first time to set up the test properly
-        verify(account, times(2)).setConsentSignature(setterCaptor.capture());
+        //verify(account, times(2)).getConsentSignatures(setterCaptor.capture());
         verify(sendMailService).sendEmail(emailCaptor.capture());
         verifyNoMoreInteractions(userConsentDao);
         verifyNoMoreInteractions(accountDao);
         
         Account account = captor.getValue();
-        // The signature has been moved to the array, and nullified. User object
-        // is marked not consented.
-        assertEquals(1, account.getConsentSignatureHistory().size());
-        assertEquals(consentSignature, account.getConsentSignatureHistory().get(0));
-        assertNull(setterCaptor.getValue()); // should be nullified
+        // Signature is there but has been marked withdrawn
+        assertNull(account.getActiveConsentSignature());
+        assertNotNull(account.getConsentSignatures().get(0).getWithdrewOn());
+        assertEquals(1, account.getConsentSignatures().size());
         assertFalse(user.isConsent());
         
         MimeTypeEmailProvider provider = emailCaptor.getValue();
@@ -200,7 +200,7 @@ public class ConsentServiceImplMockTest {
     @Test
     public void dynamoDbFailureConsistent() {
         SimpleAccount acct = new SimpleAccount();
-        acct.setConsentSignature(new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1969-04-05").build());
+        acct.getConsentSignatures().add(new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1969-04-05").build());
         
         when(accountDao.getAccount(study, user.getEmail())).thenReturn(acct);
         doThrow(new BridgeServiceException("Something bad happend", 500)).when(userConsentDao)
@@ -218,8 +218,9 @@ public class ConsentServiceImplMockTest {
         verifyNoMoreInteractions(sendMailService);
         
         Account account = captor.getAllValues().get(1);
-        assertEquals(0, account.getConsentSignatureHistory().size());
-        assertNotNull(account.getConsentSignature());
+        assertEquals(1, account.getConsentSignatures().size());
+        assertNotNull(account.getActiveConsentSignature());
+        assertNull(account.getConsentSignatures().get(0).getWithdrewOn());
     }
 
     public static class SimpleAccount implements Account {
@@ -229,8 +230,7 @@ public class ConsentServiceImplMockTest {
         private String email;
         private String healthId;
         private StudyIdentifier studyId;
-        private ConsentSignature signature;
-        private List<ConsentSignature> history;
+        private List<ConsentSignature> signatures = Lists.newArrayList();
         private Map<String,String> attributes = Maps.newHashMap();
         private Set<Roles> roles = Sets.newHashSet();
         @Override
@@ -274,20 +274,14 @@ public class ConsentServiceImplMockTest {
             this.email = email;
         }
         @Override
-        public ConsentSignature getConsentSignature() {
-            return signature;
+        public ConsentSignature getActiveConsentSignature() {
+            List<ConsentSignature> actives = signatures.stream()
+                    .filter(signature -> signature.getWithdrewOn() == null).collect(Collectors.toList());
+            return (actives.isEmpty()) ? null : actives.get(actives.size()-1);
         }
         @Override
-        public void setConsentSignature(ConsentSignature signature) {
-            this.signature = signature;
-        }
-        @Override
-        public List<ConsentSignature> getConsentSignatureHistory() {
-            return history;
-        }
-        @Override
-        public void setConsentSignatureHistory(List<ConsentSignature> signatures) {
-            this.history = signatures;
+        public List<ConsentSignature> getConsentSignatures() {
+            return signatures;
         }
         @Override
         public String getHealthId() {

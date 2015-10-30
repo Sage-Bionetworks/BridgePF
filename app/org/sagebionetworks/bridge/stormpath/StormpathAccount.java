@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
@@ -44,6 +45,7 @@ class StormpathAccount implements Account {
     private static final String PHONE_ATTRIBUTE = "phone";
     public static final String HEALTH_CODE_SUFFIX = "_code";
     public static final String CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
+    public static final String CONSENT_SIGNATURES_SUFFIX = "_consent_signatures";
     public static final String CONSENT_SIGNATURE_HISTORY_SUFFIX = "_consent_signature_history";
     public static final String VERSION_SUFFIX = "_version";
     public static final String OLD_VERSION_SUFFIX = "version";
@@ -53,10 +55,12 @@ class StormpathAccount implements Account {
     private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final String healthIdKey;
     private final String consentSignatureKey;
-    private final String consentSignatureHistoryKey;
+    private final String consentSignaturesKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
     private final Set<Roles> roles;
+    
+    private List<ConsentSignature> signatures;
     
     StormpathAccount(StudyIdentifier studyIdentifier, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
@@ -71,13 +75,25 @@ class StormpathAccount implements Account {
         this.encryptors = encryptors;
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
         this.consentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
-        this.consentSignatureHistoryKey = studyId + CONSENT_SIGNATURE_HISTORY_SUFFIX;
+        this.consentSignaturesKey = studyId + CONSENT_SIGNATURES_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.roles = BridgeUtils.convertRolesQuietly(acct.getGroups());
+        
+        signatures = decryptJSONFrom(consentSignaturesKey, CONSENT_HISTORY_TYPE);
+        if (signatures == null) {
+            signatures = new ArrayList<>();
+        }
+        if (signatures.isEmpty()) {
+            ConsentSignature sig = decryptJSONFrom(consentSignatureKey, ConsentSignature.class);
+            if (sig != null) {
+                signatures.add(sig);
+            }
+        }
     }
     
     com.stormpath.sdk.account.Account getAccount() {
+        encryptJSONTo(consentSignaturesKey, signatures);
         return acct;
     }
     
@@ -140,20 +156,16 @@ class StormpathAccount implements Account {
         encryptTo(healthIdKey, healthId);
     };
     @Override
-    public ConsentSignature getConsentSignature() {
-        return decryptJSONFrom(consentSignatureKey, ConsentSignature.class);
+    public ConsentSignature getActiveConsentSignature() {
+        if (!signatures.isEmpty()) {
+            ConsentSignature signature = signatures.get(signatures.size()-1);
+            return (signature.getWithdrewOn() == null) ? signature : null;
+        }
+        return null;
     }
     @Override
-    public void setConsentSignature(ConsentSignature signature) {
-        encryptJSONTo(consentSignatureKey, signature);
-    }
-    @Override
-    public List<ConsentSignature> getConsentSignatureHistory() {
-        return decryptJSONFrom(consentSignatureHistoryKey, CONSENT_HISTORY_TYPE);
-    }
-    @Override
-    public void setConsentSignatureHistory(List<ConsentSignature> signatures) {
-        encryptJSONTo(consentSignatureHistoryKey, signatures);
+    public List<ConsentSignature> getConsentSignatures() {
+        return signatures;
     }
     @Override
     public StudyIdentifier getStudyIdentifier() {

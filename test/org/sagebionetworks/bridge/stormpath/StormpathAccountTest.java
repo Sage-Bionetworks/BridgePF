@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
@@ -75,6 +74,7 @@ public class StormpathAccountTest {
         // even without a version attribute.
         sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
         legacySignature = MAPPER.writeValueAsString(sig);
+        data.put("foo_consent_signature", legacySignature);
         
         SortedMap<Integer, BridgeEncryptor> encryptors = new TreeMap<>();
         encryptors.put(1, encryptor1);
@@ -95,15 +95,14 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignaturesEncrypted() throws Exception {
-        List<ConsentSignature> signatures = Lists.newArrayList();
+        List<ConsentSignature> signatures = acct.getConsentSignatures();
         signatures.add(new ConsentSignature.Builder().withName("Another Name").withBirthdate("1983-05-10").build());
         
-        String json = BridgeObjectMapper.get().writeValueAsString(signatures);
+        String json = BridgeObjectMapper.get().writeValueAsString(acct.getConsentSignatures());
+        acct.getAccount(); // necessary to trigger update of customData
         
-        acct.setConsentSignatureHistory(signatures);
-        
-        assertEquals("encrypted-2-"+json, data.get("foo_consent_signature_history"));
-        assertEquals(signatures, acct.getConsentSignatureHistory());
+        assertEquals("encrypted-2-"+json, data.get("foo_consent_signatures"));
+        assertEquals(signatures, acct.getConsentSignatures());
     }
     
     @Test
@@ -164,9 +163,9 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignatureStoredAndEncrypted() {
-        acct.setConsentSignature(sig);
+        acct.getConsentSignatures().add(sig);
         
-        ConsentSignature restoredSig = acct.getConsentSignature();
+        ConsentSignature restoredSig = acct.getActiveConsentSignature();
         assertEquals("Test", restoredSig.getName());
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());
@@ -202,10 +201,7 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignatureRetrievedWithNoVersion() throws Exception {
-        // There is no version attribute for this. Can still retrieve it.
-        data.put("foo_consent_signature", legacySignature);
-        
-        ConsentSignature restoredSig = acct.getConsentSignature();
+        ConsentSignature restoredSig = acct.getActiveConsentSignature();
         assertEquals("Test", restoredSig.getName());
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());

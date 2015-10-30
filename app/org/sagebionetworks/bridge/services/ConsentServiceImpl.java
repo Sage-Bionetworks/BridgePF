@@ -6,6 +6,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -37,8 +38,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import com.google.common.collect.Lists;
 
 @Component
 public class ConsentServiceImpl implements ConsentService {
@@ -94,9 +93,9 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
         Account account = accountDao.getAccount(study, user.getEmail());
-        ConsentSignature consentSignature = account.getConsentSignature();
-        if (consentSignature != null) {
-            return consentSignature;
+        ConsentSignature signature = account.getActiveConsentSignature();
+        if (signature != null) {
+            return signature;
         }
         throw new EntityNotFoundException(ConsentSignature.class);
     }
@@ -122,7 +121,7 @@ public class ConsentServiceImpl implements ConsentService {
         // Throws exception if we have exceeded enrollment limit.
         incrementStudyEnrollment(study);
         
-        account.setConsentSignature(consentSignature);
+        account.getConsentSignatures().add(consentSignature);
         accountDao.updateAccount(study, account);
         
         UserConsent userConsent = null;
@@ -132,7 +131,8 @@ public class ConsentServiceImpl implements ConsentService {
         } catch (Throwable e) {
             // If we can't save consent record, decrement and remove the signature before rethrowing
             decrementStudyEnrollment(study);
-            account.setConsentSignature(null);
+            int len = account.getConsentSignatures().size();
+            account.getConsentSignatures().remove(len-1);
             accountDao.updateAccount(study, account);
             throw e;
         }
@@ -183,14 +183,21 @@ public class ConsentServiceImpl implements ConsentService {
         checkArgument(withdrewOn > 0L, "withdrewOn not a valid timestamp");
         
         Account account = accountDao.getAccount(study, user.getEmail());
-        signatureToHistory(account);
+        
+        ConsentSignature active = account.getActiveConsentSignature();
+        ConsentSignature withdrawn = new ConsentSignature.Builder()
+            .withConsentSignature(active)
+            .withWithdrewOn(withdrewOn).build();
+        int index = account.getConsentSignatures().indexOf(active); // should be length-1
+        
+        account.getConsentSignatures().set(index, withdrawn);
         accountDao.updateAccount(study, account);
 
         try {
             userConsentDao.withdrawConsent(user.getHealthCode(), study, withdrewOn);    
         } catch(Exception e) {
             // Could not record the consent, compensate and rethrow the exception
-            signatureFromHistory(account);
+            account.getConsentSignatures().set(index, active);
             accountDao.updateAccount(study, account);
             throw e;
         }
@@ -207,19 +214,11 @@ public class ConsentServiceImpl implements ConsentService {
     
     @Override
     public List<UserConsentHistory> getUserConsentHistory(Study study, User user) {
-        List<ConsentSignature> signatures = Lists.newArrayList();
         Account account = accountDao.getAccount(study, user.getEmail());
-        if (account.getConsentSignatureHistory() != null) {
-            signatures.addAll(account.getConsentSignatureHistory());
-        }
-        if (account.getConsentSignature() != null) {
-            signatures.add(account.getConsentSignature());
-        }
         
-        List<UserConsentHistory> history = Lists.newArrayListWithCapacity(signatures.size());
-        for (ConsentSignature signature : signatures) {
-            
-            UserConsent consent = userConsentDao.getUserConsent(user.getHealthCode(), study, signature.getSignedOn());
+        return account.getConsentSignatures().stream().map(signature -> {
+            UserConsent consent = userConsentDao.getUserConsent(
+                    user.getHealthCode(), study, signature.getSignedOn());
             boolean hasSignedActiveConsent = hasUserSignedActiveConsent(study, user);
             
             UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
@@ -233,9 +232,8 @@ public class ConsentServiceImpl implements ConsentService {
                 .withWithdrewOn(consent.getWithdrewOn())
                 .withConsentCreatedOn(consent.getConsentCreatedOn())
                 .withHasSignedActiveConsent(hasSignedActiveConsent);
-            history.add(builder.build());
-        }
-        return history;
+            return builder.build();
+        }).collect(Collectors.toList());
     }
     
     @Override
@@ -306,29 +304,5 @@ public class ConsentServiceImpl implements ConsentService {
         if (count != null && Long.parseLong(count) > 0) {
             jedisOps.decr(key);
         }
-    }
-
-    private void signatureToHistory(Account account) {
-        ConsentSignature signature = account.getConsentSignature();
-        account.setConsentSignature(null);
-        
-        // This order matters, you have to set the list on the account object after you modify
-        // it, or it will not be serialized an encrypted correctly.
-        List<ConsentSignature> history = account.getConsentSignatureHistory();
-        if (history == null) {
-            history = Lists.newArrayListWithCapacity(1);
-        }
-        history.add(signature);
-        account.setConsentSignatureHistory(history);
-    }
-    
-    private void signatureFromHistory(Account account) {
-        List<ConsentSignature> history = account.getConsentSignatureHistory();
-        int lastIndex = history.size()-1;
-        account.setConsentSignature(history.get(lastIndex));
-        history.remove(lastIndex);
-        // This order matters, you have to set the list on the account object after you modify
-        // it, or it will not be serialized an encrypted correctly.
-        account.setConsentSignatureHistory(history);
     }
 }

@@ -301,14 +301,14 @@ public class ConsentServiceImplTest {
         // Verify that the consent signature history serializes/deserializes correctly and stores the 
         // (now) historical signature
         Account account = accountDao.getAccount(testUser.getStudy(), testUser.getEmail());
-        assertEquals(1, account.getConsentSignatureHistory().size());
-        ConsentSignature historicalSignature = account.getConsentSignatureHistory().get(0);
+        assertEquals(1, account.getConsentSignatures().size());
+        ConsentSignature historicalSignature = account.getConsentSignatures().get(0);
         
         assertEquals(consent.getName(), historicalSignature.getName());
         assertEquals(consent.getBirthdate(), historicalSignature.getBirthdate());
         assertEquals(consent.getSignedOn(), historicalSignature.getSignedOn());
         
-        assertNull(account.getConsentSignature());
+        assertNull(account.getActiveConsentSignature());
         
         long newSignedOn = DateTime.now().getMillis();
         consent = new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(newSignedOn).build();
