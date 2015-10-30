@@ -57,23 +57,21 @@ public class DynamoUserConsentDaoTest {
     
     @Test
     public void canConsentToStudy() {
-        // Not consented yet
         final DynamoStudyConsent1 consent = createStudyConsent();
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
-
+        verifyActiveConsentAbsent();
+        verifyConsentAbsentAt(DateTime.now().getMillis()); // some random time will fail
+        
         // Give consent
-        userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
-        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
+        long signedOn = DateTime.now().getMillis();
+        userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn);
+        verifyActiveConsentExists();
 
         // Withdraw
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, DateTime.now().getMillis());
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
+        verifyActiveConsentAbsent();
+        verifyConsentExistsAt(signedOn);
         
-        // Cannot be retrieved (it's "not there")
-        UserConsent found = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertNull(found);
-        
-        // There should be no consent
+        // There should be no consent to withdraw from (even though it's in the historical list)
         try {
             userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, DateTime.now().getMillis());
             fail("Should have thrown exception");
@@ -81,21 +79,17 @@ public class DynamoUserConsentDaoTest {
             assertEquals(404, e.getStatusCode());
             assertEquals("Consent not found.", e.getMessage());
         }
-        
-        UserConsent existingConsent = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertNull(existingConsent);
 
-        // Can give consent again if the previous consent is withdrawn
-        userConsentDao.giveConsent(HEALTH_CODE, consent, DateTime.now().getMillis());
-        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
-
-        // Now we can find it
-        existingConsent = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertNotNull(existingConsent);
+        // Can give consent again because the previous consent is withdrawn
+        long signedAgainOn = DateTime.now().getMillis();
+        userConsentDao.giveConsent(HEALTH_CODE, consent, signedAgainOn);
+        verifyActiveConsentExists();
+        verifyConsentExistsAt(signedAgainOn);
+        verifyConsentExistsAt(signedOn); // this is still also true.
         
         // Withdraw again
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, DateTime.now().getMillis());
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
+        verifyActiveConsentAbsent();
     }
 
     @Test
@@ -137,9 +131,7 @@ public class DynamoUserConsentDaoTest {
 
     @Test
     public void singleUserCanSignMultipleConsents() {
-        // Interestingly, you could sign the same study consent more than once.
         DynamoStudyConsent1 consent = createStudyConsent(DateTime.now().getMillis());
-        StudyIdentifier studyId = new StudyIdentifierImpl(consent.getStudyKey());
 
         long signedOn = DateTime.now().getMillis();
         userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn);
@@ -158,13 +150,13 @@ public class DynamoUserConsentDaoTest {
         long signedOn2 = signedOn + (100000);
         userConsentDao.giveConsent(HEALTH_CODE, consent, signedOn2);
         
-        List<UserConsent> consents = userConsentDao.getUserConsentHistory(HEALTH_CODE, studyId);
+        List<UserConsent> consents = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
         assertEquals(2, consents.size());
         assertEquals(signedOn, consents.get(0).getSignedOn());
         assertEquals(signedOn2, consents.get(1).getSignedOn());
         
         // The active consent is the second signed consent.
-        UserConsent activeConsent = userConsentDao.getActiveUserConsent(HEALTH_CODE, studyId);
+        UserConsent activeConsent = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
         assertEquals(signedOn2, activeConsent.getSignedOn());
         assertEquals(secondConsentCreatedOn, activeConsent.getConsentCreatedOn());
     }
@@ -172,24 +164,48 @@ public class DynamoUserConsentDaoTest {
     @Test
     public void getConsentBySignedOnDate() throws Exception {
         final DynamoStudyConsent1 studyConsent = createStudyConsent();
-        final long signedOn = DateTime.now().getMillis();
-        final StudyIdentifier studyId = new StudyIdentifierImpl(studyConsent.getStudyKey());
         
+        final long signedOn = DateTime.now().getMillis();
         userConsentDao.giveConsent(HEALTH_CODE, studyConsent, signedOn);
         
-        UserConsent consent = userConsentDao.getUserConsent(HEALTH_CODE, studyId, signedOn);
+        UserConsent consent = userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER, signedOn);
         assertEquals(signedOn, consent.getSignedOn());
-        assertEquals(studyId.getIdentifier(), consent.getStudyIdentifier());
+        assertEquals(STUDY_IDENTIFIER.getIdentifier(), consent.getStudyIdentifier());
         assertNull(consent.getWithdrewOn());
         
         // Withdraw consent, you can still retrieve
         final long withdrewOn = DateTime.now().getMillis();
-        userConsentDao.withdrawConsent(HEALTH_CODE, studyId, withdrewOn);
+        userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, withdrewOn);
         
-        consent = userConsentDao.getUserConsent(HEALTH_CODE, studyId, signedOn);
+        consent = userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER, signedOn);
         assertEquals(signedOn, consent.getSignedOn());
-        assertEquals(studyId.getIdentifier(), consent.getStudyIdentifier());
+        assertEquals(STUDY_IDENTIFIER.getIdentifier(), consent.getStudyIdentifier());
         assertEquals((Long)withdrewOn, consent.getWithdrewOn());
+    }
+    
+    private void verifyActiveConsentExists() {
+        assertNotNull(userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER));
+        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, STUDY_IDENTIFIER));
+    }
+    
+    private void verifyActiveConsentAbsent() {
+        assertNull(userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER));
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, STUDY_IDENTIFIER));
+    }
+    
+    private void verifyConsentExistsAt(long signedOn) {
+        UserConsent consent = userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER, signedOn);
+        assertNotNull(consent);
+        assertEquals(signedOn, consent.getSignedOn());
+    }
+    
+    private void verifyConsentAbsentAt(long signedOn) {
+        try {
+            userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER, signedOn);
+            fail("Should have thrown an exception");
+        } catch(BridgeServiceException e) {
+            assertEquals(404, e.getStatusCode());
+        }
     }
     
     private DynamoStudyConsent1 createStudyConsent(long createdOn) {

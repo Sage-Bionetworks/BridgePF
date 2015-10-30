@@ -14,6 +14,14 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
  */
 public interface Account extends BridgeEntity {
 
+    public default ConsentSignature getActiveConsentSignature() {
+        if (!getConsentSignatures().isEmpty()) {
+            ConsentSignature signature = getConsentSignatures().get(getConsentSignatures().size()-1);
+            return (signature.getWithdrewOn() == null) ? signature : null;
+        }
+        return null;
+    }
+    
     public String getUsername();
     public void setUsername(String username);
     
@@ -28,8 +36,6 @@ public interface Account extends BridgeEntity {
 
     public String getEmail();
     public void setEmail(String email);
-    
-    public ConsentSignature getActiveConsentSignature();
     
     public List<ConsentSignature> getConsentSignatures();
     

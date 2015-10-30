@@ -155,14 +155,6 @@ class StormpathAccount implements Account {
         encryptTo(healthIdKey, healthId);
     };
     @Override
-    public ConsentSignature getActiveConsentSignature() {
-        if (!signatures.isEmpty()) {
-            ConsentSignature signature = signatures.get(signatures.size()-1);
-            return (signature.getWithdrewOn() == null) ? signature : null;
-        }
-        return null;
-    }
-    @Override
     public List<ConsentSignature> getConsentSignatures() {
         return signatures;
     }
