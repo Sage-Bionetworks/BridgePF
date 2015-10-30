@@ -19,6 +19,7 @@ import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 
 /**
@@ -96,6 +97,7 @@ public class StormpathAccountIteratorTest {
         List<com.stormpath.sdk.account.Account> accounts = Lists.newArrayList();
         for (int i=0; i < numAccounts; i++) {
             com.stormpath.sdk.account.Account acct = mock(com.stormpath.sdk.account.Account.class);
+            when(acct.getCustomData()).thenReturn(mock(CustomData.class));
             accounts.add(acct);
         }
         AccountList list = mock(AccountList.class);

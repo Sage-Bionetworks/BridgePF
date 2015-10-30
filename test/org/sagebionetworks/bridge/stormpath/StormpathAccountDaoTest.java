@@ -36,6 +36,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
 import com.stormpath.sdk.tenant.Tenant;
@@ -276,6 +277,7 @@ public class StormpathAccountDaoTest {
         
         Directory directory = mock(Directory.class);
         com.stormpath.sdk.account.Account account = mock(com.stormpath.sdk.account.Account.class);
+        when(account.getCustomData()).thenReturn(mock(CustomData.class));
         Client client = mock(Client.class);
         
         when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(account);

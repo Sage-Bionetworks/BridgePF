@@ -39,14 +39,13 @@ class StormpathAccount implements Account {
     
     static final String PLACEHOLDER_STRING = "<EMPTY>";
     
-    private static final TypeReference<List<ConsentSignature>> CONSENT_HISTORY_TYPE = new TypeReference<List<ConsentSignature>>() {};
+    private static final TypeReference<List<ConsentSignature>> CONSENT_SIGNATURES_TYPE = new TypeReference<List<ConsentSignature>>() {};
     
     private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final String PHONE_ATTRIBUTE = "phone";
     public static final String HEALTH_CODE_SUFFIX = "_code";
     public static final String CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
     public static final String CONSENT_SIGNATURES_SUFFIX = "_consent_signatures";
-    public static final String CONSENT_SIGNATURE_HISTORY_SUFFIX = "_consent_signature_history";
     public static final String VERSION_SUFFIX = "_version";
     public static final String OLD_VERSION_SUFFIX = "version";
     
@@ -80,7 +79,7 @@ class StormpathAccount implements Account {
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.roles = BridgeUtils.convertRolesQuietly(acct.getGroups());
         
-        signatures = decryptJSONFrom(consentSignaturesKey, CONSENT_HISTORY_TYPE);
+        signatures = decryptJSONFrom(consentSignaturesKey, CONSENT_SIGNATURES_TYPE);
         if (signatures == null) {
             signatures = new ArrayList<>();
         }
