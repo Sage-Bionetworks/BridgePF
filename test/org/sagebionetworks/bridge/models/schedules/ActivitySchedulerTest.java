@@ -105,6 +105,7 @@ public class ActivitySchedulerTest {
         assertNotNull(schActivity.getGuid());
         assertEquals("Activity3", schActivity.getActivity().getLabel());
         assertEquals("tapTest", schActivity.getActivity().getRef());
+        assertEquals("BBB", schActivity.getSchedulePlanGuid());
         assertEquals(0, schActivity.getMinAppVersion().intValue());
         assertEquals(1000, schActivity.getMaxAppVersion().intValue());
         assertNotNull(schActivity.getScheduledOn());

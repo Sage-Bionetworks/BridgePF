@@ -329,10 +329,16 @@ public class BridgeSpringConfig {
         return DynamoUtils.getMapper(DynamoScheduledActivity.class, bridgeConfig, client);
     }
     
-    @Bean(name = "activityIndex")
+    @Bean(name = "activityRunKeyIndex")
     @Autowired
-    public DynamoIndexHelper activityIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+    public DynamoIndexHelper activityRunKeyIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
         return DynamoIndexHelper.create(DynamoScheduledActivity.class, "hashKey-runKey-index", bridgeConfig, client);
+    }
+    
+    @Bean(name = "activitySchedulePlanGuidIndex")
+    @Autowired
+    public DynamoIndexHelper activitySchedulePlanGuidIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoIndexHelper.create(DynamoScheduledActivity.class, "schedulePlanGuid-index", bridgeConfig, client);
     }
 
     @Bean(name = "surveyResponseDdbMapper")

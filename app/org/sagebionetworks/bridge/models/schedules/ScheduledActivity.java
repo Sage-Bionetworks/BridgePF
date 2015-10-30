@@ -52,6 +52,10 @@ public interface ScheduledActivity extends BridgeEntity {
     public DateTimeZone getTimeZone();
 
     public void setTimeZone(DateTimeZone timeZone);
+    
+    public String getSchedulePlanGuid();
+
+    public void setSchedulePlanGuid(String schedulePlanGuid);
 
     public String getGuid();
 

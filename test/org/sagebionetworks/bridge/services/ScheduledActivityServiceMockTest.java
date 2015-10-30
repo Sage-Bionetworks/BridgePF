@@ -220,9 +220,9 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void deleteActivitiesDoesDelete() {
-        service.deleteActivities("BBB");
+        service.deleteActivitiesForUser("BBB");
         
-        verify(activityDao).deleteActivities("BBB");
+        verify(activityDao).deleteActivitiesForUser("BBB");
         verifyNoMoreInteractions(activityDao);
     }
 

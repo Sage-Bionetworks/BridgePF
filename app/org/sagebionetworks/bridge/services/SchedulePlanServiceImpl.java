@@ -28,20 +28,23 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     private SchedulePlanDao schedulePlanDao;
     private SchedulePlanValidator validator;
     private SurveyService surveyService;
+    private ScheduledActivityService activityService;
 
     @Autowired
     public final void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
         this.schedulePlanDao = schedulePlanDao;
     }
-    
     @Autowired
     public final void setValidator(SchedulePlanValidator validator) {
         this.validator = validator;
     }
-    
     @Autowired
     public final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
+    }
+    @Autowired
+    public final void setScheduledActivityService(ScheduledActivityService activityService) {
+        this.activityService = activityService;
     }
 
     @Override
@@ -73,12 +76,16 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
-        return schedulePlanDao.updateSchedulePlan(plan);
+        plan = schedulePlanDao.updateSchedulePlan(plan);
+        activityService.deleteActivitiesForSchedulePlan(plan.getGuid());
+        return plan;
     }
 
     @Override
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
+        
+        activityService.deleteActivitiesForSchedulePlan(guid);
     }
     
     private void updateGuids(SchedulePlan plan) {

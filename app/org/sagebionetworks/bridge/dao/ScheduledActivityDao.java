@@ -56,6 +56,16 @@ public interface ScheduledActivityDao {
      * 
      * @param healthCode
      */
-    public void deleteActivities(String healthCode);
+    public void deleteActivitiesForUser(String healthCode);
+    
+    /**
+     * Delete unstarted scheduled activities (only, finished and in-progress activities are left alone) for a given
+     * schedule plan. We do this when a schedule plan is updated and when it is deleted, to clear out the list of tasks
+     * that are returned to a user. In the case of a schedule plan update, a new set of tasks get issued according to
+     * the new schedule.
+     * 
+     * @param schedulePlanGuid
+     */
+    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid);
     
 }

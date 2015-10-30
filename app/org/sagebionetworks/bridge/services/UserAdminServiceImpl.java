@@ -203,7 +203,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                     consentService.withdrawConsent(study, user);
                     
                     healthDataService.deleteRecordsForHealthCode(healthCode);
-                    scheduledActivityService.deleteActivities(healthCode);
+                    scheduledActivityService.deleteActivitiesForUser(healthCode);
                     activityEventService.deleteActivityEvents(healthCode);
                     surveyResponseService.deleteSurveyResponses(healthCode);
                 }

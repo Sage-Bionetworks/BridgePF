@@ -87,7 +87,7 @@ public class DynamoScheduledActivityDaoTest {
     @After
     public void after() {
         schedulePlanService.deleteSchedulePlan(TestConstants.TEST_STUDY, plan.getGuid());
-        activityDao.deleteActivities(user.getHealthCode());
+        activityDao.deleteActivitiesForUser(user.getHealthCode());
     }
 
     @Test
@@ -130,7 +130,7 @@ public class DynamoScheduledActivityDaoTest {
         
         activities = activityDao.getActivities(context);
         assertEquals("deleted activity not returned from server", collectionSize-1, activities.size());
-        activityDao.deleteActivities(user.getHealthCode());
+        activityDao.deleteActivitiesForUser(user.getHealthCode());
         
         activities = activityDao.getActivities(context);
         assertEquals("all activities deleted", 0, activities.size());

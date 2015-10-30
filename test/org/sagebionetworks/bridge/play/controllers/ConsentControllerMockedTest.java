@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
@@ -11,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.Iterator;
 
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
