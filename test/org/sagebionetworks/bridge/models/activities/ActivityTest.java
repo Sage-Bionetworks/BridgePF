@@ -44,7 +44,7 @@ public class ActivityTest {
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("task", node.get("activityType").asText());
-        assertEquals("taskId", node.get("ref").asText());
+        assertEquals("taskId", node.get("task").get("identifier").asText());
         assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
@@ -71,8 +71,8 @@ public class ActivityTest {
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("survey", node.get("activityType").asText());
-        String refString = node.get("ref").asText();
-        assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/2015-01-01T10:10:10.000Z"));
+        String hrefString = node.get("survey").get("href").asText();
+        assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/2015-01-01T10:10:10.000Z"));
         assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
@@ -108,8 +108,8 @@ public class ActivityTest {
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("survey", node.get("activityType").asText());
-        String refString = node.get("ref").asText();
-        assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
+        String hrefString = node.get("survey").get("href").asText();
+        assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
         assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
@@ -145,8 +145,8 @@ public class ActivityTest {
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("survey", node.get("activityType").asText());
-        String refString = node.get("ref").asText();
-        assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
+        String hrefString = node.get("survey").get("href").asText();
+        assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
         assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         

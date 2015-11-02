@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertTrue;
-import static com.google.common.base.Preconditions.checkArgument;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;

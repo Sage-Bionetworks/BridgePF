@@ -20,7 +20,6 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 /**
  * This class is a wrapper around a DynamoDB Index object, to enable easy testing and easy mocking. This class is used
