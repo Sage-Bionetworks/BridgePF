@@ -17,7 +17,6 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -272,12 +271,6 @@ public class ConsentServiceImplMockTest {
         @Override
         public void setEmail(String email) {
             this.email = email;
-        }
-        @Override
-        public ConsentSignature getActiveConsentSignature() {
-            List<ConsentSignature> actives = signatures.stream()
-                    .filter(signature -> signature.getWithdrewOn() == null).collect(Collectors.toList());
-            return (actives.isEmpty()) ? null : actives.get(actives.size()-1);
         }
         @Override
         public List<ConsentSignature> getConsentSignatures() {

@@ -24,10 +24,13 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
+import com.newrelic.agent.deps.com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
 public class StormpathAccountTest {
+    
+    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("foo");
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     
@@ -48,14 +51,12 @@ public class StormpathAccountTest {
     
     private StormpathAccount acct;
     
-    private String legacySignature;
-    
     private ConsentSignature sig;
+    
+    private  SortedMap<Integer, BridgeEncryptor> encryptors;
     
     @Before
     public void setUp() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("foo");
-        
         account = mock(Account.class);
         data = new StubCustomData(); 
         when(account.getCustomData()).thenReturn(data);
@@ -68,19 +69,16 @@ public class StormpathAccountTest {
         when(encryptor2.getVersion()).thenReturn(2);
         encryptDecryptValues(encryptor2, "2");
         
-        // This must be a passthrough because we're not going to set the signature through
-        // StormpathAccount, we're going to put a legacy state in the map that's stubbing out
-        // The CustomData element, and then verify that we can retrieve and deserialize the consent
-        // even without a version attribute.
-        sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
-        legacySignature = MAPPER.writeValueAsString(sig);
-        data.put("foo_consent_signature", legacySignature);
-        
-        SortedMap<Integer, BridgeEncryptor> encryptors = new TreeMap<>();
+        encryptors = new TreeMap<>();
         encryptors.put(1, encryptor1);
         encryptors.put(2, encryptor2);
         
-        acct = new StormpathAccount(studyId, account, encryptors);
+        // In some tests this is stored under older keys, such as the key that was used before supporting
+        // multipl encryptor versions.
+        sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test")
+                .withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+        
+        acct = new StormpathAccount(STUDY_ID, account, encryptors);
     }
     
     private void encryptDecryptValues(final Encryptor encryptor, final String version) {
@@ -162,7 +160,7 @@ public class StormpathAccountTest {
     }
     
     @Test
-    public void consentSignatureStoredAndEncrypted() {
+    public void consentSignatureRAndEncrypted() {
         acct.getConsentSignatures().add(sig);
         
         ConsentSignature restoredSig = acct.getActiveConsentSignature();
@@ -201,6 +199,51 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignatureRetrievedWithNoVersion() throws Exception {
+        // This is a key that predates the encryptors. SHould still be found when we 
+        // retrieve the value through the new consent signature list.
+        data.put("foo_consent_signature", MAPPER.writeValueAsString(sig));
+        
+        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        
+        ConsentSignature restoredSig = acct.getActiveConsentSignature();
+        assertEquals("Test", restoredSig.getName());
+        assertEquals("1970-01-01", restoredSig.getBirthdate());
+        assertEquals("test", restoredSig.getImageData());
+        assertEquals("image/png", restoredSig.getImageMimeType());
+    }
+    
+    @Test
+    public void consentSignatureRetrievedFromEncryptedSingleObjectSlot() throws Exception {
+        data.put("foo_consent_signature", MAPPER.writeValueAsString(sig));
+        data.put("foo_consent_signature_version", 2);
+        
+        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        
+        ConsentSignature restoredSig = acct.getActiveConsentSignature();
+        assertEquals("Test", restoredSig.getName());
+        assertEquals("1970-01-01", restoredSig.getBirthdate());
+        assertEquals("test", restoredSig.getImageData());
+        assertEquals("image/png", restoredSig.getImageMimeType());
+        
+        // Also should be in "history"
+        List<ConsentSignature> history = acct.getConsentSignatures();
+        assertEquals(1, history.size());
+        assertEquals(sig, history.get(0));
+        assertNull(history.get(0).getWithdrewOn());
+    }
+    
+    @Test
+    public void consentSignatureRetrievedWithOnlySignatureList() throws Exception {
+        List<ConsentSignature> history = Lists.newArrayList();
+        // Adding a historical signature. Order matters, the active one must be last.
+        history.add(new ConsentSignature.Builder().withName("Stephen Maturin").withBirthdate("1790-04-12")
+                .withWithdrewOn(DateTime.now().getMillis()).build());
+        history.add(sig);
+        data.put("foo_consent_signatures", MAPPER.writeValueAsString(history));
+        data.put("foo_consent_signatures_version", 2);
+        
+        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        
         ConsentSignature restoredSig = acct.getActiveConsentSignature();
         assertEquals("Test", restoredSig.getName());
         assertEquals("1970-01-01", restoredSig.getBirthdate());
