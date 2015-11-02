@@ -15,7 +15,6 @@ import java.util.Map;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
@@ -87,11 +86,8 @@ public class DynamoIndexHelperTest {
         arg = ArgumentCaptor.forClass(List.class);
         when(mockMapper.batchLoad(arg.capture())).thenReturn(mockMapperResultMap);
         helper.setMapper(mockMapper);
-        
-        Map<String,AttributeValue> mockResultMap = new HashMap<>();
-        
-        
-        when(mockMapper.marshallIntoObject(any(), any())).thenReturn(new Thing("foo key", "foo value"));
+        //Map<String,AttributeValue> mockResultMap = new HashMap<>();
+        //when(mockMapper.marshallIntoObject(any(), any())).thenReturn(new Thing("foo key", "foo value"));
     }
 
     @Test

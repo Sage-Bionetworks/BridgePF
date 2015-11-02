@@ -177,7 +177,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     }
 
     @DynamoDBHashKey
-    @JsonIgnore
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -200,8 +199,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     }
 
     @DynamoDBIndexHashKey(attributeName="schedulePlanGuid", globalSecondaryIndexName = "schedulePlanGuid-index")
-    @DynamoProjection(projectionType=ProjectionType.ALL, globalSecondaryIndexName = "schedulePlanGuid-index")
-    @JsonIgnore
+    @DynamoProjection(projectionType=ProjectionType.KEYS_ONLY, globalSecondaryIndexName = "schedulePlanGuid-index")
     @Override
     public String getSchedulePlanGuid() {
         return schedulePlanGuid;

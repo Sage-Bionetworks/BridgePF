@@ -15,11 +15,10 @@ import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.internal.InternalUtils;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 /**
  * This class is a wrapper around a DynamoDB Index object, to enable easy testing and easy mocking. This class is used
@@ -81,11 +80,11 @@ public class DynamoIndexHelper {
         // convert items to the specified class
         List<T> recordKeyList = new ArrayList<>();
         for (Item oneItem : itemIter) {
-            // Some values (booleans) don't deserialize correctly (stored as an int, doesn't conver), 
-            // T oneRecord = BridgeObjectMapper.get().convertValue(oneItem.asMap(), clazz);
+            // Some values (booleans) don't deserialize correctly (stored as an int, doesn't conver),
+            T oneRecord = BridgeObjectMapper.get().convertValue(oneItem.asMap(), clazz);
             // however this song and dance deserializes the same way as the mapper would:
-            Map<String,AttributeValue> attributes = InternalUtils.toAttributeValues(oneItem);
-            T oneRecord = mapper.marshallIntoObject(clazz, attributes);
+            //Map<String,AttributeValue> attributes = InternalUtils.toAttributeValues(oneItem);
+            //T oneRecord = mapper.marshallIntoObject(clazz, attributes);
             recordKeyList.add(oneRecord);
         }
         return recordKeyList;
