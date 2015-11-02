@@ -147,7 +147,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         activity.setSchedulePlanGuid(schedulePlanGuid);
 
         List<ScheduledActivity> activitiesToDelete = schedulePlanIndex
-                .query(ScheduledActivity.class, "schedulePlanGuid", schedulePlanGuid, null)
+                .query(DynamoScheduledActivity.class, "schedulePlanGuid", schedulePlanGuid, null)
                 .stream()
                 .filter(act -> act.getStatus() != ScheduledActivityStatus.STARTED)
                 .collect(Collectors.toList());

@@ -6,6 +6,8 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.DateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -91,22 +93,26 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     @Override
     @DynamoDBIgnore
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getScheduledOn() {
         return getInstant(getLocalScheduledOn());
     }
 
     @Override
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     public void setScheduledOn(DateTime scheduledOn) {
         this.localScheduledOn = (scheduledOn == null) ? null : scheduledOn.toLocalDateTime();
     }
 
     @Override
     @DynamoDBIgnore
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getExpiresOn() {
         return getInstant(getLocalExpiresOn());
     }
 
     @Override
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     public void setExpiresOn(DateTime expiresOn) {
         this.localExpiresOn = (expiresOn == null) ? null : expiresOn.toLocalDateTime();
     }

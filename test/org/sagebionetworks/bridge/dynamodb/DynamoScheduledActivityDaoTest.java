@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
@@ -134,6 +135,35 @@ public class DynamoScheduledActivityDaoTest {
         
         activities = activityDao.getActivities(context);
         assertEquals("all activities deleted", 0, activities.size());
+    }
+    
+    @Test
+    public void createActivitiesAndDeleteSomeBySchedulePlan() throws Exception {
+        DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
+        Map<String,DateTime> events = Maps.newHashMap();
+        events.put("enrollment", ENROLLMENT);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn)
+            .withHealthCode(user.getHealthCode())
+            .withEvents(events).build();
+        
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
+        activityDao.saveActivities(activities);
+
+        String schedulePlanGuid = activities.get(0).getSchedulePlanGuid();
+        int initialCount = activities.size();
+        
+        activityDao.deleteActivitiesForSchedulePlan(schedulePlanGuid);
+        
+        activities = activityDao.getActivities(context);
+        assertNotEquals(initialCount, activities.size());
+        for (ScheduledActivity activity : activities) {
+            assertNotEquals(schedulePlanGuid, activity.getSchedulePlanGuid());
+        }
     }
 
     private void cleanActivities(List<ScheduledActivity> activities) {

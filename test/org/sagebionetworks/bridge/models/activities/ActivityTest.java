@@ -179,7 +179,6 @@ public class ActivityTest {
         assertTrue(ref2.getHref().matches("http[s]?://.*/v3/surveyresponses/BBB"));
     }
     
-    @SuppressWarnings("deprecation")
     @Test
     public void olderPublishedActivitiesCanBeDeserialized() throws Exception {
         String oldJson = "{\"label\":\"Personal Health Survey\",\"ref\":\"https://webservices-staging.sagebridge.org/api/v2/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published\",\"activityType\":\"survey\",\"survey\":{\"guid\":\"ac1e57fd-5e8e-473f-b82f-bac7547b6783\",\"identifier\":\"identifier\",\"type\":\"GuidCreatedOnVersionHolder\"},\"type\":\"Activity\"}";
@@ -188,7 +187,6 @@ public class ActivityTest {
         Activity activity = mapper.readValue(oldJson, Activity.class);
         
         assertEquals("Personal Health Survey", activity.getLabel());
-        assertTrue(activity.getRef().matches("http[s]?://.*/v3/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published"));
         assertEquals(ActivityType.SURVEY, activity.getActivityType());
         
         SurveyReference ref = activity.getSurvey();

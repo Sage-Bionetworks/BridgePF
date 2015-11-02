@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
 
@@ -72,6 +73,8 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     
     @Override
     public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
+        checkNotNull(plan);
+        
         Validate.entityThrowingException(validator, plan);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
@@ -83,12 +86,16 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
 
     @Override
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+        checkNotNull(studyIdentifier);
+        checkNotNull(isNotBlank(guid));
+        
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
         
         activityService.deleteActivitiesForSchedulePlan(guid);
     }
     
     private void updateGuids(SchedulePlan plan) {
+        
         plan.setVersion(null);
         plan.setGuid(BridgeUtils.generateGuid());
         for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
