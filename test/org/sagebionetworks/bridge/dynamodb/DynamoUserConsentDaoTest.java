@@ -189,7 +189,8 @@ public class DynamoUserConsentDaoTest {
         
         // Active consent should always be the last consent
         List<UserConsent> history = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertEquals(active, history.get(history.size()-1));
+        assertEquals(active.getSignedOn(), history.get(history.size()-1).getSignedOn());
+        assertNull(history.get(history.size()-1).getWithdrewOn());
     }
     
     private void verifyActiveConsentAbsent() {
