@@ -26,7 +26,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
 import com.google.common.collect.Lists;
-import com.newrelic.agent.deps.com.google.common.collect.Maps;
+import com.google.common.collect.Maps;
 
 public class ActivityEventServiceTest {
 

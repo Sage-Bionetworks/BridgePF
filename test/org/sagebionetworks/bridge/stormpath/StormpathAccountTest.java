@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
@@ -249,6 +249,24 @@ public class StormpathAccountTest {
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());
         assertEquals("image/png", restoredSig.getImageMimeType());
+    }
+    
+    @Test
+    public void activeConsentIsNullWhenAllConsentsWithdrawn() throws Exception {
+        sig = new ConsentSignature.Builder().withConsentSignature(sig).withWithdrewOn(DateTime.now().getMillis()).build();
+        
+        List<ConsentSignature> history = Lists.newArrayList();
+        history.add(sig);
+        history.add(new ConsentSignature.Builder().withName("Stephen Maturin").withBirthdate("1790-04-12")
+                .withWithdrewOn(DateTime.now().getMillis()).build());
+        
+        data.put("foo_consent_signatures", MAPPER.writeValueAsString(history));
+        data.put("foo_consent_signatures_version", 2);
+        
+        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        
+        ConsentSignature restoredSig = acct.getActiveConsentSignature();
+        assertNull(restoredSig);
     }
     
     @Test
