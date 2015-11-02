@@ -62,14 +62,14 @@ public class ConsentSignatureSignedOnBackfill extends AsyncBackfillTemplate {
             if (mapping != null) {
                 String healthCode = mapping.getCode();
 
-                ConsentSignature sig = account.getConsentSignature();
+                ConsentSignature sig = account.getActiveConsentSignature();
                 if (sig != null) {
-                    UserConsent consent = userConsentDao.getUserConsent(healthCode, account.getStudyIdentifier());
+                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, account.getStudyIdentifier());
                     if (consent != null) {
                         if (sig.getSignedOn() != consent.getSignedOn()) {
                             Study study = studyService.getStudy(account.getStudyIdentifier());
                             sig = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(consent.getSignedOn()).build();
-                            account.setConsentSignature(sig);
+                            account.getConsentSignatures().add(sig);
 
                             accountDao.updateAccount(study, account);
                             callback.newRecords(getBackfillRecordFactory().createAndSave(task, study, account,

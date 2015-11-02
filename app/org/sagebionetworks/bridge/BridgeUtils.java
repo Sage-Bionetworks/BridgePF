@@ -1,13 +1,17 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -146,4 +150,13 @@ public class BridgeUtils {
         }
         return roleSet;
     }
+    
+    public static Set<String> commaListToSet(String commaList) {
+        if (isNotBlank(commaList)) {
+            return commaDelimitedListToSet(commaList).stream()
+                    .map(string -> string.trim()).collect(Collectors.toSet());
+        }
+        return Collections.emptySet();
+    }
+
 }

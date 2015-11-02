@@ -183,7 +183,7 @@ public class ScheduledActivityService {
      * @return
      */
     private Map<String, DateTime> createEnrollmentEventFromConsent(ScheduleContext context, Map<String, DateTime> events) {
-        UserConsent consent = userConsentDao.getUserConsent(context.getHealthCode(), context.getStudyIdentifier());
+        UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), context.getStudyIdentifier());
         Map<String,DateTime> newEvents = Maps.newHashMap();
         newEvents.putAll(events);
         newEvents.put("enrollment", new DateTime(consent.getSignedOn()));

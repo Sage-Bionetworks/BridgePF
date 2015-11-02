@@ -27,8 +27,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.collect.Maps;
 
 /**
  * These tests cover other aspects of the scheduler besides the accuracy of its scheduling.

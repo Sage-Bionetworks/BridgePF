@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
@@ -26,7 +26,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
 import com.google.common.collect.Lists;
-import com.newrelic.agent.deps.com.google.common.collect.Maps;
+import com.google.common.collect.Maps;
 
 public class ActivityEventServiceTest {
 
@@ -108,9 +108,8 @@ public class ActivityEventServiceTest {
     public void canPublishConsent() {
         DateTime now = DateTime.now();
         
-        DynamoUserConsent2 consent = new DynamoUserConsent2();
+        DynamoUserConsent3 consent = new DynamoUserConsent3("AAA-BBB-CCC", "test-study");
         consent.setConsentCreatedOn(now.minusDays(10).getMillis());
-        consent.setHealthCode("AAA-BBB-CCC");
         consent.setSignedOn(now.getMillis());
         
         service.publishEnrollmentEvent(consent.getHealthCode(), (UserConsent)consent);

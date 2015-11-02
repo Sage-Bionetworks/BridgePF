@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 
@@ -18,6 +20,7 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -36,10 +39,13 @@ class StormpathAccount implements Account {
     
     static final String PLACEHOLDER_STRING = "<EMPTY>";
     
+    private static final TypeReference<List<ConsentSignature>> CONSENT_SIGNATURES_TYPE = new TypeReference<List<ConsentSignature>>() {};
+    
     private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final String PHONE_ATTRIBUTE = "phone";
     public static final String HEALTH_CODE_SUFFIX = "_code";
     public static final String CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
+    public static final String CONSENT_SIGNATURES_SUFFIX = "_consent_signatures";
     public static final String VERSION_SUFFIX = "_version";
     public static final String OLD_VERSION_SUFFIX = "version";
     
@@ -48,9 +54,12 @@ class StormpathAccount implements Account {
     private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final String healthIdKey;
     private final String consentSignatureKey;
+    private final String consentSignaturesKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
     private final Set<Roles> roles;
+    
+    private List<ConsentSignature> signatures;
     
     StormpathAccount(StudyIdentifier studyIdentifier, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
@@ -65,12 +74,25 @@ class StormpathAccount implements Account {
         this.encryptors = encryptors;
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
         this.consentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
+        this.consentSignaturesKey = studyId + CONSENT_SIGNATURES_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.roles = BridgeUtils.convertRolesQuietly(acct.getGroups());
+        
+        signatures = decryptJSONFrom(consentSignaturesKey, CONSENT_SIGNATURES_TYPE);
+        if (signatures == null) {
+            signatures = new ArrayList<>();
+        }
+        if (signatures.isEmpty()) {
+            ConsentSignature sig = decryptJSONFrom(consentSignatureKey, ConsentSignature.class);
+            if (sig != null) {
+                signatures.add(sig);
+            }
+        }
     }
     
     com.stormpath.sdk.account.Account getAccount() {
+        encryptJSONTo(consentSignaturesKey, signatures);
         return acct;
     }
     
@@ -133,12 +155,8 @@ class StormpathAccount implements Account {
         encryptTo(healthIdKey, healthId);
     };
     @Override
-    public ConsentSignature getConsentSignature() {
-        return decryptJSONFrom(consentSignatureKey, ConsentSignature.class);
-    }
-    @Override
-    public void setConsentSignature(ConsentSignature signature) {
-        encryptJSONTo(consentSignatureKey, signature);
+    public List<ConsentSignature> getConsentSignatures() {
+        return signatures;
     }
     @Override
     public StudyIdentifier getStudyIdentifier() {
@@ -185,6 +203,19 @@ class StormpathAccount implements Account {
         }
     }
     
+    private <T> T decryptJSONFrom(String key, TypeReference<T> reference) {
+        try {
+            String jsonString = decryptFrom(key);
+            if (jsonString == null) {
+                return null;
+            }
+            return MAPPER.readValue(jsonString, reference);
+        } catch(IOException e) {
+            String message = String.format("Could not retrieve %s due to malformed JSON: %s", key, e.getMessage());
+            throw new BridgeServiceException(message);
+        }
+    }
+    
     private <T> T decryptJSONFrom(String key, Class<T> clazz) {
         try {
             String jsonString = decryptFrom(key);
@@ -201,6 +232,7 @@ class StormpathAccount implements Account {
     private void encryptTo(String key, String value) {
         if (value == null) {
             acct.getCustomData().remove(key);
+            acct.getCustomData().remove(key+VERSION_SUFFIX);
             return;
         }
         // Encryption is always done with the most recent encryptor, which is last in the list (most revent version #)
