@@ -257,21 +257,13 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void deleteScheduledActivitiesForUser() {
         service.deleteActivitiesForUser("AAA");
-        
-        ArgumentCaptor<String> argument = ArgumentCaptor.forClass(String.class);
-        verify(activityDao).deleteActivitiesForUser(argument.capture());
-        
-        assertEquals("AAA", argument.getValue());
+        verify(activityDao).deleteActivitiesForUser("AAA");
     }
     
     @Test
     public void deleteScheduledActivitiesForSchedulePlan() {
         service.deleteActivitiesForSchedulePlan("BBB");
-        
-        ArgumentCaptor<String> argument = ArgumentCaptor.forClass(String.class);
-        verify(activityDao).deleteActivitiesForSchedulePlan(argument.capture());
-        
-        assertEquals("BBB", argument.getValue());
+        verify(activityDao).deleteActivitiesForSchedulePlan("BBB");
     }
     
     @Test(expected = IllegalArgumentException.class)
