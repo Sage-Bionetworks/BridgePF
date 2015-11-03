@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
@@ -154,13 +155,16 @@ public class DynamoScheduledActivityDaoTest {
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
         activityDao.saveActivities(activities);
 
+        // Get one schedule plan GUID to delete and the initial count
         String schedulePlanGuid = activities.get(0).getSchedulePlanGuid();
         int initialCount = activities.size();
         
         activityDao.deleteActivitiesForSchedulePlan(schedulePlanGuid);
         
         activities = activityDao.getActivities(context);
-        assertNotEquals(initialCount, activities.size());
+        // The count is now less than before
+        assertTrue(initialCount > activities.size());
+        // and the supplied schedulePlanGuid cannot be found in any of the activities that still exist
         for (ScheduledActivity activity : activities) {
             assertNotEquals(schedulePlanGuid, activity.getSchedulePlanGuid());
         }

@@ -80,11 +80,7 @@ public class DynamoIndexHelper {
         // convert items to the specified class
         List<T> recordKeyList = new ArrayList<>();
         for (Item oneItem : itemIter) {
-            // Some values (booleans) don't deserialize correctly (stored as an int, doesn't conver),
             T oneRecord = BridgeObjectMapper.get().convertValue(oneItem.asMap(), clazz);
-            // however this song and dance deserializes the same way as the mapper would:
-            //Map<String,AttributeValue> attributes = InternalUtils.toAttributeValues(oneItem);
-            //T oneRecord = mapper.marshallIntoObject(clazz, attributes);
             recordKeyList.add(oneRecord);
         }
         return recordKeyList;
