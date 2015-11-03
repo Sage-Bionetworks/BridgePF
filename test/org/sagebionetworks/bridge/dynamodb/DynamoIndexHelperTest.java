@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -86,8 +85,6 @@ public class DynamoIndexHelperTest {
         arg = ArgumentCaptor.forClass(List.class);
         when(mockMapper.batchLoad(arg.capture())).thenReturn(mockMapperResultMap);
         helper.setMapper(mockMapper);
-        //Map<String,AttributeValue> mockResultMap = new HashMap<>();
-        //when(mockMapper.marshallIntoObject(any(), any())).thenReturn(new Thing("foo key", "foo value"));
     }
 
     @Test

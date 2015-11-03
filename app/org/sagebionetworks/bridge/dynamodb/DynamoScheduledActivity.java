@@ -25,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -33,8 +34,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @BridgeTypeName("ScheduledActivity")
 @DynamoDBTable(tableName = "Task")
+@JsonFilter("filter")
 public final class DynamoScheduledActivity implements ScheduledActivity, BridgeEntity {
-
+    
     private static final String ACTIVITY_PROPERTY = "activity";
 
     private String healthCode;

@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -18,6 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import play.mvc.Result;
 
@@ -34,17 +38,20 @@ public class ScheduledActivityController extends BaseController {
     public void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
-
+    
     // This annotation adds a deprecation header to the REST API method.
     @Deprecated
     public Result getTasks(String untilString, String offset, String daysAhead) throws Exception {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead);
-        return okResult(scheduledActivities, "Task");
+        
+        return okResultAsTasks(scheduledActivities);
     }
 
     public Result getScheduledActivities(String untilString, String offset, String daysAhead) throws Exception {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead);
-        return okResult(scheduledActivities);
+        
+        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER
+                .writeValueAsString(new ResourceList<ScheduledActivity>(scheduledActivities)));
     }
 
     public Result updateScheduledActivities() throws Exception {
@@ -57,6 +64,18 @@ public class ScheduledActivityController extends BaseController {
         return okResult("Activities updated.");
     }
 
+    <T> Result okResultAsTasks(List<T> list) {
+        JsonNode node = mapper.valueToTree(new ResourceList<T>(list));
+        ArrayNode items = (ArrayNode)node.get("items");
+        for (int i=0; i < items.size(); i++) {
+            ObjectNode object = (ObjectNode)items.get(i);
+            object.put("type", "Task");
+            object.remove("healthCode");
+            object.remove("schedulePlanGuid");
+        }
+        return ok(node);
+    }
+    
     private List<ScheduledActivity> getScheduledActivitiesInternal(String untilString, String offset, String daysAhead)
             throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();

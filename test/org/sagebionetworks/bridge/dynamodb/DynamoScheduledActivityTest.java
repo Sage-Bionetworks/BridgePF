@@ -107,7 +107,7 @@ public class DynamoScheduledActivityTest {
         schActivity.setMaxAppVersion(3);
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
-        String output = BridgeObjectMapper.get().writeValueAsString(schActivity);
+        String output = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(schActivity);
         
         JsonNode node = mapper.readTree(output);
         assertEquals("AAA-BBB-CCC", node.get("guid").asText());
@@ -246,7 +246,7 @@ public class DynamoScheduledActivityTest {
         act.setMinAppVersion(1);
         act.setMaxAppVersion(2);
         
-        String json = BridgeObjectMapper.get().writeValueAsString(act);
+        String json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(act);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("activityGuid", node.get("guid").asText());

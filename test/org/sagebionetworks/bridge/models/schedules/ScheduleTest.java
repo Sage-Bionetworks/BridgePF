@@ -65,7 +65,6 @@ public class ScheduleTest {
         JsonNode actNode = node.get("activities").get(0);
         assertEquals("label", actNode.get("label").asText());
         assertEquals("task", actNode.get("activityType").asText());
-        assertEquals("ref", actNode.get("ref").asText());
         assertEquals("Activity", actNode.get("type").asText());
 
         JsonNode taskNode = actNode.get("task");
