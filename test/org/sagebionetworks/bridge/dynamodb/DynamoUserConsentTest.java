@@ -10,31 +10,28 @@ public class DynamoUserConsentTest {
     public void test() {
         // Test constructor 1
         String healthCode = "123";
-        String studyKey = "456";
-        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, studyKey);
-        assertEquals(healthCode + ":" + studyKey, userConsent.getHealthCodeStudy());
+        String studyIdentifier = "456";
+        DynamoUserConsent3 userConsent = new DynamoUserConsent3(healthCode, studyIdentifier);
+        assertEquals(healthCode + ":" + studyIdentifier, userConsent.getHealthCodeStudy());
         assertEquals(healthCode, userConsent.getHealthCode());
-        assertEquals(studyKey, userConsent.getStudyKey());
+        assertEquals(studyIdentifier, userConsent.getStudyIdentifier());
 
         // Test constructor 2
         long consentTimestamp = 789L;
-        userConsent = new DynamoUserConsent2(healthCode, studyKey);
+        userConsent = new DynamoUserConsent3(healthCode, studyIdentifier);
         userConsent.setConsentCreatedOn(consentTimestamp);
-        assertEquals(healthCode + ":" + studyKey, userConsent.getHealthCodeStudy());
+        assertEquals(healthCode + ":" + studyIdentifier, userConsent.getHealthCodeStudy());
         assertEquals(healthCode, userConsent.getHealthCode());
-        assertEquals(studyKey, userConsent.getStudyKey());
+        assertEquals(studyIdentifier, userConsent.getStudyIdentifier());
         assertEquals(consentTimestamp, userConsent.getConsentCreatedOn());
 
         // Test copy constructor
         userConsent.setSignedOn(555L);
         userConsent.setVersion(777L);
 
-        DynamoUserConsent2 userConsentCopy = new DynamoUserConsent2(userConsent);
-        assertEquals(healthCode + ":" + studyKey, userConsent.getHealthCodeStudy());
-        assertEquals(healthCode, userConsent.getHealthCode());
-        assertEquals(studyKey, userConsent.getStudyKey());
-        assertEquals(consentTimestamp, userConsent.getConsentCreatedOn());
-        assertEquals(555L, userConsent.getSignedOn());
-        assertEquals(userConsent.getVersion(), userConsentCopy.getVersion());
+        DynamoUserConsent3 userConsentCopy = new DynamoUserConsent3(healthCode, studyIdentifier);
+        assertEquals(healthCode + ":" + studyIdentifier, userConsentCopy.getHealthCodeStudy());
+        assertEquals(healthCode, userConsentCopy.getHealthCode());
+        assertEquals(studyIdentifier, userConsentCopy.getStudyIdentifier());
     }
 }

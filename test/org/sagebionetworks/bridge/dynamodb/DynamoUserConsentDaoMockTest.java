@@ -2,18 +2,18 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.http.HttpStatus;
@@ -29,9 +29,11 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
 
 public class DynamoUserConsentDaoMockTest {
 
+    private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
     private static final String HEALTH_CODE = "AAA";
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("test-study");
     
@@ -39,9 +41,7 @@ public class DynamoUserConsentDaoMockTest {
     
     DynamoStudyConsent1 studyConsent;
     
-    DynamoDBMapper mapper2;
-    
-    DynamoDBMapper mapper3;
+    DynamoDBMapper mapper;
     
     @Before
     public void before() {
@@ -51,42 +51,49 @@ public class DynamoUserConsentDaoMockTest {
         studyConsent.setStudyKey("test-study");
         studyConsent.setStoragePath("test-study.12341234123");
         
-        mapper2 = mock(DynamoDBMapper.class);
-        mapper3 = mock(DynamoDBMapper.class);
+        mapper = mock(DynamoDBMapper.class);
         
-        mockMapperResponses(null, null);
+        mockMapperQueryResponse(null);
         
         userConsentDao = new DynamoUserConsentDao();
-        userConsentDao.setDdbMapper2(mapper2);
-        userConsentDao.setDdbMapper3(mapper3);
+        userConsentDao.setDdbMapper(mapper);
     }
     
     @SuppressWarnings("unchecked")
-    private void mockMapperResponses(DynamoUserConsent2 consent2, DynamoUserConsent3 consent3) {
-        if (consent2 != null) {
-            doReturn(consent2).when(mapper2).load(any());    
-        }
+    private void mockMapperQueryResponse(DynamoUserConsent3 consent) {
         PaginatedQueryList<DynamoUserConsent3> pqList = mock(PaginatedQueryList.class);
-        if (consent3 == null) {
+        if (consent == null) {
             when(pqList.isEmpty()).thenReturn(true);
+            when(pqList.stream()).thenReturn(Stream.of());
         } else {
             when(pqList.isEmpty()).thenReturn(false);
-            when(pqList.get(0)).thenReturn(consent3);
-            when(pqList.stream()).thenReturn(Stream.of(consent3));
+            when(pqList.get(0)).thenReturn(consent);
+            when(pqList.stream()).thenReturn(Stream.of(consent));
         }
-        doReturn(pqList).when(mapper3).query(any(), any());
+        doReturn(pqList).when(mapper).query(any(), any());
     }
     
-    private void mockMapperResults() {
-        DynamoUserConsent2 existingConsent2 = new DynamoUserConsent2(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
-        existingConsent2.setConsentCreatedOn(studyConsent.getCreatedOn());
-        existingConsent2.setSignedOn(DateTime.now().getMillis());
-
-        DynamoUserConsent3 existingConsent3 = new DynamoUserConsent3(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
-        existingConsent3.setConsentCreatedOn(studyConsent.getCreatedOn());
-        existingConsent3.setSignedOn(DateTime.now().getMillis());
+    @SuppressWarnings("unchecked")
+    private void mockMapperScanResponse(DynamoUserConsent3 consent) {
+        PaginatedScanList<DynamoUserConsent3> psList = mock(PaginatedScanList.class);
+        if (consent == null) {
+            when(psList.isEmpty()).thenReturn(true);
+            when(psList.stream()).thenReturn(Stream.of());
+        } else {
+            when(psList.isEmpty()).thenReturn(false);
+            when(psList.get(0)).thenReturn(consent);
+            when(psList.stream()).thenReturn(Stream.of(consent));
+        }
+        doReturn(psList).when(mapper).scan(any(), any());
+    }
+    
+    private DynamoUserConsent3 mockMapperResponse() {
+        DynamoUserConsent3 consent = new DynamoUserConsent3(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
+        consent.setConsentCreatedOn(studyConsent.getCreatedOn());
+        consent.setSignedOn(DateTime.now().getMillis());
         
-        mockMapperResponses(existingConsent2, existingConsent3);
+        mockMapperQueryResponse(consent);
+        return consent;
     }
     
     @Test
@@ -95,12 +102,10 @@ public class DynamoUserConsentDaoMockTest {
         
         ArgumentCaptor<DynamoUserConsent3> argCaptor3 = ArgumentCaptor.forClass(DynamoUserConsent3.class);
         
-        verify(mapper3).query(any(), any()); // queries and saves, doesn't speak to table2
-        verify(mapper2).load(any());
-        verify(mapper3).save(argCaptor3.capture());
-        verifyNoMoreInteractions(mapper2);
-        verifyNoMoreInteractions(mapper3);
-        
+        verify(mapper).query(any(), any());
+        verify(mapper).save(argCaptor3.capture());
+        verifyNoMoreInteractions(mapper);
+
         DynamoUserConsent3 cons3 = argCaptor3.getValue();
         
         assertTrue(cons3.getConsentCreatedOn() > 0);
@@ -112,219 +117,108 @@ public class DynamoUserConsentDaoMockTest {
     
     @Test
     public void giveConsentWhenConsentExists() {
-        mockMapperResults();
+        mockMapperResponse();
         try {
             userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());
             fail("Should have thrown exception");
         } catch(BridgeServiceException e) {
             assertEquals("Consent already exists.", e.getMessage());
-        }
-        verify(mapper3).query(any(), any()); // queried then threw exception, didn't touch table2
-        verifyNoMoreInteractions(mapper2);
-        verifyNoMoreInteractions(mapper3);
-    }
-    
-    @Test
-    public void giveConsentWhenOnly3Exists() {
-        mockMapperResults();
-        when(mapper2.load(any())).thenReturn(null);
-        
-        try {
-            userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());    
-        } catch(BridgeServiceException e) {
-            assertEquals("Consent already exists.", e.getMessage());
-        }
-    }
-    
-    @Test
-    public void giveConsentWhenOnly2Exists() {
-        DynamoUserConsent2 existingConsent2 = new DynamoUserConsent2(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
-        existingConsent2.setConsentCreatedOn(studyConsent.getCreatedOn());
-        existingConsent2.setSignedOn(DateTime.now().getMillis());
-        
-        when(mapper2.load(any())).thenReturn(existingConsent2);
-        
-        try {
-            userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());    
-        } catch(BridgeServiceException e) {
-            assertEquals("Consent already exists.", e.getMessage());
             assertEquals(HttpStatus.SC_CONFLICT, e.getStatusCode());
         }
+        verify(mapper).query(any(), any());
+        verifyNoMoreInteractions(mapper);
     }
     
     @Test
-    public void hasConsentedWhenTable3Exists() {
-        mockMapperResults();
+    public void getUserConsent() {
+        UserConsent consent = mockMapperResponse();
+        
+        UserConsent consent2 = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertEquals(consent, consent2);
+        
+        verify(mapper).query(any(), any());
+        verifyNoMoreInteractions(mapper);
+    }
+    
+    @Test
+    public void hasConsentedConsentExists() {
+        mockMapperResponse();
         
         boolean hasConsented = userConsentDao.hasConsented(HEALTH_CODE, STUDY_IDENTIFIER);
         
         assertTrue(hasConsented);
-        verify(mapper3).query(any(), any());
-        verifyNoMoreInteractions(mapper2);
-        verifyNoMoreInteractions(mapper3);
-    }
-    
-    @Test
-    public void hasConsentedWhenTable2Exists() {
-        DynamoUserConsent2 existingConsent2 = new DynamoUserConsent2(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
-        existingConsent2.setConsentCreatedOn(studyConsent.getCreatedOn());
-        existingConsent2.setSignedOn(DateTime.now().getMillis());
-
-        doReturn(existingConsent2).when(mapper2).load(any());
-        
-        boolean hasConsented = userConsentDao.hasConsented(HEALTH_CODE, STUDY_IDENTIFIER);
-        
-        assertTrue(hasConsented);
-        verify(mapper3).query(any(), any());
-        verify(mapper2).load(any());
-        verifyNoMoreInteractions(mapper2);
-        verifyNoMoreInteractions(mapper3);
+        verify(mapper).query(any(), any());
+        verifyNoMoreInteractions(mapper);
     }
     
     @Test
     public void hasConsentedNoConsent() {
-        // Very similar to consenting when consent is in table 2, except, no consent there.
         boolean hasConsented = userConsentDao.hasConsented(HEALTH_CODE, STUDY_IDENTIFIER);
         
         assertFalse(hasConsented);
-        verify(mapper3).query(any(), any());
-        verify(mapper2).load(any());
-        verifyNoMoreInteractions(mapper2);
-        verifyNoMoreInteractions(mapper3);
+        verify(mapper).query(any(), any());
+        verifyNoMoreInteractions(mapper);
     }
     
     @Test
-    public void withdrawUpdatesBothTables() {
-        mockMapperResults();
+    public void withdrawConsent() {
+        mockMapperResponse();
+
+        userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, UNIX_TIMESTAMP);
+
+        ArgumentCaptor<DynamoUserConsent3> captor = ArgumentCaptor.forClass(DynamoUserConsent3.class);
         
-        userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        verify(mapper).query(any(), any());
+        verify(mapper).save(captor.capture());
+        verifyNoMoreInteractions(mapper);
         
-        verify(mapper2).load(any());
-        verify(mapper2).delete(any(DynamoUserConsent2.class));
-        verify(mapper3).query(any(), any());
-        verify(mapper3).delete(any(DynamoUserConsent3.class));
-        verifyNoMoreInteractions(mapper2);
-        verifyNoMoreInteractions(mapper3);
+        DynamoUserConsent3 consent = captor.getValue();
+        assertTrue(consent.getWithdrewOn() > 0L);
     }
     
     @Test
-    public void withdrawFirstTableThrowsErrorSecondTableIgnored() {
-        mockMapperResults();
-        doThrow(new ConcurrentModificationException()).when(mapper2).delete(any());
-        
+    public void withdrawConsentWithNoConsent() {
         try {
-            userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-            fail("Should have thrown exception");
-        } catch(ConcurrentModificationException e) {
-            verify(mapper2).load(any());
-            verify(mapper2).delete(any()); // this fails, mapper2 not called
-            verifyNoMoreInteractions(mapper2);
-            verifyNoMoreInteractions(mapper3);
+            userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER, UNIX_TIMESTAMP);
+            fail("Should have thrown exception.");
+        } catch(BridgeServiceException e) {
+            assertEquals("Consent not found.", e.getMessage());
+            assertEquals(404, e.getStatusCode());
         }
+        verify(mapper).query(any(), any());
+        verifyNoMoreInteractions(mapper);
+    }
+    
+    // These are basic, more extensive tests can be found in DynamoUserConsentDaoTest.
+    
+    @Test
+    public void getActiveUserConsent() {
+        mockMapperResponse();
+        
+        UserConsent consent = userConsentDao.getActiveUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertNotNull(consent);
+        assertNull(consent.getWithdrewOn());
     }
     
     @Test
-    public void withdrawSecondTableThrowsException() {
-        mockMapperResults();
-        doThrow(new ConcurrentModificationException()).when(mapper3).delete(any());
+    public void getUserConsentHistory() {
+        List<UserConsent> history = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertTrue(history.isEmpty());
         
-        // If mapper2 throws exception on delete, resave to mapper3, then propagate exception 
-        try {
-            userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-            fail("Should have thrown exception");
-        } catch(ConcurrentModificationException e) {
-            verify(mapper2).load(any());
-            verify(mapper2).delete(any()); // throws exception
-            verify(mapper3).query(any(), any());
-            verify(mapper3).delete(any());
-            verifyNoMoreInteractions(mapper2);
-            verifyNoMoreInteractions(mapper3);
-        }
-    }
-    
-    @Test
-    public void getConsentFromTable3First() {
-        mockMapperResults();
-        
-        UserConsent consent = userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertTrue(consent instanceof DynamoUserConsent3);
-        assertEquals(STUDY_IDENTIFIER.getIdentifier(), consent.getStudyIdentifier());
-        
-        verify(mapper3).query(any(), any());
-        verifyNoMoreInteractions(mapper2);
-        verifyNoMoreInteractions(mapper3);
+        mockMapperResponse();
+        history = userConsentDao.getUserConsentHistory(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertEquals(1, history.size());
     }
 
     @Test
-    public void getConsentFallsbackToTable2() {
-        DynamoUserConsent2 existingConsent2 = new DynamoUserConsent2(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
-        existingConsent2.setConsentCreatedOn(studyConsent.getCreatedOn());
-        existingConsent2.setSignedOn(DateTime.now().getMillis());
-        doReturn(existingConsent2).when(mapper2).load(any());
-
-        UserConsent consent = userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertTrue(consent instanceof DynamoUserConsent2);
-        assertEquals(STUDY_IDENTIFIER.getIdentifier(), consent.getStudyIdentifier());
+    public void getNumberOfParticipants() {
+        DynamoUserConsent3 consent = new DynamoUserConsent3(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
+        consent.setConsentCreatedOn(studyConsent.getCreatedOn());
+        consent.setSignedOn(DateTime.now().getMillis());
         
-        verify(mapper3).query(any(), any());
-        verify(mapper2).load(any());
-        verifyNoMoreInteractions(mapper2);
-        verifyNoMoreInteractions(mapper3);
+        mockMapperScanResponse(consent);
+        
+        long count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
+        assertEquals(1L, count);
     }
-    
-    @Test
-    public void deleteFirstTableThrowsErrorSecondTableIgnored() {
-        mockMapperResults();
-        doThrow(new ConcurrentModificationException()).when(mapper2).delete(any());
-        
-        // If mapper3 throws exception on delete, do not call mapper2, and do propagate exception
-        try {
-            userConsentDao.deleteConsentRecords(HEALTH_CODE, STUDY_IDENTIFIER);
-            fail("Should have thrown exception");
-        } catch(ConcurrentModificationException e) {
-            verify(mapper2).load(any());
-            verify(mapper2).delete(any());
-            verifyNoMoreInteractions(mapper3);
-            verifyNoMoreInteractions(mapper2);
-        }
-    }
-    
-    @SuppressWarnings("unchecked")
-    @Test
-    public void canMigrateBetweenTablesConsentExists() {
-        mockMapperResults();
-        // There is no #3 record, so migration should occur
-        when(mapper3.query(any(), any())).thenReturn(mock(PaginatedQueryList.class));
-        
-        boolean result = userConsentDao.migrateConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        
-        ArgumentCaptor<DynamoUserConsent3> captor3 = ArgumentCaptor.forClass(DynamoUserConsent3.class);
-        
-        assertTrue(result);
-        verify(mapper2).load(any());
-        verify(mapper3).query(any(), any());
-        verify(mapper3).save(captor3.capture());
-        verifyNoMoreInteractions(mapper3);
-        verifyNoMoreInteractions(mapper2);
-        
-        assertTrue(captor3.getValue().getSignedOn() > 0);
-        assertEquals(HEALTH_CODE, captor3.getValue().getHealthCode());
-        assertEquals(STUDY_IDENTIFIER.getIdentifier(), captor3.getValue().getStudyIdentifier());
-        assertTrue(captor3.getValue().getConsentCreatedOn() > 0);
-        assertNull(captor3.getValue().getVersion());
-    }
-    
-    @Test
-    public void doNotMigrateBetweenTablesWhenConsentDoesntExist() {
-        mockMapperResults();
-        
-        boolean result = userConsentDao.migrateConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        
-        assertFalse(result);
-        verify(mapper2).load(any());
-        verify(mapper3).query(any(), any());
-        verifyNoMoreInteractions(mapper3);
-        verifyNoMoreInteractions(mapper2);
-    }
-
 }

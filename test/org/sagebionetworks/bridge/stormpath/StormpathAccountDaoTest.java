@@ -36,6 +36,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
 import com.stormpath.sdk.tenant.Tenant;
@@ -143,7 +144,7 @@ public class StormpathAccountDaoTest {
             account.setAttribute("phone", "123-456-7890");
             account.setHealthId("abc");
             account.setUsername(random);
-            account.setConsentSignature(sig);
+            account.getConsentSignatures().add(sig);
             account.setAttribute("attribute_one", "value of attribute one");
             
             accountDao.updateAccount(study, account);
@@ -156,9 +157,9 @@ public class StormpathAccountDaoTest {
             assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
             assertEquals(account.getHealthId(), newAccount.getHealthId());
             assertEquals(account.getUsername(), newAccount.getUsername());
-            assertEquals(account.getConsentSignature(), newAccount.getConsentSignature());
-            assertEquals(account.getConsentSignature().getSignedOn(), newAccount.getConsentSignature().getSignedOn());
-            assertEquals(signedOn, newAccount.getConsentSignature().getSignedOn());
+            assertEquals(account.getActiveConsentSignature(), newAccount.getActiveConsentSignature());
+            assertEquals(account.getActiveConsentSignature().getSignedOn(), newAccount.getActiveConsentSignature().getSignedOn());
+            assertEquals(signedOn, newAccount.getActiveConsentSignature().getSignedOn());
             assertEquals(1, newAccount.getRoles().size());
             assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
             assertEquals("value of attribute one", account.getAttribute("attribute_one"));
@@ -276,6 +277,7 @@ public class StormpathAccountDaoTest {
         
         Directory directory = mock(Directory.class);
         com.stormpath.sdk.account.Account account = mock(com.stormpath.sdk.account.Account.class);
+        when(account.getCustomData()).thenReturn(mock(CustomData.class));
         Client client = mock(Client.class);
         
         when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(account);

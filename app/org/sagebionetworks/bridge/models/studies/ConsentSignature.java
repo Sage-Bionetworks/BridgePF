@@ -32,14 +32,16 @@ public final class ConsentSignature implements BridgeEntity {
     private final @Nullable String imageData;
     private final @Nullable String imageMimeType;
     private final @Nonnull long signedOn;
+    private final @Nullable Long withdrewOn;
 
     /** Private constructor. Instances should be constructed using factory methods create() or createFromJson(). */
-    private ConsentSignature(String name, String birthdate, String imageData, String imageMimeType, long signedOn) {
+    private ConsentSignature(String name, String birthdate, String imageData, String imageMimeType, long signedOn, Long withdrewOn) {
         this.name = name;
         this.birthdate = birthdate;
         this.imageData = imageData;
         this.imageMimeType = imageMimeType;
         this.signedOn = signedOn;
+        this.withdrewOn = withdrewOn;
     }
 
     /** Name of the user giving consent. */
@@ -66,6 +68,11 @@ public final class ConsentSignature implements BridgeEntity {
     public long getSignedOn() {
         return signedOn;
     }
+    
+    /** The date and time the user withdrew this consent (can be null if active). */
+    public Long getWithdrewOn() {
+        return withdrewOn;
+    }
 
     @Override
     public int hashCode() {
@@ -76,6 +83,7 @@ public final class ConsentSignature implements BridgeEntity {
         result = prime * result + Objects.hashCode(imageMimeType);
         result = prime * result + Objects.hashCode(name);
         result = prime * result + Objects.hashCode(signedOn);
+        result = prime * result + Objects.hashCode(withdrewOn);
         return result;
     }
 
@@ -88,13 +96,13 @@ public final class ConsentSignature implements BridgeEntity {
         ConsentSignature other = (ConsentSignature) obj;
         return Objects.equals(birthdate, other.birthdate) && Objects.equals(imageData, other.imageData)
                 && Objects.equals(imageMimeType, other.imageMimeType) && Objects.equals(name, other.name) 
-                && Objects.equals(signedOn, other.signedOn);
+                && Objects.equals(signedOn, other.signedOn) && Objects.equals(withdrewOn, other.withdrewOn);
     }
 
     @Override
     public String toString() {
-        return String.format("ConsentSignature [name=%s, birthdate=%s, imageData=%s, imageMimeType=%s, signedOn=%s]", 
-                name, birthdate, imageData, imageMimeType, signedOn);
+        return String.format("ConsentSignature [name=%s, birthdate=%s, imageData=%s, imageMimeType=%s, signedOn=%s, withdrewOn=%s]", 
+                name, birthdate, imageData, imageMimeType, signedOn, withdrewOn);
     }
     
     public static class Builder {
@@ -103,6 +111,7 @@ public final class ConsentSignature implements BridgeEntity {
         private String imageData;
         private String imageMimeType;
         private long signedOn;
+        private Long withdrewOn;
         
         public Builder withConsentSignature(ConsentSignature signature) {
             this.name = signature.name;
@@ -110,6 +119,7 @@ public final class ConsentSignature implements BridgeEntity {
             this.imageData = signature.imageData;
             this.imageMimeType = signature.imageMimeType;
             this.signedOn = signature.signedOn;
+            this.withdrewOn = signature.withdrewOn;
             return this;
         }
         public Builder withName(String name) {
@@ -132,9 +142,13 @@ public final class ConsentSignature implements BridgeEntity {
             this.signedOn = signedOn;
             return this;
         }
+        public Builder withWithdrewOn(Long withdrewOn) {
+            this.withdrewOn = withdrewOn;
+            return this;
+        }
         public ConsentSignature build() {
             long signatureTime = (signedOn > 0L) ? signedOn : DateTime.now().getMillis();
-            ConsentSignature signature = new ConsentSignature(name, birthdate, imageData, imageMimeType, signatureTime);
+            ConsentSignature signature = new ConsentSignature(name, birthdate, imageData, imageMimeType, signatureTime, withdrewOn);
             Validate.entityThrowingException(VALIDATOR, signature);
             return signature;
         }

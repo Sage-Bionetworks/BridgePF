@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -55,12 +55,12 @@ public class StormPathUserAdminServiceTest {
 
     @BeforeClass
     public static void initialSetUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
+        DynamoTestUtil.clearTable(DynamoUserConsent3.class);
     }
 
     @AfterClass
     public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
+        DynamoTestUtil.clearTable(DynamoUserConsent3.class);
     }
 
     @Before

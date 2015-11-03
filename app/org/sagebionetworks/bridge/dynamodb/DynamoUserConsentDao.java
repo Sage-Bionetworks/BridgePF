@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -26,156 +26,133 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
-import com.google.common.collect.Sets;
 
 @Component
 public class DynamoUserConsentDao implements UserConsentDao {
 
-    private DynamoDBMapper mapperV2;
-    private DynamoDBMapper mapperV3;
+    private DynamoDBMapper mapper;
 
-    @Resource(name = "userConsentDdbMapper2")
-    public final void setDdbMapper2(DynamoDBMapper mapper2) {
-        this.mapperV2 = mapper2;
-    }
-
-    @Resource(name = "userConsentDdbMapper3")
-    public final void setDdbMapper3(DynamoDBMapper mapper3) {
-        this.mapperV3 = mapper3;
+    @Resource(name = "userConsentDdbMapper")
+    public final void setDdbMapper(DynamoDBMapper mapper) {
+        this.mapper = mapper;
     }
 
     @Override
     public UserConsent giveConsent(String healthCode, StudyConsent studyConsent, long signedOn) {
-        checkArgument(isNotBlank(healthCode), "Health code is blank or null");
+        checkArgument(isNotBlank(healthCode));
         checkNotNull(studyConsent);
+        checkArgument(signedOn > 0L);
 
-        // It doesn't currently matter which table your consent is in, you can't consent again 
-        // if a record exists.
-        UserConsent existingConsent = getUserConsent(healthCode, new StudyIdentifierImpl(studyConsent.getStudyKey()));
-        if (existingConsent != null) {
+        UserConsent activeConsent = getActiveUserConsent(healthCode, new StudyIdentifierImpl(studyConsent.getStudyKey()));
+        if (activeConsent != null && activeConsent.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
             throw new BridgeServiceException("Consent already exists.", HttpStatus.SC_CONFLICT);
         }
         
         DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, studyConsent.getStudyKey());
         consent.setConsentCreatedOn(studyConsent.getCreatedOn());
         consent.setSignedOn(signedOn);
-        mapperV3.save(consent);
+        mapper.save(consent);
 
         return consent;
     }
 
     @Override
-    public boolean withdrawConsent(String healthCode, StudyIdentifier studyIdentifier) {
-        // In first step of migration, if user withdraws consent, we delete both consent records. In the future we 
-        // will updated UserConsent3 record with a timestamp, and these will not be returned by queries for an 
-        // active consent.
-        boolean hasWithdrawn = false;
+    public void withdrawConsent(String healthCode, StudyIdentifier studyIdentifier, long withdrewOn) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        checkArgument(withdrewOn > 0L);
         
-        DynamoUserConsent2 consent2 = getUserConsent2(healthCode, studyIdentifier.getIdentifier());
-        if (consent2 != null) {
-            mapperV2.delete(consent2);
-            hasWithdrawn = true;
+        DynamoUserConsent3 activeConsent = (DynamoUserConsent3)getActiveUserConsent(healthCode, studyIdentifier);
+        if (activeConsent == null) {
+            throw new BridgeServiceException("Consent not found.", HttpStatus.SC_NOT_FOUND);
         }
-        DynamoUserConsent3 consent3 = getUserConsent3(healthCode, studyIdentifier.getIdentifier());
-        if (consent3 != null) {
-            mapperV3.delete(consent3);
-            hasWithdrawn = true;
-        }
-        return hasWithdrawn;
+        activeConsent.setWithdrewOn(withdrewOn);
+        mapper.save(activeConsent);
     }
 
     @Override
     public boolean hasConsented(String healthCode, StudyIdentifier studyIdentifier) {
-        return getUserConsent(healthCode, studyIdentifier) != null;
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        
+        return getActiveUserConsent(healthCode, studyIdentifier) != null;
     }
 
     @Override
-    public UserConsent getUserConsent(String healthCode, StudyIdentifier studyIdentifier) {
-        UserConsent consent = getUserConsent3(healthCode, studyIdentifier.getIdentifier());
+    public UserConsent getActiveUserConsent(String healthCode, StudyIdentifier studyIdentifier) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
+
+        Condition condition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
+        DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
+            .withScanIndexForward(false)
+            .withQueryFilterEntry("withdrewOn", condition)
+            .withHashKeyValues(hashKey);
+        
+        List<DynamoUserConsent3> results = mapper.query(DynamoUserConsent3.class, query);
+        return results.isEmpty() ? null : results.get(0);
+    }
+    
+    @Override
+    public UserConsent getUserConsent(String healthCode, StudyIdentifier studyIdentifier, long signedOn) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        checkArgument(signedOn > 0L);
+        
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
+        hashKey.setSignedOn(signedOn);
+        
+        DynamoUserConsent3 consent = mapper.load(hashKey);
         if (consent == null) {
-            consent = getUserConsent2(healthCode, studyIdentifier.getIdentifier());
+            throw new BridgeServiceException("Consent not found.", HttpStatus.SC_NOT_FOUND);   
         }
         return consent;
+    }
+    
+    @Override
+    public List<UserConsent> getUserConsentHistory(String healthCode, StudyIdentifier studyIdentifier) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
+        
+        DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
+            .withHashKeyValues(hashKey);
+
+        return mapper.query(DynamoUserConsent3.class, query).stream()
+                .map(consent -> (UserConsent)consent).collect(Collectors.toList());
     }
 
     @Override
     public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
+        checkNotNull(studyIdentifier);
+        
+        Condition studyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
+        
+        Condition withdrewCondition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
+        
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
         scan.setConsistentRead(true);
-        Condition condition = new Condition();
-        condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
-        scan.addFilterCondition("studyKey", condition);
-
-        // Must find the complete set of unique health codes in both tables.
-        Set<String> healthCodes = Sets.newHashSet();
-        List<DynamoUserConsent2> mappings2 = mapperV2.scan(DynamoUserConsent2.class, scan);
-        mappings2.stream().forEach(consent -> healthCodes.add(consent.getHealthCode()));
+        scan.addFilterCondition("studyIdentifier", studyCondition);
+        scan.addFilterCondition("withdrewOn", withdrewCondition);
         
-        // The name of the column has changed, create a different expression
-        scan = new DynamoDBScanExpression();
-        scan.setConsistentRead(true);
-        condition = new Condition();
-        condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
-        scan.addFilterCondition("studyIdentifier", condition);
-        
-        List<DynamoUserConsent3> mappings3 = mapperV3.scan(DynamoUserConsent3.class, scan);
-        mappings3.stream().forEach(consent -> healthCodes.add(consent.getHealthCode()));
-        
-        return healthCodes.size();
+        return mapper.scan(DynamoUserConsent3.class, scan).stream()
+                .map(consent -> consent.getHealthCode()).collect(Collectors.toSet()).size();
     }
 
     @Override
-    public void deleteConsentRecords(String healthCode, StudyIdentifier studyIdentifier) {
-        DynamoUserConsent2 consentV2 = getUserConsent2(healthCode, studyIdentifier.getIdentifier());
-        if (consentV2 != null) {
-            mapperV2.delete(consentV2);
-        }
-        List<DynamoUserConsent3> consentsV3 = getAllUserConsentRecords3(healthCode, studyIdentifier.getIdentifier());
-        if (!consentsV3.isEmpty()) {
-            List<FailedBatch> failures = mapperV3.batchDelete(consentsV3);
+    public void deleteAllConsents(String healthCode, StudyIdentifier studyIdentifier) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(studyIdentifier);
+        
+        List<UserConsent> consents = getUserConsentHistory(healthCode, studyIdentifier);
+        if (!consents.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(consents);
             BridgeUtils.ifFailuresThrowException(failures);
         }
-    }
-    
-    @Override
-    public boolean migrateConsent(String healthCode, StudyIdentifier studyIdentifier) {
-        DynamoUserConsent2 consent2 = getUserConsent2(healthCode, studyIdentifier.getIdentifier());
-        DynamoUserConsent3 consent3 = getUserConsent3(healthCode, studyIdentifier.getIdentifier());
-
-        if (consent2 != null && consent3 == null) {
-            DynamoUserConsent3 newConsent = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
-            newConsent.setConsentCreatedOn(consent2.getConsentCreatedOn());
-            newConsent.setSignedOn(consent2.getSignedOn());
-            mapperV3.save(newConsent);
-            return true;
-        }
-        return false;
-    }
-
-    private DynamoUserConsent2 getUserConsent2(String healthCode, String studyIdentifier) {
-        DynamoUserConsent2 hashKey = new DynamoUserConsent2(healthCode, studyIdentifier);
-
-        return mapperV2.load(hashKey);
-    }
-
-    private DynamoUserConsent3 getUserConsent3(String healthCode, String studyIdentifier) {
-        // This record has a range key so there are multiple consents. Get the first one, for now.
-        List<DynamoUserConsent3> consents = getAllUserConsentRecords3(healthCode, studyIdentifier);
-        
-        return (consents.isEmpty()) ? null : consents.get(0);
-    }
-    
-    private List<DynamoUserConsent3> getAllUserConsentRecords3(String healthCode, String studyIdentifier) {
-        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier);
-
-        // Currently this is only one record. In the next phase of migration, remove scanIndexForward (maybe) and the limit.
-        DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
-                .withScanIndexForward(false)
-                .withLimit(1)
-                .withHashKeyValues(hashKey);
-
-        return mapperV3.query(DynamoUserConsent3.class, query);
     }
 }

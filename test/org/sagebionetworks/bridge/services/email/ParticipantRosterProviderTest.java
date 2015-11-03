@@ -13,9 +13,9 @@ import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.base.Joiner;
 
 public class ParticipantRosterProviderTest {
     

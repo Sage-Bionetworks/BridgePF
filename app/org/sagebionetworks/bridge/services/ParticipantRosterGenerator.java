@@ -61,7 +61,7 @@ public class ParticipantRosterGenerator implements Runnable {
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
                 Account account = accounts.next();
-                if (account.getConsentSignature() != null) {
+                if (account.getActiveConsentSignature() != null) {
                     
                     String healthCode = healthCodeService.getMapping(account.getHealthId()).getCode();
                     SharingScope sharing = sharingLookup.getSharingScope(healthCode);

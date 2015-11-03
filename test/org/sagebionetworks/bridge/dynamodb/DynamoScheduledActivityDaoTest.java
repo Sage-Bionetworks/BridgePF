@@ -79,7 +79,7 @@ public class DynamoScheduledActivityDaoTest {
         String healthCode = BridgeUtils.generateGuid();
         
         // Mock user consent, we don't care about that, we're just getting an enrollment date from that.
-        UserConsent consent = mock(DynamoUserConsent2.class);
+        UserConsent consent = mock(DynamoUserConsent3.class);
         when(consent.getSignedOn()).thenReturn(new DateTime().minusDays(2).getMillis()); 
         
         user = new User();

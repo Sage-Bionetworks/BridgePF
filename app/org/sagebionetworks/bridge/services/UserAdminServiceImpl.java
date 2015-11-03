@@ -45,51 +45,57 @@ public class UserAdminServiceImpl implements UserAdminService {
     private ActivityEventService activityEventService;
     private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
+    private ParticipantOptionsService optionsService;
 
     @Autowired
-    public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
+    public final void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
         this.authenticationService = authenticationService;
     }
     @Autowired
-    public void setAccountDao(AccountDao accountDao) {
+    public final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     @Autowired
-    public void setConsentService(ConsentService consentService) {
+    public final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
     @Autowired
-    public void setHealthDataService(HealthDataService healthDataService) {
+    public final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
     @Autowired
-    public void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
     @Autowired
-    public void setDistributedLockDao(DistributedLockDao lockDao) {
+    public final void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
     @Autowired
-    public void setHealthIdDao(HealthIdDao healthIdDao) {
+    public final void setHealthIdDao(HealthIdDao healthIdDao) {
         this.healthIdDao = healthIdDao;
     }
     @Autowired
-    public void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
+    public final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
     @Autowired
-    public void setActivityEventService(ActivityEventService activityEventService) {
+    public final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
     @Autowired
-    public void setSurveyResponseService(SurveyResponseService surveyResponseService) {
+    public final void setSurveyResponseService(SurveyResponseService surveyResponseService) {
         this.surveyResponseService = surveyResponseService;
     }
     @Autowired
-    public void setCacheProvider(CacheProvider cache) {
+    public final void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
     }
+    @Autowired
+    public final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
+    }
+    
     @Override
     public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
@@ -200,12 +206,12 @@ public class UserAdminServiceImpl implements UserAdminService {
                 if (!StringUtils.isBlank(healthCode)) {
                     User user = new User(account);
                     user.setHealthCode(healthCode);
-                    consentService.withdrawConsent(study, user);
-                    
+                    consentService.deleteAllConsents(study, user);
                     healthDataService.deleteRecordsForHealthCode(healthCode);
                     scheduledActivityService.deleteActivitiesForUser(healthCode);
                     activityEventService.deleteActivityEvents(healthCode);
                     surveyResponseService.deleteSurveyResponses(healthCode);
+                    optionsService.deleteAllParticipantOptions(healthCode);
                 }
             }
             return true;

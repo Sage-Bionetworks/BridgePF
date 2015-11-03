@@ -123,7 +123,7 @@ public class ParticipantRosterGeneratorTest {
         if (hasConsented) {
             ConsentSignature sig = new ConsentSignature.Builder().withName(firstName + " " + lastName)
                     .withBirthdate("1970-02-02").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-            when(account.getConsentSignature()).thenReturn(sig);
+            when(account.getActiveConsentSignature()).thenReturn(sig);
         }
         return account;
     }
