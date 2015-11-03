@@ -259,7 +259,6 @@ public class DynamoScheduledActivityTest {
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
         assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
-        System.out.println(node.toString());
         // all the above, plus activity, and nothing else
         assertEquals(11, fieldCount(node));
 
@@ -278,6 +277,17 @@ public class DynamoScheduledActivityTest {
         assertEquals("SurveyReference", surveyNode.get("type").asText());
         // all the above and nothing else
         assertEquals(4, fieldCount(surveyNode));
+        
+        // Were you to set scheduledOn/expiresOn directly, rather than time zone + local variants,
+        // it would still preserve the timezone, that is, the time zone you set separately, not the 
+        // time zone you specify.
+        act.setScheduledOn(DateTime.parse("2015-10-01T10:10:10.000-05:00"));
+        act.setExpiresOn(DateTime.parse("2015-10-01T14:10:10.000-05:00"));
+        json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(act);
+        node = BridgeObjectMapper.get().readTree(json);
+        // Still in time zone -6 hours.
+        assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
+        assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
     }
     
     private int fieldCount(JsonNode node) {

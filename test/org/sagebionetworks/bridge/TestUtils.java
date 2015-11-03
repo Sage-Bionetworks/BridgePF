@@ -98,9 +98,7 @@ public class TestUtils {
         return "test-" + midFix + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
 
-    public static List<ScheduledActivity> runSchedulerForActivities(User user, ScheduleContext context) {
-        List<SchedulePlan> plans = getSchedulePlans(context.getStudyIdentifier());
-        
+    public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, User user, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(context.getStudyIdentifier(), plan, user);
@@ -108,6 +106,10 @@ public class TestUtils {
         }
         Collections.sort(scheduledActivities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
         return scheduledActivities;
+    }
+    
+    public static List<ScheduledActivity> runSchedulerForActivities(User user, ScheduleContext context) {
+        return runSchedulerForActivities(getSchedulePlans(context.getStudyIdentifier()), user, context);
     }
     
     public static List<SchedulePlan> getSchedulePlans(StudyIdentifier studyId) {
@@ -158,7 +160,7 @@ public class TestUtils {
         return plan;
     }
     
-    private static ScheduleStrategy getStrategy(String interval, Activity activity) {
+    public static ScheduleStrategy getStrategy(String interval, Activity activity) {
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule " + activity.getLabel());
         schedule.setInterval(interval);

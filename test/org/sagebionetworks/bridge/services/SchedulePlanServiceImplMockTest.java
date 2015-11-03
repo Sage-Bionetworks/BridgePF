@@ -1,13 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -48,20 +46,14 @@ public class SchedulePlanServiceImplMockTest {
         plan.getStrategy().getAllPossibleSchedules().get(0).setExpires("P3D");
         
         when(schedulePlanDao.updateSchedulePlan(plan)).thenReturn(plan);
-        
         service.updateSchedulePlan(plan);
-        
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(activityService).deleteActivitiesForSchedulePlan(captor.capture());
-        assertEquals("BBB", captor.getValue());
+        verify(activityService).deleteActivitiesForSchedulePlan("BBB");
     }
     
     @Test
     public void cleansUpScheduledActivitiesOnDelete() {
         service.deleteSchedulePlan(STUDY_ID, "BBB");
         
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(activityService).deleteActivitiesForSchedulePlan(captor.capture());
-        assertEquals("BBB", captor.getValue());
+        verify(activityService).deleteActivitiesForSchedulePlan("BBB");
     }
 }

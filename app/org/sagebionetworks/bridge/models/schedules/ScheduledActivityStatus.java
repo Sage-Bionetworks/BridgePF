@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.Roles;
-
 public enum ScheduledActivityStatus {
     /**
      * Scheduled activity has a scheduled start time in the future and has not been started. 
