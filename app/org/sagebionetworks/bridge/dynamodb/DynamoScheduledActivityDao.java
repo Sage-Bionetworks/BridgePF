@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -10,6 +11,7 @@ import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -26,18 +28,24 @@ import com.google.common.collect.Lists;
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     private DynamoDBMapper mapper;
-    private DynamoIndexHelper index;
+    private DynamoIndexHelper runKeyIndex;
+    private DynamoIndexHelper schedulePlanIndex;
     
     @Resource(name = "activityDdbMapper")
     public final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
     
-    @Resource(name = "activityIndex")
-    public final void setActivityIndex(DynamoIndexHelper index) {
-        this.index = index;
+    @Resource(name = "activityRunKeyIndex")
+    public final void setActivityRunKeyIndex(DynamoIndexHelper index) {
+        this.runKeyIndex = index;
     }
     
+    @Resource(name = "activitySchedulePlanGuidIndex")
+    public final void setActivitySchedulePlanGuidIndex(DynamoIndexHelper index) {
+        this.schedulePlanIndex = index;
+    }
+
     /** {@inheritDoc} */
     @Override
     public ScheduledActivity getActivity(String healthCode, String guid) {
@@ -89,7 +97,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     @Override
     public boolean activityRunHasNotOccurred(String healthCode, String runKey) {
         RangeKeyCondition rangeKeyCondition = new RangeKeyCondition("runKey").eq(runKey);
-        int count = index.queryKeyCount("healthCode", healthCode, rangeKeyCondition);
+        int count = runKeyIndex.queryKeyCount("healthCode", healthCode, rangeKeyCondition);
         return (count == 0);
     }
     
@@ -114,7 +122,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     /** {@inheritDoc} */
     @Override
-    public void deleteActivities(String healthCode) {
+    public void deleteActivitiesForUser(String healthCode) {
         DynamoScheduledActivity hashKey = new DynamoScheduledActivity();
         hashKey.setHealthCode(healthCode);
 
@@ -125,6 +133,24 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         // Confirmed that you have to transfer these activities to a list or the batchDelete does not work. 
         List<DynamoScheduledActivity> activitiesToDelete = Lists.newArrayListWithCapacity(queryResults.size());
         activitiesToDelete.addAll(queryResults);
+        
+        if (!activitiesToDelete.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid) {
+        ScheduledActivity activity = new DynamoScheduledActivity();
+        activity.setSchedulePlanGuid(schedulePlanGuid);
+
+        List<ScheduledActivity> activitiesToDelete = schedulePlanIndex
+                .query(DynamoScheduledActivity.class, "schedulePlanGuid", schedulePlanGuid, null)
+                .stream()
+                .filter(act -> ScheduledActivityStatus.DELETABLE_STATUSES.contains(act.getStatus()))
+                .collect(Collectors.toList());
         
         if (!activitiesToDelete.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);

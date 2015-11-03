@@ -1,7 +1,13 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
@@ -12,15 +18,73 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
 
 public class DynamoScheduledActivityTest {
 
     @Test
     public void equalsHashCode() {
         EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
+
+    @Test
+    public void testComparator() {
+        DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
+        activity1.setTimeZone(DateTimeZone.UTC);
+        activity1.setScheduledOn(DateTime.parse("2010-10-10T01:01:01.000Z"));
+        activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
+        
+        // Definitely later
+        DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
+        activity2.setTimeZone(DateTimeZone.UTC);
+        activity2.setScheduledOn(DateTime.parse("2011-10-10T01:01:01.000Z"));
+        activity2.setActivity(TestConstants.TEST_3_ACTIVITY);
+        
+        // The same as 2 in all respects but activity label comes earlier in alphabet
+        DynamoScheduledActivity activity3 = new DynamoScheduledActivity();
+        activity3.setTimeZone(DateTimeZone.UTC);
+        activity3.setScheduledOn(DateTime.parse("2011-10-10T01:01:01.000Z"));
+        activity3.setActivity(new Activity.Builder().withLabel("A Label").withTask("tapTest").build());
+        
+        List<ScheduledActivity> activities = Lists.newArrayList(activity1, activity2, activity3);
+        Collections.sort(activities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
+        
+        assertEquals(activity1, activities.get(0));
+        assertEquals(activity3, activities.get(1));
+        assertEquals(activity2, activities.get(2));
+    }
+    
+    @Test
+    public void handlesNullFieldsReasonably() {
+        // No time zone
+        DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
+        activity1.setScheduledOn(DateTime.parse("2010-10-10T01:01:01.000Z"));
+        activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
+        
+        // scheduledOn
+        DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
+        activity2.setTimeZone(DateTimeZone.UTC);
+        activity2.setActivity(TestConstants.TEST_3_ACTIVITY);
+        
+        // This one is okay
+        DynamoScheduledActivity activity3 = new DynamoScheduledActivity();
+        activity3.setTimeZone(DateTimeZone.UTC);
+        activity3.setScheduledOn(DateTime.parse("2011-10-10T01:01:01.000Z"));
+        activity3.setActivity(new Activity.Builder().withLabel("A Label").withTask("tapTest").build());
+        
+        List<ScheduledActivity> activities = Lists.newArrayList(activity1, activity2, activity3);
+        Collections.sort(activities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
+        
+        // Activity 3 comes first because it's complete, the others follow. This is arbitrary...
+        // in reality they are broken activities, but the comparator will not fail.
+        assertEquals(activity3, activities.get(0));
+        assertEquals(activity1, activities.get(1));
+        assertEquals(activity2, activities.get(2));
     }
 
     @Test
@@ -43,7 +107,7 @@ public class DynamoScheduledActivityTest {
         schActivity.setMaxAppVersion(3);
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
-        String output = BridgeObjectMapper.get().writeValueAsString(schActivity);
+        String output = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(schActivity);
         
         JsonNode node = mapper.readTree(output);
         assertEquals("AAA-BBB-CCC", node.get("guid").asText());
@@ -57,7 +121,7 @@ public class DynamoScheduledActivityTest {
         
         JsonNode activityNode = node.get("activity");
         assertEquals("Activity3", activityNode.get("label").asText());
-        assertEquals("tapTest", activityNode.get("ref").asText());
+        assertEquals("tapTest", activityNode.get("task").get("identifier").asText());
         assertEquals("task", activityNode.get("activityType").asText());
         assertEquals("Activity", activityNode.get("type").asText());
         
@@ -164,4 +228,74 @@ public class DynamoScheduledActivityTest {
         assertEquals(schActivity.getExpiresOn(), local2.toDateTime(timeZone));
     }
     
+    @Test
+    public void serializesCorrectlyToPublicAPI() throws Exception {
+        DynamoScheduledActivity act = new DynamoScheduledActivity();
+        act.setTimeZone(DateTimeZone.forOffsetHours(-6));
+        act.setLocalScheduledOn(LocalDateTime.parse("2015-10-01T10:10:10.000"));
+        act.setLocalExpiresOn(LocalDateTime.parse("2015-10-01T14:10:10.000"));
+        act.setHidesOn(DateTime.parse("2015-10-01T14:10:10.000-06:00").getMillis());
+        act.setRunKey("runKey");
+        act.setHealthCode("healthCode");
+        act.setGuid("activityGuid");
+        act.setSchedulePlanGuid("schedulePlanGuid");
+        act.setActivity(TestConstants.TEST_1_ACTIVITY);
+        act.setStartedOn(DateTime.parse("2015-10-10T08:08:08.000Z").getMillis());
+        act.setFinishedOn(DateTime.parse("2015-12-05T08:08:08.000Z").getMillis());
+        act.setPersistent(true);
+        act.setMinAppVersion(1);
+        act.setMaxAppVersion(2);
+        
+        String json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(act);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        assertEquals("activityGuid", node.get("guid").asText());
+        assertEquals("2015-10-10T08:08:08.000Z", node.get("startedOn").asText());
+        assertEquals("2015-12-05T08:08:08.000Z", node.get("finishedOn").asText());
+        assertEquals("true", node.get("persistent").asText());
+        assertEquals("1", node.get("minAppVersion").asText());
+        assertEquals("2", node.get("maxAppVersion").asText());
+        assertEquals("finished", node.get("status").asText());
+        assertEquals("ScheduledActivity", node.get("type").asText());
+        assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
+        assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
+        // all the above, plus activity, and nothing else
+        assertEquals(11, fieldCount(node));
+
+        JsonNode activityNode = node.get("activity");
+        assertEquals("Activity1", activityNode.get("label").asText());
+        assertNotNull(activityNode.get("guid").asText());
+        assertEquals("survey", activityNode.get("activityType").asText());
+        assertEquals("Activity", activityNode.get("type").asText());
+        // all the above, plus survey, and nothing else
+        assertEquals(5, fieldCount(activityNode));
+        
+        JsonNode surveyNode = activityNode.get("survey");
+        assertEquals("identifier1", surveyNode.get("identifier").asText());
+        assertEquals("AAA", surveyNode.get("guid").asText());
+        assertNotNull("href", surveyNode.get("href").asText());
+        assertEquals("SurveyReference", surveyNode.get("type").asText());
+        // all the above and nothing else
+        assertEquals(4, fieldCount(surveyNode));
+        
+        // Were you to set scheduledOn/expiresOn directly, rather than time zone + local variants,
+        // it would still preserve the timezone, that is, the time zone you set separately, not the 
+        // time zone you specify.
+        act.setScheduledOn(DateTime.parse("2015-10-01T10:10:10.000-05:00"));
+        act.setExpiresOn(DateTime.parse("2015-10-01T14:10:10.000-05:00"));
+        json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(act);
+        node = BridgeObjectMapper.get().readTree(json);
+        // Still in time zone -6 hours.
+        assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
+        assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
+    }
+    
+    private int fieldCount(JsonNode node) {
+        int count = 0;
+        for (Iterator<String> i = node.fieldNames(); i.hasNext(); ) {
+            i.next();
+            count++;
+        }
+        return count;
+    }
 }

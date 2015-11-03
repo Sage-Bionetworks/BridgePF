@@ -6,6 +6,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -17,10 +18,13 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -29,12 +33,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @BridgeTypeName("ScheduledActivity")
 @DynamoDBTable(tableName = "Task")
+@JsonFilter("filter")
 public final class DynamoScheduledActivity implements ScheduledActivity, BridgeEntity {
-
+    
     private static final String ACTIVITY_PROPERTY = "activity";
 
     private String healthCode;
     private String guid;
+    private String schedulePlanGuid;
     private Long startedOn;
     private Long finishedOn;
     private LocalDateTime localScheduledOn;
@@ -88,6 +94,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     @Override
     @DynamoDBIgnore
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getScheduledOn() {
         return getInstant(getLocalScheduledOn());
     }
@@ -99,6 +106,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     @Override
     @DynamoDBIgnore
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getExpiresOn() {
         return getInstant(getLocalExpiresOn());
     }
@@ -168,7 +176,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     }
 
     @DynamoDBHashKey
-    @JsonIgnore
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -188,6 +195,18 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @Override
     public void setGuid(String guid) {
         this.guid = guid;
+    }
+
+    @DynamoDBIndexHashKey(attributeName="schedulePlanGuid", globalSecondaryIndexName = "schedulePlanGuid-index")
+    @DynamoProjection(projectionType=ProjectionType.KEYS_ONLY, globalSecondaryIndexName = "schedulePlanGuid-index")
+    @Override
+    public String getSchedulePlanGuid() {
+        return schedulePlanGuid;
+    }
+
+    @Override
+    public void setSchedulePlanGuid(String schedulePlanGuid) {
+        this.schedulePlanGuid = schedulePlanGuid;
     }
 
     @DynamoDBIgnore
@@ -273,7 +292,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @Override
     public int hashCode() {
         return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, healthCode, runKey,
-                hidesOn, persistent, timeZone, minAppVersion, maxAppVersion);
+                hidesOn, persistent, timeZone, minAppVersion, maxAppVersion, schedulePlanGuid);
     }
 
     @Override
@@ -289,14 +308,14 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
                 && Objects.equals(healthCode, other.healthCode) && Objects.equals(hidesOn, other.hidesOn)
                 && Objects.equals(runKey, other.runKey) && Objects.equals(persistent, other.persistent)
                 && Objects.equals(timeZone, other.timeZone) && Objects.equals(minAppVersion, other.minAppVersion)
-                && Objects.equals(maxAppVersion, other.maxAppVersion));
+                && Objects.equals(maxAppVersion, other.maxAppVersion) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
     }
 
     @Override
     public String toString() {
         return String.format(
-                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, minAppVersion=%s, maxAppVersion=%s, activity=%s]",
+                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, minAppVersion=%s, maxAppVersion=%s, activity=%s, schedulePlanGuid=%s]",
                 healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, timeZone,
-                minAppVersion, maxAppVersion, activity);
+                minAppVersion, maxAppVersion, activity, schedulePlanGuid);
     }
 }

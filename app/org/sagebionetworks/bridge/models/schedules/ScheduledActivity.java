@@ -5,12 +5,25 @@ import java.util.Comparator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 @JsonDeserialize(as = DynamoScheduledActivity.class)
 public interface ScheduledActivity extends BridgeEntity {
+
+    /**
+     * Due to the use of the DynamoIndexHelper, which uses JSON deserialization to recover object
+     * structure, we do not use @JsonIgnore annotation on DynamoScheduledActivity. Instead, we 
+     * exclude those values using a filter and this writer.
+     */
+    public static final ObjectWriter SCHEDULED_ACTIVITY_WRITER = new BridgeObjectMapper().writer(
+        new SimpleFilterProvider().addFilter("filter", 
+        SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "schedulePlanGuid")));
 
     public static ScheduledActivity create() {
         return new DynamoScheduledActivity();
@@ -52,6 +65,10 @@ public interface ScheduledActivity extends BridgeEntity {
     public DateTimeZone getTimeZone();
 
     public void setTimeZone(DateTimeZone timeZone);
+    
+    public String getSchedulePlanGuid();
+
+    public void setSchedulePlanGuid(String schedulePlanGuid);
 
     public String getGuid();
 

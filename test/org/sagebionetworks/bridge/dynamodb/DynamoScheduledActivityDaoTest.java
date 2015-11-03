@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
@@ -25,6 +27,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -87,7 +90,7 @@ public class DynamoScheduledActivityDaoTest {
     @After
     public void after() {
         schedulePlanService.deleteSchedulePlan(TestConstants.TEST_STUDY, plan.getGuid());
-        activityDao.deleteActivities(user.getHealthCode());
+        activityDao.deleteActivitiesForUser(user.getHealthCode());
     }
 
     @Test
@@ -130,10 +133,102 @@ public class DynamoScheduledActivityDaoTest {
         
         activities = activityDao.getActivities(context);
         assertEquals("deleted activity not returned from server", collectionSize-1, activities.size());
-        activityDao.deleteActivities(user.getHealthCode());
+        activityDao.deleteActivitiesForUser(user.getHealthCode());
         
         activities = activityDao.getActivities(context);
         assertEquals("all activities deleted", 0, activities.size());
+    }
+    
+    @Test
+    public void createActivitiesAndDeleteSomeBySchedulePlan() throws Exception {
+        DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
+        Map<String,DateTime> events = Maps.newHashMap();
+        events.put("enrollment", ENROLLMENT);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn)
+            .withHealthCode(user.getHealthCode())
+            .withEvents(events).build();
+        
+        // Schedule plans are specific to this test because we're going to delete them;
+        List<SchedulePlan> plans = getSchedulePlans();
+        SchedulePlan testPlan = plans.get(0);
+        SchedulePlan testPlan2 = plans.get(1);
+        SchedulePlan testPlan3 = plans.get(2);
+        
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(plans, user, context);
+        activityDao.saveActivities(activities);
+
+        // Get one schedule plan GUID to delete and the initial count
+        int initialCount = activities.size();
+        String taskRunForActivityDeleted = findAnActivityFor(activities, testPlan).getRunKey();
+        
+        activityDao.deleteActivitiesForSchedulePlan(testPlan.getGuid());
+        
+        activities = activityDao.getActivities(context);
+        // The count is now less than before
+        assertTrue(initialCount > activities.size());
+        // and the supplied schedulePlanGuid cannot be found in any of the activities that still exist
+        for (ScheduledActivity activity : activities) {
+            assertNotEquals(testPlan.getGuid(), activity.getSchedulePlanGuid());
+        }
+        
+        // Finally, verify that finished activities are not physically deleted. When this is true, they will 
+        // not be returned from the API, (which is true anyway), but calling activityRunHasNotOccurred() will 
+        // return false, because the activities are still in the table. When an activity is really deleted, 
+        // the taskRun key will not be there and activityRunHasNotOccurred() will return true.
+        ScheduledActivity finishedActivity = findAnActivityFor(activities, testPlan2);
+        finishedActivity.setFinishedOn(DateTime.now().getMillis());
+        activityDao.saveActivities(activities);
+        
+        activityDao.deleteActivitiesForSchedulePlan(testPlan2.getGuid());
+        activities = activityDao.getActivities(context);
+        
+        // We've verified that activities are deleted (above), but the one we finished, although not returned 
+        // when we query for tasks, will return false when we ask if its run key has not occurred. Because it's
+        // still in the table.
+        assertFalse(activityDao.activityRunHasNotOccurred(context.getHealthCode(), finishedActivity.getRunKey()));
+
+        // This is true, it was deleted, so it's like it never happened
+        assertTrue(activityDao.activityRunHasNotOccurred(context.getHealthCode(), taskRunForActivityDeleted));
+    }
+    
+    private List<SchedulePlan> getSchedulePlans() {
+        List<SchedulePlan> plans = Lists.newArrayList();
+        SchedulePlan testPlan = new DynamoSchedulePlan();
+        testPlan.setGuid(BridgeUtils.generateGuid());
+        testPlan.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withLabel("Activity4")
+                .withTask("tapTest").build()));
+        testPlan.setStudyKey(TEST_STUDY.getIdentifier());
+        plans.add(testPlan);
+
+        SchedulePlan testPlan2 = new DynamoSchedulePlan();
+        testPlan2.setGuid(BridgeUtils.generateGuid());
+        testPlan2.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withLabel("Activity5")
+                .withTask("anotherTapTest").build()));
+        testPlan2.setStudyKey(TEST_STUDY.getIdentifier());
+        plans.add(testPlan2);
+        
+        SchedulePlan testPlan3 = new DynamoSchedulePlan();
+        testPlan3.setGuid(BridgeUtils.generateGuid());
+        testPlan3.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withLabel("Activity6")
+                .withTask("yetAnotherTapTest").build()));
+        testPlan3.setStudyKey(TEST_STUDY.getIdentifier());
+        plans.add(testPlan3);
+        
+        return plans;
+    }
+    
+    private ScheduledActivity findAnActivityFor(List<ScheduledActivity> activities, SchedulePlan plan) {
+        for (ScheduledActivity activity : activities) {
+            if (activity.getSchedulePlanGuid().equals(plan.getGuid())) {
+                return activity;
+            }
+        }
+        throw new IllegalArgumentException("An activity for the schedule plan was not found.");
     }
 
     private void cleanActivities(List<ScheduledActivity> activities) {

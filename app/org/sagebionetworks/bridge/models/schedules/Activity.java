@@ -81,23 +81,6 @@ public final class Activity implements BridgeEntity {
             ("survey:"+getSurvey().getGuid()+":finished") :
             ("task:"+getTask().getIdentifier()+":finished");
     }
-    /**
-     * This property is maintained for backwards compatibility, but clients should now look for 
-     * metadata information, including links, in the survey, surveyResponse or task property 
-     * objects.
-     * @return
-     * @deprecated
-     */
-    @Deprecated
-    public String getRef() { 
-        if (task != null) {
-            return task.getIdentifier();
-        } else if (survey != null) {
-            return survey.getHref();
-        }
-        return null;
-    }
-
     public static class Builder {
         private String label;
         private String labelDetail;
@@ -197,7 +180,7 @@ public final class Activity implements BridgeEntity {
 
     @Override
     public String toString() {
-        return String.format("Activity [label=%s, labelDetail=%s, guid=%s, ref=%s, task=%s, survey=%s, response=%s, activityType=%s]",
-            label, labelDetail, guid, getRef(), task, survey, response, activityType);
+        return String.format("Activity [label=%s, labelDetail=%s, guid=%s, task=%s, survey=%s, response=%s, activityType=%s]",
+            label, labelDetail, guid, task, survey, response, activityType);
     }
 }

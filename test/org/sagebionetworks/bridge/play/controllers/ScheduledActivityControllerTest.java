@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -79,32 +82,38 @@ public class ScheduledActivityControllerTest {
         doReturn(clientInfo).when(controller).getClientInfoFromUserAgentHeader();
     }
     
-    @SuppressWarnings("deprecation")
-    @Test
-    public void getScheduledActivitiesAsTasksReturnsCorrectType() throws Exception {
-        DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
-        
-        Result result = controller.getTasks(now.toString(), null, null);
-        String output = Helpers.contentAsString(result);
-        
-        JsonNode results = BridgeObjectMapper.get().readTree(output);
-        ArrayNode items = (ArrayNode)results.get("items");
-        for (int i=0; i < items.size(); i++) {
-            assertEquals("Task", items.get(i).get("type").asText());
-        }
-    }
-    
     @Test
     public void getScheduledActivitiesAsScheduledActivitiesReturnsCorrectType() throws Exception {
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
         
         Result result = controller.getScheduledActivities(now.toString(), null, null);
         String output = Helpers.contentAsString(result);
-        
+
         JsonNode results = BridgeObjectMapper.get().readTree(output);
         ArrayNode items = (ArrayNode)results.get("items");
         for (int i=0; i < items.size(); i++) {
             assertEquals("ScheduledActivity", items.get(i).get("type").asText());
+        }
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Test
+    public void getScheduledActivitesAsTasks() throws Exception {
+        DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
+        
+        Result result = controller.getTasks(now.toString(), null, null);
+        String output = Helpers.contentAsString(result);
+        
+        // Verify that even without the writer, we are not leaking these values
+        // through the API, and they are typed as "Task"s.
+        JsonNode items = BridgeObjectMapper.get().readTree(output).get("items");
+        assertTrue(items.size() > 0);
+        for (int i=0; i < items.size(); i++) {
+            JsonNode item = items.get(i);
+            assertNotNull(item.get("guid"));
+            assertNull(item.get("healthCode"));
+            assertNull(item.get("schedulePlanGuid"));
+            assertEquals("Task", item.get("type").asText());
         }
     }
     

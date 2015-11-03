@@ -44,7 +44,7 @@ public class ActivityTest {
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("task", node.get("activityType").asText());
-        assertEquals("taskId", node.get("ref").asText());
+        assertEquals("taskId", node.get("task").get("identifier").asText());
         assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
@@ -71,8 +71,8 @@ public class ActivityTest {
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("survey", node.get("activityType").asText());
-        String refString = node.get("ref").asText();
-        assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/2015-01-01T10:10:10.000Z"));
+        String hrefString = node.get("survey").get("href").asText();
+        assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/2015-01-01T10:10:10.000Z"));
         assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
@@ -108,8 +108,8 @@ public class ActivityTest {
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("survey", node.get("activityType").asText());
-        String refString = node.get("ref").asText();
-        assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
+        String hrefString = node.get("survey").get("href").asText();
+        assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
         assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
@@ -145,8 +145,8 @@ public class ActivityTest {
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("survey", node.get("activityType").asText());
-        String refString = node.get("ref").asText();
-        assertTrue(refString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
+        String hrefString = node.get("survey").get("href").asText();
+        assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
         assertNotNull("guid", node.get("guid"));
         assertEquals("Activity", node.get("type").asText());
         
@@ -179,7 +179,6 @@ public class ActivityTest {
         assertTrue(ref2.getHref().matches("http[s]?://.*/v3/surveyresponses/BBB"));
     }
     
-    @SuppressWarnings("deprecation")
     @Test
     public void olderPublishedActivitiesCanBeDeserialized() throws Exception {
         String oldJson = "{\"label\":\"Personal Health Survey\",\"ref\":\"https://webservices-staging.sagebridge.org/api/v2/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published\",\"activityType\":\"survey\",\"survey\":{\"guid\":\"ac1e57fd-5e8e-473f-b82f-bac7547b6783\",\"identifier\":\"identifier\",\"type\":\"GuidCreatedOnVersionHolder\"},\"type\":\"Activity\"}";
@@ -188,7 +187,6 @@ public class ActivityTest {
         Activity activity = mapper.readValue(oldJson, Activity.class);
         
         assertEquals("Personal Health Survey", activity.getLabel());
-        assertTrue(activity.getRef().matches("http[s]?://.*/v3/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published"));
         assertEquals(ActivityType.SURVEY, activity.getActivityType());
         
         SurveyReference ref = activity.getSurvey();

@@ -38,16 +38,19 @@ public class SchedulePlanServiceMockTest {
     
     private SchedulePlanDao mockSchedulePlanDao;
     private SurveyService mockSurveyService;
+    private ScheduledActivityService mockActivityService;
     
     @Before
     public void before() {
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
+        mockActivityService = mock(ScheduledActivityService.class);
         
         service = new SchedulePlanServiceImpl();
         service.setSchedulePlanDao(mockSchedulePlanDao);
         service.setSurveyService(mockSurveyService);
         service.setValidator(new SchedulePlanValidator());
+        service.setScheduledActivityService(mockActivityService);
         
         Survey survey1 = TestUtils.getSurvey(false);
         survey1.setIdentifier("identifier1");
@@ -81,6 +84,7 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = createSchedulePlan();
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
+        when(mockSchedulePlanDao.updateSchedulePlan(any())).thenReturn(plan);
         
         service.updateSchedulePlan(plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
@@ -95,6 +99,8 @@ public class SchedulePlanServiceMockTest {
 
     @Test
     public void doNotUseIdentifierFromClient() {
+        
+        
         // The survey GUID/createdOn identify a survey, but the identifier from the client can just be 
         // mismatched by the client, so ignore it and look it up from the DB using the primary keys.
         Activity activity = new Activity.Builder().withLabel("A survey activity")
@@ -108,6 +114,7 @@ public class SchedulePlanServiceMockTest {
         assertEquals("junkIdentifier", identifier);
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
+        when(mockSchedulePlanDao.updateSchedulePlan(any())).thenReturn(plan);
         
         service.updateSchedulePlan(plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
@@ -166,6 +173,7 @@ public class SchedulePlanServiceMockTest {
         plan.setLabel("This is a label");
         plan.setStrategy(strategy);
         plan.setStudyKey("study-key");
+        plan.setGuid("BBB");
         return plan;
     }
     

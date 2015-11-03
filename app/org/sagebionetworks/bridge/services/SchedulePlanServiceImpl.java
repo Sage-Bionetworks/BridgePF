@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
 
@@ -28,20 +29,23 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     private SchedulePlanDao schedulePlanDao;
     private SchedulePlanValidator validator;
     private SurveyService surveyService;
+    private ScheduledActivityService activityService;
 
     @Autowired
     public final void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
         this.schedulePlanDao = schedulePlanDao;
     }
-    
     @Autowired
     public final void setValidator(SchedulePlanValidator validator) {
         this.validator = validator;
     }
-    
     @Autowired
     public final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
+    }
+    @Autowired
+    public final void setScheduledActivityService(ScheduledActivityService activityService) {
+        this.activityService = activityService;
     }
 
     @Override
@@ -69,19 +73,29 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     
     @Override
     public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
+        checkNotNull(plan);
+        
         Validate.entityThrowingException(validator, plan);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
-        return schedulePlanDao.updateSchedulePlan(plan);
+        plan = schedulePlanDao.updateSchedulePlan(plan);
+        activityService.deleteActivitiesForSchedulePlan(plan.getGuid());
+        return plan;
     }
 
     @Override
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+        checkNotNull(studyIdentifier);
+        checkNotNull(isNotBlank(guid));
+        
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
+        
+        activityService.deleteActivitiesForSchedulePlan(guid);
     }
     
     private void updateGuids(SchedulePlan plan) {
+        
         plan.setVersion(null);
         plan.setGuid(BridgeUtils.generateGuid());
         for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {

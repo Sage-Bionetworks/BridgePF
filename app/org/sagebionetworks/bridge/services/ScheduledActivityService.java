@@ -157,10 +157,16 @@ public class ScheduledActivityService {
         }
     }
     
-    public void deleteActivities(String healthCode) {
+    public void deleteActivitiesForUser(String healthCode) {
         checkArgument(isNotBlank(healthCode));
         
-        activityDao.deleteActivities(healthCode);
+        activityDao.deleteActivitiesForUser(healthCode);
+    }
+    
+    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid) {
+        checkArgument(isNotBlank(schedulePlanGuid));
+        
+        activityDao.deleteActivitiesForSchedulePlan(schedulePlanGuid);
     }
     
     /**

@@ -208,7 +208,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                     user.setHealthCode(healthCode);
                     consentService.deleteAllConsents(study, user);
                     healthDataService.deleteRecordsForHealthCode(healthCode);
-                    scheduledActivityService.deleteActivities(healthCode);
+                    scheduledActivityService.deleteActivitiesForUser(healthCode);
                     activityEventService.deleteActivityEvents(healthCode);
                     surveyResponseService.deleteSurveyResponses(healthCode);
                     optionsService.deleteAllParticipantOptions(healthCode);

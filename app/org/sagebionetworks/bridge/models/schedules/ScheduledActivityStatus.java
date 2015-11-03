@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 public enum ScheduledActivityStatus {
     /**
      * Scheduled activity has a scheduled start time in the future and has not been started. 
@@ -29,4 +32,13 @@ public enum ScheduledActivityStatus {
      * without being started.
      */
     DELETED;
+    
+    /**
+     * If a scheduled activity has not been started by the user, it can be deleted. However, if it is finished, 
+     * or deleted, it shouldn't be visible and we won't delete so that a trivial change to a schedule plan 
+     * won't cause the activity to appear again in the interface. 
+     */
+    public static final Set<ScheduledActivityStatus> DELETABLE_STATUSES = EnumSet.of(ScheduledActivityStatus.SCHEDULED,
+            ScheduledActivityStatus.AVAILABLE, ScheduledActivityStatus.EXPIRED);
+    
 }

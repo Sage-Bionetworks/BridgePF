@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -220,13 +221,13 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void deleteActivitiesDoesDelete() {
-        service.deleteActivities("BBB");
+        service.deleteActivitiesForUser("BBB");
         
-        verify(activityDao).deleteActivities("BBB");
+        verify(activityDao).deleteActivitiesForUser("BBB");
         verifyNoMoreInteractions(activityDao);
     }
 
-    @SuppressWarnings({"unchecked","rawtypes","deprecation"})
+    @SuppressWarnings({"unchecked","rawtypes"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
         service.getScheduledActivities(user, new ScheduleContext.Builder()
@@ -242,8 +243,9 @@ public class ScheduledActivityServiceMockTest {
         boolean foundActivity3 = false;
         for (ScheduledActivity schActivity : (List<ScheduledActivity>)argument.getValue()) {
             // ignoring tapTest
-            if (!"tapTest".equals(schActivity.getActivity().getRef())) {
-                String ref = schActivity.getActivity().getSurveyResponse().getHref();
+            Activity act = schActivity.getActivity();
+            if (act.getTask() != null && !"tapTest".equals(act.getTask().getIdentifier())) {
+                String ref = act.getSurveyResponse().getHref();
                 assertTrue("Found activity with survey response ref", ref.contains("/v3/surveyresponses/identifier"));        
             } else {
                 foundActivity3 = true;
@@ -251,6 +253,28 @@ public class ScheduledActivityServiceMockTest {
         }
         assertTrue("Found activity with tapTest ref", foundActivity3);
     }
+    
+    @Test
+    public void deleteScheduledActivitiesForUser() {
+        service.deleteActivitiesForUser("AAA");
+        verify(activityDao).deleteActivitiesForUser("AAA");
+    }
+    
+    @Test
+    public void deleteScheduledActivitiesForSchedulePlan() {
+        service.deleteActivitiesForSchedulePlan("BBB");
+        verify(activityDao).deleteActivitiesForSchedulePlan("BBB");
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteActivitiesForUserRejectsBadValue() {
+        service.deleteActivitiesForUser(null);
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteActivitiesForSchedulePlanRejectsBadValue() {
+        service.deleteActivitiesForUser("  ");
+    }    
     
     private ScheduleContext createScheduleContext(DateTime endsOn) {
         Map<String,DateTime> events = Maps.newHashMap();

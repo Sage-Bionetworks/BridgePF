@@ -238,7 +238,7 @@ public class DynamoScheduledActivityDaoMockTest {
         mockQuery(Lists.newArrayList(activity1, activity2));
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
-        activityDao.deleteActivities("AAA");
+        activityDao.deleteActivitiesForUser("AAA");
 
         verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class));

@@ -67,6 +67,7 @@ public abstract class ActivityScheduler {
             if (expiresOn == null || expiresOn.isAfter(context.getNow())) {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
+                    schActivity.setSchedulePlanGuid(plan.getGuid());
                     schActivity.setTimeZone(context.getZone());
                     schActivity.setHealthCode(context.getHealthCode());
                     schActivity.setActivity(activity);

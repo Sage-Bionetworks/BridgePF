@@ -25,7 +25,6 @@ public class ScheduleTest {
         EqualsVerifier.forClass(Schedule.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
     }
     
-    @SuppressWarnings("deprecation")
     @Test
     public void canRountripSerialize() throws Exception {
         Activity activity = new Activity.Builder().withLabel("label").withTask("ref").build();
@@ -66,7 +65,6 @@ public class ScheduleTest {
         JsonNode actNode = node.get("activities").get(0);
         assertEquals("label", actNode.get("label").asText());
         assertEquals("task", actNode.get("activityType").asText());
-        assertEquals("ref", actNode.get("ref").asText());
         assertEquals("Activity", actNode.get("type").asText());
 
         JsonNode taskNode = actNode.get("task");
@@ -87,7 +85,6 @@ public class ScheduleTest {
         assertEquals("14:00:00.000", schedule.getTimes().get(1).toString());
         activity = schedule.getActivities().get(0);
         assertEquals("label", activity.getLabel());
-        assertEquals("ref", activity.getRef());
         assertEquals("ref", activity.getTask().getIdentifier());
     }
     
