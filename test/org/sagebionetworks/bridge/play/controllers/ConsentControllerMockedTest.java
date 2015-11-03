@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -152,6 +153,9 @@ public class ConsentControllerMockedTest {
     
     @Test
     public void canWithdrawConsent() throws Exception {
+        CacheProvider cacheProvider = mock(CacheProvider.class);
+        controller.setCacheProvider(cacheProvider);
+        
         String json = "{\"reason\":\"Because, reasons.\"}";
         Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
@@ -163,8 +167,14 @@ public class ConsentControllerMockedTest {
         JsonNode node = BridgeObjectMapper.get().readTree(response);
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
+        // Should call the service and withdraw
         verify(consentService).withdrawConsent(any(Study.class), any(User.class), captor.capture(), any(Long.class));
         assertEquals("Because, reasons.", captor.getValue().getReason());
+        
+        // Should update the user's session to be non-consented
+        ArgumentCaptor<UserSession> sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
+        verify(cacheProvider).setUserSession(sessionCaptor.capture());
+        assertFalse(sessionCaptor.getValue().getUser().doesConsent());
     }
 
     @Test
