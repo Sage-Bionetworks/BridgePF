@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
@@ -76,7 +77,7 @@ public class DynamoScheduledActivityDaoTest {
         
         plan = new DynamoSchedulePlan();
         plan.setLabel("And this is a schedule plan");
-        plan.setStudyKey(TestConstants.TEST_STUDY_IDENTIFIER);
+        plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plan.setStrategy(strategy);
         
         plan = schedulePlanService.createSchedulePlan(study, plan);
@@ -89,12 +90,12 @@ public class DynamoScheduledActivityDaoTest {
         
         user = new User();
         user.setHealthCode(healthCode);
-        user.setStudyKey(TestConstants.TEST_STUDY_IDENTIFIER);
+        user.setStudyKey(TEST_STUDY_IDENTIFIER);
     }
     
     @After
     public void after() {
-        schedulePlanService.deleteSchedulePlan(TestConstants.TEST_STUDY, plan.getGuid());
+        schedulePlanService.deleteSchedulePlan(TEST_STUDY, plan.getGuid());
         activityDao.deleteActivitiesForUser(user.getHealthCode());
     }
 

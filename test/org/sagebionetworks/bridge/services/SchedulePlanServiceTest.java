@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 
@@ -46,7 +47,7 @@ public class SchedulePlanServiceTest {
     public void schedulePlansAreFilteredByAppVersion() {
         SchedulePlan savedPlan = null;
         try {
-            SchedulePlan plan = TestUtils.getABTestSchedulePlan(TestConstants.TEST_STUDY);
+            SchedulePlan plan = TestUtils.getABTestSchedulePlan(TEST_STUDY);
             plan.setGuid(null);
             plan.setVersion(null);
             plan.setMinAppVersion(14);
@@ -99,7 +100,7 @@ public class SchedulePlanServiceTest {
     
     @Test
     public void canRoundTripSchedulePlan() throws Exception {
-        SchedulePlan plan = TestUtils.getABTestSchedulePlan(TestConstants.TEST_STUDY);
+        SchedulePlan plan = TestUtils.getABTestSchedulePlan(TEST_STUDY);
         
         String json = BridgeObjectMapper.get().writeValueAsString(plan);
         

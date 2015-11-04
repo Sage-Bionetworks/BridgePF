@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static play.test.Helpers.contentAsString;
 
 import java.util.Map;
@@ -14,10 +15,10 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -43,7 +44,7 @@ public class UserManagementControllerTest {
         user.setRoles(Sets.newHashSet(ADMIN));
         session.setUser(user);
         session.setAuthenticated(true);
-        session.setStudyIdentifier(new StudyIdentifierImpl("api"));
+        session.setStudyIdentifier(TEST_STUDY);
         
         AuthenticationService authService = mock(AuthenticationService.class);
         when(authService.getSession(any(String.class))).thenReturn(session);

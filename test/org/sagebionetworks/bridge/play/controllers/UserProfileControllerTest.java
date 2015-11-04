@@ -9,6 +9,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
@@ -16,8 +17,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.play.controllers.UserProfileController;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl;
@@ -28,8 +27,6 @@ import play.mvc.Result;
 public class UserProfileControllerTest {
 
     private ParticipantOptionsService optionsService;
-    
-    private StudyIdentifier studyIdentifier = new StudyIdentifierImpl("api");
     
     @Test
     public void canSubmitExternalIdentifier() throws Exception {
@@ -42,7 +39,7 @@ public class UserProfileControllerTest {
         assertEquals("application/json", result.contentType());
         assertEquals("{\"message\":\"External identifier added to user profile.\"}", contentAsString(result));
         
-        verify(optionsService).setOption(studyIdentifier, "healthCode", 
+        verify(optionsService).setOption(TEST_STUDY, "healthCode", 
             ParticipantOption.EXTERNAL_IDENTIFIER, "ABC-123-XYZ");
     }
     
@@ -67,7 +64,7 @@ public class UserProfileControllerTest {
         
         UserSession session = mock(UserSession.class);
         when(session.getUser()).thenReturn(user);
-        when(session.getStudyIdentifier()).thenReturn(studyIdentifier);
+        when(session.getStudyIdentifier()).thenReturn(TEST_STUDY);
         return session;
     }
     

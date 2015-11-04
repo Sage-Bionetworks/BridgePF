@@ -3,23 +3,21 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.Sets;
 
 public class SchedulePlanServiceImplMockTest {
 
-    private static StudyIdentifier STUDY_ID = new StudyIdentifierImpl("foo-key");
-    
     private SchedulePlanServiceImpl service;
     private SchedulePlanDao schedulePlanDao;
     private SurveyService surveyService;
@@ -44,7 +42,7 @@ public class SchedulePlanServiceImplMockTest {
     
     @Test
     public void cleansUpScheduledActivitiesOnUpdate() {
-        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(STUDY_ID);
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
         plan.setLabel("Label");
         plan.setGuid("BBB");
         plan.getStrategy().getAllPossibleSchedules().get(0).setExpires("P3D");
@@ -56,7 +54,7 @@ public class SchedulePlanServiceImplMockTest {
     
     @Test
     public void cleansUpScheduledActivitiesOnDelete() {
-        service.deleteSchedulePlan(STUDY_ID, "BBB");
+        service.deleteSchedulePlan(TEST_STUDY, "BBB");
         
         verify(activityService).deleteActivitiesForSchedulePlan("BBB");
     }

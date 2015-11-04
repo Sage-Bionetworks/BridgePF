@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -55,7 +57,7 @@ public class SendEmailIntegTest {
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         final User user = new User();
         user.setEmail("bridge-testing@sagebase.org");
-        final Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
+        final Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
         sendEmailService.sendEmail(new ConsentEmailProvider(study, user, signature, 
             SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate));

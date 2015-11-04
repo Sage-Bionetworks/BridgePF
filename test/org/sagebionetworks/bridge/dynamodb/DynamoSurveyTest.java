@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.Iterator;
 import java.util.List;
@@ -122,7 +123,7 @@ public class DynamoSurveyTest {
         Survey copy = new DynamoSurvey(survey);
 
         // validate
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, copy.getStudyIdentifier());
+        assertEquals(TEST_STUDY_IDENTIFIER, copy.getStudyIdentifier());
         assertEquals("test-survey-guid", copy.getGuid());
         assertEquals(TEST_CREATED_ON_MILLIS, copy.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, copy.getModifiedOn());
