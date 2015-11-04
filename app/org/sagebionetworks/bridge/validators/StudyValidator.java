@@ -20,6 +20,7 @@ public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
     private static final Joiner COMMA_DELIMITED_LIST = Joiner.on(", ");
     private static final int MAX_SYNAPSE_LENGTH = 100;
+    private static final String IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -119,9 +120,14 @@ public class StudyValidator implements Validator {
             errors.popNestedPath();
         }
     }
-    
+
     private void validateSerializedDataGroupsFitInSynapse(Errors errors, Set<String> dataGroups) {
         if (dataGroups != null) {
+            for (String group : dataGroups) {
+                if (!group.matches(IDENTIFIER_PATTERN)) {
+                    errors.rejectValue("dataGroups", "contains invalid tag '"+group+"' (only letters, numbers, underscore and dash allowed)");
+                }
+            }
             String ser = COMMA_DELIMITED_LIST.join(dataGroups);
             if (ser.length() > MAX_SYNAPSE_LENGTH) {
                 errors.rejectValue("dataGroups", "will not export to Synapse (string is over "+MAX_SYNAPSE_LENGTH+" characters: '" + ser + "')");

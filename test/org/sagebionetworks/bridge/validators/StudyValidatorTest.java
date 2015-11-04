@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public class StudyValidatorTest {
             List<String> errors = e.getErrors().get(fieldName);
             assertFalse(errors == null || errors.isEmpty());
             String error = errors.get(0);
-            assertEquals(message, error);
+            assertEquals(error, message);
         }
     }
     
@@ -220,12 +221,15 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void dataGroupCharactersRestricted() {
+        study.setDataGroups(Sets.newHashSet("Liège"));
+        assertCorrectMessage(study, "dataGroups", "dataGroups contains invalid tag 'Liège' (only letters, numbers, underscore and dash allowed)");
+    }
+    
+    @Test
     public void cannotExportVeryLongListOfDataGroups() {
-        study.setDataGroups(Sets.newHashSet("Antwerp", "Ghent", "Charleroi", "Liège", "Brussels-City", "Bruges",
-                "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean", "Mechelen", "Ixelles",
-                "Aalst", "Uccle", "La", "Louvière", "Hasselt", "Kortrijk", "Sint-Niklaas", "Ostend", "Tournai", "Genk",
-                "Seraing", "Roeselare", "Mouscron"));
-        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Molenbeek-Saint-Jean, Roeselare, Brussels-City, Mechelen, Hasselt, Tournai, Ixelles, Aalst, Louvière, Kortrijk, Ghent, Seraing, Leuven, La, Mouscron, Antwerp, Genk, Mons, Liège, Bruges, Namur, Anderlecht, Uccle, Ostend, Sint-Niklaas, Charleroi, Schaerbeek')");
+        study.setDataGroups(Sets.newHashSet("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean"));
+        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Anderlecht, Molenbeek-Saint-Jean, Brussels-City, Ghent, Mons, Charleroi, Schaerbeek, Leuven, Liege, Antwerp, Bruges, Namur')");
     }
 
 }
