@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -228,8 +229,16 @@ public class StudyValidatorTest {
     
     @Test
     public void cannotExportVeryLongListOfDataGroups() {
-        study.setDataGroups(Sets.newHashSet("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean"));
-        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Anderlecht, Molenbeek-Saint-Jean, Brussels-City, Ghent, Mons, Charleroi, Schaerbeek, Leuven, Liege, Antwerp, Bruges, Namur')");
+        study.setDataGroups(newLinkedHashSet("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean"));
+        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Antwerp, Ghent, Charleroi, Liege, Brussels-City, Bruges, Schaerbeek, Anderlecht, Namur, Leuven, Mons, Molenbeek-Saint-Jean')");
+    }
+    
+    private Set<String> newLinkedHashSet(String... list) {
+        Set<String> set = new LinkedHashSet<>();
+        for (String element : list) {
+            set.add(element);
+        }
+        return set;
     }
 
 }
