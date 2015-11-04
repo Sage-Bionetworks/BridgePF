@@ -208,8 +208,7 @@ public class ConsentServiceImpl implements ConsentService {
         String externalId = optionsService.getOption(user.getHealthCode(), ParticipantOption.EXTERNAL_IDENTIFIER);
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
-        
-        System.out.println("YES DID GET HERE");
+
         user.setConsent(false);
     }
     
