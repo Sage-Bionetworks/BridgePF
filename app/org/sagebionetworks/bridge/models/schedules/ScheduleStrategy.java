@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -32,9 +33,10 @@ public interface ScheduleStrategy {
     
     /**
      * Validate that the strategy implementation instance is valid.
+     * @param taskIdentifiers
      * @param errors
      */
-    public void validate(Errors errors);
+    public void validate(Set<String> taskIdentifiers, Errors errors);
     
     /**
      * Get all possible schedules that this schedule strategy might schedule. This can be used to 

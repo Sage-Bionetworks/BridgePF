@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
@@ -41,6 +42,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -58,6 +60,9 @@ public class DynamoScheduledActivityDaoTest {
     
     @Before
     public void before() {
+        Study study = new DynamoStudy();
+        study.setTaskIdentifiers(Sets.newHashSet("tapTest"));
+        
         Schedule schedule = new Schedule();
         schedule.setLabel("This is a schedule");
         schedule.setScheduleType(ScheduleType.RECURRING);
@@ -74,7 +79,7 @@ public class DynamoScheduledActivityDaoTest {
         plan.setStudyKey(TestConstants.TEST_STUDY_IDENTIFIER);
         plan.setStrategy(strategy);
         
-        plan = schedulePlanService.createSchedulePlan(plan);
+        plan = schedulePlanService.createSchedulePlan(study, plan);
 
         String healthCode = BridgeUtils.generateGuid();
         

@@ -41,6 +41,8 @@ public final class DynamoStudy implements Study {
     private boolean active;
     private StudyIdentifier studyIdentifier;
     private Set<String> profileAttributes;
+    private Set<String> taskIdentifiers;
+    private Set<String> dataGroups;
     private PasswordPolicy passwordPolicy;
     private EmailTemplate verifyEmailTemplate;
     private EmailTemplate resetPasswordTemplate;
@@ -187,6 +189,30 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @Override
+    public Set<String> getTaskIdentifiers() {
+        return taskIdentifiers;
+    }
+
+    @Override
+    public void setTaskIdentifiers(Set<String> taskIdentifiers) {
+        this.taskIdentifiers = taskIdentifiers;
+    }
+    
+    /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @Override
+    public Set<String> getDataGroups() {
+        return dataGroups;
+    }
+
+    @Override
+    public void setDataGroups(Set<String> dataGroups) {
+        this.dataGroups = dataGroups;
+    }
+    
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = PasswordPolicyMarshaller.class)
     @Override
     public PasswordPolicy getPasswordPolicy() {
@@ -274,6 +300,8 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(stormpathHref);
         result = prime * result + Objects.hashCode(version);
         result = prime * result + Objects.hashCode(profileAttributes);
+        result = prime * result + Objects.hashCode(taskIdentifiers);
+        result = prime * result + Objects.hashCode(dataGroups);
         result = prime * result + Objects.hashCode(passwordPolicy);
         result = prime * result + Objects.hashCode(verifyEmailTemplate);
         result = prime * result + Objects.hashCode(resetPasswordTemplate);
@@ -300,6 +328,8 @@ public final class DynamoStudy implements Study {
                         && Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate)
                         && Objects.equals(version, other.version)
                         && Objects.equals(profileAttributes, other.profileAttributes)
+                        && Objects.equals(taskIdentifiers, other.taskIdentifiers)
+                        && Objects.equals(dataGroups, other.dataGroups)
                         && Objects.equals(sponsorName, other.sponsorName)
                         && Objects.equals(technicalEmail, other.technicalEmail)
                         && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled);
@@ -308,12 +338,12 @@ public final class DynamoStudy implements Study {
     @Override
     public String toString() {
         return String.format(
-                        "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
-                                        + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
-                                        + "version=%s, userProfileAttributes=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s]"
-                                        + "strictUploadValidationEnabled=%s",
-                        name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
-                        supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes,
-                        passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled);
+            "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
+                            + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
+                            + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
+                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s]",
+            name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
+            supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
+            dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled);
     }
 }

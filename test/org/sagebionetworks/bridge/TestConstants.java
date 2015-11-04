@@ -37,7 +37,7 @@ public class TestConstants {
     
     public static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
     public static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
-    public static final String ACTIVITY_3_REF = "tapTest";
+    
     /**
      * During tests, must sometimes pause because the underlying query uses a DynamoDB global 
      * secondary index, and this does not currently support consistent reads.

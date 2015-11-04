@@ -20,18 +20,20 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 
 import com.google.common.collect.Sets;
 
 public class SchedulePlanServiceMockTest {
 
+    private Study study;
     private String surveyGuid1;
     private String surveyGuid2;
     private SchedulePlanServiceImpl service;
@@ -42,6 +44,9 @@ public class SchedulePlanServiceMockTest {
     
     @Before
     public void before() {
+        study = new DynamoStudy();
+        study.setTaskIdentifiers(Sets.newHashSet("tapTest", "taskGuid"));
+        
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
         mockActivityService = mock(ScheduledActivityService.class);
@@ -49,7 +54,6 @@ public class SchedulePlanServiceMockTest {
         service = new SchedulePlanServiceImpl();
         service.setSchedulePlanDao(mockSchedulePlanDao);
         service.setSurveyService(mockSurveyService);
-        service.setValidator(new SchedulePlanValidator());
         service.setScheduledActivityService(mockActivityService);
         
         Survey survey1 = TestUtils.getSurvey(false);
@@ -68,7 +72,7 @@ public class SchedulePlanServiceMockTest {
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
         
-        service.createSchedulePlan(plan);
+        service.createSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
         verify(mockSurveyService).getSurvey(any());
         verify(mockSchedulePlanDao).createSchedulePlan(spCaptor.capture());
@@ -86,7 +90,7 @@ public class SchedulePlanServiceMockTest {
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
         when(mockSchedulePlanDao.updateSchedulePlan(any())).thenReturn(plan);
         
-        service.updateSchedulePlan(plan);
+        service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
         verify(mockSurveyService).getSurvey(any());
         verify(mockSchedulePlanDao).updateSchedulePlan(spCaptor.capture());
@@ -116,7 +120,7 @@ public class SchedulePlanServiceMockTest {
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
         when(mockSchedulePlanDao.updateSchedulePlan(any())).thenReturn(plan);
         
-        service.updateSchedulePlan(plan);
+        service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
         verify(mockSurveyService).getSurvey(any());
         verify(mockSchedulePlanDao).updateSchedulePlan(spCaptor.capture());
@@ -141,7 +145,7 @@ public class SchedulePlanServiceMockTest {
         }
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
-        service.createSchedulePlan(plan);
+        service.createSchedulePlan(study, plan);
         
         verify(mockSchedulePlanDao).createSchedulePlan(spCaptor.capture());
         

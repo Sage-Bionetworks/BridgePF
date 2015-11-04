@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -96,7 +97,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         return group.getSchedule();
     }
     @Override
-    public void validate(Errors errors) {
+    public void validate(Set<String> taskIdentifiers, Errors errors) {
         int percentage = 0;
         for (ScheduleGroup group : groups) {
             percentage += group.getPercentage();
@@ -113,7 +114,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
                 return;
             } else {
                 errors.pushNestedPath("schedule");
-                new ScheduleValidator().validate(group.getSchedule(), errors);
+                new ScheduleValidator(taskIdentifiers).validate(group.getSchedule(), errors);
                 errors.popNestedPath();
             }
             errors.popNestedPath();
@@ -125,7 +126,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
                 return;
             } else {
                 errors.pushNestedPath("schedule");
-                new ScheduleValidator().validate(group.getSchedule(), errors);
+                new ScheduleValidator(taskIdentifiers).validate(group.getSchedule(), errors);
                 errors.popNestedPath();
             }
         }

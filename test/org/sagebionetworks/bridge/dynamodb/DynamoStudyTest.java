@@ -57,6 +57,8 @@ public class DynamoStudyTest {
                 EmailTemplate.class));
         assertEquals(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
         assertEquals(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
+        assertEquals(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
+        assertEquals(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
         assertEquals(study.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
         assertEquals(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
         assertEquals((Long)study.getVersion(), (Long)node.get("version").asLong());

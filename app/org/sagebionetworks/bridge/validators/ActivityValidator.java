@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.Set;
+
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
@@ -9,9 +11,17 @@ import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import com.google.common.base.Joiner;
+
 public class ActivityValidator implements Validator {
     
     private static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
+    
+    private final Set<String> taskIdentifiers;
+    
+    public ActivityValidator(Set<String> taskIdentifiers) {
+        this.taskIdentifiers = taskIdentifiers;
+    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -47,6 +57,14 @@ public class ActivityValidator implements Validator {
         errors.pushNestedPath("task");
         if (isBlank(ref.getIdentifier())) {
             errors.rejectValue("identifier", CANNOT_BE_BLANK);
+        } else if (taskIdentifiers == null || !taskIdentifiers.contains(ref.getIdentifier())) {
+            String message = "";
+            if (taskIdentifiers != null && !taskIdentifiers.isEmpty()) {
+                message += Joiner.on(", ").join(taskIdentifiers);
+            } else {
+                message += "<no task identifiers declared>";
+            }
+            errors.rejectValue("identifier", "'" + ref.getIdentifier() + "' is not in enumeration: " + message);
         }
         errors.popNestedPath();
     }

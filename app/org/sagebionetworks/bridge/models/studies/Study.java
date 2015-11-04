@@ -123,6 +123,23 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public void setUserProfileAttributes(Set<String> attributes);
 
     /**
+     * The enumerated task identifiers that can be used when scheduling tasks for this study. These are provided 
+     * through the UI to prevent errors when creating schedules. 
+     * @return
+     */
+    public Set<String> getTaskIdentifiers();
+    public void setTaskIdentifiers(Set<String> taskIdentifiers);
+
+    /**
+     * The enumerated set of data group strings that can be assigned to users in this study. This enumeration ensures 
+     * the values are meaningful to the study and the data groups cannot be filled maliciously with junk tags. 
+     * @return
+     */
+    public Set<String> getDataGroups();
+    public void setDataGroups(Set<String> dataGroups);
+
+    
+    /**
      * The password policy for users signing up for this study. 
      * @return
      */

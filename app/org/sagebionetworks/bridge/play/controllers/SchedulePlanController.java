@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,11 +38,11 @@ public class SchedulePlanController extends BaseController {
 
     public Result createSchedulePlan() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
-        planForm.setStudyKey(studyId.getIdentifier());
-        SchedulePlan plan = schedulePlanService.createSchedulePlan(planForm);
+        planForm.setStudyKey(study.getIdentifier());
+        SchedulePlan plan = schedulePlanService.createSchedulePlan(study, planForm);
         return createdResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
 
@@ -55,12 +56,12 @@ public class SchedulePlanController extends BaseController {
 
     public Result updateSchedulePlan(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
-        planForm.setStudyKey(studyId.getIdentifier());
+        planForm.setStudyKey(study.getIdentifier());
         planForm.setGuid(guid);
-        SchedulePlan plan = schedulePlanService.updateSchedulePlan(planForm);
+        SchedulePlan plan = schedulePlanService.updateSchedulePlan(study, planForm);
         
         return okResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface SchedulePlanService {
@@ -12,9 +13,9 @@ public interface SchedulePlanService {
     
     public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     
-    public SchedulePlan createSchedulePlan(SchedulePlan plan);
+    public SchedulePlan createSchedulePlan(Study study, SchedulePlan plan);
     
-    public SchedulePlan updateSchedulePlan(SchedulePlan plan);
+    public SchedulePlan updateSchedulePlan(Study study, SchedulePlan plan);
     
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     

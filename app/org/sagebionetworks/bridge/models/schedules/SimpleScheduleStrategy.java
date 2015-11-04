@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -34,12 +35,12 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     }
     
     @Override
-    public void validate(Errors errors) {
+    public void validate(Set<String> taskIdentifiers, Errors errors) {
         if (schedule == null) {
             errors.rejectValue("schedule", "is required");
         } else {
             errors.pushNestedPath("schedule");
-            new ScheduleValidator().validate(schedule, errors);
+            new ScheduleValidator(taskIdentifiers).validate(schedule, errors);
             errors.popNestedPath();
         }
     }
