@@ -154,9 +154,6 @@ public class ConsentControllerMockedTest {
     
     @Test
     public void canWithdrawConsent() throws Exception {
-        CacheProvider cacheProvider = mock(CacheProvider.class);
-        controller.setCacheProvider(cacheProvider);
-        
         String json = "{\"reason\":\"Because, reasons.\"}";
         Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
