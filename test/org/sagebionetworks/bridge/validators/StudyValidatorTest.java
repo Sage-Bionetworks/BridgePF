@@ -16,6 +16,8 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.google.common.collect.Sets;
+
 public class StudyValidatorTest {
 
     private DynamoStudy study;
@@ -209,6 +211,21 @@ public class StudyValidatorTest {
     public void cannotSetMaxNumOfParticipantsLessThanZero() {
         study.setMaxNumOfParticipants(-100);
         assertCorrectMessage(study, "maxNumOfParticipants", "maxNumOfParticipants must be zero (no limit on enrollees) or higher");
+    }
+    
+    @Test
+    public void shorterLisOfDataGroupsOK() {
+        study.setDataGroups(Sets.newHashSet("beta_users", "production_users", "testers", "internal"));
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test
+    public void cannotExportVeryLongListOfDataGroups() {
+        study.setDataGroups(Sets.newHashSet("Antwerp", "Ghent", "Charleroi", "Liège", "Brussels-City", "Bruges",
+                "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean", "Mechelen", "Ixelles",
+                "Aalst", "Uccle", "La", "Louvière", "Hasselt", "Kortrijk", "Sint-Niklaas", "Ostend", "Tournai", "Genk",
+                "Seraing", "Roeselare", "Mouscron"));
+        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Molenbeek-Saint-Jean, Roeselare, Brussels-City, Mechelen, Hasselt, Tournai, Ixelles, Aalst, Louvière, Kortrijk, Ghent, Seraing, Leuven, La, Mouscron, Antwerp, Genk, Mons, Liège, Bruges, Namur, Anderlecht, Uccle, Ostend, Sint-Niklaas, Charleroi, Schaerbeek')");
     }
 
 }

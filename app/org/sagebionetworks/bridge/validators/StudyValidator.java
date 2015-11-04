@@ -13,9 +13,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import com.newrelic.agent.deps.com.google.common.base.Joiner;
+
 @Component
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
+    private static final Joiner COMMA_DELIMITED_LIST = Joiner.on(", ");
+    private static final int MAX_SYNAPSE_LENGTH = 100;
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -79,6 +83,7 @@ public class StudyValidator implements Validator {
         validateEmails(errors, study.getSupportEmail(), "supportEmail");
         validateEmails(errors, study.getTechnicalEmail(), "technicalEmail");
         validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
+        validateSerializedDataGroupsFitInSynapse(errors, study.getDataGroups());
     }
     
     private boolean isInRange(int value, int min) {
@@ -112,6 +117,15 @@ public class StudyValidator implements Validator {
                 }
             }
             errors.popNestedPath();
+        }
+    }
+    
+    private void validateSerializedDataGroupsFitInSynapse(Errors errors, Set<String> dataGroups) {
+        if (dataGroups != null) {
+            String ser = COMMA_DELIMITED_LIST.join(dataGroups);
+            if (ser.length() > MAX_SYNAPSE_LENGTH) {
+                errors.rejectValue("dataGroups", "will not export to Synapse (string is over "+MAX_SYNAPSE_LENGTH+" characters: '" + ser + "')");
+            }
         }
     }
 
