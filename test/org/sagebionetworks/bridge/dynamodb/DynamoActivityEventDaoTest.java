@@ -79,6 +79,21 @@ public class DynamoActivityEventDaoTest {
         assertEquals(0, map.size());
     }
     
+    @Test
+    public void neverUpdateEnrollmentTaskEvent() {
+        final DateTime firstEvent = DateTime.now();
+        
+        ActivityEvent event = getEnrollmentEvent(firstEvent);
+        activityEventDao.publishEvent(event);
+        
+        // This does not work. You can't do this.
+        event = getEnrollmentEvent(firstEvent.plusHours(2));
+        activityEventDao.publishEvent(event);
+        
+        Map<String,DateTime> eventMap = activityEventDao.getActivityEventMap("BBB");
+        assertEquals(firstEvent, eventMap.get("enrollment"));
+    }
+    
     private DynamoActivityEvent getEnrollmentEvent(DateTime timestamp) {
         return new DynamoActivityEvent.Builder().withHealthCode("BBB")
             .withObjectType(ActivityEventObjectType.ENROLLMENT).withTimestamp(timestamp).build();

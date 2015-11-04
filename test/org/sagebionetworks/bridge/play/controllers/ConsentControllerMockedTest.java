@@ -52,7 +52,8 @@ public class ConsentControllerMockedTest {
 
     private StudyService studyService;
     private ConsentService consentService;
-    ParticipantOptionsService optionsService;
+    private ParticipantOptionsService optionsService;
+    private CacheProvider cacheProvider;
 
     @Before
     public void before() {
@@ -80,7 +81,8 @@ public class ConsentControllerMockedTest {
         optionsService = mock(ParticipantOptionsService.class);
         controller.setOptionsService(optionsService);
 
-        controller.setCacheProvider(mock(CacheProvider.class));
+        cacheProvider = mock(CacheProvider.class);
+        controller.setCacheProvider(cacheProvider);
     }
 
     @After
@@ -163,8 +165,11 @@ public class ConsentControllerMockedTest {
         JsonNode node = BridgeObjectMapper.get().readTree(response);
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
+        // Should call the service and withdraw
         verify(consentService).withdrawConsent(any(Study.class), any(User.class), captor.capture(), any(Long.class));
         assertEquals("Because, reasons.", captor.getValue().getReason());
+        
+        verify(cacheProvider).setUserSession(session);
     }
 
     @Test
