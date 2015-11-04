@@ -62,6 +62,7 @@ public class DynamoScheduledActivityDaoTest {
     @Before
     public void before() {
         Study study = new DynamoStudy();
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setTaskIdentifiers(Sets.newHashSet("tapTest"));
         
         Schedule schedule = new Schedule();

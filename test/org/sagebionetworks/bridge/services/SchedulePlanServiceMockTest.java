@@ -9,6 +9,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Set;
@@ -45,6 +46,7 @@ public class SchedulePlanServiceMockTest {
     @Before
     public void before() {
         study = new DynamoStudy();
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setTaskIdentifiers(Sets.newHashSet("tapTest", "taskGuid"));
         
         mockSchedulePlanDao = mock(SchedulePlanDao.class);

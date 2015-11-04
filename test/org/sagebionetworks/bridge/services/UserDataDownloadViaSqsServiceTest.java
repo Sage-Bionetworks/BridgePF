@@ -18,7 +18,6 @@ import com.amazonaws.services.sqs.model.SendMessageResult;
 import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;

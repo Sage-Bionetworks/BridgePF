@@ -4,10 +4,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -27,6 +27,7 @@ public class SchedulePlanServiceImplMockTest {
     @Before
     public void before() {
         study = new DynamoStudy();
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setTaskIdentifiers(Sets.newHashSet("CCC"));
         
         service = new SchedulePlanServiceImpl();

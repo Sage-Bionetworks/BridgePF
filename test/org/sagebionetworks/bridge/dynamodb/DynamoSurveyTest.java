@@ -16,7 +16,6 @@ import nl.jqno.equalsverifier.Warning;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.DataType;

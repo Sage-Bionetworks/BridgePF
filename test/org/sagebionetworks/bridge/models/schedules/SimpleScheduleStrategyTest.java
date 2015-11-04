@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import java.util.List;
 
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 
 import com.google.common.collect.ImmutableList;

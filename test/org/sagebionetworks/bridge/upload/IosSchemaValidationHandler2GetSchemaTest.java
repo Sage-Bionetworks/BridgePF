@@ -14,7 +14,6 @@ import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
