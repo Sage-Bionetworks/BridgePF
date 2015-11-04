@@ -58,17 +58,11 @@ public class ActivityValidator implements Validator {
         if (isBlank(ref.getIdentifier())) {
             errors.rejectValue("identifier", CANNOT_BE_BLANK);
         } else if (taskIdentifiers == null || !taskIdentifiers.contains(ref.getIdentifier())) {
-            String message = "";
-            if (taskIdentifiers != null && !taskIdentifiers.isEmpty()) {
-                message += Joiner.on(", ").join(taskIdentifiers);
-            } else {
-                message += "<no task identifiers declared>";
-            }
-            errors.rejectValue("identifier", "'" + ref.getIdentifier() + "' is not in enumeration: " + message);
+            errors.rejectValue("identifier", geTaskIdentifierMessage(ref));
         }
         errors.popNestedPath();
     }
-    
+   
     private void validate(Errors errors, SurveyReference ref) {
         errors.pushNestedPath("survey");
         if (isBlank(ref.getGuid())) {
@@ -85,4 +79,13 @@ public class ActivityValidator implements Validator {
         errors.popNestedPath();
     }
     
+    private String geTaskIdentifierMessage(TaskReference ref) {
+        String message = "'" + ref.getIdentifier() + "' is not in enumeration: ";
+        if (taskIdentifiers != null && !taskIdentifiers.isEmpty()) {
+            message += Joiner.on(", ").join(taskIdentifiers);
+        } else {
+            message += "<no task identifiers declared>";
+        }
+        return message;
+    }
 }

@@ -57,11 +57,14 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     @Override
     public SchedulePlan createSchedulePlan(Study study, SchedulePlan plan) {
         checkNotNull(plan);
-        
+
+        // Plan must always be in user's study
+        plan.setStudyKey(study.getIdentifier());
+
         // Delete existing GUIDs so this is a new object (or recreate them)
         Validate.entityThrowingException(new SchedulePlanValidator(study.getTaskIdentifiers()), plan);
         updateGuids(plan);
-        
+
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
         return schedulePlanDao.createSchedulePlan(plan);
@@ -70,6 +73,9 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     @Override
     public SchedulePlan updateSchedulePlan(Study study, SchedulePlan plan) {
         checkNotNull(plan);
+        
+        // Plan must always be in user's study
+        plan.setStudyKey(study.getIdentifier());
         
         Validate.entityThrowingException(new SchedulePlanValidator(study.getTaskIdentifiers()), plan);
         
@@ -90,8 +96,12 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         activityService.deleteActivitiesForSchedulePlan(guid);
     }
     
+    /**
+     * Saving a new plan that has GUIDs and is an existing plan? Clear them out so that we create a 
+     * new copy of the plan.
+     * @param plan
+     */
     private void updateGuids(SchedulePlan plan) {
-        
         plan.setVersion(null);
         plan.setGuid(BridgeUtils.generateGuid());
         for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
