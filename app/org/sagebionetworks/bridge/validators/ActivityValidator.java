@@ -82,10 +82,10 @@ public class ActivityValidator implements Validator {
     
     private String getTaskIdentifierMessage(TaskReference ref) {
         String message = "'" + ref.getIdentifier() + "' is not in enumeration: ";
-        if (taskIdentifiers != null && !taskIdentifiers.isEmpty()) {
-            message += Joiner.on(", ").join(taskIdentifiers);
-        } else {
+        if (taskIdentifiers.isEmpty()) {
             message += "<no task identifiers declared>";
+        } else {
+            message += Joiner.on(", ").join(taskIdentifiers);
         }
         return message;
     }

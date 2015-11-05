@@ -141,9 +141,6 @@ public final class Activity implements BridgeEntity {
             if (guid == null) {
                 guid = BridgeUtils.generateGuid();
             }
-            // Activity is validated as part of a schedule, and requires task identifiers 
-            // for the study being validated. We can't validate again, here, during construction 
-            // without adding taskIdentifiers to the builder, which is strange.
             return new Activity(label, labelDetail, guid, task, survey, response);
         }
     }
