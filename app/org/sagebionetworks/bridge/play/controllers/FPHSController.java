@@ -36,7 +36,7 @@ public class FPHSController extends BaseController {
         // public API, no restrictions
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
         fphsService.verifyExternalIdentifier(externalId);
-        return okResult("External identifier valid.");
+        return okResult("External identifier is valid.");
     }
     public Result registerExternalIdentifier() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();

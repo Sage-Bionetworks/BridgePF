@@ -14,12 +14,12 @@ public class DynamoFPHSExternalIdentifier implements FPHSExternalIdentifier {
     
     @DynamoDBHashKey
     @Override
-    public String getExternalIdentifier() {
+    public String getExternalId() {
         return externalIdentifier;
     }
 
     @Override
-    public void setExternalIdentifier(String externalIdentifier) {
+    public void setExternalId(String externalIdentifier) {
         this.externalIdentifier = externalIdentifier;
     }
 
