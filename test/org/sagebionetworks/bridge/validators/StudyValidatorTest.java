@@ -37,7 +37,7 @@ public class StudyValidatorTest {
             List<String> errors = e.getErrors().get(fieldName);
             assertFalse(errors == null || errors.isEmpty());
             String error = errors.get(0);
-            assertEquals(error, message);
+            assertEquals(message, error);
         }
     }
     
@@ -216,21 +216,21 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void shorterLisOfDataGroupsOK() {
+    public void shortListOfDataGroupsOK() {
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users", "testers", "internal"));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test
+    public void longListOfDataGroupsInvalid() {
+        study.setDataGroups(newLinkedHashSet("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean"));
+        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Antwerp, Ghent, Charleroi, Liege, Brussels-City, Bruges, Schaerbeek, Anderlecht, Namur, Leuven, Mons, Molenbeek-Saint-Jean')");
     }
     
     @Test
     public void dataGroupCharactersRestricted() {
         study.setDataGroups(Sets.newHashSet("Liège"));
         assertCorrectMessage(study, "dataGroups", "dataGroups contains invalid tag 'Liège' (only letters, numbers, underscore and dash allowed)");
-    }
-    
-    @Test
-    public void cannotExportVeryLongListOfDataGroups() {
-        study.setDataGroups(newLinkedHashSet("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean"));
-        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Antwerp, Ghent, Charleroi, Liege, Brussels-City, Bruges, Schaerbeek, Anderlecht, Namur, Leuven, Mons, Molenbeek-Saint-Jean')");
     }
     
     private Set<String> newLinkedHashSet(String... list) {
