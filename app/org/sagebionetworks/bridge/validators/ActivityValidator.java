@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -20,7 +21,7 @@ public class ActivityValidator implements Validator {
     private final Set<String> taskIdentifiers;
     
     public ActivityValidator(Set<String> taskIdentifiers) {
-        this.taskIdentifiers = taskIdentifiers;
+        this.taskIdentifiers = (taskIdentifiers == null) ? Collections.emptySet() : taskIdentifiers;
     }
     
     @Override
@@ -57,8 +58,8 @@ public class ActivityValidator implements Validator {
         errors.pushNestedPath("task");
         if (isBlank(ref.getIdentifier())) {
             errors.rejectValue("identifier", CANNOT_BE_BLANK);
-        } else if (taskIdentifiers == null || !taskIdentifiers.contains(ref.getIdentifier())) {
-            errors.rejectValue("identifier", geTaskIdentifierMessage(ref));
+        } else if (!taskIdentifiers.contains(ref.getIdentifier())) {
+            errors.rejectValue("identifier", getTaskIdentifierMessage(ref));
         }
         errors.popNestedPath();
     }
@@ -79,7 +80,7 @@ public class ActivityValidator implements Validator {
         errors.popNestedPath();
     }
     
-    private String geTaskIdentifierMessage(TaskReference ref) {
+    private String getTaskIdentifierMessage(TaskReference ref) {
         String message = "'" + ref.getIdentifier() + "' is not in enumeration: ";
         if (taskIdentifiers != null && !taskIdentifiers.isEmpty()) {
             message += Joiner.on(", ").join(taskIdentifiers);

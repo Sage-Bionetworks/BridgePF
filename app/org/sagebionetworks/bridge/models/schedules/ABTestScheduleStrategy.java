@@ -119,17 +119,6 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             }
             errors.popNestedPath();
         }
-        
-        for (ScheduleGroup group : groups) {
-            if (group.getSchedule() == null){
-                errors.reject("at least one AB test plan group is missing a schedule");
-                return;
-            } else {
-                errors.pushNestedPath("schedule");
-                new ScheduleValidator(taskIdentifiers).validate(group.getSchedule(), errors);
-                errors.popNestedPath();
-            }
-        }
     }
 
     @Override

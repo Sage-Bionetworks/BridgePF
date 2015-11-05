@@ -47,6 +47,9 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
 
     @Override
     public List<Schedule> getAllPossibleSchedules() {
+        if (schedule == null) {
+            return ImmutableList.of();
+        }
         return ImmutableList.of(schedule);
     }
     

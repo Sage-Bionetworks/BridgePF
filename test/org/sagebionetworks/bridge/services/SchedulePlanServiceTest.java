@@ -74,9 +74,6 @@ public class SchedulePlanServiceTest {
             clientInfo = ClientInfo.fromUserAgentCache("TestApp/16 TestSDK/40");
             plans = schedulePlanService.getSchedulePlans(clientInfo, study);
             assertEquals(baseCount-1, plans.size());
-            
-        } catch(Exception e) {
-            e.printStackTrace();
         } finally {
             schedulePlanService.deleteSchedulePlan(new StudyIdentifierImpl(savedPlan.getStudyKey()), savedPlan.getGuid());
         }

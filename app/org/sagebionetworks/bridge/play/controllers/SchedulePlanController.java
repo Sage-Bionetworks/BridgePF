@@ -41,7 +41,6 @@ public class SchedulePlanController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
-        planForm.setStudyKey(study.getIdentifier());
         SchedulePlan plan = schedulePlanService.createSchedulePlan(study, planForm);
         return createdResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
@@ -59,7 +58,6 @@ public class SchedulePlanController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
-        planForm.setStudyKey(study.getIdentifier());
         planForm.setGuid(guid);
         SchedulePlan plan = schedulePlanService.updateSchedulePlan(study, planForm);
         

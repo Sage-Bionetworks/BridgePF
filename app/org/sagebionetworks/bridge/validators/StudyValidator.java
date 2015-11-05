@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import com.newrelic.agent.deps.com.google.common.base.Joiner;
+import com.google.common.base.Joiner;
 
 @Component
 public class StudyValidator implements Validator {

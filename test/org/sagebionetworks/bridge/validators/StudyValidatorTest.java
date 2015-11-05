@@ -4,9 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +17,7 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class StudyValidatorTest {
@@ -223,8 +223,8 @@ public class StudyValidatorTest {
     
     @Test
     public void longListOfDataGroupsInvalid() {
-        study.setDataGroups(newLinkedHashSet("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean"));
-        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Antwerp, Ghent, Charleroi, Liege, Brussels-City, Bruges, Schaerbeek, Anderlecht, Namur, Leuven, Mons, Molenbeek-Saint-Jean')");
+        study.setDataGroups(Sets.newTreeSet(Lists.newArrayList("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean")));
+        assertCorrectMessage(study, "dataGroups", "dataGroups will not export to Synapse (string is over 100 characters: 'Anderlecht, Antwerp, Bruges, Brussels-City, Charleroi, Ghent, Leuven, Liege, Molenbeek-Saint-Jean, Mons, Namur, Schaerbeek')");
     }
     
     @Test
@@ -232,13 +232,4 @@ public class StudyValidatorTest {
         study.setDataGroups(Sets.newHashSet("Liège"));
         assertCorrectMessage(study, "dataGroups", "dataGroups contains invalid tag 'Liège' (only letters, numbers, underscore and dash allowed)");
     }
-    
-    private Set<String> newLinkedHashSet(String... list) {
-        Set<String> set = new LinkedHashSet<>();
-        for (String element : list) {
-            set.add(element);
-        }
-        return set;
-    }
-
 }
