@@ -12,9 +12,9 @@ public interface SchedulePlanDao {
     
     public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     
-    public SchedulePlan createSchedulePlan(SchedulePlan plan);
+    public SchedulePlan createSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan);
     
-    public SchedulePlan updateSchedulePlan(SchedulePlan plan);
+    public SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan);
     
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     

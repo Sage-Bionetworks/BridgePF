@@ -48,7 +48,7 @@ public class SchedulePlanServiceImplMockTest {
         plan.setGuid("BBB");
         plan.getStrategy().getAllPossibleSchedules().get(0).setExpires("P3D");
         
-        when(schedulePlanDao.updateSchedulePlan(plan)).thenReturn(plan);
+        when(schedulePlanDao.updateSchedulePlan(study.getStudyIdentifier(), plan)).thenReturn(plan);
         service.updateSchedulePlan(study, plan);
         verify(activityService).deleteActivitiesForSchedulePlan("BBB");
     }

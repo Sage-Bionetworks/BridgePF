@@ -110,8 +110,6 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             errors.pushNestedPath("scheduleGroups"+i);
             if (group.getSchedule() == null){
                 errors.rejectValue("schedule", "is required");
-                errors.popNestedPath();
-                return;
             } else {
                 errors.pushNestedPath("schedule");
                 new ScheduleValidator(taskIdentifiers).validate(group.getSchedule(), errors);

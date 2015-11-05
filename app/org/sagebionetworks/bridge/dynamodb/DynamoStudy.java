@@ -189,7 +189,6 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @Override
     public Set<String> getTaskIdentifiers() {
         return taskIdentifiers;
@@ -201,7 +200,6 @@ public final class DynamoStudy implements Study {
     }
     
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @Override
     public Set<String> getDataGroups() {
         return dataGroups;

@@ -67,7 +67,7 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
 
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
-        return schedulePlanDao.createSchedulePlan(plan);
+        return schedulePlanDao.createSchedulePlan(studyId, plan);
     }
     
     @Override
@@ -81,7 +81,7 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
-        plan = schedulePlanDao.updateSchedulePlan(plan);
+        plan = schedulePlanDao.updateSchedulePlan(studyId, plan);
         activityService.deleteActivitiesForSchedulePlan(plan.getGuid());
         return plan;
     }

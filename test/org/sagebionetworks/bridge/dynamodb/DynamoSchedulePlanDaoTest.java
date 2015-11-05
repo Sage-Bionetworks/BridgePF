@@ -70,14 +70,14 @@ public class DynamoSchedulePlanDaoTest {
     public void canCrudOneSchedulePlan() {
         SchedulePlan abPlan = TestUtils.getABTestSchedulePlan(studyIdentifier);
         
-        SchedulePlan savedPlan = schedulePlanDao.createSchedulePlan(abPlan);
+        SchedulePlan savedPlan = schedulePlanDao.createSchedulePlan(studyIdentifier, abPlan);
         assertNotNull("Creates and returns a GUID", abPlan.getGuid());
         assertEquals("GUID is the same", savedPlan.getGuid(), abPlan.getGuid());
         
         // Update the plan... to a simple strategy
         SchedulePlan simplePlan = TestUtils.getSimpleSchedulePlan(studyIdentifier);
         abPlan.setStrategy(simplePlan.getStrategy());
-        schedulePlanDao.updateSchedulePlan(abPlan);
+        schedulePlanDao.updateSchedulePlan(studyIdentifier, abPlan);
         
         // Get it from DynamoDB
         SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(studyIdentifier, abPlan.getGuid());
@@ -98,9 +98,9 @@ public class DynamoSchedulePlanDaoTest {
         SchedulePlan abPlan = TestUtils.getABTestSchedulePlan(studyIdentifier);
         SchedulePlan simplePlan = TestUtils.getSimpleSchedulePlan(studyIdentifier);
         
-        SchedulePlan plan1 = schedulePlanDao.createSchedulePlan(abPlan);
+        SchedulePlan plan1 = schedulePlanDao.createSchedulePlan(studyIdentifier, abPlan);
         plansToDelete.add(plan1.getGuid());
-        SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(simplePlan);
+        SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(studyIdentifier, simplePlan);
         plansToDelete.add(plan2.getGuid());
         
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
@@ -113,16 +113,16 @@ public class DynamoSchedulePlanDaoTest {
         Set<String> oneGuid = Sets.newHashSet();
         
         List<SchedulePlan> plans = TestUtils.getSchedulePlans(studyIdentifier);
-        SchedulePlan plan = schedulePlanDao.createSchedulePlan(plans.get(0));
+        SchedulePlan plan = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(0));
         guids.add(plan.getGuid());
         plansToDelete.add(plan.getGuid());
         
-        plan = schedulePlanDao.createSchedulePlan(plans.get(1));
+        plan = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(1));
         guids.add(plan.getGuid());
         oneGuid.add(plan.getGuid());
         plansToDelete.add(plan.getGuid());
 
-        plan = schedulePlanDao.createSchedulePlan(plans.get(2));
+        plan = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(2));
         guids.add(plan.getGuid());
         plansToDelete.add(plan.getGuid());
         
