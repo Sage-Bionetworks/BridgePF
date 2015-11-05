@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.List;
@@ -11,9 +13,9 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-/**
- */
+@Component
 public class FPHSService {
     
     private FPHSExternalIdentifierDao fphsDao;
@@ -29,24 +31,49 @@ public class FPHSService {
     }
     
     public boolean verifyExternalIdentifier(ExternalIdentifier externalId) throws Exception {
+        checkNotNull(externalId);
+        
         if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
         return fphsDao.verifyExternalId(externalId);
     }
     public void registerExternalIdentifier(StudyIdentifier studyId, String healthCode, ExternalIdentifier externalId) throws Exception {
+        checkNotNull(studyId);
+        checkNotNull(healthCode);
+        checkNotNull(externalId);
+        
         if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
-        // Throws exception if the identifier is used or not found, preventing optionsService from being called.
         fphsDao.registerExternalId(externalId);
-        // TODO: Compensate if this fails?
-        optionsService.setOption(studyId, healthCode, ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+        try {
+            optionsService.setOption(studyId, healthCode, ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+        } catch(Exception e) {
+            fphsDao.unregisterExternalId(externalId);
+            throw e;
+        }
     }
+    
+    /**
+     * Get all FPHS identifiers along with information about which ones have been used to register.
+     * 
+     * @return
+     * @throws Exception
+     */
     public List<FPHSExternalIdentifier> getExternalIdentifiers() throws Exception {
         return fphsDao.getExternalIds();
     }
-    public void updateExternalIdentifiers(List<FPHSExternalIdentifier> externalIds) throws Exception {
-        fphsDao.updateExternalIds(externalIds);
+    
+    /**
+     * Add new external identifiers to the database. This will not overwrite the registration status of existing
+     * external IDs.
+     * 
+     * @param externalIds
+     * @throws Exception
+     */
+    public void addExternalIdentifiers(List<FPHSExternalIdentifier> externalIds) throws Exception {
+        checkNotNull(externalIds);
+        fphsDao.addExternalIds(externalIds);
     }
 }

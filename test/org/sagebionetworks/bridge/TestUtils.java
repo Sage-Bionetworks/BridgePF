@@ -51,10 +51,9 @@ public class TestUtils {
             }
         }
     }
-
+    
     public static Http.Context mockPlayContextWithJson(String json) throws Exception {
         JsonNode node = new ObjectMapper().readTree(json);
-
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(node);
 
@@ -76,7 +75,7 @@ public class TestUtils {
 
         return context;
     }
-
+    
     public static Http.Context mockPlayContext() throws Exception {
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(null);

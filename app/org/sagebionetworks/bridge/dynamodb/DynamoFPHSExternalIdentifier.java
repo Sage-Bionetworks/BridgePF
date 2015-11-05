@@ -9,22 +9,30 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 @DynamoDBTable(tableName = "FPHSExternalIdentifier")
 public class DynamoFPHSExternalIdentifier implements FPHSExternalIdentifier {
 
-    private String externalIdentifier;
+    private String externalId;
     private boolean registered;
     
+    public DynamoFPHSExternalIdentifier() {
+        
+    }
+    
+    public DynamoFPHSExternalIdentifier(String externalId) {
+        this.externalId = externalId;
+    }
+    
+    @Override
     @DynamoDBHashKey
-    @Override
     public String getExternalId() {
-        return externalIdentifier;
+        return externalId;
     }
 
     @Override
-    public void setExternalId(String externalIdentifier) {
-        this.externalIdentifier = externalIdentifier;
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
     }
 
+    @Override
     @DynamoDBAttribute
-    @Override
     public boolean getRegistered() {
         return registered;
     }

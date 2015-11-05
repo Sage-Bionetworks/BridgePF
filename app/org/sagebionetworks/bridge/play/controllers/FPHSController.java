@@ -52,12 +52,12 @@ public class FPHSController extends BaseController {
         
         return okResult(identifiers);
     }
-    public Result updateExternalIdentifiers() throws Exception {
+    public Result addExternalIdentifiers() throws Exception {
         getAuthenticatedSession(ADMIN);
-
-        List<FPHSExternalIdentifier> externalIds = mapper.convertValue(requestToJSON(request()), externalIdTypeRef);
-        fphsService.updateExternalIdentifiers(externalIds);
         
-        return ok("External identifiers updated");
+        List<FPHSExternalIdentifier> externalIds = mapper.convertValue(requestToJSON(request()), externalIdTypeRef);
+        fphsService.addExternalIdentifiers(externalIds);
+        
+        return okResult("External identifiers updated.");
     }
 }

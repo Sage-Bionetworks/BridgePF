@@ -13,8 +13,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -59,6 +59,12 @@ public class FPHSControllerTest {
     
     private void setExternalIdentifierPost(ExternalIdentifier externalId) throws Exception {
         String json = BridgeObjectMapper.get().writeValueAsString(externalId);
+        Http.Context context = TestUtils.mockPlayContextWithJson(json);
+        Http.Context.current.set(context);
+    }
+    
+    private void setFPHSExternalIdentifiersPost(List<FPHSExternalIdentifier> list) throws Exception {
+        String json = BridgeObjectMapper.get().writeValueAsString(list);
         Http.Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
     }
@@ -154,42 +160,52 @@ public class FPHSControllerTest {
         
         Result result = controller.getExternalIdentifiers();
         JsonNode node = resultToJson(result);
+        
         assertEquals(2, node.get("items").size());
         
-        verify(fphsService).getExternalIdentifiers(); // can't not be true, really
+        verify(fphsService).getExternalIdentifiers();
     }
     
     @Test
-    @Ignore
-    public void updatingAllIdentifiersRequiresAdmin() throws Exception {
-        setData();
+    public void addIdentifiersRequiresAdmin() throws Exception {
+        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create();
+        id1.setExternalId("AAA");
+        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create();
+        id2.setExternalId("BBB");
+        setFPHSExternalIdentifiersPost(Lists.newArrayList(id1, id2));
         
         // There's a user, but not an admin user
         setUserSession();
         try {
-            controller.updateExternalIdentifiers();
+            controller.addExternalIdentifiers();
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
             assertEquals("Caller does not have permission to access this service.", e.getMessage());
         }
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Test
+    public void addIdentifiersOK() throws Exception {
+        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create();
+        id1.setExternalId("AAA");
+        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create();
+        id2.setExternalId("BBB");
+        setFPHSExternalIdentifiersPost(Lists.newArrayList(id1, id2));
+        
+        setUserSession();
         
         // Now when we have an admin user, we get back results
         when(user.isInRole(Roles.ADMIN)).thenReturn(true);
+        Result result = controller.addExternalIdentifiers();
         
-        Result result = controller.updateExternalIdentifiers();
+        ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
+        verify(fphsService).addExternalIdentifiers(captor.capture());
+        
+        List<FPHSExternalIdentifier> passedList = (List<FPHSExternalIdentifier>)captor.getValue();
+        assertEquals(2, passedList.size());
+        
         JsonNode node = resultToJson(result);
-        assertEquals(2, node.get("items").size());
-        verify(fphsService).getExternalIdentifiers();
+        assertEquals("External identifiers updated.", node.get("message").asText());
     }
-    
-    /*
-    public Result updateExternalIdentifiers() throws Exception {
-        getAuthenticatedSession(ADMIN);
-
-        List<FPHSExternalIdentifier> externalIds = mapper.convertValue(requestToJSON(request()), externalIdTypeRef);
-        fphsService.updateExternalIdentifiers(externalIds);
-        
-        return ok("External identifiers updated");
-    }
-     */
 }

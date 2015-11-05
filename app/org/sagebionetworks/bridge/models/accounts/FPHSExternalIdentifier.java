@@ -15,7 +15,7 @@ public interface FPHSExternalIdentifier extends BridgeEntity {
     }
     
     public String getExternalId();
-    public void setExternalId(String externalIdentifier);
+    public void setExternalId(String externalId);
     
     public boolean getRegistered();
     public void setRegistered(boolean registered);

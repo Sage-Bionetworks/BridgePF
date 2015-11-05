@@ -110,7 +110,7 @@ DELETE /v3/cache/:cacheKey @org.sagebionetworks.bridge.play.controllers.CacheAdm
 POST   /fphs/profile/externalId/verify @org.sagebionetworks.bridge.play.controllers.FPHSController.verifyExternalIdentifier
 POST   /fphs/profile/externalId        @org.sagebionetworks.bridge.play.controllers.FPHSController.registerExternalIdentifier
 GET    /fphs/profile/externalIds       @org.sagebionetworks.bridge.play.controllers.FPHSController.getExternalIdentifiers
-POST   /fphs/profile/externalIds       @org.sagebionetworks.bridge.play.controllers.FPHSController.updateExternalIdentifiers
+POST   /fphs/profile/externalIds       @org.sagebionetworks.bridge.play.controllers.FPHSController.addExternalIdentifiers
 
 # OLD API ----------------------------------------------------------------------------------------------------
 

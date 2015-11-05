@@ -11,8 +11,12 @@ public interface FPHSExternalIdentifierDao {
     
     public void registerExternalId(ExternalIdentifier externalId);
     
+    public void unregisterExternalId(ExternalIdentifier externalId);
+    
     public List<FPHSExternalIdentifier> getExternalIds();
     
-    public void updateExternalIds(List<FPHSExternalIdentifier> externalIds);
+    public void addExternalIds(List<FPHSExternalIdentifier> externalIds);
+    
+    public void deleteAll();
 
 }
