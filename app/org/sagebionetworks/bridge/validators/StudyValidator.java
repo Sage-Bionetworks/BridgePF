@@ -84,7 +84,7 @@ public class StudyValidator implements Validator {
         validateEmails(errors, study.getSupportEmail(), "supportEmail");
         validateEmails(errors, study.getTechnicalEmail(), "technicalEmail");
         validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
-        validateSerializedDataGroupsFitInSynapse(errors, study.getDataGroups());
+        validateDataGroupNamesAndFitForSynapseExport(errors, study.getDataGroups());
     }
     
     private boolean isInRange(int value, int min) {
@@ -121,7 +121,7 @@ public class StudyValidator implements Validator {
         }
     }
 
-    private void validateSerializedDataGroupsFitInSynapse(Errors errors, Set<String> dataGroups) {
+    private void validateDataGroupNamesAndFitForSynapseExport(Errors errors, Set<String> dataGroups) {
         if (dataGroups != null) {
             for (String group : dataGroups) {
                 if (!group.matches(IDENTIFIER_PATTERN)) {
