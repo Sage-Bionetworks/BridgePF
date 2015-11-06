@@ -99,7 +99,7 @@ public class SchedulePlanValidatorTest {
         SchedulePlan plan = getValidABTestStrategy();
         ((ABTestScheduleStrategy)plan.getStrategy()).getScheduleGroups().get(0).setSchedule(null);
         
-        assertMessage(plan, "strategy.scheduleGroups0.schedule is required", "strategy.scheduleGroups0.schedule");
+        assertMessage(plan, "strategy.scheduleGroups[0].schedule is required", "strategy.scheduleGroups[0].schedule");
     }
 
     private void assertMessage(SchedulePlan plan, String message, String fieldName) {
