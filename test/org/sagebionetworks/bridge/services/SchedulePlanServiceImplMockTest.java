@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,13 +44,32 @@ public class SchedulePlanServiceImplMockTest {
     }
     
     @Test
-    public void cleansUpScheduledActivitiesOnUpdate() {
-        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
-        plan.setLabel("Label");
-        plan.setGuid("BBB");
-        plan.getStrategy().getAllPossibleSchedules().get(0).setExpires("P3D");
+    public void schedulePlanSetsStudyIdentifierOnCreate() {
+        DynamoStudy anotherStudy = getAnotherStudy();
+        SchedulePlan plan = getSchedulePlan();
+        // Just pass it back, the service should set the studyKey
+        when(schedulePlanDao.createSchedulePlan(any(), any())).thenReturn(plan);
         
+        plan = service.createSchedulePlan(anotherStudy, plan);
+        assertEquals("another-study", plan.getStudyKey());
+    }
+    
+    @Test
+    public void schedulePlanSetsStudyIdentifierOnUpdate() {
+        DynamoStudy anotherStudy = getAnotherStudy();
+        SchedulePlan plan = getSchedulePlan();
+        // Just pass it back, the service should set the studyKey
+        when(schedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
+        
+        plan = service.updateSchedulePlan(anotherStudy, plan);
+        assertEquals("another-study", plan.getStudyKey());
+    }
+    
+    @Test
+    public void cleansUpScheduledActivitiesOnUpdate() {
+        SchedulePlan plan = getSchedulePlan();
         when(schedulePlanDao.updateSchedulePlan(study.getStudyIdentifier(), plan)).thenReturn(plan);
+        
         service.updateSchedulePlan(study, plan);
         verify(activityService).deleteActivitiesForSchedulePlan("BBB");
     }
@@ -59,4 +80,20 @@ public class SchedulePlanServiceImplMockTest {
         
         verify(activityService).deleteActivitiesForSchedulePlan("BBB");
     }
+    
+    private DynamoStudy getAnotherStudy() {
+        DynamoStudy anotherStudy = new DynamoStudy();
+        anotherStudy.setIdentifier("another-study");
+        anotherStudy.setTaskIdentifiers(Sets.newHashSet("CCC"));
+        return anotherStudy;
+    }
+    
+    private SchedulePlan getSchedulePlan() {
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
+        plan.setLabel("Label");
+        plan.setGuid("BBB");
+        plan.getStrategy().getAllPossibleSchedules().get(0).setExpires("P3D");
+        return plan;
+    }
 }
+
