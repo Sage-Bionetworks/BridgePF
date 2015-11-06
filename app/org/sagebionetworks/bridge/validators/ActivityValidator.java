@@ -37,7 +37,7 @@ public class ActivityValidator implements Validator {
             errors.rejectValue("label", CANNOT_BE_BLANK);
         }
         if (activity.getTask() == null && activity.getSurvey() == null && activity.getSurveyResponse() == null) {
-            errors.reject("Activity must have a task, survey, and/or a survey response");
+            errors.rejectValue("reference", "must have a task or survey reference");
             return;
         }
         if (activity.getTask() != null) {

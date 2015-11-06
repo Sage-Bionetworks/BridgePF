@@ -107,7 +107,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         }
         for (int i=0; i < groups.size(); i++) {
             ScheduleGroup group = groups.get(i);
-            errors.pushNestedPath("scheduleGroups"+i);
+            errors.pushNestedPath("scheduleGroups["+i+"]");
             if (group.getSchedule() == null){
                 errors.rejectValue("schedule", "is required");
             } else {

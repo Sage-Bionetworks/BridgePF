@@ -56,6 +56,7 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
 
     @Override
     public SchedulePlan createSchedulePlan(Study study, SchedulePlan plan) {
+        checkNotNull(study);
         checkNotNull(plan);
 
         // Plan must always be in user's study
@@ -72,6 +73,7 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     
     @Override
     public SchedulePlan updateSchedulePlan(Study study, SchedulePlan plan) {
+        checkNotNull(study);
         checkNotNull(plan);
         
         // Plan must always be in user's study
