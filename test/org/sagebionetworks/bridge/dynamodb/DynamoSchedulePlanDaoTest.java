@@ -41,7 +41,7 @@ public class DynamoSchedulePlanDaoTest {
     
     private StudyIdentifier studyIdentifier;
     
-    private Set<String> plansToDelete;
+    private Set<SchedulePlan> plansToDelete;
     
     @Before
     public void before() {
@@ -51,8 +51,8 @@ public class DynamoSchedulePlanDaoTest {
     
     @After
     public void after() {
-        for (String guid : plansToDelete) {
-            schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
+        for (SchedulePlan plan : plansToDelete) {
+            schedulePlanDao.deleteSchedulePlan(new StudyIdentifierImpl(plan.getStudyKey()), plan.getGuid());
         }
     }
     
@@ -64,6 +64,21 @@ public class DynamoSchedulePlanDaoTest {
         SchedulePlan newPlan = mapping.readValue(output, SchedulePlan.class);
         
         assertEquals("Schedule plans are equal", abPlan.hashCode(), newPlan.hashCode());
+    }
+    
+    @Test
+    public void studySetIfIncorrect() throws Exception {
+        SchedulePlan abPlan = TestUtils.getABTestSchedulePlan(new StudyIdentifierImpl("wrong-study"));
+        SchedulePlan savedPlan = schedulePlanDao.createSchedulePlan(new StudyIdentifierImpl("correct1"), abPlan);
+        assertEquals("correct1", savedPlan.getStudyKey());
+        plansToDelete.add(savedPlan);
+
+        // Passing in a different study key creates a new plan (or throws a ConditionalCheckFailedException if there's 
+        // a version for an existing object). It does a create rather than an update, but it still enforces the correct study.
+        abPlan = TestUtils.getABTestSchedulePlan(new StudyIdentifierImpl("wrong-study"));
+        SchedulePlan nextPlan = schedulePlanDao.updateSchedulePlan(new StudyIdentifierImpl("correct2"), abPlan);
+        assertEquals("correct2", nextPlan.getStudyKey());
+        plansToDelete.add(nextPlan);
     }
     
     @Test
@@ -99,9 +114,9 @@ public class DynamoSchedulePlanDaoTest {
         SchedulePlan simplePlan = TestUtils.getSimpleSchedulePlan(studyIdentifier);
         
         SchedulePlan plan1 = schedulePlanDao.createSchedulePlan(studyIdentifier, abPlan);
-        plansToDelete.add(plan1.getGuid());
+        plansToDelete.add(plan1);
         SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(studyIdentifier, simplePlan);
-        plansToDelete.add(plan2.getGuid());
+        plansToDelete.add(plan2);
         
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
         assertEquals(getSchedulePlanGuids(plan1, plan2), getSchedulePlanGuids(plans));
@@ -115,16 +130,16 @@ public class DynamoSchedulePlanDaoTest {
         List<SchedulePlan> plans = TestUtils.getSchedulePlans(studyIdentifier);
         SchedulePlan plan = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(0));
         guids.add(plan.getGuid());
-        plansToDelete.add(plan.getGuid());
+        plansToDelete.add(plan);
         
-        plan = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(1));
-        guids.add(plan.getGuid());
-        oneGuid.add(plan.getGuid());
-        plansToDelete.add(plan.getGuid());
+        SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(1));
+        guids.add(plan2.getGuid());
+        oneGuid.add(plan2.getGuid());
+        plansToDelete.add(plan2);
 
-        plan = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(2));
-        guids.add(plan.getGuid());
-        plansToDelete.add(plan.getGuid());
+        SchedulePlan plan3 = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(2));
+        guids.add(plan3.getGuid());
+        plansToDelete.add(plan3);
         
         // No known client, all the guids are returned
         plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
