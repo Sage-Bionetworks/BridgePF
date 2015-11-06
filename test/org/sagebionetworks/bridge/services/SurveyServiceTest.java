@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.GSI_WAIT_DURATION;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.HashSet;
 import java.util.List;
@@ -58,8 +58,6 @@ public class SurveyServiceTest {
 
     @Resource
     SurveyServiceImpl surveyService;
-
-    private final StudyIdentifier studyIdentifier = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
 
     private TestSurvey testSurvey;
     private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
@@ -148,7 +146,7 @@ public class SurveyServiceTest {
         surveyService.deleteSurvey(survey);
 
         try {
-            surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
+            surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException enfe) {
             // expected exception
@@ -222,7 +220,7 @@ public class SurveyServiceTest {
     public void cannotUpdatePublishedSurveys() {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
-        surveyService.publishSurvey(studyIdentifier, survey);
+        surveyService.publishSurvey(TEST_STUDY, survey);
 
         survey.setName("This is a new name");
         surveyService.updateSurvey(survey);
@@ -234,7 +232,7 @@ public class SurveyServiceTest {
     public void canVersionASurveyEvenIfPublished() {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
-        surveyService.publishSurvey(studyIdentifier, survey);
+        surveyService.publishSurvey(TEST_STUDY, survey);
 
         Long originalVersion = survey.getCreatedOn();
         survey = surveyService.versionSurvey(survey);
@@ -268,19 +266,19 @@ public class SurveyServiceTest {
     public void canPublishASurvey() {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
-        survey = surveyService.publishSurvey(studyIdentifier, survey);
+        survey = surveyService.publishSurvey(TEST_STUDY, survey);
 
         assertTrue("Survey is marked published", survey.isPublished());
 
-        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
+        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
 
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
         assertTrue("Published testSurvey is marked published", pubSurvey.isPublished());
 
         // Publishing again is harmless
-        survey = surveyService.publishSurvey(studyIdentifier, survey);
-        pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
+        survey = surveyService.publishSurvey(TEST_STUDY, survey);
+        pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
         assertTrue("Published testSurvey is marked published", pubSurvey.isPublished());
@@ -290,16 +288,16 @@ public class SurveyServiceTest {
     public void canPublishANewerVersionOfASurvey() {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
-        survey = surveyService.publishSurvey(studyIdentifier, survey);
+        survey = surveyService.publishSurvey(TEST_STUDY, survey);
 
         Survey laterSurvey = surveyService.versionSurvey(survey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(laterSurvey));
         assertNotEquals("Surveys do not have the same createdOn", survey.getCreatedOn(),
                 laterSurvey.getCreatedOn());
 
-        laterSurvey = surveyService.publishSurvey(studyIdentifier, laterSurvey);
+        laterSurvey = surveyService.publishSurvey(TEST_STUDY, laterSurvey);
 
-        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
+        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
         assertEquals("Later testSurvey is the published testSurvey", laterSurvey.getCreatedOn(), pubSurvey.getCreatedOn());
     }
 
@@ -330,11 +328,11 @@ public class SurveyServiceTest {
         Thread.sleep(GSI_WAIT_DURATION);
         // Get all surveys
         // Make sure this returns all surveys that we created
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyIdentifier);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(TEST_STUDY);
         assertContainsAllKeys(mostRecentVersionSurveys, surveys);
 
         // Get all surveys of a version
-        surveys = surveyService.getSurveyAllVersions(studyIdentifier, survey.getGuid());
+        surveys = surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid());
         assertEquals("All surveys are returned", 2, surveys.size());
 
         Survey version1 = surveys.get(0);
@@ -362,13 +360,13 @@ public class SurveyServiceTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
 
         // Publish one version
-        surveyService.publishSurvey(studyIdentifier, survey1);
+        surveyService.publishSurvey(TEST_STUDY, survey1);
 
         // Must pause because the underlying query uses a global secondary index, and
         // this does not support consistent reads
         Thread.sleep(GSI_WAIT_DURATION);
         // Find the survey that we created and make sure it's the published version (survey1)
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY);
         boolean foundSurvey1 = false;
         for (Survey oneSurvey : surveys) {
             if (oneSurvey.keysEqual(survey1)) {
@@ -379,13 +377,13 @@ public class SurveyServiceTest {
         assertTrue(foundSurvey1);
 
         // Publish a later version
-        surveyService.publishSurvey(studyIdentifier, survey2);
+        surveyService.publishSurvey(TEST_STUDY, survey2);
         
         // Must pause because the underlying query uses a global secondary index, and
         // this does not support consistent reads
         Thread.sleep(GSI_WAIT_DURATION);
         // Now the most recent version of this testSurvey should be survey2.
-        surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
+        surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY);
         boolean foundSurvey2 = false;
         for (Survey oneSurvey : surveys) {
             if (oneSurvey.keysEqual(survey2)) {
@@ -400,21 +398,21 @@ public class SurveyServiceTest {
     public void canRetrieveMostRecentPublishedSurveysWithManySurveys() throws Exception {
         Survey survey1 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
-        surveyService.publishSurvey(studyIdentifier, survey1);
+        surveyService.publishSurvey(TEST_STUDY, survey1);
 
         Survey survey2 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
-        surveyService.publishSurvey(studyIdentifier, survey2);
+        surveyService.publishSurvey(TEST_STUDY, survey2);
 
         Survey survey3 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
-        surveyService.publishSurvey(studyIdentifier, survey3);
+        surveyService.publishSurvey(TEST_STUDY, survey3);
 
         // Must pause because the underlying query uses a global secondary index, and
         // this does not support consistent reads
         Thread.sleep(GSI_WAIT_DURATION);
         // Make sure this returns all surveys that we created
-        List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
+        List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY);
         assertContainsAllKeys(surveysToDelete, published);
     }
 

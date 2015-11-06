@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -30,6 +31,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -86,6 +89,8 @@ public class StudyServiceImplTest {
     @Test
     public void crudStudy() {
         study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        // verify this can be null, that's okay
+        study.setTaskIdentifiers(null);
         study = studyService.createStudy(study);
         
         assertNotNull("Version has been set", study.getVersion());
@@ -105,6 +110,8 @@ public class StudyServiceImplTest {
         assertEquals("Test Study [StudyServiceImplTest]", newStudy.getName());
         assertEquals(200, newStudy.getMaxNumOfParticipants());
         assertEquals(18, newStudy.getMinAgeOfConsent());
+        assertEquals(Sets.newHashSet("beta_users", "production_users"), newStudy.getDataGroups());
+        assertNull(newStudy.getTaskIdentifiers());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
         verify(cache).getStudy(newStudy.getIdentifier());

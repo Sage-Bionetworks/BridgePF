@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+
 import java.util.List;
 import java.util.UUID;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
@@ -173,7 +174,7 @@ public class TestSurvey extends DynamoSurvey {
         setVersion(2L);
         setPublished(true);
         setSchemaRevision(42);
-        setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         List<SurveyElement> elements = getElements();
         elements.add(booleanQuestion);
         elements.add(dateQuestion);

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -96,7 +97,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         return group.getSchedule();
     }
     @Override
-    public void validate(Errors errors) {
+    public void validate(Set<String> taskIdentifiers, Errors errors) {
         int percentage = 0;
         for (ScheduleGroup group : groups) {
             percentage += group.getPercentage();
@@ -106,28 +107,15 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         }
         for (int i=0; i < groups.size(); i++) {
             ScheduleGroup group = groups.get(i);
-            errors.pushNestedPath("scheduleGroups"+i);
+            errors.pushNestedPath("scheduleGroups["+i+"]");
             if (group.getSchedule() == null){
                 errors.rejectValue("schedule", "is required");
-                errors.popNestedPath();
-                return;
             } else {
                 errors.pushNestedPath("schedule");
-                new ScheduleValidator().validate(group.getSchedule(), errors);
+                new ScheduleValidator(taskIdentifiers).validate(group.getSchedule(), errors);
                 errors.popNestedPath();
             }
             errors.popNestedPath();
-        }
-        
-        for (ScheduleGroup group : groups) {
-            if (group.getSchedule() == null){
-                errors.reject("at least one AB test plan group is missing a schedule");
-                return;
-            } else {
-                errors.pushNestedPath("schedule");
-                new ScheduleValidator().validate(group.getSchedule(), errors);
-                errors.popNestedPath();
-            }
         }
     }
 

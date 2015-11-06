@@ -298,7 +298,7 @@ public class ActivitySchedulerTest {
         schedule.setExpires("P1D");
         schedule.addTimes("10:00");
         schedule.addActivity(new Activity.Builder().withLabel("Foo").withTask("foo").build());
-        Validate.entityThrowingException(new ScheduleValidator(), schedule);
+        Validate.entityThrowingException(new ScheduleValidator(Sets.newHashSet("foo")), schedule);
         
         // User is in Moscow, however.
         DateTimeZone zone = DateTimeZone.forOffsetHours(3);
@@ -321,7 +321,7 @@ public class ActivitySchedulerTest {
         schedule.setExpires("P1D");
         schedule.addTimes("10:00");
         schedule.addActivity(new Activity.Builder().withLabel("Foo").withTask("foo").build());
-        Validate.entityThrowingException(new ScheduleValidator(), schedule);
+        Validate.entityThrowingException(new ScheduleValidator(Sets.newHashSet("foo")), schedule);
         
         List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, getContext(DateTimeZone.UTC, DateTime.now().plusDays(4)));
         Set<String> allGuids = Sets.newHashSet();

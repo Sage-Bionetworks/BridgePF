@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
@@ -9,9 +12,17 @@ import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import com.google.common.base.Joiner;
+
 public class ActivityValidator implements Validator {
     
     private static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
+    
+    private final Set<String> taskIdentifiers;
+    
+    public ActivityValidator(Set<String> taskIdentifiers) {
+        this.taskIdentifiers = (taskIdentifiers == null) ? Collections.emptySet() : taskIdentifiers;
+    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -26,7 +37,7 @@ public class ActivityValidator implements Validator {
             errors.rejectValue("label", CANNOT_BE_BLANK);
         }
         if (activity.getTask() == null && activity.getSurvey() == null && activity.getSurveyResponse() == null) {
-            errors.reject("Activity must have a task, survey, and/or a survey response");
+            errors.rejectValue("reference", "must have a task or survey reference");
             return;
         }
         if (activity.getTask() != null) {
@@ -47,10 +58,12 @@ public class ActivityValidator implements Validator {
         errors.pushNestedPath("task");
         if (isBlank(ref.getIdentifier())) {
             errors.rejectValue("identifier", CANNOT_BE_BLANK);
+        } else if (!taskIdentifiers.contains(ref.getIdentifier())) {
+            errors.rejectValue("identifier", getTaskIdentifierMessage(ref));
         }
         errors.popNestedPath();
     }
-    
+   
     private void validate(Errors errors, SurveyReference ref) {
         errors.pushNestedPath("survey");
         if (isBlank(ref.getGuid())) {
@@ -67,4 +80,13 @@ public class ActivityValidator implements Validator {
         errors.popNestedPath();
     }
     
+    private String getTaskIdentifierMessage(TaskReference ref) {
+        String message = "'" + ref.getIdentifier() + "' is not in enumeration: ";
+        if (taskIdentifiers.isEmpty()) {
+            message += "<no task identifiers declared>";
+        } else {
+            message += Joiner.on(", ").join(taskIdentifiers);
+        }
+        return message;
+    }
 }

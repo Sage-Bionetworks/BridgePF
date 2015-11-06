@@ -37,7 +37,6 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
@@ -48,8 +47,6 @@ import com.google.common.collect.Maps;
 public class ScheduledActivityServiceMockTest {
 
     private static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
-    
-    private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("foo");
     
     private static final String HEALTH_CODE = "BBB";
     
@@ -71,7 +68,7 @@ public class ScheduledActivityServiceMockTest {
     @Before
     public void before() {
         user = new User();
-        user.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
+        user.setStudyKey(TEST_STUDY.getIdentifier());
         user.setHealthCode(HEALTH_CODE);
         
         endsOn = DateTime.now().plusDays(2);
@@ -79,7 +76,7 @@ public class ScheduledActivityServiceMockTest {
         service = new ScheduledActivityService();
         
         schedulePlanService = mock(SchedulePlanService.class);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, STUDY_IDENTIFIER)).thenReturn(TestUtils.getSchedulePlans(STUDY_IDENTIFIER));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
         
         UserConsent consent = mock(DynamoUserConsent3.class);
         when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 

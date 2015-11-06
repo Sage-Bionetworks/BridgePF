@@ -8,8 +8,6 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.validators.ActivityValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -25,8 +23,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
  */
 @JsonDeserialize(builder=Activity.Builder.class)
 public final class Activity implements BridgeEntity {
-    
-    private static final ActivityValidator VALIDATOR = new ActivityValidator();
     
     private String label;
     private String labelDetail;
@@ -145,9 +141,7 @@ public final class Activity implements BridgeEntity {
             if (guid == null) {
                 guid = BridgeUtils.generateGuid();
             }
-            Activity activity = new Activity(label, labelDetail, guid, task, survey, response);
-            Validate.entityThrowingException(VALIDATOR, activity);
-            return activity;
+            return new Activity(label, labelDetail, guid, task, survey, response);
         }
     }
     

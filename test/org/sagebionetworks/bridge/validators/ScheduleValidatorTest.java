@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 
+import com.google.common.collect.Sets;
+
 public class ScheduleValidatorTest {
 
     private Schedule schedule;
@@ -23,7 +25,7 @@ public class ScheduleValidatorTest {
     @Before
     public void before() {
         schedule = new Schedule();
-        validator = new ScheduleValidator();
+        validator = new ScheduleValidator(Sets.newHashSet("tapTest"));
     }
     
     @Test

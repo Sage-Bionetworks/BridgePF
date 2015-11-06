@@ -90,9 +90,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public SchedulePlan createSchedulePlan(SchedulePlan plan) {
+    public SchedulePlan createSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
         checkNotNull(plan, "Schedule plan is null");
         
+        plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
@@ -100,9 +102,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
+    public SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
         checkNotNull(plan, "Schedule plan is null");
         
+        plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
         return plan;
