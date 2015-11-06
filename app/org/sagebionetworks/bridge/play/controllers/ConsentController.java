@@ -79,6 +79,7 @@ public class ConsentController extends BaseController {
         final long withdrewOn = DateTime.now().getMillis();
         
         consentService.withdrawConsent(study, session.getUser(), withdrawal, withdrewOn);
+        updateSessionUser(session, session.getUser());
         
         return okResult("User has been withdrawn from the study.");
     }

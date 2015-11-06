@@ -30,7 +30,7 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     private DynamoDBMapper mapper;
 
     @Resource(name = "activityEventDdbMapper")
-    public void setDdbMapper(DynamoDBMapper mapper) {
+    public final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
     
@@ -42,10 +42,9 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         hashKey.setHealthCode(event.getHealthCode());
         hashKey.setEventId(event.getEventId());
         
-        // Only save if the timestamp is later than the current timestamp in the table
         ActivityEvent savedEvent = mapper.load(hashKey);
-        if (savedEvent == null || event.getTimestamp() > savedEvent.getTimestamp()) {
-            mapper.save(event);    
+        if (isLaterNonEnrollmentEvent(savedEvent, event)) {
+            mapper.save(event);
         }
     }
 
@@ -85,6 +84,16 @@ public class DynamoActivityEventDao implements ActivityEventDao {
             List<FailedBatch> failures = mapper.batchDelete(objectsToDelete);
             BridgeUtils.ifFailuresThrowException(failures);
         }
+    }
+    
+    // Enrollment can only be recorded once, even if user withdraws and re-enrolls. Tasks are 
+    // not deleted and so one-time tasks are not re-scheduled against a new enrollment date.
+    // Only save if the timestamp is later than the current timestamp in the table
+    private boolean isLaterNonEnrollmentEvent(ActivityEvent savedEvent, ActivityEvent event) {
+        if (savedEvent == null) {
+            return true;
+        }
+        return (!"enrollment".equals(event.getEventId()) && event.getTimestamp() > savedEvent.getTimestamp());
     }
 
     /**

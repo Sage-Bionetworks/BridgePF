@@ -164,7 +164,6 @@ public class DynamoScheduledActivityDaoTest {
         List<SchedulePlan> plans = getSchedulePlans();
         SchedulePlan testPlan = plans.get(0);
         SchedulePlan testPlan2 = plans.get(1);
-        SchedulePlan testPlan3 = plans.get(2);
         
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(plans, user, context);
         activityDao.saveActivities(activities);

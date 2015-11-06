@@ -86,9 +86,9 @@ public class ConsentServiceImplMockTest {
         consentService.setStudyConsentService(studyConsentService);
         
         study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
-        user = new User();
-        user.setHealthCode("BBB");
-        user.setEmail("bbb@bbb.com");
+        user = mock(User.class);
+        when(user.getHealthCode()).thenReturn("BBB");
+        when(user.getEmail()).thenReturn("bbb@bbb.com");
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1990-01-01")
                 .withSignedOn(UNIX_TIMESTAMP).build();
         
@@ -126,7 +126,8 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void noActivityEventIfAlreadyConsented() {
-        user.setConsent(true);
+        when(user.doesConsent()).thenReturn(true);
+        when(user.isConsent()).thenReturn(true);
         
         try {
             consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
@@ -181,6 +182,9 @@ public class ConsentServiceImplMockTest {
         assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceImplMockTest]", email.getSubject());
         assertEquals("<p>User   &lt;bbb@bbb.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>", 
                     email.getMessageParts().get(0).getContent());
+        
+        verify(user).setConsent(false);
+        verify(user).setSharingScope(SharingScope.NO_SHARING);
     }
     
     @Test
@@ -203,7 +207,7 @@ public class ConsentServiceImplMockTest {
         
         when(accountDao.getAccount(study, user.getEmail())).thenReturn(acct);
         doThrow(new BridgeServiceException("Something bad happend", 500)).when(userConsentDao)
-            .withdrawConsent(user.getHealthCode(), study, UNIX_TIMESTAMP);
+            .withdrawConsent("BBB", study, UNIX_TIMESTAMP);
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         

@@ -203,11 +203,12 @@ public class ConsentServiceImpl implements ConsentService {
         decrementStudyEnrollment(study);
 
         optionsService.setOption(study, user.getHealthCode(), SharingScope.NO_SHARING);
+        user.setSharingScope(SharingScope.NO_SHARING);
         
         String externalId = optionsService.getOption(user.getHealthCode(), ParticipantOption.EXTERNAL_IDENTIFIER);
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
-        
+
         user.setConsent(false);
     }
     
