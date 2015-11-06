@@ -23,9 +23,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDao {
 
     private DynamoDBMapper mapper;
-
+    
     @Resource(name = "fphsExternalIdDdbMapper")
-    public final void setDdbMapper(DynamoDBMapper mapper) {
+    public final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
     
@@ -33,7 +33,7 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
     public boolean verifyExternalId(ExternalIdentifier externalId) {
         checkNotNull(externalId);
         
-        DynamoFPHSExternalIdentifier record = getExternalId(externalId);
+        DynamoFPHSExternalIdentifier record = getExternalId(externalId, false);
         return (record != null && !record.getRegistered());
     }
 
@@ -41,14 +41,7 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
     public void registerExternalId(ExternalIdentifier externalId) {
         checkNotNull(externalId);
         
-        // Should never be null as that path leads to an exception being thrown
-        DynamoFPHSExternalIdentifier record = getExternalId(externalId);
-        if (record == null) {
-            throw new EntityNotFoundException(FPHSExternalIdentifier.class);
-        }
-        if (record.getRegistered()) {
-            throw new EntityAlreadyExistsException(record);
-        }
+        DynamoFPHSExternalIdentifier record = getExternalId(externalId, true);
         record.setRegistered(true);
         mapper.save(record);
     }
@@ -57,14 +50,7 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
     public void unregisterExternalId(ExternalIdentifier externalId) {
         checkNotNull(externalId);
         
-        // Should never be null as that path leads to an exception being thrown
-        DynamoFPHSExternalIdentifier record = getExternalId(externalId);
-        if (record == null) {
-            throw new EntityNotFoundException(FPHSExternalIdentifier.class);
-        }
-        if (record.getRegistered()) {
-            throw new EntityAlreadyExistsException(record);
-        }
+        DynamoFPHSExternalIdentifier record = getExternalId(externalId, true);
         record.setRegistered(false);
         mapper.save(record);
     }
@@ -88,9 +74,10 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
             }).map(id -> {
                 return new DynamoFPHSExternalIdentifier(id.getExternalId());  
             }).collect(Collectors.toList());
-
-            List<FailedBatch> failures = mapper.batchSave(idsToSave);
-            BridgeUtils.ifFailuresThrowException(failures);
+            if (!idsToSave.isEmpty()) {
+                List<FailedBatch> failures = mapper.batchSave(idsToSave);
+                BridgeUtils.ifFailuresThrowException(failures);
+            }
         }
     }
     
@@ -99,17 +86,27 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
         List<DynamoFPHSExternalIdentifier> identifiers = getExternalIds().stream().map(id -> {
             return new DynamoFPHSExternalIdentifier(id.getExternalId());
         }).collect(Collectors.toList());
+
         if (!identifiers.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(identifiers);
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }
     
-    private DynamoFPHSExternalIdentifier getExternalId(ExternalIdentifier externalId) {
+    private DynamoFPHSExternalIdentifier getExternalId(ExternalIdentifier externalId, boolean throwExceptions) {
         DynamoFPHSExternalIdentifier hashKey = new DynamoFPHSExternalIdentifier();
         hashKey.setExternalId(externalId.getIdentifier());
         
-        return mapper.load(hashKey);
+        DynamoFPHSExternalIdentifier record = mapper.load(hashKey);
+        if (throwExceptions) {
+            if (record == null) {
+                throw new EntityNotFoundException(FPHSExternalIdentifier.class);
+            }
+            if (record.getRegistered()) {
+                throw new EntityAlreadyExistsException(record);
+            }
+        }
+        return record;
     }
 
 }

@@ -70,12 +70,10 @@ public class FPHSControllerTest {
     }
     
     private void setData() throws Exception {
-        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create();
-        id1.setExternalId("foo");
+        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("foo");
         id1.setRegistered(true);
         
-        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create();
-        id2.setExternalId("bar");
+        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("bar");
         
         List<FPHSExternalIdentifier> identifiers = Lists.newArrayList(id1, id2);
         
@@ -168,10 +166,8 @@ public class FPHSControllerTest {
     
     @Test
     public void addIdentifiersRequiresAdmin() throws Exception {
-        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create();
-        id1.setExternalId("AAA");
-        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create();
-        id2.setExternalId("BBB");
+        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("AAA");
+        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
         setFPHSExternalIdentifiersPost(Lists.newArrayList(id1, id2));
         
         // There's a user, but not an admin user
@@ -187,10 +183,8 @@ public class FPHSControllerTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void addIdentifiersOK() throws Exception {
-        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create();
-        id1.setExternalId("AAA");
-        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create();
-        id2.setExternalId("BBB");
+        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("AAA");
+        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
         setFPHSExternalIdentifiersPost(Lists.newArrayList(id1, id2));
         
         setUserSession();

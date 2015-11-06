@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoFPHSExternalIdentifier.class)
 public interface FPHSExternalIdentifier extends BridgeEntity {
 
-    public static FPHSExternalIdentifier create() {
-        return new DynamoFPHSExternalIdentifier();
+    public static FPHSExternalIdentifier create(String externalId) {
+        return new DynamoFPHSExternalIdentifier(externalId);
     }
     
     public String getExternalId();
