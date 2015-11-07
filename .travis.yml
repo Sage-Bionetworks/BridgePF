@@ -30,13 +30,13 @@ script:
 - sbt clean test
 branches:
   only:
-    - develop
-    - uat
-    - prod
+  - develop
+  - uat
+  - prod
 deploy:
   provider: heroku
   api_key:
-    secure: "tX0wF6iyezJo/qCmDfxPX6bUthO3dB+YmMgU7xHfros0oCZA5Qy21+Vp2mG2gGR99ddL/RPBN9eZK82zx3kMhNZSuVfNp65jeMW7yHbvlDXgodP8tNLoK/vTbfKm0dmAUnd5gWoWMWo9BUcCKLLRKJUJ1TcAstwtUCHylXW01BG4zBjqhaGtjS0iN8LfyS36ey7VM+vAC8atN2aZH32Fk52siMe7eZxjTWqrxKxlz+6ZfWpBWL1zS5xfsZ3qHg7E9Nc5KZrdhoJiDf8zg2FVVZh5do/BtLc3Vc+Zw0xUtWUdSbtWNhVDJd512IfIX1Rnh53yebJLDoKQPB0lHHQ0Cj9Wq1Z2i3HgDnDG2YtiOV0FVpDyxOC8cV1ml7Y4mE3eVT/5ob/8+b+EM3FlVzbHZhD5QSAl+a9hWaI3eBTbgDOVEeRtCdZqsEvHznlPFx0MdDqyxBW62VcBDnzkQCNaG8VFT/XFNbBhlsX6Pib20NrypSRb/MSyHrIoWX6/Oa6UJHq3Ac5vTqPf8OzJqUtw0wPK1N39yJhSFP0PqEh/XoXf8ez4yhZwNkP6GPH6U6y44xHFY4tWAkAOnEtt8XglZij3v1HENsJGkcZezAtdoVCTaxZ4z5SggmPexhkonbPiH4wl0kfaA+0ncMqbCmb7WCQlJvtXsS3MoT42rWZstpE="
+    secure: dsrD0lN7luCXQCI+AK4wBZEWpxv/ji2xbbSMWWo3snBYb8CbuzqmH3KHSWStd9kSTKojWzatGFfIoIGGj6qoyG7gAk4E/PR1tb2Gelz+t6yWQUcRQclLHNd/WkozHLb5Z9Bg7N4HLcyupl7OMICixAaQ92+o2M+xhHq3/r2aOFs=
   app:
     develop: bridge-develop
     uat: bridge-uat
