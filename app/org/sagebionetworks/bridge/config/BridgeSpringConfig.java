@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.config;
 
+import java.net.URI;
 import java.util.List;
 import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
@@ -82,29 +83,22 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "jedisPool")
-    public JedisPool jedisPool(final BridgeConfig config) {
-
+    public JedisPool jedisPool(final BridgeConfig config) throws Exception {
         // Configure pool
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
 
         // Create pool
-        final String host = config.getProperty("redis.host");
-        final int port = config.getPropertyAsInt("redis.port");
-        final int timeout = config.getPropertyAsInt("redis.timeout");
-        final String password = config.getProperty("redis.password");
-        final JedisPool jedisPool = config.isLocal() ?
-                new JedisPool(poolConfig, host, port, timeout) :
-                new JedisPool(poolConfig, host, port, timeout, password);
+        final String url = getRedisURL(config);
+        final URI redisURI = new URI(url);
+        final JedisPool jedisPool = constructJedisPool(redisURI, config);
 
         // Test pool
         try (Jedis jedis = jedisPool.getResource()) {
             final String result = jedis.ping();
             if (result == null || !"PONG".equalsIgnoreCase(result.trim())) {
-                throw new MissingResourceException(
-                        "No PONG from PINGing Redis: " + result + ".",
-                        JedisPool.class.getName(),
-                        host + ":" + port);
+                throw new MissingResourceException("No PONG from PINGing Redis: " + result + ".",
+                        JedisPool.class.getName(), redisURI.toString());
             }
         }
 
@@ -117,6 +111,33 @@ public class BridgeSpringConfig {
         }));
 
         return jedisPool;
+    }
+    
+    private String getRedisURL(final BridgeConfig config) {
+        // Use Redis-To-Go if available, if not, fallback to Redis Cloud, if neither is available
+        // try the configuration
+        String url = System.getenv("REDISTOGO_URL");
+        if (url != null) {
+            url = System.getenv("REDISCLOUD_URL");
+        }
+        if (url != null) {
+            url = config.getProperty("redis.url");
+        }
+        return url;
+    }
+    
+    private JedisPool constructJedisPool(final URI redisURI, final BridgeConfig config) {
+        if (config.isLocal()) {
+            return new JedisPool(new JedisPoolConfig(),
+                redisURI.getHost(),
+                redisURI.getPort(),
+                config.getPropertyAsInt("redis.timeout"));        
+        }
+        return new JedisPool(new JedisPoolConfig(),
+            redisURI.getHost(),
+            redisURI.getPort(),
+            config.getPropertyAsInt("redis.timeout"),
+            redisURI.getUserInfo().split(":",2)[1]);        
     }
 
     @Bean(name = "jedisOps")
