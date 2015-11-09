@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
 
@@ -50,11 +51,8 @@ public class ParticipantOptionsServiceImplTest {
     
     @Test
     public void canCrudSharingScopeOption() {
-        optionsService.setOption(testUser.getStudyIdentifier(), testUser.getUser().getHealthCode(),
+        optionsService.setSharingScope(testUser.getStudyIdentifier(), testUser.getUser().getHealthCode(),
                 SharingScope.ALL_QUALIFIED_RESEARCHERS);
-        
-        String value = optionsService.getOption(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE);
-        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), value);
         
         SharingScope sharing = optionsService.getSharingScope(testUser.getUser().getHealthCode());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, sharing);
@@ -67,8 +65,8 @@ public class ParticipantOptionsServiceImplTest {
     
     @Test
     public void getDefaultValeFromSingleLookup() {
-        String value = optionsService.getOption(testUser.getUser().getHealthCode(), ParticipantOption.EMAIL_NOTIFICATIONS);
-        assertEquals("true", value);
+        boolean notify = optionsService.getEmailNotifications(testUser.getUser().getHealthCode());
+        assertTrue(notify);
     }
     
     @Test

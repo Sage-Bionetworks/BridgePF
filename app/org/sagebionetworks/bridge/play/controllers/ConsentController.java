@@ -88,7 +88,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final User user = session.getUser();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-        optionsService.setOption(study, user.getHealthCode(), sharingScope);
+        optionsService.setSharingScope(study, user.getHealthCode(), sharingScope);
         user.setSharingScope(sharingScope);
         updateSessionUser(session, user);
         consentService.emailConsentAgreement(study, user);

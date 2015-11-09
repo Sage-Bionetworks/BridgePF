@@ -95,7 +95,7 @@ public class ConsentControllerMockedTest {
         controller.changeSharingScope(SharingScope.NO_SHARING, "message");
 
         InOrder inOrder = inOrder(optionsService, consentService);
-        inOrder.verify(optionsService).setOption(study, "healthCode", SharingScope.NO_SHARING);
+        inOrder.verify(optionsService).setSharingScope(study, "healthCode", SharingScope.NO_SHARING);
         inOrder.verify(consentService).emailConsentAgreement(study, user);
     }
 

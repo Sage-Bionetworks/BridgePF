@@ -5,7 +5,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -81,8 +80,7 @@ public class UserProfileController extends BaseController {
         if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
-        optionsService.setOption(session.getStudyIdentifier(), session.getUser().getHealthCode(), 
-            ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+        optionsService.setExternalIdentifier(session.getStudyIdentifier(), session.getUser().getHealthCode(), externalId.getIdentifier());
         
         return okResult("External identifier added to user profile.");
     }

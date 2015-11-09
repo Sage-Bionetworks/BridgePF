@@ -12,7 +12,6 @@ import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -140,7 +139,7 @@ public class ConsentServiceImpl implements ConsentService {
         if (userConsent != null){
             activityEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
         }
-        optionsService.setOption(study, user.getHealthCode(), sharingScope);
+        optionsService.setSharingScope(study, user.getHealthCode(), sharingScope);
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, 
                 consentSignature, sharingScope, studyConsentService, consentTemplate);
@@ -202,10 +201,10 @@ public class ConsentServiceImpl implements ConsentService {
         }
         decrementStudyEnrollment(study);
 
-        optionsService.setOption(study, user.getHealthCode(), SharingScope.NO_SHARING);
+        optionsService.setSharingScope(study, user.getHealthCode(), SharingScope.NO_SHARING);
         user.setSharingScope(SharingScope.NO_SHARING);
         
-        String externalId = optionsService.getOption(user.getHealthCode(), ParticipantOption.EXTERNAL_IDENTIFIER);
+        String externalId = optionsService.getExternalIdentifier(user.getHealthCode());
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
 

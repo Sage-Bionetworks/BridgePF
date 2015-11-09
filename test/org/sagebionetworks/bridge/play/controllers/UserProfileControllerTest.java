@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -39,8 +38,7 @@ public class UserProfileControllerTest {
         assertEquals("application/json", result.contentType());
         assertEquals("{\"message\":\"External identifier added to user profile.\"}", contentAsString(result));
         
-        verify(optionsService).setOption(TEST_STUDY, "healthCode", 
-            ParticipantOption.EXTERNAL_IDENTIFIER, "ABC-123-XYZ");
+        verify(optionsService).setExternalIdentifier(TEST_STUDY, "healthCode", "ABC-123-XYZ");
     }
     
     @Test

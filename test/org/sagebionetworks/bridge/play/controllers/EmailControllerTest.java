@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.play.controllers.EmailController;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
@@ -106,8 +105,7 @@ public class EmailControllerTest {
         EmailController controller = createController("bridge-testing@sagebase.org");
         controller.unsubscribeFromEmail();
         
-        verify(optionsService).setOption(study, "healthCode", 
-            ParticipantOption.EMAIL_NOTIFICATIONS, "false");
+        verify(optionsService).setEmailNotifications(study, "healthCode", false);
     }
     
     @Test
