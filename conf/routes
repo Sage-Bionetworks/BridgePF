@@ -107,10 +107,10 @@ DELETE /v3/cache/:cacheKey @org.sagebionetworks.bridge.play.controllers.CacheAdm
 
 # HARVARD API ----------------------------------------------------------------------------------------------------
 
-POST   /fphs/profile/externalId/verify @org.sagebionetworks.bridge.play.controllers.FPHSController.verifyExternalIdentifier
-POST   /fphs/profile/externalId        @org.sagebionetworks.bridge.play.controllers.FPHSController.registerExternalIdentifier
-GET    /fphs/profile/externalIds       @org.sagebionetworks.bridge.play.controllers.FPHSController.getExternalIdentifiers
-POST   /fphs/profile/externalIds       @org.sagebionetworks.bridge.play.controllers.FPHSController.addExternalIdentifiers
+GET    /fphs/externalId   @org.sagebionetworks.bridge.play.controllers.FPHSController.verifyExternalIdentifier(externalId: String ?= null)
+POST   /fphs/externalId   @org.sagebionetworks.bridge.play.controllers.FPHSController.registerExternalIdentifier
+GET    /fphs/externalIds  @org.sagebionetworks.bridge.play.controllers.FPHSController.getExternalIdentifiers
+POST   /fphs/externalIds  @org.sagebionetworks.bridge.play.controllers.FPHSController.addExternalIdentifiers
 
 # OLD API ----------------------------------------------------------------------------------------------------
 

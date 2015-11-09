@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -93,9 +94,7 @@ public class FPHSControllerTest {
     
     @Test
     public void verifyOK() throws Exception {
-        setExternalIdentifierPost(new ExternalIdentifier("foo"));
-        
-        Result result = controller.verifyExternalIdentifier();
+        Result result = controller.verifyExternalIdentifier("foo");
         JsonNode node = resultToJson(result);
         
         // No session is required
@@ -106,14 +105,25 @@ public class FPHSControllerTest {
     
     @Test
     public void verifyFails() throws Exception {
-        setExternalIdentifierPost(new ExternalIdentifier("foo"));
         when(fphsService.verifyExternalIdentifier(any())).thenThrow(new EntityNotFoundException(FPHSExternalIdentifier.class));
         
         try {
-            controller.verifyExternalIdentifier();
+            controller.verifyExternalIdentifier("foo");
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             assertEquals("ExternalIdentifier not found.", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void verifyFailsWhenNull() throws Exception {
+        when(fphsService.verifyExternalIdentifier(any())).thenThrow(new InvalidEntityException("ExternalIdentifier cannot be blank, null or missing."));
+        
+        try {
+            controller.verifyExternalIdentifier(null);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("ExternalIdentifier cannot be blank, null or missing.", e.getMessage());
         }
     }
     
