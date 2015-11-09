@@ -210,6 +210,6 @@ public class FPHSControllerTest {
         assertEquals(2, passedList.size());
         
         JsonNode node = resultToJson(result);
-        assertEquals("External identifiers updated.", node.get("message").asText());
+        assertEquals("External identifiers added.", node.get("message").asText());
     }
 }

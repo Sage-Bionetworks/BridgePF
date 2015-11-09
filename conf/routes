@@ -105,7 +105,7 @@ POST   /v3/backfill/:name/start    @org.sagebionetworks.bridge.play.controllers.
 GET    /v3/cache           @org.sagebionetworks.bridge.play.controllers.CacheAdminController.listItems
 DELETE /v3/cache/:cacheKey @org.sagebionetworks.bridge.play.controllers.CacheAdminController.removeItem(cacheKey: String)
 
-# HARVARD API ----------------------------------------------------------------------------------------------------
+# FOOTBALL PLAYERS HEATH STUDY API --------------------------------------------------------------------------
 
 GET    /fphs/externalId   @org.sagebionetworks.bridge.play.controllers.FPHSController.verifyExternalIdentifier(externalId: String ?= null)
 POST   /fphs/externalId   @org.sagebionetworks.bridge.play.controllers.FPHSController.registerExternalIdentifier
