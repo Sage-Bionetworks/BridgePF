@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.config;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,6 +23,7 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.newrelic.agent.deps.com.google.common.collect.Maps;
 import com.stormpath.sdk.api.ApiKey;
 import com.stormpath.sdk.api.ApiKeys;
 import com.stormpath.sdk.application.Application;
@@ -30,7 +32,8 @@ import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
-import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -74,6 +77,8 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 @Configuration
 public class BridgeSpringConfig {
 
+    private static Logger logger = LoggerFactory.getLogger(BridgeSpringConfig.class);
+
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
         return BridgeObjectMapper.get();
@@ -90,11 +95,9 @@ public class BridgeSpringConfig {
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
 
-        // Create pool. We need to log the heck out of this for the time being
-        System.out.println("========================================== REDIS INIT ==========================================");
+        // Create pool.
         final String url = getRedisURL(config);
         final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
-        System.out.println("jedisPool -> " + jedisPool);
         
         // Test pool
         try (Jedis jedis = jedisPool.getResource()) {
@@ -104,7 +107,6 @@ public class BridgeSpringConfig {
                         JedisPool.class.getName(), jedis.getClient().getHost() + ":" + jedis.getClient().getPort());
             }
         }
-        System.out.println("We got a connection, would not expect to see this logged");
 
         // Shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -117,53 +119,44 @@ public class BridgeSpringConfig {
         return jedisPool;
     }
     
+    /**
+     * Try Redis providers to find one that is provisioned, or fall back on our existing configuration 
+     * (creating an URL so further processing can be standardized regardless of the provider). Using 
+     * this URL in the environment variables is the documented way to interact with these services.
+     * @param config
+     * @return
+     */
     private String getRedisURL(final BridgeConfig config) {
-        // Use Redis-To-Go if available, if not, fallback to Redis Cloud, if neither is available
-        // try the configuration
         String url = System.getenv("REDISTOGO_URL");
-        if (url == null) {
-            url = System.getenv("REDISCLOUD_URL");
-        } else {
-            System.out.println("found REDISTOGO_URL");
+        if (url != null) {
+            logger.info("Using Redis To Go Redis provider");
+            return url;
         }
-        if (url == null) {
-            System.out.println("Using config to construct URL");
-            url = String.format("redis://provider:%s@%s:%s", config.getProperty("redis.password"),
-                    config.getProperty("redis.host"), config.getProperty("redis.port"));
-        } else {
-            System.out.println("found REDISCLOUD_URL");
+        url = System.getenv("REDISCLOUD_URL");
+        if (url != null) {
+            logger.info("Using Redis Cloud/Redis Labs provider");
+            return url;
         }
-        return url;
+        logger.info("Using configured provider using environment variables");
+        return String.format("redis://provider:%s@%s:%s", config.getProperty("redis.password"),
+                config.getProperty("redis.host"), config.getProperty("redis.port"));
     }
     
     private JedisPool constructJedisPool(final String url, final JedisPoolConfig poolConfig, final BridgeConfig config)
             throws URISyntaxException {
-        
-        // The password for Redis contains the "@" character which causes the Java URI class to parse the URL 
-        // incorrectly. All this junk is to work around this.
-        
+        // The password for Redis on development, at least, contains the "@" character which causes the Java URI 
+        // class to parse the URL incorrectly. All this junk is to work around this.
         String authComp = new URI(url).getRawAuthority();
         String creds = authComp.substring(0, authComp.lastIndexOf("@"));
+        String password = creds.split(":")[1];
         // Now, remove the password and parse URI again
         String urlWithoutPassword = url.replace(creds+"@","");
         URI redisURI = new URI(urlWithoutPassword);
-        String password = creds.split(":")[1];
         
         if (config.isLocal()) {
-            System.out.println("Creating local JedisPool");
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
                     config.getPropertyAsInt("redis.timeout"));
         } else {
-            System.out.println("Creating non-local JedisPool");
-            // Test (temporarily) that the password matches what is saved in configuration
-            if (config.getProperty("redis.password").equals(password)) {
-                System.out.println("The password matches");
-            } else {
-                System.out.println("The password DOES NOT match");
-            }
-            System.out.println(redisURI.getHost());
-            System.out.println(redisURI.getPort());
-            System.out.println(config.getPropertyAsInt("redis.timeout"));
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
                     config.getPropertyAsInt("redis.timeout"), password);
         }
