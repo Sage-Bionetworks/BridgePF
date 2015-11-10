@@ -93,7 +93,6 @@ public class BridgeSpringConfig {
         // Create pool. We need to log the heck out of this for the time being
         System.out.println("========================================== REDIS INIT ==========================================");
         final String url = getRedisURL(config);
-        System.out.println("getRedisURL() -> " + url);
         final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
         System.out.println("jedisPool -> " + jedisPool);
         
@@ -129,7 +128,7 @@ public class BridgeSpringConfig {
         }
         if (url == null) {
             System.out.println("Using config to construct URL");
-            url = "redis://" + config.getProperty("redis.host") + ":" + config.getProperty("redis.port");
+            url = "redis://providerName:" +config.getProperty("redis.password") + "@" + config.getProperty("redis.host") + ":" + config.getProperty("redis.port");
         } else {
             System.out.println("found REDISCLOUD_URL");
         }
