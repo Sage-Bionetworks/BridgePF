@@ -128,7 +128,8 @@ public class BridgeSpringConfig {
         }
         if (url == null) {
             System.out.println("Using config to construct URL");
-            url = "redis://providerName:" +config.getProperty("redis.password") + "@" + config.getProperty("redis.host") + ":" + config.getProperty("redis.port");
+            url = String.format("redis://provider:%s@%s:%s", config.getProperty("redis.password"),
+                    config.getProperty("redis.host"), config.getProperty("redis.port"));
         } else {
             System.out.println("found REDISCLOUD_URL");
         }
@@ -144,6 +145,7 @@ public class BridgeSpringConfig {
                     config.getPropertyAsInt("redis.timeout"));
         } else {
             System.out.println("Creating non-local JedisPool");
+            
             // config.getProperty("redis.password"); Parse password out from provided path.
             String auth = redisURI.getAuthority();
             if (auth == null) {
@@ -151,6 +153,16 @@ public class BridgeSpringConfig {
             }
             String creds = auth.substring(0, auth.lastIndexOf("@"));
             String password = creds.split(":")[1];
+            
+            // Test (temporarily) that the password matches what is saved in configuration
+            if (config.getProperty("redis.password").equals(password)) {
+                System.out.println("The password matches");
+            } else {
+                System.out.println("The password DOES NOT match");
+            }
+            System.out.println(redisURI.getHost());
+            System.out.println(redisURI.getPort());
+            System.out.println(config.getPropertyAsInt("redis.timeout"));
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
                     config.getPropertyAsInt("redis.timeout"), password);
         }
