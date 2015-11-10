@@ -92,6 +92,7 @@ public class BridgeSpringConfig {
 
         // Create pool
         final String url = getRedisURL(config);
+        System.out.println(url);
         final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
 
         // Test pool
@@ -122,8 +123,9 @@ public class BridgeSpringConfig {
             url = System.getenv("REDISCLOUD_URL");
         }
         if (url == null) {
-            url = config.getProperty("redis.url");
+            url = "redis://" + config.getProperty("redis.host") + ":" + config.getProperty("redis.port");
         }
+        System.out.println(url);
         return url;
     }
     
@@ -131,37 +133,19 @@ public class BridgeSpringConfig {
             throws URISyntaxException {
         // To build on Travis. Eventually this can be replaced with an environment variable. Still
         // verifying this will work.
-        if (url == null) {
-            final String host = config.getProperty("redis.host");
-            final int port = config.getPropertyAsInt("redis.port");
-            final int timeout = config.getPropertyAsInt("redis.timeout");
-            final String password = config.getProperty("redis.password");
-            return config.isLocal() ?
-                    new JedisPool(poolConfig, host, port, timeout) :
-                    new JedisPool(poolConfig, host, port, timeout, password);
-        }
-        final URI redisURI = new URI(url);        
+        final URI redisURI = new URI(url);
         if (config.isLocal()) {
-            return new JedisPool(poolConfig,
-                redisURI.getHost(),
-                redisURI.getPort(),
-                config.getPropertyAsInt("redis.timeout"));        
+            return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
+                    config.getPropertyAsInt("redis.timeout"));
+        } else {
+            // Parse password out from provided path.
+            // config.getProperty("redis.password");
+            String auth = redisURI.getAuthority();
+            String creds = auth.substring(0, auth.lastIndexOf("@"));
+            String password = creds.split(":")[1];
+            return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
+                    config.getPropertyAsInt("redis.timeout"), password);
         }
-        System.out.println(redisURI.getHost());
-        System.out.println(redisURI.getPort());
-        System.out.println(redisURI.getScheme());
-        String auth = redisURI.getAuthority();
-        if (auth == null) {
-            throw new IllegalArgumentException("authority null");
-        }
-        String creds = auth.substring(0, auth.lastIndexOf("@"));
-        String password = creds.split(":")[1];
-        
-        return new JedisPool(poolConfig,
-            redisURI.getHost(),
-            redisURI.getPort(),
-            config.getPropertyAsInt("redis.timeout"),
-            password);        
     }
 
     @Bean(name = "jedisOps")
