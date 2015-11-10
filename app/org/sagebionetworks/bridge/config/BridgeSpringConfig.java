@@ -90,10 +90,13 @@ public class BridgeSpringConfig {
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
 
-        // Create pool
+        // Create pool. We need to log the heck out of this for the time being
+        System.out.println("========================================== REDIS INIT ==========================================");
         final String url = getRedisURL(config);
+        System.out.println("getRedisURL() -> " + url);
         final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
-
+        System.out.println("jedisPool -> " + jedisPool);
+        
         // Test pool
         try (Jedis jedis = jedisPool.getResource()) {
             final String result = jedis.ping();
@@ -102,6 +105,7 @@ public class BridgeSpringConfig {
                         JedisPool.class.getName(), jedis.getClient().getHost() + ":" + jedis.getClient().getPort());
             }
         }
+        System.out.println("We got a connection, would not expect to see this logged");
 
         // Shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -120,9 +124,14 @@ public class BridgeSpringConfig {
         String url = System.getenv("REDISTOGO_URL");
         if (url == null) {
             url = System.getenv("REDISCLOUD_URL");
+        } else {
+            System.out.println("found REDISTOGO_URL");
         }
         if (url == null) {
+            System.out.println("Using config to construct URL");
             url = "redis://" + config.getProperty("redis.host") + ":" + config.getProperty("redis.port");
+        } else {
+            System.out.println("found REDISCLOUD_URL");
         }
         return url;
     }
@@ -131,11 +140,16 @@ public class BridgeSpringConfig {
             throws URISyntaxException {
         final URI redisURI = new URI(url);
         if (config.isLocal()) {
+            System.out.println("Creating local JedisPool");
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
                     config.getPropertyAsInt("redis.timeout"));
         } else {
+            System.out.println("Creating non-local JedisPool");
             // config.getProperty("redis.password"); Parse password out from provided path.
             String auth = redisURI.getAuthority();
+            if (auth == null) {
+                System.out.println("auth == null");
+            }
             String creds = auth.substring(0, auth.lastIndexOf("@"));
             String password = creds.split(":")[1];
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
