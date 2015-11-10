@@ -23,7 +23,7 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.newrelic.agent.deps.com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 import com.stormpath.sdk.api.ApiKey;
 import com.stormpath.sdk.api.ApiKeys;
 import com.stormpath.sdk.application.Application;
@@ -78,6 +78,7 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 public class BridgeSpringConfig {
 
     private static Logger logger = LoggerFactory.getLogger(BridgeSpringConfig.class);
+    private static final List<String> REDIS_PROVIDERS = Lists.newArrayList("REDISTOGO_URL", "REDISCLOUD_URL");
 
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
@@ -127,17 +128,13 @@ public class BridgeSpringConfig {
      * @return
      */
     private String getRedisURL(final BridgeConfig config) {
-        String url = System.getenv("REDISTOGO_URL");
-        if (url != null) {
-            logger.info("Using Redis To Go Redis provider");
-            return url;
+        for (String provider : REDIS_PROVIDERS) {
+            if (System.getenv(provider) != null) {
+                logger.info("Using Redis Provider: " + provider);
+                return System.getenv(provider);
+            }
         }
-        url = System.getenv("REDISCLOUD_URL");
-        if (url != null) {
-            logger.info("Using Redis Cloud/Redis Labs provider");
-            return url;
-        }
-        logger.info("Using configured provider using environment variables");
+        logger.info("Using Redis Provider: configured in environment variables");
         return String.format("redis://provider:%s@%s:%s", config.getProperty("redis.password"),
                 config.getProperty("redis.host"), config.getProperty("redis.port"));
     }
