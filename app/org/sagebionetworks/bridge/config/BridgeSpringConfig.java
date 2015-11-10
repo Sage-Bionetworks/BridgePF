@@ -91,14 +91,14 @@ public class BridgeSpringConfig {
         // Create pool
         final String url = getRedisURL(config);
         final URI redisURI = new URI(url);
-        final JedisPool jedisPool = constructJedisPool(redisURI, config);
+        final JedisPool jedisPool = constructJedisPool(redisURI, poolConfig, config);
 
         // Test pool
         try (Jedis jedis = jedisPool.getResource()) {
             final String result = jedis.ping();
             if (result == null || !"PONG".equalsIgnoreCase(result.trim())) {
                 throw new MissingResourceException("No PONG from PINGing Redis: " + result + ".",
-                        JedisPool.class.getName(), redisURI.toString());
+                        JedisPool.class.getName(), redisURI.getHost() + ":" + redisURI.getPort());
             }
         }
 
@@ -126,14 +126,14 @@ public class BridgeSpringConfig {
         return url;
     }
     
-    private JedisPool constructJedisPool(final URI redisURI, final BridgeConfig config) {
+    private JedisPool constructJedisPool(final URI redisURI, final JedisPoolConfig poolConfig, final BridgeConfig config) {
         if (config.isLocal()) {
-            return new JedisPool(new JedisPoolConfig(),
+            return new JedisPool(poolConfig,
                 redisURI.getHost(),
                 redisURI.getPort(),
                 config.getPropertyAsInt("redis.timeout"));        
         }
-        return new JedisPool(new JedisPoolConfig(),
+        return new JedisPool(poolConfig,
             redisURI.getHost(),
             redisURI.getPort(),
             config.getPropertyAsInt("redis.timeout"),
