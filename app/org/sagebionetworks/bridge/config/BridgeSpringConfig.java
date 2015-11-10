@@ -133,11 +133,15 @@ public class BridgeSpringConfig {
                 redisURI.getPort(),
                 config.getPropertyAsInt("redis.timeout"));        
         }
+        String auth = redisURI.getAuthority();
+        String creds = auth.substring(0, auth.lastIndexOf("@"));
+        String password = creds.split(":")[1];
+        
         return new JedisPool(poolConfig,
             redisURI.getHost(),
             redisURI.getPort(),
             config.getPropertyAsInt("redis.timeout"),
-            redisURI.getUserInfo().split(":",2)[1]);        
+            password);        
     }
 
     @Bean(name = "jedisOps")
