@@ -147,7 +147,13 @@ public class BridgeSpringConfig {
                 redisURI.getPort(),
                 config.getPropertyAsInt("redis.timeout"));        
         }
+        System.out.println(redisURI.getHost());
+        System.out.println(redisURI.getPort());
+        System.out.println(redisURI.getScheme());
         String auth = redisURI.getAuthority();
+        if (auth == null) {
+            throw new IllegalArgumentException("authority null");
+        }
         String creds = auth.substring(0, auth.lastIndexOf("@"));
         String password = creds.split(":")[1];
         
