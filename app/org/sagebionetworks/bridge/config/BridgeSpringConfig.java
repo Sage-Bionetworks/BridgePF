@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.config;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +30,7 @@ import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -90,15 +92,14 @@ public class BridgeSpringConfig {
 
         // Create pool
         final String url = getRedisURL(config);
-        final URI redisURI = new URI(url);
-        final JedisPool jedisPool = constructJedisPool(redisURI, poolConfig, config);
+        final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
 
         // Test pool
         try (Jedis jedis = jedisPool.getResource()) {
             final String result = jedis.ping();
             if (result == null || !"PONG".equalsIgnoreCase(result.trim())) {
-                throw new MissingResourceException("No PONG from PINGing Redis: " + result + ".",
-                        JedisPool.class.getName(), redisURI.getHost() + ":" + redisURI.getPort());
+                throw new MissingResourceException("No PONG from PINGing Redis" + result + ".",
+                        JedisPool.class.getName(), jedis.getClient().getHost() + ":" + jedis.getClient().getPort());
             }
         }
 
@@ -126,7 +127,20 @@ public class BridgeSpringConfig {
         return url;
     }
     
-    private JedisPool constructJedisPool(final URI redisURI, final JedisPoolConfig poolConfig, final BridgeConfig config) {
+    private JedisPool constructJedisPool(final String url, final JedisPoolConfig poolConfig, final BridgeConfig config)
+            throws URISyntaxException {
+        // To build on Travis. Eventually this can be replaced with an environment variable. Still
+        // verifying this will work.
+        if (url == null) {
+            final String host = config.getProperty("redis.host");
+            final int port = config.getPropertyAsInt("redis.port");
+            final int timeout = config.getPropertyAsInt("redis.timeout");
+            final String password = config.getProperty("redis.password");
+            return config.isLocal() ?
+                    new JedisPool(poolConfig, host, port, timeout) :
+                    new JedisPool(poolConfig, host, port, timeout, password);
+        }
+        final URI redisURI = new URI(url);        
         if (config.isLocal()) {
             return new JedisPool(poolConfig,
                 redisURI.getHost(),
