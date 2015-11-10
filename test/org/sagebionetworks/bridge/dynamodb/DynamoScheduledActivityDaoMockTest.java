@@ -25,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -45,10 +46,13 @@ public class DynamoScheduledActivityDaoMockTest {
     private static final DateTime NOW = DateTime.parse("2015-04-12T14:20:56.123-07:00");
 
     private static final String HEALTH_CODE = "AAA";
-
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("mock-study");
-
     private static final DateTimeZone PACIFIC_TIME_ZONE = DateTimeZone.forOffsetHours(-7);
+    
+    private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL();
+    private static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
+    private static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
+    private static final String ACTIVITY_3_REF = TestConstants.TEST_3_ACTIVITY.getTask().getIdentifier();
 
     private User user;
 
@@ -137,11 +141,11 @@ public class DynamoScheduledActivityDaoMockTest {
 
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
         // Expired activities are not returned, so this starts on the 12th
-        assertScheduledActivity(activities2.get(0), TestConstants.ACTIVITY_2_REF, "2015-04-12T13:00:00-07:00");
-        assertScheduledActivity(activities2.get(1), TestConstants.ACTIVITY_2_REF, "2015-04-13T13:00:00-07:00");
-        assertScheduledActivity(activities2.get(2), TestConstants.ACTIVITY_3_REF, "2015-04-13T13:00:00-07:00");
-        assertScheduledActivity(activities2.get(3), TestConstants.ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
-        assertScheduledActivity(activities2.get(4), TestConstants.ACTIVITY_2_REF, "2015-04-14T13:00:00-07:00");
+        assertScheduledActivity(activities2.get(0), ACTIVITY_2_REF, "2015-04-12T13:00:00-07:00");
+        assertScheduledActivity(activities2.get(1), ACTIVITY_2_REF, "2015-04-13T13:00:00-07:00");
+        assertScheduledActivity(activities2.get(2), ACTIVITY_3_REF, "2015-04-13T13:00:00-07:00");
+        assertScheduledActivity(activities2.get(3), ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
+        assertScheduledActivity(activities2.get(4), ACTIVITY_2_REF, "2015-04-14T13:00:00-07:00");
 
         verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class));
@@ -174,9 +178,9 @@ public class DynamoScheduledActivityDaoMockTest {
         // just like the next test of 4 days, but without the Activity_2 activity
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
         assertEquals(3, activities2.size());
-        assertScheduledActivity(activities2.get(0), TestConstants.ACTIVITY_3_REF, "2015-04-13T13:00:00-07:00");
-        assertScheduledActivity(activities2.get(1), TestConstants.ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
-        assertScheduledActivity(activities2.get(2), TestConstants.ACTIVITY_3_REF, "2015-04-15T13:00:00-07:00");
+        assertScheduledActivity(activities2.get(0), ACTIVITY_3_REF, "2015-04-13T13:00:00-07:00");
+        assertScheduledActivity(activities2.get(1), ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
+        assertScheduledActivity(activities2.get(2), ACTIVITY_3_REF, "2015-04-15T13:00:00-07:00");
 
         verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class));
@@ -204,14 +208,14 @@ public class DynamoScheduledActivityDaoMockTest {
         List<ScheduledActivity> activities2 = activityDao.getActivities(context);
 
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
-        assertScheduledActivity(activities2.get(0), TestConstants.ACTIVITY_2_REF, "2015-04-12T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(1), TestConstants.ACTIVITY_2_REF, "2015-04-13T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(2), TestConstants.ACTIVITY_3_REF, "2015-04-13T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(3), TestConstants.ACTIVITY_1_REF, "2015-04-14T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(4), TestConstants.ACTIVITY_2_REF, "2015-04-14T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(5), TestConstants.ACTIVITY_2_REF, "2015-04-15T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(6), TestConstants.ACTIVITY_3_REF, "2015-04-15T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(7), TestConstants.ACTIVITY_2_REF, "2015-04-16T13:00:00.000-07:00");
+        assertScheduledActivity(activities2.get(0), ACTIVITY_2_REF, "2015-04-12T13:00:00.000-07:00");
+        assertScheduledActivity(activities2.get(1), ACTIVITY_2_REF, "2015-04-13T13:00:00.000-07:00");
+        assertScheduledActivity(activities2.get(2), ACTIVITY_3_REF, "2015-04-13T13:00:00.000-07:00");
+        assertScheduledActivity(activities2.get(3), ACTIVITY_1_REF, "2015-04-14T13:00:00.000-07:00");
+        assertScheduledActivity(activities2.get(4), ACTIVITY_2_REF, "2015-04-14T13:00:00.000-07:00");
+        assertScheduledActivity(activities2.get(5), ACTIVITY_2_REF, "2015-04-15T13:00:00.000-07:00");
+        assertScheduledActivity(activities2.get(6), ACTIVITY_3_REF, "2015-04-15T13:00:00.000-07:00");
+        assertScheduledActivity(activities2.get(7), ACTIVITY_2_REF, "2015-04-16T13:00:00.000-07:00");
 
         verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
                         (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class));

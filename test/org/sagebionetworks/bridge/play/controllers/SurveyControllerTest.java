@@ -14,9 +14,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,7 +60,6 @@ import com.google.common.collect.Sets;
  * etc. through integration tests is very slow.
  */
 public class SurveyControllerTest {
-    private static final StudyIdentifier API_STUDY_IDENTIFIER = new StudyIdentifierImpl("api");
 
     private SurveyController controller;
     
@@ -191,20 +189,12 @@ public class SurveyControllerTest {
         
         // Should only include key felds.
         // Survey node
-        Set<String> fields = fieldNamesAsSet(node.get("items").get(0));
+        Set<String> fields = TestUtils.getFieldNamesSet(node.get("items").get(0));
         assertEquals(Sets.newHashSet("name","type","guid","identifier","createdOn","elements"), fields);
         
         // Element node
-        fields = fieldNamesAsSet(node.get("items").get(0).get("elements").get(0));
+        fields = TestUtils.getFieldNamesSet(node.get("items").get(0).get("elements").get(0));
         assertEquals(Sets.newHashSet("guid","fireEvent","identifier","type"), fields);
-    }
-    
-    private Set<String> fieldNamesAsSet(JsonNode node) {
-        HashSet<String> set = new HashSet<>();
-        for (Iterator<String> i = node.fieldNames(); i.hasNext(); ) {
-            set.add(i.next());
-        }
-        return set;
     }
     
     @Test
@@ -595,12 +585,12 @@ public class SurveyControllerTest {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
         setContext();
         when(service.getSurvey(keys)).thenReturn(survey);
-        when(service.publishSurvey(eq(API_STUDY_IDENTIFIER), any(Survey.class))).thenReturn(survey);
+        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class))).thenReturn(survey);
 
         controller.publishSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
         
         verify(service).getSurvey(keys);
-        verify(service).publishSurvey(eq(API_STUDY_IDENTIFIER), any(Survey.class));
+        verify(service).publishSurvey(eq(TEST_STUDY), any(Survey.class));
         verifyNoMoreInteractions(service);
     }
     
@@ -610,7 +600,7 @@ public class SurveyControllerTest {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
         setContext();
         when(service.getSurvey(keys)).thenReturn(survey);
-        when(service.publishSurvey(eq(API_STUDY_IDENTIFIER), any(Survey.class))).thenReturn(survey);
+        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class))).thenReturn(survey);
         setUserSession("secondstudy");
         
         try {

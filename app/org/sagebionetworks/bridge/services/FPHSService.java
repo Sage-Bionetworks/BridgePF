@@ -30,13 +30,14 @@ public class FPHSService {
         this.optionsService = options;
     }
     
-    public boolean verifyExternalIdentifier(ExternalIdentifier externalId) throws Exception {
+    public void verifyExternalIdentifier(ExternalIdentifier externalId) throws Exception {
         checkNotNull(externalId);
         
         if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
-        return fphsDao.verifyExternalId(externalId);
+        // Throws exception if not verified
+        fphsDao.verifyExternalId(externalId);
     }
     public void registerExternalIdentifier(StudyIdentifier studyId, String healthCode, ExternalIdentifier externalId) throws Exception {
         checkNotNull(studyId);

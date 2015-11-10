@@ -27,7 +27,9 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoStudyDaoTest {
 
-    private final Set<String> EXTRA_USER_PROFILE_ATTRIBUTES = Sets.newHashSet("can-publish", "can-recontact");
+    private final Set<String> USER_PROFILE_ATTRIBUTES = Sets.newHashSet("can-publish", "can-recontact");
+    private final Set<String> TASK_IDENTIFIERS = Sets.newHashSet("task1", "task2");
+    private final Set<String> DATA_GROUPS = Sets.newHashSet("beta_users", "production_users");
 
     @Resource
     DynamoStudyDao studyDao;
@@ -52,7 +54,9 @@ public class DynamoStudyDaoTest {
     public void crudOneStudy() {
         Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
         study.setStormpathHref("http://url.com/");
-        study.setUserProfileAttributes(EXTRA_USER_PROFILE_ATTRIBUTES);
+        study.setUserProfileAttributes(USER_PROFILE_ATTRIBUTES);
+        study.setTaskIdentifiers(TASK_IDENTIFIERS);
+        study.setDataGroups(DATA_GROUPS);
 
         study = studyDao.createStudy(study);
         assertNotNull("Study was assigned a version", study.getVersion());
@@ -67,7 +71,9 @@ public class DynamoStudyDaoTest {
         assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
         assertEquals("bridge-testing+support@sagebase.org", study.getSupportEmail());
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
-        assertEquals(EXTRA_USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
+        assertEquals(USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
+        assertEquals(TASK_IDENTIFIERS, study.getTaskIdentifiers());
+        assertEquals(DATA_GROUPS, study.getDataGroups());
 
         String identifier = study.getIdentifier();
         studyDao.deleteStudy(study);

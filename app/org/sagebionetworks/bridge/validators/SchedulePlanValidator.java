@@ -2,14 +2,20 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.Set;
+
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-@Component
 public class SchedulePlanValidator implements Validator {
 
+    private final Set<String> taskIdentifiers;
+    
+    public SchedulePlanValidator(Set<String> taskIdentifiers) {
+        this.taskIdentifiers = taskIdentifiers;
+    }
+    
     @Override
     public boolean supports(Class<?> clazz) {
         return SchedulePlan.class.isAssignableFrom(clazz);
@@ -38,7 +44,7 @@ public class SchedulePlanValidator implements Validator {
             errors.rejectValue("strategy", "is required");
         } else {
             errors.pushNestedPath("strategy");
-            plan.getStrategy().validate(errors);
+            plan.getStrategy().validate(taskIdentifiers, errors);
             errors.popNestedPath();
         }
     }

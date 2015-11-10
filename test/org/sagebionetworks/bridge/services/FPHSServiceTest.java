@@ -5,24 +5,25 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFI
 
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 
 public class FPHSServiceTest {
 
@@ -47,27 +48,22 @@ public class FPHSServiceTest {
         service.verifyExternalIdentifier(new ExternalIdentifier(""));
     }
     
+    @Test
+    public void verifyExternalIdentifierSucceeds() throws Exception {
+        service.verifyExternalIdentifier(externalId);
+        verify(dao).verifyExternalId(externalId);
+    }
+    
     @Test(expected = InvalidEntityException.class)
     public void registerIdThrowsException() throws Exception {
         service.registerExternalIdentifier(TEST_STUDY, "BBB", new ExternalIdentifier(null));
     }
     
     @Test
-    public void verifyExternalIdentifierFalse() throws Exception {
-        when(dao.verifyExternalId(externalId)).thenReturn(false);
-        assertFalse(service.verifyExternalIdentifier(externalId));
-    }
-
-    @Test
-    public void verifyExternalIdentifierTrue() throws Exception {
-        when(dao.verifyExternalId(externalId)).thenReturn(true);
-        assertTrue(service.verifyExternalIdentifier(externalId));
-    }
-    
-    @Test
     public void registerExternalIdentifier() throws Exception {
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(dao).registerExternalId(externalId);
+        verify(optionsService).setOption(TEST_STUDY, "BBB", ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
     }
     
     @Test
@@ -102,7 +98,13 @@ public class FPHSServiceTest {
     
     @Test
     public void getExternalIdentifiers() throws Exception {
-        service.getExternalIdentifiers();
+        List<FPHSExternalIdentifier> externalIds = Lists.newArrayList(
+                new DynamoFPHSExternalIdentifier("foo"), new DynamoFPHSExternalIdentifier("bar"));
+        when(dao.getExternalIds()).thenReturn(externalIds);
+        
+        List<FPHSExternalIdentifier> identifiers = service.getExternalIdentifiers();
+        
+        assertEquals(externalIds, identifiers);
         verify(dao).getExternalIds();
     }
     

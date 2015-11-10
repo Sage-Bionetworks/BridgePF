@@ -5,8 +5,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.Period;
@@ -187,6 +190,8 @@ public class TestUtils {
         study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
         study.setSupportEmail("bridge-testing+support@sagebase.org");
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
+        study.setTaskIdentifiers(Sets.newHashSet("task1", "task2"));
+        study.setDataGroups(Sets.newHashSet("beta_users", "production_users"));
         study.setStrictUploadValidationEnabled(true);
         return study;
     }
@@ -236,4 +241,13 @@ public class TestUtils {
     public static Survey getSurvey(boolean makeNew) {
         return new TestSurvey(makeNew);
     }
+    
+    public static Set<String> getFieldNamesSet(JsonNode node) {
+        HashSet<String> set = new HashSet<>();
+        for (Iterator<String> i = node.fieldNames(); i.hasNext(); ) {
+            set.add(i.next());
+        }
+        return set;
+    }
+    
  }

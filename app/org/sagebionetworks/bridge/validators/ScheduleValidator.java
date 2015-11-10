@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITIES_PROPERTY;
 
 import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
@@ -14,17 +15,19 @@ import org.quartz.CronExpression;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-@Component
 public class ScheduleValidator implements Validator {
-
-    private static final ActivityValidator ACTIVITY_VALIDATOR = new ActivityValidator();
     
     public static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
     public static final String CANNOT_BE_NULL = "cannot be null";
+    
+    private final ActivityValidator activityValidator;
+    
+    public ScheduleValidator(Set<String> taskIdentifiers) {
+        activityValidator = new ActivityValidator(taskIdentifiers);
+    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -188,7 +191,7 @@ public class ScheduleValidator implements Validator {
             for (int i=0; i < schedule.getActivities().size(); i++) {
                 Activity activity = schedule.getActivities().get(i);
                 errors.pushNestedPath(ACTIVITIES_PROPERTY+"["+i+"]");
-                ACTIVITY_VALIDATOR.validate(activity, errors);
+                activityValidator.validate(activity, errors);
                 errors.popNestedPath();
             }
         }

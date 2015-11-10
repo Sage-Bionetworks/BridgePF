@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -20,10 +19,10 @@ import play.mvc.Result;
 @Controller("fphsController")
 public class FPHSController extends BaseController {
     
-    private static final TypeReference<ArrayList<FPHSExternalIdentifier>> externalIdTypeRef = 
-            new TypeReference<ArrayList<FPHSExternalIdentifier>>() {};
+    private static final TypeReference<List<FPHSExternalIdentifier>> EXTERNAL_ID_TYPE_REF = 
+            new TypeReference<List<FPHSExternalIdentifier>>() {};
 
-    private static final BridgeObjectMapper mapper = BridgeObjectMapper.get();
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
 
     private FPHSService fphsService;
     
@@ -55,7 +54,7 @@ public class FPHSController extends BaseController {
     public Result addExternalIdentifiers() throws Exception {
         getAuthenticatedSession(ADMIN);
         
-        List<FPHSExternalIdentifier> externalIds = mapper.convertValue(requestToJSON(request()), externalIdTypeRef);
+        List<FPHSExternalIdentifier> externalIds = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
         fphsService.addExternalIdentifiers(externalIds);
         
         return okResult("External identifiers added.");

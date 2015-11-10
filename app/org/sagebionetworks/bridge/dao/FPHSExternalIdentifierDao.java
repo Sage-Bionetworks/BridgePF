@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 
 public interface FPHSExternalIdentifierDao {
 
-    public boolean verifyExternalId(ExternalIdentifier externalId);
+    public void verifyExternalId(ExternalIdentifier externalId);
     
     public void registerExternalId(ExternalIdentifier externalId);
     
@@ -17,6 +17,6 @@ public interface FPHSExternalIdentifierDao {
     
     public void addExternalIds(List<FPHSExternalIdentifier> externalIds);
     
-    public void deleteAll();
+    public void deleteExternalId(String externalId);
 
 }

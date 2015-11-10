@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -15,7 +16,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -52,7 +52,7 @@ public class DynamoParticipantOptionsDaoTest {
     
     @Test
     public void canChangeSharingScope() {
-        Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
+        Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         String healthCode1 = "AAA";
         
         optionsDao.setOption(study, healthCode1, ParticipantOption.SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS.name());

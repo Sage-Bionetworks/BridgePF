@@ -30,6 +30,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.common.collect.Sets;
+
 /**
  * Verify that the combination of running the scheduler, and persistence, work 
  * together correctly.   
@@ -59,6 +61,7 @@ public class ScheduledActivityServiceTest {
     @Before
     public void before() {
         study = studyService.getStudy(TEST_STUDY.getIdentifier());
+        study.setTaskIdentifiers(Sets.newHashSet("taskId"));
         testUser = helper.createUser(ScheduledActivityServiceTest.class);
         
         Schedule schedule = new Schedule();
@@ -77,7 +80,7 @@ public class ScheduledActivityServiceTest {
         schedulePlan.setStudyKey(TEST_STUDY.getIdentifier());
         schedulePlan.setMinAppVersion(10);
         schedulePlan.setStrategy(strategy);
-        schedulePlan = schedulePlanService.createSchedulePlan(schedulePlan);
+        schedulePlan = schedulePlanService.createSchedulePlan(study, schedulePlan);
     }
 
     @After

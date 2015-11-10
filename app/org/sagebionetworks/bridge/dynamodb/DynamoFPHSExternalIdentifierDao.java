@@ -30,17 +30,18 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
     }
     
     @Override
-    public boolean verifyExternalId(ExternalIdentifier externalId) {
+    public void verifyExternalId(ExternalIdentifier externalId) {
         checkNotNull(externalId);
         
-        DynamoFPHSExternalIdentifier record = getExternalId(externalId, false);
-        return (record != null && !record.getRegistered());
+        // This will throw an exception if the record doesn't exist or has already been registered.
+        getExternalId(externalId, true);
     }
 
     @Override
     public void registerExternalId(ExternalIdentifier externalId) {
         checkNotNull(externalId);
         
+        // This will throw an exception if the record doesn't exist or has already been registered.
         DynamoFPHSExternalIdentifier record = getExternalId(externalId, true);
         record.setRegistered(true);
         mapper.save(record);
@@ -50,9 +51,11 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
     public void unregisterExternalId(ExternalIdentifier externalId) {
         checkNotNull(externalId);
         
-        DynamoFPHSExternalIdentifier record = getExternalId(externalId, true);
-        record.setRegistered(false);
-        mapper.save(record);
+        DynamoFPHSExternalIdentifier record = getExternalId(externalId, false);
+        if (record != null) {
+            record.setRegistered(false);
+            mapper.save(record);
+        }
     }
 
     @Override
@@ -82,15 +85,9 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
     }
     
     @Override
-    public void deleteAll() {
-        List<DynamoFPHSExternalIdentifier> identifiers = getExternalIds().stream().map(id -> {
-            return new DynamoFPHSExternalIdentifier(id.getExternalId());
-        }).collect(Collectors.toList());
-
-        if (!identifiers.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(identifiers);
-            BridgeUtils.ifFailuresThrowException(failures);
-        }
+    public void deleteExternalId(String identifier) {
+        DynamoFPHSExternalIdentifier externalId = new DynamoFPHSExternalIdentifier(identifier);
+        mapper.delete(externalId);
     }
     
     private DynamoFPHSExternalIdentifier getExternalId(ExternalIdentifier externalId, boolean throwExceptions) {
@@ -102,7 +99,7 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
             if (record == null) {
                 throw new EntityNotFoundException(FPHSExternalIdentifier.class);
             }
-            if (record.getRegistered()) {
+            if (record.isRegistered()) {
                 throw new EntityAlreadyExistsException(record);
             }
         }

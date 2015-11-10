@@ -33,7 +33,7 @@ public class DynamoFPHSExternalIdentifier implements FPHSExternalIdentifier {
 
     @Override
     @DynamoDBAttribute
-    public boolean getRegistered() {
+    public boolean isRegistered() {
         return registered;
     }
 

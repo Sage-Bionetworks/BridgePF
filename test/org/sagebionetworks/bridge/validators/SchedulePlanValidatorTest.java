@@ -13,13 +13,15 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 
+import com.google.common.collect.Sets;
+
 public class SchedulePlanValidatorTest {
 
     private SchedulePlanValidator validator;
 
     @Before
     public void before() throws Exception {
-        validator = new SchedulePlanValidator();
+        validator = new SchedulePlanValidator(Sets.newHashSet("tapTest"));
     }
 
     @Test
@@ -97,7 +99,7 @@ public class SchedulePlanValidatorTest {
         SchedulePlan plan = getValidABTestStrategy();
         ((ABTestScheduleStrategy)plan.getStrategy()).getScheduleGroups().get(0).setSchedule(null);
         
-        assertMessage(plan, "strategy.scheduleGroups0.schedule is required", "strategy.scheduleGroups0.schedule");
+        assertMessage(plan, "strategy.scheduleGroups[0].schedule is required", "strategy.scheduleGroups[0].schedule");
     }
 
     private void assertMessage(SchedulePlan plan, String message, String fieldName) {

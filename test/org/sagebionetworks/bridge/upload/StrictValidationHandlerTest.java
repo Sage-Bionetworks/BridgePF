@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -45,7 +45,7 @@ public class StrictValidationHandlerTest {
 
         // Set up common context attributes.
         context = new UploadValidationContext();
-        context.setStudy(TestConstants.TEST_STUDY);
+        context.setStudy(TEST_STUDY);
 
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId("test-upload");
@@ -68,7 +68,7 @@ public class StrictValidationHandlerTest {
 
         // mock schema service
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "test-schema", 1)).thenReturn(
+        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "test-schema", 1)).thenReturn(
                 testSchema);
         handler.setUploadSchemaService(mockSchemaService);
 
@@ -77,7 +77,7 @@ public class StrictValidationHandlerTest {
         testStudy.setStrictUploadValidationEnabled(shouldThrow);
 
         StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(testStudy);
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(testStudy);
         handler.setStudyService(mockStudyService);
 
         // set up attachments map

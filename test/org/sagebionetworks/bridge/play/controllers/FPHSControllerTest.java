@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -105,7 +106,7 @@ public class FPHSControllerTest {
     
     @Test
     public void verifyFails() throws Exception {
-        when(fphsService.verifyExternalIdentifier(any())).thenThrow(new EntityNotFoundException(FPHSExternalIdentifier.class));
+        doThrow(new EntityNotFoundException(FPHSExternalIdentifier.class)).when(fphsService).verifyExternalIdentifier(any());
         
         try {
             controller.verifyExternalIdentifier("foo");
@@ -117,7 +118,7 @@ public class FPHSControllerTest {
     
     @Test
     public void verifyFailsWhenNull() throws Exception {
-        when(fphsService.verifyExternalIdentifier(any())).thenThrow(new InvalidEntityException("ExternalIdentifier cannot be blank, null or missing."));
+        doThrow(new InvalidEntityException("ExternalIdentifier cannot be blank, null or missing.")).when(fphsService).verifyExternalIdentifier(any());
         
         try {
             controller.verifyExternalIdentifier(null);

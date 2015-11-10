@@ -4,6 +4,8 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.Map;
 
@@ -12,7 +14,6 @@ import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -23,8 +24,7 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class IosSchemaValidationHandler2GetSchemaTest {
     private static final Map<String, Map<String, Integer>> DEFAULT_SCHEMA_REV_MAP =
-            ImmutableMap.<String, Map<String, Integer>>of(TestConstants.TEST_STUDY_IDENTIFIER,
-                    ImmutableMap.of("schema-rev-test", 2));
+            ImmutableMap.<String, Map<String, Integer>>of(TEST_STUDY_IDENTIFIER, ImmutableMap.of("schema-rev-test", 2));
 
     private static final String TEST_SURVEY_CREATED_ON_STRING = "2015-08-27T13:38:55-07:00";
     private static final long TEST_SURVEY_CREATED_ON_MILLIS = DateTime.parse(TEST_SURVEY_CREATED_ON_STRING)
@@ -45,7 +45,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         // mock upload schema service
         UploadSchema dummySchema = new DynamoUploadSchema();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
-        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "test-survey", 4)).thenReturn(
+        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "test-survey", 4)).thenReturn(
                 dummySchema);
 
         // set up test handler
@@ -60,7 +60,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         infoJson.put("surveyCreatedOn", TEST_SURVEY_CREATED_ON_STRING);
 
         // execute and validate
-        UploadSchema retVal = handler.getUploadSchema(TestConstants.TEST_STUDY, infoJson);
+        UploadSchema retVal = handler.getUploadSchema(TEST_STUDY, infoJson);
         assertSame(dummySchema, retVal);
     }
 
@@ -87,7 +87,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         infoJson.put("surveyCreatedOn", TEST_SURVEY_CREATED_ON_STRING);
 
         // execute, expected exception
-        handler.getUploadSchema(TestConstants.TEST_STUDY, infoJson);
+        handler.getUploadSchema(TEST_STUDY, infoJson);
     }
 
     // branch coverage: survey with no schema rev
@@ -113,7 +113,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         infoJson.put("surveyCreatedOn", TEST_SURVEY_CREATED_ON_STRING);
 
         // execute, expected exception
-        handler.getUploadSchema(TestConstants.TEST_STUDY, infoJson);
+        handler.getUploadSchema(TEST_STUDY, infoJson);
     }
 
     @Test
@@ -121,7 +121,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         // mock upload schema service
         UploadSchema dummySchema = new DynamoUploadSchema();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
-        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "test-schema", 1)).thenReturn(
+        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "test-schema", 1)).thenReturn(
                 dummySchema);
 
         // set up test handler
@@ -134,7 +134,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         infoJson.put("item", "test-schema");
 
         // execute and validate
-        UploadSchema retVal = handler.getUploadSchema(TestConstants.TEST_STUDY, infoJson);
+        UploadSchema retVal = handler.getUploadSchema(TEST_STUDY, infoJson);
         assertSame(dummySchema, retVal);
     }
 
@@ -143,7 +143,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         // mock upload schema service
         UploadSchema dummySchema = new DynamoUploadSchema();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
-        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "schema-rev-test", 2)).thenReturn(
+        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "schema-rev-test", 2)).thenReturn(
                 dummySchema);
 
         // set up test handler
@@ -156,7 +156,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         infoJson.put("item", "schema-rev-test");
 
         // execute and validate
-        UploadSchema retVal = handler.getUploadSchema(TestConstants.TEST_STUDY, infoJson);
+        UploadSchema retVal = handler.getUploadSchema(TEST_STUDY, infoJson);
         assertSame(dummySchema, retVal);
     }
 
@@ -165,7 +165,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         // mock upload schema service
         UploadSchema dummySchema = new DynamoUploadSchema();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
-        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "schema-rev-test", 3)).thenReturn(
+        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "schema-rev-test", 3)).thenReturn(
                 dummySchema);
 
         // set up test handler
@@ -179,7 +179,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         infoJson.put("schemaRevision", 3);
 
         // execute and validate
-        UploadSchema retVal = handler.getUploadSchema(TestConstants.TEST_STUDY, infoJson);
+        UploadSchema retVal = handler.getUploadSchema(TEST_STUDY, infoJson);
         assertSame(dummySchema, retVal);
     }
 
@@ -188,7 +188,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         // mock upload schema service
         UploadSchema dummySchema = new DynamoUploadSchema();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
-        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "test-schema", 1)).thenReturn(
+        when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "test-schema", 1)).thenReturn(
                 dummySchema);
 
         // set up test handler
@@ -201,14 +201,14 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         infoJson.put("identifier", "test-schema");
 
         // execute and validate
-        UploadSchema retVal = handler.getUploadSchema(TestConstants.TEST_STUDY, infoJson);
+        UploadSchema retVal = handler.getUploadSchema(TEST_STUDY, infoJson);
         assertSame(dummySchema, retVal);
     }
 
     // branch coverage: no item or survey
     @Test(expected = UploadValidationException.class)
     public void missingItemOrSurvey() throws Exception {
-        new IosSchemaValidationHandler2().getUploadSchema(TestConstants.TEST_STUDY,
+        new IosSchemaValidationHandler2().getUploadSchema(TEST_STUDY,
                 BridgeObjectMapper.get().createObjectNode());
     }
 }

@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -27,17 +28,12 @@ import org.springframework.stereotype.Component;
 public class SchedulePlanServiceImpl implements SchedulePlanService {
     
     private SchedulePlanDao schedulePlanDao;
-    private SchedulePlanValidator validator;
     private SurveyService surveyService;
     private ScheduledActivityService activityService;
 
     @Autowired
     public final void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
         this.schedulePlanDao = schedulePlanDao;
-    }
-    @Autowired
-    public final void setValidator(SchedulePlanValidator validator) {
-        this.validator = validator;
     }
     @Autowired
     public final void setSurveyService(SurveyService surveyService) {
@@ -59,27 +55,35 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     }
 
     @Override
-    public SchedulePlan createSchedulePlan(SchedulePlan plan) {
+    public SchedulePlan createSchedulePlan(Study study, SchedulePlan plan) {
+        checkNotNull(study);
         checkNotNull(plan);
-        
+
+        // Plan must always be in user's study
+        plan.setStudyKey(study.getIdentifier());
+
         // Delete existing GUIDs so this is a new object (or recreate them)
-        Validate.entityThrowingException(validator, plan);
+        Validate.entityThrowingException(new SchedulePlanValidator(study.getTaskIdentifiers()), plan);
         updateGuids(plan);
-        
+
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
-        return schedulePlanDao.createSchedulePlan(plan);
+        return schedulePlanDao.createSchedulePlan(studyId, plan);
     }
     
     @Override
-    public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
+    public SchedulePlan updateSchedulePlan(Study study, SchedulePlan plan) {
+        checkNotNull(study);
         checkNotNull(plan);
         
-        Validate.entityThrowingException(validator, plan);
+        // Plan must always be in user's study
+        plan.setStudyKey(study.getIdentifier());
+        
+        Validate.entityThrowingException(new SchedulePlanValidator(study.getTaskIdentifiers()), plan);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
-        plan = schedulePlanDao.updateSchedulePlan(plan);
+        plan = schedulePlanDao.updateSchedulePlan(studyId, plan);
         activityService.deleteActivitiesForSchedulePlan(plan.getGuid());
         return plan;
     }
@@ -94,8 +98,12 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         activityService.deleteActivitiesForSchedulePlan(guid);
     }
     
+    /**
+     * Saving a new plan that has GUIDs and is an existing plan? Clear them out so that we create a 
+     * new copy of the plan.
+     * @param plan
+     */
     private void updateGuids(SchedulePlan plan) {
-        
         plan.setVersion(null);
         plan.setGuid(BridgeUtils.generateGuid());
         for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
