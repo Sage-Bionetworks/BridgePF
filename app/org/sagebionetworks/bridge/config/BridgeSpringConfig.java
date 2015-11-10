@@ -138,22 +138,23 @@ public class BridgeSpringConfig {
     
     private JedisPool constructJedisPool(final String url, final JedisPoolConfig poolConfig, final BridgeConfig config)
             throws URISyntaxException {
-        final URI redisURI = new URI(url);
+        
+        // The password for Redis contains the "@" character which causes the Java URI class to parse the URL 
+        // incorrectly. All this junk is to work around this.
+        
+        String authComp = new URI(url).getRawAuthority();
+        String creds = authComp.substring(0, authComp.lastIndexOf("@"));
+        // Now, remove the password and parse URI again
+        String urlWithoutPassword = url.replace(creds+"@","");
+        URI redisURI = new URI(urlWithoutPassword);
+        String password = creds.split(":")[1];
+        
         if (config.isLocal()) {
             System.out.println("Creating local JedisPool");
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
                     config.getPropertyAsInt("redis.timeout"));
         } else {
             System.out.println("Creating non-local JedisPool");
-            
-            // config.getProperty("redis.password"); Parse password out from provided path.
-            String auth = redisURI.getAuthority();
-            if (auth == null) {
-                System.out.println("auth == null");
-            }
-            String creds = auth.substring(0, auth.lastIndexOf("@"));
-            String password = creds.split(":")[1];
-            
             // Test (temporarily) that the password matches what is saved in configuration
             if (config.getProperty("redis.password").equals(password)) {
                 System.out.println("The password matches");
