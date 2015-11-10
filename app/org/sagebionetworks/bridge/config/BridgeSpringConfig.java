@@ -117,10 +117,10 @@ public class BridgeSpringConfig {
         // Use Redis-To-Go if available, if not, fallback to Redis Cloud, if neither is available
         // try the configuration
         String url = System.getenv("REDISTOGO_URL");
-        if (url != null) {
+        if (url == null) {
             url = System.getenv("REDISCLOUD_URL");
         }
-        if (url != null) {
+        if (url == null) {
             url = config.getProperty("redis.url");
         }
         return url;
