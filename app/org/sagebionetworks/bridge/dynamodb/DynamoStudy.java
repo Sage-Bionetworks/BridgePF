@@ -50,6 +50,8 @@ public final class DynamoStudy implements Study {
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
+        taskIdentifiers = new HashSet<>();
+        dataGroups = new HashSet<>();
     }
 
     /** {@inheritDoc} */
@@ -189,6 +191,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @Override
     public Set<String> getTaskIdentifiers() {
         return taskIdentifiers;
@@ -200,6 +203,7 @@ public final class DynamoStudy implements Study {
     }
     
     /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @Override
     public Set<String> getDataGroups() {
         return dataGroups;
