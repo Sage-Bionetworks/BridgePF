@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.config;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -78,7 +77,7 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 public class BridgeSpringConfig {
 
     private static Logger logger = LoggerFactory.getLogger(BridgeSpringConfig.class);
-    private static final List<String> REDIS_PROVIDERS = Lists.newArrayList("REDISTOGO_URL", "REDISCLOUD_URL");
+    private static final List<String> REDIS_PROVIDERS = Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
 
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
@@ -121,9 +120,8 @@ public class BridgeSpringConfig {
     }
     
     /**
-     * Try Redis providers to find one that is provisioned, or fall back on our existing configuration 
-     * (creating an URL so further processing can be standardized regardless of the provider). Using 
-     * this URL in the environment variables is the documented way to interact with these services.
+     * Try Redis providers to find one that is provisioned. Using this URL in the environment variables 
+     * is the documented way to interact with these services.
      * @param config
      * @return
      */
@@ -134,21 +132,16 @@ public class BridgeSpringConfig {
                 return System.getenv(provider);
             }
         }
-        logger.info("Using Redis Provider: configured in environment variables");
-        return String.format("redis://provider:%s@%s:%s", config.getProperty("redis.password"),
-                config.getProperty("redis.host"), config.getProperty("redis.port"));
+        logger.info("Using Redis Provider: redis.url");
+        return config.getProperty("redis.url");
     }
     
     private JedisPool constructJedisPool(final String url, final JedisPoolConfig poolConfig, final BridgeConfig config)
             throws URISyntaxException {
-        // The password for Redis on development, at least, contains the "@" character which causes the Java URI 
-        // class to parse the URL incorrectly. All this junk is to work around this.
-        String authComp = new URI(url).getRawAuthority();
-        String creds = authComp.substring(0, authComp.lastIndexOf("@"));
-        String password = creds.split(":")[1];
-        // Now, remove the password and parse URI again
-        String urlWithoutPassword = url.replace(creds+"@","");
-        URI redisURI = new URI(urlWithoutPassword);
+        
+        // With changes in Redis provisioning, passwords are now parseable by Java's URI class.
+        URI redisURI = new URI(url);
+        String password = redisURI.getUserInfo().split(":",2)[1];
         
         if (config.isLocal()) {
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
