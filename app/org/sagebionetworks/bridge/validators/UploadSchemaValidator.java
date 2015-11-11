@@ -78,10 +78,11 @@ public class UploadSchemaValidator implements Validator {
 
                 for (int i=0; i < fieldDefList.size(); i++) {
                     UploadFieldDefinition fieldDef = fieldDefList.get(i);
+                    String fieldDefinitionKey = "fieldDefinitions["+i+"]";
                     if (fieldDef == null) {
-                        errors.rejectValue("fieldDefinitions" + i, "is required");
+                        errors.rejectValue(fieldDefinitionKey, "is required");
                     } else {
-                        errors.pushNestedPath("fieldDefinitions" + i);
+                        errors.pushNestedPath(fieldDefinitionKey);
 
                         String fieldName = fieldDef.getName();
                         if (Strings.isNullOrEmpty(fieldName)) {
