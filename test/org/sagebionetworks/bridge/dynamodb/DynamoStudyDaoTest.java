@@ -84,6 +84,28 @@ public class DynamoStudyDaoTest {
             // expected
         }
     }
+    
+    @Test
+    public void stringSetsCanBeEmpty() throws Exception {
+        Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
+        study = studyDao.createStudy(study);
+        
+        // This triggers an error without the JSON serializer annotations because DDB doesn't support empty sets
+        study.setTaskIdentifiers(Sets.newHashSet());
+        studyDao.updateStudy(study);
+        
+        // We get what we want here because it deserializes the empty array
+        study = studyDao.getStudy(study.getIdentifier()); 
+        assertEquals(0, study.getTaskIdentifiers().size());
+        
+        // These two are now equivalent insofar as they throw no error and the object can always present a non-null field
+        study.setTaskIdentifiers(null);
+        studyDao.updateStudy(study);
+        
+        // We get what we want here because we set the field to an empty set in the constructor. It's never null.
+        study = studyDao.getStudy(study.getIdentifier());
+        assertEquals(0, study.getTaskIdentifiers().size());
+    }
 
     @Test
     public void canRetrieveAllStudies() throws InterruptedException {
