@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +15,8 @@ import nl.jqno.equalsverifier.Warning;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.DataType;
@@ -145,10 +146,10 @@ public class DynamoSurveyTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         ObjectNode survey = (ObjectNode)node.get(0);
-        Set<String> surveyFieldNames = getFieldNames(survey);
+        Set<String> surveyFieldNames = TestUtils.getFieldNamesSet(survey);
         
         ObjectNode question = (ObjectNode)survey.get("elements").get(0);
-        Set<String> questionFieldNames = getFieldNames(question);
+        Set<String> questionFieldNames = TestUtils.getFieldNamesSet(question);
         
         assertEquals(Sets.newHashSet("identifier","elements","name","guid","type","createdOn"), surveyFieldNames);
         assertEquals(Sets.newHashSet("guid","identifier","fireEvent","type"), questionFieldNames);
@@ -157,15 +158,6 @@ public class DynamoSurveyTest {
     @Test
     public void equalsVerifier() {
         EqualsVerifier.forClass(DynamoSurvey.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
-    }
-    
-    private Set<String> getFieldNames(ObjectNode object) {
-        Set<String> set = Sets.newHashSet();
-        Iterator<String> i = object.fieldNames();
-        while(i.hasNext()) {
-            set.add(i.next());
-        }
-        return set;
     }
 
     private static void assertEqualsSurveyElement(SurveyElement expected, SurveyElement actual) {

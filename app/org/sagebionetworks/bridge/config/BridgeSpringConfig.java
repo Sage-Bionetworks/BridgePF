@@ -55,6 +55,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
+import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
@@ -336,6 +337,12 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper uploadDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
         return DynamoUtils.getMapper(DynamoUpload2.class, bridgeConfig, client);
+    }
+    
+    @Bean(name = "fphsExternalIdDdbMapper")
+    @Autowired
+    public DynamoDBMapper fphsExternalIdDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoFPHSExternalIdentifier.class, bridgeConfig, client);
     }
 
     @Bean(name = "uploadValidationHandlerList")
