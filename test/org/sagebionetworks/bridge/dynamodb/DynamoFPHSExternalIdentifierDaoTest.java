@@ -154,6 +154,27 @@ public class DynamoFPHSExternalIdentifierDaoTest {
         assertFalse(found.isRegistered());
     }
     
+    @Test
+    public void unregistrationFailsSilentlyIfCannotRollback() {
+        // If you unregister, and the identifier either doesn't exist or isn't registered, then 
+        // this should just silently pass... we don't need an exception here as the state is 
+        // where we want it and we're not changing anything.
+        
+        // Not found, not a problem (no exception)
+        dao.unregisterExternalId(new ExternalIdentifier("foo"));
+        
+        // Found but not registered is not a problem (no exception & comes back unregistered)
+        DynamoFPHSExternalIdentifier id1 = new DynamoFPHSExternalIdentifier(getId());
+        dao.addExternalIds(Lists.newArrayList(id1));
+        idsToDelete.add(id1.getExternalId());
+        
+        dao.unregisterExternalId(new ExternalIdentifier(id1.getExternalId()));
+        
+        List<FPHSExternalIdentifier> results = dao.getExternalIds();
+        FPHSExternalIdentifier found = getById(results, id1);
+        assertFalse(found.isRegistered());
+    }
+    
     private FPHSExternalIdentifier getById(List<FPHSExternalIdentifier> identifiers, FPHSExternalIdentifier externalId) {
         for (FPHSExternalIdentifier identifier : identifiers) {
             if (identifier.getExternalId().equals(externalId.getExternalId())) {

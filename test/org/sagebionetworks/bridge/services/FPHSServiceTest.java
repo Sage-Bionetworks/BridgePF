@@ -54,6 +54,13 @@ public class FPHSServiceTest {
         verify(dao).verifyExternalId(externalId);
     }
     
+    @Test(expected = EntityNotFoundException.class)
+    public void verifyExternalIdentifierFailsOnNotFound() throws Exception {
+        doThrow(new EntityNotFoundException(ExternalIdentifier.class)).when(dao).verifyExternalId(externalId);
+        
+        service.verifyExternalIdentifier(externalId);
+    }
+    
     @Test(expected = InvalidEntityException.class)
     public void registerIdThrowsException() throws Exception {
         service.registerExternalIdentifier(TEST_STUDY, "BBB", new ExternalIdentifier(null));
