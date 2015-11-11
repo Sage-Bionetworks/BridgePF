@@ -187,7 +187,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public void setUserProfileAttributes(Set<String> profileAttributes) {
-        this.profileAttributes = profileAttributes;
+        this.profileAttributes = (profileAttributes == null) ? new HashSet<>() : profileAttributes;
     }
 
     /** {@inheritDoc} */
@@ -199,7 +199,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public void setTaskIdentifiers(Set<String> taskIdentifiers) {
-        this.taskIdentifiers = taskIdentifiers;
+        this.taskIdentifiers = (taskIdentifiers == null) ? new HashSet<>() : taskIdentifiers;
     }
     
     /** {@inheritDoc} */
@@ -211,7 +211,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public void setDataGroups(Set<String> dataGroups) {
-        this.dataGroups = dataGroups;
+        this.dataGroups = (dataGroups == null) ? new HashSet<>() : dataGroups;
     }
     
     /** {@inheritDoc} */
@@ -321,20 +321,20 @@ public final class DynamoStudy implements Study {
         DynamoStudy other = (DynamoStudy) obj;
 
         return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail)
-                        && Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants)
-                        && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
-                        && Objects.equals(stormpathHref, other.stormpathHref)
-                        && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
-                        && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
-                        && Objects.equals(consentNotificationEmail, other.consentNotificationEmail)
-                        && Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate)
-                        && Objects.equals(version, other.version)
-                        && Objects.equals(profileAttributes, other.profileAttributes)
-                        && Objects.equals(taskIdentifiers, other.taskIdentifiers)
-                        && Objects.equals(dataGroups, other.dataGroups)
-                        && Objects.equals(sponsorName, other.sponsorName)
-                        && Objects.equals(technicalEmail, other.technicalEmail)
-                        && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled);
+                && Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants)
+                && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
+                && Objects.equals(stormpathHref, other.stormpathHref)
+                && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
+                && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
+                && Objects.equals(consentNotificationEmail, other.consentNotificationEmail)
+                && Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate)
+                && Objects.equals(version, other.version)
+                && Objects.equals(profileAttributes, other.profileAttributes)
+                && Objects.equals(taskIdentifiers, other.taskIdentifiers)
+                && Objects.equals(dataGroups, other.dataGroups)
+                && Objects.equals(sponsorName, other.sponsorName)
+                && Objects.equals(technicalEmail, other.technicalEmail)
+                && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled);
     }
 
     @Override

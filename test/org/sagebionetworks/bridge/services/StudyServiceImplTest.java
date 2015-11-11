@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -111,7 +110,7 @@ public class StudyServiceImplTest {
         assertEquals(200, newStudy.getMaxNumOfParticipants());
         assertEquals(18, newStudy.getMinAgeOfConsent());
         assertEquals(Sets.newHashSet("beta_users", "production_users"), newStudy.getDataGroups());
-        assertNull(newStudy.getTaskIdentifiers());
+        assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
         verify(cache).getStudy(newStudy.getIdentifier());
