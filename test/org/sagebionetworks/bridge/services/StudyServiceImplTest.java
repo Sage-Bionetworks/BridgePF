@@ -220,21 +220,24 @@ public class StudyServiceImplTest {
     
     @Test
     public void adminsCanSomeValuesResearchersCannot() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class); // it's 200.
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study.setMaxNumOfParticipants(200);
+        study.setHealthCodeExportEnabled(false);
         study = studyService.createStudy(study);
         
-        // Okay, now that it's set, researchers can change it to no effect
+        // Okay, now that these are set, researchers cannot change them
         study.setMaxNumOfParticipants(1000);
         study.setHealthCodeExportEnabled(true);
-        study = studyService.updateStudy(study, false);
-        assertEquals(200, study.getMaxNumOfParticipants()); // nope
-        assertFalse(study.isHealthCodeExportEnabled()); // nope
+        study = studyService.updateStudy(study, false); // nope
+        assertEquals(200, study.getMaxNumOfParticipants());
+        assertFalse("This should be null", study.isHealthCodeExportEnabled());
         
+        // But administrators can
         study.setMaxNumOfParticipants(1000);
         study.setHealthCodeExportEnabled(true);
-        study = studyService.updateStudy(study, true);
-        assertEquals(1000, study.getMaxNumOfParticipants()); // yep
-        assertTrue(study.isHealthCodeExportEnabled()); // yep
+        study = studyService.updateStudy(study, true); // yep
+        assertEquals(1000, study.getMaxNumOfParticipants());
+        assertTrue(study.isHealthCodeExportEnabled());
     }
     
     @Test(expected=InvalidEntityException.class)
