@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
+import org.sagebionetworks.bridge.services.email.NotifyOperationsEmailProvider;
 import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,9 +89,11 @@ public class ParticipantRosterGenerator implements Runnable {
             Collections.sort(participants, STUDY_PARTICIPANT_COMPARATOR);
 
             MimeTypeEmailProvider roster = new ParticipantRosterProvider(study, participants);
-            logger.debug("sending roster to the sendMailService");
             sendMailService.sendEmail(roster);
-            logger.debug("roster sent.");
+            
+            String message = "The participant roster for the study '"+study.getName()+"' has been emailed to '"+study.getConsentNotificationEmail()+"'.";
+            sendMailService.sendEmail(new NotifyOperationsEmailProvider("A participant roster has been emailed", message));
+            
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

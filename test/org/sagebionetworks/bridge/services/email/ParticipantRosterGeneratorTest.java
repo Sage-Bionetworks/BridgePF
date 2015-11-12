@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,7 +39,7 @@ public class ParticipantRosterGeneratorTest {
     
     private ParticipantRosterGenerator generator;
     
-    private ArgumentCaptor<ParticipantRosterProvider> argument;
+    private ArgumentCaptor<MimeTypeEmailProvider> argument;
     
     private SendMailService sendMailService;
     
@@ -51,7 +53,7 @@ public class ParticipantRosterGeneratorTest {
         study.setUserProfileAttributes(Sets.newHashSet("phone", "can_recontact"));
         
         @SuppressWarnings("unchecked")
-        Class<ParticipantRosterProvider> providerClass = (Class<ParticipantRosterProvider>)(Class<?>)List.class;
+        Class<MimeTypeEmailProvider> providerClass = (Class<MimeTypeEmailProvider>)(Class<?>)List.class;
         argument = ArgumentCaptor.forClass(providerClass);
         
         sendMailService = mock(SendMailService.class);
@@ -87,21 +89,19 @@ public class ParticipantRosterGeneratorTest {
     }
     
     @Test
-    public void generatorCreatesRoster() {
+    public void generatorCreatesRoster() throws Exception {
         generator.run();
-        verify(sendMailService).sendEmail(argument.capture());
+        verify(sendMailService, times(2)).sendEmail(argument.capture());
         
-        ParticipantRosterProvider provider = argument.getValue();
+        ParticipantRosterProvider rosterProvider = (ParticipantRosterProvider)argument.getAllValues().get(0);
+        NotifyOperationsEmailProvider emailProvider = (NotifyOperationsEmailProvider)argument.getAllValues().get(1);
         
-        List<StudyParticipant> participants = provider.getParticipants();
-        
+        List<StudyParticipant> participants = rosterProvider.getParticipants();
         // They're all there
         assertEquals(2, participants.size());
-        
         // Should be sorted by email addresses
         assertEquals("first.last@test.com", participants.get(0).getEmail());
         assertEquals("zanadine@test.com", participants.get(1).getEmail());
-        
         // These objects should be fully realized
         StudyParticipant p = participants.get(0);
         assertEquals("First", p.getFirstName());
@@ -110,6 +110,12 @@ public class ParticipantRosterGeneratorTest {
         assertEquals("(206) 111-2222", p.get("phone"));
         assertEquals("true", p.get("can_recontact"));
         assertNull(p.get("another_attribute"));
+
+        assertNotNull(emailProvider);
+        String subject = "A participant roster has been emailed";
+        String body = "The participant roster for the study 'Test Study [ParticipantRosterGeneratorTest]' has been emailed to 'bridge-testing+consent@sagebase.org'.";
+        assertEquals(subject, emailProvider.getSubject());
+        assertEquals(body, emailProvider.getMessage());
     }
 
     private Account createAccount(String email, String firstName, String lastName, String phone, boolean hasConsented) {
