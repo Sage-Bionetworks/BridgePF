@@ -91,13 +91,15 @@ public class StudyServiceImplTest {
         // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setTaskIdentifiers(null);
         study.setActive(false);
+        study.setStrictUploadValidationEnabled(false);
         study.setHealthCodeExportEnabled(true);
         study = studyService.createStudy(study);
         
         assertNotNull("Version has been set", study.getVersion());
-        assertTrue(study.isActive()); // study is active
-        assertTrue(study.isHealthCodeExportEnabled()); // health code will not be exported
-        
+        assertTrue(study.isActive());
+        assertTrue(study.isStrictUploadValidationEnabled()); // by default set to true
+        assertTrue(study.isHealthCodeExportEnabled()); // it was set true in the study
+
         verify(cache).setStudy(study);
         verifyNoMoreInteractions(cache);
         reset(cache);
