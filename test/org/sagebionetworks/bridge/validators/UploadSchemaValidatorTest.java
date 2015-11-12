@@ -301,12 +301,12 @@ public class UploadSchemaValidatorTest {
         // missing property
         String json = "{\"name\":\"Upload Test iOS Survey\",\"schemaId\":\"upload-test-ios-survey\",\"schemaType\":\"ios_survey\",\"revision\":1,\"fieldDefinitions\":[{\"name\":\"foo\",\"required\":true}]}";
         UploadSchema schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
-        assertWillGenerateValidationError(schema, "fieldDefinitions0.type is required", "fieldDefinitions0.type");
+        assertWillGenerateValidationError(schema, "fieldDefinitions[0].type is required", "fieldDefinitions[0].type");
         
         // null property
         json = "{\"name\":\"Upload Test iOS Survey\",\"schemaId\":\"upload-test-ios-survey\",\"schemaType\":\"ios_survey\",\"revision\":1,\"fieldDefinitions\":[{\"name\":\"foo\",\"required\":true,\"type\":null}]}";
         schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
-        assertWillGenerateValidationError(schema, "fieldDefinitions0.type is required", "fieldDefinitions0.type");
+        assertWillGenerateValidationError(schema, "fieldDefinitions[0].type is required", "fieldDefinitions[0].type");
     }
     
     @Test
@@ -314,17 +314,17 @@ public class UploadSchemaValidatorTest {
         // missing property
         String json = "{\"name\":\"Upload Test iOS Survey\",\"schemaId\":\"upload-test-ios-survey\",\"schemaType\":\"ios_survey\",\"revision\":1,\"fieldDefinitions\":[{\"required\":true,\"type\":\"string\"}]}";
         UploadSchema schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
-        assertWillGenerateValidationError(schema, "fieldDefinitions0.name is required", "fieldDefinitions0.name");
+        assertWillGenerateValidationError(schema, "fieldDefinitions[0].name is required", "fieldDefinitions[0].name");
         
         // empty property
         json = "{\"name\":\"Upload Test iOS Survey\",\"schemaId\":\"upload-test-ios-survey\",\"schemaType\":\"ios_survey\",\"revision\":1,\"fieldDefinitions\":[{\"name\":\"\",\"required\":true,\"type\":\"string\"}]}";
         schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
-        assertWillGenerateValidationError(schema, "fieldDefinitions0.name is required", "fieldDefinitions0.name");
+        assertWillGenerateValidationError(schema, "fieldDefinitions[0].name is required", "fieldDefinitions[0].name");
         
         // null property
         json = "{\"name\":\"Upload Test iOS Survey\",\"schemaId\":\"upload-test-ios-survey\",\"schemaType\":\"ios_survey\",\"revision\":1,\"fieldDefinitions\":[{\"name\":null,\"required\":true,\"type\":\"string\"}]}";
         schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
-        assertWillGenerateValidationError(schema, "fieldDefinitions0.name is required", "fieldDefinitions0.name");
+        assertWillGenerateValidationError(schema, "fieldDefinitions[0].name is required", "fieldDefinitions[0].name");
     }
 
     @Test
