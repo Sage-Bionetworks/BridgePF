@@ -157,6 +157,7 @@ public class StudyServiceImpl implements StudyService {
             studyConsentService.publishConsent(study, view.getCreatedOn());
             
             study.setActive(true);
+            study.setStrictUploadValidationEnabled(true);
 
             String directory = directoryDao.createDirectoryForStudy(study);
             study.setStormpathHref(directory);
@@ -184,10 +185,11 @@ public class StudyServiceImpl implements StudyService {
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setStormpathHref(originalStudy.getStormpathHref());
         study.setActive(true);
-        // study.setActive(originalStudy.isActive());
-        // And this cannot be set unless you're an administrator.
+        // And this cannot be set unless you're an administrator. Regardless of what the 
+        // developer set, set these back to the original study.
         if (!isAdminUpdate) {
             study.setMaxNumOfParticipants(originalStudy.getMaxNumOfParticipants());
+            study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
         }
         Validate.entityThrowingException(validator, study);
 

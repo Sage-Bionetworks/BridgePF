@@ -47,4 +47,10 @@ public final class StudyParticipant extends HashMap<String,String> {
     public void setNotifyByEmail(Boolean notifyByEmail) {
         put(UserProfile.NOTIFY_BY_EMAIL_FIELD, notifyByEmail.toString());
     }
+    public String getHealthCode() {
+        return getEmpty(UserProfile.HEALTH_CODE_FIELD);
+    }
+    public void setHealthCode(String healthCode) {
+        put(UserProfile.HEALTH_CODE_FIELD, healthCode);
+    }
 }

@@ -109,9 +109,23 @@ public class ParticipantRosterGeneratorTest {
         assertEquals("first.last@test.com", p.getEmail());
         assertEquals("(206) 111-2222", p.get("phone"));
         assertEquals("true", p.get("can_recontact"));
+        assertEquals("healthCode", p.getHealthCode());
         assertNull(p.get("another_attribute"));
     }
 
+    @Test
+    public void generatorWithoutHealthCodeExportDoesntExportHealthCode() {
+        study.setHealthCodeExportEnabled(false);
+        generator.run();
+        verify(sendMailService).sendEmail(argument.capture());
+        
+        ParticipantRosterProvider provider = argument.getValue();
+        
+        for (StudyParticipant participant : provider.getParticipants()) {
+            assertEquals("", participant.getHealthCode());
+        }
+    }
+    
     private Account createAccount(String email, String firstName, String lastName, String phone, boolean hasConsented) {
         Account account = mock(Account.class);
         when(account.getEmail()).thenReturn(email);

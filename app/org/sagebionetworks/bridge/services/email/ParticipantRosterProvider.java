@@ -81,6 +81,9 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
         for (String attribute : study.getUserProfileAttributes()) {
             append(sb, StringUtils.capitalize(attribute), true);
         }
+        if (study.isHealthCodeExportEnabled()) {
+            append(sb, "Health Code", true);
+        }
         sb.append(NEWLINE);
         for (int i=0; i < participants.size(); i++) {
             StudyParticipant participant = participants.get(i);
@@ -94,6 +97,9 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
             append(sb, (notifyByEmail == null) ? "" : notifyByEmail.toString().toLowerCase(), true);
             for (String attribute : study.getUserProfileAttributes()) {
                 append(sb, participant.getEmpty(attribute), true);
+            }
+            if (study.isHealthCodeExportEnabled()) {
+                append(sb, participant.getHealthCode(), true);
             }
             sb.append(NEWLINE);
         }
