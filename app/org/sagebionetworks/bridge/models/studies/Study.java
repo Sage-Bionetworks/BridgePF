@@ -185,8 +185,14 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public String getConsentPDF();
 
     /** True if uploads in this study should fail on strict validation errors. */
-    boolean isStrictUploadValidationEnabled();
+    public boolean isStrictUploadValidationEnabled();
 
     /** @see #isStrictUploadValidationEnabled */
-    void setStrictUploadValidationEnabled(boolean enabled);
+    public void setStrictUploadValidationEnabled(boolean enabled);
+    
+    /** True if this study will export the healthCode when generating a participant roster. */
+    public boolean isHealthCodeExportEnabled();
+    
+    /** @see #isHealthCodeExportEnabled(); */
+    public void setHealthCodeExportEnabled(boolean enabled);
 }

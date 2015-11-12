@@ -88,12 +88,16 @@ public class StudyServiceImplTest {
     @Test
     public void crudStudy() {
         study = TestUtils.getValidStudy(StudyServiceImplTest.class);
-        // verify this can be null, that's okay
+        // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setTaskIdentifiers(null);
+        study.setActive(false);
+        study.setHealthCodeExportEnabled(true);
         study = studyService.createStudy(study);
         
         assertNotNull("Version has been set", study.getVersion());
-        assertTrue(study.isActive());
+        assertTrue(study.isActive()); // study is active
+        assertTrue(study.isHealthCodeExportEnabled()); // health code will not be exported
+        
         verify(cache).setStudy(study);
         verifyNoMoreInteractions(cache);
         reset(cache);

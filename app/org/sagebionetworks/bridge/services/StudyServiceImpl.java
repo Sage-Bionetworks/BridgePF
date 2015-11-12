@@ -157,6 +157,7 @@ public class StudyServiceImpl implements StudyService {
             studyConsentService.publishConsent(study, view.getCreatedOn());
             
             study.setActive(true);
+            study.setStrictUploadValidationEnabled(true);
 
             String directory = directoryDao.createDirectoryForStudy(study);
             study.setStormpathHref(directory);
