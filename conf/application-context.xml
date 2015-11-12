@@ -150,4 +150,7 @@
         <property name="targetName" value="scheduledActivityController"/>
     </bean>
 
+    <bean id="FPHSControllerProxied" parent="proxiedController">
+        <property name="targetName" value="fphsController"/>
+    </bean>
 </beans>
