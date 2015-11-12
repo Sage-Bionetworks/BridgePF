@@ -109,6 +109,7 @@ public class StudyServiceImplTest {
         
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());
+        assertTrue(newStudy.isStrictUploadValidationEnabled());
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceImplTest]", newStudy.getName());
         assertEquals(200, newStudy.getMaxNumOfParticipants());
@@ -218,18 +219,22 @@ public class StudyServiceImplTest {
     }
     
     @Test
-    public void adminsCanChangeMaxNumParticipantsResearchersCannot() {
+    public void adminsCanSomeValuesResearchersCannot() {
         study = TestUtils.getValidStudy(StudyServiceImplTest.class); // it's 200.
         study = studyService.createStudy(study);
         
-        // Okay, not that it's set, researchers can change it to no effect
+        // Okay, now that it's set, researchers can change it to no effect
         study.setMaxNumOfParticipants(1000);
+        study.setHealthCodeExportEnabled(true);
         study = studyService.updateStudy(study, false);
         assertEquals(200, study.getMaxNumOfParticipants()); // nope
+        assertFalse(study.isHealthCodeExportEnabled()); // nope
         
         study.setMaxNumOfParticipants(1000);
+        study.setHealthCodeExportEnabled(true);
         study = studyService.updateStudy(study, true);
         assertEquals(1000, study.getMaxNumOfParticipants()); // yep
+        assertTrue(study.isHealthCodeExportEnabled()); // yep
     }
     
     @Test(expected=InvalidEntityException.class)
