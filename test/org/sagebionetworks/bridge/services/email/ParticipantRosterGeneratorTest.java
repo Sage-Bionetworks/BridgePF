@@ -111,6 +111,7 @@ public class ParticipantRosterGeneratorTest {
         assertEquals("true", p.get("can_recontact"));
         assertNull(p.get("another_attribute"));
 
+        // Notification was sent to sysops
         assertNotNull(emailProvider);
         String subject = "A participant roster has been emailed";
         String body = "The participant roster for the study 'Test Study [ParticipantRosterGeneratorTest]' has been emailed to 'bridge-testing+consent@sagebase.org'.";

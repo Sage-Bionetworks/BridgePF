@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
@@ -49,6 +50,16 @@ public class ParticipantRosterGenerator implements Runnable {
         this.optionsService = optionsService;
     }
 
+    private String getHealthCode(Account account) {
+        if (account.getHealthId() != null) {
+            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+            if (healthId != null && healthId.getCode() != null) {
+                return healthId.getCode();
+            }
+        }
+        return null;
+    }
+    
     @Override
     public void run() {
         logger.debug("Running participant roster generator...");
@@ -64,11 +75,13 @@ public class ParticipantRosterGenerator implements Runnable {
                 Account account = accounts.next();
                 if (account.getActiveConsentSignature() != null) {
                     
-                    String healthCode = healthCodeService.getMapping(account.getHealthId()).getCode();
-                    SharingScope sharing = sharingLookup.getSharingScope(healthCode);
-                    
-                    Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
-
+                    SharingScope sharing = null;
+                    Boolean notifyByEmail = null;
+                    String healthCode = getHealthCode(account);
+                    if (healthCode != null) {
+                        sharing = sharingLookup.getSharingScope(healthCode);
+                        notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
+                    }
                     StudyParticipant participant = new StudyParticipant();
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());
