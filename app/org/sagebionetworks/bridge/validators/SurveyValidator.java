@@ -54,7 +54,7 @@ public class SurveyValidator implements Validator {
         Set<String> foundIdentifiers = Sets.newHashSet();
         for (int i=0; i < survey.getElements().size(); i++) {
             SurveyElement element = survey.getElements().get(i);
-            errors.pushNestedPath("element"+i);
+            errors.pushNestedPath("elements["+i+"]");
             if (SURVEY_QUESTION_TYPE.equals(element.getType())) {
                 doValidateQuestion((SurveyQuestion)element, errors);    
             } else if (SURVEY_INFO_SCREEN_TYPE.equals(element.getType())) {
@@ -125,7 +125,7 @@ public class SurveyValidator implements Validator {
             SurveyQuestion question = questions.get(i);
             for (SurveyRule rule : question.getConstraints().getRules()) {
                 if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                    errors.pushNestedPath("question"+i);
+                    errors.pushNestedPath("questions["+i+"]");
                     rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());
                     errors.popNestedPath();
                 }
@@ -137,7 +137,7 @@ public class SurveyValidator implements Validator {
             SurveyQuestion question = questions.get(i);
             for (SurveyRule rule : question.getConstraints().getRules()) {
                 if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                    errors.pushNestedPath("question"+i);
+                    errors.pushNestedPath("questions["+i+"]");
                     rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
                     errors.popNestedPath();
                 }

@@ -16,8 +16,6 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -191,20 +189,12 @@ public class SurveyControllerTest {
         
         // Should only include key felds.
         // Survey node
-        Set<String> fields = fieldNamesAsSet(node.get("items").get(0));
+        Set<String> fields = TestUtils.getFieldNamesSet(node.get("items").get(0));
         assertEquals(Sets.newHashSet("name","type","guid","identifier","createdOn","elements"), fields);
         
         // Element node
-        fields = fieldNamesAsSet(node.get("items").get(0).get("elements").get(0));
+        fields = TestUtils.getFieldNamesSet(node.get("items").get(0).get("elements").get(0));
         assertEquals(Sets.newHashSet("guid","fireEvent","identifier","type"), fields);
-    }
-    
-    private Set<String> fieldNamesAsSet(JsonNode node) {
-        HashSet<String> set = new HashSet<>();
-        for (Iterator<String> i = node.fieldNames(); i.hasNext(); ) {
-            set.add(i.next());
-        }
-        return set;
     }
     
     @Test

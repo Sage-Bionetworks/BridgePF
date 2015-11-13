@@ -47,9 +47,12 @@ public final class DynamoStudy implements Study {
     private EmailTemplate verifyEmailTemplate;
     private EmailTemplate resetPasswordTemplate;
     private boolean strictUploadValidationEnabled;
+    private boolean healthCodeExportEnabled;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
+        taskIdentifiers = new HashSet<>();
+        dataGroups = new HashSet<>();
     }
 
     /** {@inheritDoc} */
@@ -185,10 +188,11 @@ public final class DynamoStudy implements Study {
 
     @Override
     public void setUserProfileAttributes(Set<String> profileAttributes) {
-        this.profileAttributes = profileAttributes;
+        this.profileAttributes = (profileAttributes == null) ? new HashSet<>() : profileAttributes;
     }
 
     /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @Override
     public Set<String> getTaskIdentifiers() {
         return taskIdentifiers;
@@ -196,10 +200,11 @@ public final class DynamoStudy implements Study {
 
     @Override
     public void setTaskIdentifiers(Set<String> taskIdentifiers) {
-        this.taskIdentifiers = taskIdentifiers;
+        this.taskIdentifiers = (taskIdentifiers == null) ? new HashSet<>() : taskIdentifiers;
     }
     
     /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @Override
     public Set<String> getDataGroups() {
         return dataGroups;
@@ -207,7 +212,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public void setDataGroups(Set<String> dataGroups) {
-        this.dataGroups = dataGroups;
+        this.dataGroups = (dataGroups == null) ? new HashSet<>() : dataGroups;
     }
     
     /** {@inheritDoc} */
@@ -282,6 +287,18 @@ public final class DynamoStudy implements Study {
     public void setStrictUploadValidationEnabled(boolean enabled) {
         this.strictUploadValidationEnabled = enabled;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public boolean isHealthCodeExportEnabled() {
+        return healthCodeExportEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setHealthCodeExportEnabled(boolean enabled) {
+        this.healthCodeExportEnabled = enabled;
+    }
 
     @Override
     public int hashCode() {
@@ -305,6 +322,7 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(resetPasswordTemplate);
         result = prime * result + Objects.hashCode(active);
         result = prime * result + Objects.hashCode(strictUploadValidationEnabled);
+        result = prime * result + Objects.hashCode(healthCodeExportEnabled);
         return result;
     }
 
@@ -317,20 +335,21 @@ public final class DynamoStudy implements Study {
         DynamoStudy other = (DynamoStudy) obj;
 
         return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail)
-                        && Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants)
-                        && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
-                        && Objects.equals(stormpathHref, other.stormpathHref)
-                        && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
-                        && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
-                        && Objects.equals(consentNotificationEmail, other.consentNotificationEmail)
-                        && Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate)
-                        && Objects.equals(version, other.version)
-                        && Objects.equals(profileAttributes, other.profileAttributes)
-                        && Objects.equals(taskIdentifiers, other.taskIdentifiers)
-                        && Objects.equals(dataGroups, other.dataGroups)
-                        && Objects.equals(sponsorName, other.sponsorName)
-                        && Objects.equals(technicalEmail, other.technicalEmail)
-                        && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled);
+                && Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants)
+                && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
+                && Objects.equals(stormpathHref, other.stormpathHref)
+                && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
+                && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
+                && Objects.equals(consentNotificationEmail, other.consentNotificationEmail)
+                && Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate)
+                && Objects.equals(version, other.version)
+                && Objects.equals(profileAttributes, other.profileAttributes)
+                && Objects.equals(taskIdentifiers, other.taskIdentifiers)
+                && Objects.equals(dataGroups, other.dataGroups)
+                && Objects.equals(sponsorName, other.sponsorName)
+                && Objects.equals(technicalEmail, other.technicalEmail)
+                && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
+                && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled);
     }
 
     @Override
@@ -339,9 +358,10 @@ public final class DynamoStudy implements Study {
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
                             + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
                             + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
-                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s]",
+                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s]",
             name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
             supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
-            dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled);
+            dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
+            healthCodeExportEnabled);
     }
 }

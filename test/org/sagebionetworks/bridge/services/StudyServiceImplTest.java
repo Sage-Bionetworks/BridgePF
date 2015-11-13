@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -89,12 +88,18 @@ public class StudyServiceImplTest {
     @Test
     public void crudStudy() {
         study = TestUtils.getValidStudy(StudyServiceImplTest.class);
-        // verify this can be null, that's okay
+        // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setTaskIdentifiers(null);
+        study.setActive(false);
+        study.setStrictUploadValidationEnabled(false);
+        study.setHealthCodeExportEnabled(true);
         study = studyService.createStudy(study);
         
         assertNotNull("Version has been set", study.getVersion());
         assertTrue(study.isActive());
+        assertTrue(study.isStrictUploadValidationEnabled()); // by default set to true
+        assertTrue(study.isHealthCodeExportEnabled()); // it was set true in the study
+
         verify(cache).setStudy(study);
         verifyNoMoreInteractions(cache);
         reset(cache);
@@ -106,12 +111,13 @@ public class StudyServiceImplTest {
         
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());
+        assertTrue(newStudy.isStrictUploadValidationEnabled());
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceImplTest]", newStudy.getName());
         assertEquals(200, newStudy.getMaxNumOfParticipants());
         assertEquals(18, newStudy.getMinAgeOfConsent());
         assertEquals(Sets.newHashSet("beta_users", "production_users"), newStudy.getDataGroups());
-        assertNull(newStudy.getTaskIdentifiers());
+        assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
         verify(cache).getStudy(newStudy.getIdentifier());
@@ -215,18 +221,25 @@ public class StudyServiceImplTest {
     }
     
     @Test
-    public void adminsCanChangeMaxNumParticipantsResearchersCannot() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class); // it's 200.
+    public void adminsCanSomeValuesResearchersCannot() {
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study.setMaxNumOfParticipants(200);
+        study.setHealthCodeExportEnabled(false);
         study = studyService.createStudy(study);
         
-        // Okay, not that it's set, researchers can change it to no effect
+        // Okay, now that these are set, researchers cannot change them
         study.setMaxNumOfParticipants(1000);
-        study = studyService.updateStudy(study, false);
-        assertEquals(200, study.getMaxNumOfParticipants()); // nope
+        study.setHealthCodeExportEnabled(true);
+        study = studyService.updateStudy(study, false); // nope
+        assertEquals(200, study.getMaxNumOfParticipants());
+        assertFalse("This should be null", study.isHealthCodeExportEnabled());
         
+        // But administrators can
         study.setMaxNumOfParticipants(1000);
-        study = studyService.updateStudy(study, true);
-        assertEquals(1000, study.getMaxNumOfParticipants()); // yep
+        study.setHealthCodeExportEnabled(true);
+        study = studyService.updateStudy(study, true); // yep
+        assertEquals(1000, study.getMaxNumOfParticipants());
+        assertTrue(study.isHealthCodeExportEnabled());
     }
     
     @Test(expected=InvalidEntityException.class)

@@ -10,8 +10,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Iterator;
-
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -111,7 +109,7 @@ public class ConsentControllerMockedTest {
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
-        assertEquals(5, fieldNameCount(node));
+        assertEquals(5, TestUtils.getFieldNamesSet(node).size());
         assertEquals("Jack Aubrey", node.get("name").asText());
         assertEquals("1970-10-10", node.get("birthdate").asText());
         assertEquals("ConsentSignature", node.get("type").asText());
@@ -207,12 +205,4 @@ public class ConsentControllerMockedTest {
         assertEquals("image/png", signature.getImageMimeType());
     }
 
-    private int fieldNameCount(JsonNode node) {
-        int count = 0;
-        for (Iterator<String> i = node.fieldNames(); i.hasNext();) {
-            i.next();
-            count++;
-        }
-        return count;
-    }
 }

@@ -112,7 +112,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element1.identifier exists in an earlier survey element", errorFor(e, "element1.identifier"));
+            assertEquals("elements[1].identifier exists in an earlier survey element", errorFor(e, "elements[1].identifier"));
         }
     }
 
@@ -127,7 +127,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element9.identifier is required", errorFor(e, "element9.identifier"));
+            assertEquals("elements[9].identifier is required", errorFor(e, "elements[9].identifier"));
         }
     }
 
@@ -142,7 +142,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element9.title is required", errorFor(e, "element9.title"));
+            assertEquals("elements[9].title is required", errorFor(e, "elements[9].title"));
         }
     }
 
@@ -157,7 +157,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element9.prompt is required", errorFor(e, "element9.prompt"));
+            assertEquals("elements[9].prompt is required", errorFor(e, "elements[9].prompt"));
         }
     }
 
@@ -172,9 +172,9 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element9.image.width is required", errorFor(e, "element9.image.width"));
-            assertEquals("element9.image.height is required", errorFor(e, "element9.image.height"));
-            assertEquals("element9.image.source is required", errorFor(e, "element9.image.source"));
+            assertEquals("elements[9].image.width is required", errorFor(e, "elements[9].image.width"));
+            assertEquals("elements[9].image.height is required", errorFor(e, "elements[9].image.height"));
+            assertEquals("elements[9].image.source is required", errorFor(e, "elements[9].image.source"));
         }
     }
 
@@ -187,7 +187,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element0.identifier is required", errorFor(e, "element0.identifier"));
+            assertEquals("elements[0].identifier is required", errorFor(e, "elements[0].identifier"));
         }
     }
 
@@ -200,7 +200,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element0.uiHint is required", errorFor(e, "element0.uiHint"));
+            assertEquals("elements[0].uiHint is required", errorFor(e, "elements[0].uiHint"));
         }
     }
 
@@ -213,7 +213,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element0.prompt is required", errorFor(e, "element0.prompt"));
+            assertEquals("elements[0].prompt is required", errorFor(e, "elements[0].prompt"));
         }
     }
 
@@ -226,7 +226,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element0.constraints is required", errorFor(e, "element0.constraints"));
+            assertEquals("elements[0].constraints is required", errorFor(e, "elements[0].constraints"));
         }
     }
 
@@ -243,7 +243,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("element0.constraints.dataType is required", errorFor(e, "element0.constraints.dataType"));
+            assertEquals("elements[0].constraints.dataType is required", errorFor(e, "elements[0].constraints.dataType"));
         }
     }
 
@@ -258,7 +258,7 @@ public class SurveyValidatorTest {
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
             assertEquals("data type 'boolean' doesn't match the UI hint of 'list'",
-                            errorFor(e, "element0.constraints.dataType"));
+                            errorFor(e, "elements[0].constraints.dataType"));
         }
     }
 
@@ -274,7 +274,7 @@ public class SurveyValidatorTest {
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
             assertEquals("'combobox' is only valid when multiple = false and other = true",
-                            errorFor(e, "element7.constraints.uiHint"));
+                            errorFor(e, "elements[7].constraints.uiHint"));
         }
         try {
             survey = new TestSurvey(false);
@@ -286,7 +286,7 @@ public class SurveyValidatorTest {
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
             assertEquals("'combobox' is only valid when multiple = false and other = true",
-                            errorFor(e, "element7.constraints.uiHint"));
+                            errorFor(e, "elements[7].constraints.uiHint"));
         }
     }
 
@@ -302,7 +302,7 @@ public class SurveyValidatorTest {
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
             assertEquals("allows multiples but the 'slider' UI hint doesn't gather more than one answer",
-                            errorFor(e, "element7.constraints.uiHint"));
+                            errorFor(e, "elements[7].constraints.uiHint"));
         }
     }
 
@@ -318,7 +318,7 @@ public class SurveyValidatorTest {
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
             assertEquals("doesn't allow multiples but the 'checkbox' UI hint gathers more than one answer",
-                            errorFor(e, "element7.constraints.uiHint"));
+                            errorFor(e, "elements[7].constraints.uiHint"));
         }
     }
 
@@ -332,7 +332,7 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("pattern is not a valid regular expression: ?", errorFor(e, "element8.constraints.pattern"));
+            assertEquals("pattern is not a valid regular expression: ?", errorFor(e, "elements[8].constraints.pattern"));
         }
     }
     

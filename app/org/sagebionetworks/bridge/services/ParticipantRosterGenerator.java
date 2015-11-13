@@ -79,6 +79,9 @@ public class ParticipantRosterGenerator implements Runnable {
                         // Whether present or not, add an entry.
                         participant.put(attribute, value);
                     }
+                    if (study.isHealthCodeExportEnabled()) {
+                        participant.setHealthCode(healthCode);
+                    }
                     participants.add(participant);
                     logger.debug("processing account #" + (count++));
                 } else {

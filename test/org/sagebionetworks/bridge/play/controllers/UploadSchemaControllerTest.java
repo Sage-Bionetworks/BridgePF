@@ -271,7 +271,7 @@ public class UploadSchemaControllerTest {
             assertEquals("schemaId is required", e.getErrors().get("schemaId").get(0));
             assertEquals("name is required", e.getErrors().get("name").get(0));
             assertEquals("schemaType is required", e.getErrors().get("schemaType").get(0));
-            assertEquals("fieldDefinitions0.type is required", e.getErrors().get("fieldDefinitions0.type").get(0));
+            assertEquals("fieldDefinitions[0].type is required", e.getErrors().get("fieldDefinitions[0].type").get(0));
         }
     }
 

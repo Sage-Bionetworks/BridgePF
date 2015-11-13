@@ -5,8 +5,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.Period;
@@ -51,10 +54,9 @@ public class TestUtils {
             }
         }
     }
-
+    
     public static Http.Context mockPlayContextWithJson(String json) throws Exception {
         JsonNode node = new ObjectMapper().readTree(json);
-
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(node);
 
@@ -76,7 +78,7 @@ public class TestUtils {
 
         return context;
     }
-
+    
     public static Http.Context mockPlayContext() throws Exception {
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(null);
@@ -191,6 +193,7 @@ public class TestUtils {
         study.setTaskIdentifiers(Sets.newHashSet("task1", "task2"));
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users"));
         study.setStrictUploadValidationEnabled(true);
+        study.setHealthCodeExportEnabled(true);
         return study;
     }
     
@@ -239,4 +242,13 @@ public class TestUtils {
     public static Survey getSurvey(boolean makeNew) {
         return new TestSurvey(makeNew);
     }
+    
+    public static Set<String> getFieldNamesSet(JsonNode node) {
+        HashSet<String> set = new HashSet<>();
+        for (Iterator<String> i = node.fieldNames(); i.hasNext(); ) {
+            set.add(i.next());
+        }
+        return set;
+    }
+    
  }
