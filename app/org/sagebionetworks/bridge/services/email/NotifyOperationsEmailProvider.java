@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.services.email;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.nio.charset.StandardCharsets;
-
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 
@@ -12,6 +10,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 public class NotifyOperationsEmailProvider implements MimeTypeEmailProvider {
 
     private static final String SYSOPS_EMAIL = BridgeConfigFactory.getConfig().getProperty("sysops.email");
+    private static final String MIME_TYPE_TEXT = "text/plain";
     
     private final String subject;
     private final String message;
@@ -34,9 +33,9 @@ public class NotifyOperationsEmailProvider implements MimeTypeEmailProvider {
     @Override
     public MimeTypeEmail getEmail(String defaultSender) throws MessagingException {
         String sender = (defaultSender != null) ? defaultSender : SYSOPS_EMAIL;
-        
+
         MimeBodyPart body = new MimeBodyPart();
-        body.setText(message, StandardCharsets.UTF_8.name(), "text/plain");
+        body.setContent(message, MIME_TYPE_TEXT);
         
         return new MimeTypeEmailBuilder()
                 .withSender(sender)

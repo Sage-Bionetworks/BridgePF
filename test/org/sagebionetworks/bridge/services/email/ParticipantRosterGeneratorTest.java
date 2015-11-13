@@ -124,11 +124,11 @@ public class ParticipantRosterGeneratorTest {
     public void generatorWithoutHealthCodeExportDoesntExportHealthCode() {
         study.setHealthCodeExportEnabled(false);
         generator.run();
-        verify(sendMailService).sendEmail(argument.capture());
+        verify(sendMailService, times(2)).sendEmail(argument.capture());
         
-        ParticipantRosterProvider provider = argument.getValue();
+        ParticipantRosterProvider rosterProvider = (ParticipantRosterProvider)argument.getAllValues().get(0);
         
-        for (StudyParticipant participant : provider.getParticipants()) {
+        for (StudyParticipant participant : rosterProvider.getParticipants()) {
             assertEquals("", participant.getHealthCode());
         }
     }

@@ -78,6 +78,8 @@ public class ParticipantRosterGenerator implements Runnable {
                     SharingScope sharing = null;
                     Boolean notifyByEmail = null;
                     String healthCode = getHealthCode(account);
+                    // If there's no health code, this is not a participant, this is a researcher or admin.
+                    // We still export these folks.
                     if (healthCode != null) {
                         sharing = sharingLookup.getSharingScope(healthCode);
                         notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
