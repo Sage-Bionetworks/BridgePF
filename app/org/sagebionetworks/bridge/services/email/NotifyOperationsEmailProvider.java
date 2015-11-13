@@ -36,14 +36,12 @@ public class NotifyOperationsEmailProvider implements MimeTypeEmailProvider {
     }
     
     @Override
-    public MimeTypeEmail getEmail(String defaultSender) throws MessagingException {
-        String sender = (defaultSender != null) ? defaultSender : SYSOPS_EMAIL;
-
+    public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeBodyPart body = new MimeBodyPart();
         body.setContent(message, MIME_TYPE_TEXT);
         
         return new MimeTypeEmailBuilder()
-                .withSender(sender)
+                .withSender(SYSOPS_EMAIL)
                 .withRecipient(SYSOPS_EMAIL)
                 .withSubject(subject)
                 .withMessageParts(body)

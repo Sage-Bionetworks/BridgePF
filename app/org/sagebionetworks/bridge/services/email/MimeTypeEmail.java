@@ -31,14 +31,12 @@ public final class MimeTypeEmail {
     private final List<MimeBodyPart> messageParts;
     
     MimeTypeEmail(String subject, String senderAddress, List<String> recipientAddresses, List<MimeBodyPart> messageParts) {
-        checkArgument(isNotBlank(senderAddress));
         checkArgument(isNotBlank(subject));
-        checkArgument(isNotBlank(senderAddress));
         checkArgument(recipientAddresses != null && !recipientAddresses.isEmpty());
         checkArgument(messageParts != null && !messageParts.isEmpty());
         
         this.subject = subject;
-        this.senderAddress = escapeEmailAddress(senderAddress);
+        this.senderAddress = (senderAddress != null) ? escapeEmailAddress(senderAddress) : null;
         this.recipientAddresses = Lists.transform(recipientAddresses, APPLY_EMAIL_ESCAPER);
         this.messageParts = ImmutableList.copyOf(messageParts);
     }

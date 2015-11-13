@@ -25,20 +25,8 @@ public class NotifyOperationsEmailProviderTest {
     public void testWithNoSender() throws Exception {
         provider = new NotifyOperationsEmailProvider("Subject", "This is a test message.");
         
-        MimeTypeEmail email = provider.getEmail(null);
+        MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(sysopsEmail, email.getSenderAddress());
-        assertEquals(sysopsEmail, email.getRecipientAddresses().get(0));
-        assertEquals("Subject", email.getSubject());
-        assertEquals("This is a test message.", (String)email.getMessageParts().get(0).getContent());
-    }
-    
-    @Test
-    public void testWithSender() throws Exception {
-        provider = new NotifyOperationsEmailProvider("Subject", "This is a test message.");
-        
-        String emailEscaped = "\"Sender\" <sender@sender.com>";
-        MimeTypeEmail email = provider.getEmail("Sender <sender@sender.com>");
-        assertEquals(emailEscaped, email.getSenderAddress());
         assertEquals(sysopsEmail, email.getRecipientAddresses().get(0));
         assertEquals("Subject", email.getSubject());
         assertEquals("This is a test message.", (String)email.getMessageParts().get(0).getContent());
