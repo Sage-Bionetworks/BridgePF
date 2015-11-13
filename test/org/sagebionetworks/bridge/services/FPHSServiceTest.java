@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.List;
 
@@ -16,7 +15,6 @@ import static org.mockito.Mockito.when;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -70,7 +68,7 @@ public class FPHSServiceTest {
     public void registerExternalIdentifier() throws Exception {
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(dao).registerExternalId(externalId);
-        verify(optionsService).setOption(TEST_STUDY, "BBB", ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+        verify(optionsService).setExternalIdentifier(TEST_STUDY, "BBB", externalId.getIdentifier());
     }
     
     @Test
@@ -88,8 +86,7 @@ public class FPHSServiceTest {
     
     @Test
     public void failureToSetExternalIdRollsBackRegistration() throws Exception {
-        doThrow(new RuntimeException()).when(optionsService).setOption(TEST_STUDY, "BBB", 
-                EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+        doThrow(new RuntimeException()).when(optionsService).setExternalIdentifier(TEST_STUDY, "BBB", externalId.getIdentifier());
         try {
             service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
             fail("Exception should have been thrown");
@@ -97,8 +94,7 @@ public class FPHSServiceTest {
             verify(dao).registerExternalId(externalId);
             verify(dao).unregisterExternalId(externalId);
             verifyNoMoreInteractions(dao);
-            verify(optionsService).setOption(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER,
-                    externalId.getIdentifier());
+            verify(optionsService).setExternalIdentifier(TEST_STUDY, "BBB", externalId.getIdentifier());
             verifyNoMoreInteractions(optionsService);
         }
     }

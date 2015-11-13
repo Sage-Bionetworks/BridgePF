@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.Map;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
@@ -16,20 +17,13 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Sets;
-
 @Component
 public class ParticipantOptionsServiceImpl implements ParticipantOptionsService {
-
-    private static final Joiner SET_JOINER = Joiner.on(",");
-    private static final Splitter SET_SPLITTER = Splitter.on(",");
     
     private ParticipantOptionsDao optionsDao;
     
     @Autowired
-    public final void setParticipantOptionsDao(ParticipantOptionsDao participantOptionsDao) {
+    final void setParticipantOptionsDao(ParticipantOptionsDao participantOptionsDao) {
         this.optionsDao = participantOptionsDao;
     }
     
@@ -66,20 +60,14 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
         checkArgument(isNotBlank(healthCode));
         checkNotNull(dataGroups);
         
-        String value = SET_JOINER.join(dataGroups);
+        String value = BridgeUtils.dataGroupsToString(dataGroups);
         setOption(studyIdentifier, healthCode, ParticipantOption.DATA_GROUPS, value);
     }
 
     @Override
     public Set<String> getDataGroups(String healthCode) {
         String value = getOption(healthCode, ParticipantOption.DATA_GROUPS);
-        Set<String> dataGroups = Sets.newHashSet();
-        if (isNotBlank(value)) {
-            for (String group : SET_SPLITTER.split(value)) {
-                dataGroups.add(group);
-            }
-        }
-        return dataGroups;
+        return BridgeUtils.stringToDataGroups(value);
     }
 
     @Override

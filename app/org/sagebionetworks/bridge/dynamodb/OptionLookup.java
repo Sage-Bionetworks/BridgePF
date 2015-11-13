@@ -1,14 +1,14 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.validators.Validate;
 
 public class OptionLookup {
     
@@ -16,12 +16,11 @@ public class OptionLookup {
     private final String defaultValue;
 
     public OptionLookup(String defaultValue) {
-        checkArgument(isNotBlank(defaultValue), Validate.CANNOT_BE_BLANK, "defaultValue");
         this.defaultValue = defaultValue;
     }
 
     void put(String healthCode, String value) {
-        checkNotNull(healthCode, Validate.CANNOT_BE_NULL, "healthCode");
+        checkNotNull(healthCode);
         if (isNotBlank(value)) {
             map.put(healthCode, value);
         }
@@ -34,6 +33,11 @@ public class OptionLookup {
     
     public SharingScope getSharingScope(String healthCode) {
         return SharingScope.valueOf(get(healthCode));
+    }
+    
+    public Set<String> getDataGroups(String healthCode) {
+        String value = map.get(healthCode);
+        return (value == null) ? null : BridgeUtils.stringToDataGroups(value);
     }
 
 }

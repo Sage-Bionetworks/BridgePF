@@ -7,7 +7,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
@@ -49,7 +48,7 @@ public class FPHSService {
         }
         fphsDao.registerExternalId(externalId);
         try {
-            optionsService.setOption(studyId, healthCode, ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+            optionsService.setExternalIdentifier(studyId, healthCode, externalId.getIdentifier());
         } catch(Exception e) {
             fphsDao.unregisterExternalId(externalId);
             throw e;
