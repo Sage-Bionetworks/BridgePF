@@ -7,6 +7,11 @@ import javax.mail.internet.MimeBodyPart;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 
+/**
+ * This is a simple and generic provider to send a notification via email to our sysops/devops email address. The first
+ * use of this is to verify that a participant roster has been completed and sent to the consent notification email for
+ * a study, because if this fails, we get no information about it one way or another.
+ */
 public class NotifyOperationsEmailProvider implements MimeTypeEmailProvider {
 
     private static final String SYSOPS_EMAIL = BridgeConfigFactory.getConfig().getProperty("sysops.email");

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services.email;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -131,6 +132,20 @@ public class ParticipantRosterGeneratorTest {
         for (StudyParticipant participant : rosterProvider.getParticipants()) {
             assertEquals("", participant.getHealthCode());
         }
+    }
+    
+    @Test
+    public void failureToGenerateRosterSendsEmailToSysops() {
+        when(healthCodeService.getMapping(anyString())).thenThrow(new RuntimeException("Something bad happened"));
+        study.setHealthCodeExportEnabled(false);
+        generator.run();
+        
+        verify(sendMailService, times(1)).sendEmail(argument.capture());
+        NotifyOperationsEmailProvider emailProvider = (NotifyOperationsEmailProvider)argument.getValue();
+        
+        assertTrue(emailProvider.getMessage().contains("Something bad happened"));
+        assertTrue(emailProvider.getMessage().contains("ParticipantRosterGenerator")); // dumb way to verify it's a stacktrace
+        assertEquals("Generating participant roster failed for the study 'Test Study [ParticipantRosterGeneratorTest]'", emailProvider.getSubject());
     }
     
     private Account createAccount(String email, String firstName, String lastName, String phone, boolean hasConsented) {

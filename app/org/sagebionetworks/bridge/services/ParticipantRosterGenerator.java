@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.NotifyOperationsEmailProvider;
 import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
+
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +116,10 @@ public class ParticipantRosterGenerator implements Runnable {
             
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            
+            String subject = "Generating participant roster failed for the study '"+study.getName()+"'";
+            String message = ExceptionUtils.getStackTrace(e);
+            sendMailService.sendEmail(new NotifyOperationsEmailProvider(subject, message));
         }
     }
 
