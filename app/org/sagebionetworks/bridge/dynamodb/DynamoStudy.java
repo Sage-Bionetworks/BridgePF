@@ -47,6 +47,7 @@ public final class DynamoStudy implements Study {
     private EmailTemplate verifyEmailTemplate;
     private EmailTemplate resetPasswordTemplate;
     private boolean strictUploadValidationEnabled;
+    private boolean healthCodeExportEnabled;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
@@ -286,6 +287,18 @@ public final class DynamoStudy implements Study {
     public void setStrictUploadValidationEnabled(boolean enabled) {
         this.strictUploadValidationEnabled = enabled;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public boolean isHealthCodeExportEnabled() {
+        return healthCodeExportEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setHealthCodeExportEnabled(boolean enabled) {
+        this.healthCodeExportEnabled = enabled;
+    }
 
     @Override
     public int hashCode() {
@@ -309,6 +322,7 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(resetPasswordTemplate);
         result = prime * result + Objects.hashCode(active);
         result = prime * result + Objects.hashCode(strictUploadValidationEnabled);
+        result = prime * result + Objects.hashCode(healthCodeExportEnabled);
         return result;
     }
 
@@ -334,7 +348,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(dataGroups, other.dataGroups)
                 && Objects.equals(sponsorName, other.sponsorName)
                 && Objects.equals(technicalEmail, other.technicalEmail)
-                && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled);
+                && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
+                && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled);
     }
 
     @Override
@@ -343,9 +358,10 @@ public final class DynamoStudy implements Study {
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
                             + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
                             + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
-                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s]",
+                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s]",
             name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
             supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
-            dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled);
+            dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
+            healthCodeExportEnabled);
     }
 }

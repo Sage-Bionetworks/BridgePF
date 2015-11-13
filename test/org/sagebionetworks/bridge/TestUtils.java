@@ -193,6 +193,7 @@ public class TestUtils {
         study.setTaskIdentifiers(Sets.newHashSet("task1", "task2"));
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users"));
         study.setStrictUploadValidationEnabled(true);
+        study.setHealthCodeExportEnabled(true);
         return study;
     }
     

@@ -63,6 +63,7 @@ public class DynamoStudyTest {
         assertEquals(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
         assertEquals((Long)study.getVersion(), (Long)node.get("version").asLong());
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
+        assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertEquals("Study", node.get("type").asText());
         
         String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.html";
