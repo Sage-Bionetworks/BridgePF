@@ -77,21 +77,19 @@ public class ParticipantRosterGenerator implements Runnable {
                 Account account = accounts.next();
                 if (account.getActiveConsentSignature() != null) {
                     
-                    SharingScope sharing = null;
-                    Boolean notifyByEmail = null;
                     String healthCode = getHealthCode(account);
-                    // If there's no health code, this is not a participant, this is a researcher or admin.
-                    // We still export these folks.
-                    if (healthCode != null) {
-                        sharing = sharingLookup.getSharingScope(healthCode);
-                        notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
-                    }
                     StudyParticipant participant = new StudyParticipant();
+                    // Accounts exist that have signatures but no health codes. This may only be from testing, 
+                    // but still, do not want to fail to export accounts because of this. So we check for this.
+                    if (healthCode != null) {
+                        SharingScope sharing = sharingLookup.getSharingScope(healthCode);
+                        Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
+                        participant.setSharingScope(sharing);
+                        participant.setNotifyByEmail(notifyByEmail);
+                    }
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());
                     participant.setEmail(account.getEmail());
-                    participant.setSharingScope(sharing);
-                    participant.setNotifyByEmail(notifyByEmail);
                     for (String attribute : study.getUserProfileAttributes()) {
                         String value = account.getAttribute(attribute);
                         // Whether present or not, add an entry.
