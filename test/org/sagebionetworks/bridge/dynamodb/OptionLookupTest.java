@@ -1,20 +1,16 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
 public class OptionLookupTest {
 
     @Test
-    public void mustProvideDefaultValue() {
-        try {
-            new OptionLookup(null);
-            fail("Should have thrown exception");
-        } catch(IllegalArgumentException e) {
-            assertEquals("defaultValue cannot be missing, null, or blank", e.getMessage());
-        }
+    public void nullDefaultIsOK() {
+        OptionLookup lookup = new OptionLookup(null);
+        assertNull(lookup.get("AAA"));
     }
     
     @Test

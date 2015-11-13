@@ -2,10 +2,13 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.Set;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
@@ -75,8 +78,6 @@ public class UserProfileController extends BaseController {
 
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
         
-        // TODO: An annotation-based validator would make these trivial validations 
-        // easier to factor out.
         if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
@@ -84,4 +85,21 @@ public class UserProfileController extends BaseController {
         
         return okResult("External identifier added to user profile.");
     }
+    
+    public Result getDataGroups() throws Exception {
+        UserSession session = getAuthenticatedSession();
+
+        Set<String> dataGroups = optionsService.getDataGroups(session.getUser().getHealthCode());
+        return okResult(new DataGroups(dataGroups));
+    }
+    
+    public Result updateDataGroups() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        
+        DataGroups dataGroups = parseJson(request(), DataGroups.class);
+        optionsService.setDataGroups(session.getStudyIdentifier(), 
+                session.getUser().getHealthCode(), dataGroups.getDataGroups());
+        return okResult("Data groups updated.");
+    }
+
 }

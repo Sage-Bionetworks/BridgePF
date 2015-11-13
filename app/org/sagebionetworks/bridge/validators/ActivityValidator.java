@@ -85,7 +85,7 @@ public class ActivityValidator implements Validator {
         if (taskIdentifiers.isEmpty()) {
             message += "<no task identifiers declared>";
         } else {
-            message += Joiner.on(", ").join(taskIdentifiers);
+            message += Joiner.on(", ").join(taskIdentifiers) + ".";
         }
         return message;
     }

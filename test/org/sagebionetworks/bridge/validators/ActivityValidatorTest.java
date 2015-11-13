@@ -73,7 +73,7 @@ public class ActivityValidatorTest {
             Validate.entityThrowingException(new ActivityValidator(Sets.newHashSet("bar", "baz")), activity);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals("task.identifier 'foo' is not in enumeration: bar, baz", e.getErrors().get("task.identifier").get(0));
+            assertEquals("task.identifier 'foo' is not in enumeration: bar, baz.", e.getErrors().get("task.identifier").get(0));
         }
     }
     

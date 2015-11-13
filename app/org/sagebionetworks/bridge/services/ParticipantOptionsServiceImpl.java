@@ -12,7 +12,10 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.DataGroupsValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -21,10 +24,16 @@ import org.springframework.stereotype.Component;
 public class ParticipantOptionsServiceImpl implements ParticipantOptionsService {
     
     private ParticipantOptionsDao optionsDao;
+    private StudyService studyService;
     
     @Autowired
     final void setParticipantOptionsDao(ParticipantOptionsDao participantOptionsDao) {
         this.optionsDao = participantOptionsDao;
+    }
+    
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     private void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {
@@ -59,6 +68,9 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
         checkNotNull(dataGroups);
+        
+        Study study = studyService.getStudy(studyIdentifier);
+        Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), new DataGroups(dataGroups));
         
         String value = BridgeUtils.dataGroupsToString(dataGroups);
         setOption(studyIdentifier, healthCode, ParticipantOption.DATA_GROUPS, value);
