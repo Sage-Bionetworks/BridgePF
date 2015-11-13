@@ -15,7 +15,7 @@ public class NotifyOperationsEmailProviderTest {
     @Before
     public void before() {
         // This is a quick and dirty implementation of the escaping that is done
-        // by the email service, so we can test without hardcoding the actual email.
+        // by MimeTypeEmail, so we can test without hardcoding the actual email.
         sysopsEmail = BridgeConfigFactory.getConfig().getProperty("sysops.email");
         String[] parts = sysopsEmail.split(" <");
         sysopsEmail = "\"" + parts[0] + "\" <" + parts[1];

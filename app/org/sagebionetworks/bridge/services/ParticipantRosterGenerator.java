@@ -80,7 +80,7 @@ public class ParticipantRosterGenerator implements Runnable {
                     String healthCode = getHealthCode(account);
                     StudyParticipant participant = new StudyParticipant();
                     // Accounts exist that have signatures but no health codes. This may only be from testing, 
-                    // but still, do not want to fail to export accounts because of this. So we check for this.
+                    // but still, do not want roster generation to fail because of this. So we check for this.
                     if (healthCode != null) {
                         SharingScope sharing = sharingLookup.getSharingScope(healthCode);
                         Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
