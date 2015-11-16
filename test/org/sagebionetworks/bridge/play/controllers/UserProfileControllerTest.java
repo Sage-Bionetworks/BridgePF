@@ -5,6 +5,7 @@ import static play.test.Helpers.contentAsString;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -19,13 +20,17 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.controllers.UserProfileController;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl;
+import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -70,8 +75,8 @@ public class UserProfileControllerTest {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
-    public void canSetDataGroups() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"A\",\"B\",\"C\"]}"));
+    public void validDataGroupsCanBeAdded() throws Exception {
+        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}"));
         
         UserProfileController controller = controllerForExternalIdTests();
         
@@ -81,12 +86,28 @@ public class UserProfileControllerTest {
         verify(optionsService).setDataGroups(any(), any(), captor.capture());
         
         Set<String> dataGroups = (Set<String>)captor.getValue();
-        assertEquals(Sets.newHashSet("A","B","C"), dataGroups);
+        assertEquals(Sets.newHashSet("group1"), dataGroups);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("Data groups updated.", node.get("message").asText());
     }
 
+    @Test
+    public void invalidDataGroupsThrowException() throws Exception {
+        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"A\",\"B\",\"C\"]}"));
+        
+        UserProfileController controller = controllerForExternalIdTests();
+        try {
+            controller.updateDataGroups();
+            fail("Should have thrown exception.");
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("dataGroups 'A' is not one of these valid values: "));
+            assertTrue(e.getMessage().contains("dataGroups 'B' is not one of these valid values: "));
+            assertTrue(e.getMessage().contains("dataGroups 'C' is not one of these valid values: "));
+            verifyNoMoreInteractions(optionsService);
+        }
+    }
+    
     @Test
     public void canGetDataGroups() throws Exception {
         Set<String> dataGroupsSet = Sets.newHashSet("group1","group2");
@@ -136,9 +157,15 @@ public class UserProfileControllerTest {
     }
     
     private UserProfileController controllerForExternalIdTests() {
+        Study study = new DynamoStudy();
+        study.setDataGroups(Sets.newHashSet("group1", "group2"));
+        
         optionsService = mock(ParticipantOptionsServiceImpl.class);
+        StudyService studyService = mock(StudyService.class);
+        when(studyService.getStudy((StudyIdentifier)any())).thenReturn(study);
         
         UserProfileController controller = spy(new UserProfileController());
+        controller.setStudyService(studyService);
         controller.setParticipantOptionsService(optionsService);
         doReturn(mockSession()).when(controller).getAuthenticatedSession();
 

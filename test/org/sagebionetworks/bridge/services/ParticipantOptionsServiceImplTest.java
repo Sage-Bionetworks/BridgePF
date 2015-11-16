@@ -6,7 +6,6 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -18,10 +17,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 
 import com.google.common.collect.Sets;
 
@@ -31,20 +27,12 @@ public class ParticipantOptionsServiceImplTest {
     
     private ParticipantOptionsServiceImpl service;
     private ParticipantOptionsDao mockDao;
-    private StudyService mockStudyService;
     
     @Before
     public void before() {
         service = new ParticipantOptionsServiceImpl();
         mockDao = mock(ParticipantOptionsDao.class);
         service.setParticipantOptionsDao(mockDao);
-        
-        Study study = new DynamoStudy();
-        study.setDataGroups(Sets.newHashSet("group1", "group2", "group3"));
-        
-        mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        service.setStudyService(mockStudyService);
     }
 
     @Test
@@ -100,19 +88,6 @@ public class ParticipantOptionsServiceImplTest {
         
         // Order of the set when serialized is indeterminate, it's a set
         verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, ParticipantOption.DATA_GROUPS, BridgeUtils.dataGroupsToString(dataGroups));
-        verifyNoMoreInteractions(mockDao);
-    }
-    
-    @Test
-    public void setDataGroupsValidates() {
-        Set<String> dataGroups = Sets.newHashSet("groupA");
-        
-        try {
-            service.setDataGroups(TEST_STUDY, HEALTH_CODE, dataGroups);
-            fail("Should have thrown exception.");
-        } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("'groupA' is not one of these valid values: "));
-        }
         verifyNoMoreInteractions(mockDao);
     }
     
