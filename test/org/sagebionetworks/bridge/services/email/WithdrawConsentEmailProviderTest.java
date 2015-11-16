@@ -40,7 +40,7 @@ public class WithdrawConsentEmailProviderTest {
         when(study.getSupportEmail()).thenReturn("c@c.com");
         when(user.getEmail()).thenReturn("d@d.com");
 
-        MimeTypeEmail email = provider.getEmail("foo@foo.com");
+        MimeTypeEmail email = provider.getMimeTypeEmail();
         
         List<String> recipients = email.getRecipientAddresses();
         assertEquals(1, recipients.size());
@@ -66,7 +66,7 @@ public class WithdrawConsentEmailProviderTest {
         when(user.getLastName()).thenReturn("Aubrey");
         when(user.getEmail()).thenReturn("d@d.com");
         
-        MimeTypeEmail email = provider.getEmail("foo@foo.com");
+        MimeTypeEmail email = provider.getMimeTypeEmail();
         
         List<String> recipients = email.getRecipientAddresses();
         assertEquals(2, recipients.size());

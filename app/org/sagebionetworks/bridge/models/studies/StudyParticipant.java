@@ -45,7 +45,9 @@ public final class StudyParticipant extends HashMap<String,String> {
         return (emptyString == null) ? null : Boolean.valueOf(emptyString);
     }
     public void setNotifyByEmail(Boolean notifyByEmail) {
-        put(UserProfile.NOTIFY_BY_EMAIL_FIELD, notifyByEmail.toString());
+        if (notifyByEmail != null) {
+            put(UserProfile.NOTIFY_BY_EMAIL_FIELD, notifyByEmail.toString());    
+        }
     }
     public String getHealthCode() {
         return getEmpty(UserProfile.HEALTH_CODE_FIELD);

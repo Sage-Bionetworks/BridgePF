@@ -55,7 +55,7 @@ public class SendMailViaAmazonService implements SendMailService {
     @Override
     public void sendEmail(MimeTypeEmailProvider provider) {
         try {
-            MimeTypeEmail email = provider.getEmail(supportEmail);
+            MimeTypeEmail email = provider.getMimeTypeEmail();
             for (String recipient: email.getRecipientAddresses()) {
                 sendEmail(recipient, email);    
             }
@@ -65,9 +65,11 @@ public class SendMailViaAmazonService implements SendMailService {
     }
 
     private void sendEmail(String recipient, MimeTypeEmail email) throws AmazonClientException, MessagingException, IOException {
+        String sendFrom = (email.getSenderAddress() == null) ? supportEmail :  email.getSenderAddress();
+        
         Session mailSession = Session.getInstance(new Properties(), null);
         MimeMessage mimeMessage = new MimeMessage(mailSession);
-        mimeMessage.setFrom(new InternetAddress(email.getSenderAddress()));
+        mimeMessage.setFrom(new InternetAddress(sendFrom));
         mimeMessage.setSubject(email.getSubject(), Charsets.UTF_8.name());
         mimeMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
 
@@ -85,7 +87,7 @@ public class SendMailViaAmazonService implements SendMailService {
         RawMessage sesRawMessage = new RawMessage(ByteBuffer.wrap(byteOutputStream.toByteArray()));
 
         SendRawEmailRequest req = new SendRawEmailRequest(sesRawMessage);
-        req.setSource(email.getSenderAddress());
+        req.setSource(sendFrom);
         req.setDestinations(Collections.singleton(recipient));
         emailClient.setRegion(REGION);
         SendRawEmailResult result = emailClient.sendRawEmail(req);

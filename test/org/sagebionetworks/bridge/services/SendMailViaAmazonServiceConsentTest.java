@@ -41,7 +41,6 @@ public class SendMailViaAmazonServiceConsentTest {
     
     private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <study-support-email@study.com>";
     private static final String FROM_DEFAULT_UNFORMATTED = "Sage Bionetworks <test-sender@sagebase.org>";
-    private static final String FROM_DEFAULT_AS_FORMATTED = "\"Sage Bionetworks\" <test-sender@sagebase.org>";
 
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
@@ -77,25 +76,6 @@ public class SendMailViaAmazonServiceConsentTest {
         
         studyConsentService = mock(StudyConsentService.class);
         when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);
-    }
-    
-    @Test
-    public void whenNoStudySupportEmailUsesDefaultSupportEmail() {
-        study.setSupportEmail(""); // just a blank string, tricky
-
-        ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
-                .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-        User user = new User();
-        user.setEmail("test-user@sagebase.org");
-        
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.NO_SHARING,
-                        studyConsentService, consentBodyTemplate);
-        service.sendEmail(provider);
-
-        verify(emailClient).sendRawEmail(argument.capture());
-        SendRawEmailRequest req = argument.getValue();
-        
-        assertEquals("Correct sender", FROM_DEFAULT_AS_FORMATTED, req.getSource());
     }
 
     @Test
