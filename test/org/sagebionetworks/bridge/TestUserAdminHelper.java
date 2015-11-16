@@ -19,8 +19,6 @@ import org.sagebionetworks.bridge.services.UserAdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Sets;
-
 /**
  * A support class that can be injected into any SpringJUnit4ClassRunner test that needs to
  * create a test user before performing some tests. After (in a @Before method or a finally
@@ -41,20 +39,22 @@ public class TestUserAdminHelper {
         private final String email;
         private final String password;
         private final Set<Roles> roles;
+        private final Set<String> dataGroups;
         private final Study study;
         private final UserSession session;
 
-        public TestUser(String username, String email, String password, Set<Roles> roleList, Study study, UserSession session) {
-            this.username = username;
-            this.email = email;
-            this.password = password;
+        public TestUser(SignUp signUp, Study study, UserSession session) {
+            this.username = signUp.getUsername();
+            this.email = signUp.getEmail();
+            this.password = signUp.getPassword();
+            this.roles = signUp.getRoles();
+            this.roles.add(TEST_USERS);
+            this.dataGroups = signUp.getDataGroups();
             this.study = study;
             this.session = session;
-            this.roles = (roleList == null) ? Sets.<Roles>newHashSet() : roleList;
-            this.roles.add(TEST_USERS);
         }
         public SignUp getSignUp() {
-            return new SignUp(username, email, password, roles);
+            return new SignUp(username, email, password, roles, dataGroups);
         }
         public SignIn getSignIn() {
             return new SignIn(username, password);
@@ -85,15 +85,15 @@ public class TestUserAdminHelper {
         }
     }
     @Autowired
-    public void setUserAdminService(UserAdminService userAdminService) {
+    public final void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }
     @Autowired
-    public void setAuthService(AuthenticationService authService) {
+    public final void setAuthService(AuthenticationService authService) {
         this.authService = authService;
     }
     @Autowired
-    public void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
 
@@ -104,21 +104,26 @@ public class TestUserAdminHelper {
     }
 
     public TestUser createUser(Class<?> cls) {
-        return createUser(cls, null);
+        return createUser(cls, true, true, null, null);
+    }
+    
+    public TestUser createUser(Class<?> cls, Study study, boolean consent) {
+        return createUser(cls, study, true, consent, null, null);
     }
 
-    public TestUser createUser(Class<?> cls, Set<Roles> roles) {
-        checkNotNull(cls, "Class must not be null");
-
-        return createUser(cls, true, true, roles);
+    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent) {
+        return createUser(cls, signIn, consent, null, null);
     }
-
-    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, Set<Roles> roles) {
-        checkNotNull(cls, "Class must not be null");
-
-        String name = makeRandomUserName(cls);
-        SignUp signUp = new SignUp(name, name + "@sagebase.org", PASSWORD, roles);
+    
+    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, Set<Roles> roles, Set<String> dataGroups) {
         Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
+        return createUser(cls, study, signIn, consent, roles, dataGroups);
+    }
+    
+    public TestUser createUser(Class<?> cls, Study study, boolean signIn, boolean consent, Set<Roles> roles, Set<String> dataGroups) {
+        checkNotNull(cls);
+        String name = makeRandomUserName(cls);
+        SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles, dataGroups);
         return createUser(signUp, study, signIn, consent);
     }
 
@@ -129,19 +134,9 @@ public class TestUserAdminHelper {
         checkNotNull(study);
 
         UserSession session = userAdminService.createUser(signUp, study, signIn, consent);
-        return new TestUser(signUp.getUsername(), signUp.getEmail(), signUp.getPassword(), signUp.getRoles(), study, session);
+        return new TestUser(signUp, study, session);
     }
 
-    public TestUser createUser(Class<?> cls, Study study, boolean consent, Set<Roles> roles) {
-        checkNotNull(cls, "Class must not be null");
-        checkNotNull(study);
-
-        String name = makeRandomUserName(cls);
-        SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles);
-        UserSession session = userAdminService.createUser(signUp, study, true, consent);
-        return new TestUser(signUp.getUsername(), signUp.getEmail(), signUp.getPassword(), signUp.getRoles(), study, session);
-    }
-    
     public void deleteUser(TestUser testUser) {
         checkNotNull(testUser);
 

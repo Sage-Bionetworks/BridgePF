@@ -6,6 +6,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+
+import java.util.Set;
+
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -17,18 +20,24 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
+import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
@@ -47,6 +56,15 @@ public class AuthenticationServiceImplTest {
     private AuthenticationServiceImpl authService;
 
     @Resource
+    private ParticipantOptionsService optionsService;
+    
+    @Resource
+    private AccountDao accountDao;
+    
+    @Resource
+    private HealthCodeService healthCodeService;
+    
+    @Resource
     private StudyServiceImpl studyService;
 
     @Resource
@@ -57,6 +75,11 @@ public class AuthenticationServiceImplTest {
     @Before
     public void before() {
         testUser = helper.createUser(AuthenticationServiceImplTest.class);
+        Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
+        if (study.getDataGroups().isEmpty()) {
+            study.getDataGroups().add("foo");
+            studyService.updateStudy(study, true);
+        }
     }
 
     @After
@@ -136,7 +159,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void unconsentedUserMustSignTOU() throws Exception {
-        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false);
         try {
             // Create a user who has not consented.
             authService.signIn(user.getStudy(), user.getSignIn());
@@ -149,7 +172,7 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void canResendEmailVerification() throws Exception {
-        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false);
         try {
             Email email = new Email(testUser.getStudyIdentifier(), user.getEmail());
             authService.resendEmailVerification(user.getStudyIdentifier(), email);
@@ -161,7 +184,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
         TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false,
-                Sets.newHashSet(RESEARCHER));
+                Sets.newHashSet(RESEARCHER), null);
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.
@@ -173,7 +196,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void createAdminAndSignInWithoutConsentError() {
         TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false,
-                        Sets.newHashSet(ADMIN));
+                        Sets.newHashSet(ADMIN), null);
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.
@@ -201,6 +224,61 @@ public class AuthenticationServiceImplTest {
         assertNull(cacheProvider.getUserSessionByUserId(userId));
     }
     
+    @Test
+    public void signUpWillCreateDataGroups() {
+        authService = spy(authService);
+        optionsService = spy(optionsService);
+        authService.setOptionsService(optionsService);
+        
+        Study tempStudy = TestUtils.getValidStudy(AuthenticationServiceImplTest.class);
+        tempStudy.setDataGroups(Sets.newHashSet("group1","group2","group3"));
+        tempStudy = studyService.createStudy(tempStudy);
+
+        Set<String> list = Sets.newHashSet("group1");
+        String name = TestUtils.randomName(AuthenticationServiceImplTest.class);
+        String email = "bridge-testing+"+name+"@sagebase.org";
+        
+        try {
+            SignUp signUp = new SignUp(name, email, "P@ssword1", null, list);
+
+            authService.signUp(tempStudy, signUp, true);
+            Account account = accountDao.getAccount(tempStudy, email);
+            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+            
+            verify(authService).signUp(tempStudy, signUp, true);
+            verify(optionsService).setDataGroups(tempStudy, healthId.getCode(), list);
+        } finally {
+            accountDao.deleteAccount(tempStudy, email);
+            studyService.deleteStudy(tempStudy.getIdentifier());
+        }
+    }
+    
+    @Test
+    public void userCreatedWithDataGroupsHasThemOnSignIn() throws Exception {
+        // @Before method always ensures there is one data group in the study.
+        String group = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER).getDataGroups().iterator().next();
+        Set<String> dataGroups = Sets.newHashSet(group);
+        
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, true, null, dataGroups);
+        try {
+            UserSession session = authService.signIn(user.getStudy(), user.getSignIn());
+            assertEquals(dataGroups, session.getUser().getDataGroups());
+        } finally {
+            helper.deleteUser(user);
+        }
+    }
+    
+    @Test
+    public void invalidDataGroupsAreRejected() throws Exception {
+        try {
+            Set<String> dataGroups = Sets.newHashSet("bugleboy");
+            helper.createUser(AuthenticationServiceImplTest.class, false, false, null, dataGroups);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("dataGroups 'bugleboy' is not one of these valid values: foo."));
+        }
+    }
+    
     // Account enumeration security. Verify the service is quite (throws no exceptions) when we don't
     // recognize an account.
 
@@ -212,7 +290,7 @@ public class AuthenticationServiceImplTest {
         Study tempStudy = TestUtils.getValidStudy(AuthenticationServiceImplTest.class);
         tempStudy = studyService.createStudy(tempStudy);
 
-        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false);
         try {
             authService.signUp(user.getStudy(), user.getSignUp(), true);
             authService.signUp(tempStudy, user.getSignUp(), true);
@@ -227,7 +305,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
         // In particular, it must not throw an EntityNotFoundException
-        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false);
         try {
             Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
             authService.resendEmailVerification(user.getStudyIdentifier(), email);
@@ -239,7 +317,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void requestResetPasswordLooksSuccessfulWhenNoAccount() throws Exception {
         // In particular, it must not throw an EntityNotFoundException
-        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false);
         try {
             Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
             authService.requestResetPassword(testUser.getStudy(), email);

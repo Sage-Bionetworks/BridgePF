@@ -148,7 +148,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         
-        Validate.entityThrowingException(new SignUpValidator(study.getPasswordPolicy()), signUp);
+        Validate.entityThrowingException(new SignUpValidator(study.getPasswordPolicy(), study.getDataGroups()), signUp);
         
         String lockId = null;
         try {
@@ -156,7 +156,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             if (consentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
-            accountDao.signUp(study, signUp, isAnonSignUp);
+            Account account = accountDao.signUp(study, signUp, isAnonSignUp);
+            if (!signUp.getDataGroups().isEmpty()) {
+                final String healthCode = getHealthCode(study, account);
+                optionsService.setDataGroups(study, healthCode, signUp.getDataGroups());
+            }
+            
         } catch(EntityAlreadyExistsException e) {
             // Suppress this. Otherwise it the response reveals that the email has already been taken, 
             // and you can infer who is in the study from the response. Instead send a reset password 
@@ -228,7 +233,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private UserSession getSessionFromAccount(final Study study, final Account account) {
-
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
@@ -241,6 +245,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setHealthCode(healthCode);
 
         user.setSharingScope(optionsService.getSharingScope(healthCode));
+        user.setDataGroups(optionsService.getDataGroups(healthCode));
         user.setSignedMostRecentConsent(consentService.hasUserSignedActiveConsent(study, user));
         user.setConsent(consentService.hasUserConsentedToResearch(study, user));
 

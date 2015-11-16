@@ -142,7 +142,7 @@ public class AuthenticationControllerTest {
     
     @Test
     public void adminUserGetsExceptionAccessingParticipantAPI() {
-        TestUser dev = helper.createUser(AuthenticationControllerTest.class, false, false, Sets.newHashSet(Roles.DEVELOPER));
+        TestUser dev = helper.createUser(AuthenticationControllerTest.class, false, false, Sets.newHashSet(Roles.DEVELOPER), null);
         
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {

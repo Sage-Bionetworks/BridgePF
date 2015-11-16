@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 
 @BridgeTypeName("User")
@@ -32,6 +33,7 @@ public class User implements BridgeEntity {
     private boolean signedMostRecentConsent;
     private SharingScope sharingScope;
     private Set<Roles> roles = Sets.newHashSet();
+    private Set<String> dataGroups = Sets.newHashSet();
 
     public User() {
     }
@@ -123,6 +125,14 @@ public class User implements BridgeEntity {
     public void setRoles(Set<Roles> roles) {
         this.roles = roles;
     }
+    
+    public Set<String> getDataGroups() {
+        return dataGroups;
+    }
+    
+    public void setDataGroups(Set<String> dataGroups) {
+        this.dataGroups = dataGroups;
+    }
 
     public boolean doesConsent() {
         return consent;
@@ -168,83 +178,30 @@ public class User implements BridgeEntity {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (consent ? 1231 : 1237);
-        result = prime * result + ((email == null) ? 0 : email.hashCode());
-        result = prime * result + ((firstName == null) ? 0 : firstName.hashCode());
-        result = prime * result + ((healthCode == null) ? 0 : healthCode.hashCode());
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        result = prime * result + ((lastName == null) ? 0 : lastName.hashCode());
-        result = prime * result + ((roles == null) ? 0 : roles.hashCode());
-        result = prime * result + ((sharingScope == null) ? 0 : sharingScope.hashCode());
-        result = prime * result + (signedMostRecentConsent ? 1231 : 1237);
-        result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
-        result = prime * result + ((username == null) ? 0 : username.hashCode());
-        return result;
+        return Objects.hashCode(consent, email, firstName, lastName, healthCode, id, roles, sharingScope,
+                signedMostRecentConsent, studyKey, username, dataGroups);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
         User other = (User) obj;
-        if (consent != other.consent)
-            return false;
-        if (email == null) {
-            if (other.email != null)
-                return false;
-        } else if (!email.equals(other.email))
-            return false;
-        if (firstName == null) {
-            if (other.firstName != null)
-                return false;
-        } else if (!firstName.equals(other.firstName))
-            return false;
-        if (healthCode == null) {
-            if (other.healthCode != null)
-                return false;
-        } else if (!healthCode.equals(other.healthCode))
-            return false;
-        if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
-            return false;
-        if (lastName == null) {
-            if (other.lastName != null)
-                return false;
-        } else if (!lastName.equals(other.lastName))
-            return false;
-        if (roles == null) {
-            if (other.roles != null)
-                return false;
-        } else if (!roles.equals(other.roles))
-            return false;
-        if (sharingScope != other.sharingScope)
-            return false;
-        if (signedMostRecentConsent != other.signedMostRecentConsent)
-            return false;
-        if (studyKey == null) {
-            if (other.studyKey != null)
-                return false;
-        } else if (!studyKey.equals(other.studyKey))
-            return false;
-        if (username == null) {
-            if (other.username != null)
-                return false;
-        } else if (!username.equals(other.username))
-            return false;
-        return true;
+        return (Objects.equal(consent, other.consent) && Objects.equal(email, other.email)
+                && Objects.equal(firstName, other.firstName) && Objects.equal(lastName, other.lastName)
+                && Objects.equal(healthCode, other.healthCode) && Objects.equal(id, other.id)
+                && Objects.equal(roles, other.roles) && Objects.equal(sharingScope, other.sharingScope)
+                && Objects.equal(signedMostRecentConsent, other.signedMostRecentConsent)
+                && Objects.equal(studyKey, other.studyKey) && Objects.equal(username, other.username)
+                && Objects.equal(dataGroups, other.dataGroups));                
     }
 
     @Override
     public String toString() {
-        return "User [id=" + id + ", username=" + username + ", firstName=" + firstName + ", lastName=" + lastName
-                + ", email=" + email + ", studyKey=" + studyKey + ", consent=" + consent + ", roles=" + roles + "]";
+        return String.format("User [consent=%s, email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, "
+                + "signedMostRecentConsent=%s, studyKey=%s, username=%s, dataGroups=%s]", 
+                consent, email, firstName, lastName, id, roles, sharingScope, signedMostRecentConsent, studyKey, username, dataGroups);
     }
 }

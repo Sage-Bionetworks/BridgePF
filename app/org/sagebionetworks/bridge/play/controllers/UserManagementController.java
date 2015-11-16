@@ -31,7 +31,7 @@ public class UserManagementController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         JsonNode node = requestToJSON(request());
-        SignUp signUp = SignUp.fromJson(node, true);
+        SignUp signUp = parseJson(request(), SignUp.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
 

@@ -202,7 +202,7 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override 
-    public void signUp(Study study, SignUp signUp, boolean sendEmail) {
+    public Account signUp(Study study, SignUp signUp, boolean sendEmail) {
         checkNotNull(study);
         checkNotNull(signUp);
         
@@ -225,6 +225,7 @@ public class StormpathAccountDao implements AccountDao {
         } catch(ResourceException e) {
             rethrowResourceException(e, account);
         }
+        return account;
     }
     
     @Override

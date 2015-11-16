@@ -32,6 +32,7 @@ public class UserSessionInfo {
     private final String username;
     private final String environment;
     private final Set<Roles> roles;
+    private final Set<String> dataGroups;
 
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
@@ -41,6 +42,7 @@ public class UserSessionInfo {
         this.sharingScope = session.getUser().getSharingScope();
         this.username = session.getUser().getUsername();
         this.roles = session.getUser().getRoles();
+        this.dataGroups = session.getUser().getDataGroups();
         this.environment = ENVIRONMENTS.get(session.getEnvironment());
     }
 
@@ -70,5 +72,8 @@ public class UserSessionInfo {
     }
     public Set<Roles> getRoles() {
         return roles;
+    }
+    public Set<String> getDataGroups() {
+        return dataGroups;
     }
 }

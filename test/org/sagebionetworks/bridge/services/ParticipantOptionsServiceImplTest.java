@@ -111,7 +111,7 @@ public class ParticipantOptionsServiceImplTest {
             service.setDataGroups(TEST_STUDY, HEALTH_CODE, dataGroups);
             fail("Should have thrown exception.");
         } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("'groupA' is not a valid value"));
+            assertTrue(e.getMessage().contains("'groupA' is not one of these valid values: "));
         }
         verifyNoMoreInteractions(mockDao);
     }

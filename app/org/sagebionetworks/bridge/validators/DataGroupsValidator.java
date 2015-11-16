@@ -35,7 +35,7 @@ public class DataGroupsValidator implements Validator {
     }
 
     private String getDataGroupMessage(String group) {
-        String message = "'" + group + "' is not a valid value: ";
+        String message = "'" + group + "' is not one of these valid values: ";
         if (studyDataGroups.isEmpty()) {
             message += "<none>";
         } else {

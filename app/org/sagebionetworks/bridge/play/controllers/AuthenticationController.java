@@ -42,7 +42,7 @@ public class AuthenticationController extends BaseController {
 
     public Result signUp() throws Exception {
         JsonNode json = requestToJSON(request());
-        SignUp signUp = SignUp.fromJson(json, false);
+        SignUp signUp = parseJson(request(), SignUp.class);
         signUp.getRoles().clear();
         Study study = getStudyOrThrowException(json);
         authenticationService.signUp(study, signUp, true);

@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.Set;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
+
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.springframework.validation.Errors;
@@ -12,9 +16,11 @@ public class SignUpValidator implements Validator {
     private final EmailValidator emailValidator = EmailValidator.getInstance();
     
     private final PasswordPolicy passwordPolicy;
+    private final Set<String> dataGroups;
     
-    public SignUpValidator(PasswordPolicy passwordPolicy) {
+    public SignUpValidator(PasswordPolicy passwordPolicy, Set<String> dataGroups) {
         this.passwordPolicy = passwordPolicy;
+        this.dataGroups = dataGroups;
     }
     
     @Override
@@ -55,6 +61,7 @@ public class SignUpValidator implements Validator {
         if (passwordPolicy.isUpperCaseRequired() && !password.matches(".*[A-Z]+.*")) {
             errors.rejectValue("password", "must contain at least one uppercase letter (A-Z)");
         }
+        new DataGroupsValidator(dataGroups).validate(new DataGroups(signUp.getDataGroups()), errors);
     }
 
 }

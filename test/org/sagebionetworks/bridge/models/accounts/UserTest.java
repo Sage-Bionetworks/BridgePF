@@ -14,8 +14,25 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.google.common.collect.Sets;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class UserTest {
 
+    @Test
+    public void hashCodeEquals() {
+        EqualsVerifier.forClass(User.class).allFieldsShouldBeUsed();
+    }
+    
+    @Test
+    public void cannotExposeHealthCode() throws Exception {
+        User user = new User();
+        user.setHealthCode("123abc");
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(user);
+        assertFalse(json.contains("123abc"));
+        assertFalse(user.toString().contains("123abc"));
+    }
+    
     @Test
     public void testHealthCodeEncryption() throws IOException {
         User user = new User();

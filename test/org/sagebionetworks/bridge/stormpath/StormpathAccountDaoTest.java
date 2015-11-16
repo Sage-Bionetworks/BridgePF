@@ -89,7 +89,7 @@ public class StormpathAccountDaoTest {
         Account account = null;
         
         try {
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
             accountDao.signUp(study, signUp, false);
             
             account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
@@ -105,7 +105,7 @@ public class StormpathAccountDaoTest {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
         try {
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
             accountDao.signUp(study, signUp, false);
             
             try {
@@ -134,7 +134,7 @@ public class StormpathAccountDaoTest {
             ConsentSignature sig = new ConsentSignature.Builder().withName("Test Test").withBirthdate("1970-01-01")
                     .withSignedOn(signedOn).build();
             
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
             
             accountDao.signUp(study, signUp, false);
             account = accountDao.getAccount(study, signUp.getEmail());
@@ -192,7 +192,7 @@ public class StormpathAccountDaoTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         String random = RandomStringUtils.randomAlphabetic(5);
-        SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", PASSWORD, null); 
+        SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null); 
         try {
             accountDao.signUp(study, signUp, false); // don't send email
             
@@ -286,7 +286,7 @@ public class StormpathAccountDaoTest {
         
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
-        SignUp signUp = new SignUp(random, email, PASSWORD, null);
+        SignUp signUp = new SignUp(random, email, PASSWORD, null, null);
         dao.signUp(study, signUp, false);
 
         ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);

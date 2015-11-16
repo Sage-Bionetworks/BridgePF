@@ -70,6 +70,7 @@ public class ExceptionInterceptorTest {
         user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         user.setSignedMostRecentConsent(false);
         user.setStudyKey("test");
+        user.getDataGroups().add("group1");
         user.setUsername("username");
         
         UserSession session = new UserSession();
@@ -87,7 +88,7 @@ public class ExceptionInterceptorTest {
         
         Result result = (Result)interceptor.invoke(invocation);
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
-        
+
         assertTrue(node.get("authenticated").asBoolean());
         assertFalse(node.get("consented").asBoolean());
         assertFalse(node.get("signedMostRecentConsent").asBoolean());
@@ -99,7 +100,10 @@ public class ExceptionInterceptorTest {
         assertEquals("UserSessionInfo", node.get("type").asText());
         ArrayNode array = (ArrayNode)node.get("roles");
         assertEquals(0, array.size());
+        array = (ArrayNode)node.get("dataGroups");
+        assertEquals(1, array.size());
+        assertEquals("group1", array.get(0).asText());
         // And no further properties
-        assertEquals(10, node.size());
+        assertEquals(11, node.size());
     }
 }    
