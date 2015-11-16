@@ -9,10 +9,14 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
+import org.sagebionetworks.bridge.services.email.NotifyOperationsEmailProvider;
 import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
+
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +52,16 @@ public class ParticipantRosterGenerator implements Runnable {
         this.optionsService = optionsService;
     }
 
+    private String getHealthCode(Account account) {
+        if (account.getHealthId() != null) {
+            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+            if (healthId != null && healthId.getCode() != null) {
+                return healthId.getCode();
+            }
+        }
+        return null;
+    }
+    
     @Override
     public void run() {
         logger.debug("Running participant roster generator...");
@@ -63,17 +77,19 @@ public class ParticipantRosterGenerator implements Runnable {
                 Account account = accounts.next();
                 if (account.getActiveConsentSignature() != null) {
                     
-                    String healthCode = healthCodeService.getMapping(account.getHealthId()).getCode();
-                    SharingScope sharing = sharingLookup.getSharingScope(healthCode);
-                    
-                    Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
-
+                    String healthCode = getHealthCode(account);
                     StudyParticipant participant = new StudyParticipant();
+                    // Accounts exist that have signatures but no health codes. This may only be from testing, 
+                    // but still, do not want roster generation to fail because of this. So we check for this.
+                    if (healthCode != null) {
+                        SharingScope sharing = sharingLookup.getSharingScope(healthCode);
+                        Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
+                        participant.setSharingScope(sharing);
+                        participant.setNotifyByEmail(notifyByEmail);
+                    }
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());
                     participant.setEmail(account.getEmail());
-                    participant.setSharingScope(sharing);
-                    participant.setNotifyByEmail(notifyByEmail);
                     for (String attribute : study.getUserProfileAttributes()) {
                         String value = account.getAttribute(attribute);
                         // Whether present or not, add an entry.
@@ -91,11 +107,17 @@ public class ParticipantRosterGenerator implements Runnable {
             Collections.sort(participants, STUDY_PARTICIPANT_COMPARATOR);
 
             MimeTypeEmailProvider roster = new ParticipantRosterProvider(study, participants);
-            logger.debug("sending roster to the sendMailService");
             sendMailService.sendEmail(roster);
-            logger.debug("roster sent.");
+            
+            String message = "The participant roster for the study '"+study.getName()+"' has been emailed to '"+study.getConsentNotificationEmail()+"'.";
+            sendMailService.sendEmail(new NotifyOperationsEmailProvider("A participant roster has been emailed", message));
+            
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            
+            String subject = "Generating participant roster failed for the study '"+study.getName()+"'";
+            String message = ExceptionUtils.getStackTrace(e);
+            sendMailService.sendEmail(new NotifyOperationsEmailProvider(subject, message));
         }
     }
 

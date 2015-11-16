@@ -175,7 +175,7 @@ public class ConsentServiceImplMockTest {
         assertFalse(user.isConsent());
         
         MimeTypeEmailProvider provider = emailCaptor.getValue();
-        MimeTypeEmail email = provider.getEmail("a@a.com");
+        MimeTypeEmail email = provider.getMimeTypeEmail();
         
         assertEquals("\"Test Study [ConsentServiceImplMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
         assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));

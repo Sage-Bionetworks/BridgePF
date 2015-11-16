@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -123,6 +124,17 @@ public class ParticipantRosterProviderTest {
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
         String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "(123) 456-7890", "false");
         assertEquals(output, provider.createParticipantTSV());
+    }
+    
+    @Test
+    public void assemblesCorrectEmail() throws Exception {
+        ParticipantRosterProvider provider = new ParticipantRosterProvider(study, Lists.newArrayList());
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        
+        assertEquals("Study participants for Test Study [ParticipantRosterProviderTest]", email.getSubject());
+        assertNull(email.getSenderAddress()); // comes from our default support address
+        assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
+        assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
     }
     
     private String row(String... fields) {

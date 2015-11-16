@@ -13,18 +13,40 @@ class MimeTypeEmailBuilder {
     private List<String> recipientAddresses = Lists.newArrayList();
     private List<MimeBodyPart> messageParts = Lists.newArrayList();
     
+    /**
+     * The subject of the email. Required.
+     * @param subject
+     * @return
+     */
     MimeTypeEmailBuilder withSubject(String subject) {
         this.subject = subject;
         return this;
     }
+    /**
+     * The sender of the email. This value is optional (if not supplied, the server's 
+     * default support email address will be used).
+     * @param senderAddress
+     * @return
+     */
     MimeTypeEmailBuilder withSender(String senderAddress) {
         this.senderAddress = senderAddress;
         return this;
     }
+    /**
+     * A recipient for this email (may call this more than once and values will be accumulated).
+     * @param recipientAddress
+     * @return
+     */
     MimeTypeEmailBuilder withRecipient(String recipientAddress) {
         this.recipientAddresses.add(recipientAddress);
         return this;
     }
+    /**
+     * A body part for a MIME-based email message (may call this more than once and the body parts 
+     * will be accumulated).
+     * @param parts
+     * @return
+     */
     MimeTypeEmailBuilder withMessageParts(MimeBodyPart... parts) {
         if (parts != null) {
             for (MimeBodyPart part : parts) {
@@ -35,6 +57,10 @@ class MimeTypeEmailBuilder {
         }
         return this;
     }
+    /**
+     * Construct this MimeTypeEmail instance.
+     * @return
+     */
     MimeTypeEmail build() {
         return new MimeTypeEmail(subject, senderAddress, recipientAddresses, messageParts);
     }

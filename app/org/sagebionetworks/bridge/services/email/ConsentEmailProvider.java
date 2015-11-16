@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.services.email;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
@@ -59,14 +57,13 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     }
 
     @Override
-    public MimeTypeEmail getEmail(String defaultSender) throws MessagingException {
+    public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
 
         String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
         builder.withSubject(subject);
 
-        final String sendFromEmail = isNotBlank(study.getSupportEmail()) ? String.format("%s <%s>", study.getName(),
-                        study.getSupportEmail()) : defaultSender;
+        final String sendFromEmail = String.format("%s <%s>", study.getName(), study.getSupportEmail());
         builder.withSender(sendFromEmail);
 
         builder.withRecipient(user.getEmail());

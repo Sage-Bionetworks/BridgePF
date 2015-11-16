@@ -43,6 +43,7 @@ public class ConsentEmailProviderTest {
         Study study = new DynamoStudy();
         study.setName("Study Name");
         study.setSponsorName("Sponsor Name");
+        study.setSupportEmail("sender@default.com");
         study.setConsentNotificationEmail("consent@consent.com");
         
         User user = new User();
@@ -61,10 +62,10 @@ public class ConsentEmailProviderTest {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), LEGACY_DOCUMENT);
         when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);
         
-        MimeTypeEmail email = provider.getEmail("sender@default.com");
+        MimeTypeEmail email = provider.getMimeTypeEmail();
         MimeBodyPart body = email.getMessageParts().get(0);
         assertEquals("Consent Agreement for Study Name", email.getSubject());
-        assertEquals("sender@default.com", email.getSenderAddress());
+        assertEquals("\"Study Name\" <sender@default.com>", email.getSenderAddress());
         assertEquals("user@user.com", email.getRecipientAddresses().get(0));
         assertEquals("consent@consent.com", email.getRecipientAddresses().get(1));
         
@@ -79,10 +80,10 @@ public class ConsentEmailProviderTest {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), NEW_DOCUMENT_FRAGMENT);
         when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);
         
-        MimeTypeEmail email = provider.getEmail("sender@default.com");
+        MimeTypeEmail email = provider.getMimeTypeEmail();
         MimeBodyPart body = email.getMessageParts().get(0);
         assertEquals("Consent Agreement for Study Name", email.getSubject());
-        assertEquals("sender@default.com", email.getSenderAddress());
+        assertEquals("\"Study Name\" <sender@default.com>", email.getSenderAddress());
         assertEquals("user@user.com", email.getRecipientAddresses().get(0));
         assertEquals("consent@consent.com", email.getRecipientAddresses().get(1));
         
