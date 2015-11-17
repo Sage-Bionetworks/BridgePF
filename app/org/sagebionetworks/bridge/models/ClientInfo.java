@@ -134,6 +134,18 @@ public final class ClientInfo {
         return sdkVersion;
     }
     
+    public boolean isSupportedAppVersion(Integer minSupportedVersion) {
+        // If there's no declared client version, it matches anything.
+        if (appVersion != null) {
+            // Otherwise we can't be outside of either range boundary if the boundary
+            // is declared.
+            if (minSupportedVersion != null && appVersion.intValue() < minSupportedVersion.intValue()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
     public boolean isTargetedAppVersion(Integer minValue, Integer maxValue) {
         // If there's no declared client version, it matches anything.
         if (appVersion != null) {
