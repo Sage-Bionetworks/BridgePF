@@ -132,4 +132,23 @@ public class BaseControllerTest {
         controller.verifyMinSupportedVersionOrThrowException(study);
 
     }
+    
+    @Test
+    public void testValidSupportedVersionDoesNotThrowException() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        Study study = mock(Study.class);
+        when(study.getMinSupportedVersion()).thenReturn(25L);
+        
+        SchedulePlanController controller = new SchedulePlanController();
+        
+        controller.verifyMinSupportedVersionOrThrowException(study);
+
+    }
 }
