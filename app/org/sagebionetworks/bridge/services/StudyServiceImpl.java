@@ -190,6 +190,7 @@ public class StudyServiceImpl implements StudyService {
         if (!isAdminUpdate) {
             study.setMaxNumOfParticipants(originalStudy.getMaxNumOfParticipants());
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
+            // TODO: syoung 11/16/2015 Should the minSupportedVersion require admin privileges? I'm thinking No.
         }
         Validate.entityThrowingException(validator, study);
 

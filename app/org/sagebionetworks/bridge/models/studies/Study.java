@@ -195,4 +195,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     /** @see #isHealthCodeExportEnabled(); */
     public void setHealthCodeExportEnabled(boolean enabled);
+    
+    /**
+     * Minimum supported version number. default=0. If set, clients pointing to an older
+     * version will fail with an httpResponse status code of 410.
+     */
+    public Long getMinSupportedVersion();
+    
+    /** @see #getMinSupportedVersion(); */
+    public void setMinSupportedVersion(Long version);
 }

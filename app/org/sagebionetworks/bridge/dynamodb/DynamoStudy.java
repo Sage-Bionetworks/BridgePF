@@ -48,11 +48,13 @@ public final class DynamoStudy implements Study {
     private EmailTemplate resetPasswordTemplate;
     private boolean strictUploadValidationEnabled;
     private boolean healthCodeExportEnabled;
+    private Long minSupportedVersion;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
         dataGroups = new HashSet<>();
+        minSupportedVersion = 0L;
     }
 
     /** {@inheritDoc} */
@@ -299,6 +301,19 @@ public final class DynamoStudy implements Study {
     public void setHealthCodeExportEnabled(boolean enabled) {
         this.healthCodeExportEnabled = enabled;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Long getMinSupportedVersion() {
+    	return minSupportedVersion;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setMinSupportedVersion(Long version) {
+    	Long maxAllowedVersion = this.version != null ? this.version : 0L;
+    	this.minSupportedVersion = version <= maxAllowedVersion ? version : maxAllowedVersion;
+    }
 
     @Override
     public int hashCode() {
@@ -323,6 +338,7 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(active);
         result = prime * result + Objects.hashCode(strictUploadValidationEnabled);
         result = prime * result + Objects.hashCode(healthCodeExportEnabled);
+        result = prime * result + Objects.hashCode(minSupportedVersion);
         return result;
     }
 
@@ -349,7 +365,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(sponsorName, other.sponsorName)
                 && Objects.equals(technicalEmail, other.technicalEmail)
                 && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
-                && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled);
+                && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
+                && Objects.equals(minSupportedVersion, other.minSupportedVersion);
     }
 
     @Override
@@ -358,10 +375,11 @@ public final class DynamoStudy implements Study {
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
                             + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
                             + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
-                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s]",
+                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, "
+                            + "healthCodeExportEnabled=%s, minSupportedVersion=%s]",
             name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
             supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
             dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
-            healthCodeExportEnabled);
+            healthCodeExportEnabled, minSupportedVersion);
     }
 }
