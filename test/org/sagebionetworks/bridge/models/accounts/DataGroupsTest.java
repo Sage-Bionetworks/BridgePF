@@ -14,7 +14,7 @@ public class DataGroupsTest {
 
     @Test
     public void equalsHashCode() {
-        EqualsVerifier.forClass(DataGroups.class).allFieldsShouldBeUsed();
+        EqualsVerifier.forClass(DataGroups.class).allFieldsShouldBeUsed().verify();
     }
     
     @Test

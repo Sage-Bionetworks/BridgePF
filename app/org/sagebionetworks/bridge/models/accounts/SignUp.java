@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Sets;
 
-public class SignUp implements BridgeEntity {
+public final class SignUp implements BridgeEntity {
 
     private final String username;
     private final String email;

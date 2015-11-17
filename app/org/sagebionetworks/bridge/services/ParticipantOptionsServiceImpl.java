@@ -4,9 +4,17 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -14,9 +22,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.validators.Validate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 @Component
 public class ParticipantOptionsServiceImpl implements ParticipantOptionsService {
@@ -32,7 +37,6 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
         checkNotNull(option);
-        checkArgument(isNotBlank(value));
         
         optionsDao.setOption(studyIdentifier, healthCode, option, value);
     }
@@ -46,56 +50,55 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     
     @Override
     public void setSharingScope(StudyIdentifier studyIdentifier, String healthCode, SharingScope option) {
-        setOption(studyIdentifier, healthCode, ParticipantOption.SHARING_SCOPE, option.name());
+        setOption(studyIdentifier, healthCode, SHARING_SCOPE, option.name());
     }
 
     @Override
     public SharingScope getSharingScope(String healthCode) {
-        String value = getOption(healthCode, ParticipantOption.SHARING_SCOPE);
+        String value = getOption(healthCode, SHARING_SCOPE);
         return Enum.valueOf(SharingScope.class, value);
     }
 
     @Override
     public void setDataGroups(StudyIdentifier studyIdentifier, String healthCode, Set<String> dataGroups) {
-        checkNotNull(studyIdentifier);
-        checkArgument(isNotBlank(healthCode));
         checkNotNull(dataGroups);
+        // The rest are checked in setOption
         
         String value = BridgeUtils.setToCommaList(dataGroups.stream()
-                .filter(string -> isNotBlank(string)).collect(toSet()));
+                .filter(StringUtils::isNotBlank).collect(toSet()));
         
-        setOption(studyIdentifier, healthCode, ParticipantOption.DATA_GROUPS, value);
+        setOption(studyIdentifier, healthCode, DATA_GROUPS, value);
     }
 
     @Override
     public Set<String> getDataGroups(String healthCode) {
-        String value = getOption(healthCode, ParticipantOption.DATA_GROUPS);
+        String value = getOption(healthCode, DATA_GROUPS);
         return BridgeUtils.commaListToSet(value);
     }
 
     @Override
     public void setEmailNotifications(StudyIdentifier studyIdentifier, String healthCode, boolean option) {
-        setOption(studyIdentifier, healthCode, ParticipantOption.EMAIL_NOTIFICATIONS, Boolean.toString(option));
+        setOption(studyIdentifier, healthCode, EMAIL_NOTIFICATIONS, Boolean.toString(option));
     }
 
     @Override
     public boolean getEmailNotifications(String healthCode) {
-        String value = getOption(healthCode, ParticipantOption.EMAIL_NOTIFICATIONS);
+        String value = getOption(healthCode, EMAIL_NOTIFICATIONS);
         return Boolean.valueOf(value);
     }
 
     @Override
     public void setExternalIdentifier(StudyIdentifier studyIdentifier, String healthCode, String externalId) {
-        setOption(studyIdentifier, healthCode, ParticipantOption.EXTERNAL_IDENTIFIER, externalId);
+        setOption(studyIdentifier, healthCode, EXTERNAL_IDENTIFIER, externalId);
     }
 
     @Override
     public String getExternalIdentifier(String healthCode) {
-        return getOption(healthCode, ParticipantOption.EXTERNAL_IDENTIFIER);
+        return getOption(healthCode, EXTERNAL_IDENTIFIER);
     }
     
     public void deleteAllParticipantOptions(String healthCode) {
-        checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
+        checkArgument(isNotBlank(healthCode));
         
         optionsDao.deleteAllParticipantOptions(healthCode);
     }

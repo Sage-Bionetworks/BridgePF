@@ -24,10 +24,7 @@ public final class DataGroups implements BridgeEntity {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(dataGroups);
-        return result;
+        return Objects.hashCode(dataGroups);
     }
 
     @Override

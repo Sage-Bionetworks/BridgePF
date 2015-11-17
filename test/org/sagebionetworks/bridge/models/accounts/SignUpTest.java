@@ -21,7 +21,7 @@ public class SignUpTest {
 
     @Test
     public void equalsHashCode() {
-        EqualsVerifier.forClass(SignUp.class).allFieldsShouldBeUsed();
+        EqualsVerifier.forClass(SignUp.class).allFieldsShouldBeUsed().verify();
     }
     
     @Test

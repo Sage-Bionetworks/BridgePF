@@ -5,7 +5,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +25,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
 
@@ -156,16 +156,15 @@ public class BridgeUtils {
     public static Set<String> commaListToSet(String commaList) {
         if (isNotBlank(commaList)) {
             return commaDelimitedListToSet(commaList).stream()
-                    .map(string -> string.trim()).filter(string -> isNotBlank(string)).collect(Collectors.toSet());
+                    .map(string -> string.trim())
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toSet());
         }
-        return Collections.emptySet();
+        return Sets.newHashSet();
     }
     
     public static String setToCommaList(Set<String> set) {
-        if (set != null) {
-            return JOINER.join(set);    
-        }
-        return null;
+        return (set == null) ? null : JOINER.join(set);
     }
 
 }

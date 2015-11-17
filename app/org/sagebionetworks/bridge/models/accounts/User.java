@@ -17,7 +17,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 
 @BridgeTypeName("User")
-public class User implements BridgeEntity {
+public final class User implements BridgeEntity {
 
     private static final Encryptor encryptor = new AesGcmEncryptor(
             BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));

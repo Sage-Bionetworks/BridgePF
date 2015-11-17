@@ -17,7 +17,6 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 
 import com.google.common.collect.Sets;

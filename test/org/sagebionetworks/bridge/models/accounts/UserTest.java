@@ -15,12 +15,13 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 
 public class UserTest {
 
     @Test
     public void hashCodeEquals() {
-        EqualsVerifier.forClass(User.class).allFieldsShouldBeUsed();
+        EqualsVerifier.forClass(User.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
     }
     
     @Test
