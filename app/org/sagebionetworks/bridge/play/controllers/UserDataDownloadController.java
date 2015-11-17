@@ -34,6 +34,6 @@ public class UserDataDownloadController extends BaseController {
         DateRange dateRange = parseJson(request(), DateRange.class);
 
         userDataDownloadService.requestUserData(studyIdentifier, user, dateRange);
-        return okResult("Request submitted.");
+        return acceptedResult("Request submitted.");
     }
 }

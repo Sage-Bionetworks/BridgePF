@@ -189,6 +189,10 @@ public abstract class BaseController extends Controller {
         return created((JsonNode)mapper.valueToTree(obj));
     }
     
+    Result acceptedResult(String message) {
+        return status(202, Json.toJson(new StatusMessage(message)));
+    }
+    
     // This is needed or tests fail. It appears to be a bug in Play Framework,
     // that the asJson() method doesn't return a node in that context, possibly
     // because the root object in the JSON is an array (which is legal). 
