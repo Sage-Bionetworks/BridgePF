@@ -135,9 +135,8 @@ public class StormpathAccountDaoTest {
                     .withSignedOn(signedOn).build();
             
             SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+            account = accountDao.signUp(study, signUp, false);
             
-            accountDao.signUp(study, signUp, false);
-            account = accountDao.getAccount(study, signUp.getEmail());
             assertNull(account.getFirstName()); // defaults are not visible
             assertNull(account.getLastName());
             account.setEmail(email);

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services.email;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.mail.internet.MimeBodyPart;
@@ -37,8 +38,13 @@ class MimeTypeEmailBuilder {
      * @param recipientAddress
      * @return
      */
-    MimeTypeEmailBuilder withRecipient(String recipientAddress) {
-        this.recipientAddresses.add(recipientAddress);
+    /**
+     * A recipient for this email (may call this more than once and values will be accumulated).
+     * @param recipientAddress
+     * @return
+     */
+    MimeTypeEmailBuilder withRecipients(Collection<String> recipients) {
+        this.recipientAddresses.addAll(recipients);
         return this;
     }
     /**

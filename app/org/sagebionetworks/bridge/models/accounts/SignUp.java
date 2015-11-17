@@ -25,14 +25,8 @@ public class SignUp implements BridgeEntity {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.roles = Sets.newHashSet();
-        if (roles != null) {
-            this.roles.addAll(roles);
-        }
-        this.dataGroups = Sets.newHashSet();
-        if (dataGroups != null) {
-            this.dataGroups.addAll(dataGroups);
-        }
+        this.roles = (roles == null) ? Sets.newHashSet() : roles;
+        this.dataGroups = (dataGroups == null) ? Sets.newHashSet() : dataGroups;
     }
 
     public String getUsername() {

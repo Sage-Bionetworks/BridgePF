@@ -64,13 +64,13 @@ public class DynamoParticipantOptionsDaoTest {
         // Set three options for an individual
         optionsDao.setOption(study, healthCode, SHARING_SCOPE, sharingName);
         optionsDao.setOption(study, healthCode, EXTERNAL_IDENTIFIER, "AAA");
-        optionsDao.setOption(study,  healthCode, DATA_GROUPS, BridgeUtils.dataGroupsToString(dataGroups));
+        optionsDao.setOption(study,  healthCode, DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups));
 
         // Get them all for one individual, they are set
         Map<ParticipantOption,String> values = optionsDao.getAllParticipantOptions(healthCode);
         assertEquals(sharingName, values.get(SHARING_SCOPE));
         assertEquals("AAA", values.get(EXTERNAL_IDENTIFIER));
-        assertEquals(BridgeUtils.dataGroupsToString(dataGroups),  values.get(DATA_GROUPS));
+        assertEquals(BridgeUtils.setToCommaList(dataGroups),  values.get(DATA_GROUPS));
         
         // Get an individual option for all users (try all three)
         OptionLookup sharingLookup = optionsDao.getOptionForAllStudyParticipants(study, SHARING_SCOPE);

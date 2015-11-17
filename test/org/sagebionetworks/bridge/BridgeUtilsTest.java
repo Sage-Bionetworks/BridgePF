@@ -53,6 +53,9 @@ public class BridgeUtilsTest {
         Set<String> set = BridgeUtils.commaListToSet("a, b , c");
         assertEquals(Sets.newHashSet("a","b","c"), set);
         
+        set = BridgeUtils.commaListToSet("a,b,c");
+        assertEquals(Sets.newHashSet("a","b","c"), set);
+        
         set = BridgeUtils.commaListToSet("");
         assertEquals(Sets.newHashSet(), set);
         
@@ -61,6 +64,10 @@ public class BridgeUtilsTest {
         
         set = BridgeUtils.commaListToSet(" a");
         assertEquals(Sets.newHashSet("a"), set);
+        
+        // Does not produce a null value.
+        set = BridgeUtils.commaListToSet("a,,b");
+        assertEquals(Sets.newHashSet("a","b"), set);
     }
 
 }

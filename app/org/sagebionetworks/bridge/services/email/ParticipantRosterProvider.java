@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge.services.email;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 
 import org.apache.commons.lang3.StringUtils;
+
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
@@ -35,7 +38,8 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
         
-        builder.withRecipient(study.getConsentNotificationEmail());
+        Set<String> recipients = BridgeUtils.commaListToSet(study.getConsentNotificationEmail());
+        builder.withRecipients(recipients);
         
         String subject = String.format(PARTICIPANTS_EMAIL_SUBJECT, study.getName());
         builder.withSubject(subject);

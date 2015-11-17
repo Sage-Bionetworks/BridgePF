@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Map;
@@ -60,14 +61,16 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
         checkArgument(isNotBlank(healthCode));
         checkNotNull(dataGroups);
         
-        String value = BridgeUtils.dataGroupsToString(dataGroups);
+        String value = BridgeUtils.setToCommaList(dataGroups.stream()
+                .filter(string -> isNotBlank(string)).collect(toSet()));
+        
         setOption(studyIdentifier, healthCode, ParticipantOption.DATA_GROUPS, value);
     }
 
     @Override
     public Set<String> getDataGroups(String healthCode) {
         String value = getOption(healthCode, ParticipantOption.DATA_GROUPS);
-        return BridgeUtils.stringToDataGroups(value);
+        return BridgeUtils.commaListToSet(value);
     }
 
     @Override
@@ -99,23 +102,23 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     
     @Override
     public void deleteOption(String healthCode, ParticipantOption option) {
-        checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
-        checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
         
         optionsDao.deleteOption(healthCode, option);
     }
 
     @Override
     public Map<ParticipantOption, String> getAllParticipantOptions(String healthCode) {
-        checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
+        checkArgument(isNotBlank(healthCode));
         
         return optionsDao.getAllParticipantOptions(healthCode);
     }
 
     @Override
     public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, ParticipantOption option) {
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
-        checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
+        checkNotNull(studyIdentifier);
+        checkNotNull(option);
         
         return optionsDao.getOptionForAllStudyParticipants(studyIdentifier, option);
     }

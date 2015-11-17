@@ -24,17 +24,14 @@ import org.springframework.core.annotation.AnnotationUtils;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
 
 public class BridgeUtils {
     
     private static final Joiner JOINER = Joiner.on(",");
-    private static final Splitter SPLITTER = Splitter.on(",");
     
     /**
      * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
@@ -159,23 +156,16 @@ public class BridgeUtils {
     public static Set<String> commaListToSet(String commaList) {
         if (isNotBlank(commaList)) {
             return commaDelimitedListToSet(commaList).stream()
-                    .map(string -> string.trim()).collect(Collectors.toSet());
+                    .map(string -> string.trim()).filter(string -> isNotBlank(string)).collect(Collectors.toSet());
         }
         return Collections.emptySet();
     }
     
-    public static Set<String> stringToDataGroups(String value) {
-        Set<String> dataGroups = Sets.newHashSet();
-        if (isNotBlank(value)) {
-            for (String group : SPLITTER.split(value)) {
-                dataGroups.add(group);
-            }
+    public static String setToCommaList(Set<String> set) {
+        if (set != null) {
+            return JOINER.join(set);    
         }
-        return dataGroups;
-    }
-    
-    public static String dataGroupsToString(Set<String> dataGroups) {
-        return JOINER.join(dataGroups);
+        return null;
     }
 
 }

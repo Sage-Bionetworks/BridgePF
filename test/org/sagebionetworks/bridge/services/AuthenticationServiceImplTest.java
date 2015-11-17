@@ -255,13 +255,15 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void userCreatedWithDataGroupsHasThemOnSignIn() throws Exception {
-        // @Before method always ensures there is one data group in the study.
+        // @Before method always ensures there is one data group in the study. Use that for this test.
         String group = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER).getDataGroups().iterator().next();
         Set<String> dataGroups = Sets.newHashSet(group);
         
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, true, null, dataGroups);
         try {
             UserSession session = authService.signIn(user.getStudy(), user.getSignIn());
+            // Verify we created a list and the anticipated group was not null
+            assertEquals(1, session.getUser().getDataGroups().size()); 
             assertEquals(dataGroups, session.getUser().getDataGroups());
         } finally {
             helper.deleteUser(user);

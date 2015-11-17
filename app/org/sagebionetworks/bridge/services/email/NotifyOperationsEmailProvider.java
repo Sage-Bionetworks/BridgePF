@@ -7,6 +7,8 @@ import javax.mail.internet.MimeBodyPart;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 
+import com.google.common.collect.Lists;
+
 /**
  * This is a simple and generic provider to send a notification via email to our sysops/devops email address. The first
  * use of this is to verify that a participant roster has been completed and sent to the consent notification email for
@@ -42,7 +44,7 @@ public class NotifyOperationsEmailProvider implements MimeTypeEmailProvider {
         
         return new MimeTypeEmailBuilder()
                 .withSender(SYSOPS_EMAIL)
-                .withRecipient(SYSOPS_EMAIL)
+                .withRecipients(Lists.newArrayList(SYSOPS_EMAIL))
                 .withSubject(subject)
                 .withMessageParts(body)
                 .build();

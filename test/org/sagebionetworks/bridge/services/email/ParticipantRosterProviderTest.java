@@ -29,6 +29,20 @@ public class ParticipantRosterProviderTest {
     }
 
     @Test
+    public void correctlySplitsRecipients() throws Exception {
+        StudyParticipant participant = new StudyParticipant();
+        List<StudyParticipant> participants = Lists.newArrayList(participant);
+        
+        study.setConsentNotificationEmail("bridge-testing@sagebase.org,postmaster@sagebase.org");
+        ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
+        
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        assertEquals(2, email.getRecipientAddresses().size());
+        assertEquals("bridge-testing@sagebase.org", email.getRecipientAddresses().get(0));
+        assertEquals("postmaster@sagebase.org", email.getRecipientAddresses().get(1));
+    }
+    
+    @Test
     public void participantsCorrectlyDescribedInText() {
         StudyParticipant participant = new StudyParticipant();
         participant.setFirstName("First");

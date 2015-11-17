@@ -40,5 +40,4 @@ public class DataGroupsTest {
         assertEquals(0, newGroups.getDataGroups().size());
     }
     
-    
 }

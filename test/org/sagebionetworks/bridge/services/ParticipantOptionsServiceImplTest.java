@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 
 import com.google.common.collect.Sets;
@@ -87,7 +88,16 @@ public class ParticipantOptionsServiceImplTest {
         service.setDataGroups(TEST_STUDY, HEALTH_CODE, dataGroups);
         
         // Order of the set when serialized is indeterminate, it's a set
-        verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, ParticipantOption.DATA_GROUPS, BridgeUtils.dataGroupsToString(dataGroups));
+        verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, ParticipantOption.DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups));
+        verifyNoMoreInteractions(mockDao);
+    }
+    
+    @Test
+    public void setDataGroupsRemovesBadValuesFromSet() {
+        Set<String> dataGroups = Sets.newHashSet("A", null, " ", "B");
+        service.setDataGroups(TEST_STUDY, HEALTH_CODE, dataGroups);
+
+        verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, ParticipantOption.DATA_GROUPS, "A,B");
         verifyNoMoreInteractions(mockDao);
     }
     
