@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -246,7 +247,7 @@ public class AuthenticationServiceImplTest {
             HealthId healthId = healthCodeService.getMapping(account.getHealthId());
             
             verify(authService).signUp(tempStudy, signUp, true);
-            verify(optionsService).setDataGroups(tempStudy, healthId.getCode(), list);
+            verify(optionsService).setDataGroups(tempStudy, healthId.getCode(), new DataGroups(list));
         } finally {
             accountDao.deleteAccount(tempStudy, email);
             studyService.deleteStudy(tempStudy.getIdentifier());

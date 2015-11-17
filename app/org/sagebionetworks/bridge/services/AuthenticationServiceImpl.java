@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
@@ -159,7 +160,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Account account = accountDao.signUp(study, signUp, isAnonSignUp);
             if (!signUp.getDataGroups().isEmpty()) {
                 final String healthCode = getHealthCode(study, account);
-                optionsService.setDataGroups(study, healthCode, signUp.getDataGroups());
+                optionsService.setDataGroups(study, healthCode, new DataGroups(signUp.getDataGroups()));
             }
             
         } catch(EntityAlreadyExistsException e) {

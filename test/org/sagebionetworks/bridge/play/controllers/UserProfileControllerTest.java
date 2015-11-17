@@ -5,15 +5,12 @@ import static play.test.Helpers.contentAsString;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import org.junit.Test;
@@ -21,8 +18,9 @@ import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -55,25 +53,9 @@ public class UserProfileControllerTest {
         assertEquals("application/json", result.contentType());
         assertEquals("{\"message\":\"External identifier added to user profile.\"}", contentAsString(result));
         
-        verify(optionsService).setExternalIdentifier(TEST_STUDY, "healthCode", "ABC-123-XYZ");
-    }
-    
-    @Test
-    public void externalIdentifierVerifiesIdentifierExists() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"identifier\":\"\"}"));
-        
-        UserProfileController controller = controllerForExternalIdTests();
-
-        try {
-            controller.createExternalIdentifier();
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("ExternalIdentifier is not valid.", e.getMessage());
-        }
-        verifyNoMoreInteractions(optionsService);
+        verify(optionsService).setExternalIdentifier(TEST_STUDY, "healthCode", new ExternalIdentifier("ABC-123-XYZ"));
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
         Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}"));
@@ -82,32 +64,16 @@ public class UserProfileControllerTest {
         
         Result result = controller.updateDataGroups();
         
-        ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
+        ArgumentCaptor<DataGroups> captor = ArgumentCaptor.forClass(DataGroups.class);
         verify(optionsService).setDataGroups(any(), any(), captor.capture());
         
-        Set<String> dataGroups = (Set<String>)captor.getValue();
-        assertEquals(Sets.newHashSet("group1"), dataGroups);
+        DataGroups dataGroups = (DataGroups)captor.getValue();
+        assertEquals(Sets.newHashSet("group1"), dataGroups.getDataGroups());
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("Data groups updated.", node.get("message").asText());
     }
 
-    @Test
-    public void invalidDataGroupsThrowException() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"A\",\"B\",\"C\"]}"));
-        
-        UserProfileController controller = controllerForExternalIdTests();
-        try {
-            controller.updateDataGroups();
-            fail("Should have thrown exception.");
-        } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("dataGroups 'A' is not one of these valid values: "));
-            assertTrue(e.getMessage().contains("dataGroups 'B' is not one of these valid values: "));
-            assertTrue(e.getMessage().contains("dataGroups 'C' is not one of these valid values: "));
-            verifyNoMoreInteractions(optionsService);
-        }
-    }
-    
     @Test
     public void canGetDataGroups() throws Exception {
         Set<String> dataGroupsSet = Sets.newHashSet("group1","group2");
@@ -126,7 +92,6 @@ public class UserProfileControllerTest {
         }
     }
     
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
         Http.Context.current.set(TestUtils.mockPlayContextWithJson("{}"));
@@ -135,11 +100,11 @@ public class UserProfileControllerTest {
         
         Result result = controller.updateDataGroups();
         
-        ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
+        ArgumentCaptor<DataGroups> captor = ArgumentCaptor.forClass(DataGroups.class);
         verify(optionsService).setDataGroups(any(), any(), captor.capture());
         
-        Set<String> dataGroups = (Set<String>)captor.getValue();
-        assertEquals(Sets.newHashSet(), dataGroups);
+        DataGroups dataGroups = (DataGroups)captor.getValue();
+        assertEquals(Sets.newHashSet(), dataGroups.getDataGroups());
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("Data groups updated.", node.get("message").asText());

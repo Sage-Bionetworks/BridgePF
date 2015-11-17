@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
@@ -21,11 +22,11 @@ public class FPHSService {
     private ParticipantOptionsService optionsService;
 
     @Autowired
-    public final void setFPHSExternalIdentifierDao(FPHSExternalIdentifierDao dao) {
+    final void setFPHSExternalIdentifierDao(FPHSExternalIdentifierDao dao) {
         this.fphsDao = dao;
     }
     @Autowired
-    public final void setParticipantOptionsService(ParticipantOptionsService options) {
+    final void setParticipantOptionsService(ParticipantOptionsService options) {
         this.optionsService = options;
     }
     
@@ -46,11 +47,11 @@ public class FPHSService {
         if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
-        fphsDao.registerExternalId(externalId);
+        optionsService.setExternalIdentifier(studyId, healthCode, externalId);
         try {
-            optionsService.setExternalIdentifier(studyId, healthCode, externalId.getIdentifier());
+            fphsDao.registerExternalId(externalId);    
         } catch(Exception e) {
-            fphsDao.unregisterExternalId(externalId);
+            optionsService.deleteOption(healthCode, ParticipantOption.EXTERNAL_IDENTIFIER);
             throw e;
         }
     }

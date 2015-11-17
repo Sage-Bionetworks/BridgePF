@@ -6,6 +6,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -18,6 +19,11 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Sets;
 
@@ -27,12 +33,19 @@ public class ParticipantOptionsServiceImplTest {
     
     private ParticipantOptionsServiceImpl service;
     private ParticipantOptionsDao mockDao;
+    private StudyService mockStudyService;
     
     @Before
     public void before() {
         service = new ParticipantOptionsServiceImpl();
         mockDao = mock(ParticipantOptionsDao.class);
+        mockStudyService = mock(StudyService.class);
         service.setParticipantOptionsDao(mockDao);
+        service.setStudyService(mockStudyService);
+        
+        Study study = new DynamoStudy();
+        study.setDataGroups(Sets.newHashSet("A","B","group1","group2","group3"));
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
     }
 
     @Test
@@ -52,12 +65,38 @@ public class ParticipantOptionsServiceImplTest {
     
     @Test
     public void setExternalIdentifier() {
-        service.setExternalIdentifier(TEST_STUDY, HEALTH_CODE, "BBB");
+        ExternalIdentifier externalId = new ExternalIdentifier("BBB");
+        
+        service.setExternalIdentifier(TEST_STUDY, HEALTH_CODE, externalId);
         
         verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, ParticipantOption.EXTERNAL_IDENTIFIER, "BBB");
         verifyNoMoreInteractions(mockDao);
     }
 
+    @Test
+    public void setExternalIdentifierValidatesNotNull() {
+        try {
+            ExternalIdentifier externalId = new ExternalIdentifier(null);
+            service.setExternalIdentifier(TEST_STUDY, HEALTH_CODE, externalId);
+            fail("Should have thrown an exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("ExternalIdentifier is not valid.", e.getMessage());
+        }
+        verifyNoMoreInteractions(mockDao);
+    }
+    
+    @Test
+    public void setExternalIdentifierValidatesNotBlank() {
+        try {
+            ExternalIdentifier externalId = new ExternalIdentifier("   ");
+            service.setExternalIdentifier(TEST_STUDY, HEALTH_CODE, externalId);
+            fail("Should have thrown an exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("ExternalIdentifier is not valid.", e.getMessage());
+        }
+        verifyNoMoreInteractions(mockDao);
+    }
+    
     @Test
     public void getExternalIdentifier() {
         when(mockDao.getOption(HEALTH_CODE, ParticipantOption.EXTERNAL_IDENTIFIER)).thenReturn("BBB");
@@ -84,7 +123,7 @@ public class ParticipantOptionsServiceImplTest {
     @Test
     public void setDataGroups() {
         Set<String> dataGroups = Sets.newHashSet("group1", "group2", "group3");
-        service.setDataGroups(TEST_STUDY, HEALTH_CODE, dataGroups);
+        service.setDataGroups(TEST_STUDY, HEALTH_CODE, new DataGroups(dataGroups));
         
         // Order of the set when serialized is indeterminate, it's a set
         verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, ParticipantOption.DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups));
@@ -92,11 +131,15 @@ public class ParticipantOptionsServiceImplTest {
     }
     
     @Test
-    public void setDataGroupsRemovesBadValuesFromSet() {
-        Set<String> dataGroups = Sets.newHashSet("A", null, " ", "B");
-        service.setDataGroups(TEST_STUDY, HEALTH_CODE, dataGroups);
-
-        verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, ParticipantOption.DATA_GROUPS, "A,B");
+    public void setDataGroupsValidatesBadValues() {
+        try {
+            Set<String> dataGroups = Sets.newHashSet("A", null, " ", "B");
+            service.setDataGroups(TEST_STUDY, HEALTH_CODE, new DataGroups(dataGroups));
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getErrors().get("dataGroups").get(0).contains("dataGroups 'null' is not one of these valid values: "));
+            assertTrue(e.getErrors().get("dataGroups").get(1).contains("dataGroups ' ' is not one of these valid values: "));
+        }
         verifyNoMoreInteractions(mockDao);
     }
     

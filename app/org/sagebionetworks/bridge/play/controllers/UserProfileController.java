@@ -1,13 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
-
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -16,8 +13,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.UserProfileService;
-import org.sagebionetworks.bridge.validators.DataGroupsValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -80,12 +75,7 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
 
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
-        
-        if (isBlank(externalId.getIdentifier())) {
-            throw new InvalidEntityException(externalId);
-        }
-        optionsService.setExternalIdentifier(session.getStudyIdentifier(), session.getUser().getHealthCode(), externalId.getIdentifier());
-        
+        optionsService.setExternalIdentifier(session.getStudyIdentifier(), session.getUser().getHealthCode(), externalId);
         return okResult("External identifier added to user profile.");
     }
     
@@ -98,13 +88,11 @@ public class UserProfileController extends BaseController {
     
     public Result updateDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
         
         DataGroups dataGroups = parseJson(request(), DataGroups.class);
-        Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);
         
         optionsService.setDataGroups(session.getStudyIdentifier(), 
-                session.getUser().getHealthCode(), dataGroups.getDataGroups());
+                session.getUser().getHealthCode(), dataGroups);
         return okResult("Data groups updated.");
     }
 

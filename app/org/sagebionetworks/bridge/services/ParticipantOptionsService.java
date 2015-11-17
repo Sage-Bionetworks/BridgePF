@@ -6,6 +6,8 @@ import java.util.Set;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
@@ -36,7 +38,7 @@ public interface ParticipantOptionsService {
      * @param healthCode
      * @param externalId
      */
-    public void setExternalIdentifier(StudyIdentifier studyIdentifier, String healthCode, String externalId);
+    public void setExternalIdentifier(StudyIdentifier studyIdentifier, String healthCode, ExternalIdentifier externalId);
 
     /**
      * Get the external identifier for this participant. 
@@ -66,7 +68,7 @@ public interface ParticipantOptionsService {
      * @param healthCode
      * @param dataGroups
      */
-    public void setDataGroups(StudyIdentifier studyIdentifier, String healthCode, Set<String> dataGroups);
+    public void setDataGroups(StudyIdentifier studyIdentifier, String healthCode, DataGroups dataGroups);
     
     /**
      * Get the data group options for this participant as a string set. 
