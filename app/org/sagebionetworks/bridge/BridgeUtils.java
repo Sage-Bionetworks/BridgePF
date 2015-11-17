@@ -164,7 +164,12 @@ public class BridgeUtils {
     }
     
     public static String setToCommaList(Set<String> set) {
-        return (set == null) ? null : JOINER.join(set);
+        if (set != null) {
+            return JOINER.join(set.stream()
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toSet()));
+        }
+        return null;
     }
 
 }

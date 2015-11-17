@@ -32,9 +32,9 @@ public class StudyControllerTest {
         UserSession session = mock(UserSession.class);
         StudyIdentifier studyId = mock(StudyIdentifier.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);
-        User user = mock(User.class);
-        when(user.getHealthCode()).thenReturn("healthCode");
-        when(user.getRoles()).thenReturn(Sets.newHashSet()); // not a developer
+        User user = new User();
+        user.setHealthCode("healthCode");
+        user.setRoles(Sets.newHashSet());
         when(session.getUser()).thenReturn(user);
 
         StudyController controller = spy(new StudyController());
@@ -52,9 +52,9 @@ public class StudyControllerTest {
         UserSession session = mock(UserSession.class);
         StudyIdentifier studyId = mock(StudyIdentifier.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);
-        User user = mock(User.class);
-        when(user.getHealthCode()).thenReturn("healthCode");
-        when(user.isInRole(Roles.DEVELOPER)).thenReturn(true); // caller is a developer
+        User user = new User();
+        user.setHealthCode("healthCode");
+        user.setRoles(Sets.newHashSet(Roles.DEVELOPER));
         when(session.getUser()).thenReturn(user);
 
         StudyController controller = spy(new StudyController());

@@ -147,8 +147,8 @@ public class UserProfileControllerTest {
     }
     
     private UserSession mockSession() {
-        User user = mock(User.class);
-        when(user.getHealthCode()).thenReturn("healthCode");
+        User user = new User();
+        user.setHealthCode("healthCode");
         
         UserSession session = mock(UserSession.class);
         when(session.getUser()).thenReturn(user);

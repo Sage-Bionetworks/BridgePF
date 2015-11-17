@@ -69,5 +69,12 @@ public class BridgeUtilsTest {
         set = BridgeUtils.commaListToSet("a,,b");
         assertEquals(Sets.newHashSet("a","b"), set);
     }
+    
+    @Test
+    public void setToCommaList() {
+        Set<String> set = Sets.newHashSet("a", null, "", "b");
+        
+        assertEquals("a,b", BridgeUtils.setToCommaList(set));
+    }
 
 }

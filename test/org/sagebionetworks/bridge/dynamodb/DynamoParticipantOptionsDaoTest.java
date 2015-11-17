@@ -31,6 +31,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoParticipantOptionsDaoTest {
 
+    private static final String TEST_EXT_ID = "AAA";
+    private static final String TEST_EXT_ID_2 = "BBB";
+    private static final String TEST_EXT_ID_3 = "CCC";
+    
     private Study study;
     private String healthCode;
     
@@ -63,26 +67,30 @@ public class DynamoParticipantOptionsDaoTest {
         
         // Set three options for an individual
         optionsDao.setOption(study, healthCode, SHARING_SCOPE, sharingName);
-        optionsDao.setOption(study, healthCode, EXTERNAL_IDENTIFIER, "AAA");
+        optionsDao.setOption(study, healthCode, EXTERNAL_IDENTIFIER, TEST_EXT_ID);
         optionsDao.setOption(study,  healthCode, DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups));
 
-        // Get them all for one individual, they are set
+        // Verify all are set in the options map
         Map<ParticipantOption,String> values = optionsDao.getAllParticipantOptions(healthCode);
         assertEquals(sharingName, values.get(SHARING_SCOPE));
-        assertEquals("AAA", values.get(EXTERNAL_IDENTIFIER));
+        assertEquals(TEST_EXT_ID, values.get(EXTERNAL_IDENTIFIER));
         assertEquals(BridgeUtils.setToCommaList(dataGroups),  values.get(DATA_GROUPS));
         
-        // Get an individual option for all users (try all three)
+        // Veriry all are set in the OptionLookup object (same option for all users)
         OptionLookup sharingLookup = optionsDao.getOptionForAllStudyParticipants(study, SHARING_SCOPE);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, sharingLookup.getSharingScope(healthCode));
         
         OptionLookup externalIdLookup = optionsDao.getOptionForAllStudyParticipants(study, EXTERNAL_IDENTIFIER);
-        assertEquals("AAA", externalIdLookup.get(healthCode));
+        assertEquals(TEST_EXT_ID, externalIdLookup.get(healthCode));
         
         OptionLookup dataGroupsLookup = optionsDao.getOptionForAllStudyParticipants(study, DATA_GROUPS);
         assertEquals(dataGroups, dataGroupsLookup.getDataGroups(healthCode));
         
-        // Now delete them all, there should still be defaults
+        // Verify deleting one option
+        optionsDao.deleteOption(healthCode, EXTERNAL_IDENTIFIER);
+        assertNull(optionsDao.getOption(healthCode, EXTERNAL_IDENTIFIER));
+        
+        // Delete all options and verify they return to defaults
         optionsDao.deleteAllParticipantOptions(healthCode);
 
         sharingLookup = optionsDao.getOptionForAllStudyParticipants(study, SHARING_SCOPE);
@@ -92,36 +100,27 @@ public class DynamoParticipantOptionsDaoTest {
         assertNull(externalIdLookup.get(healthCode));
         
         dataGroupsLookup = optionsDao.getOptionForAllStudyParticipants(study, DATA_GROUPS);
-        assertNull(dataGroupsLookup.getDataGroups(healthCode));
+        assertEquals(0, dataGroupsLookup.getDataGroups(healthCode).size());
     }
     
     @Test
-    public void getAllParticipantOptions() {
-        optionsDao.setOption(study, healthCode, SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS.name());
-        optionsDao.setOption(study, healthCode, EXTERNAL_IDENTIFIER, "AAA");
-        
-        Map<ParticipantOption,String> values = optionsDao.getAllParticipantOptions(healthCode);
-        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), values.get(SHARING_SCOPE));
-        assertEquals("AAA", values.get(EXTERNAL_IDENTIFIER));
-        assertEquals("true", values.get(EMAIL_NOTIFICATIONS)); // Defaults are included
-        assertNull(values.get(DATA_GROUPS));
-    }
-    
-    @Test
-    public void getOptionForAllStudyParticipants() {
-        optionsDao.setOption(study, healthCode, EXTERNAL_IDENTIFIER, "AAA");
-        optionsDao.setOption(study, healthCode+"2", EXTERNAL_IDENTIFIER, "BBB");
-        optionsDao.setOption(study, healthCode+"3", EXTERNAL_IDENTIFIER, "CCC");
+    public void getOptionLookupContainsCodesForAllUsers() {
+        // Verify the lookup object contains records for multiple users
+        optionsDao.setOption(study, healthCode, EXTERNAL_IDENTIFIER, TEST_EXT_ID);
+        optionsDao.setOption(study, healthCode+"2", EXTERNAL_IDENTIFIER, TEST_EXT_ID_2);
+        optionsDao.setOption(study, healthCode+"3", EXTERNAL_IDENTIFIER, TEST_EXT_ID_3);
 
         OptionLookup lookup = optionsDao.getOptionForAllStudyParticipants(study, EXTERNAL_IDENTIFIER);
         
-        assertEquals("AAA", lookup.get(healthCode));
-        assertEquals("BBB", lookup.get(healthCode+"2"));
-        assertEquals("CCC", lookup.get(healthCode+"3"));
+        assertEquals(TEST_EXT_ID, lookup.get(healthCode));
+        assertEquals(TEST_EXT_ID_2, lookup.get(healthCode+"2"));
+        assertEquals(TEST_EXT_ID_3, lookup.get(healthCode+"3"));
         
         // healthCode's options are deleted in the @After method
         optionsDao.deleteAllParticipantOptions(healthCode+"2");
         optionsDao.deleteAllParticipantOptions(healthCode+"3");
+        
+        
     }
     
 }

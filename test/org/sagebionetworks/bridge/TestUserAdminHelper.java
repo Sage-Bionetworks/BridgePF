@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 public class TestUserAdminHelper {
 
     private static final String PASSWORD = "P4ssword!";
+    private static final String EMAIL_DOMAIN = "@sagebridge.org";
 
     UserAdminService userAdminService;
     AuthenticationService authService;
@@ -98,6 +99,7 @@ public class TestUserAdminHelper {
     }
 
     public String makeRandomUserName(Class<?> cls) {
+        checkNotNull(cls);
         String devPart = BridgeConfigFactory.getConfig().getUser();
         String rndPart = TestUtils.randomName(cls);
         return String.format("bridge-testing+%s-%s", devPart, rndPart);
@@ -121,9 +123,8 @@ public class TestUserAdminHelper {
     }
     
     public TestUser createUser(Class<?> cls, Study study, boolean signIn, boolean consent, Set<Roles> roles, Set<String> dataGroups) {
-        checkNotNull(cls);
         String name = makeRandomUserName(cls);
-        SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles, dataGroups);
+        SignUp signUp = new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
         return createUser(signUp, study, signIn, consent);
     }
 

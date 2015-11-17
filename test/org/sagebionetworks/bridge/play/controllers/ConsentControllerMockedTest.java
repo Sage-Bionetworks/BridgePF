@@ -60,8 +60,8 @@ public class ConsentControllerMockedTest {
         session = mock(UserSession.class);
         StudyIdentifier studyId = mock(StudyIdentifier.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);
-        user = mock(User.class);
-        when(user.getHealthCode()).thenReturn("healthCode");
+        user = new User();
+        user.setHealthCode("healthCode");
         when(session.getUser()).thenReturn(user);
 
         controller = spy(new ConsentController());
