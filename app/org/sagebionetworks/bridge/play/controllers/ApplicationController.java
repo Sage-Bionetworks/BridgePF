@@ -20,13 +20,13 @@ public class ApplicationController extends BaseController {
 
     public Result verifyEmail(String study) {
         Study studyObj = studyService.getStudy(study);
-        return ok(views.html.verifyEmail.render(ASSETS_HOST, ASSETS_BUILD, 
-                
-                StringEscapeUtils.escapeHtml4("Football Player's Health Study Team"), studyObj.getSupportEmail()));
+        return ok(views.html.verifyEmail.render(ASSETS_HOST, ASSETS_BUILD,
+                StringEscapeUtils.escapeHtml4(studyObj.getName()), studyObj.getSupportEmail()));
     }
 
     public Result resetPassword(String study) {
         Study studyObj = studyService.getStudy(study);
-        return ok(views.html.resetPassword.render(ASSETS_HOST, ASSETS_BUILD, studyObj.getName(), studyObj.getSupportEmail()));
+        return ok(views.html.resetPassword.render(ASSETS_HOST, ASSETS_BUILD,
+                StringEscapeUtils.escapeHtml4(studyObj.getName()), studyObj.getSupportEmail()));
     }
 }
