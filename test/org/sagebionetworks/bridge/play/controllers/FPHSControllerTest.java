@@ -100,7 +100,7 @@ public class FPHSControllerTest {
         
         // No session is required
         verifyNoMoreInteractions(authenticationService);
-        assertEquals("foo", node.get("identifier").asText());
+        assertEquals("foo", node.get("externalId").asText());
         assertEquals(200, result.status());
     }
     
