@@ -31,12 +31,12 @@ public class FPHSController extends BaseController {
         this.fphsService = service; 
     }
     
-    public Result verifyExternalIdentifier(String externalId) throws Exception {
+    public Result verifyExternalIdentifier(String identifier) throws Exception {
         // public API, no restrictions. externalId can be null so we can create a 400 error in the service.
-        ExternalIdentifier identifier = new ExternalIdentifier(externalId);
-        fphsService.verifyExternalIdentifier(identifier);
+        ExternalIdentifier externalId = new ExternalIdentifier(identifier);
+        fphsService.verifyExternalIdentifier(externalId);
         
-        return okResult(identifier);
+        return okResult(externalId);
     }
     public Result registerExternalIdentifier() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
