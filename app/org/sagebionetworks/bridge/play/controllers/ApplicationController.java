@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.ASSETS_HOST;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.stereotype.Controller;
 
@@ -18,7 +20,9 @@ public class ApplicationController extends BaseController {
 
     public Result verifyEmail(String study) {
         Study studyObj = studyService.getStudy(study);
-        return ok(views.html.verifyEmail.render(ASSETS_HOST, ASSETS_BUILD, studyObj.getName(), studyObj.getSupportEmail()));
+        return ok(views.html.verifyEmail.render(ASSETS_HOST, ASSETS_BUILD, 
+                
+                StringEscapeUtils.escapeHtml4("Football Player's Health Study Team"), studyObj.getSupportEmail()));
     }
 
     public Result resetPassword(String study) {
