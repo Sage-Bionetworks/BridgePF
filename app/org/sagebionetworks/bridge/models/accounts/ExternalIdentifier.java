@@ -12,6 +12,7 @@ public final class ExternalIdentifier implements BridgeEntity {
         this.identifier = identifier;
     }
     
+    @JsonProperty("externalId")
     public String getIdentifier() {
         return identifier;
     }
