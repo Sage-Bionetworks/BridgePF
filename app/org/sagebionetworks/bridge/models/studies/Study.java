@@ -201,12 +201,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      * Minimum supported app version number. If set, user app clients pointing to an older version will 
      * fail with an httpResponse status code of 410.
      */
-    public Integer getMinSupportedAppVersion(String osName);
-    
-    /** @see #getMinSupportedVersion(); */
-    public void setMinSupportedAppVersion(String osName, Integer version);
-    
-    /** @see #getMinSupportedVersion(); */
     Map<String, Integer> getMinSupportedAppVersions();
 	
 	/** @see #getMinSupportedVersion(); */

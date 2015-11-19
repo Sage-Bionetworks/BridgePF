@@ -305,7 +305,6 @@ public final class DynamoStudy implements Study {
     }
     
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringIntegerMapMarshaller.class)
     @Override
     public Map<String,Integer> getMinSupportedAppVersions() {
         return minSupportedAppVersions;
@@ -314,18 +313,6 @@ public final class DynamoStudy implements Study {
     @Override
     public void setMinSupportedAppVersions(Map<String,Integer> map) {
         this.minSupportedAppVersions = (map == null) ? new HashMap<>() : map;
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public Integer getMinSupportedAppVersion(String osName) {
-    	return minSupportedAppVersions.get(osName);
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public void setMinSupportedAppVersion(String osName, Integer version) {
-    	this.minSupportedAppVersions.put(osName, version);
     }
 
     @Override

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
@@ -17,7 +18,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.controllers.BaseController;
 
@@ -126,14 +126,14 @@ public class BaseControllerTest {
         when(context.request()).thenReturn(mockRequest);
         Http.Context.current.set(context);
         
-        Study study = mock(Study.class);
-        when(study.getMinSupportedAppVersion("iPhone OS")).thenReturn(28);
+        HashMap<String, Integer> map =new HashMap<>();
+        map.put("iPhone OS", 28);
         
-        UserSession session = mock(UserSession.class);
-        when(session.isAdminRole()).thenReturn(false);
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersions()).thenReturn(map);
         
         SchedulePlanController controller = new SchedulePlanController();
-        controller.verifySupportedVersionOrThrowException(study, session);
+        controller.verifySupportedVersionOrThrowException(study);
 
     }
     
@@ -147,14 +147,14 @@ public class BaseControllerTest {
         when(context.request()).thenReturn(mockRequest);
         Http.Context.current.set(context);
         
-        Study study = mock(Study.class);
-        when(study.getMinSupportedAppVersion("iPhone OS")).thenReturn(25);
+        HashMap<String, Integer> map =new HashMap<>();
+        map.put("iPhone OS", 25);
         
-        UserSession session = mock(UserSession.class);
-        when(session.isAdminRole()).thenReturn(false);
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersions()).thenReturn(map);
         
         SchedulePlanController controller = new SchedulePlanController();
-        controller.verifySupportedVersionOrThrowException(study, session);
+        controller.verifySupportedVersionOrThrowException(study);
     }
     
     @Test
@@ -167,14 +167,13 @@ public class BaseControllerTest {
         when(context.request()).thenReturn(mockRequest);
         Http.Context.current.set(context);
         
-        Study study = mock(Study.class);
-        when(study.getMinSupportedAppVersion("iPhone OS")).thenReturn(null);
+        HashMap<String, Integer> map =new HashMap<>();
         
-        UserSession session = mock(UserSession.class);
-        when(session.isAdminRole()).thenReturn(false);
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersions()).thenReturn(map);
         
         SchedulePlanController controller = new SchedulePlanController();
-        controller.verifySupportedVersionOrThrowException(study, session);
+        controller.verifySupportedVersionOrThrowException(study);
     }
     
     @Test
@@ -187,32 +186,14 @@ public class BaseControllerTest {
         when(context.request()).thenReturn(mockRequest);
         Http.Context.current.set(context);
         
-        Study study = mock(Study.class);
-        
-        UserSession session = mock(UserSession.class);
-        when(session.isAdminRole()).thenReturn(false);
-        
-        SchedulePlanController controller = new SchedulePlanController();
-        controller.verifySupportedVersionOrThrowException(study, session);
-    }
-    
-    @Test
-    public void testAdminRoleDoesNotThrowException() throws Exception {
-        Http.Request mockRequest = mock(Http.Request.class);
-        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
-        
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        HashMap<String, Integer> map =new HashMap<>();
+        map.put("iPhone OS", 25);
         
         Study study = mock(Study.class);
-        when(study.getMinSupportedAppVersion("iPhone OS")).thenReturn(28);
-        
-        UserSession session = mock(UserSession.class);
-        when(session.isAdminRole()).thenReturn(true);
+        when(study.getMinSupportedAppVersions()).thenReturn(map);
         
         SchedulePlanController controller = new SchedulePlanController();
-        controller.verifySupportedVersionOrThrowException(study, session);
+        controller.verifySupportedVersionOrThrowException(study);
     }
+
 }
