@@ -42,7 +42,7 @@ public class ClientInfoTest {
     }
     
     @Test
-    public void missingUserAgentReturnsEmptyClientInf() {
+    public void missingUserAgentReturnsEmptyClientInfo() {
         assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.parseUserAgentString(null));
         assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.parseUserAgentString("   \t"));
     }
@@ -174,4 +174,24 @@ public class ClientInfoTest {
         assertTrue(info.isTargetedAppVersion(0, 100));
     }
     
-}
+    @Test
+    public void testIsSupportedAppVersion_GreaterThanOrEqualToSucceeds() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
+        assertTrue(info.isSupportedAppVersion(1));
+        assertTrue(info.isSupportedAppVersion(25));
+        assertTrue(info.isSupportedAppVersion(26));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_NullMinSucceeds() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
+        assertTrue(info.isSupportedAppVersion(null));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_LessThanFails() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
+        assertFalse(info.isSupportedAppVersion(27));
+    }
+    
+ }

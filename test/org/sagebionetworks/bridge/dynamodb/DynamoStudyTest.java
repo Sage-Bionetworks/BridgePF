@@ -36,7 +36,8 @@ public class DynamoStudyTest {
     @Test
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
-        study.setVersion(2L);
+        study.setVersion(3L);
+        study.setMinSupportedVersion(2L);
         study.setStormpathHref("test");
         
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
@@ -62,6 +63,7 @@ public class DynamoStudyTest {
         assertEquals(study.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
         assertEquals(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
         assertEquals((Long)study.getVersion(), (Long)node.get("version").asLong());
+        assertEquals((Long)study.getMinSupportedVersion(), (Long)node.get("minSupportedVersion").asLong());
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertEquals("Study", node.get("type").asText());
@@ -85,4 +87,46 @@ public class DynamoStudyTest {
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
         assertEquals(study, deserStudy);
     }
+    
+    // Following tests are to check that the minSupportedVersion is always less than or equal to the current version
+    
+    @Test
+    public void testMinSupportedVersionAlwaysLessThanOrEqualToVersion_SetMinLessThan() throws Exception {
+        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        
+        study.setVersion(3L);
+        study.setMinSupportedVersion(2L);
+        
+        Long expectedVersion = 3L;
+        Long expectedMinVersion = 2L;
+        assertEquals(expectedVersion, (Long)study.getVersion());
+        assertEquals(expectedMinVersion, (Long)study.getMinSupportedVersion());
+    }
+    
+    @Test
+    public void testMinSupportedVersionAlwaysLessThanOrEqualToVersion_SetMinEqual() throws Exception {
+        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        
+        study.setVersion(3L);
+        study.setMinSupportedVersion(3L);
+        
+        Long expectedVersion = 3L;
+        Long expectedMinVersion = 3L;
+        assertEquals(expectedVersion, (Long)study.getVersion());
+        assertEquals(expectedMinVersion, (Long)study.getMinSupportedVersion());
+    }
+    
+    @Test
+    public void testMinSupportedVersionAlwaysLessThanOrEqualToVersion_SetMinGreaterThan() throws Exception {
+        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        
+        study.setVersion(3L);
+        study.setMinSupportedVersion(4L);
+        
+        Long expectedVersion = 3L;
+        Long expectedMinVersion = 3L;
+        assertEquals(expectedVersion, (Long)study.getVersion());
+        assertEquals(expectedMinVersion, (Long)study.getMinSupportedVersion());
+    }
+    
 }
