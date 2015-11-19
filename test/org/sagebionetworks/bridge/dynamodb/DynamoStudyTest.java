@@ -37,7 +37,7 @@ public class DynamoStudyTest {
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         study.setVersion(2L);
-        study.setMinSupportedAppVersion("iPhone OS", 2);
+        study.getMinSupportedAppVersions().put("iPhone OS", 2);
         study.setStormpathHref("test");
         
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
@@ -69,7 +69,7 @@ public class DynamoStudyTest {
         
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
         assertNotNull(supportedVersionsNode);
-        assertEqualsAndNotNull(study.getMinSupportedAppVersion("iPhone OS"), (Integer)supportedVersionsNode.get("iPhone OS").asInt());
+        assertEqualsAndNotNull(study.getMinSupportedAppVersions().get("iPhone OS"), (Integer)supportedVersionsNode.get("iPhone OS").asInt());
         
         
         String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.html";
@@ -86,6 +86,20 @@ public class DynamoStudyTest {
         final JsonNode filteredNode = BridgeObjectMapper.get().readTree(filteredJson);
         assertNull(filteredNode.get("stormpathHref"));
         assertNull(filteredNode.get("active"));
+
+        // Deserialize back to a POJO and verify.
+        final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
+        assertEquals(study, deserStudy);
+    }
+    
+    @Test
+    public void testThatEmptyMinSupportedVersionMapperDoesNotThrowException() throws Exception {
+        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        study.setVersion(2L);
+        study.setStormpathHref("test");
+        
+        final String json = BridgeObjectMapper.get().writeValueAsString(study);
+        BridgeObjectMapper.get().readTree(json);
 
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);

@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -128,7 +127,7 @@ public abstract class BaseController extends Controller {
     UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());        
-        verifySupportedVersionOrThrowException(study, session);
+        verifySupportedVersionOrThrowException(study);
         if (!session.getUser().isConsent()) {
             throw new ConsentRequiredException(session);
         }
@@ -166,18 +165,10 @@ public abstract class BaseController extends Controller {
         return session[0];
     }
     
-    void verifySupportedVersionOrThrowException(Study study, UserSession session) throws UnsupportedVersionException {
-
-    	// Exit early if Admin. These accounts should not throw the exception b/c of version support
-    	// b/c might want to look at older data. The supported version is intended for client apps that
-    	// gather data rather than apps used to model it. syoung 11/19/2015
-    	if (session.isAdminRole()) {
-    		return;  
-    	}
+    void verifySupportedVersionOrThrowException(Study study) throws UnsupportedVersionException {
     	
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-        String osName = clientInfo.getOsName();
-        if (osName != null && !clientInfo.isSupportedVersion(study.getMinSupportedAppVersion(osName))) {
+        if (!clientInfo.isSupportedVersion(study.getMinSupportedAppVersions().get(clientInfo.getOsName()))) {
         	throw new UnsupportedVersionException(clientInfo);
         }
     }

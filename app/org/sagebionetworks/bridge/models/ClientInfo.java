@@ -6,7 +6,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,10 +152,9 @@ public final class ClientInfo {
     }
     
     public boolean isSupportedVersion(Integer minSupportedVersion) {
-    	if (appVersion != null && minSupportedVersion != null && appVersion < minSupportedVersion) {
-    		return false;
-    	}
-    	return true;
+    	// If both the appVersion and minSupportedVersion are defined, check that the appVersion is 
+    	// greater than or equal to the minSupportedVersion
+    	return (appVersion == null || minSupportedVersion == null || appVersion >= minSupportedVersion);
     }
     
     public boolean isTargetedAppVersion(Integer minValue, Integer maxValue) {
@@ -288,34 +286,34 @@ public final class ClientInfo {
     private static ClientInfo parseLongUserAgent(String ua) {
         Matcher matcher = LONG_STRING.matcher(ua);
         if (matcher.matches()) {
-        	// Pull out the information that matches both deprecated and new format
-        	Builder builder = new ClientInfo.Builder()
-                    .withAppName(matcher.group(1).trim())
-                    .withAppVersion(Integer.parseInt(matcher.group(2).trim()))
-                    .withDeviceName(matcher.group(3).trim())
-                    .withSdkName(matcher.group(5).trim())
-                    .withSdkVersion(Integer.parseInt(matcher.group(6).trim()));
+            // Pull out the information that matches both deprecated and new format
+            Builder builder = new ClientInfo.Builder()
+                .withAppName(matcher.group(1).trim())
+                .withAppVersion(Integer.parseInt(matcher.group(2).trim()))
+                .withDeviceName(matcher.group(3).trim())
+                .withSdkName(matcher.group(5).trim())
+                .withSdkVersion(Integer.parseInt(matcher.group(6).trim()));
         	
-        	// Older vesions of iOS apps that use the BridgeSDK have a space between 
-        	// the osName and osVersion, whereas newer format is to use a forward slash
-        	// to separate the two parts. syoung 11/19/2015
-        	String osInfo = matcher.group(4).trim();
-        	String[] osParts = osInfo.split("/");
-        	if (osParts.length == 2) {
-        		builder = builder.
-        				withOsName(osParts[0].trim()).
-        				withOsVersion(osParts[1].trim());
-        	}
-        	else {
-        		int idx = osInfo.lastIndexOf(" ");
-        		if (idx > 0) {
-            		builder = builder.
-            				withOsName(osInfo.substring(0,idx).trim()).
-            				withOsVersion(osInfo.substring(idx).trim());
-        		}
-        	}
+            // Older vesions of iOS apps that use the BridgeSDK have a space between 
+            // the osName and osVersion, whereas newer format is to use a forward slash
+            // to separate the two parts. syoung 11/19/2015
+            String osInfo = matcher.group(4).trim();
+            String[] osParts = osInfo.split("/");
+            if (osParts.length == 2) {
+                builder = builder
+                    .withOsName(osParts[0].trim())
+                    .withOsVersion(osParts[1].trim());
+            }
+            else {
+                int idx = osInfo.lastIndexOf(" ");
+        	    if (idx > 0) {
+        	        builder = builder
+        	            .withOsName(osInfo.substring(0,idx).trim())
+        	            .withOsVersion(osInfo.substring(idx).trim());
+                }
+            }
         	
-        	return builder.build();
+            return builder.build();
         }
         return UNKNOWN_CLIENT;
     }
