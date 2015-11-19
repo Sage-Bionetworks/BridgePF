@@ -70,7 +70,8 @@ public class StudyController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         userProfileService.sendStudyParticipantRoster(study);
-        return okResult("A roster of study participants will be emailed to the study's consent notification contact.");
+        
+        return acceptedResult("A roster of study participants will be emailed to the study's consent notification contact.");
     }
 
     public Result updateStudyForDeveloper() throws Exception {

@@ -51,7 +51,7 @@ public class UserDataDownloadControllerTest {
 
         // execute and validate
         Result result = controller.requestUserData();
-        assertEquals(200, result.status());
+        assertEquals(202, result.status());
 
         // validate args sent to mock service
         ArgumentCaptor<DateRange> dateRangeCaptor = ArgumentCaptor.forClass(DateRange.class);
