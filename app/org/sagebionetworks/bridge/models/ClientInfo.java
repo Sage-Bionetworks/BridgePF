@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +21,7 @@ import com.google.common.cache.LoadingCache;
  * </p>
  * 
  * <p>
- * appName/appVersion (osName; osVersion) sdkName/sdkVersion
+ * appName/appVersion (deviceName; osName/osVersion) sdkName/sdkVersion
  * </p>
  * 
  * <p>
@@ -31,8 +32,8 @@ import com.google.common.cache.LoadingCache;
  * <ul>
  *     <li>Melanoma Challenge Application/1</li>
  *     <li>Unknown Client/14 BridgeJavaSDK/10</li>
- *     <li>Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4</li>
- *     <li>CardioHealth/1 (iPhone 6.0; iPhone OS 9.0.2) BridgeSDK/10</li>
+ *     <li>Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4</li>
+ *     <li>CardioHealth/1 (iPhone 6.0; iPhone OS/9.0.2) BridgeSDK/10</li>
  * </ul>
  * 
  * <p>
@@ -78,6 +79,16 @@ public final class ClientInfo {
      * is still logged exactly as it is retrieved from the request.
      */
     public static final ClientInfo UNKNOWN_CLIENT = new ClientInfo.Builder().build();
+    
+    /**
+     * The osName that maps to an iOS client app.
+     */
+    public static final String IOS_OS_NAME = "iPhone OS";
+    
+    /**
+     * The osName that maps to an Android client app.
+     */
+    public static final String ANDROID_OS_NAME = "Android";
 
     /**
      * For example, "App Name/14".
@@ -88,22 +99,25 @@ public final class ClientInfo {
      */
     private static final Pattern MEDIUM_STRING = Pattern.compile("^([^/]+)\\/(\\d{1,9})\\s([^/\\(]*)\\/(\\d{1,9})($)");
     /**
-     * For example, "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4".
+     * For example, "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4" or 
+     * "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4"
      */
     private static final Pattern LONG_STRING = Pattern
             .compile("^([^/]+)\\/(\\d{1,9})\\s\\(([^;]+);([^\\)]*)\\)\\s([^/]*)\\/(\\d{1,9})($)");
-
+     
     private final String appName;
     private final Integer appVersion;
+    private final String deviceName;
     private final String osName;
     private final String osVersion;
     private final String sdkName;
     private final Integer sdkVersion;
 
-    private ClientInfo(String appName, Integer appVersion, String osName, String osVersion, String sdkName,
+    private ClientInfo(String appName, Integer appVersion, String deviceName, String osName, String osVersion, String sdkName,
             Integer sdkVersion) {
         this.appName = appName;
         this.appVersion = appVersion;
+        this.deviceName = deviceName;
         this.osName = osName;
         this.osVersion = osVersion;
         this.sdkName = sdkName;
@@ -116,6 +130,10 @@ public final class ClientInfo {
 
     public Integer getAppVersion() {
         return appVersion;
+    }
+    
+    public String getDeviceName() {
+        return deviceName;
     }
 
     public String getOsName() {
@@ -134,16 +152,11 @@ public final class ClientInfo {
         return sdkVersion;
     }
     
-    public boolean isSupportedAppVersion(Integer minSupportedVersion) {
-        // If there's no declared client version, it matches anything.
-        if (appVersion != null) {
-            // Otherwise we can't be outside of either range boundary if the boundary
-            // is declared.
-            if (minSupportedVersion != null && appVersion.intValue() < minSupportedVersion.intValue()) {
-                return false;
-            }
-        }
-        return true;
+    public boolean isSupportedVersion(Integer minSupportedVersion) {
+    	if (appVersion != null && minSupportedVersion != null && appVersion < minSupportedVersion) {
+    		return false;
+    	}
+    	return true;
     }
     
     public boolean isTargetedAppVersion(Integer minValue, Integer maxValue) {
@@ -165,6 +178,7 @@ public final class ClientInfo {
         int result = 1;
         result = prime * result + Objects.hashCode(appName);
         result = prime * result + Objects.hashCode(appVersion);
+        result = prime * result + Objects.hashCode(deviceName);
         result = prime * result + Objects.hashCode(osName);
         result = prime * result + Objects.hashCode(osVersion);
         result = prime * result + Objects.hashCode(sdkName);
@@ -181,18 +195,20 @@ public final class ClientInfo {
         ClientInfo other = (ClientInfo) obj;
         return Objects.equals(appName, other.appName) && Objects.equals(appVersion, other.appVersion)
                 && Objects.equals(osName, other.osName) && Objects.equals(osVersion, other.osVersion)
-                && Objects.equals(sdkName, other.sdkName) && Objects.equals(sdkVersion, other.sdkVersion);
+                && Objects.equals(sdkName, other.sdkName) && Objects.equals(sdkVersion, other.sdkVersion) 
+                && Objects.equals(deviceName, other.deviceName);
     }
 
     @Override
     public String toString() {
-        return "ClientInfo [appName=" + appName + ", appVersion=" + appVersion + ", osName=" + osName + ", osVersion="
+        return "ClientInfo [appName=" + appName + ", appVersion=" + appVersion + ", deviceName=" + deviceName + ", osName=" + osName + ", osVersion="
                 + osVersion + ", sdkName=" + sdkName + ", sdkVersion=" + sdkVersion + "]";
     }
 
     static class Builder {
         private String appName;
         private Integer appVersion;
+        private String deviceName;
         private String osName;
         private String osVersion;
         private String sdkName;
@@ -204,6 +220,10 @@ public final class ClientInfo {
         }
         public Builder withAppVersion(Integer appVersion) {
             this.appVersion = appVersion;
+            return this;
+        }
+        public Builder withDeviceName(String deviceName) {
+            this.deviceName = deviceName;
             return this;
         }
         public Builder withOsName(String osName) {
@@ -227,7 +247,7 @@ public final class ClientInfo {
          * User-Agent header is not in our prescribed format.
          */
         public ClientInfo build() {
-            return new ClientInfo(appName, appVersion, osName, osVersion, sdkName, sdkVersion);
+            return new ClientInfo(appName, appVersion, deviceName, osName, osVersion, sdkName, sdkVersion);
         }
 
     }
@@ -264,17 +284,38 @@ public final class ClientInfo {
         }
         return info;
     }
-
+    
     private static ClientInfo parseLongUserAgent(String ua) {
         Matcher matcher = LONG_STRING.matcher(ua);
         if (matcher.matches()) {
-            return new ClientInfo.Builder()
-                .withAppName(matcher.group(1).trim())
-                .withAppVersion(Integer.parseInt(matcher.group(2).trim()))
-                .withOsName(matcher.group(3).trim())
-                .withOsVersion(matcher.group(4).trim())
-                .withSdkName(matcher.group(5).trim())
-                .withSdkVersion(Integer.parseInt(matcher.group(6).trim())).build();
+        	// Pull out the information that matches both deprecated and new format
+        	Builder builder = new ClientInfo.Builder()
+                    .withAppName(matcher.group(1).trim())
+                    .withAppVersion(Integer.parseInt(matcher.group(2).trim()))
+                    .withDeviceName(matcher.group(3).trim())
+                    .withSdkName(matcher.group(5).trim())
+                    .withSdkVersion(Integer.parseInt(matcher.group(6).trim()));
+        	
+        	// Older vesions of iOS apps that use the BridgeSDK have a space between 
+        	// the osName and osVersion, whereas newer format is to use a forward slash
+        	// to separate the two parts. syoung 11/19/2015
+        	String osInfo = matcher.group(4).trim();
+        	String[] osParts = osInfo.split("/");
+        	if (osParts.length == 2) {
+        		builder = builder.
+        				withOsName(osParts[0].trim()).
+        				withOsVersion(osParts[1].trim());
+        	}
+        	else {
+        		int idx = osInfo.lastIndexOf(" ");
+        		if (idx > 0) {
+            		builder = builder.
+            				withOsName(osInfo.substring(0,idx).trim()).
+            				withOsVersion(osInfo.substring(idx).trim());
+        		}
+        	}
+        	
+        	return builder.build();
         }
         return UNKNOWN_CLIENT;
     }

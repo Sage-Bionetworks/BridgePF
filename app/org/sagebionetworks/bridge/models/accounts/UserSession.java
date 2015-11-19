@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -51,5 +52,8 @@ public class UserSession {
     }
     public void setUser(User user) {
         this.user = user;
+    }
+    public boolean isAdminRole() {
+    	return this.getUser().isInRole(Roles.ADMINISTRATIVE_ROLES);
     }
 }

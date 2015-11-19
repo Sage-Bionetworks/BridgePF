@@ -14,9 +14,10 @@ import play.mvc.Http;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.exceptions.MinSupportedVersionException;
+import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.controllers.BaseController;
 
@@ -90,8 +91,8 @@ public class BaseControllerTest {
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
-        assertEquals("Unknown iPhone", info.getOsName());
-        assertEquals("iPhone OS 9.0.2", info.getOsVersion());
+        assertEquals("iPhone OS", info.getOsName());
+        assertEquals("9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
     }
@@ -115,7 +116,7 @@ public class BaseControllerTest {
         assertNull(info.getSdkVersion());
     }
     
-    @Test (expected = MinSupportedVersionException.class)
+    @Test (expected = UnsupportedVersionException.class)
     public void testInvalidSupportedVersionThrowsException() throws Exception {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
@@ -126,10 +127,13 @@ public class BaseControllerTest {
         Http.Context.current.set(context);
         
         Study study = mock(Study.class);
-        when(study.getMinSupportedVersion()).thenReturn(28L);
+        when(study.getMinSupportedAppVersion("iPhone OS")).thenReturn(28);
+        
+        UserSession session = mock(UserSession.class);
+        when(session.isAdminRole()).thenReturn(false);
         
         SchedulePlanController controller = new SchedulePlanController();
-        controller.verifyMinSupportedVersionOrThrowException(study);
+        controller.verifySupportedVersionOrThrowException(study, session);
 
     }
     
@@ -144,11 +148,71 @@ public class BaseControllerTest {
         Http.Context.current.set(context);
         
         Study study = mock(Study.class);
-        when(study.getMinSupportedVersion()).thenReturn(25L);
+        when(study.getMinSupportedAppVersion("iPhone OS")).thenReturn(25);
+        
+        UserSession session = mock(UserSession.class);
+        when(session.isAdminRole()).thenReturn(false);
         
         SchedulePlanController controller = new SchedulePlanController();
+        controller.verifySupportedVersionOrThrowException(study, session);
+    }
+    
+    @Test
+    public void testNullSupportedVersionDoesNotThrowException() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
-        controller.verifyMinSupportedVersionOrThrowException(study);
-
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersion("iPhone OS")).thenReturn(null);
+        
+        UserSession session = mock(UserSession.class);
+        when(session.isAdminRole()).thenReturn(false);
+        
+        SchedulePlanController controller = new SchedulePlanController();
+        controller.verifySupportedVersionOrThrowException(study, session);
+    }
+    
+    @Test
+    public void testUnknownOSDoesNotThrowException() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 BridgeSDK/4");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        Study study = mock(Study.class);
+        
+        UserSession session = mock(UserSession.class);
+        when(session.isAdminRole()).thenReturn(false);
+        
+        SchedulePlanController controller = new SchedulePlanController();
+        controller.verifySupportedVersionOrThrowException(study, session);
+    }
+    
+    @Test
+    public void testAdminRoleDoesNotThrowException() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersion("iPhone OS")).thenReturn(28);
+        
+        UserSession session = mock(UserSession.class);
+        when(session.isAdminRole()).thenReturn(true);
+        
+        SchedulePlanController controller = new SchedulePlanController();
+        controller.verifySupportedVersionOrThrowException(study, session);
     }
 }

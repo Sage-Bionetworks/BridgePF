@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.MinSupportedVersionException;
+import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -102,6 +102,7 @@ public class AuthenticationController extends BaseController {
         final Study study = getStudyOrThrowException(json);
         try {
             session = authenticationService.signIn(study, signIn);
+            verifySupportedVersionOrThrowException(study, session);
         } catch(ConsentRequiredException e) {
             setSessionToken(e.getUserSession().getSessionToken());
             throw e;
@@ -131,7 +132,6 @@ public class AuthenticationController extends BaseController {
     private Study getStudyOrThrowException(JsonNode node) {
         String studyId = getStudyStringOrThrowException(node);
         Study study = studyService.getStudy(studyId);
-        verifyMinSupportedVersionOrThrowException(study);
         return study;
     }
 

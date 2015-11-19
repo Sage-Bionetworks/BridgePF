@@ -36,37 +36,41 @@ public class DynamoStudyTest {
     @Test
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
-        study.setVersion(3L);
-        study.setMinSupportedVersion(2L);
+        study.setVersion(2L);
+        study.setMinSupportedAppVersion("iPhone OS", 2);
         study.setStormpathHref("test");
         
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
         final JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
-        assertEquals(study.getSupportEmail(), node.get("supportEmail").asText());
-        assertEquals(study.getTechnicalEmail(), node.get("technicalEmail").asText());
-        assertEquals(study.getSponsorName(), node.get("sponsorName").asText());
-        assertEquals(study.getName(), node.get("name").asText());
-        assertEquals(study.isActive(), node.get("active").asBoolean());
-        assertEquals(study.getIdentifier(), node.get("identifier").asText());
-        assertEquals(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
-        assertEquals(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
-        assertEquals(study.getStormpathHref(), node.get("stormpathHref").asText());
-        assertEquals(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEquals(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate",
+        assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
+        assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
+        assertEqualsAndNotNull(study.getTechnicalEmail(), node.get("technicalEmail").asText());
+        assertEqualsAndNotNull(study.getSponsorName(), node.get("sponsorName").asText());
+        assertEqualsAndNotNull(study.getName(), node.get("name").asText());
+        assertEqualsAndNotNull(study.isActive(), node.get("active").asBoolean());
+        assertEqualsAndNotNull(study.getIdentifier(), node.get("identifier").asText());
+        assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
+        assertEqualsAndNotNull(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
+        assertEqualsAndNotNull(study.getStormpathHref(), node.get("stormpathHref").asText());
+        assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
+        assertEqualsAndNotNull(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate",
                 EmailTemplate.class));
-        assertEquals(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
-        assertEquals(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
-        assertEquals(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
-        assertEquals(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
-        assertEquals(study.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
-        assertEquals(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
-        assertEquals((Long)study.getVersion(), (Long)node.get("version").asLong());
-        assertEquals((Long)study.getMinSupportedVersion(), (Long)node.get("minSupportedVersion").asLong());
+        assertEqualsAndNotNull(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
+        assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
+        assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
+        assertEqualsAndNotNull(study.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
+        assertEqualsAndNotNull(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
+        assertEqualsAndNotNull((Long)study.getVersion(), (Long)node.get("version").asLong());
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
-        assertEquals("Study", node.get("type").asText());
+        assertEqualsAndNotNull("Study", node.get("type").asText());
+        
+        JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
+        assertNotNull(supportedVersionsNode);
+        assertEqualsAndNotNull(study.getMinSupportedAppVersion("iPhone OS"), (Integer)supportedVersionsNode.get("iPhone OS").asInt());
+        
         
         String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.html";
         assertEquals(htmlURL, study.getConsentHTML());
@@ -88,45 +92,10 @@ public class DynamoStudyTest {
         assertEquals(study, deserStudy);
     }
     
-    // Following tests are to check that the minSupportedVersion is always less than or equal to the current version
-    
-    @Test
-    public void testMinSupportedVersionAlwaysLessThanOrEqualToVersion_SetMinLessThan() throws Exception {
-        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
-        
-        study.setVersion(3L);
-        study.setMinSupportedVersion(2L);
-        
-        Long expectedVersion = 3L;
-        Long expectedMinVersion = 2L;
-        assertEquals(expectedVersion, (Long)study.getVersion());
-        assertEquals(expectedMinVersion, (Long)study.getMinSupportedVersion());
-    }
-    
-    @Test
-    public void testMinSupportedVersionAlwaysLessThanOrEqualToVersion_SetMinEqual() throws Exception {
-        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
-        
-        study.setVersion(3L);
-        study.setMinSupportedVersion(3L);
-        
-        Long expectedVersion = 3L;
-        Long expectedMinVersion = 3L;
-        assertEquals(expectedVersion, (Long)study.getVersion());
-        assertEquals(expectedMinVersion, (Long)study.getMinSupportedVersion());
-    }
-    
-    @Test
-    public void testMinSupportedVersionAlwaysLessThanOrEqualToVersion_SetMinGreaterThan() throws Exception {
-        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
-        
-        study.setVersion(3L);
-        study.setMinSupportedVersion(4L);
-        
-        Long expectedVersion = 3L;
-        Long expectedMinVersion = 3L;
-        assertEquals(expectedVersion, (Long)study.getVersion());
-        assertEquals(expectedMinVersion, (Long)study.getMinSupportedVersion());
+    void assertEqualsAndNotNull(Object expected, Object actual) {
+        assertNotNull(expected);
+        assertNotNull(actual);
+        assertEquals(expected, actual);
     }
     
 }
