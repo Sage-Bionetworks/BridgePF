@@ -25,8 +25,8 @@ public abstract class HealthDataRecordBuilder {
     private String studyId;
     private LocalDate uploadDate;
     private String uploadId;
-    private ParticipantOption.SharingScope userSharingScope;
     private String userExternalId;
+    private ParticipantOption.SharingScope userSharingScope;
     private Long version;
 
     /** Copies all fields from the specified record into the builder. This is useful for updating records. */
@@ -41,6 +41,7 @@ public abstract class HealthDataRecordBuilder {
         studyId = record.getStudyId();
         uploadDate = record.getUploadDate();
         uploadId = record.getUploadId();
+        userExternalId = record.getUserExternalId();
         userSharingScope = record.getUserSharingScope();
         version = record.getVersion();
         return this;
@@ -183,8 +184,9 @@ public abstract class HealthDataRecordBuilder {
     }
 
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getVersion */
-    public void setVersion(Long version) {
+    public HealthDataRecordBuilder withVersion(Long version) {
         this.version = version;
+        return this;
     }
 
     /**
