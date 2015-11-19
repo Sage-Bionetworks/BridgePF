@@ -12,7 +12,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.exceptions.MinSupportedVersionException;
+import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -125,10 +125,10 @@ public abstract class BaseController extends Controller {
      * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
      * exist (user not authorized), consent has not been given or the client app version is not supported.
      */
-    UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException, MinSupportedVersionException {
+    UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());        
-        verifyMinSupportedVersionOrThrowException(study);
+        verifySupportedVersionOrThrowException(study, session);
         if (!session.getUser().isConsent()) {
             throw new ConsentRequiredException(session);
         }
@@ -166,10 +166,19 @@ public abstract class BaseController extends Controller {
         return session[0];
     }
     
-    void verifyMinSupportedVersionOrThrowException(Study study) throws MinSupportedVersionException {
+    void verifySupportedVersionOrThrowException(Study study, UserSession session) throws UnsupportedVersionException {
+
+    	// Exit early if Admin. These accounts should not throw the exception b/c of version support
+    	// b/c might want to look at older data. The supported version is intended for client apps that
+    	// gather data rather than apps used to model it. syoung 11/19/2015
+    	if (session.isAdminRole()) {
+    		return;  
+    	}
+    	
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-        if (!clientInfo.isSupportedAppVersion(study.getMinSupportedVersion().intValue())) {
-        	throw new MinSupportedVersionException(clientInfo);
+        String osName = clientInfo.getOsName();
+        if (osName != null && !clientInfo.isSupportedVersion(study.getMinSupportedAppVersion(osName))) {
+        	throw new UnsupportedVersionException(clientInfo);
         }
     }
 

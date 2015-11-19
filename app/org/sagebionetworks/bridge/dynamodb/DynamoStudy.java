@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -48,13 +50,13 @@ public final class DynamoStudy implements Study {
     private EmailTemplate resetPasswordTemplate;
     private boolean strictUploadValidationEnabled;
     private boolean healthCodeExportEnabled;
-    private Long minSupportedVersion;
+    private Map<String, Integer> minSupportedAppVersions;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
         dataGroups = new HashSet<>();
-        minSupportedVersion = 0L;
+        minSupportedAppVersions = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -303,16 +305,27 @@ public final class DynamoStudy implements Study {
     }
     
     /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = StringIntegerMapMarshaller.class)
     @Override
-    public Long getMinSupportedVersion() {
-    	return minSupportedVersion;
+    public Map<String,Integer> getMinSupportedAppVersions() {
+        return minSupportedAppVersions;
+    }
+
+    @Override
+    public void setMinSupportedAppVersions(Map<String,Integer> map) {
+        this.minSupportedAppVersions = (map == null) ? new HashMap<>() : map;
     }
     
     /** {@inheritDoc} */
     @Override
-    public void setMinSupportedVersion(Long version) {
-    	Long maxAllowedVersion = this.version != null ? this.version : 0L;
-    	this.minSupportedVersion = version <= maxAllowedVersion ? version : maxAllowedVersion;
+    public Integer getMinSupportedAppVersion(String osName) {
+    	return minSupportedAppVersions.get(osName);
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setMinSupportedAppVersion(String osName, Integer version) {
+    	this.minSupportedAppVersions.put(osName, version);
     }
 
     @Override
@@ -338,7 +351,7 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(active);
         result = prime * result + Objects.hashCode(strictUploadValidationEnabled);
         result = prime * result + Objects.hashCode(healthCodeExportEnabled);
-        result = prime * result + Objects.hashCode(minSupportedVersion);
+        result = prime * result + Objects.hashCode(minSupportedAppVersions);
         return result;
     }
 
@@ -366,7 +379,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(technicalEmail, other.technicalEmail)
                 && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
                 && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
-                && Objects.equals(minSupportedVersion, other.minSupportedVersion);
+                && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions);
     }
 
     @Override
@@ -376,10 +389,10 @@ public final class DynamoStudy implements Study {
                             + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
                             + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
                             + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, "
-                            + "healthCodeExportEnabled=%s, minSupportedVersion=%s]",
+                            + "healthCodeExportEnabled=%s, minSupportedAppVersions=%s]",
             name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
             supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
             dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
-            healthCodeExportEnabled, minSupportedVersion);
+            healthCodeExportEnabled, minSupportedAppVersions);
     }
 }

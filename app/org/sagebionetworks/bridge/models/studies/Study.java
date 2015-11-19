@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -197,11 +198,17 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public void setHealthCodeExportEnabled(boolean enabled);
     
     /**
-     * Minimum supported version number. default=0. If set, clients pointing to an older
-     * version will fail with an httpResponse status code of 410.
+     * Minimum supported app version number. If set, user app clients pointing to an older version will 
+     * fail with an httpResponse status code of 410.
      */
-    public Long getMinSupportedVersion();
+    public Integer getMinSupportedAppVersion(String osName);
     
     /** @see #getMinSupportedVersion(); */
-    public void setMinSupportedVersion(Long version);
+    public void setMinSupportedAppVersion(String osName, Integer version);
+    
+    /** @see #getMinSupportedVersion(); */
+    Map<String, Integer> getMinSupportedAppVersions();
+	
+	/** @see #getMinSupportedVersion(); */
+    void setMinSupportedAppVersions(Map<String, Integer> map);
 }
