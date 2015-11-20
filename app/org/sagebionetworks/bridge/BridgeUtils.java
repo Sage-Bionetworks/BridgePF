@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +23,9 @@ import org.springframework.core.annotation.AnnotationUtils;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
 
@@ -154,22 +154,33 @@ public class BridgeUtils {
     }
     
     public static Set<String> commaListToSet(String commaList) {
-        if (isNotBlank(commaList)) {
+        if (commaList != null) {
             return commaDelimitedListToSet(commaList).stream()
                     .map(string -> string.trim())
                     .filter(StringUtils::isNotBlank)
                     .collect(Collectors.toSet());
         }
-        return Sets.newHashSet();
+        return Collections.emptySet();
     }
     
     public static String setToCommaList(Set<String> set) {
         if (set != null) {
-            return JOINER.join(set.stream()
+            Set<String> result = set.stream()
                     .filter(StringUtils::isNotBlank)
-                    .collect(Collectors.toSet()));
+                    .collect(Collectors.toSet());
+            return (result.isEmpty()) ? null : JOINER.join(result);
         }
         return null;
+    }
+    
+    /**
+     * Wraps a set in an immutable set, or returns an empty immutable set if null.
+     * @param set
+     * @return
+     */
+    public static <T> Set<T> nullSafeImmutableSet(Set<T> set) {
+        return (set == null) ? ImmutableSet.of() : ImmutableSet.copyOf(set.stream()
+                .filter(element -> element != null).collect(Collectors.toSet()));
     }
 
 }

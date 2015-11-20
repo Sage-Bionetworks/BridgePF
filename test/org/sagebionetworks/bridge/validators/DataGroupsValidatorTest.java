@@ -35,8 +35,7 @@ public class DataGroupsValidatorTest {
             fail("Should have thrown exception.");
         } catch(InvalidEntityException e) {
             List<String> errors = e.getErrors().get("dataGroups");
-            assertEquals(4, errors.size());
-            assertTrue(errors.contains("dataGroups 'null' is not one of these valid values: group_1, group_2."));
+            assertEquals(3, errors.size());
             assertTrue(errors.contains("dataGroups ' ' is not one of these valid values: group_1, group_2."));
             assertTrue(errors.contains("dataGroups 'A' is not one of these valid values: group_1, group_2."));
             assertTrue(errors.contains("dataGroups 'B' is not one of these valid values: group_1, group_2."));

@@ -37,7 +37,8 @@ public class OptionLookup {
     
     public Set<String> getDataGroups(String healthCode) {
         String value = map.get(healthCode);
-        return BridgeUtils.commaListToSet(value);
+        Set<String> set = BridgeUtils.commaListToSet(value);
+        return (set.isEmpty()) ? null : set;
     }
 
 }

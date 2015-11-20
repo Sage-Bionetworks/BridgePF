@@ -16,6 +16,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+
+import com.google.common.collect.Sets;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +51,7 @@ public class TestUserAdminHelper {
             this.username = signUp.getUsername();
             this.email = signUp.getEmail();
             this.password = signUp.getPassword();
-            this.roles = signUp.getRoles();
+            this.roles = Sets.newHashSet(signUp.getRoles());
             this.roles.add(TEST_USERS);
             this.dataGroups = signUp.getDataGroups();
             this.study = study;

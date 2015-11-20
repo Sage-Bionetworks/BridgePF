@@ -100,7 +100,7 @@ public class DynamoParticipantOptionsDaoTest {
         assertNull(externalIdLookup.get(healthCode));
         
         dataGroupsLookup = optionsDao.getOptionForAllStudyParticipants(study, DATA_GROUPS);
-        assertEquals(0, dataGroupsLookup.getDataGroups(healthCode).size());
+        assertNull(dataGroupsLookup.getDataGroups(healthCode));
     }
     
     @Test
@@ -119,8 +119,6 @@ public class DynamoParticipantOptionsDaoTest {
         // healthCode's options are deleted in the @After method
         optionsDao.deleteAllParticipantOptions(healthCode+"2");
         optionsDao.deleteAllParticipantOptions(healthCode+"3");
-        
-        
     }
     
 }

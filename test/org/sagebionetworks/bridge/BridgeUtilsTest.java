@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +62,7 @@ public class BridgeUtilsTest {
         assertEquals(Sets.newHashSet(), set);
         
         set = BridgeUtils.commaListToSet(null);
-        assertEquals(Sets.newHashSet(), set);
+        assertNotNull(set);
         
         set = BridgeUtils.commaListToSet(" a");
         assertEquals(Sets.newHashSet("a"), set);
@@ -75,6 +77,21 @@ public class BridgeUtilsTest {
         Set<String> set = Sets.newHashSet("a", null, "", "b");
         
         assertEquals("a,b", BridgeUtils.setToCommaList(set));
+        assertNull(BridgeUtils.setToCommaList(null));
+        assertNull(BridgeUtils.setToCommaList(Sets.newHashSet()));
     }
 
+    @Test(expected = UnsupportedOperationException.class)
+    public void nullsafeImmutableSet() {
+        assertNotNull(BridgeUtils.nullSafeImmutableSet(null));
+        assertNotNull(BridgeUtils.nullSafeImmutableSet(Sets.newHashSet("A")));
+        
+        // This should throw an UnsupportedOperationException
+        Set<String> set = BridgeUtils.nullSafeImmutableSet(Sets.newHashSet("A"));
+        set.add("B");
+        
+        // nulls are removed. They have to be to create ImmutableSet
+        assertEquals(Sets.newHashSet("A"), BridgeUtils.nullSafeImmutableSet(Sets.newHashSet(null, "A")));
+    }
+    
 }

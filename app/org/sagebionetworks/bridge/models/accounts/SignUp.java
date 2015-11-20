@@ -3,12 +3,12 @@ package org.sagebionetworks.bridge.models.accounts;
 import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.Sets;
 
 public final class SignUp implements BridgeEntity {
 
@@ -25,8 +25,8 @@ public final class SignUp implements BridgeEntity {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.roles = (roles == null) ? Sets.newHashSet() : roles;
-        this.dataGroups = (dataGroups == null) ? Sets.newHashSet() : dataGroups;
+        this.roles = BridgeUtils.nullSafeImmutableSet(roles);
+        this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
     }
 
     public String getUsername() {

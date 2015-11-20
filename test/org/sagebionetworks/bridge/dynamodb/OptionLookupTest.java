@@ -3,7 +3,11 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.util.Set;
+
 import org.junit.Test;
+
+import com.google.common.collect.Sets;
 
 public class OptionLookupTest {
 
@@ -46,5 +50,17 @@ public class OptionLookupTest {
         
         String value = lookup.get("AAA");
         assertEquals("setValue", value);
+    }
+    
+    @Test
+    public void correctlySetsAndGetsStringSet() {
+        OptionLookup lookup = new OptionLookup(null);
+        lookup.put("AAA", "A,B,C");
+        
+        Set<String> set = lookup.getDataGroups("AAA");
+        assertEquals(Sets.newHashSet("A","B","C"), set);
+        
+        set = lookup.getDataGroups("BBB");
+        assertNull(set);
     }
 }

@@ -133,12 +133,12 @@ public class ParticipantOptionsServiceImplTest {
     @Test
     public void setDataGroupsValidatesBadValues() {
         try {
+            // Null is simply removed in the construction of an immutable set.
             Set<String> dataGroups = Sets.newHashSet("A", null, " ", "B");
             service.setDataGroups(TEST_STUDY, HEALTH_CODE, new DataGroups(dataGroups));
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertTrue(e.getErrors().get("dataGroups").get(0).contains("dataGroups 'null' is not one of these valid values: "));
-            assertTrue(e.getErrors().get("dataGroups").get(1).contains("dataGroups ' ' is not one of these valid values: "));
+            assertTrue(e.getErrors().get("dataGroups").get(0).contains("dataGroups ' ' is not one of these valid values: "));
         }
         verifyNoMoreInteractions(mockDao);
     }

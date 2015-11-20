@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -22,7 +23,8 @@ public class DataGroupsTest {
         DataGroups groups = new DataGroups(Sets.newHashSet("A","B","C"));
         
         String json = BridgeObjectMapper.get().writeValueAsString(groups);
-        assertEquals("{\"dataGroups\":[\"A\",\"B\",\"C\"],\"type\":\"DataGroups\"}", json);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        assertEquals("DataGroups", node.get("type").asText());
        
         DataGroups newGroups = BridgeObjectMapper.get().readValue(json, DataGroups.class);
         assertEquals(3, newGroups.getDataGroups().size());

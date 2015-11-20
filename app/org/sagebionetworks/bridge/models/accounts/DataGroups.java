@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -15,7 +15,7 @@ public final class DataGroups implements BridgeEntity {
     
     @JsonCreator
     public DataGroups(@JsonProperty("dataGroups") Set<String> dataGroups) {
-        this.dataGroups = (dataGroups == null) ? Collections.emptySet() : dataGroups;
+        this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
     }
     
     public Set<String> getDataGroups() {

@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
@@ -123,7 +124,7 @@ public final class User implements BridgeEntity {
     }
 
     public void setRoles(Set<Roles> roles) {
-        this.roles = roles;
+        this.roles = BridgeUtils.nullSafeImmutableSet(roles);
     }
     
     public Set<String> getDataGroups() {
@@ -131,7 +132,7 @@ public final class User implements BridgeEntity {
     }
     
     public void setDataGroups(Set<String> dataGroups) {
-        this.dataGroups = dataGroups;
+        this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
     }
 
     public boolean doesConsent() {

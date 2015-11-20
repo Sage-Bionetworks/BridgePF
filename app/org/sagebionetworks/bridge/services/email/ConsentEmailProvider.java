@@ -26,6 +26,7 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.lowagie.text.DocumentException;
 
 public class ConsentEmailProvider implements MimeTypeEmailProvider {
@@ -66,7 +67,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         final String sendFromEmail = String.format("%s <%s>", study.getName(), study.getSupportEmail());
         builder.withSender(sendFromEmail);
 
-        Set<String> emailAddresses = BridgeUtils.commaListToSet(study.getConsentNotificationEmail());
+        Set<String> emailAddresses = Sets.newHashSet(BridgeUtils.commaListToSet(study.getConsentNotificationEmail()));
         emailAddresses.add(user.getEmail());
         builder.withRecipients(emailAddresses);
 

@@ -1,9 +1,10 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import java.util.Objects;
+
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.stormpath.sdk.lang.Objects;
 
 public final class ExternalIdentifier implements BridgeEntity {
 
@@ -19,17 +20,19 @@ public final class ExternalIdentifier implements BridgeEntity {
 
     @Override
     public int hashCode() {
-        return identifier.hashCode();
+        return Objects.hash(identifier);
     }
 
     @Override
     public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
         if (this == obj || obj == null)
             return false;
         if (getClass() != obj.getClass())
             return false;
         ExternalIdentifier other = (ExternalIdentifier) obj;
-        return Objects.nullSafeEquals(identifier, other.identifier);
+        return Objects.equals(identifier, other.identifier);
     }
     
 }
