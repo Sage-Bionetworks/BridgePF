@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
@@ -14,8 +15,10 @@ import play.mvc.Http;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.controllers.BaseController;
 
 /** Test class for basic utility functions in BaseController. */
@@ -88,8 +91,8 @@ public class BaseControllerTest {
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
-        assertEquals("Unknown iPhone", info.getOsName());
-        assertEquals("iPhone OS 9.0.2", info.getOsVersion());
+        assertEquals("iPhone OS", info.getOsName());
+        assertEquals("9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
     }
@@ -112,4 +115,85 @@ public class BaseControllerTest {
         assertNull(info.getSdkName());
         assertNull(info.getSdkVersion());
     }
+    
+    @Test (expected = UnsupportedVersionException.class)
+    public void testInvalidSupportedVersionThrowsException() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        HashMap<String, Integer> map =new HashMap<>();
+        map.put("iPhone OS", 28);
+        
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersions()).thenReturn(map);
+        
+        SchedulePlanController controller = new SchedulePlanController();
+        controller.verifySupportedVersionOrThrowException(study);
+
+    }
+    
+    @Test
+    public void testValidSupportedVersionDoesNotThrowException() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        HashMap<String, Integer> map =new HashMap<>();
+        map.put("iPhone OS", 25);
+        
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersions()).thenReturn(map);
+        
+        SchedulePlanController controller = new SchedulePlanController();
+        controller.verifySupportedVersionOrThrowException(study);
+    }
+    
+    @Test
+    public void testNullSupportedVersionDoesNotThrowException() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        HashMap<String, Integer> map =new HashMap<>();
+        
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersions()).thenReturn(map);
+        
+        SchedulePlanController controller = new SchedulePlanController();
+        controller.verifySupportedVersionOrThrowException(study);
+    }
+    
+    @Test
+    public void testUnknownOSDoesNotThrowException() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
+            .thenReturn("Asthma/26 BridgeSDK/4");
+        
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        HashMap<String, Integer> map =new HashMap<>();
+        map.put("iPhone OS", 25);
+        
+        Study study = mock(Study.class);
+        when(study.getMinSupportedAppVersions()).thenReturn(map);
+        
+        SchedulePlanController controller = new SchedulePlanController();
+        controller.verifySupportedVersionOrThrowException(study);
+    }
+
 }

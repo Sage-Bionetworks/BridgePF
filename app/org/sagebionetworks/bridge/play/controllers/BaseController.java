@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -23,6 +24,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -120,10 +122,12 @@ public abstract class BaseController extends Controller {
 
     /**
      * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
-     * exist (user not authorized) or consent has not been given.
+     * exist (user not authorized), consent has not been given or the client app version is not supported.
      */
-    UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException {
+    UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
         UserSession session = getAuthenticatedSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());        
+        verifySupportedVersionOrThrowException(study);
         if (!session.getUser().isConsent()) {
             throw new ConsentRequiredException(session);
         }
@@ -159,6 +163,14 @@ public abstract class BaseController extends Controller {
             return null;
         }
         return session[0];
+    }
+    
+    void verifySupportedVersionOrThrowException(Study study) throws UnsupportedVersionException {
+    	
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+        if (!clientInfo.isSupportedVersion(study.getMinSupportedAppVersions().get(clientInfo.getOsName()))) {
+        	throw new UnsupportedVersionException(clientInfo);
+        }
     }
 
     ClientInfo getClientInfoFromUserAgentHeader() {

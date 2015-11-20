@@ -11,9 +11,12 @@ public class ClientInfoTest {
     private static final String VALID_SHORT_UA_1 = "Unknown Client/14";
     private static final String VALID_SHORT_UA_2 = "App Name: Here/14";
     private static final String VALID_MEDIUM_UA_1 = "Unknown Client/14 BridgeJavaSDK/10";
-    private static final String VALID_LONG_UA_1 = "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4";
-    private static final String VALID_LONG_UA_2 = "Cardio Health/1 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4";
-    private static final String VALID_LONG_UA_3 = "Belgium/2 (Motorola Flip-Phone; Android 14) BridgeJavaSDK/10";
+    private static final String VALID_LONG_UA_1 = "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4";
+    private static final String VALID_LONG_UA_2 = "Cardio Health/1 (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4";
+    private static final String VALID_LONG_UA_3 = "Belgium/2 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10";
+    private static final String VALID_LONG_UA_1_DEPRECATED = "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4";
+    private static final String VALID_LONG_UA_2_DEPRECATED = "Cardio Health/1 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4";
+    private static final String VALID_LONG_UA_3_DEPRECATED = "Belgium/2 (Motorola Flip-Phone; Android 14) BridgeJavaSDK/10";
     
     private static final String INVALID_UA_1 = "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi";
     private static final String INVALID_UA_2 = "Integration Tests (Linux/3.13.0-36-generic) BridgeJavaSDK/3";
@@ -42,7 +45,7 @@ public class ClientInfoTest {
     }
     
     @Test
-    public void missingUserAgentReturnsEmptyClientInf() {
+    public void missingUserAgentReturnsEmptyClientInfo() {
         assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.parseUserAgentString(null));
         assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.parseUserAgentString("   \t"));
     }
@@ -107,24 +110,54 @@ public class ClientInfoTest {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
-        assertEquals("Unknown iPhone", info.getOsName());
-        assertEquals("iPhone OS 9.1", info.getOsVersion());
+        assertEquals("Unknown iPhone", info.getDeviceName());
+        assertEquals("iPhone OS", info.getOsName());
+        assertEquals("9.1", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
         
         info = ClientInfo.parseUserAgentString(VALID_LONG_UA_2);
         assertEquals("Cardio Health", info.getAppName());
         assertEquals(1, info.getAppVersion().intValue());
-        assertEquals("Unknown iPhone", info.getOsName());
-        assertEquals("iPhone OS 9.0.2", info.getOsVersion());
+        assertEquals("Unknown iPhone", info.getDeviceName());
+        assertEquals("iPhone OS", info.getOsName());
+        assertEquals("9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
         
         info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3);
         assertEquals("Belgium", info.getAppName());
         assertEquals(2, info.getAppVersion().intValue());
-        assertEquals("Motorola Flip-Phone", info.getOsName());
-        assertEquals("Android 14", info.getOsVersion());
+        assertEquals("Motorola Flip-Phone", info.getDeviceName());
+        assertEquals("Android", info.getOsName());
+        assertEquals("14", info.getOsVersion());
+        assertEquals("BridgeJavaSDK", info.getSdkName());
+        assertEquals(10, info.getSdkVersion().intValue());
+    }
+    
+    @Test
+    public void deprecatedLongFormCorrectlyParsed() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1_DEPRECATED);
+        assertEquals("Asthma", info.getAppName());
+        assertEquals(26, info.getAppVersion().intValue());
+        assertEquals("iPhone OS", info.getOsName());
+        assertEquals("9.1", info.getOsVersion());
+        assertEquals("BridgeSDK", info.getSdkName());
+        assertEquals(4, info.getSdkVersion().intValue());
+        
+        info = ClientInfo.parseUserAgentString(VALID_LONG_UA_2_DEPRECATED);
+        assertEquals("Cardio Health", info.getAppName());
+        assertEquals(1, info.getAppVersion().intValue());
+        assertEquals("iPhone OS", info.getOsName());
+        assertEquals("9.0.2", info.getOsVersion());
+        assertEquals("BridgeSDK", info.getSdkName());
+        assertEquals(4, info.getSdkVersion().intValue());
+        
+        info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3_DEPRECATED);
+        assertEquals("Belgium", info.getAppName());
+        assertEquals(2, info.getAppVersion().intValue());
+        assertEquals("Android", info.getOsName());
+        assertEquals("14", info.getOsVersion());
         assertEquals("BridgeJavaSDK", info.getSdkName());
         assertEquals(10, info.getSdkVersion().intValue());
     }
@@ -174,4 +207,28 @@ public class ClientInfoTest {
         assertTrue(info.isTargetedAppVersion(0, 100));
     }
     
-}
+    @Test
+    public void testIsSupportedAppVersion_GreaterThanSucceeds() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
+        assertTrue(info.isSupportedVersion(25));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_EqualToSucceeds() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
+        assertTrue(info.isSupportedVersion(26));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_NullMinSucceeds() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
+        assertTrue(info.isSupportedVersion(null));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_LessThanFails() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
+        assertFalse(info.isSupportedVersion(27));
+    }
+    
+ }

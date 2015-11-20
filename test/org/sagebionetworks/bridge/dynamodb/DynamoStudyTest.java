@@ -37,34 +37,40 @@ public class DynamoStudyTest {
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         study.setVersion(2L);
+        study.getMinSupportedAppVersions().put("iPhone OS", 2);
         study.setStormpathHref("test");
         
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
         final JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
-        assertEquals(study.getSupportEmail(), node.get("supportEmail").asText());
-        assertEquals(study.getTechnicalEmail(), node.get("technicalEmail").asText());
-        assertEquals(study.getSponsorName(), node.get("sponsorName").asText());
-        assertEquals(study.getName(), node.get("name").asText());
-        assertEquals(study.isActive(), node.get("active").asBoolean());
-        assertEquals(study.getIdentifier(), node.get("identifier").asText());
-        assertEquals(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
-        assertEquals(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
-        assertEquals(study.getStormpathHref(), node.get("stormpathHref").asText());
-        assertEquals(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEquals(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate",
+        assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
+        assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
+        assertEqualsAndNotNull(study.getTechnicalEmail(), node.get("technicalEmail").asText());
+        assertEqualsAndNotNull(study.getSponsorName(), node.get("sponsorName").asText());
+        assertEqualsAndNotNull(study.getName(), node.get("name").asText());
+        assertEqualsAndNotNull(study.isActive(), node.get("active").asBoolean());
+        assertEqualsAndNotNull(study.getIdentifier(), node.get("identifier").asText());
+        assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
+        assertEqualsAndNotNull(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
+        assertEqualsAndNotNull(study.getStormpathHref(), node.get("stormpathHref").asText());
+        assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
+        assertEqualsAndNotNull(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate",
                 EmailTemplate.class));
-        assertEquals(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
-        assertEquals(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
-        assertEquals(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
-        assertEquals(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
-        assertEquals(study.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
-        assertEquals(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
-        assertEquals((Long)study.getVersion(), (Long)node.get("version").asLong());
+        assertEqualsAndNotNull(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
+        assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
+        assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
+        assertEqualsAndNotNull(study.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
+        assertEqualsAndNotNull(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
+        assertEqualsAndNotNull((Long)study.getVersion(), (Long)node.get("version").asLong());
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
-        assertEquals("Study", node.get("type").asText());
+        assertEqualsAndNotNull("Study", node.get("type").asText());
+        
+        JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
+        assertNotNull(supportedVersionsNode);
+        assertEqualsAndNotNull(study.getMinSupportedAppVersions().get("iPhone OS"), (Integer)supportedVersionsNode.get("iPhone OS").asInt());
+        
         
         String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.html";
         assertEquals(htmlURL, study.getConsentHTML());
@@ -85,4 +91,25 @@ public class DynamoStudyTest {
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
         assertEquals(study, deserStudy);
     }
+    
+    @Test
+    public void testThatEmptyMinSupportedVersionMapperDoesNotThrowException() throws Exception {
+        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        study.setVersion(2L);
+        study.setStormpathHref("test");
+        
+        final String json = BridgeObjectMapper.get().writeValueAsString(study);
+        BridgeObjectMapper.get().readTree(json);
+
+        // Deserialize back to a POJO and verify.
+        final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
+        assertEquals(study, deserStudy);
+    }
+    
+    void assertEqualsAndNotNull(Object expected, Object actual) {
+        assertNotNull(expected);
+        assertNotNull(actual);
+        assertEquals(expected, actual);
+    }
+    
 }
