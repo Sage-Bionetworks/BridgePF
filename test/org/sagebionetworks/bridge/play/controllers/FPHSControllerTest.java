@@ -101,8 +101,8 @@ public class FPHSControllerTest {
         
         // No session is required
         verifyNoMoreInteractions(authenticationService);
-        
-        assertEquals("External identifier is valid.", node.get("message").asText());
+        assertEquals("foo", node.get("externalId").asText());
+        assertEquals(200, result.status());
     }
     
     @Test

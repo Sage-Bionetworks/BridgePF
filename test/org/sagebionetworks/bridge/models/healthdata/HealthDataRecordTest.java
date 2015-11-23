@@ -70,7 +70,9 @@ public class HealthDataRecordTest {
         HealthDataRecord record = DAO.getRecordBuilder().withData(data).withHealthCode("required healthcode")
                 .withId("optional record ID").withCreatedOn(arbitraryTimestamp).withMetadata(metadata)
                 .withSchemaId("required schema").withSchemaRevision(3).withStudyId("required study")
-                .withUploadDate(uploadDate).build();
+                .withUploadDate(uploadDate).withUploadId("optional upload ID")
+                .withUserExternalId("optional external ID")
+                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS).withVersion(42L).build();
 
         // validate
         assertEquals("required healthcode", record.getHealthCode());
@@ -80,12 +82,37 @@ public class HealthDataRecordTest {
         assertEquals(3, record.getSchemaRevision());
         assertEquals("required study", record.getStudyId());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
+        assertEquals("optional upload ID", record.getUploadId());
+        assertEquals("optional external ID", record.getUserExternalId());
+        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
+        assertEquals(42, record.getVersion().longValue());
 
         assertEquals(1, record.getData().size());
         assertEquals("myDataValue", record.getData().get("myData").asText());
 
         assertEquals(1, record.getMetadata().size());
         assertEquals("myMetaValue", record.getMetadata().get("myMetadata").asText());
+
+        // test copy constructor
+        HealthDataRecord copyRecord = DAO.getRecordBuilder().copyOf(record).build();
+        assertEquals("required healthcode", copyRecord.getHealthCode());
+        assertEquals("optional record ID", copyRecord.getId());
+        assertEquals(arbitraryTimestamp, copyRecord.getCreatedOn().longValue());
+        assertEquals("required schema", copyRecord.getSchemaId());
+        assertEquals(3, copyRecord.getSchemaRevision());
+        assertEquals("required study", copyRecord.getStudyId());
+        assertEquals("2014-02-12", copyRecord.getUploadDate().toString(ISODateTimeFormat.date()));
+        assertEquals("optional upload ID", copyRecord.getUploadId());
+        assertEquals("optional external ID", copyRecord.getUserExternalId());
+        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, copyRecord.getUserSharingScope());
+        assertEquals(42, copyRecord.getVersion().longValue());
+
+        assertEquals(1, copyRecord.getData().size());
+        assertEquals("myDataValue", copyRecord.getData().get("myData").asText());
+
+        assertEquals(1, copyRecord.getMetadata().size());
+        assertEquals("myMetaValue", copyRecord.getMetadata().get("myMetadata").asText());
+
     }
 
     @Test(expected = InvalidEntityException.class)
