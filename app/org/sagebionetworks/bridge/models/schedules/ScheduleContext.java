@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -10,6 +11,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 /**
  * All the information necessary to convert a schedule into a set of activities, on a given request. 
@@ -27,9 +29,10 @@ public final class ScheduleContext {
     private final Map<String,DateTime> events;
     private final String healthCode;
     private final DateTime now;
+    private final Set<String> userDataGroups;
     
     private ScheduleContext(StudyIdentifier studyId, ClientInfo clientInfo, DateTimeZone zone, DateTime endsOn, String healthCode,
-                    Map<String, DateTime> events, DateTime now) {
+                    Map<String, DateTime> events, DateTime now, Set<String> userDataGroups) {
         this.studyId = studyId;
         this.clientInfo = clientInfo;
         this.zone = zone;
@@ -37,6 +40,7 @@ public final class ScheduleContext {
         this.healthCode = healthCode;
         this.events = events;
         this.now = now;
+        this.userDataGroups = (userDataGroups == null) ? Sets.newHashSet() : userDataGroups;
     }
     
     /**
@@ -108,9 +112,13 @@ public final class ScheduleContext {
         return now;
     }
     
+    public Set<String> getUserDataGroups() {
+        return userDataGroups;
+    }
+    
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, clientInfo, zone, endsOn, healthCode, events, now);
+        return Objects.hash(studyId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
     }
 
     @Override
@@ -123,13 +131,14 @@ public final class ScheduleContext {
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
                 Objects.equals(clientInfo, other.clientInfo) && 
                 Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
-                Objects.equals(studyId, other.studyId) && Objects.equals(now, other.now));
+                Objects.equals(studyId, other.studyId) && Objects.equals(now, other.now) && 
+                Objects.equals(userDataGroups, other.userDataGroups));
     }
 
     @Override
     public String toString() {
         return "ScheduleContext [studyId=" + studyId + ", clientInfo=" + clientInfo + ", zone=" + zone + ", endsOn=" + 
-                endsOn + ", events=" + events + "]";
+                endsOn + ", events=" + events + ", userDataGroups=" + userDataGroups + "]";
     }
     
     public static class Builder {
@@ -140,6 +149,7 @@ public final class ScheduleContext {
         private Map<String,DateTime> events;
         private String healthCode;
         private DateTime now;
+        private Set<String> userDataGroups;
         
         public Builder withStudyIdentifier(String studyId) {
             if (studyId != null) {
@@ -173,6 +183,10 @@ public final class ScheduleContext {
             this.healthCode = healthCode;
             return this;
         }
+        public Builder withUserDataGroups(Set<String> userDataGroups) {
+            this.userDataGroups = userDataGroups;
+            return this;
+        }
         public Builder withContext(ScheduleContext context) {
             this.studyId = context.studyId;
             this.clientInfo = context.clientInfo;
@@ -181,6 +195,7 @@ public final class ScheduleContext {
             this.events = context.events;
             this.healthCode = context.healthCode;
             this.now = context.now;
+            this.userDataGroups = context.userDataGroups;
             return this;
         }
         
@@ -188,7 +203,7 @@ public final class ScheduleContext {
             if (now == null) {
                 now = (zone == null) ? DateTime.now() : DateTime.now(zone);
             }
-            ScheduleContext context = new ScheduleContext(studyId, clientInfo, zone, endsOn, healthCode, events, now);
+            ScheduleContext context = new ScheduleContext(studyId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
             // Not validating here. There are many tests to confirm that the scheduler will work with different 
             // time windows, but the validator ensures the context object is within the declared allowable
             // time window. This is validated in ScheduledActivityService.
