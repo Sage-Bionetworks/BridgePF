@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
@@ -14,7 +17,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
@@ -160,7 +162,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Account account = accountDao.signUp(study, signUp, isAnonSignUp);
             if (!signUp.getDataGroups().isEmpty()) {
                 final String healthCode = getHealthCode(study, account);
-                optionsService.setDataGroups(study, healthCode, new DataGroups(signUp.getDataGroups()));
+                optionsService.setStringSet(study, healthCode, DATA_GROUPS, signUp.getDataGroups());
             }
             
         } catch(EntityAlreadyExistsException e) {
@@ -245,8 +247,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
 
-        user.setSharingScope(optionsService.getSharingScope(healthCode));
-        user.setDataGroups(optionsService.getDataGroups(healthCode));
+        user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
+        user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
+        
         user.setSignedMostRecentConsent(consentService.hasUserSignedActiveConsent(study, user));
         user.setConsent(consentService.hasUserConsentedToResearch(study, user));
 

@@ -4,6 +4,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
 import static org.mockito.Mockito.verify;
 import static play.test.Helpers.contentAsString;
 
@@ -105,7 +106,7 @@ public class EmailControllerTest {
         EmailController controller = createController("bridge-testing@sagebase.org");
         controller.unsubscribeFromEmail();
         
-        verify(optionsService).setEmailNotifications(study, "healthCode", false);
+        verify(optionsService).setBoolean(study, "healthCode", EMAIL_NOTIFICATIONS, false);
     }
     
     @Test

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
+
 import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -75,7 +77,7 @@ public class EmailController extends BaseController {
             if (healthId == null) {
                 throw new RuntimeException("Health code not found.");
             }
-            optionsService.setEmailNotifications(study, healthId.getCode(), false);
+            optionsService.setBoolean(study, healthId.getCode(), EMAIL_NOTIFICATIONS, false);
 
             return ok("You have been unsubscribed from future email.");
         } catch(Throwable throwable) {

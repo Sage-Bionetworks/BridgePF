@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
@@ -88,7 +90,8 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final User user = session.getUser();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-        optionsService.setSharingScope(study, user.getHealthCode(), sharingScope);
+        optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, sharingScope);
+        
         user.setSharingScope(sharingScope);
         updateSessionUser(session, user);
         consentService.emailConsentAgreement(study, user);

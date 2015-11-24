@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.List;
 
@@ -70,7 +71,7 @@ public class FPHSServiceTest {
     public void registerExternalIdentifier() throws Exception {
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(dao).registerExternalId(externalId);
-        verify(optionsService).setExternalIdentifier(TEST_STUDY, "BBB", externalId);
+        verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
     }
     
     @Test
@@ -82,7 +83,7 @@ public class FPHSServiceTest {
         } catch(EntityNotFoundException e) {
             verify(dao).registerExternalId(externalId);
             verifyNoMoreInteractions(dao);
-            verify(optionsService).setExternalIdentifier(TEST_STUDY, "BBB", externalId);
+            verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
             verify(optionsService).deleteOption("BBB", ParticipantOption.EXTERNAL_IDENTIFIER);
             verifyNoMoreInteractions(optionsService);
         }
@@ -97,7 +98,7 @@ public class FPHSServiceTest {
         } catch(RuntimeException e) {
             verify(dao).registerExternalId(externalId);
             verifyNoMoreInteractions(dao);
-            verify(optionsService).setExternalIdentifier(TEST_STUDY, "BBB", externalId);
+            verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
             verify(optionsService).deleteOption("BBB", ParticipantOption.EXTERNAL_IDENTIFIER);
             verifyNoMoreInteractions(optionsService);
         }

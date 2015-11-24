@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -75,14 +78,18 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
 
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
-        optionsService.setExternalIdentifier(session.getStudyIdentifier(), session.getUser().getHealthCode(), externalId);
+
+        optionsService.setString(session.getStudyIdentifier(), session.getUser().getHealthCode(), EXTERNAL_IDENTIFIER,
+                externalId.getIdentifier());
+        
         return okResult("External identifier added to user profile.");
     }
     
     public Result getDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
-
-        Set<String> dataGroups = optionsService.getDataGroups(session.getUser().getHealthCode());
+        
+        Set<String> dataGroups = optionsService.getStringSet(session.getUser().getHealthCode(), DATA_GROUPS);
+        
         return okResult(new DataGroups(dataGroups));
     }
     
@@ -91,8 +98,8 @@ public class UserProfileController extends BaseController {
         
         DataGroups dataGroups = parseJson(request(), DataGroups.class);
         
-        optionsService.setDataGroups(session.getStudyIdentifier(), 
-                session.getUser().getHealthCode(), dataGroups);
+        optionsService.setStringSet(session.getStudyIdentifier(), 
+                session.getUser().getHealthCode(), DATA_GROUPS, dataGroups.getDataGroups());
         return okResult("Data groups updated.");
     }
 

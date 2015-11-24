@@ -7,11 +7,14 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -19,8 +22,6 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.DataGroups;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -53,9 +54,10 @@ public class UserProfileControllerTest {
         assertEquals("application/json", result.contentType());
         assertEquals("{\"message\":\"External identifier added to user profile.\"}", contentAsString(result));
         
-        verify(optionsService).setExternalIdentifier(TEST_STUDY, "healthCode", new ExternalIdentifier("ABC-123-XYZ"));
+        verify(optionsService).setString(TEST_STUDY, "healthCode", EXTERNAL_IDENTIFIER, "ABC-123-XYZ");
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
         Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}"));
@@ -64,11 +66,11 @@ public class UserProfileControllerTest {
         
         Result result = controller.updateDataGroups();
         
-        ArgumentCaptor<DataGroups> captor = ArgumentCaptor.forClass(DataGroups.class);
-        verify(optionsService).setDataGroups(any(), any(), captor.capture());
+        ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
+        verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
         
-        DataGroups dataGroups = (DataGroups)captor.getValue();
-        assertEquals(Sets.newHashSet("group1"), dataGroups.getDataGroups());
+        Set<String> dataGroups = (Set<String>)captor.getValue();
+        assertEquals(Sets.newHashSet("group1"), dataGroups);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("Data groups updated.", node.get("message").asText());
@@ -79,7 +81,8 @@ public class UserProfileControllerTest {
         Set<String> dataGroupsSet = Sets.newHashSet("group1","group2");
         
         UserProfileController controller = controllerForExternalIdTests();
-        when(optionsService.getDataGroups("healthCode")).thenReturn(dataGroupsSet);
+        
+        when(optionsService.getStringSet("healthCode", DATA_GROUPS)).thenReturn(dataGroupsSet);
         
         Result result = controller.getDataGroups();
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
@@ -92,6 +95,7 @@ public class UserProfileControllerTest {
         }
     }
     
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
         Http.Context.current.set(TestUtils.mockPlayContextWithJson("{}"));
@@ -100,15 +104,14 @@ public class UserProfileControllerTest {
         
         Result result = controller.updateDataGroups();
         
-        ArgumentCaptor<DataGroups> captor = ArgumentCaptor.forClass(DataGroups.class);
-        verify(optionsService).setDataGroups(any(), any(), captor.capture());
+        ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
+        verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
         
-        DataGroups dataGroups = (DataGroups)captor.getValue();
-        assertEquals(Sets.newHashSet(), dataGroups.getDataGroups());
+        Set<String> dataGroups = (Set<String>)captor.getValue();
+        assertEquals(Sets.newHashSet(), dataGroups);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("Data groups updated.", node.get("message").asText());
-
     }
     
     private UserSession mockSession() {

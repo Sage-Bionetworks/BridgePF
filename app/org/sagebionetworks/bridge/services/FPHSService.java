@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.List;
 
@@ -47,7 +48,7 @@ public class FPHSService {
         if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
-        optionsService.setExternalIdentifier(studyId, healthCode, externalId);
+        optionsService.setString(studyId, healthCode, EXTERNAL_IDENTIFIER, externalId.getIdentifier());
         try {
             fphsDao.registerExternalId(externalId);    
         } catch(Exception e) {

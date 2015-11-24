@@ -4,10 +4,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
-import org.sagebionetworks.bridge.models.accounts.DataGroups;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
@@ -16,66 +13,21 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
  */
 public interface ParticipantOptionsService {
     
-    /**
-     * Set whether or not a user should be contacted via email. By default true  (we can contact user via email).
-     * @param studyIdentifier
-     * @param healthCode
-     * @param option
-     */
-    public void setEmailNotifications(StudyIdentifier studyIdentifier, String healthCode, boolean option);
+    public void setBoolean(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, boolean value);
     
-    /**
-     * Get whether or not a user should be contacted via email.
-     * @param healthCode
-     * @param option
-     * @return
-     */
-    public boolean getEmailNotifications(String healthCode);
+    public boolean getBoolean(String healthCode, ParticipantOption option);
     
-    /**
-     * Set an external identifier for this participant. By default, this value is null.
-     * @param studyIdentifier
-     * @param healthCode
-     * @param externalId
-     */
-    public void setExternalIdentifier(StudyIdentifier studyIdentifier, String healthCode, ExternalIdentifier externalId);
-
-    /**
-     * Get the external identifier for this participant. 
-     * @param healthCode
-     * @return
-     */
-    public String getExternalIdentifier(String healthCode);
-   
-    /**
-     * Set the scope of sharing option. By default, set to NO_SHARING.
-     * @param studyIdentifier
-     * @param healthCode
-     * @param option
-     */
-    public void setSharingScope(StudyIdentifier studyIdentifier, String healthCode, SharingScope option);
+    public void setString(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value);
     
-    /**
-     * Get the sharing scope for this health code.
-     * @param healthCode
-     */
-    public SharingScope getSharingScope(String healthCode);
+    public String getString(String healthCode, ParticipantOption option);
     
-    /**
-     * Set the data groups for this participant. The group are stored as a comma-separated list of values and exported
-     * verbatim. By default, an empty set.
-     * @param studyIdentifier
-     * @param healthCode
-     * @param dataGroups
-     */
-    public void setDataGroups(StudyIdentifier studyIdentifier, String healthCode, DataGroups dataGroups);
+    public void setEnum(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Enum<?> value);
     
-    /**
-     * Get the data group options for this participant as a string set. 
-     * @param healthCode
-     * @return
-     */
-    public Set<String> getDataGroups(String healthCode);
+    public <T extends Enum<T>> T getEnum(String healthCode, ParticipantOption option, Class<T> enumType);
+    
+    public void setStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Set<String> value);
+    
+    public Set<String> getStringSet(String healthCode, ParticipantOption option);
     
     /**
      * Delete the entire record associated with a participant in the study and all options.

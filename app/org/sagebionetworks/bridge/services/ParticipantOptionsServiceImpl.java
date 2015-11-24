@@ -2,12 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.Map;
 import java.util.Set;
@@ -17,113 +12,22 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.accounts.DataGroups;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.validators.DataGroupsValidator;
-import org.sagebionetworks.bridge.validators.Validate;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Sets;
 
 @Component
 public class ParticipantOptionsServiceImpl implements ParticipantOptionsService {
     
     private ParticipantOptionsDao optionsDao;
-    private StudyService studyService;
     
     @Autowired
     final void setParticipantOptionsDao(ParticipantOptionsDao participantOptionsDao) {
         this.optionsDao = participantOptionsDao;
-    }
-    
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    
-    private void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {
-        checkNotNull(studyIdentifier);
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-        
-        optionsDao.setOption(studyIdentifier, healthCode, option, value);
-    }
-
-    private String getOption(String healthCode, ParticipantOption option) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-        
-        return optionsDao.getOption(healthCode, option);
-    }
-    
-    @Override
-    public void setSharingScope(StudyIdentifier studyIdentifier, String healthCode, SharingScope option) {
-        setOption(studyIdentifier, healthCode, SHARING_SCOPE, option.name());
-    }
-
-    @Override
-    public SharingScope getSharingScope(String healthCode) {
-        String value = getOption(healthCode, SHARING_SCOPE);
-        return Enum.valueOf(SharingScope.class, value);
-    }
-
-    @Override
-    public void setDataGroups(StudyIdentifier studyIdentifier, String healthCode, DataGroups dataGroups) {
-        checkNotNull(dataGroups);
-        
-        Study study = studyService.getStudy(studyIdentifier);
-        Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);
-        
-        String value = BridgeUtils.setToCommaList(dataGroups.getDataGroups());
-        setOption(studyIdentifier, healthCode, DATA_GROUPS, value);
-    }
-
-    @Override
-    public Set<String> getDataGroups(String healthCode) {
-        String value = getOption(healthCode, DATA_GROUPS);
-        return BridgeUtils.commaListToSet(value);
-    }
-
-    @Override
-    public void setEmailNotifications(StudyIdentifier studyIdentifier, String healthCode, boolean option) {
-        setOption(studyIdentifier, healthCode, EMAIL_NOTIFICATIONS, Boolean.toString(option));
-    }
-
-    @Override
-    public boolean getEmailNotifications(String healthCode) {
-        String value = getOption(healthCode, EMAIL_NOTIFICATIONS);
-        return Boolean.valueOf(value);
-    }
-
-    @Override
-    public void setExternalIdentifier(StudyIdentifier studyIdentifier, String healthCode, ExternalIdentifier externalId) {
-        checkNotNull(externalId);
-        if (isBlank(externalId.getIdentifier())) {
-            throw new InvalidEntityException(externalId);
-        }
-        setOption(studyIdentifier, healthCode, EXTERNAL_IDENTIFIER, externalId.getIdentifier());
-    }
-
-    @Override
-    public String getExternalIdentifier(String healthCode) {
-        return getOption(healthCode, EXTERNAL_IDENTIFIER);
-    }
-    
-    public void deleteAllParticipantOptions(String healthCode) {
-        checkArgument(isNotBlank(healthCode));
-        
-        optionsDao.deleteAllParticipantOptions(healthCode);
-    }
-    
-    @Override
-    public void deleteOption(String healthCode, ParticipantOption option) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-        
-        optionsDao.deleteOption(healthCode, option);
     }
 
     @Override
@@ -141,4 +45,92 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
         return optionsDao.getOptionForAllStudyParticipants(studyIdentifier, option);
     }
 
+    @Override
+    public void setBoolean(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, boolean value) {
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+        
+        optionsDao.setOption(studyIdentifier, healthCode, option, Boolean.toString(value));
+    }
+
+    @Override
+    public boolean getBoolean(String healthCode, ParticipantOption option) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+        
+        String value = optionsDao.getOption(healthCode, option);
+        return (value == null) ? false : Boolean.parseBoolean(value);
+    }
+
+    @Override
+    public void setString(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+        
+        optionsDao.setOption(studyIdentifier, healthCode, option, value);
+    }
+
+    @Override
+    public String getString(String healthCode, ParticipantOption option) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+
+        return optionsDao.getOption(healthCode, option);
+    }
+
+    @Override
+    public void setEnum(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Enum<?> value) {
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+
+        String result = (value == null) ? null : value.name();
+        optionsDao.setOption(studyIdentifier, healthCode, option, result);
+    }
+
+    @Override
+    public <T extends Enum<T>> T getEnum(String healthCode, ParticipantOption option, Class<T> enumType) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+        checkNotNull(enumType);
+
+        String value = optionsDao.getOption(healthCode, option);
+        return (value == null) ? null : Enum.valueOf(enumType, value);
+    }
+    
+    @Override
+    public void setStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Set<String> value) {
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+        
+        optionsDao.setOption(studyIdentifier, healthCode, option, BridgeUtils.setToCommaList(value));
+    }
+    
+    @Override
+    public Set<String> getStringSet(String healthCode, ParticipantOption option) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+        
+        String value = optionsDao.getOption(healthCode, option);
+        return (value == null) ? Sets.newHashSet() : Sets.newHashSet(Splitter.on(",").split(value));
+    }
+    
+    @Override
+    public void deleteAllParticipantOptions(String healthCode) {
+        checkArgument(isNotBlank(healthCode));
+        
+        optionsDao.deleteAllParticipantOptions(healthCode);
+    }
+    
+    @Override
+    public void deleteOption(String healthCode, ParticipantOption option) {
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+        
+        optionsDao.deleteOption(healthCode, option);
+    }
+    
 }
