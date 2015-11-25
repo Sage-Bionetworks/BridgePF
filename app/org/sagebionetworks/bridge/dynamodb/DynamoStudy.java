@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -48,11 +50,13 @@ public final class DynamoStudy implements Study {
     private EmailTemplate resetPasswordTemplate;
     private boolean strictUploadValidationEnabled;
     private boolean healthCodeExportEnabled;
+    private Map<String, Integer> minSupportedAppVersions;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
         dataGroups = new HashSet<>();
+        minSupportedAppVersions = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -299,6 +303,17 @@ public final class DynamoStudy implements Study {
     public void setHealthCodeExportEnabled(boolean enabled) {
         this.healthCodeExportEnabled = enabled;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Map<String,Integer> getMinSupportedAppVersions() {
+        return minSupportedAppVersions;
+    }
+
+    @Override
+    public void setMinSupportedAppVersions(Map<String,Integer> map) {
+        this.minSupportedAppVersions = (map == null) ? new HashMap<>() : map;
+    }
 
     @Override
     public int hashCode() {
@@ -323,6 +338,7 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(active);
         result = prime * result + Objects.hashCode(strictUploadValidationEnabled);
         result = prime * result + Objects.hashCode(healthCodeExportEnabled);
+        result = prime * result + Objects.hashCode(minSupportedAppVersions);
         return result;
     }
 
@@ -349,7 +365,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(sponsorName, other.sponsorName)
                 && Objects.equals(technicalEmail, other.technicalEmail)
                 && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
-                && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled);
+                && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
+                && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions);
     }
 
     @Override
@@ -358,10 +375,11 @@ public final class DynamoStudy implements Study {
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
                             + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
                             + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
-                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s]",
+                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, "
+                            + "healthCodeExportEnabled=%s, minSupportedAppVersions=%s]",
             name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
             supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
             dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
-            healthCodeExportEnabled);
+            healthCodeExportEnabled, minSupportedAppVersions);
     }
 }

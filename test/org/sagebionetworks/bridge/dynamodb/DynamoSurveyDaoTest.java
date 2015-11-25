@@ -63,6 +63,7 @@ public class DynamoSurveyDaoTest {
 
     @BeforeClass
     public static void beforeClass() {
+    	DynamoInitializer.init(DynamoUploadSchema.class);
         DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
     }
 
