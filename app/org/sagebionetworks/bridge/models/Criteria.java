@@ -11,4 +11,5 @@ public interface Criteria extends BridgeEntity {
     public Set<String> getAllOfGroups();
     
     public Set<String> getNoneOfGroups();
+
 }

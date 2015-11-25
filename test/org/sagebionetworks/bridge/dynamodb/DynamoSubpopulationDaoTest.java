@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -16,7 +17,9 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
@@ -140,6 +143,26 @@ public class DynamoSubpopulationDaoTest {
         // version 4, tag group1 == Subpops 1,2,3,4, returns 2 in this case (most specific)
         subpop = dao.getSubpopulationForUser(scheduleContext(4, "group1"));
         assertEquals(SUBPOP_1, subpop.getName());
+    }
+    
+    @Test
+    public void cannotDeleteSubpopOnCreateOrUpdate() {
+        Subpopulation subpop = subpop("Name", null, null, null);
+        subpop.setDeleted(true);
+        
+        subpop = dao.createSubpopulation(subpop);
+        assertFalse(subpop.isDeleted());
+        
+        subpop.setDeleted(true);
+        subpop = dao.updateSubpopulation(subpop);
+        assertFalse(subpop.isDeleted());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void cannotUpdateASubpopThatDoesNotExist() {
+        Subpopulation subpop = subpop("Name", null, null, null);
+        subpop.setGuid(BridgeUtils.generateGuid());
+        dao.updateSubpopulation(subpop);
     }
 
     private Subpopulation subpop(String name, Integer min, Integer max, String group) {

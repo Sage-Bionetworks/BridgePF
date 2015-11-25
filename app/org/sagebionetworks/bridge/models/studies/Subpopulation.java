@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.studies;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.models.Criteria;
 
@@ -9,6 +8,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoSubpopulation.class)
 public interface Subpopulation extends Criteria {
 
+    public static Subpopulation create() {
+        return new DynamoSubpopulation();
+    }
+    
     public void setStudyIdentifier(String studyIdentifier);
     public String getStudyIdentifier();
     

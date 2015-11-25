@@ -33,6 +33,7 @@ public class SubpopulationService {
      * @return
      */
     public Subpopulation createSubpopulation(Study study, Subpopulation subpop) {
+        checkNotNull(study);
         checkNotNull(subpop);
         
         subpop.setGuid(BridgeUtils.generateGuid());
@@ -49,14 +50,10 @@ public class SubpopulationService {
      * @return
      */
     public Subpopulation updateSubpopulation(Study study, Subpopulation subpop) {
+        checkNotNull(study);
         checkNotNull(subpop);
         
-        // This will throw a not found exception if this is not an update. We 
-        // also use it to prevent deletion through this call.
-        Subpopulation existing = subpopDao.getSubpopulation(study, subpop.getGuid());
         subpop.setStudyIdentifier(study.getIdentifier());
-        subpop.setDeleted(existing.isDeleted());
-        
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
         

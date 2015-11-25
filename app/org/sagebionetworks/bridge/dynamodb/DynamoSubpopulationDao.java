@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -52,6 +53,11 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         checkNotNull(subpop.getStudyIdentifier());
         checkNotNull(subpop.getVersion());
         checkNotNull(subpop.getGuid());
+        
+        // This will throw a not found exception if this is not an update. 
+        // It also prevents deletion through this call.
+        Subpopulation existing = getSubpopulation(new StudyIdentifierImpl(subpop.getStudyIdentifier()), subpop.getGuid());
+        subpop.setDeleted(existing.isDeleted());
         
         mapper.save(subpop);
         return subpop;

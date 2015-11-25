@@ -16,9 +16,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Sets;
 
 /**
- * A sub-population of the study participants who will receive a unique consent based on select either by a data group
- * associated with the user, or the app version being submitted by the client (to make it possible to release the
- * application with a new consent).
+ * A sub-population of the study participants who will receive a unique consent based on selection by a data group, 
+ * an application version, or both. 
  */
 @DynamoDBTable(tableName = "Subpopulation")
 @BridgeTypeName("Subpopulation")

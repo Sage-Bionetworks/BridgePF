@@ -4,10 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -23,8 +21,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -52,7 +48,7 @@ public class SubpopulationServiceTest {
         service = new SubpopulationService();
         service.setSubpopulationDao(dao);
         
-        subpop = new DynamoSubpopulation();
+        subpop = Subpopulation.create();
         
         Set<String> dataGroups = Sets.newHashSet("group1","group2");
         when(study.getDataGroups()).thenReturn(dataGroups);
@@ -65,20 +61,20 @@ public class SubpopulationServiceTest {
     // The contents of this exception are tested in the validator tests.
     @Test(expected = InvalidEntityException.class)
     public void creationIsValidated() {
-        Subpopulation subpop = new DynamoSubpopulation();
+        Subpopulation subpop = Subpopulation.create();
         service.createSubpopulation(study, subpop);
     }
     
     // The contents of this exception are tested in the validator tests.
     @Test(expected = InvalidEntityException.class)
     public void updateIsValidated() {
-        Subpopulation subpop = new DynamoSubpopulation();
+        Subpopulation subpop = Subpopulation.create();
         service.createSubpopulation(study, subpop);
     }
     
     @Test
     public void createSubpopulation() {
-        Subpopulation subpop = new DynamoSubpopulation();
+        Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setStudyIdentifier("junk-you-cannot-set");
@@ -96,7 +92,7 @@ public class SubpopulationServiceTest {
     }
     @Test
     public void updateSubpopulation() {
-        Subpopulation subpop = new DynamoSubpopulation();
+        Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setStudyIdentifier("junk-you-cannot-set");
@@ -104,33 +100,17 @@ public class SubpopulationServiceTest {
         subpop.setRequired(false);
         subpop.setDeleted(true);
         
-        when(dao.getSubpopulation(any(), any())).thenReturn(new DynamoSubpopulation());
+        when(dao.getSubpopulation(any(), any())).thenReturn(Subpopulation.create());
         
         Subpopulation result = service.updateSubpopulation(study, subpop);
         assertEquals("Name", result.getName());
-        assertFalse(result.isDeleted()); // you can't delete through this method
         assertEquals("guid", result.getGuid());
         
         verify(dao).updateSubpopulation(subpop);
     }
     @Test
-    public void updateThrowsExceptionIfSubpopDoesNotExist() {
-        Subpopulation subpop = new DynamoSubpopulation();
-        subpop.setName("Name");
-        subpop.setGuid("guid");
-        
-        when(dao.getSubpopulation(any(), any())).thenThrow(new EntityNotFoundException(Subpopulation.class));
-        try {
-            service.updateSubpopulation(study, subpop);
-            fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-        }
-        verify(dao, never()).updateSubpopulation(subpop);
-        
-    }
-    @Test
     public void getSubpopulations() {
-        Subpopulation subpop = new DynamoSubpopulation();
+        Subpopulation subpop = Subpopulation.create();
         // use the same twice, that's okay for this, just mocking a list
         List<Subpopulation> list = Lists.newArrayList(subpop, subpop); 
         when(dao.getSubpopulations(TEST_STUDY, false)).thenReturn(list);
@@ -141,7 +121,7 @@ public class SubpopulationServiceTest {
     }
     @Test
     public void getSubpopulation() {
-        Subpopulation subpop = new DynamoSubpopulation();
+        Subpopulation subpop = Subpopulation.create();
         when(dao.getSubpopulation(TEST_STUDY, "AAA")).thenReturn(subpop);
 
         Subpopulation result = service.getSubpopulation(TEST_STUDY, "AAA");

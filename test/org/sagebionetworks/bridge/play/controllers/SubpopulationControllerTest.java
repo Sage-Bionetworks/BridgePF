@@ -19,7 +19,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -99,7 +98,7 @@ public class SubpopulationControllerTest {
         Http.Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
         
-        DynamoSubpopulation createdSubpop = new DynamoSubpopulation();
+        Subpopulation createdSubpop = Subpopulation.create();
         createdSubpop.setGuid("AAA");
         createdSubpop.setVersion(1L);
         doReturn(createdSubpop).when(subpopService).createSubpopulation(eq(study), captor.capture());
@@ -128,7 +127,7 @@ public class SubpopulationControllerTest {
         Http.Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
         
-        DynamoSubpopulation createdSubpop = new DynamoSubpopulation();
+        Subpopulation createdSubpop = Subpopulation.create();
         createdSubpop.setGuid("AAA");
         createdSubpop.setVersion(1L);
         doReturn(createdSubpop).when(subpopService).updateSubpopulation(eq(study), captor.capture());
@@ -157,7 +156,7 @@ public class SubpopulationControllerTest {
         Http.Context context = TestUtils.mockPlayContext();
         Http.Context.current.set(context);
         
-        Subpopulation subpop = new DynamoSubpopulation();
+        Subpopulation subpop = Subpopulation.create();
         subpop.setGuid("AAA");
         doReturn(subpop).when(subpopService).getSubpopulation(STUDY_IDENTIFIER, "AAA");
         

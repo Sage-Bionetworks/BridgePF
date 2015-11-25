@@ -9,7 +9,6 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
 
@@ -26,7 +25,7 @@ public class SubpopulationValidatorTest {
     
     @Test
     public void testValidation() {
-        Subpopulation subpop = new DynamoSubpopulation();
+        Subpopulation subpop = Subpopulation.create();
         subpop.setMinAppVersion(-10);
         subpop.setMaxAppVersion(-2);
         subpop.getNoneOfGroups().add("wrongGroup");
