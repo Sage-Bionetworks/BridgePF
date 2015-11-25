@@ -51,7 +51,12 @@ public class SubpopulationService {
     public Subpopulation updateSubpopulation(Study study, Subpopulation subpop) {
         checkNotNull(subpop);
         
+        // This will throw a not found exception if this is not an update. We 
+        // also use it to prevent deletion through this call.
+        Subpopulation existing = subpopDao.getSubpopulation(study, subpop.getGuid());
         subpop.setStudyIdentifier(study.getIdentifier());
+        subpop.setDeleted(existing.isDeleted());
+        
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
         
@@ -59,16 +64,16 @@ public class SubpopulationService {
     }
     
     /**
-     * Get all subpopulations defined for this study. It is possible to create a first default
-     * subpopulation if none exists
+     * Get all subpopulations defined for this study that have not been deleted. If 
+     * there are no subpopulations, a default subpopulation will be created with a 
+     * default consent.
      * @param studyId
-     * @param createDefault
      * @return
      */
-    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean createDefault) {
+    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        return subpopDao.getSubpopulations(studyId, createDefault);
+        return subpopDao.getSubpopulations(studyId, false);
     }
     
     /**

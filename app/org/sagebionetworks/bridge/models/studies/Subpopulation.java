@@ -1,7 +1,12 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.models.Criteria;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(as=DynamoSubpopulation.class)
 public interface Subpopulation extends Criteria {
 
     public void setStudyIdentifier(String studyIdentifier);
@@ -18,6 +23,9 @@ public interface Subpopulation extends Criteria {
     
     public void setRequired(boolean required);
     public boolean isRequired();
+    
+    public void setDeleted(boolean deleted);
+    public boolean isDeleted();
     
     public Long getVersion();
     public void setVersion(Long version);

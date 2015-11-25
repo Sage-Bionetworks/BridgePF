@@ -1,8 +1,20 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+
+import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -12,8 +24,15 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SubpopulationServiceTest {
@@ -23,6 +42,7 @@ public class SubpopulationServiceTest {
     @Mock
     SubpopulationDao dao;
     
+    @Mock
     Study study;
     
     Subpopulation subpop;
@@ -32,21 +52,117 @@ public class SubpopulationServiceTest {
         service = new SubpopulationService();
         service.setSubpopulationDao(dao);
         
-        study = mock(Study.class);
-        
         subpop = new DynamoSubpopulation();
         
-        when(dao.createSubpopulation(any())).thenReturn(subpop);
+        Set<String> dataGroups = Sets.newHashSet("group1","group2");
+        when(study.getDataGroups()).thenReturn(dataGroups);
+        when(study.getIdentifier()).thenReturn(TEST_STUDY_IDENTIFIER);
+        
+        when(dao.createSubpopulation(any())).thenAnswer(returnsFirstArg());
+        when(dao.updateSubpopulation(any())).thenAnswer(returnsFirstArg());
     }
     
-    @Test
-    public void creation() {
+    // The contents of this exception are tested in the validator tests.
+    @Test(expected = InvalidEntityException.class)
+    public void creationIsValidated() {
+        Subpopulation subpop = new DynamoSubpopulation();
+        service.createSubpopulation(study, subpop);
+    }
+    
+    // The contents of this exception are tested in the validator tests.
+    @Test(expected = InvalidEntityException.class)
+    public void updateIsValidated() {
         Subpopulation subpop = new DynamoSubpopulation();
         service.createSubpopulation(study, subpop);
     }
     
     @Test
-    public void update() {
+    public void createSubpopulation() {
+        Subpopulation subpop = new DynamoSubpopulation();
+        subpop.setName("Name");
+        subpop.setDescription("Description");
+        subpop.setStudyIdentifier("junk-you-cannot-set");
+        subpop.setGuid("cannot-set-guid");
+        subpop.setRequired(false);
         
+        Subpopulation result = service.createSubpopulation(study, subpop);
+        assertEquals("Name", result.getName());
+        assertNotNull(result.getGuid());
+        assertNotEquals("cannot-set-guid", result.getGuid());
+        assertFalse(result.isDeleted());
+        assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
+        
+        verify(dao).createSubpopulation(subpop);
+    }
+    @Test
+    public void updateSubpopulation() {
+        Subpopulation subpop = new DynamoSubpopulation();
+        subpop.setName("Name");
+        subpop.setDescription("Description");
+        subpop.setStudyIdentifier("junk-you-cannot-set");
+        subpop.setGuid("guid");
+        subpop.setRequired(false);
+        subpop.setDeleted(true);
+        
+        when(dao.getSubpopulation(any(), any())).thenReturn(new DynamoSubpopulation());
+        
+        Subpopulation result = service.updateSubpopulation(study, subpop);
+        assertEquals("Name", result.getName());
+        assertFalse(result.isDeleted()); // you can't delete through this method
+        assertEquals("guid", result.getGuid());
+        
+        verify(dao).updateSubpopulation(subpop);
+    }
+    @Test
+    public void updateThrowsExceptionIfSubpopDoesNotExist() {
+        Subpopulation subpop = new DynamoSubpopulation();
+        subpop.setName("Name");
+        subpop.setGuid("guid");
+        
+        when(dao.getSubpopulation(any(), any())).thenThrow(new EntityNotFoundException(Subpopulation.class));
+        try {
+            service.updateSubpopulation(study, subpop);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(dao, never()).updateSubpopulation(subpop);
+        
+    }
+    @Test
+    public void getSubpopulations() {
+        Subpopulation subpop = new DynamoSubpopulation();
+        // use the same twice, that's okay for this, just mocking a list
+        List<Subpopulation> list = Lists.newArrayList(subpop, subpop); 
+        when(dao.getSubpopulations(TEST_STUDY, false)).thenReturn(list);
+        
+        List<Subpopulation> results = service.getSubpopulations(TEST_STUDY);
+        assertEquals(2, results.size());
+        verify(dao).getSubpopulations(TEST_STUDY, false);
+    }
+    @Test
+    public void getSubpopulation() {
+        Subpopulation subpop = new DynamoSubpopulation();
+        when(dao.getSubpopulation(TEST_STUDY, "AAA")).thenReturn(subpop);
+
+        Subpopulation result = service.getSubpopulation(TEST_STUDY, "AAA");
+        assertEquals(subpop, result);
+        verify(dao).getSubpopulation(TEST_STUDY, "AAA");
+    }
+    @Test
+    public void getSubpopulationForUser() {
+        // We test the matching logic in CriteriaUtilsTest as well as in the DAO. Here we just want
+        // to verify it is being carried through.
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/4")).build();
+        
+        service.getSubpopulationForUser(context);
+        
+        verify(dao).getSubpopulationForUser(context);
+    }
+    @Test
+    public void deleteSubpopulation() {
+        service.deleteSubpopulation(TEST_STUDY, "AAA");
+        
+        verify(dao).deleteSubpopulation(TEST_STUDY, "AAA");
     }
 }

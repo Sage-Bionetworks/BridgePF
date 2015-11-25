@@ -16,16 +16,28 @@ public interface SubpopulationDao {
     public Subpopulation createSubpopulation(Subpopulation subpop);
     
     /**
+     * If no subpoulation exists, a default subpopulation can be created. This will be called
+     * as part of creating a study, or when an existing study is found to have no subpopulations.
+     * Subpopulations in turn create a default consent document. 
+     * @param study
+     * @return
+     */
+    public Subpopulation createDefaultSubpopulation(StudyIdentifier study);
+    
+    /**
      * Get all subpopulations defined for this study. It is possible to create a first default
      * subpopulation if none exists
      * @param studyId
-     * @param createDefault
+     * @param allExistingRecordsOnly
+     *      if true, this call will not create a default subpopulation if none exist, and it will return all 
+     *      records including deleted subpopulations. If false, the opposite: it will create a default 
+     *      subpopulation and it will hide deleted subpopulations.
      * @return
      */
-    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean createDefault);
+    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean allExistingRecordsOnly);
     
     /**
-     * Get a specific subpopulation.
+     * Get a specific subpopulation. This always returns the subpopulation whether it is logically deleted or not. 
      * @return subpopulation
      */
     public Subpopulation getSubpopulation(StudyIdentifier studyId, String guid);
@@ -47,10 +59,18 @@ public interface SubpopulationDao {
     public Subpopulation updateSubpopulation(Subpopulation subpop);
 
     /**
-     * Delete a subpopulation.
+     * Delete a subpopulation. This is a logical delete only, because we cannot be certain that no 
+     * one has signed a consent for this subpopulation and need to keep the consent document around. 
      * @param studyId
      * @param guid
      */
     public void deleteSubpopulation(StudyIdentifier studyId, String guid);
+    
+    /**
+     * Delete all subpopulations. This is a physical delete and not a logical delete, and is not exposed 
+     * in the API. This is used when deleting a study, as part of a test, for example.
+     * @param studyId
+     */
+    public void deleteAllSubpopulations(StudyIdentifier studyId);
     
 }

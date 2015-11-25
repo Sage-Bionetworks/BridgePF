@@ -12,6 +12,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Sets;
 
 /**
@@ -28,6 +29,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     private String name;
     private String description;
     private boolean required;
+    private boolean deleted;
     private Integer minAppVersion;
     private Integer maxAppVersion;
     private Long version;
@@ -39,6 +41,7 @@ public final class DynamoSubpopulation implements Subpopulation {
         this.noneOfGroups = Sets.newHashSet();
     }
     
+    @JsonIgnore
     @Override
     @DynamoDBHashKey
     public String getStudyIdentifier() {
@@ -83,6 +86,15 @@ public final class DynamoSubpopulation implements Subpopulation {
     @Override
     public void setRequired(boolean required) {
         this.required = required;
+    }
+    @DynamoDBAttribute
+    @Override
+    public boolean isDeleted() {
+        return deleted;
+    }
+    @Override
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
     @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @DynamoDBAttribute
@@ -130,8 +142,8 @@ public final class DynamoSubpopulation implements Subpopulation {
     
     @Override
     public int hashCode() {
-        return Objects.hash(allOfGroups, noneOfGroups, name, description, required, guid, minAppVersion,
-                maxAppVersion, studyIdentifier, version);
+        return Objects.hash(allOfGroups, noneOfGroups, name, description, required, deleted, guid, 
+                minAppVersion, maxAppVersion, studyIdentifier, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -140,21 +152,19 @@ public final class DynamoSubpopulation implements Subpopulation {
         if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoSubpopulation other = (DynamoSubpopulation) obj;
-        return Objects.equals(allOfGroups, other.allOfGroups) 
-                && Objects.equals(noneOfGroups, other.noneOfGroups) 
-                && Objects.equals(name, other.name)
+        return Objects.equals(noneOfGroups, other.noneOfGroups)
+                && Objects.equals(allOfGroups, other.allOfGroups) && Objects.equals(name, other.name)
                 && Objects.equals(description, other.description) && Objects.equals(guid, other.guid)
                 && Objects.equals(minAppVersion, other.minAppVersion) && Objects.equals(required, other.required)
-                && Objects.equals(maxAppVersion, other.maxAppVersion)
-                && Objects.equals(studyIdentifier, other.studyIdentifier) 
-                && Objects.equals(version, other.version);
+                && Objects.equals(maxAppVersion, other.maxAppVersion) && Objects.equals(deleted, other.deleted)
+                && Objects.equals(studyIdentifier, other.studyIdentifier) && Objects.equals(version, other.version);
     }
     @Override
     public String toString() {
         return "DynamoSubpopulation [studyIdentifier=" + studyIdentifier + ", guid=" + guid + ", name=" + name
-                + ", description=" + description + ", required=" + required + ", allOfGroups=" + allOfGroups 
-                + ", noneOfGroups=" +  noneOfGroups + ", minAppVersion=" + minAppVersion 
-                + ", maxAppVersion=" + maxAppVersion + ", version=" + version + "]";
+                + ", description=" + description + ", required=" + required + ", deleted=" + deleted 
+                + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" +  noneOfGroups + ", minAppVersion=" 
+                + minAppVersion + ", maxAppVersion=" + maxAppVersion + ", version=" + version + "]";
     }
 
 }

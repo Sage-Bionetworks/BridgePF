@@ -3,10 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.List;
-import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -19,7 +17,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
@@ -42,8 +39,6 @@ public class DynamoSubpopulationDaoTest {
     @Resource
     DynamoSubpopulationDao dao;
     
-    private Set<Subpopulation> subpopsToDelete;
-    
     @BeforeClass
     public static void beforeClass() {
         DynamoInitializer.init(DynamoSubpopulation.class);
@@ -52,16 +47,12 @@ public class DynamoSubpopulationDaoTest {
     @Before
     public void before() {
         studyId = new StudyIdentifierImpl(TestUtils.randomName(DynamoSubpopulationDaoTest.class));
-        subpopsToDelete = Sets.newHashSet();
     }
     
     @After
     public void after() {
-        for (Subpopulation subpop: subpopsToDelete) {
-            dao.deleteSubpopulation(studyId, subpop.getGuid());
-        }
-        // testing delete after every test...
-        assertTrue(dao.getSubpopulations(studyId, false).isEmpty());
+        dao.deleteAllSubpopulations(studyId);
+        assertTrue(dao.getSubpopulations(studyId, true).isEmpty());
     }
     
     @Test
@@ -90,34 +81,38 @@ public class DynamoSubpopulationDaoTest {
         // With this change, they should be equivalent using value equality
         retrievedSubpop.setVersion(finalSubpop.getVersion());
         
-        // And delete we handle after every test.
         assertEquals(retrievedSubpop, finalSubpop);
+
+        // Some further things that should be true:
+        // 1. there's only one subpopulation in the list, we don't also create a default, despite the false flag
+        List<Subpopulation> allSubpops = dao.getSubpopulations(studyId, true);
+        assertEquals(1, allSubpops.size());
         
+        // 2. Logical delete works...
         dao.deleteSubpopulation(studyId, finalSubpop.getGuid());
-        try {
-            dao.getSubpopulation(studyId, finalSubpop.getGuid());
-            fail("Should have thrown an exception");
-        } catch(EntityNotFoundException e) {
-            assertEquals("Subpopulation not found.", e.getMessage());
-        }
+        Subpopulation deletedSubpop = dao.getSubpopulation(studyId, finalSubpop.getGuid());
+        assertTrue(deletedSubpop.isDeleted());
+        
+        // ... and it hides the subpop in the query used to find subpopulations for a user
+        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false);
+        assertEquals(0, subpopulations.size());
     }
 
     @Test
     public void getSubpopulationsWillNotCreateDefault() {
-        List<Subpopulation> subpops = dao.getSubpopulations(studyId, false);
+        List<Subpopulation> subpops = dao.getSubpopulations(studyId, true);
         assertTrue(subpops.isEmpty());
     }
     
     @Test
     public void getSubpopulationsWillCreateDefault() {
-        List<Subpopulation> subpops = dao.getSubpopulations(studyId, true);
+        List<Subpopulation> subpops = dao.getSubpopulations(studyId, false);
         assertEquals(1, subpops.size());
 
         Subpopulation subpop = subpops.get(0);
         assertEquals("Default Consent Group", subpop.getName());
         assertEquals(studyId.getIdentifier(), subpop.getGuid());
         assertTrue(subpop.isRequired());
-        subpopsToDelete.add(subpop);
     }
 
     @Test
@@ -161,7 +156,6 @@ public class DynamoSubpopulationDaoTest {
             subpop.setAllOfGroups(Sets.newHashSet(group));
         }
         dao.createSubpopulation(subpop);
-        subpopsToDelete.add(subpop);
         return subpop;
     }
     

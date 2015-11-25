@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.collect.Lists;
 
 @Component
@@ -39,6 +40,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         checkNotNull(subpop.getStudyIdentifier());
 
         subpop.setVersion(null);
+        subpop.setDeleted(false);
         subpop.setGuid(BridgeUtils.generateGuid());
         mapper.save(subpop);
         return subpop;
@@ -55,33 +57,37 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         return subpop;
     }
 
-    /**
-     * If no subpopulations can be found by this method, a default subpop will be created using
-     * a key that will match the key of the existing consent stream.
-     */
     @Override
-    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean createDefault) {
+    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean allExistingRecordsOnly) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
         hashKey.setStudyIdentifier(studyId.getIdentifier());
         
         DynamoDBQueryExpression<DynamoSubpopulation> query = 
                 new DynamoDBQueryExpression<DynamoSubpopulation>().withHashKeyValues(hashKey);
         
+        // Get all the records because we only create a default if there are no physical records, 
+        // regardless of the deletion status.
         List<DynamoSubpopulation> subpops = mapper.query(DynamoSubpopulation.class, query);
-        if (createDefault && subpops.isEmpty()) {
-            // Using the studyId as the GUID ensures this first subpop is linked to the existing
-            // stream of consent documents. Future subpops will have a GUID instead.
-            DynamoSubpopulation subpop = new DynamoSubpopulation();
-            subpop.setStudyIdentifier(studyId.getIdentifier());
-            subpop.setGuid(studyId.getIdentifier());
-            subpop.setName("Default Consent Group");
-            subpop.setMinAppVersion(0);
-            subpop.setRequired(true);
-            mapper.save(subpop);
-            
-            subpops = mapper.query(DynamoSubpopulation.class, query);
+        if (!allExistingRecordsOnly && subpops.isEmpty()) {
+            Subpopulation subpop = createDefaultSubpopulation(studyId);
+            return Lists.newArrayList(subpop);
         }
-        return subpops.stream().sorted(SPECIFICITY_SORTER).collect(Collectors.toList());
+        // Now filter out deleted subpopulations, if requested
+        return subpops.stream()
+            .filter(subpop -> allExistingRecordsOnly || !subpop.isDeleted())
+            .sorted(SPECIFICITY_SORTER).collect(Collectors.toList());
+    }
+    
+    @Override
+    public Subpopulation createDefaultSubpopulation(StudyIdentifier studyId) {
+        DynamoSubpopulation subpop = new DynamoSubpopulation();
+        subpop.setStudyIdentifier(studyId.getIdentifier());
+        subpop.setGuid(studyId.getIdentifier());
+        subpop.setName("Default Consent Group");
+        subpop.setMinAppVersion(0);
+        subpop.setRequired(true);
+        mapper.save(subpop);
+        return subpop;
     }
     
     @Override
@@ -101,7 +107,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     public Subpopulation getSubpopulationForUser(ScheduleContext context) {
         List<Subpopulation> found = Lists.newArrayList();
 
-        List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true);
+        List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), false);
         for (Subpopulation subpop : subpops) {
             boolean matches = CriteriaUtils.matchCriteria(context, subpop);
             if (matches) {
@@ -118,7 +124,18 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public void deleteSubpopulation(StudyIdentifier studyId, String guid) {
         Subpopulation subpop = getSubpopulation(studyId, guid);
-        mapper.delete(subpop);
+        subpop.setDeleted(true);
+        mapper.save(subpop);
+    }
+
+    @Override
+    public void deleteAllSubpopulations(StudyIdentifier studyId) {
+        List<Subpopulation> subpops = getSubpopulations(studyId, true);
+        
+        if (!subpops.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(subpops);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
     }
     
 }

@@ -45,8 +45,9 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     /**
      * A string that uniquely identifies the study, and serves as a domain within which accounts are 
-     * scoped for that study. By convention, should be an instution acronym or tag, a dash, and then 
-     * an acronym or short phrase for the study. For example "uw-asthma".
+     * scoped for that study. By convention, should be an institution acronym or tag, a dash, and then 
+     * an acronym or short phrase for the study. For example "uw-asthma" or "ohsu-molemapper". Cannot
+     * be changed once created.
      */
     public String getIdentifier();
     public void setIdentifier(String identifier);
