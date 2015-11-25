@@ -62,5 +62,4 @@ public class BridgeUtilsTest {
         set = BridgeUtils.commaListToSet(" a");
         assertEquals(Sets.newHashSet("a"), set);
     }
-
 }

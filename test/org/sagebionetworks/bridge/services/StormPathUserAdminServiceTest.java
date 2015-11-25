@@ -15,6 +15,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -55,6 +56,7 @@ public class StormPathUserAdminServiceTest {
 
     @BeforeClass
     public static void initialSetUp() {
+        DynamoInitializer.init(DynamoUserConsent3.class);
         DynamoTestUtil.clearTable(DynamoUserConsent3.class);
     }
 

@@ -5,12 +5,12 @@ import org.junit.Test;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
-public class DynamoStudyCohortTest {
+public class DynamoSubpopulationTest {
 
     @Test
     public void hashCodeEquals() {
-        EqualsVerifier.forClass(DynamoStudyCohort.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
-                .verify();
+        EqualsVerifier.forClass(DynamoSubpopulation.class).suppress(Warning.NONFINAL_FIELDS)
+            .allFieldsShouldBeUsed().verify();
     }
     
 }

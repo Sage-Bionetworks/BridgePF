@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.models.studies;
 
-import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.Criteria;
 
-public interface StudyCohort extends BridgeEntity {
+public interface Subpopulation extends Criteria {
 
     public void setStudyIdentifier(String studyIdentifier);
     public String getStudyIdentifier();
@@ -19,16 +19,10 @@ public interface StudyCohort extends BridgeEntity {
     public void setRequired(boolean required);
     public boolean isRequired();
     
-    public void setDataGroup(String dataGroup);
-    public String getDataGroup();
-    
-    public Integer getMinAppVersion();
-    public void setMinAppVersion(Integer minAppVersion);
-    
-    public Integer getMaxAppVersion();
-    public void setMaxAppVersion(Integer maxAppVersion);
-
     public Long getVersion();
     public void setVersion(Long version);
+    
+    public void setMinAppVersion(Integer minAppVersion);
+    public void setMaxAppVersion(Integer minAppVersion);
 
 }
