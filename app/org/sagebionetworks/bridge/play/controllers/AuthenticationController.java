@@ -128,7 +128,9 @@ public class AuthenticationController extends BaseController {
      */
     private Study getStudyOrThrowException(JsonNode node) {
         String studyId = getStudyStringOrThrowException(node);
-        return studyService.getStudy(studyId);
+        Study study = studyService.getStudy(studyId);
+        verifySupportedVersionOrThrowException(study);
+        return study;
     }
 
     private StudyIdentifier getStudyIdentifierOrThrowException(JsonNode node) {
