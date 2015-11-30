@@ -166,9 +166,8 @@ public abstract class BaseController extends Controller {
     }
     
     void verifySupportedVersionOrThrowException(Study study) throws UnsupportedVersionException {
-    	
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-        if (!clientInfo.isSupportedVersion(study.getMinSupportedAppVersions().get(clientInfo.getOsName()))) {
+        if (!clientInfo.isSupportedAppVersion(study.getMinSupportedAppVersions().get(clientInfo.getOsName()))) {
         	throw new UnsupportedVersionException(clientInfo);
         }
     }

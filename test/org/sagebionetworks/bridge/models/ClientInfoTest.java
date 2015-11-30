@@ -210,25 +210,25 @@ public class ClientInfoTest {
     @Test
     public void testIsSupportedAppVersion_GreaterThanSucceeds() {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
-        assertTrue(info.isSupportedVersion(25));
+        assertTrue(info.isSupportedAppVersion(25));
     }
     
     @Test
     public void testIsSupportedAppVersion_EqualToSucceeds() {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
-        assertTrue(info.isSupportedVersion(26));
+        assertTrue(info.isSupportedAppVersion(26));
     }
     
     @Test
     public void testIsSupportedAppVersion_NullMinSucceeds() {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
-        assertTrue(info.isSupportedVersion(null));
+        assertTrue(info.isSupportedAppVersion(null));
     }
     
     @Test
     public void testIsSupportedAppVersion_LessThanFails() {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
-        assertFalse(info.isSupportedVersion(27));
+        assertFalse(info.isSupportedAppVersion(27));
     }
     
  }
