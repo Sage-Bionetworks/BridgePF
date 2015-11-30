@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -251,4 +252,8 @@ public class StudyServiceImplTest {
         studyService.updateStudy(study, false);
     }
 
+    @Test(expected = UnauthorizedException.class)
+    public void cantDeleteApiStudy() {
+        studyService.deleteStudy("api");
+    }
 }

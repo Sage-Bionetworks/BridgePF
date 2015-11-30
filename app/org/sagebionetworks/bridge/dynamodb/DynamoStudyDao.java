@@ -6,14 +6,19 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import com.google.common.collect.ImmutableSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +32,8 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 
 @Component
 public class DynamoStudyDao implements StudyDao {
+    private static final Set<String> STUDY_WHITE_LIST = ImmutableSet.copyOf(
+            BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist"));
 
     private DynamoDBMapper mapper;
 
@@ -94,7 +101,11 @@ public class DynamoStudyDao implements StudyDao {
     public void deleteStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_BLANK, "study");
 
+        String studyId = study.getIdentifier();
+        if (STUDY_WHITE_LIST.contains(studyId)) {
+            throw new UnauthorizedException(studyId + " is protected by whitelist.");
+        }
+
         mapper.delete(study);
     }
-
 }
