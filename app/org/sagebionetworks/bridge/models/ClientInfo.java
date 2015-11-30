@@ -151,7 +151,7 @@ public final class ClientInfo {
         return sdkVersion;
     }
     
-    public boolean isSupportedVersion(Integer minSupportedVersion) {
+    public boolean isSupportedAppVersion(Integer minSupportedVersion) {
     	// If both the appVersion and minSupportedVersion are defined, check that the appVersion is 
     	// greater than or equal to the minSupportedVersion
     	return (appVersion == null || minSupportedVersion == null || appVersion >= minSupportedVersion);
@@ -160,10 +160,9 @@ public final class ClientInfo {
     public boolean isTargetedAppVersion(Integer minValue, Integer maxValue) {
         // If there's no declared client version, it matches anything.
         if (appVersion != null) {
-            // Otherwise we can't be outside of either range boundary if the boundary
-            // is declared.
-            if ((minValue != null && appVersion.intValue() < minValue.intValue()) || 
-                (maxValue != null && appVersion.intValue() > maxValue.intValue())) {
+            // Otherwise we can't be outside of either range boundary if the boundary is declared.
+            if ((minValue != null && appVersion < minValue) || 
+                (maxValue != null && appVersion > maxValue)) {
                 return false;
             }
         }
