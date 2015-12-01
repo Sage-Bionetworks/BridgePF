@@ -62,6 +62,7 @@ public class TestUtils {
 
         Map<String,String[]> headers = Maps.newHashMap();
         headers.put("Content-Type", new String[] {"text/json; charset=UTF-8"});
+        headers.put("User-Agent", new String[] {"app/10"});
         Http.Request request = mock(Http.Request.class);
         Http.Response response = mock(Http.Response.class);
 
