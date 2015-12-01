@@ -100,7 +100,7 @@ public class DynamoParticipantOptionsDaoTest {
         assertNull(externalIdLookup.get(healthCode));
         
         dataGroupsLookup = optionsDao.getOptionForAllStudyParticipants(study, DATA_GROUPS);
-        assertNull(dataGroupsLookup.getDataGroups(healthCode));
+        assertEquals(Sets.newHashSet(), dataGroupsLookup.getDataGroups(healthCode));
     }
     
     @Test
