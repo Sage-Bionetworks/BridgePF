@@ -77,6 +77,7 @@ public class AuthenticationServiceImplTest {
     @Before
     public void before() {
         testUser = helper.getBuilder(AuthenticationServiceImplTest.class).build();
+        cacheProvider.removeStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         if (!study.getDataGroups().contains(TEST_DATA_GROUP)) {
             study.getDataGroups().add(TEST_DATA_GROUP);
