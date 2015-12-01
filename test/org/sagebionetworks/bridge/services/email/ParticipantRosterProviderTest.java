@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -38,8 +39,9 @@ public class ParticipantRosterProviderTest {
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(2, email.getRecipientAddresses().size());
-        assertEquals("bridge-testing@sagebase.org", email.getRecipientAddresses().get(0));
-        assertEquals("postmaster@sagebase.org", email.getRecipientAddresses().get(1));
+        
+        Set<String> recipients = Sets.newHashSet("bridge-testing@sagebase.org", "postmaster@sagebase.org");
+        assertEquals(recipients, Sets.newHashSet(email.getRecipientAddresses()));
     }
     
     @Test
@@ -147,8 +149,8 @@ public class ParticipantRosterProviderTest {
         
         assertEquals("Study participants for Test Study [ParticipantRosterProviderTest]", email.getSubject());
         assertNull(email.getSenderAddress()); // comes from our default support address
-        assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
-        assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
+        Set<String> recipients = Sets.newHashSet("bridge-testing+consent@sagebase.org", "bridge-testing+consent@sagebase.org");
+        assertEquals(recipients, Sets.newHashSet(email.getRecipientAddresses()));
     }
     
     private String row(String... fields) {

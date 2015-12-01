@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
 

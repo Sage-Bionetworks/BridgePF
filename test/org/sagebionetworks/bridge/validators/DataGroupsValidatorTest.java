@@ -42,4 +42,27 @@ public class DataGroupsValidatorTest {
         }
     }
     
+    @Test
+    public void invalidGroupsWhenStudyHasNoDataGroups() {
+        try {
+            DataGroups dataGroups = new DataGroups(Sets.newHashSet("group_4"));
+            Validate.entityThrowingException(new DataGroupsValidator(Sets.newHashSet()), dataGroups);    
+        } catch(InvalidEntityException e) {
+            List<String> errors = e.getErrors().get("dataGroups");
+            assertEquals("dataGroups 'group_4' is not one of these valid values: <none>", errors.get(0));
+        }
+    }
+    
+    @Test
+    public void validDataGroup() {
+        DataGroups dataGroups = new DataGroups(Sets.newHashSet("group_1", "group_2"));
+        Validate.entityThrowingException(validator, dataGroups);
+    }
+    
+    @Test
+    public void emptyDataGroupsValid() {
+        DataGroups dataGroups = new DataGroups(Sets.newHashSet());
+        Validate.entityThrowingException(validator, dataGroups);
+    }
+    
 }

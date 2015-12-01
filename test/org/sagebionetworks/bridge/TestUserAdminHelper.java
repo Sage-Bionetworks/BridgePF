@@ -100,45 +100,10 @@ public class TestUserAdminHelper {
     public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-
-    public String makeRandomUserName(Class<?> cls) {
+    
+    public Builder getBuilder(Class<?> cls) {
         checkNotNull(cls);
-        String devPart = BridgeConfigFactory.getConfig().getUser();
-        String rndPart = TestUtils.randomName(cls);
-        return String.format("bridge-testing+%s-%s", devPart, rndPart);
-    }
-
-    public TestUser createUser(Class<?> cls) {
-        return createUser(cls, true, true, null, null);
-    }
-    
-    public TestUser createUser(Class<?> cls, Study study, boolean consent) {
-        return createUser(cls, study, true, consent, null, null);
-    }
-
-    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent) {
-        return createUser(cls, signIn, consent, null, null);
-    }
-    
-    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, Set<Roles> roles, Set<String> dataGroups) {
-        Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
-        return createUser(cls, study, signIn, consent, roles, dataGroups);
-    }
-    
-    public TestUser createUser(Class<?> cls, Study study, boolean signIn, boolean consent, Set<Roles> roles, Set<String> dataGroups) {
-        String name = makeRandomUserName(cls);
-        SignUp signUp = new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
-        return createUser(signUp, study, signIn, consent);
-    }
-
-    public TestUser createUser(SignUp signUp, Study study, boolean signIn, boolean consent) {
-        checkNotNull(signUp.getUsername());
-        checkNotNull(signUp.getEmail());
-        checkNotNull(signUp.getPassword());
-        checkNotNull(study);
-
-        UserSession session = userAdminService.createUser(signUp, study, signIn, consent);
-        return new TestUser(signUp, study, session);
+        return new Builder(cls);
     }
 
     public void deleteUser(TestUser testUser) {
@@ -159,6 +124,60 @@ public class TestUserAdminHelper {
         checkNotNull(email);
 
         userAdminService.deleteUser(study, email);
+    }
+    
+    public class Builder {
+        private Class<?> cls;
+        private Study study;
+        private boolean signIn;
+        private boolean consent;
+        private Set<Roles> roles;
+        private Set<String> dataGroups;
+        private SignUp signUp;
+        
+        private Builder(Class<?> cls) {
+            this.cls = cls;
+            this.signIn = true;
+            this.consent = true;
+        }
+        public Builder withStudy(Study study) {
+            this.study = study;
+            return this;
+        }
+        public Builder withSignIn(boolean signIn) {
+            this.signIn = signIn;
+            return this;
+        }
+        public Builder withConsent(boolean consent) {
+            this.consent = consent;
+            return this;
+        }
+        public Builder withRoles(Roles... roles) {
+            this.roles = Sets.newHashSet(roles);
+            return this;
+        }
+        public Builder withDataGroups(Set<String> dataGroups) {
+            this.dataGroups = dataGroups;
+            return this;
+        }
+        public Builder withSignUp(SignUp signUp) {
+            this.signUp = signUp;
+            return this;
+        }
+        private String makeRandomUserName(Class<?> cls) {
+            String devPart = BridgeConfigFactory.getConfig().getUser();
+            String rndPart = TestUtils.randomName(cls);
+            return String.format("bridge-testing+%s-%s", devPart, rndPart);
+        }
+        public TestUser build() {
+            if (study == null) {
+                study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
+            }
+            String name = makeRandomUserName(cls);
+            SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
+            UserSession session = userAdminService.createUser(finalSignUp, study, signIn, consent);
+            return new TestUser(finalSignUp, study, session);
+        }
     }
 
 }

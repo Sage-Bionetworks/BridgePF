@@ -26,7 +26,6 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.lowagie.text.DocumentException;
 
 public class ConsentEmailProvider implements MimeTypeEmailProvider {
@@ -67,9 +66,10 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         final String sendFromEmail = String.format("%s <%s>", study.getName(), study.getSupportEmail());
         builder.withSender(sendFromEmail);
 
-        Set<String> emailAddresses = Sets.newHashSet(BridgeUtils.commaListToSet(study.getConsentNotificationEmail()));
-        emailAddresses.add(user.getEmail());
-        builder.withRecipients(emailAddresses);
+        // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
+        Set<String> recipients = BridgeUtils.commaListToSet(study.getConsentNotificationEmail());
+        builder.withRecipients(recipients);
+        builder.withRecipient(user.getEmail());
 
         final String consentDoc = createSignedDocument();
 

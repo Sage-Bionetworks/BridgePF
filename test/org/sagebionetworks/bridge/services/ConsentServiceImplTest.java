@@ -93,7 +93,7 @@ public class ConsentServiceImplTest {
         study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         studyService.createStudy(study);
         
-        testUser = helper.createUser(ConsentServiceImplTest.class, study, false);
+        testUser = helper.getBuilder(ConsentServiceImplTest.class).withStudy(study).withConsent(false).build();
     }
 
     @After

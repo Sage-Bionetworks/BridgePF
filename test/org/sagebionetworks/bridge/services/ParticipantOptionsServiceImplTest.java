@@ -6,11 +6,13 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -24,10 +26,11 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class ParticipantOptionsServiceImplTest {
@@ -50,7 +53,7 @@ public class ParticipantOptionsServiceImplTest {
     @Test
     public void setBoolean() {
         service.setBoolean(TEST_STUDY, HEALTH_CODE, EMAIL_NOTIFICATIONS, true);
-        
+
         verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, ParticipantOption.EMAIL_NOTIFICATIONS, Boolean.TRUE.toString());
         verifyNoMoreInteractions(mockDao);
     }
@@ -60,6 +63,13 @@ public class ParticipantOptionsServiceImplTest {
         when(mockDao.getOption(HEALTH_CODE, ParticipantOption.EMAIL_NOTIFICATIONS)).thenReturn("true");
         
         assertTrue(service.getBoolean(HEALTH_CODE, EMAIL_NOTIFICATIONS));
+    }
+    
+    @Test
+    public void getBooleanNull() {
+        when(mockDao.getOption(HEALTH_CODE, ParticipantOption.EMAIL_NOTIFICATIONS)).thenReturn(null);
+        
+        assertFalse(service.getBoolean(HEALTH_CODE, EMAIL_NOTIFICATIONS));
     }
     
     @Test
@@ -95,6 +105,13 @@ public class ParticipantOptionsServiceImplTest {
     }
     
     @Test
+    public void getEnumNull() {
+        when(mockDao.getOption(HEALTH_CODE, ParticipantOption.SHARING_SCOPE)).thenReturn(null);
+        
+        assertNull(service.getEnum(HEALTH_CODE, SHARING_SCOPE, SharingScope.class));
+    }
+    
+    @Test
     public void setStringSet() {
         Set<String> dataGroups = Sets.newHashSet("group1", "group2", "group3");
         service.setStringSet(TEST_STUDY, HEALTH_CODE, DATA_GROUPS, dataGroups);
@@ -111,6 +128,13 @@ public class ParticipantOptionsServiceImplTest {
         Set<String> dataGroups = Sets.newHashSet("group1", "group2", "group3");
         
         assertEquals(dataGroups, service.getStringSet(HEALTH_CODE, DATA_GROUPS));
+    }
+    
+    @Test
+    public void getStringSetNull() {
+        when(mockDao.getOption(HEALTH_CODE, ParticipantOption.DATA_GROUPS)).thenReturn(null);
+        
+        assertEquals(Sets.newHashSet(), service.getStringSet(HEALTH_CODE, DATA_GROUPS));
     }
 
     @Test
@@ -131,7 +155,12 @@ public class ParticipantOptionsServiceImplTest {
 
     @Test
     public void getAllParticipantOptions() {
-        service.getAllParticipantOptions(HEALTH_CODE);
+        Map<ParticipantOption,String> map = Maps.newHashMap();
+        map.put(ParticipantOption.DATA_GROUPS, "a,b,c");
+        when(mockDao.getAllParticipantOptions(HEALTH_CODE)).thenReturn(map);
+        
+        Map<ParticipantOption,String> result = service.getAllParticipantOptions(HEALTH_CODE);
+        assertEquals(map, result);
         
         verify(mockDao).getAllParticipantOptions(HEALTH_CODE);
         verifyNoMoreInteractions(mockDao);
@@ -139,7 +168,11 @@ public class ParticipantOptionsServiceImplTest {
     
     @Test
     public void getOptionForAllStudyParticipants() {
-        service.getOptionForAllStudyParticipants(TEST_STUDY, ParticipantOption.EMAIL_NOTIFICATIONS);
+        OptionLookup lookup = new OptionLookup(null);
+        when(mockDao.getOptionForAllStudyParticipants(TEST_STUDY, ParticipantOption.EMAIL_NOTIFICATIONS)).thenReturn(lookup);
+        
+        OptionLookup result = service.getOptionForAllStudyParticipants(TEST_STUDY, ParticipantOption.EMAIL_NOTIFICATIONS);
+        assertEquals(lookup, result);
         
         verify(mockDao).getOptionForAllStudyParticipants(TEST_STUDY, ParticipantOption.EMAIL_NOTIFICATIONS);
         verifyNoMoreInteractions(mockDao);

@@ -34,17 +34,21 @@ class MimeTypeEmailBuilder {
         return this;
     }
     /**
-     * A recipient for this email (may call this more than once and values will be accumulated).
-     * @param recipientAddress
-     * @return
-     */
-    /**
-     * A recipient for this email (may call this more than once and values will be accumulated).
+     * One or more recipients for this email (may call this more than once and values will be accumulated).
      * @param recipientAddress
      * @return
      */
     MimeTypeEmailBuilder withRecipients(Collection<String> recipients) {
         this.recipientAddresses.addAll(recipients);
+        return this;
+    }
+    /**
+     * A recipient for this email (may call this more than once and values will be accumulated).
+     * @param recipientAddress
+     * @return
+     */
+    MimeTypeEmailBuilder withRecipient(String recipient) {
+        this.recipientAddresses.add(recipient);
         return this;
     }
     /**
