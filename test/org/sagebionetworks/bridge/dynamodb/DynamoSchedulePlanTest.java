@@ -5,7 +5,13 @@ import static org.junit.Assert.assertEquals;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy.ScheduleCriteria;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -22,6 +28,15 @@ public class DynamoSchedulePlanTest {
     @Test
     public void canSerializeDynamoSchedulePlan() throws Exception {
         DateTime datetime = DateTime.now().withZone(DateTimeZone.UTC);
+
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        
+        CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
+        ScheduleCriteria criteria = new ScheduleCriteria.Builder().withMinAppVersion(1).withMaxAppVersion(10)
+                .withSchedule(schedule).build();
+        strategy.addCriteria(criteria);
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("Label");
@@ -31,6 +46,7 @@ public class DynamoSchedulePlanTest {
         plan.setModifiedOn(datetime.getMillis());
         plan.setStudyKey("test-study");
         plan.setVersion(2L);
+        plan.setStrategy(strategy);
         
         String json = BridgeObjectMapper.get().writeValueAsString(plan);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -51,6 +67,8 @@ public class DynamoSchedulePlanTest {
         assertEquals(plan.getGuid(), plan2.getGuid());
         assertEquals(plan.getLabel(), plan2.getLabel());
         assertEquals(plan.getModifiedOn(), plan2.getModifiedOn());
+        
+        assertEquals(plan, plan2);
     }
     
 }

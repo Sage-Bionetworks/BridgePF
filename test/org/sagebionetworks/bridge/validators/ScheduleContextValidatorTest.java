@@ -5,24 +5,34 @@ import static org.junit.Assert.fail;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 
 public class ScheduleContextValidatorTest {
 
     private ScheduleContextValidator validator = new ScheduleContextValidator();
+    
+    private User user;
+    
+    @Before
+    public void before() {
+        user = new User();
+        user.setStudyKey("test-id");
+        user.setHealthCode("AAA");
+    }
 
     @Test
     public void validContext() {
         // The minimum you need to have a valid schedule context.
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier("test-id")
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withEndsOn(DateTime.now().plusDays(2))
             .withTimeZone(DateTimeZone.forOffsetHours(-3))
-            .withHealthCode("AAA")
+            .withUser(user)
             .build();
         
         Validate.nonEntityThrowingException(validator, context);
@@ -31,10 +41,9 @@ public class ScheduleContextValidatorTest {
     @Test
     public void clientInfoRequired() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("test-id")
                 .withEndsOn(DateTime.now().plusDays(2))
                 .withTimeZone(DateTimeZone.forOffsetHours(-3))
-                .withHealthCode("AAA")
+                .withUser(user)
                 .build();
         try {
             Validate.nonEntityThrowingException(validator, context);
@@ -61,8 +70,8 @@ public class ScheduleContextValidatorTest {
     @Test
     public void endsOnAfterNow() {
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier("study-id").withTimeZone(DateTimeZone.UTC)
-            .withEndsOn(DateTime.now().minusHours(1)).withHealthCode("healthCode").build();
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(DateTime.now().minusHours(1)).withUser(user).build();
         try {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
@@ -76,8 +85,8 @@ public class ScheduleContextValidatorTest {
         // Setting this two days past the maximum. Will always fail.
         DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS+2);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier("study-id").withTimeZone(DateTimeZone.UTC)
-            .withEndsOn(endsOn).withHealthCode("healthCode").build();
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn).withUser(user).build();
         try {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");

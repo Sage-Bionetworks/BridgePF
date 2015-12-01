@@ -26,14 +26,6 @@ public interface ScheduledActivityDao {
     public List<ScheduledActivity> getActivities(ScheduleContext context);
     
     /**
-     * Have any of the activities for this run key been created?
-     * @param healthCode
-     * @param runKey
-     * @return
-     */
-    public boolean activityRunHasNotOccurred(String healthCode, String runKey);
-    
-    /**
      * Save activities (activities will only be saved if they are not in the database).
      * @param activities
      */
@@ -68,4 +60,11 @@ public interface ScheduledActivityDao {
      */
     public void deleteActivitiesForSchedulePlan(String schedulePlanGuid);
     
+    /**
+     * In calculating activities to return to a user, any activities found that are no longer in the list of scheduled
+     * activites are deleted through this method
+     * 
+     * @param activitiesToDelete
+     */
+    public void deleteActivities(List<ScheduledActivity> activitiesToDelete);
 }

@@ -63,7 +63,7 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         plan.setStudyKey(study.getIdentifier());
 
         // Delete existing GUIDs so this is a new object (or recreate them)
-        Validate.entityThrowingException(new SchedulePlanValidator(study.getTaskIdentifiers()), plan);
+        Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
         updateGuids(plan);
 
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
@@ -79,7 +79,7 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         // Plan must always be in user's study
         plan.setStudyKey(study.getIdentifier());
         
-        Validate.entityThrowingException(new SchedulePlanValidator(study.getTaskIdentifiers()), plan);
+        Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);

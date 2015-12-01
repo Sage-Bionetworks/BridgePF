@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 
@@ -61,6 +62,7 @@ public class ScheduleControllerTest {
         controller.setSchedulePlanService(schedulePlanService);
         
         User user = new User();
+        user.setStudyKey(TEST_STUDY_IDENTIFIER);
         
         UserSession session = mock(UserSession.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);

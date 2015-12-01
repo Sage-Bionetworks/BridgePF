@@ -114,11 +114,10 @@ public class DynamoScheduledActivityDaoTest {
         events.put("enrollment", ENROLLMENT);
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withUser(user)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn)
-            .withHealthCode(user.getHealthCode())
             .withEvents(events).build();
         
         List<ScheduledActivity> activitiesToSchedule = TestUtils.runSchedulerForActivities(user, context);
@@ -160,11 +159,10 @@ public class DynamoScheduledActivityDaoTest {
         events.put("enrollment", ENROLLMENT);
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withUser(user)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn)
-            .withHealthCode(user.getHealthCode())
             .withEvents(events).build();
         
         // Schedule plans are specific to this test because we're going to delete them;
@@ -177,7 +175,6 @@ public class DynamoScheduledActivityDaoTest {
 
         // Get one schedule plan GUID to delete and the initial count
         int initialCount = activities.size();
-        String taskRunForActivityDeleted = findAnActivityFor(activities, testPlan).getRunKey();
         
         activityDao.deleteActivitiesForSchedulePlan(testPlan.getGuid());
         
@@ -199,14 +196,6 @@ public class DynamoScheduledActivityDaoTest {
         
         activityDao.deleteActivitiesForSchedulePlan(testPlan2.getGuid());
         activities = activityDao.getActivities(context);
-        
-        // We've verified that activities are deleted (above), but the one we finished, although not returned 
-        // when we query for tasks, will return false when we ask if its run key has not occurred. Because it's
-        // still in the table.
-        assertFalse(activityDao.activityRunHasNotOccurred(context.getHealthCode(), finishedActivity.getRunKey()));
-
-        // This is true, it was deleted, so it's like it never happened
-        assertTrue(activityDao.activityRunHasNotOccurred(context.getHealthCode(), taskRunForActivityDeleted));
     }
     
     private List<SchedulePlan> getSchedulePlans() {

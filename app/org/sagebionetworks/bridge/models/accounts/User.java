@@ -32,6 +32,7 @@ public class User implements BridgeEntity {
     private boolean signedMostRecentConsent;
     private SharingScope sharingScope;
     private Set<Roles> roles = Sets.newHashSet();
+    private Set<String> dataGroups = Sets.newHashSet();
 
     public User() {
     }
@@ -164,6 +165,14 @@ public class User implements BridgeEntity {
     
     public boolean isInRole(Set<Roles> roleSet) {
         return roleSet != null && !Collections.disjoint(roles, roleSet);
+    }
+    
+    public Set<String> getDataGroups() {
+        return dataGroups;
+    }
+
+    public void setDataGroups(Set<String> dataGroups) {
+        this.dataGroups = dataGroups;
     }
 
     @Override

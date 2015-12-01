@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asse
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
 import static org.sagebionetworks.bridge.TestConstants.TEST_3_ACTIVITY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +16,7 @@ import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.models.accounts.User;
 
 import com.google.common.collect.Maps;
 
@@ -116,8 +117,11 @@ public class CronActivitySchedulerTest {
     }
     
     private ScheduleContext getContext(DateTime endsOn) {
+        User user = new User();
+        user.setStudyKey(TEST_STUDY_IDENTIFIER);
+        
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withUser(user)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn)
             .withEvents(events).build();

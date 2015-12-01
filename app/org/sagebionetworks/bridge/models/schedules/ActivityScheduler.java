@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
-import org.sagebionetworks.bridge.BridgeUtils;
 
 public abstract class ActivityScheduler {
 
@@ -78,9 +77,6 @@ public abstract class ActivityScheduler {
                         schActivity.setExpiresOn(expiresOn);
                         schActivity.setHidesOn(expiresOn.getMillis());
                     }
-                    schActivity.setRunKey(BridgeUtils.generateScheduledActivityRunKey(schActivity, plan.getGuid()));
-                    schActivity.setMinAppVersion(plan.getMinAppVersion());
-                    schActivity.setMaxAppVersion(plan.getMaxAppVersion());
                     scheduledActivities.add(schActivity);
                 }
             }

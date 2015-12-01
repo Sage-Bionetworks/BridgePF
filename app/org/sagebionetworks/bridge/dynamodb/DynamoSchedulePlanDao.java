@@ -58,6 +58,9 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         
         ArrayList<SchedulePlan> plans = Lists.newArrayListWithCapacity(dynamoPlans.size());
         for(DynamoSchedulePlan dynamoPlan : dynamoPlans) {
+            // We still do this, but I would like to move to filtering through a specific schedule plan strategy, 
+            // rather than through the schedule plan itself. This pushes the complexity down to a specific strategy
+            // class and encapsulates the logic better.
             if (clientInfo.isTargetedAppVersion(dynamoPlan.getMinAppVersion(), dynamoPlan.getMaxAppVersion())) {
                 plans.add(dynamoPlan);
             }

@@ -21,7 +21,7 @@ public class SchedulePlanValidatorTest {
 
     @Before
     public void before() throws Exception {
-        validator = new SchedulePlanValidator(Sets.newHashSet("tapTest"));
+        validator = new SchedulePlanValidator(Sets.newHashSet(), Sets.newHashSet("tapTest"));
     }
 
     @Test

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
@@ -100,7 +101,6 @@ public class ScheduledActivityServiceMockTest {
             return schActivity;
         });
         when(activityDao.getActivities(context)).thenReturn(scheduledActivities);
-        when(activityDao.activityRunHasNotOccurred(anyString(), anyString())).thenReturn(true);
         
         Survey survey = new DynamoSurvey();
         survey.setGuid("guid");
@@ -129,14 +129,15 @@ public class ScheduledActivityServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
         service.getScheduledActivities(user, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(DateTimeZone.UTC).withEndsOn(DateTime.now().minusSeconds(1)).build());
+            .withUser(user)
+            .withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(DateTime.now().minusSeconds(1)).build());
     }
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
         service.getScheduledActivities(user, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withUser(user)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).plusSeconds(1)).build());
     }
@@ -227,12 +228,14 @@ public class ScheduledActivityServiceMockTest {
     @SuppressWarnings({"unchecked","rawtypes"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
+        User user = new User();
+        user.setStudyKey(TEST_STUDY_IDENTIFIER);
+        user.setHealthCode(HEALTH_CODE);
         service.getScheduledActivities(user, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withUser(user)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(DateTimeZone.UTC)
-            .withEndsOn(endsOn.plusDays(2))
-            .withHealthCode(HEALTH_CODE).build());
+            .withEndsOn(endsOn.plusDays(2)).build());
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(activityDao).saveActivities(argument.capture());
@@ -277,8 +280,8 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withTimeZone(DateTimeZone.UTC)
-            .withEndsOn(endsOn).withHealthCode(HEALTH_CODE).withEvents(events).build();
+        return new ScheduleContext.Builder().withUser(user).withTimeZone(DateTimeZone.UTC)
+            .withEndsOn(endsOn).withEvents(events).build();
     }
     
 }

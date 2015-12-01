@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.models.accounts.User;
 
 import com.google.common.collect.Maps;
 
@@ -481,11 +482,14 @@ public class IntervalActivitySchedulerTest {
     }
 
     private ScheduleContext getContext(DateTime endsOn) {
+        User user = new User();
+        user.setHealthCode("AAA");
+        user.setStudyKey(TEST_STUDY_IDENTIFIER);
+        
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withUser(user)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn)
-            .withHealthCode("AAA")
             .withEvents(events).build();
     }
     

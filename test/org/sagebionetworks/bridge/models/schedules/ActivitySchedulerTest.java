@@ -9,7 +9,7 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asLong;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -39,6 +40,7 @@ public class ActivitySchedulerTest {
     private static final DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     private static final DateTime NOW = DateTime.parse("2015-03-26T14:40:00Z");
     
+    private User user;
     private List<ScheduledActivity> scheduledActivities;
     private Map<String,DateTime> events;
     private DynamoSchedulePlan plan = new DynamoSchedulePlan();
@@ -46,6 +48,10 @@ public class ActivitySchedulerTest {
     
     @Before
     public void before() {
+        user = new User();
+        user.setHealthCode("AAA");
+        user.setStudyKey(TEST_STUDY_IDENTIFIER);
+        
         plan.setGuid("BBB");
         plan.setMinAppVersion(0);
         plan.setMaxAppVersion(1000);
@@ -75,7 +81,7 @@ public class ActivitySchedulerTest {
         Map<String,DateTime> empty = Maps.newHashMap();
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withUser(user)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(NOW.plusWeeks(1))
             .withEvents(empty).build();
@@ -83,7 +89,7 @@ public class ActivitySchedulerTest {
         assertEquals(0, scheduledActivities.size());
         
         context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withUser(user)
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(NOW.plusWeeks(1)).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
@@ -104,13 +110,10 @@ public class ActivitySchedulerTest {
         assertNotNull(schActivity.getGuid());
         assertEquals("Activity3", schActivity.getActivity().getLabel());
         assertEquals("BBB", schActivity.getSchedulePlanGuid());
-        assertEquals(0, schActivity.getMinAppVersion().intValue());
-        assertEquals(1000, schActivity.getMaxAppVersion().intValue());
         assertNotNull(schActivity.getScheduledOn());
         assertNotNull(schActivity.getExpiresOn());
         assertEquals("AAA", schActivity.getHealthCode());
         assertEquals(DateTimeZone.UTC, schActivity.getTimeZone());
-        assertNotNull(schActivity.getRunKey());
     }
     
     /**
@@ -338,8 +341,8 @@ public class ActivitySchedulerTest {
     }
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
+        return new ScheduleContext.Builder().withUser(user)
+            .withTimeZone(zone).withEndsOn(endsOn).withEvents(events).build();
     }
     
 }

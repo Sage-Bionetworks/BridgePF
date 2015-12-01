@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ public class ScheduleStrategyTest {
         for (int i = 0; i < 1000; i++) {
             User user = new User(Integer.toString(i), "test" + i + "@sagebridge.org");
             user.setHealthCode(BridgeUtils.generateGuid());
+            user.setStudyKey(TEST_STUDY_IDENTIFIER);
             users.add(user);
         }
         study = TestUtils.getValidStudy(ScheduleStrategyTest.class);
@@ -99,7 +101,8 @@ public class ScheduleStrategyTest {
 
         List<Schedule> schedules = Lists.newArrayList();
         for (User user : users) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(study, plan, user);
+            ScheduleContext context = new ScheduleContext.Builder().withUser(user).build();
+            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             schedules.add(schedule);
         }
 

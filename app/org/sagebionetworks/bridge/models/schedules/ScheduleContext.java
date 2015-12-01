@@ -2,10 +2,12 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -21,22 +23,26 @@ import com.google.common.collect.ImmutableMap;
 public final class ScheduleContext {
     
     private final StudyIdentifier studyId;
+    private final String healthCode;
     private final ClientInfo clientInfo;
     private final DateTimeZone zone;
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
-    private final String healthCode;
     private final DateTime now;
+    private final User user;
+    private final Set<String> dataGroups;
     
-    private ScheduleContext(StudyIdentifier studyId, ClientInfo clientInfo, DateTimeZone zone, DateTime endsOn, String healthCode,
-                    Map<String, DateTime> events, DateTime now) {
-        this.studyId = studyId;
+    private ScheduleContext(ClientInfo clientInfo, DateTimeZone zone, DateTime endsOn,
+            Map<String, DateTime> events, DateTime now, User user) {
+        this.studyId = (user == null) ? null : new StudyIdentifierImpl(user.getStudyKey());
+        this.healthCode = (user == null) ? null : user.getHealthCode();
         this.clientInfo = clientInfo;
         this.zone = zone;
         this.endsOn = endsOn;
-        this.healthCode = healthCode;
         this.events = events;
         this.now = now;
+        this.user = user;
+        this.dataGroups = (user == null) ? null : user.getDataGroups();
     }
     
     /**
@@ -108,9 +114,13 @@ public final class ScheduleContext {
         return now;
     }
     
+    public Set<String> getUserDataGroups() {
+        return dataGroups;
+    }
+    
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, clientInfo, zone, endsOn, healthCode, events, now);
+        return Objects.hash(studyId, healthCode, clientInfo, zone, endsOn, events, now, user, dataGroups);
     }
 
     @Override
@@ -120,39 +130,29 @@ public final class ScheduleContext {
         if (obj == null || getClass() != obj.getClass())
             return false;
         ScheduleContext other = (ScheduleContext) obj;
-        return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
-                Objects.equals(clientInfo, other.clientInfo) && 
-                Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
-                Objects.equals(studyId, other.studyId) && Objects.equals(now, other.now));
+        return (Objects.equals(studyId, other.studyId) && Objects.equals(healthCode, other.healthCode)
+                && Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone)
+                && Objects.equals(clientInfo, other.clientInfo) && Objects.equals(events, other.events)
+                && Objects.equals(now, other.now) && Objects.equals(user, other.user)
+                && Objects.equals(dataGroups, other.dataGroups));
     }
 
     @Override
     public String toString() {
-        return "ScheduleContext [studyId=" + studyId + ", clientInfo=" + clientInfo + ", zone=" + zone + ", endsOn=" + 
-                endsOn + ", events=" + events + "]";
+        return "ScheduleContext [clientInfo=" + clientInfo + ", zone=" + zone + ", endsOn=" + 
+                endsOn + ", events=" + events + ", user=" + user + ", dataGroups=" + dataGroups + "]";
     }
     
     public static class Builder {
-        private StudyIdentifier studyId;
         private ClientInfo clientInfo;
         private DateTimeZone zone;
         private DateTime endsOn;
         private Map<String,DateTime> events;
-        private String healthCode;
         private DateTime now;
+        private User user;
         
-        public Builder withStudyIdentifier(String studyId) {
-            if (studyId != null) {
-                this.studyId = new StudyIdentifierImpl(studyId);    
-            }
-            return this;
-        }
         public Builder withClientInfo(ClientInfo clientInfo) {
             this.clientInfo = clientInfo;
-            return this;
-        }
-        public Builder withStudyIdentifier(StudyIdentifier studyId) {
-            this.studyId = studyId;
             return this;
         }
         public Builder withTimeZone(DateTimeZone zone) {
@@ -169,18 +169,17 @@ public final class ScheduleContext {
             }
             return this;
         }
-        public Builder withHealthCode(String healthCode) {
-            this.healthCode = healthCode;
+        public Builder withUser(User user) {
+            this.user = user;
             return this;
         }
         public Builder withContext(ScheduleContext context) {
-            this.studyId = context.studyId;
             this.clientInfo = context.clientInfo;
             this.zone = context.zone;
             this.endsOn = context.endsOn;
             this.events = context.events;
-            this.healthCode = context.healthCode;
             this.now = context.now;
+            this.user = context.user;
             return this;
         }
         
@@ -188,7 +187,7 @@ public final class ScheduleContext {
             if (now == null) {
                 now = (zone == null) ? DateTime.now() : DateTime.now(zone);
             }
-            ScheduleContext context = new ScheduleContext(studyId, clientInfo, zone, endsOn, healthCode, events, now);
+            ScheduleContext context = new ScheduleContext(clientInfo, zone, endsOn, events, now, user);
             // Not validating here. There are many tests to confirm that the scheduler will work with different 
             // time windows, but the validator ensures the context object is within the declared allowable
             // time window. This is validated in ScheduledActivityService.
