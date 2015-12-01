@@ -141,10 +141,11 @@ public class CacheProviderTest {
         when(jedisOps.getTransaction(sessionKey)).thenReturn(transaction);
         when(jedisOps.get(sessionKey)).thenReturn("userSessionString");
         cacheProvider.setJedisOps(jedisOps);
-        User mockUser = mock(User.class);
-        when(mockUser.getId()).thenReturn(userId);
+        User user = new User();
+        user.setId(userId);
+        
         UserSession mockUserSession = mock(UserSession.class);
-        when(mockUserSession.getUser()).thenReturn(mockUser);
+        when(mockUserSession.getUser()).thenReturn(user);
         BridgeObjectMapper mockObjectMapper = mock(BridgeObjectMapper.class);
         when(mockObjectMapper.readValue("userSessionString",  UserSession.class)).thenReturn(mockUserSession);
         cacheProvider.setBridgeObjectMapper(mockObjectMapper);
@@ -164,10 +165,10 @@ public class CacheProviderTest {
 
     @Test
     public void testRemoveSession() {
-        User mockUser = mock(User.class);
-        when(mockUser.getId()).thenReturn(userId);
+        User user = new User();
+        user.setId(userId);
         UserSession mockUserSession = mock(UserSession.class);
-        when(mockUserSession.getUser()).thenReturn(mockUser);
+        when(mockUserSession.getUser()).thenReturn(user);
         when(mockUserSession.getSessionToken()).thenReturn(sessionToken);
         cacheProvider.removeSession(mockUserSession);
         cacheProvider.getUserSession(sessionToken);

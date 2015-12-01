@@ -10,7 +10,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.MapBindingResult;
@@ -31,6 +30,11 @@ public class Validate {
     public static final String CANNOT_BE_ZERO_OR_NEGATIVE = "%s cannot be negative";
     public static final String WRONG_TYPE = "%s is the wrong type";
     
+    public static Errors getErrorsFor(Object object) {
+        String entityName = BridgeUtils.getTypeName(object.getClass());
+        return new MapBindingResult(Maps.newHashMap(), entityName);
+    }
+    
     /**
      * This method will validate an object (not an entity, that is, not an object that is 
      * defined in the API and usually represented by a JSON payload), throwing a 
@@ -44,13 +48,10 @@ public class Validate {
         checkArgument(validator.supports(object.getClass()), "Invalid validator");
         checkNotNull(object);
         
-        String entityName = BridgeUtils.getTypeName(object.getClass());
-        MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), entityName);
-        
+        Errors errors = getErrorsFor(object);
         validator.validate(object, errors);
-        
         if (errors.hasErrors()) {
-            String message = convertBindingResultToMessage(errors);
+            String message = convertErrorToMessage(errors);
             throw new BadRequestException(message);
         }
     }
@@ -68,11 +69,8 @@ public class Validate {
         checkArgument(validator.supports(object.getClass()), "Invalid validator");
         checkNotNull(object);
         
-        String entityName = BridgeUtils.getTypeName(object.getClass());
-        MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), entityName);
-        
+        Errors errors = getErrorsFor(object);
         validator.validate(object, errors);
-        
         throwException(errors, (BridgeEntity)object);
     }
     
@@ -85,15 +83,15 @@ public class Validate {
         
         validator.validate(object, errors);
     }
-    public static void throwException(BindingResult errors, BridgeEntity entity) {
+    public static void throwException(Errors errors, BridgeEntity entity) {
         if (errors.hasErrors()) {
-            String message = convertBindingResultToMessage(errors);
-            Map<String,List<String>> map = convertBindingResultToSimpleMap(errors);
+            String message = convertErrorToMessage(errors);
+            Map<String,List<String>> map = convertErrorsToSimpleMap(errors);
             
             throw new InvalidEntityException(entity, message, map);
         }
     }
-    private static Map<String,List<String>> convertBindingResultToSimpleMap(BindingResult errors) {
+    private static Map<String,List<String>> convertErrorsToSimpleMap(Errors errors) {
         Map<String,List<String>> map = Maps.newHashMap();
         
         if (errors.hasGlobalErrors()) {
@@ -114,7 +112,7 @@ public class Validate {
         }
         return map;
     }
-    private static String convertBindingResultToMessage(BindingResult errors) {
+    private static String convertErrorToMessage(Errors errors) {
         List<String> messages = Lists.newArrayListWithCapacity(errors.getErrorCount());
         for (ObjectError error : errors.getGlobalErrors()) {
             messages.add(errorToString(error.getObjectName(), error));    

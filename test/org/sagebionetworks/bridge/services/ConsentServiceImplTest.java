@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -92,7 +93,7 @@ public class ConsentServiceImplTest {
         study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         studyService.createStudy(study);
         
-        testUser = helper.createUser(ConsentServiceImplTest.class, study, false, null);
+        testUser = helper.getBuilder(ConsentServiceImplTest.class).withStudy(study).withConsent(false).build();
     }
 
     @After
@@ -125,7 +126,7 @@ public class ConsentServiceImplTest {
         assertEquals("1990-11-11", returnedSig.getBirthdate());
         assertNull(returnedSig.getImageData());
         assertNull(returnedSig.getImageMimeType());
-        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, optionsService.getSharingScope(testUser.getUser().getHealthCode()));
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, optionsService.getEnum(testUser.getUser().getHealthCode(), SHARING_SCOPE, SharingScope.class));
 
         // Withdraw consent and verify.
         consentService.withdrawConsent(testUser.getStudy(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
@@ -60,8 +61,8 @@ public class ConsentControllerMockedTest {
         session = mock(UserSession.class);
         StudyIdentifier studyId = mock(StudyIdentifier.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);
-        user = mock(User.class);
-        when(user.getHealthCode()).thenReturn("healthCode");
+        user = new User();
+        user.setHealthCode("healthCode");
         when(session.getUser()).thenReturn(user);
 
         controller = spy(new ConsentController());
@@ -93,7 +94,7 @@ public class ConsentControllerMockedTest {
         controller.changeSharingScope(SharingScope.NO_SHARING, "message");
 
         InOrder inOrder = inOrder(optionsService, consentService);
-        inOrder.verify(optionsService).setOption(study, "healthCode", SharingScope.NO_SHARING);
+        inOrder.verify(optionsService).setEnum(study, "healthCode", SHARING_SCOPE, SharingScope.NO_SHARING);
         inOrder.verify(consentService).emailConsentAgreement(study, user);
     }
 

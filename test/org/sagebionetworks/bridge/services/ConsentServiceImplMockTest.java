@@ -86,9 +86,9 @@ public class ConsentServiceImplMockTest {
         consentService.setStudyConsentService(studyConsentService);
         
         study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
-        user = mock(User.class);
-        when(user.getHealthCode()).thenReturn("BBB");
-        when(user.getEmail()).thenReturn("bbb@bbb.com");
+        user = new User();
+        user.setHealthCode("BBB");
+        user.setEmail("bbb@bbb.com");
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1990-01-01")
                 .withSignedOn(UNIX_TIMESTAMP).build();
         
@@ -126,8 +126,7 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void noActivityEventIfAlreadyConsented() {
-        when(user.doesConsent()).thenReturn(true);
-        when(user.isConsent()).thenReturn(true);
+        user.setConsent(true);
         
         try {
             consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
@@ -183,8 +182,8 @@ public class ConsentServiceImplMockTest {
         assertEquals("<p>User   &lt;bbb@bbb.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>", 
                     email.getMessageParts().get(0).getContent());
         
-        verify(user).setConsent(false);
-        verify(user).setSharingScope(SharingScope.NO_SHARING);
+        assertFalse(user.doesConsent());
+        assertEquals(SharingScope.NO_SHARING, user.getSharingScope());
     }
     
     @Test

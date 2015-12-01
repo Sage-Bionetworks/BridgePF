@@ -77,7 +77,7 @@ public class StormPathUserAdminServiceTest {
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
-        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword!", null);
+        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword!", null, null);
 
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, signIn).getUser();
@@ -124,7 +124,7 @@ public class StormPathUserAdminServiceTest {
         testUser = userAdminService.createUser(signUp, study, true, false).getUser();
         
         try {
-            SignUp sameWithDifferentUsername = new SignUp(RandomStringUtils.randomAlphabetic(8), signUp.getEmail(), signUp.getPassword(), null);
+            SignUp sameWithDifferentUsername = new SignUp(RandomStringUtils.randomAlphabetic(8), signUp.getEmail(), signUp.getPassword(), null, null);
             userAdminService.createUser(sameWithDifferentUsername, study, false, false);
             fail("Sign up with email already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) {
@@ -133,7 +133,7 @@ public class StormPathUserAdminServiceTest {
         try {
             String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
             String email = name+"@sagebridge.org";
-            SignUp sameWithDifferentEmail = new SignUp(signUp.getUsername(), email, signUp.getPassword(), null);
+            SignUp sameWithDifferentEmail = new SignUp(signUp.getUsername(), email, signUp.getPassword(), null, null);
             userAdminService.createUser(sameWithDifferentEmail, study, false, false);
             fail("Sign up with username already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) { 

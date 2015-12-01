@@ -1,42 +1,32 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Sets;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class SignUp implements BridgeEntity {
-
-    private static final String EMAIL_FIELD = "email";
-    private static final String USERNAME_FIELD = "username";
-    private static final String PASSWORD_FIELD = "password";
-    private static final String ROLES_FIELD = "roles";
+public final class SignUp implements BridgeEntity {
 
     private final String username;
     private final String email;
     private final String password;
     private final Set<Roles> roles;
+    private final Set<String> dataGroups;
 
-    public SignUp(String username, String email, String password, Set<Roles> roles) {
+    @JsonCreator
+    public SignUp(@JsonProperty("username") String username, @JsonProperty("email") String email, 
+            @JsonProperty("password") String password, @JsonProperty("roles") Set<Roles> roles, 
+            @JsonProperty("dataGroups") Set<String> dataGroups) {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.roles = Sets.newHashSet();
-        if (roles != null) {
-            this.roles.addAll(roles);
-        }
-    }
-
-    public static final SignUp fromJson(JsonNode node, boolean allowRoles) {
-        String username = JsonUtils.asText(node, USERNAME_FIELD);
-        String email = JsonUtils.asText(node, EMAIL_FIELD);
-        String password = JsonUtils.asText(node, PASSWORD_FIELD);
-        Set<Roles> roles = (allowRoles) ? JsonUtils.asRolesSet(node, ROLES_FIELD) : null;
-        return new SignUp(username, email, password, roles);
+        this.roles = BridgeUtils.nullSafeImmutableSet(roles);
+        this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
     }
 
     public String getUsername() {
@@ -54,10 +44,31 @@ public class SignUp implements BridgeEntity {
     public Set<Roles> getRoles() {
         return roles;
     }
+    
+    public Set<String> getDataGroups() {
+        return dataGroups;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(email, password, roles, username, dataGroups);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        SignUp other = (SignUp) obj;
+        return (Objects.equals(email, other.email) && Objects.equals(password, other.password) && 
+                Objects.equals(roles, other.roles) && Objects.equals(username,  other.username) && 
+                Objects.equals(dataGroups, other.dataGroups));
+    }
 
     @Override
     public String toString() {
-        return "SignUp [username=" + username + ", email=" + email + ", password=" + password + ", roles=" + roles + "]";
+        return "SignUp [username=" + username + ", email=" + email + ", password=" + password + ", roles=" + roles + ", dataGroups="+ dataGroups +"]";
     }
 
 }

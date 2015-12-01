@@ -66,11 +66,10 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         final String sendFromEmail = String.format("%s <%s>", study.getName(), study.getSupportEmail());
         builder.withSender(sendFromEmail);
 
+        // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
+        Set<String> recipients = BridgeUtils.commaListToSet(study.getConsentNotificationEmail());
+        builder.withRecipients(recipients);
         builder.withRecipient(user.getEmail());
-        Set<String> emailAddresses = BridgeUtils.commaListToSet(study.getConsentNotificationEmail());
-        for (String email : emailAddresses) {
-            builder.withRecipient(email);
-        }
 
         final String consentDoc = createSignedDocument();
 

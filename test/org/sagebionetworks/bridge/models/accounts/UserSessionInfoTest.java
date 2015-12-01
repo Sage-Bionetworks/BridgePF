@@ -26,6 +26,7 @@ public class UserSessionInfoTest {
         user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         user.setSignedMostRecentConsent(false);
         user.setStudyKey("study-identifier");
+        user.getDataGroups().add("foo");
         user.setUsername("username");
         
         UserSession session = new UserSession();
@@ -48,11 +49,12 @@ public class UserSessionInfoTest {
         assertEquals(session.getSessionToken(), node.get("sessionToken").asText());
         assertEquals(user.getUsername(), node.get("username").asText());
         assertEquals("researcher", node.get("roles").get(0).asText());
+        assertEquals("foo", node.get("dataGroups").get(0).asText());
         assertEquals("staging", node.get("environment").asText());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
         // ... and no things that shouldn't be there
-        assertEquals(10, node.size());
+        assertEquals(11, node.size());
     }
     
 }

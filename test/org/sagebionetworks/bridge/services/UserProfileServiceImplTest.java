@@ -35,7 +35,7 @@ public class UserProfileServiceImplTest {
     
     @Before
     public void before() {
-        testUser = helper.createUser(UserProfileServiceImplTest.class);
+        testUser = helper.getBuilder(UserProfileServiceImplTest.class).build();
     }
     
     @After

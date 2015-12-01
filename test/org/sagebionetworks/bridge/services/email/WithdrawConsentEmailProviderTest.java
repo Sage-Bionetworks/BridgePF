@@ -27,7 +27,7 @@ public class WithdrawConsentEmailProviderTest {
     @Before
     public void before() {
         study = mock(Study.class);
-        user = mock(User.class);
+        user = new User();
         provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, user, WITHDRAWAL, UNIX_TIMESTAMP);
     }
     
@@ -38,7 +38,7 @@ public class WithdrawConsentEmailProviderTest {
         when(study.getConsentNotificationEmail()).thenReturn("a@a.com");
         when(study.getName()).thenReturn("Study Name");
         when(study.getSupportEmail()).thenReturn("c@c.com");
-        when(user.getEmail()).thenReturn("d@d.com");
+        user.setEmail("d@d.com");
 
         MimeTypeEmail email = provider.getMimeTypeEmail();
         
@@ -62,9 +62,10 @@ public class WithdrawConsentEmailProviderTest {
         when(study.getConsentNotificationEmail()).thenReturn("a@a.com, b@b.com");
         when(study.getName()).thenReturn("Study Name");
         when(study.getSupportEmail()).thenReturn("c@c.com");
-        when(user.getFirstName()).thenReturn("Jack");
-        when(user.getLastName()).thenReturn("Aubrey");
-        when(user.getEmail()).thenReturn("d@d.com");
+        
+        user.setFirstName("Jack");
+        user.setLastName("Aubrey");
+        user.setEmail("d@d.com");
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         

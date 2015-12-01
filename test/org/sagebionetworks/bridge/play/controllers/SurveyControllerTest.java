@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -409,7 +410,7 @@ public class SurveyControllerTest {
         when(service.getSurvey(eq(keys))).thenReturn(survey);
         setContext();
         
-        session.getUser().getRoles().add(ADMIN);
+        session.getUser().setRoles(Sets.newHashSet(ADMIN));
         controller.deleteSurvey(guid, date.toString(), "true");
         
         verify(service).getSurvey(eq(keys));
@@ -426,8 +427,7 @@ public class SurveyControllerTest {
         when(service.getSurvey(eq(keys))).thenReturn(survey);
         setContext();
         
-        session.getUser().getRoles().remove(DEVELOPER);
-        session.getUser().getRoles().add(ADMIN);
+        session.getUser().setRoles(Sets.newHashSet(ADMIN));
         try {
             controller.deleteSurvey(guid, date.toString(), "false");
             fail("This should have thrown an exception");
@@ -636,8 +636,7 @@ public class SurveyControllerTest {
         setContext();
         when(service.getSurvey(keys)).thenReturn(survey);
         setUserSession("api");
-        session.getUser().getRoles().clear();
-        session.getUser().getRoles().add(ADMIN);
+        session.getUser().setRoles(Sets.newHashSet(ADMIN));
         
         try {
             controller.getSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
@@ -654,7 +653,7 @@ public class SurveyControllerTest {
         setContext();
         when(service.getSurvey(keys)).thenReturn(survey);
         setUserSession("api");
-        session.getUser().getRoles().clear();
+        session.getUser().setRoles(Collections.emptySet());
         session.getUser().setConsent(false);
         
         try {

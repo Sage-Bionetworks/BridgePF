@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -32,6 +33,7 @@ public class UserSessionInfo {
     private final String username;
     private final String environment;
     private final Set<Roles> roles;
+    private final Set<String> dataGroups;
 
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
@@ -40,7 +42,8 @@ public class UserSessionInfo {
         this.consented = session.getUser().doesConsent();
         this.sharingScope = session.getUser().getSharingScope();
         this.username = session.getUser().getUsername();
-        this.roles = session.getUser().getRoles();
+        this.roles = BridgeUtils.nullSafeImmutableSet(session.getUser().getRoles());
+        this.dataGroups = BridgeUtils.nullSafeImmutableSet(session.getUser().getDataGroups());
         this.environment = ENVIRONMENTS.get(session.getEnvironment());
     }
 
@@ -70,5 +73,8 @@ public class UserSessionInfo {
     }
     public Set<Roles> getRoles() {
         return roles;
+    }
+    public Set<String> getDataGroups() {
+        return dataGroups;
     }
 }

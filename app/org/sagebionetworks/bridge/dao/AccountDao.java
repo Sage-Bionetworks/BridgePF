@@ -24,8 +24,9 @@ public interface AccountDao {
      * @param study
      * @param signUp
      * @param sendEmail
+     * @return account
      */
-    public void signUp(Study study, SignUp signUp, boolean sendEmail);
+    public Account signUp(Study study, SignUp signUp, boolean sendEmail);
     
     /**
      * Verify an email address using a supplied, one-time token for verification.

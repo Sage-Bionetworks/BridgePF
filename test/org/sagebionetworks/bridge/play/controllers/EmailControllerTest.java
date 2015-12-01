@@ -4,6 +4,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
 import static org.mockito.Mockito.verify;
 import static play.test.Helpers.contentAsString;
 
@@ -11,7 +12,6 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.play.controllers.EmailController;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
@@ -106,8 +106,7 @@ public class EmailControllerTest {
         EmailController controller = createController("bridge-testing@sagebase.org");
         controller.unsubscribeFromEmail();
         
-        verify(optionsService).setOption(study, "healthCode", 
-            ParticipantOption.EMAIL_NOTIFICATIONS, "false");
+        verify(optionsService).setBoolean(study, "healthCode", EMAIL_NOTIFICATIONS, false);
     }
     
     @Test

@@ -62,7 +62,7 @@ public class ScheduledActivityServiceTest {
     public void before() {
         study = studyService.getStudy(TEST_STUDY.getIdentifier());
         study.setTaskIdentifiers(Sets.newHashSet("taskId"));
-        testUser = helper.createUser(ScheduledActivityServiceTest.class);
+        testUser = helper.getBuilder(ScheduledActivityServiceTest.class).build();
         
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule Label");
