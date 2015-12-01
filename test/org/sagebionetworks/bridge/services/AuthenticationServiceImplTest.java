@@ -96,12 +96,12 @@ public class AuthenticationServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
-        authService.signIn(testUser.getStudy(), new SignIn(TEST_DATA_GROUP, null));
+        authService.signIn(testUser.getStudy(), new SignIn("foobar", null));
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
-        authService.signIn(testUser.getStudy(), new SignIn(TEST_DATA_GROUP, "bar"));
+        authService.signIn(testUser.getStudy(), new SignIn("foobar", "bar"));
     }
 
     @Test
@@ -128,7 +128,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void getSessionWithBogusSessionToken() throws Exception {
-        UserSession session = authService.getSession(TEST_DATA_GROUP);
+        UserSession session = authService.getSession("anytoken");
         assertNull("Session is null", session);
 
         session = authService.getSession(null);
@@ -156,7 +156,7 @@ public class AuthenticationServiceImplTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
-        authService.resetPassword(new PasswordReset("newpassword", TEST_DATA_GROUP));
+        authService.resetPassword(new PasswordReset("newpassword", "resettoken"));
     }
 
     @Test
@@ -248,7 +248,10 @@ public class AuthenticationServiceImplTest {
             HealthId healthId = healthCodeService.getMapping(account.getHealthId());
             
             verify(authService).signUp(study, signUp, true);
-            verify(optionsService).setStringSet(study, healthId.getCode(), DATA_GROUPS, list);
+            // Verify that data groups were set correctly as an option
+            Set<String> persistedGroups = optionsService.getStringSet(healthId.getCode(), DATA_GROUPS);
+            assertEquals(list, persistedGroups);
+            
         } finally {
             accountDao.deleteAccount(study, email);
         }

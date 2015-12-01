@@ -83,13 +83,16 @@ public class BridgeUtilsTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void nullsafeImmutableSet() {
-        assertNotNull(BridgeUtils.nullSafeImmutableSet(null));
-        assertNotNull(BridgeUtils.nullSafeImmutableSet(Sets.newHashSet("A")));
+        assertEquals(0, BridgeUtils.nullSafeImmutableSet(null).size());
+        assertEquals(Sets.newHashSet("A"), BridgeUtils.nullSafeImmutableSet(Sets.newHashSet("A")));
         
         // This should throw an UnsupportedOperationException
         Set<String> set = BridgeUtils.nullSafeImmutableSet(Sets.newHashSet("A"));
         set.add("B");
-        
+    }
+    
+    @Test
+    public void nullsAreRemoved() {
         // nulls are removed. They have to be to create ImmutableSet
         assertEquals(Sets.newHashSet("A"), BridgeUtils.nullSafeImmutableSet(Sets.newHashSet(null, "A")));
     }

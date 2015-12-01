@@ -61,6 +61,6 @@ public class OptionLookupTest {
         assertEquals(Sets.newHashSet("A","B","C"), set);
         
         set = lookup.getDataGroups("BBB");
-        assertNull(set);
+        assertEquals(Sets.newHashSet(), set);
     }
 }
