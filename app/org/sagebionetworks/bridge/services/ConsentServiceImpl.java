@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -12,7 +14,6 @@ import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -140,7 +141,7 @@ public class ConsentServiceImpl implements ConsentService {
         if (userConsent != null){
             activityEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
         }
-        optionsService.setOption(study, user.getHealthCode(), sharingScope);
+        optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, sharingScope);
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, 
                 consentSignature, sharingScope, studyConsentService, consentTemplate);
@@ -202,10 +203,10 @@ public class ConsentServiceImpl implements ConsentService {
         }
         decrementStudyEnrollment(study);
 
-        optionsService.setOption(study, user.getHealthCode(), SharingScope.NO_SHARING);
+        optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
         user.setSharingScope(SharingScope.NO_SHARING);
         
-        String externalId = optionsService.getOption(user.getHealthCode(), ParticipantOption.EXTERNAL_IDENTIFIER);
+        String externalId = optionsService.getString(user.getHealthCode(), EXTERNAL_IDENTIFIER);
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
 
@@ -253,8 +254,9 @@ public class ConsentServiceImpl implements ConsentService {
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
-
-        final SharingScope sharingScope = optionsService.getSharingScope(user.getHealthCode());
+        final SharingScope sharingScope = optionsService.getEnum(user.getHealthCode(), 
+                SHARING_SCOPE, SharingScope.class);
+        
         MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(
             study, user, consentSignature, sharingScope, studyConsentService, consentTemplate);
         sendMailService.sendEmail(consentEmail);

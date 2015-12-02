@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +29,21 @@ public class ParticipantRosterProviderTest {
         study.setUserProfileAttributes(Sets.newHashSet("phone", "recontact"));
     }
 
+    @Test
+    public void correctlySplitsRecipients() throws Exception {
+        StudyParticipant participant = new StudyParticipant();
+        List<StudyParticipant> participants = Lists.newArrayList(participant);
+        
+        study.setConsentNotificationEmail("bridge-testing@sagebase.org,postmaster@sagebase.org");
+        ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
+        
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        assertEquals(2, email.getRecipientAddresses().size());
+        
+        Set<String> recipients = Sets.newHashSet("bridge-testing@sagebase.org", "postmaster@sagebase.org");
+        assertEquals(recipients, Sets.newHashSet(email.getRecipientAddresses()));
+    }
+    
     @Test
     public void participantsCorrectlyDescribedInText() {
         StudyParticipant participant = new StudyParticipant();
@@ -133,8 +149,8 @@ public class ParticipantRosterProviderTest {
         
         assertEquals("Study participants for Test Study [ParticipantRosterProviderTest]", email.getSubject());
         assertNull(email.getSenderAddress()); // comes from our default support address
-        assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
-        assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
+        Set<String> recipients = Sets.newHashSet("bridge-testing+consent@sagebase.org", "bridge-testing+consent@sagebase.org");
+        assertEquals(recipients, Sets.newHashSet(email.getRecipientAddresses()));
     }
     
     private String row(String... fields) {

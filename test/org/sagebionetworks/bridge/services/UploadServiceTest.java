@@ -70,7 +70,7 @@ public class UploadServiceTest {
         assertNotNull(uploadService);
         assertNotNull(s3Client);
         objectsToRemove = new ArrayList<String>();
-        testUser = helper.createUser(UploadServiceTest.class);
+        testUser = helper.getBuilder(UploadServiceTest.class).build();
     }
 
     @After

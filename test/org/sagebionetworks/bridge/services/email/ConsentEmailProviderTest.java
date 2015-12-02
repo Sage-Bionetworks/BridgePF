@@ -24,6 +24,8 @@ import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 
+import com.google.common.collect.Sets;
+
 public class ConsentEmailProviderTest {
 
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
@@ -66,8 +68,8 @@ public class ConsentEmailProviderTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         assertEquals("Consent Agreement for Study Name", email.getSubject());
         assertEquals("\"Study Name\" <sender@default.com>", email.getSenderAddress());
-        assertEquals("user@user.com", email.getRecipientAddresses().get(0));
-        assertEquals("consent@consent.com", email.getRecipientAddresses().get(1));
+        assertEquals(Sets.newHashSet("user@user.com","consent@consent.com"),
+                     Sets.newHashSet(email.getRecipientAddresses()));
         
         assertTrue("Name correct", ((String)body.getContent()).contains("|Test Person|"));
         assertTrue("User email correct", ((String)body.getContent()).contains("|user@user.com|"));
@@ -84,8 +86,8 @@ public class ConsentEmailProviderTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         assertEquals("Consent Agreement for Study Name", email.getSubject());
         assertEquals("\"Study Name\" <sender@default.com>", email.getSenderAddress());
-        assertEquals("user@user.com", email.getRecipientAddresses().get(0));
-        assertEquals("consent@consent.com", email.getRecipientAddresses().get(1));
+        assertEquals(Sets.newHashSet("user@user.com","consent@consent.com"),
+                Sets.newHashSet(email.getRecipientAddresses()));
         
         assertTrue("Study name correct", ((String)body.getContent()).contains("<title>Study Name Consent To Research</title>"));
         assertTrue("Name correct", ((String)body.getContent()).contains(">Test Person<"));

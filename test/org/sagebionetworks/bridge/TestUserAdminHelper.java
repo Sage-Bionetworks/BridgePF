@@ -16,10 +16,11 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Sets;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * A support class that can be injected into any SpringJUnit4ClassRunner test that needs to
@@ -31,6 +32,7 @@ import com.google.common.collect.Sets;
 public class TestUserAdminHelper {
 
     private static final String PASSWORD = "P4ssword!";
+    private static final String EMAIL_DOMAIN = "@sagebridge.org";
 
     UserAdminService userAdminService;
     AuthenticationService authService;
@@ -41,20 +43,22 @@ public class TestUserAdminHelper {
         private final String email;
         private final String password;
         private final Set<Roles> roles;
+        private final Set<String> dataGroups;
         private final Study study;
         private final UserSession session;
 
-        public TestUser(String username, String email, String password, Set<Roles> roleList, Study study, UserSession session) {
-            this.username = username;
-            this.email = email;
-            this.password = password;
+        public TestUser(SignUp signUp, Study study, UserSession session) {
+            this.username = signUp.getUsername();
+            this.email = signUp.getEmail();
+            this.password = signUp.getPassword();
+            this.roles = Sets.newHashSet(signUp.getRoles());
+            this.roles.add(TEST_USERS);
+            this.dataGroups = signUp.getDataGroups();
             this.study = study;
             this.session = session;
-            this.roles = (roleList == null) ? Sets.<Roles>newHashSet() : roleList;
-            this.roles.add(TEST_USERS);
         }
         public SignUp getSignUp() {
-            return new SignUp(username, email, password, roles);
+            return new SignUp(username, email, password, roles, dataGroups);
         }
         public SignIn getSignIn() {
             return new SignIn(username, password);
@@ -85,63 +89,23 @@ public class TestUserAdminHelper {
         }
     }
     @Autowired
-    public void setUserAdminService(UserAdminService userAdminService) {
+    public final void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }
     @Autowired
-    public void setAuthService(AuthenticationService authService) {
+    public final void setAuthService(AuthenticationService authService) {
         this.authService = authService;
     }
     @Autowired
-    public void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-
-    public String makeRandomUserName(Class<?> cls) {
-        String devPart = BridgeConfigFactory.getConfig().getUser();
-        String rndPart = TestUtils.randomName(cls);
-        return String.format("bridge-testing+%s-%s", devPart, rndPart);
-    }
-
-    public TestUser createUser(Class<?> cls) {
-        return createUser(cls, null);
-    }
-
-    public TestUser createUser(Class<?> cls, Set<Roles> roles) {
-        checkNotNull(cls, "Class must not be null");
-
-        return createUser(cls, true, true, roles);
-    }
-
-    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, Set<Roles> roles) {
-        checkNotNull(cls, "Class must not be null");
-
-        String name = makeRandomUserName(cls);
-        SignUp signUp = new SignUp(name, name + "@sagebase.org", PASSWORD, roles);
-        Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
-        return createUser(signUp, study, signIn, consent);
-    }
-
-    public TestUser createUser(SignUp signUp, Study study, boolean signIn, boolean consent) {
-        checkNotNull(signUp.getUsername());
-        checkNotNull(signUp.getEmail());
-        checkNotNull(signUp.getPassword());
-        checkNotNull(study);
-
-        UserSession session = userAdminService.createUser(signUp, study, signIn, consent);
-        return new TestUser(signUp.getUsername(), signUp.getEmail(), signUp.getPassword(), signUp.getRoles(), study, session);
-    }
-
-    public TestUser createUser(Class<?> cls, Study study, boolean consent, Set<Roles> roles) {
-        checkNotNull(cls, "Class must not be null");
-        checkNotNull(study);
-
-        String name = makeRandomUserName(cls);
-        SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles);
-        UserSession session = userAdminService.createUser(signUp, study, true, consent);
-        return new TestUser(signUp.getUsername(), signUp.getEmail(), signUp.getPassword(), signUp.getRoles(), study, session);
-    }
     
+    public Builder getBuilder(Class<?> cls) {
+        checkNotNull(cls);
+        return new Builder(cls);
+    }
+
     public void deleteUser(TestUser testUser) {
         checkNotNull(testUser);
 
@@ -160,6 +124,60 @@ public class TestUserAdminHelper {
         checkNotNull(email);
 
         userAdminService.deleteUser(study, email);
+    }
+    
+    public class Builder {
+        private Class<?> cls;
+        private Study study;
+        private boolean signIn;
+        private boolean consent;
+        private Set<Roles> roles;
+        private Set<String> dataGroups;
+        private SignUp signUp;
+        
+        private Builder(Class<?> cls) {
+            this.cls = cls;
+            this.signIn = true;
+            this.consent = true;
+        }
+        public Builder withStudy(Study study) {
+            this.study = study;
+            return this;
+        }
+        public Builder withSignIn(boolean signIn) {
+            this.signIn = signIn;
+            return this;
+        }
+        public Builder withConsent(boolean consent) {
+            this.consent = consent;
+            return this;
+        }
+        public Builder withRoles(Roles... roles) {
+            this.roles = Sets.newHashSet(roles);
+            return this;
+        }
+        public Builder withDataGroups(Set<String> dataGroups) {
+            this.dataGroups = dataGroups;
+            return this;
+        }
+        public Builder withSignUp(SignUp signUp) {
+            this.signUp = signUp;
+            return this;
+        }
+        private String makeRandomUserName(Class<?> cls) {
+            String devPart = BridgeConfigFactory.getConfig().getUser();
+            String rndPart = TestUtils.randomName(cls);
+            return String.format("bridge-testing+%s-%s", devPart, rndPart);
+        }
+        public TestUser build() {
+            if (study == null) {
+                study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
+            }
+            String name = makeRandomUserName(cls);
+            SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
+            UserSession session = userAdminService.createUser(finalSignUp, study, signIn, consent);
+            return new TestUser(finalSignUp, study, session);
+        }
     }
 
 }

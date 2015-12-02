@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -211,6 +212,10 @@ public class StudyServiceImpl implements StudyService {
     @Override
     public void deleteStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+
+        if (studyWhitelist.contains(identifier)) {
+            throw new UnauthorizedException(identifier + " is protected by whitelist.");
+        }
 
         // Verify the study exists before you do this.
         Study existing = getStudy(identifier);

@@ -49,7 +49,7 @@ public class ConsentControllerTest {
     
     @Before
     public void before() {
-        testUser = helper.createUser(ConsentControllerTest.class);
+        testUser = helper.getBuilder(ConsentControllerTest.class).build();
     }
     
     @After

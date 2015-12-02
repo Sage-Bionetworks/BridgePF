@@ -44,6 +44,8 @@ POST   /v3/users/self/emailData         @org.sagebionetworks.bridge.play.control
 GET    /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 POST   /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 POST   /v3/users/self/dataSharing       @org.sagebionetworks.bridge.play.controllers.ConsentController.changeSharingScope
+GET    /v3/users/self/dataGroups        @org.sagebionetworks.bridge.play.controllers.UserProfileController.getDataGroups
+POST   /v3/users/self/dataGroups        @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateDataGroups
 
 # Surveys
 GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion(format: String ?= null)

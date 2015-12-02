@@ -39,7 +39,7 @@ public interface ParticipantOptionsDao {
     public void deleteAllParticipantOptions(String healthCode);
     
     /**
-     * Get all options and their values set for sa participant as a map of key/value pairs.
+     * Get all options and their values set for a participant as a map of key/value pairs.
      * If a value is not set, the value will be null in the map. Map will be returned whether 
      * any values have been set for this participant or not.
      * @param healthCode

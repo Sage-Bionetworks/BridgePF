@@ -2,13 +2,16 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -16,20 +19,26 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.Study;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoStudyDaoTest {
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoStudyDaoTest.class);
 
     private final Set<String> USER_PROFILE_ATTRIBUTES = Sets.newHashSet("can-publish", "can-recontact");
     private final Set<String> TASK_IDENTIFIERS = Sets.newHashSet("task1", "task2");
     private final Set<String> DATA_GROUPS = Sets.newHashSet("beta_users", "production_users");
+
+    private Set<String> studyIdsToDelete;
 
     @Resource
     DynamoStudyDao studyDao;
@@ -40,12 +49,19 @@ public class DynamoStudyDaoTest {
     }
     
     @Before
-    public void before() throws Exception {
-        // We need to leave the test study in the database.
-        List<Study> studies = studyDao.getStudies();
-        for (Study study : studies) {
-            if (!"api".equals(study.getIdentifier())) {
+    public void before() {
+        // Clear the set before each test, because JUnit seems to not do this automatically.
+        studyIdsToDelete = new HashSet<>();
+    }
+
+    @After
+    public void after() {
+        for (String oneStudyId : studyIdsToDelete) {
+            try {
+                Study study = studyDao.getStudy(oneStudyId);
                 studyDao.deleteStudy(study);
+            } catch (RuntimeException ex) {
+                LOG.error("Error deleting study " + oneStudyId + ": " + ex.getMessage(), ex);
             }
         }
     }
@@ -58,7 +74,7 @@ public class DynamoStudyDaoTest {
         study.setTaskIdentifiers(TASK_IDENTIFIERS);
         study.setDataGroups(DATA_GROUPS);
 
-        study = studyDao.createStudy(study);
+        study = createStudy(study);
         assertNotNull("Study was assigned a version", study.getVersion());
         assertNotNull("Study has an identifier", study.getIdentifier());
 
@@ -78,7 +94,7 @@ public class DynamoStudyDaoTest {
         String identifier = study.getIdentifier();
         studyDao.deleteStudy(study);
         try {
-            study = studyDao.getStudy(identifier);
+            studyDao.getStudy(identifier);
             fail("Should have thrown EntityNotFoundException");
         } catch (EntityNotFoundException e) {
             // expected
@@ -88,8 +104,8 @@ public class DynamoStudyDaoTest {
     @Test
     public void stringSetsCanBeEmpty() throws Exception {
         Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
-        study = studyDao.createStudy(study);
-        
+        study = createStudy(study);
+
         // This triggers an error without the JSON serializer annotations because DDB doesn't support empty sets
         study.setTaskIdentifiers(Sets.newHashSet());
         studyDao.updateStudy(study);
@@ -109,50 +125,76 @@ public class DynamoStudyDaoTest {
 
     @Test
     public void canRetrieveAllStudies() throws InterruptedException {
-        List<Study> studies = Lists.newArrayList();
-        try {
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class)));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class)));
-        
+        // create studies
+        Study study1 = createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class));
+        String study1Id = study1.getIdentifier();
+        Study study2 = createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class));
+        String study2Id = study2.getIdentifier();
+
+        // verify that they exist
+        {
             List<Study> savedStudies = studyDao.getStudies();
-            // The five studies, plus the API study we refuse to delete...
-            assertEquals("There are three studies", 3, savedStudies.size());
-        } finally {
-            for (Study study : studies) {
-                studyDao.deleteStudy(study);
+            boolean foundStudy1 = false, foundStudy2 = false;
+            for (Study oneStudy : savedStudies) {
+                if (study1Id.equals(oneStudy.getIdentifier())) {
+                    foundStudy1 = true;
+                } else if (study2Id.equals(oneStudy.getIdentifier())) {
+                    foundStudy2 = true;
+                }
+            }
+            assertTrue(foundStudy1);
+            assertTrue(foundStudy2);
+        }
+
+        // delete studies
+        studyDao.deleteStudy(study1);
+        studyDao.deleteStudy(study2);
+
+        // verify that they don't exist
+        {
+            List<Study> savedStudies = studyDao.getStudies();
+            for (Study oneStudy : savedStudies) {
+                if (study1Id.equals(oneStudy.getIdentifier())) {
+                    fail("study " + study1Id + " shouldn't exist");
+                } else if (study2Id.equals(oneStudy.getIdentifier())) {
+                    fail("study " + study2Id + " shouldn't exist");
+                }
             }
         }
-        List<Study> savedStudies = studyDao.getStudies();
-        assertEquals("There should be only one study", 1, savedStudies.size());
-        assertEquals("That should be the test study study", "api", savedStudies.get(0).getIdentifier());
     }
 
     @Test
     public void willNotSaveTwoStudiesWithSameIdentifier() {
-        Study study = null;
-        Long version = null;
+        Study study;
         try {
             study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
-            study = studyDao.createStudy(study);
-            version = study.getVersion();
+            study = createStudy(study);
             study.setVersion(null);
-            studyDao.createStudy(study);
+            createStudy(study);
             fail("Should have thrown entity exists exception");
         } catch (EntityAlreadyExistsException e) {
-
-        } finally {
-            study.setVersion(version);
-            studyDao.deleteStudy(study);
+            // expected exception
         }
     }
 
     @Test(expected = EntityAlreadyExistsException.class)
     public void identifierUniquenessEnforcedByVersionChecks() throws Exception {
         Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
-        studyDao.createStudy(study);
+        createStudy(study);
 
         study.setVersion(null); // This is now a "new study"
-        studyDao.createStudy(study);
+        createStudy(study);
     }
 
+    @Test(expected = UnauthorizedException.class)
+    public void cantDeleteApiStudy() {
+        Study apiStudy = studyDao.getStudy("api");
+        studyDao.deleteStudy(apiStudy);
+    }
+
+    private Study createStudy(Study study) {
+        Study createdStudy = studyDao.createStudy(study);
+        studyIdsToDelete.add(createdStudy.getIdentifier());
+        return createdStudy;
+    }
 }

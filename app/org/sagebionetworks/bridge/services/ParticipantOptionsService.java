@@ -1,64 +1,42 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
+/**
+ * Provides type-safe access to all the options that can be persisted for a health code, as well as validation. 
+ * The values are saved as strings and can be exported as such (in spreadsheets, Synapse, and so forth).
+ */
 public interface ParticipantOptionsService {
-    /**
-     * Set an option for a participant. Value cannot be null.
-     * @param studyIdentifier
-     * @param healthCode
-     * @param option
-     * @param value
-     */
-    public void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value);
+    
+    public void setBoolean(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, boolean value);
+    
+    public boolean getBoolean(String healthCode, ParticipantOption option);
+    
+    public void setString(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value);
+    
+    public String getString(String healthCode, ParticipantOption option);
+    
+    public void setEnum(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Enum<?> value);
+    
+    public <T extends Enum<T>> T getEnum(String healthCode, ParticipantOption option, Class<T> enumType);
+    
+    public void setStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Set<String> value);
+    
+    public Set<String> getStringSet(String healthCode, ParticipantOption option);
     
     /**
-     * Set the scope of sharing option.
-     * @param studyIdentifier
-     * @param healthCode
-     * @param option
-     */
-    public void setOption(StudyIdentifier studyIdentifier, String healthCode, SharingScope option);
-    
-    /**
-     * Get an option for a participant. Returns the default value for the option if the option 
-     * has never been set for this participant (which may be null).
-     * @param healthCode
-     * @param option
-     * @return
-     */
-    public String getOption(String healthCode, ParticipantOption option);
-
-    /**
-     * Get the scope of sharing option as an enumeration. Returns the default value for the option if the option 
-     * has never been set for this participant (which may be null).
-     * @param healthCode
-     * @param option
-     * @param cls
-     */
-    public SharingScope getSharingScope(String healthCode);
-    
-    /**
-     * Get a participant option as a boolean
-     * @param healthCode
-     * @param option
-     * @return true or false (false if not set)
-     */
-    public boolean getBooleanOption(String healthCode, ParticipantOption option);
-    
-    /**
-     * Delete the entire record associated with a participant in the study (for deleting users).
+     * Delete the entire record associated with a participant in the study and all options.
      * @param healthCode
      */
     public void deleteAllParticipantOptions(String healthCode);
     
     /**
-     * Clear an option for a participant.
+     * Clear one of the options for a participant. Will fallback to the default value.
      * @param healthCode
      * @param option
      */
@@ -69,14 +47,13 @@ public interface ParticipantOptionsService {
      * If a value is not set, the value will be null in the map. Map will be returned whether 
      * any values have been set for this participant or not.
      * @param healthCode
-     * @param option
      * @return
      */
     public Map<ParticipantOption,String> getAllParticipantOptions(String healthCode);
     
     /**
-     * Get a map of all health codes to all values for an option (null if never set), for a 
-     * given study. Useful for export and other batch tasks.
+     * Get a map of all health codes to all values for an option (default value if not set for a given 
+     * participant), for a given study. Useful for export and other batch tasks.
      * @param studyIdentifier
      * @param option
      * @return

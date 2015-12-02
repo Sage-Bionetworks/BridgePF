@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.services.FPHSService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import play.mvc.Http;
 import play.mvc.Result;
@@ -83,8 +84,8 @@ public class FPHSControllerTest {
     }
     
     private void setUserSession() {
-        user = mock(User.class);
-        when(user.getHealthCode()).thenReturn("BBB");
+        user = new User();
+        user.setHealthCode("BBB");
         
         UserSession session = mock(UserSession.class);
         when(session.getUser()).thenReturn(user);
@@ -165,7 +166,7 @@ public class FPHSControllerTest {
         }
         
         // Now when we have an admin user, we get back results
-        when(user.isInRole(Roles.ADMIN)).thenReturn(true);
+        user.setRoles(Sets.newHashSet(Roles.ADMIN));
         
         Result result = controller.getExternalIdentifiers();
         JsonNode node = resultToJson(result);
@@ -201,7 +202,7 @@ public class FPHSControllerTest {
         setUserSession();
         
         // Now when we have an admin user, we get back results
-        when(user.isInRole(Roles.ADMIN)).thenReturn(true);
+        user.setRoles(Sets.newHashSet(Roles.ADMIN));
         Result result = controller.addExternalIdentifiers();
         
         ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);

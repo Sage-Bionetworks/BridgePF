@@ -1,19 +1,23 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.Set;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
+
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.springframework.validation.Errors;
-import org.springframework.validation.Validator;
 
-public class SignUpValidator implements Validator {
+public class SignUpValidator extends DataGroupsValidator {
     
     private final EmailValidator emailValidator = EmailValidator.getInstance();
     
     private final PasswordPolicy passwordPolicy;
     
-    public SignUpValidator(PasswordPolicy passwordPolicy) {
+    public SignUpValidator(PasswordPolicy passwordPolicy, Set<String> dataGroups) {
+        super(dataGroups);
         this.passwordPolicy = passwordPolicy;
     }
     
@@ -25,6 +29,8 @@ public class SignUpValidator implements Validator {
     @Override
     public void validate(Object object, Errors errors) {
         SignUp signUp = (SignUp) object;
+        
+        super.validate(new DataGroups(signUp.getDataGroups()), errors);
 
         if (StringUtils.isBlank(signUp.getEmail())) {
             errors.rejectValue("email", "is required");

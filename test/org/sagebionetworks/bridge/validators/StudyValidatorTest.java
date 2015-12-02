@@ -107,12 +107,6 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void rejectsInvalidSupportEmailAddresses2() {
-        study.setSupportEmail("test@test.com,,,test2@test.com");
-        assertCorrectMessage(study, "supportEmail", "supportEmail '' is not a valid email address");
-    }
-    
-    @Test
     public void requiresMissingSupportEmail() {
         study.setSupportEmail(null);
         assertCorrectMessage(study, "supportEmail", "supportEmail is required");
@@ -128,12 +122,6 @@ public class StudyValidatorTest {
     public void rejectsInvalidTechnicalEmailAddresses() {
         study.setTechnicalEmail("test@test.com,asdf,test2@test.com");
         assertCorrectMessage(study, "technicalEmail", "technicalEmail 'asdf' is not a valid email address");
-    }
-    
-    @Test
-    public void rejectsInvalidTechnicalEmailAddresses2() {
-        study.setTechnicalEmail("test@test.com,,,test2@test.com");
-        assertCorrectMessage(study, "technicalEmail", "technicalEmail '' is not a valid email address");
     }
     
     @Test

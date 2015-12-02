@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.util.Map;
 import java.util.Set;
@@ -53,13 +55,46 @@ public class BridgeUtilsTest {
         Set<String> set = BridgeUtils.commaListToSet("a, b , c");
         assertEquals(Sets.newHashSet("a","b","c"), set);
         
+        set = BridgeUtils.commaListToSet("a,b,c");
+        assertEquals(Sets.newHashSet("a","b","c"), set);
+        
         set = BridgeUtils.commaListToSet("");
         assertEquals(Sets.newHashSet(), set);
         
         set = BridgeUtils.commaListToSet(null);
-        assertEquals(Sets.newHashSet(), set);
+        assertNotNull(set);
         
         set = BridgeUtils.commaListToSet(" a");
         assertEquals(Sets.newHashSet("a"), set);
+        
+        // Does not produce a null value.
+        set = BridgeUtils.commaListToSet("a,,b");
+        assertEquals(Sets.newHashSet("a","b"), set);
     }
+    
+    @Test
+    public void setToCommaList() {
+        Set<String> set = Sets.newHashSet("a", null, "", "b");
+        
+        assertEquals("a,b", BridgeUtils.setToCommaList(set));
+        assertNull(BridgeUtils.setToCommaList(null));
+        assertNull(BridgeUtils.setToCommaList(Sets.newHashSet()));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void nullsafeImmutableSet() {
+        assertEquals(0, BridgeUtils.nullSafeImmutableSet(null).size());
+        assertEquals(Sets.newHashSet("A"), BridgeUtils.nullSafeImmutableSet(Sets.newHashSet("A")));
+        
+        // This should throw an UnsupportedOperationException
+        Set<String> set = BridgeUtils.nullSafeImmutableSet(Sets.newHashSet("A"));
+        set.add("B");
+    }
+    
+    @Test
+    public void nullsAreRemoved() {
+        // nulls are removed. They have to be to create ImmutableSet
+        assertEquals(Sets.newHashSet("A"), BridgeUtils.nullSafeImmutableSet(Sets.newHashSet(null, "A")));
+    }
+    
 }

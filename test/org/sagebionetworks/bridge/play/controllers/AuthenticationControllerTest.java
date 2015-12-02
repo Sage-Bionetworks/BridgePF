@@ -43,7 +43,6 @@ import play.libs.ws.WSRequest;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -67,7 +66,7 @@ public class AuthenticationControllerTest {
     
     @Before
     public void before() {
-        testUser = helper.createUser(AuthenticationControllerTest.class);
+        testUser = helper.getBuilder(AuthenticationControllerTest.class).build();
     }
     
     @After
@@ -142,7 +141,8 @@ public class AuthenticationControllerTest {
     
     @Test
     public void adminUserGetsExceptionAccessingParticipantAPI() {
-        TestUser dev = helper.createUser(AuthenticationControllerTest.class, false, false, Sets.newHashSet(Roles.DEVELOPER));
+        TestUser dev = helper.getBuilder(AuthenticationControllerTest.class).withConsent(false).withSignIn(false)
+                .withRoles(Roles.DEVELOPER).build();
         
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {

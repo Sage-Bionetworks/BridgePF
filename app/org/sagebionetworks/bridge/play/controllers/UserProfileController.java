@@ -1,12 +1,14 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+
+import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
@@ -14,6 +16,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.UserProfileService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -75,15 +78,29 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
 
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
-        
-        // TODO: An annotation-based validator would make these trivial validations 
-        // easier to factor out.
-        if (isBlank(externalId.getIdentifier())) {
-            throw new InvalidEntityException(externalId);
-        }
-        optionsService.setOption(session.getStudyIdentifier(), session.getUser().getHealthCode(), 
-            ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+
+        optionsService.setString(session.getStudyIdentifier(), session.getUser().getHealthCode(), EXTERNAL_IDENTIFIER,
+                externalId.getIdentifier());
         
         return okResult("External identifier added to user profile.");
     }
+    
+    public Result getDataGroups() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        
+        Set<String> dataGroups = optionsService.getStringSet(session.getUser().getHealthCode(), DATA_GROUPS);
+        
+        return okResult(new DataGroups(dataGroups));
+    }
+    
+    public Result updateDataGroups() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        
+        DataGroups dataGroups = parseJson(request(), DataGroups.class);
+        
+        optionsService.setStringSet(session.getStudyIdentifier(), 
+                session.getUser().getHealthCode(), DATA_GROUPS, dataGroups.getDataGroups());
+        return okResult("Data groups updated.");
+    }
+
 }

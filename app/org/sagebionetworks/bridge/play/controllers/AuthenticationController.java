@@ -42,8 +42,10 @@ public class AuthenticationController extends BaseController {
 
     public Result signUp() throws Exception {
         JsonNode json = requestToJSON(request());
-        SignUp signUp = SignUp.fromJson(json, false);
-        signUp.getRoles().clear();
+        SignUp signUp = parseJson(request(), SignUp.class);
+        // this is now the only way to eliminate roles if set by the user...
+        signUp = new SignUp(signUp.getUsername(), signUp.getEmail(), 
+                signUp.getPassword(), null, signUp.getDataGroups()); 
         Study study = getStudyOrThrowException(json);
         authenticationService.signUp(study, signUp, true);
         return createdResult("Signed up.");

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.util.Collection;
@@ -24,12 +23,15 @@ import org.springframework.core.annotation.AnnotationUtils;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
 
 public class BridgeUtils {
+    
+    private static final Joiner JOINER = Joiner.on(",");
     
     /**
      * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
@@ -152,10 +154,33 @@ public class BridgeUtils {
     }
     
     public static Set<String> commaListToSet(String commaList) {
-        if (isNotBlank(commaList)) {
+        if (commaList != null) {
             return commaDelimitedListToSet(commaList).stream()
-                    .map(string -> string.trim()).collect(Collectors.toSet());
+                    .map(string -> string.trim())
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toSet());
         }
         return Collections.emptySet();
     }
+    
+    public static String setToCommaList(Set<String> set) {
+        if (set != null) {
+            Set<String> result = set.stream()
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toSet());
+            return (result.isEmpty()) ? null : JOINER.join(result);
+        }
+        return null;
+    }
+    
+    /**
+     * Wraps a set in an immutable set, or returns an empty immutable set if null.
+     * @param set
+     * @return
+     */
+    public static <T> Set<T> nullSafeImmutableSet(Set<T> set) {
+        return (set == null) ? ImmutableSet.of() : ImmutableSet.copyOf(set.stream()
+                .filter(element -> element != null).collect(Collectors.toSet()));
+    }
+
 }

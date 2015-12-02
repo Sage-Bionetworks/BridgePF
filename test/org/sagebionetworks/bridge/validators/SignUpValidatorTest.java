@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 
+import com.google.common.collect.Sets;
+
 public class SignUpValidatorTest {
 
     private final static Set<Roles> EMPTY_ROLES = new HashSet<>();
@@ -23,7 +25,7 @@ public class SignUpValidatorTest {
     
     @Before
     public void before() {
-        validator = new SignUpValidator(new PasswordPolicy(8, true, true, true, true));
+        validator = new SignUpValidator(new PasswordPolicy(8, true, true, true, true), Sets.newHashSet("bluebell"));
     }
     
     public void assertCorrectMessage(SignUp signUp, String fieldName, String message) {
@@ -39,20 +41,25 @@ public class SignUpValidatorTest {
     }
     
     private SignUp withPassword(String password) {
-        return new SignUp("username", "email@email.com", password, EMPTY_ROLES);
+        return new SignUp("username", "email@email.com", password, EMPTY_ROLES, null);
     }
     
     private SignUp withEmail(String email) {
-        return new SignUp("username", email, "aAz1%_aAz1%", EMPTY_ROLES);
+        return new SignUp("username", email, "aAz1%_aAz1%", EMPTY_ROLES, null);
     }
     
     private SignUp withUsername(String username) {
-        return new SignUp(username, "email@email.com", "aAz1%_aAz1%", EMPTY_ROLES);
+        return new SignUp(username, "email@email.com", "aAz1%_aAz1%", EMPTY_ROLES, null);
+    }
+    
+    private SignUp withDataGroup(String dataGroup) {
+        return new SignUp("username", "email@email.com", "aAz1%_aAz1%", EMPTY_ROLES, Sets.newHashSet(dataGroup));
     }
     
     @Test
     public void validPasses() {
         Validate.entityThrowingException(validator, withEmail("email@email.com"));
+        Validate.entityThrowingException(validator, withDataGroup("bluebell"));
     }
     
     @Test
@@ -100,4 +107,10 @@ public class SignUpValidatorTest {
     public void upperCaseRequired() {
         assertCorrectMessage(withPassword("aaaaa!a1"), "password", "password must contain at least one uppercase letter (A-Z)");
     }
+    
+    @Test
+    public void validatesDataGroupsValidIfSupplied() {
+        assertCorrectMessage(withDataGroup("squirrel"), "dataGroups", "dataGroups 'squirrel' is not one of these valid values: bluebell.");
+    }
+    
 }
