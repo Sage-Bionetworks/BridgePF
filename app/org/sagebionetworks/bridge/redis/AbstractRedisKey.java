@@ -28,9 +28,9 @@ abstract class AbstractRedisKey implements RedisKey {
     
     /**
      * If this key is being used in a shared environment (development or local, where multiple 
-     * users are using the same Redis server), suffix the key the user's name so that these 
-     * users do not collide in their usage of Redis (particularly Travis and Heroku on development). 
-     * Will not change/break keys in staging or production.
+     * users are using the same Redis server), suffix the key with the user's name so these 
+     * keys do not collide (particularly Travis and Heroku on development). Will not 
+     * change/break keys in staging or production.
      * @param key
      * @return
      */
