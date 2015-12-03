@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -29,6 +28,7 @@ import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -145,29 +145,26 @@ public class DynamoSubpopulationDaoTest {
     
     @Test
     public void getSubpopulationsForUser() {
-        createSubpop(SUBPOP_1, 0, 6, "group1"); // match up to version 6 and data group1, specificity 3
-        
-        createSubpop(SUBPOP_2, null, 6, null); // match version 0-6, specificity 2
-        
-        createSubpop(SUBPOP_3, null, null, "group1"); // match group1, specificity 1
-        
-        createSubpop(SUBPOP_4, null, null, null); // match anything, specificity 0
+        Subpopulation subpop1 = createSubpop(SUBPOP_1, 0, 6, "group1"); // match up to version 6 and data group1, specificity 3
+        Subpopulation subpop2 = createSubpop(SUBPOP_2, null, 6, null); // match version 0-6, specificity 2
+        Subpopulation subpop3 = createSubpop(SUBPOP_3, null, null, "group1"); // match group1, specificity 1
+        Subpopulation subpop4 = createSubpop(SUBPOP_4, null, null, null); // match anything, specificity 0
         
         // version 12, no tags == Subpop 4
-        Subpopulation subpop = dao.getSubpopulationForUser(scheduleContext(12, null));
-        assertEquals(SUBPOP_4, subpop.getName());
+        List<Subpopulation> results = dao.getSubpopulationsForUser(scheduleContext(12, null));
+        assertEquals(Sets.newHashSet(subpop4), Sets.newHashSet(results));
         
         // version 12, tag group1 == Subpops 3, 4
-        subpop = dao.getSubpopulationForUser(scheduleContext(12, "group1"));
-        assertEquals(SUBPOP_3, subpop.getName());
+        results = dao.getSubpopulationsForUser(scheduleContext(12, "group1"));
+        assertEquals(Sets.newHashSet(subpop3, subpop4), Sets.newHashSet(results));
         
         // version 4, no tag == Subpops 2, 4
-        subpop = dao.getSubpopulationForUser(scheduleContext(4, null));
-        assertEquals(SUBPOP_2, subpop.getName());
+        results = dao.getSubpopulationsForUser(scheduleContext(4, null));
+        assertEquals(Sets.newHashSet(subpop2, subpop4), Sets.newHashSet(results));
         
         // version 4, tag group1 == Subpops 1,2,3,4, returns 1 in this case (most specific)
-        subpop = dao.getSubpopulationForUser(scheduleContext(4, "group1"));
-        assertEquals(SUBPOP_1, subpop.getName());
+        results = dao.getSubpopulationsForUser(scheduleContext(4, "group1"));
+        assertEquals(Sets.newHashSet(subpop1, subpop2, subpop3, subpop4), Sets.newHashSet(results));
     }
     
     @Test(expected = BadRequestException.class)
@@ -195,26 +192,6 @@ public class DynamoSubpopulationDaoTest {
         // This should now throw ENFE
         dao.updateSubpopulation(subpop);
     }
-
-    /**
-     * Right now these are sorted by "specificity", eventually all that match
-     * will be returned. But for now, a test of same:
-     */
-    @Test
-    public void getSubpopulationsSorted() {
-        // lowest precedence
-        createSubpop("Name 1", null, null, null);
-        // mid precedence
-        createSubpop("Name 2", 2, 10, null);
-        // high precedence
-        createSubpop("Name 3", 2, 10, "group1");
-        
-        List<Subpopulation> results = dao.getSubpopulations(studyId, true, false);
-        assertEquals(3, results.size());
-        assertEquals("Name 3", results.get(0).getName());
-        assertEquals("Name 2", results.get(1).getName());
-        assertEquals("Name 1", results.get(2).getName());
-    };
     
     @Test
     public void createDefaultSubpopulation() {
@@ -234,9 +211,10 @@ public class DynamoSubpopulationDaoTest {
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
                 .withStudyIdentifier(studyId.getIdentifier())
                 .build();
-        Subpopulation subpop = dao.getSubpopulationForUser(context);
+        List<Subpopulation> results = dao.getSubpopulationsForUser(context);
         
-        assertEquals("Default Consent Group", subpop.getName());
+        assertEquals(1, results.size());
+        assertEquals("Default Consent Group", results.get(0).getName());
     }
     
     /**
@@ -250,9 +228,8 @@ public class DynamoSubpopulationDaoTest {
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
                 .withStudyIdentifier(studyId.getIdentifier())
                 .build();
-        Subpopulation subpop = dao.getSubpopulationForUser(context);
-        
-        assertNull(subpop);
+        List<Subpopulation> results = dao.getSubpopulationsForUser(context);
+        assertTrue(results.isEmpty());
     }
     
     private Subpopulation createSubpop(String name, Integer min, Integer max, String group) {

@@ -2,12 +2,10 @@ package org.sagebionetworks.bridge.models;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.Comparator;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 
 import com.google.common.base.Joiner;
@@ -19,7 +17,7 @@ import com.google.common.base.Joiner;
  * a parameter object of values against which matching occurs.
  */
 public class CriteriaUtils {
-    
+    /*
     public static Comparator<Criteria> SPECIFICITY_SORTER = new Comparator<Criteria>() {
         @Override
         public int compare(Criteria crit1, Criteria crit2) {
@@ -34,7 +32,7 @@ public class CriteriaUtils {
             return specificity;
         }
     };
-    
+    */
     /**
      * A matching method that matches our common set of matching criteria for consents, schedulses, and more. 
      * We use the dataGroups and app version in the scheduling context and compare this to required and/or 

@@ -1,10 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.models.CriteriaUtils.SPECIFICITY_SORTER;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
-import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -85,7 +83,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         // Now filter out deleted subpopulations, if requested
         return subpops.stream()
             .filter(subpop -> includeDeleted || !subpop.isDeleted())
-            .sorted(SPECIFICITY_SORTER).collect(toImmutableList());
+            .collect(toImmutableList());
     }
     
     @Override
@@ -114,7 +112,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public Subpopulation getSubpopulationForUser(ScheduleContext context) {
+    public List<Subpopulation> getSubpopulationsForUser(ScheduleContext context) {
         List<Subpopulation> found = Lists.newArrayList();
 
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true, false);
@@ -124,12 +122,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
                 found.add(subpop);
             }
         }
-        // There were subpopulations, but the user didn't match any of them. Return null.
-        if (found.isEmpty()) {
-            return null;
-        }
-        Collections.sort(found, SPECIFICITY_SORTER);
-        return found.get(0);
+        return found;
     }
     
     @Override

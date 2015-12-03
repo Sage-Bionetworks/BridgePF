@@ -91,10 +91,10 @@ public class SubpopulationService {
      * @param context
      * @return
      */
-    public Subpopulation getSubpopulationForUser(ScheduleContext context) {
+    public List<Subpopulation> getSubpopulationForUser(ScheduleContext context) {
         checkNotNull(context);
         
-        return subpopDao.getSubpopulationForUser(context);
+        return subpopDao.getSubpopulationsForUser(context);
     }
 
     /**

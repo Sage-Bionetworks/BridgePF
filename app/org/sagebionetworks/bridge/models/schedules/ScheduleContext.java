@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 /**
  * All the information necessary to convert a schedule into a set of activities, on a given request. 

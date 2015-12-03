@@ -44,13 +44,12 @@ public interface SubpopulationDao {
     public Subpopulation getSubpopulation(StudyIdentifier studyId, String guid);
     
     /**
-     * Get a subpopulation that matches the most specific criteria defined for a subpopulation. 
-     * That is, the populations are sorted by the amount of criteria that are defined to match that 
-     * population, and the first one that matches is returned.
+     * Get all subpopulations for a user that match the provided ScheduleContext information. Returns an empty
+     * list if no subpopulations match (which can be considered an error in the design of the study).
      * @param context
      * @return
      */
-    public Subpopulation getSubpopulationForUser(ScheduleContext context);
+    public List<Subpopulation> getSubpopulationsForUser(ScheduleContext context);
     
     /**
      * Update a subpopulation.

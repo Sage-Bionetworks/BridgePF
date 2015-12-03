@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -136,18 +137,18 @@ public class SubpopulationServiceTest {
     }
     @Test
     public void getSubpopulationForUser() {
-        Subpopulation subpop = Subpopulation.create();
+        List<Subpopulation> subpops = ImmutableList.of(Subpopulation.create());
         // We test the matching logic in CriteriaUtilsTest as well as in the DAO. Here we just want
         // to verify it is being carried through.
         ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/4")).build();
         
-        when(dao.getSubpopulationForUser(context)).thenReturn(subpop);
+        when(dao.getSubpopulationsForUser(context)).thenReturn(subpops);
         
-        Subpopulation result = service.getSubpopulationForUser(context);
+        List<Subpopulation> results = service.getSubpopulationForUser(context);
         
-        assertEquals(subpop, result);
-        verify(dao).getSubpopulationForUser(context);
+        assertEquals(subpops, results);
+        verify(dao).getSubpopulationsForUser(context);
     }
     @Test
     public void deleteSubpopulation() {
