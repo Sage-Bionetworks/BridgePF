@@ -26,6 +26,12 @@ public interface Subpopulation extends Criteria {
     public void setDescription(String description);
     public String getDescription();
     
+    /**
+     * Is this subpopulation required? Required subpopulations cannot be deleted. 
+     * Right now the only required subpopulation is the default subpopulation, 
+     * created for new studies or transitional studies.
+     * @param required
+     */
     public void setRequired(boolean required);
     public boolean isRequired();
     

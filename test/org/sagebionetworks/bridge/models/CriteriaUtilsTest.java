@@ -95,7 +95,7 @@ public class CriteriaUtilsTest {
     }
     
     @Test
-    public void matchingWithMiminalContextDoesNotCrash() {
+    public void matchingWithMinimalContextDoesNotCrash() {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT).build();
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, null, null)));

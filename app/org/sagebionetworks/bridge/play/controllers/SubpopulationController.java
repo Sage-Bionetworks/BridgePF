@@ -27,9 +27,8 @@ public class SubpopulationController extends BaseController {
 
     public Result getAllSubpopulations() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getStudyIdentifier());
         return okResult(subpopulations);
     }
     public Result createSubpopulation() throws Exception {

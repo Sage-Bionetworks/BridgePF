@@ -42,9 +42,14 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         checkNotNull(subpop.getGuid());
         checkNotNull(subpop.getStudyIdentifier());
 
-        if (subpop.getVersion() != null || subpop.isDeleted() || subpop.isRequired()) {
-            throw new BadRequestException("Subpopulation does not appear to be a new object");
+        // guid should always be set in service, so it's okay to check with a checkNotNull. But 
+        // if version is present, that's a bad submission from the service user
+        if (subpop.getVersion() != null) { 
+            throw new BadRequestException("Subpopulation does not appear to be new (includes version number).");
         }
+        // these are completely ignored, if submitted
+        subpop.setDeleted(false); 
+        subpop.setRequired(false);
         mapper.save(subpop);
         return subpop;
     }
@@ -53,14 +58,20 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     public Subpopulation updateSubpopulation(Subpopulation subpop) {
         checkNotNull(subpop);
         checkNotNull(subpop.getStudyIdentifier());
-        checkNotNull(subpop.getVersion());
-        checkNotNull(subpop.getGuid());
         
-        Subpopulation existing = getSubpopulation(new StudyIdentifierImpl(subpop.getStudyIdentifier()), subpop.getGuid());
-        if (existing.isDeleted()) {
+        // These have to be supplied by the user so if they don't exist, we want a 400-level exception,
+        // not a checkNotNull which translates to a 500 level response
+        if (subpop.getVersion() == null || subpop.getGuid() == null) {
+            throw new BadRequestException("Subpopulation appears to be a new object (no guid or version).");
+        }
+        StudyIdentifier studyId = new StudyIdentifierImpl(subpop.getStudyIdentifier());
+        Subpopulation existing = getSubpopulation(studyId, subpop.getGuid());
+        if (existing == null || existing.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
-        subpop.setRequired(existing.isRequired());
+        // these are ignored if submitted. delete remains what it was
+        subpop.setRequired(existing.isRequired()); 
+        subpop.setDeleted(false);
         mapper.save(subpop);
         return subpop;
     }
@@ -113,21 +124,19 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
 
     @Override
     public List<Subpopulation> getSubpopulationsForUser(ScheduleContext context) {
-        List<Subpopulation> found = Lists.newArrayList();
-
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true, false);
-        for (Subpopulation subpop : subpops) {
-            boolean matches = CriteriaUtils.matchCriteria(context, subpop);
-            if (matches) {
-                found.add(subpop);
-            }
-        }
-        return found;
+        
+        return subpops.stream().filter(subpop -> {
+            return CriteriaUtils.matchCriteria(context, subpop);
+        }).collect(toImmutableList());
     }
     
     @Override
     public void deleteSubpopulation(StudyIdentifier studyId, String guid) {
         Subpopulation subpop = getSubpopulation(studyId, guid);
+        if (subpop == null || subpop.isDeleted()) {
+            throw new EntityNotFoundException(Subpopulation.class);
+        }
         if (subpop.isRequired()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }

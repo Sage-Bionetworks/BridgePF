@@ -87,6 +87,7 @@ public final class DynamoSubpopulation implements Subpopulation {
         this.required = required;
     }
     @DynamoDBAttribute
+    @JsonIgnore
     @Override
     public boolean isDeleted() {
         return deleted;

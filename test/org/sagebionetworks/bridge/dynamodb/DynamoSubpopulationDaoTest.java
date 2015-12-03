@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -75,7 +74,7 @@ public class DynamoSubpopulationDaoTest {
         Subpopulation savedSubpop = dao.createSubpopulation(subpop);
         assertNotNull(savedSubpop.getGuid());
         assertNotNull(savedSubpop.getVersion());
-        assertFalse(savedSubpop.isRequired());
+        assertFalse(savedSubpop.isRequired()); // was not set to true
         
         // READ
         Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
@@ -84,13 +83,11 @@ public class DynamoSubpopulationDaoTest {
         // UPDATE
         retrievedSubpop.setName("Name 2");
         retrievedSubpop.setDescription("Description 2");
-        retrievedSubpop.setRequired(true); // CANNOT be set
         Subpopulation finalSubpop = dao.updateSubpopulation(retrievedSubpop);
         
         // With this change, they should be equivalent using value equality
         retrievedSubpop.setVersion(finalSubpop.getVersion());
         assertEquals(retrievedSubpop, finalSubpop);
-        assertFalse(retrievedSubpop.isRequired()); // still false
 
         // Some further things that should be true:
         // There's now only one subpopulation in the list
@@ -167,14 +164,28 @@ public class DynamoSubpopulationDaoTest {
         assertEquals(Sets.newHashSet(subpop1, subpop2, subpop3, subpop4), Sets.newHashSet(results));
     }
     
-    @Test(expected = BadRequestException.class)
-    public void cannotDeleteSubpopOnCreate() {
+    @Test
+    public void cannotDeleteOrRequireSubpopOnCreate() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setGuid("AAA");
+        subpop.setGuid(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier("AAA");
         subpop.setDeleted(true);
+        subpop.setRequired(true);
         
         subpop = dao.createSubpopulation(subpop);
+        assertFalse(subpop.isDeleted());
+        assertFalse(subpop.isRequired());
+    }
+    
+    @Test
+    public void cannotDeleteOrRequireSubpopOnUpdate() {
+        Subpopulation subpop = createSubpop("Name", null, null, null);
+        subpop.setDeleted(true);
+        subpop.setRequired(true);
+        
+        subpop = dao.updateSubpopulation(subpop);
+        assertFalse(subpop.isDeleted());
+        assertFalse(subpop.isRequired());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -195,9 +206,25 @@ public class DynamoSubpopulationDaoTest {
     
     @Test
     public void createDefaultSubpopulation() {
+        // This is not currently called outside of the DAO but it will be when creating studies.
+        Subpopulation subpop = dao.createDefaultSubpopulation(studyId);
+        assertEquals("Default Consent Group", subpop.getName());
+        assertEquals(studyId.getIdentifier(), subpop.getGuid());
+        assertEquals(studyId.getIdentifier(), subpop.getStudyIdentifier());
+        assertNotNull(subpop.getGuid());
+        assertNotNull(subpop.getVersion());
+    }
+    
+    @Test
+    public void createDefaultSubpopulationThroughGetMethod() {
         List<Subpopulation> results = dao.getSubpopulations(studyId, true, false);
         assertEquals(1, results.size());
         assertEquals("Default Consent Group", results.get(0).getName());
+    }
+    
+    @Test(expected=EntityNotFoundException.class)
+    public void deleteNotExistingSubpopulationThrowsException() {
+        dao.deleteSubpopulation(studyId, "guidDoesNotExist");
     }
     
     /**

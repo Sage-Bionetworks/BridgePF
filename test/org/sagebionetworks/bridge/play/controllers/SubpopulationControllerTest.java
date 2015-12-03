@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -43,6 +44,7 @@ import play.test.Helpers;
 public class SubpopulationControllerTest {
 
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("test-key");
+    private static final TypeReference<ResourceList<Subpopulation>> subpopType = new TypeReference<ResourceList<Subpopulation>>() {};
     
     @Spy
     private SubpopulationController controller;
@@ -77,7 +79,6 @@ public class SubpopulationControllerTest {
         when(studyService.getStudy(STUDY_IDENTIFIER)).thenReturn(study);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void getAllSubpopulations() throws Exception {
         Http.Context context = TestUtils.mockPlayContext();
@@ -91,11 +92,10 @@ public class SubpopulationControllerTest {
         assertEquals(200, result.status());
         String json = Helpers.contentAsString(result);
         
-        ResourceList<Subpopulation> rList = BridgeObjectMapper.get().readValue(json, ResourceList.class);
+        ResourceList<Subpopulation> rList = BridgeObjectMapper.get().readValue(json, subpopType);
         assertEquals(list, rList.getItems());
         assertEquals(2, rList.getTotal());
         
-        verify(studyService).getStudy(STUDY_IDENTIFIER);
         verify(subpopService).getSubpopulations(study.getStudyIdentifier());
     }
     

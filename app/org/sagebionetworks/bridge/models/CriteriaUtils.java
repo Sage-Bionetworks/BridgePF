@@ -17,22 +17,6 @@ import com.google.common.base.Joiner;
  * a parameter object of values against which matching occurs.
  */
 public class CriteriaUtils {
-    /*
-    public static Comparator<Criteria> SPECIFICITY_SORTER = new Comparator<Criteria>() {
-        @Override
-        public int compare(Criteria crit1, Criteria crit2) {
-            return specificity(crit2) - specificity(crit1);
-        }
-        private int specificity(Criteria crit) {
-            int specificity = 0;
-            specificity += (BridgeUtils.isEmpty(crit.getAllOfGroups())) ? 0 : 1;
-            specificity += (BridgeUtils.isEmpty(crit.getNoneOfGroups())) ? 0 : 1;
-            specificity += (crit.getMinAppVersion() == null) ? 0 : 1;
-            specificity += (crit.getMaxAppVersion() == null) ? 0 : 1;
-            return specificity;
-        }
-    };
-    */
     /**
      * A matching method that matches our common set of matching criteria for consents, schedulses, and more. 
      * We use the dataGroups and app version in the scheduling context and compare this to required and/or 
