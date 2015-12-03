@@ -32,6 +32,7 @@ public class DynamoSubpopulationTest {
         subpop.setMinAppVersion(2);
         subpop.setMaxAppVersion(10);
         subpop.setRequired(true);
+        subpop.setDefaultGroup(true);
         subpop.setDeleted(true);
         subpop.getAllOfGroups().add("requiredGroup");
         subpop.getNoneOfGroups().add("prohibitedGroup");
@@ -49,6 +50,7 @@ public class DynamoSubpopulationTest {
         assertEquals(2, node.get("minAppVersion").asInt());
         assertEquals(10, node.get("maxAppVersion").asInt());
         assertTrue(node.get("required").asBoolean());
+        assertNull(node.get("defaultGroup"));
         assertNull(node.get("deleted")); // users do not see this flag, they never get deleted items
         assertEquals("requiredGroup", node.get("allOfGroups").get(0).asText());
         assertEquals("prohibitedGroup", node.get("noneOfGroups").get(0).asText());
@@ -57,6 +59,7 @@ public class DynamoSubpopulationTest {
         Subpopulation newSubpop = BridgeObjectMapper.get().readValue(json, Subpopulation.class);
         // Not serialized, these values have to be added back to have equal objects 
         newSubpop.setStudyIdentifier("study-key");
+        newSubpop.setDefaultGroup(true);
         newSubpop.setDeleted(true);
         
         assertEquals(subpop, newSubpop);

@@ -32,6 +32,7 @@ public class SubpopulationValidatorTest {
         subpop.getAllOfGroups().add("group2");
         subpop.setName("Name");
         subpop.setDescription("Description");
+        subpop.setDefaultGroup(true);
         subpop.setRequired(true);
         subpop.setStudyIdentifier("test-study");
         subpop.setVersion(3L);

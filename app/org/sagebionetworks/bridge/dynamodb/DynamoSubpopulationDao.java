@@ -49,7 +49,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         }
         // these are completely ignored, if submitted
         subpop.setDeleted(false); 
-        subpop.setRequired(false);
+        subpop.setDefaultGroup(false);
         mapper.save(subpop);
         return subpop;
     }
@@ -70,7 +70,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             throw new EntityNotFoundException(Subpopulation.class);
         }
         // these are ignored if submitted. delete remains what it was
-        subpop.setRequired(existing.isRequired()); 
+        subpop.setDefaultGroup(existing.isDefaultGroup()); 
         subpop.setDeleted(false);
         mapper.save(subpop);
         return subpop;
@@ -104,7 +104,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         subpop.setGuid(studyId.getIdentifier());
         subpop.setName("Default Consent Group");
         subpop.setMinAppVersion(0);
-        subpop.setRequired(true);
+        subpop.setDefaultGroup(true);
         mapper.save(subpop);
         return subpop;
     }
@@ -137,7 +137,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (subpop == null || subpop.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
-        if (subpop.isRequired()) {
+        if (subpop.isDefaultGroup()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }
         subpop.setDeleted(true);

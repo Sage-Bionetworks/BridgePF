@@ -80,7 +80,7 @@ public class SubpopulationServiceTest {
         subpop.setDescription("Description");
         subpop.setStudyIdentifier("junk-you-cannot-set");
         subpop.setGuid("cannot-set-guid");
-        subpop.setRequired(false);
+        subpop.setDefaultGroup(false);
         
         Subpopulation result = service.createSubpopulation(study, subpop);
         assertEquals("Name", result.getName());
@@ -98,7 +98,7 @@ public class SubpopulationServiceTest {
         subpop.setDescription("Description");
         subpop.setStudyIdentifier("junk-you-cannot-set");
         subpop.setGuid("guid");
-        subpop.setRequired(false);
+        subpop.setDefaultGroup(false);
         subpop.setDeleted(true);
         
         when(dao.getSubpopulation(any(), any())).thenReturn(Subpopulation.create());

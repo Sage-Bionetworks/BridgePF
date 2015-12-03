@@ -121,7 +121,7 @@ public class SubpopulationControllerTest {
         Subpopulation created = captor.getValue();
         assertEquals("Name", created.getName());
         assertEquals("Description", created.getDescription());
-        assertTrue(created.isRequired());
+        assertTrue(created.isDefaultGroup());
         assertEquals((Integer)2, created.getMinAppVersion());
         assertEquals((Integer)10, created.getMaxAppVersion());
         assertEquals(Sets.newHashSet("requiredGroup"), created.getAllOfGroups());
@@ -151,7 +151,7 @@ public class SubpopulationControllerTest {
         assertEquals("AAA", created.getGuid());
         assertEquals("Name", created.getName());
         assertEquals("Description", created.getDescription());
-        assertTrue(created.isRequired());
+        assertTrue(created.isDefaultGroup());
         assertEquals((Integer)2, created.getMinAppVersion());
         assertEquals((Integer)10, created.getMaxAppVersion());
         assertEquals(Sets.newHashSet("requiredGroup"), created.getAllOfGroups());

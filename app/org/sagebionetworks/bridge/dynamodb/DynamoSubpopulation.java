@@ -13,6 +13,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 /**
@@ -29,6 +30,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     private String description;
     private boolean required;
     private boolean deleted;
+    private boolean defaultGroup;
     private Integer minAppVersion;
     private Integer maxAppVersion;
     private Long version;
@@ -96,6 +98,16 @@ public final class DynamoSubpopulation implements Subpopulation {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
+    @DynamoDBAttribute
+    @JsonIgnore
+    @Override
+    public boolean isDefaultGroup() {
+        return defaultGroup;
+    }
+    @Override
+    public void setDefaultGroup(boolean defaultGroup) {
+        this.defaultGroup = defaultGroup;
+    }
     @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @DynamoDBAttribute
     @Override
@@ -104,7 +116,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     }
     @Override
     public void setAllOfGroups(Set<String> dataGroups) {
-        this.allOfGroups = (dataGroups == null) ? Sets.newHashSet() : Sets.newHashSet(dataGroups);
+        this.allOfGroups = (dataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(dataGroups);
     }
     @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @DynamoDBAttribute
@@ -114,7 +126,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     }
     @Override
     public void setNoneOfGroups(Set<String> dataGroups){
-        this.noneOfGroups = (dataGroups == null) ? Sets.newHashSet() : Sets.newHashSet(dataGroups);
+        this.noneOfGroups = (dataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(dataGroups);
     }
     @DynamoDBAttribute
     @Override
@@ -146,7 +158,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     
     @Override
     public int hashCode() {
-        return Objects.hash(allOfGroups, noneOfGroups, name, description, required, deleted, guid, 
+        return Objects.hash(allOfGroups, noneOfGroups, name, description, required, deleted, defaultGroup, guid,
                 minAppVersion, maxAppVersion, studyIdentifier, version);
     }
     @Override
@@ -161,7 +173,8 @@ public final class DynamoSubpopulation implements Subpopulation {
                 && Objects.equals(description, other.description) && Objects.equals(guid, other.guid)
                 && Objects.equals(minAppVersion, other.minAppVersion) && Objects.equals(required, other.required)
                 && Objects.equals(maxAppVersion, other.maxAppVersion) && Objects.equals(deleted, other.deleted)
-                && Objects.equals(studyIdentifier, other.studyIdentifier) && Objects.equals(version, other.version);
+                && Objects.equals(studyIdentifier, other.studyIdentifier) && Objects.equals(version, other.version)
+                && Objects.equals(defaultGroup, other.defaultGroup);
     }
     @Override
     public String toString() {

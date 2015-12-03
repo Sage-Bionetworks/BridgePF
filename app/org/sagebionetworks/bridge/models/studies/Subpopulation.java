@@ -27,16 +27,29 @@ public interface Subpopulation extends Criteria {
     public String getDescription();
     
     /**
-     * Is this subpopulation required? Required subpopulations cannot be deleted. 
-     * Right now the only required subpopulation is the default subpopulation, 
-     * created for new studies or transitional studies.
+     * Is it required that the user sign the consent for this subpopulation in order
+     * to access the Bridge server and participate in the study?
      * @param required
      */
     public void setRequired(boolean required);
     public boolean isRequired();
     
+    /**
+     * Has this subpopulation been deleted? The record remains for reconstructing historical 
+     * consent histories, but it cannot be accessed through the APIs.
+     * @param deleted
+     */
     public void setDeleted(boolean deleted);
     public boolean isDeleted();
+    
+    /**
+     * Is this subpopulation a default group? The first default subpopulation can be 
+     * edited, but it cannot be deleted. Created for new studies or transitional 
+     * studies.
+     * @param defaultGroup
+     */
+    public void setDefaultGroup(boolean defaultGroup);
+    public boolean isDefaultGroup();
     
     public Long getVersion();
     public void setVersion(Long version);

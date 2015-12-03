@@ -74,7 +74,7 @@ public class DynamoSubpopulationDaoTest {
         Subpopulation savedSubpop = dao.createSubpopulation(subpop);
         assertNotNull(savedSubpop.getGuid());
         assertNotNull(savedSubpop.getVersion());
-        assertFalse(savedSubpop.isRequired()); // was not set to true
+        assertFalse(savedSubpop.isDefaultGroup()); // was not set to true
         
         // READ
         Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
@@ -124,12 +124,12 @@ public class DynamoSubpopulationDaoTest {
         Subpopulation subpop = subpops.get(0);
         assertEquals("Default Consent Group", subpop.getName());
         assertEquals(studyId.getIdentifier(), subpop.getGuid());
-        assertTrue(subpop.isRequired());
+        assertTrue(subpop.isDefaultGroup());
         
         // Cannot set this group to be unrequired
-        subpop.setRequired(false);
+        subpop.setDefaultGroup(false);
         subpop = dao.updateSubpopulation(subpop);
-        assertTrue(subpop.isRequired());
+        assertTrue(subpop.isDefaultGroup());
         
         // Cannot delete a required subpopulation
         try {
@@ -170,22 +170,22 @@ public class DynamoSubpopulationDaoTest {
         subpop.setGuid(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier("AAA");
         subpop.setDeleted(true);
-        subpop.setRequired(true);
+        subpop.setDefaultGroup(true);
         
         subpop = dao.createSubpopulation(subpop);
         assertFalse(subpop.isDeleted());
-        assertFalse(subpop.isRequired());
+        assertFalse(subpop.isDefaultGroup());
     }
     
     @Test
     public void cannotDeleteOrRequireSubpopOnUpdate() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
         subpop.setDeleted(true);
-        subpop.setRequired(true);
+        subpop.setDefaultGroup(true);
         
         subpop = dao.updateSubpopulation(subpop);
         assertFalse(subpop.isDeleted());
-        assertFalse(subpop.isRequired());
+        assertFalse(subpop.isDefaultGroup());
     }
     
     @Test(expected = EntityNotFoundException.class)
