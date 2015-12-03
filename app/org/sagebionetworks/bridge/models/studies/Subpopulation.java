@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import java.util.Set;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.models.Criteria;
 
@@ -35,5 +37,7 @@ public interface Subpopulation extends Criteria {
     
     public void setMinAppVersion(Integer minAppVersion);
     public void setMaxAppVersion(Integer minAppVersion);
+    public void setAllOfGroups(Set<String> allOfGroups);
+    public void setNoneOfGroups(Set<String> noneOfGroups);
 
 }

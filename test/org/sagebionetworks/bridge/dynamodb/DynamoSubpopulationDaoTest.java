@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.List;
 
@@ -19,6 +21,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -55,13 +58,14 @@ public class DynamoSubpopulationDaoTest {
     @After
     public void after() {
         dao.deleteAllSubpopulations(studyId);
-        assertTrue(dao.getSubpopulations(studyId, true).isEmpty());
+        assertTrue(dao.getSubpopulations(studyId, false, true).isEmpty());
     }
     
     @Test
     public void crudSubpopulationOK() {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
+        subpop.setGuid(BridgeUtils.generateGuid());
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setMinAppVersion(2);
@@ -71,6 +75,7 @@ public class DynamoSubpopulationDaoTest {
         Subpopulation savedSubpop = dao.createSubpopulation(subpop);
         assertNotNull(savedSubpop.getGuid());
         assertNotNull(savedSubpop.getVersion());
+        assertFalse(savedSubpop.isRequired());
         
         // READ
         Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
@@ -79,54 +84,74 @@ public class DynamoSubpopulationDaoTest {
         // UPDATE
         retrievedSubpop.setName("Name 2");
         retrievedSubpop.setDescription("Description 2");
+        retrievedSubpop.setRequired(true); // CANNOT be set
         Subpopulation finalSubpop = dao.updateSubpopulation(retrievedSubpop);
         
         // With this change, they should be equivalent using value equality
         retrievedSubpop.setVersion(finalSubpop.getVersion());
-        
         assertEquals(retrievedSubpop, finalSubpop);
+        assertFalse(retrievedSubpop.isRequired()); // still false
 
         // Some further things that should be true:
-        // 1. there's only one subpopulation in the list, we don't also create a default, despite the false flag
-        List<Subpopulation> allSubpops = dao.getSubpopulations(studyId, true);
+        // There's now only one subpopulation in the list
+        List<Subpopulation> allSubpops = dao.getSubpopulations(studyId, false, true);
         assertEquals(1, allSubpops.size());
         
-        // 2. Logical delete works...
+        // Logical delete works...
         dao.deleteSubpopulation(studyId, finalSubpop.getGuid());
         Subpopulation deletedSubpop = dao.getSubpopulation(studyId, finalSubpop.getGuid());
         assertTrue(deletedSubpop.isDeleted());
         
         // ... and it hides the subpop in the query used to find subpopulations for a user
-        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false);
+        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, true, false);
         assertEquals(0, subpopulations.size());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void cannotRecreateExistingObject() {
+        Subpopulation subpop = createSubpop("Name", null, null, null);
+        dao.createSubpopulation(subpop);
     }
 
     @Test
     public void getSubpopulationsWillNotCreateDefault() {
-        List<Subpopulation> subpops = dao.getSubpopulations(studyId, true);
+        List<Subpopulation> subpops = dao.getSubpopulations(studyId, false, true);
         assertTrue(subpops.isEmpty());
     }
     
     @Test
     public void getSubpopulationsWillCreateDefault() {
-        List<Subpopulation> subpops = dao.getSubpopulations(studyId, false);
+        List<Subpopulation> subpops = dao.getSubpopulations(studyId, true, false);
         assertEquals(1, subpops.size());
 
         Subpopulation subpop = subpops.get(0);
         assertEquals("Default Consent Group", subpop.getName());
         assertEquals(studyId.getIdentifier(), subpop.getGuid());
         assertTrue(subpop.isRequired());
+        
+        // Cannot set this group to be unrequired
+        subpop.setRequired(false);
+        subpop = dao.updateSubpopulation(subpop);
+        assertTrue(subpop.isRequired());
+        
+        // Cannot delete a required subpopulation
+        try {
+            dao.deleteSubpopulation(studyId, subpop.getGuid());
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+            assertEquals("Cannot delete the default subpopulation for a study.", e.getMessage());
+        }
     }
-
+    
     @Test
     public void getSubpopulationsForUser() {
-        subpop(SUBPOP_1, 0, 6, "group1"); // match up to version 6 and data group1, specificity 3
+        createSubpop(SUBPOP_1, 0, 6, "group1"); // match up to version 6 and data group1, specificity 3
         
-        subpop(SUBPOP_2, null, 6, null); // match version 0-6, specificity 2
+        createSubpop(SUBPOP_2, null, 6, null); // match version 0-6, specificity 2
         
-        subpop(SUBPOP_3, null, null, "group1"); // match group1, specificity 1
+        createSubpop(SUBPOP_3, null, null, "group1"); // match group1, specificity 1
         
-        subpop(SUBPOP_4, null, null, null); // match anything, specificity 0
+        createSubpop(SUBPOP_4, null, null, null); // match anything, specificity 0
         
         // version 12, no tags == Subpop 4
         Subpopulation subpop = dao.getSubpopulationForUser(scheduleContext(12, null));
@@ -140,35 +165,101 @@ public class DynamoSubpopulationDaoTest {
         subpop = dao.getSubpopulationForUser(scheduleContext(4, null));
         assertEquals(SUBPOP_2, subpop.getName());
         
-        // version 4, tag group1 == Subpops 1,2,3,4, returns 2 in this case (most specific)
+        // version 4, tag group1 == Subpops 1,2,3,4, returns 1 in this case (most specific)
         subpop = dao.getSubpopulationForUser(scheduleContext(4, "group1"));
         assertEquals(SUBPOP_1, subpop.getName());
     }
     
-    @Test
-    public void cannotDeleteSubpopOnCreateOrUpdate() {
-        Subpopulation subpop = subpop("Name", null, null, null);
+    @Test(expected = BadRequestException.class)
+    public void cannotDeleteSubpopOnCreate() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuid("AAA");
+        subpop.setStudyIdentifier("AAA");
         subpop.setDeleted(true);
         
         subpop = dao.createSubpopulation(subpop);
-        assertFalse(subpop.isDeleted());
-        
-        subpop.setDeleted(true);
-        subpop = dao.updateSubpopulation(subpop);
-        assertFalse(subpop.isDeleted());
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void cannotUpdateASubpopThatDoesNotExist() {
-        Subpopulation subpop = subpop("Name", null, null, null);
+        Subpopulation subpop = createSubpop("Name", null, null, null);
         subpop.setGuid(BridgeUtils.generateGuid());
         dao.updateSubpopulation(subpop);
     }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void cannotUpdateASubpopThatIsDeleted() {
+        Subpopulation subpop = createSubpop("Name", null, null, null);
+        dao.deleteSubpopulation(studyId, subpop.getGuid());
+        
+        // This should now throw ENFE
+        dao.updateSubpopulation(subpop);
+    }
 
-    private Subpopulation subpop(String name, Integer min, Integer max, String group) {
+    /**
+     * Right now these are sorted by "specificity", eventually all that match
+     * will be returned. But for now, a test of same:
+     */
+    @Test
+    public void getSubpopulationsSorted() {
+        // lowest precedence
+        createSubpop("Name 1", null, null, null);
+        // mid precedence
+        createSubpop("Name 2", 2, 10, null);
+        // high precedence
+        createSubpop("Name 3", 2, 10, "group1");
+        
+        List<Subpopulation> results = dao.getSubpopulations(studyId, true, false);
+        assertEquals(3, results.size());
+        assertEquals("Name 3", results.get(0).getName());
+        assertEquals("Name 2", results.get(1).getName());
+        assertEquals("Name 1", results.get(2).getName());
+    };
+    
+    @Test
+    public void createDefaultSubpopulation() {
+        List<Subpopulation> results = dao.getSubpopulations(studyId, true, false);
+        assertEquals(1, results.size());
+        assertEquals("Default Consent Group", results.get(0).getName());
+    }
+    
+    /**
+     * When there are no subpopulations at all, then we create and return a default 
+     * subpopulation. This is necessary for migration and for bootstrapping initial 
+     * studies.
+     */
+    @Test
+    public void getSubpopulationsForUserReturnsNoSubpopulations() {
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withStudyIdentifier(studyId.getIdentifier())
+                .build();
+        Subpopulation subpop = dao.getSubpopulationForUser(context);
+        
+        assertEquals("Default Consent Group", subpop.getName());
+    }
+    
+    /**
+     * Here the research designer has created an error when creating subpopulations 
+     * such that there's no match for this user... in this case, we want to return null.
+     */
+    @Test
+    public void getSubpopulationsForUserDoesNotMatchSubpopulationReturnsNull() {
+        createSubpop("Name of unmatcheable subpopulation", null, null, "unmatcheableGroup");
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withStudyIdentifier(studyId.getIdentifier())
+                .build();
+        Subpopulation subpop = dao.getSubpopulationForUser(context);
+        
+        assertNull(subpop);
+    }
+    
+    private Subpopulation createSubpop(String name, Integer min, Integer max, String group) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setName(name);
+        subpop.setGuid(BridgeUtils.generateGuid());
         if (min != null) {
             subpop.setMinAppVersion(min);
         }
@@ -178,8 +269,7 @@ public class DynamoSubpopulationDaoTest {
         if (group != null) {
             subpop.setAllOfGroups(Sets.newHashSet(group));
         }
-        dao.createSubpopulation(subpop);
-        return subpop;
+        return dao.createSubpopulation(subpop);
     }
     
     private ScheduleContext scheduleContext(int version, String tag) {

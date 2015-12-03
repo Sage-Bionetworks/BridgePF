@@ -70,7 +70,7 @@ public class SubpopulationService {
     public List<Subpopulation> getSubpopulations(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        return subpopDao.getSubpopulations(studyId, false);
+        return subpopDao.getSubpopulations(studyId, true, false);
     }
     
     /**

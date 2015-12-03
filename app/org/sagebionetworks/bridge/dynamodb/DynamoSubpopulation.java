@@ -101,8 +101,9 @@ public final class DynamoSubpopulation implements Subpopulation {
     public Set<String> getAllOfGroups() {
         return allOfGroups;
     }
+    @Override
     public void setAllOfGroups(Set<String> dataGroups) {
-        this.allOfGroups = (dataGroups == null) ? Sets.newHashSet() : dataGroups;
+        this.allOfGroups = (dataGroups == null) ? Sets.newHashSet() : Sets.newHashSet(dataGroups);
     }
     @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @DynamoDBAttribute
@@ -110,14 +111,16 @@ public final class DynamoSubpopulation implements Subpopulation {
     public Set<String> getNoneOfGroups(){
         return noneOfGroups;
     }
+    @Override
     public void setNoneOfGroups(Set<String> dataGroups){
-        this.noneOfGroups = (dataGroups == null) ? Sets.newHashSet() : dataGroups;
+        this.noneOfGroups = (dataGroups == null) ? Sets.newHashSet() : Sets.newHashSet(dataGroups);
     }
     @DynamoDBAttribute
     @Override
     public Integer getMinAppVersion() {
         return minAppVersion;
     }
+    @Override
     public void setMinAppVersion(Integer minAppVersion) {
         this.minAppVersion = minAppVersion;
     }
@@ -126,6 +129,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     public Integer getMaxAppVersion() {
         return maxAppVersion;
     }
+    @Override
     public void setMaxAppVersion(Integer maxAppVersion) {
         this.maxAppVersion = maxAppVersion;
     }

@@ -8,6 +8,8 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,6 +22,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -30,6 +33,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import play.mvc.Http;
@@ -73,28 +77,32 @@ public class SubpopulationControllerTest {
         doReturn(STUDY_IDENTIFIER).when(session).getStudyIdentifier();
         when(studyService.getStudy(STUDY_IDENTIFIER)).thenReturn(study);
     }
-
+    
+    @SuppressWarnings("unchecked")
     @Test
     public void getAllSubpopulations() throws Exception {
         Http.Context context = TestUtils.mockPlayContext();
         Http.Context.current.set(context);
         
+        List<Subpopulation> list = createSubpopulationList();
+        when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(list);
+        
         Result result = controller.getAllSubpopulations();
         
         assertEquals(200, result.status());
         String json = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
-        assertNotNull(node.get("items"));
-        assertNotNull(node.get("total"));
-        assertEquals("ResourceList", node.get("type").asText());
+        
+        ResourceList<Subpopulation> rList = BridgeObjectMapper.get().readValue(json, ResourceList.class);
+        assertEquals(list, rList.getItems());
+        assertEquals(2, rList.getTotal());
         
         verify(studyService).getStudy(STUDY_IDENTIFIER);
-        verify(subpopService).getSubpopulations(study);
+        verify(subpopService).getSubpopulations(study.getStudyIdentifier());
     }
     
     @Test
     public void createSubpopulation() throws Exception {
-        String json = "{\"name\":\"Name\",\"description\":\"Description\",\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
+        String json = "{\"guid\":\"junk\",\"name\":\"Name\",\"description\":\"Description\",\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
         Http.Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
         
@@ -186,5 +194,12 @@ public class SubpopulationControllerTest {
         
         verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, "AAA");
     }
-    
+
+    private List<Subpopulation> createSubpopulationList() {
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setName("Name 1");
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setName("Name 2");
+        return Lists.newArrayList(subpop1, subpop2);
+    }
 }

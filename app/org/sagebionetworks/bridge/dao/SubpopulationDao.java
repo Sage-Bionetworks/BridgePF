@@ -28,13 +28,14 @@ public interface SubpopulationDao {
      * Get all subpopulations defined for this study. It is possible to create a first default
      * subpopulation if none exists
      * @param studyId
-     * @param allExistingRecordsOnly
-     *      if true, this call will not create a default subpopulation if none exist, and it will return all 
-     *      records including deleted subpopulations. If false, the opposite: it will create a default 
-     *      subpopulation and it will hide deleted subpopulations.
+     * @param createDefault
+     *      if true and this study has no subpopulations, create and return a default subpopulation with a 
+     *      default consent.
+     * @param includeDeleted
+     *      if true, return logically deleted subpopulations. If false, do not return them.
      * @return
      */
-    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean allExistingRecordsOnly);
+    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean createDefault, boolean includeDeleted);
     
     /**
      * Get a specific subpopulation. This always returns the subpopulation whether it is logically deleted or not. 

@@ -105,19 +105,25 @@ public class SubpopulationServiceTest {
         Subpopulation result = service.updateSubpopulation(study, subpop);
         assertEquals("Name", result.getName());
         assertEquals("guid", result.getGuid());
+        assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
         verify(dao).updateSubpopulation(subpop);
     }
     @Test
     public void getSubpopulations() {
-        Subpopulation subpop = Subpopulation.create();
-        // use the same twice, that's okay for this, just mocking a list
-        List<Subpopulation> list = Lists.newArrayList(subpop, subpop); 
-        when(dao.getSubpopulations(TEST_STUDY, false)).thenReturn(list);
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setName("Name 1");
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setName("Name 2");
+
+        List<Subpopulation> list = Lists.newArrayList(subpop1, subpop2); 
+        when(dao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(list);
         
         List<Subpopulation> results = service.getSubpopulations(TEST_STUDY);
         assertEquals(2, results.size());
-        verify(dao).getSubpopulations(TEST_STUDY, false);
+        assertEquals(subpop1, results.get(0));
+        assertEquals(subpop2, results.get(1));
+        verify(dao).getSubpopulations(TEST_STUDY, true, false);
     }
     @Test
     public void getSubpopulation() {
@@ -130,13 +136,17 @@ public class SubpopulationServiceTest {
     }
     @Test
     public void getSubpopulationForUser() {
+        Subpopulation subpop = Subpopulation.create();
         // We test the matching logic in CriteriaUtilsTest as well as in the DAO. Here we just want
         // to verify it is being carried through.
         ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/4")).build();
         
-        service.getSubpopulationForUser(context);
+        when(dao.getSubpopulationForUser(context)).thenReturn(subpop);
         
+        Subpopulation result = service.getSubpopulationForUser(context);
+        
+        assertEquals(subpop, result);
         verify(dao).getSubpopulationForUser(context);
     }
     @Test

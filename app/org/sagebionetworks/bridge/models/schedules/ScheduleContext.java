@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 /**
@@ -40,7 +41,7 @@ public final class ScheduleContext {
         this.healthCode = healthCode;
         this.events = events;
         this.now = now;
-        this.userDataGroups = (userDataGroups == null) ? Sets.newHashSet() : userDataGroups;
+        this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
     }
     
     /**

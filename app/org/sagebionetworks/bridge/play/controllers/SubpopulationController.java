@@ -29,7 +29,7 @@ public class SubpopulationController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(study);
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
         return okResult(subpopulations);
     }
     public Result createSubpopulation() throws Exception {

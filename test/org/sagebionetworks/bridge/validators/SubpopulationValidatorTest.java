@@ -19,8 +19,25 @@ public class SubpopulationValidatorTest {
     SubpopulationValidator validator;
     
     @Before
-    public void beofre() {
+    public void before() {
         validator = new SubpopulationValidator(Sets.newHashSet("group1","group2"));
+    }
+    
+    @Test
+    public void testEntirelyValid() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setMinAppVersion(2);
+        subpop.setMaxAppVersion(4);
+        subpop.getNoneOfGroups().add("group1");
+        subpop.getAllOfGroups().add("group2");
+        subpop.setName("Name");
+        subpop.setDescription("Description");
+        subpop.setRequired(true);
+        subpop.setStudyIdentifier("test-study");
+        subpop.setVersion(3L);
+        subpop.setGuid("AAA");
+        
+        Validate.entityThrowingException(validator, subpop);
     }
     
     @Test
