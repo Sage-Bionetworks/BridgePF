@@ -35,7 +35,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Resource(name = "userConsentDdbMapper2")
     public final void setDdbMapper2(DynamoDBMapper mapper2) {
-        this.mapper = mapper2;
+        this.mapper2 = mapper2;
     }
     
     @Resource(name = "userConsentDdbMapper")
