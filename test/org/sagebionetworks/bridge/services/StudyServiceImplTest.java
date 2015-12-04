@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -19,6 +20,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.DirectoryDao;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
+import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -43,6 +47,15 @@ public class StudyServiceImplTest {
     
     @Resource
     StudyConsentServiceImpl studyConsentService;
+    
+    @Resource
+    StudyConsentDao studyConsentDao;
+    
+    @Resource
+    DirectoryDao directoryDao;
+    
+    @Resource
+    SubpopulationDao subpopDao;
     
     private CacheProvider cache;
     
@@ -135,6 +148,10 @@ public class StudyServiceImplTest {
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
         }
+        // Verify that all the dependent stuff has been deleted as well:
+        assertNull(directoryDao.getDirectoryForStudy(study));
+        assertEquals(0, subpopDao.getSubpopulations(study.getStudyIdentifier(), false, true).size());
+        assertEquals(0, studyConsentDao.getConsents(study).size());
         study = null;
     }
     
