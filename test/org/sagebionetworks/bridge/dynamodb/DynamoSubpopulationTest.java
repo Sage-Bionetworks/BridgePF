@@ -59,7 +59,6 @@ public class DynamoSubpopulationTest {
         Subpopulation newSubpop = BridgeObjectMapper.get().readValue(json, Subpopulation.class);
         // Not serialized, these values have to be added back to have equal objects 
         newSubpop.setStudyIdentifier("study-key");
-        newSubpop.setDefaultGroup(true);
         newSubpop.setDeleted(true);
         
         assertEquals(subpop, newSubpop);

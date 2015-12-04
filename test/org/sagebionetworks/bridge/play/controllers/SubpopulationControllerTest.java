@@ -71,8 +71,6 @@ public class SubpopulationControllerTest {
         
         controller.setSubpopulationService(subpopService);
         controller.setStudyService(studyService);
-        // Alarmingly, it seems like this is being called...
-        // controller.setAuthenticationService(null);
         
         when(study.getStudyIdentifier()).thenReturn(STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession();
