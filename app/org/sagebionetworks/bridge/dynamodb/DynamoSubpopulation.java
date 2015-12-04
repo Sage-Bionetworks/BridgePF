@@ -99,7 +99,6 @@ public final class DynamoSubpopulation implements Subpopulation {
         this.deleted = deleted;
     }
     @DynamoDBAttribute
-    @JsonIgnore
     @Override
     public boolean isDefaultGroup() {
         return defaultGroup;
