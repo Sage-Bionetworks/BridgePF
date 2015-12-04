@@ -71,6 +71,8 @@ public class SubpopulationControllerTest {
         
         controller.setSubpopulationService(subpopService);
         controller.setStudyService(studyService);
+        // Alarmingly, it seems like this is being called...
+        // controller.setAuthenticationService(null);
         
         when(study.getStudyIdentifier()).thenReturn(STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession();
@@ -101,7 +103,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void createSubpopulation() throws Exception {
-        String json = "{\"guid\":\"junk\",\"name\":\"Name\",\"description\":\"Description\",\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
+        String json = "{\"guid\":\"junk\",\"name\":\"Name\",\"defaultGroup\":true,\"description\":\"Description\",\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
         Http.Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
         
@@ -130,7 +132,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void updateSubpopulation() throws Exception {
-        String json = "{\"name\":\"Name\",\"description\":\"Description\",\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
+        String json = "{\"name\":\"Name\",\"description\":\"Description\",\"defaultGroup\":true,\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
         Http.Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
         
