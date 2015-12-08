@@ -16,4 +16,5 @@ abstract class AbstractRedisKey implements RedisKey {
         String suffix = RedisKey.SEPARATOR + getSuffix();
         return redisKey.substring(0, redisKey.indexOf(suffix));
     }
+
 }
