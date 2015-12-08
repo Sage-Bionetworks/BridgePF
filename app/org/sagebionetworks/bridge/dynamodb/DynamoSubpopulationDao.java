@@ -23,7 +23,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 @Component
 public class DynamoSubpopulationDao implements SubpopulationDao {
