@@ -12,6 +12,8 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -59,6 +61,15 @@ public class UserTest {
     }
     
     @Test
+    public void immutableConsentStatuses() {
+        User user = new User();
+        assertTrue(user.getConsentStatuses() instanceof ImmutableList);
+        
+        user.setConsentStatuses(Lists.newArrayList());
+        assertTrue(user.getConsentStatuses() instanceof ImmutableList);
+    }
+    
+    @Test
     public void userIsInRoleSet() {
         User user = new User();
         user.setRoles(Sets.newHashSet(Roles.ADMIN, Roles.DEVELOPER));
@@ -67,5 +78,64 @@ public class UserTest {
         
         user = new User();
         assertFalse(user.isInRole(Roles.ADMINISTRATIVE_ROLES));
+    }
+    
+    @Test
+    public void noConsentsProperlySetsBooleans() {
+        User user = new User();
+        assertFalse(user.doesConsent());
+        assertFalse(user.hasSignedMostRecentConsent());
+    }
+    
+    @Test
+    public void hasUserConsentedWorks() {
+        // Empty consent list... you are not considered consented
+        User user = new User();
+        user.setConsentStatuses(Lists.newArrayList());
+        assertFalse(user.doesConsent());
+        
+        // All required consents are consented, even one that's not up-to-date
+        user = new User();
+        user.setConsentStatuses(Lists.newArrayList(
+            new ConsentStatus("Name", "guid1", true, true, false),
+            new ConsentStatus("Name", "guid2", true, true, true),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        assertTrue(user.doesConsent());
+        
+        // A required consent is not consented
+        user = new User();
+        user.setConsentStatuses(Lists.newArrayList(
+            new ConsentStatus("Name", "guid1", true, true, false),
+            new ConsentStatus("Name", "guid2", true, false, false),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        assertFalse(user.doesConsent());
+    }
+    
+    @Test
+    public void areConsentsUpToDateWorks() {
+        // Empty consent list... you are not considered consented
+        User user = new User();
+        user.setConsentStatuses(Lists.newArrayList());
+        assertFalse(user.hasSignedMostRecentConsent());
+        
+        // All required consents are consented, even one that's not up-to-date
+        user = new User();
+        user.setConsentStatuses(Lists.newArrayList(
+            new ConsentStatus("Name", "guid1", true, true, false),
+            new ConsentStatus("Name", "guid2", true, true, true),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        assertFalse(user.hasSignedMostRecentConsent());
+        
+        // A required consent is not consented
+        user = new User();
+        user.setConsentStatuses(Lists.newArrayList(
+            new ConsentStatus("Name", "guid1", true, true, false),
+            new ConsentStatus("Name", "guid2", true, false, false),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        assertFalse(user.hasSignedMostRecentConsent());
     }
 }

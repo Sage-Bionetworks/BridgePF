@@ -12,17 +12,17 @@ public class DynamoUserConsentTest {
         String healthCode = "123";
         String studyIdentifier = "456";
         DynamoUserConsent3 userConsent = new DynamoUserConsent3(healthCode, studyIdentifier);
-        assertEquals(healthCode + ":" + studyIdentifier, userConsent.getHealthCodeStudy());
+        assertEquals(healthCode + ":" + studyIdentifier, userConsent.getHealthCodeSubpopGuid());
         assertEquals(healthCode, userConsent.getHealthCode());
-        assertEquals(studyIdentifier, userConsent.getStudyIdentifier());
+        assertEquals(studyIdentifier, userConsent.getSubpopulationGuid());
 
         // Test constructor 2
         long consentTimestamp = 789L;
         userConsent = new DynamoUserConsent3(healthCode, studyIdentifier);
         userConsent.setConsentCreatedOn(consentTimestamp);
-        assertEquals(healthCode + ":" + studyIdentifier, userConsent.getHealthCodeStudy());
+        assertEquals(healthCode + ":" + studyIdentifier, userConsent.getHealthCodeSubpopGuid());
         assertEquals(healthCode, userConsent.getHealthCode());
-        assertEquals(studyIdentifier, userConsent.getStudyIdentifier());
+        assertEquals(studyIdentifier, userConsent.getSubpopulationGuid());
         assertEquals(consentTimestamp, userConsent.getConsentCreatedOn());
 
         // Test copy constructor
@@ -30,8 +30,8 @@ public class DynamoUserConsentTest {
         userConsent.setVersion(777L);
 
         DynamoUserConsent3 userConsentCopy = new DynamoUserConsent3(healthCode, studyIdentifier);
-        assertEquals(healthCode + ":" + studyIdentifier, userConsentCopy.getHealthCodeStudy());
+        assertEquals(healthCode + ":" + studyIdentifier, userConsentCopy.getHealthCodeSubpopGuid());
         assertEquals(healthCode, userConsentCopy.getHealthCode());
-        assertEquals(studyIdentifier, userConsentCopy.getStudyIdentifier());
+        assertEquals(studyIdentifier, userConsentCopy.getSubpopulationGuid());
     }
 }

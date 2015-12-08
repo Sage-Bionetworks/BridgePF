@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 @BridgeTypeName("User")
@@ -30,16 +32,17 @@ public final class User implements BridgeEntity {
     private String email;
     private String healthCode;
     private String studyKey;
-    private boolean consent;
-    private boolean signedMostRecentConsent;
     private SharingScope sharingScope;
     private Set<Roles> roles = Sets.newHashSet();
     private Set<String> dataGroups = Sets.newHashSet();
+    private List<ConsentStatus> consentStatuses;
 
     public User() {
+        this.consentStatuses = ImmutableList.of();
     }
 
     public User(Account account) {
+        this();
         this.email = account.getEmail();
         this.username = account.getUsername();
         this.firstName = account.getFirstName();
@@ -135,32 +138,6 @@ public final class User implements BridgeEntity {
         this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
     }
 
-    public boolean doesConsent() {
-        return consent;
-    }
-
-    // Jackson serialization needs this method, even though linguistically, it makes no sense.
-    public boolean isConsent() {
-        return consent;
-    }
-
-    public void setConsent(boolean consent) {
-        this.consent = consent;
-    }
-
-    public boolean hasSignedMostRecentConsent() {
-        return this.signedMostRecentConsent;
-    }
-
-    // Need "is" for Jackson serialization.
-    public boolean isSignedMostRecentConsent() {
-        return this.signedMostRecentConsent;
-    }
-
-    public void setSignedMostRecentConsent(boolean signedMostRecentConsent) {
-        this.signedMostRecentConsent = signedMostRecentConsent;
-    }
-
     public SharingScope getSharingScope() {
         return sharingScope;
     }
@@ -176,11 +153,35 @@ public final class User implements BridgeEntity {
     public boolean isInRole(Set<Roles> roleSet) {
         return roleSet != null && !Collections.disjoint(roles, roleSet);
     }
+    
+    public List<ConsentStatus> getConsentStatuses() {
+        return consentStatuses;
+    }
+    
+    public void setConsentStatuses(List<ConsentStatus> consentStatuses) {
+        this.consentStatuses = (consentStatuses == null) ? ImmutableList.of() : ImmutableList.copyOf(consentStatuses);
+    }
 
+    /**
+     * Has the user consented to all required consents they are eligible for?
+     * @return
+     */
+    public boolean doesConsent() {
+        return !consentStatuses.isEmpty() && consentStatuses.stream().allMatch(status -> !status.isRequired() || status.isConsented());
+    }
+
+    /**
+     * Are all the required consents up-to-date?
+     * @return
+     */
+    public boolean hasSignedMostRecentConsent() {
+        return !consentStatuses.isEmpty() && consentStatuses.stream().allMatch(status -> !status.isRequired() || status.isMostRecentConsent());
+    }
+    
     @Override
     public int hashCode() {
-        return Objects.hashCode(consent, email, firstName, lastName, healthCode, id, roles, sharingScope,
-                signedMostRecentConsent, studyKey, username, dataGroups);
+        return Objects.hashCode(email, firstName, lastName, healthCode, id, roles, sharingScope, studyKey, username,
+                dataGroups, consentStatuses);
     }
 
     @Override
@@ -190,19 +191,17 @@ public final class User implements BridgeEntity {
         if (obj == null || getClass() != obj.getClass())
             return false;
         User other = (User) obj;
-        return (Objects.equal(consent, other.consent) && Objects.equal(email, other.email)
-                && Objects.equal(firstName, other.firstName) && Objects.equal(lastName, other.lastName)
-                && Objects.equal(healthCode, other.healthCode) && Objects.equal(id, other.id)
-                && Objects.equal(roles, other.roles) && Objects.equal(sharingScope, other.sharingScope)
-                && Objects.equal(signedMostRecentConsent, other.signedMostRecentConsent)
-                && Objects.equal(studyKey, other.studyKey) && Objects.equal(username, other.username)
-                && Objects.equal(dataGroups, other.dataGroups));                
+        return (Objects.equal(email, other.email) && Objects.equal(firstName, other.firstName)
+                && Objects.equal(lastName, other.lastName) && Objects.equal(healthCode, other.healthCode)
+                && Objects.equal(id, other.id) && Objects.equal(roles, other.roles)
+                && Objects.equal(sharingScope, other.sharingScope) && Objects.equal(studyKey, other.studyKey)
+                && Objects.equal(username, other.username) && Objects.equal(dataGroups, other.dataGroups)
+                && Objects.equal(consentStatuses, other.consentStatuses));
     }
 
     @Override
     public String toString() {
-        return String.format("User [consent=%s, email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, "
-                + "signedMostRecentConsent=%s, studyKey=%s, username=%s, dataGroups=%s]", 
-                consent, email, firstName, lastName, id, roles, sharingScope, signedMostRecentConsent, studyKey, username, dataGroups);
+        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, username=%s, dataGroups=%s, consentStatuses=%s]", 
+                email, firstName, lastName, id, roles, sharingScope, studyKey, username, dataGroups, consentStatuses);
     }
 }

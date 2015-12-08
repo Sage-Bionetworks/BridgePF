@@ -58,7 +58,7 @@ public class SendEmailIntegTest {
         user.setEmail("bridge-testing@sagebase.org");
         final Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
-        sendEmailService.sendEmail(new ConsentEmailProvider(study, user, signature, 
+        sendEmailService.sendEmail(new ConsentEmailProvider(study, TEST_STUDY_IDENTIFIER, user, signature, 
             SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate));
     }
     

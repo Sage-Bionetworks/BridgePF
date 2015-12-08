@@ -4,6 +4,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface UserAdminService {
@@ -14,6 +15,8 @@ public interface UserAdminService {
      *
      * @param signUp
      *            sign up information for the target user
+     * @param context
+     *            context for this request
      * @param userStudy
      *            the study of the target user
      * @param signUserIn
@@ -24,7 +27,7 @@ public interface UserAdminService {
      *
      * @throws BridgeServiceException
      */
-    public UserSession createUser(SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser);
+    public UserSession createUser(SignUp signUp, ScheduleContext context, Study userStudy, boolean signUserIn, boolean consentUser);
 
     /**
      * Delete the target user.

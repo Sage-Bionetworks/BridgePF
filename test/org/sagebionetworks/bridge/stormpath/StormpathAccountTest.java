@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.stormpath;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -10,6 +11,8 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -25,17 +28,20 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
 public class StormpathAccountTest {
     
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("foo");
-    
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
-    
     private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
-    
+    private static final String SUBPOP_GUID = "foo";
+    private static final String SUBPOP_GUID_2 = "foo2";
+    private static final String SUBPOP_GUID_3 = "foo3";
+    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(SUBPOP_GUID);
+    private static final Set<String> SUBPOP_GUIDS = Sets.newHashSet(SUBPOP_GUID, SUBPOP_GUID_2, SUBPOP_GUID_3);
+
     @SuppressWarnings("serial")
     private class StubCustomData extends HashMap<String,Object> implements CustomData {
         @Override public String getHref() { return null; }
@@ -78,7 +84,7 @@ public class StormpathAccountTest {
         sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test")
                 .withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
         
-        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        acct = new StormpathAccount(STUDY_ID, SUBPOP_GUIDS, account, encryptors);
     }
     
     private void encryptDecryptValues(final Encryptor encryptor, final String version) {
@@ -93,14 +99,14 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignaturesEncrypted() throws Exception {
-        List<ConsentSignature> signatures = acct.getConsentSignatures();
+        List<ConsentSignature> signatures = acct.getConsentSignatureHistory(SUBPOP_GUID);
         signatures.add(new ConsentSignature.Builder().withName("Another Name").withBirthdate("1983-05-10").build());
         
-        String json = BridgeObjectMapper.get().writeValueAsString(acct.getConsentSignatures());
+        String json = BridgeObjectMapper.get().writeValueAsString(acct.getConsentSignatureHistory(SUBPOP_GUID));
         acct.getAccount(); // necessary to trigger update of customData
         
         assertEquals("encrypted-2-"+json, data.get("foo_consent_signatures"));
-        assertEquals(signatures, acct.getConsentSignatures());
+        assertEquals(signatures, acct.getConsentSignatureHistory(SUBPOP_GUID));
     }
     
     @Test
@@ -161,9 +167,9 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignatureRAndEncrypted() {
-        acct.getConsentSignatures().add(sig);
+        acct.getConsentSignatureHistory(SUBPOP_GUID).add(sig);
         
-        ConsentSignature restoredSig = acct.getActiveConsentSignature();
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
         assertEquals("Test", restoredSig.getName());
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());
@@ -203,9 +209,9 @@ public class StormpathAccountTest {
         // retrieve the value through the new consent signature list.
         data.put("foo_consent_signature", MAPPER.writeValueAsString(sig));
         
-        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        acct = new StormpathAccount(STUDY_ID, SUBPOP_GUIDS, account, encryptors);
         
-        ConsentSignature restoredSig = acct.getActiveConsentSignature();
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
         assertEquals("Test", restoredSig.getName());
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());
@@ -217,16 +223,16 @@ public class StormpathAccountTest {
         data.put("foo_consent_signature", MAPPER.writeValueAsString(sig));
         data.put("foo_consent_signature_version", 2);
         
-        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        acct = new StormpathAccount(STUDY_ID, SUBPOP_GUIDS, account, encryptors);
         
-        ConsentSignature restoredSig = acct.getActiveConsentSignature();
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
         assertEquals("Test", restoredSig.getName());
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());
         assertEquals("image/png", restoredSig.getImageMimeType());
         
         // Also should be in "history"
-        List<ConsentSignature> history = acct.getConsentSignatures();
+        List<ConsentSignature> history = acct.getConsentSignatureHistory(SUBPOP_GUID);
         assertEquals(1, history.size());
         assertEquals(sig, history.get(0));
         assertNull(history.get(0).getWithdrewOn());
@@ -242,9 +248,9 @@ public class StormpathAccountTest {
         data.put("foo_consent_signatures", MAPPER.writeValueAsString(history));
         data.put("foo_consent_signatures_version", 2);
         
-        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        acct = new StormpathAccount(STUDY_ID, SUBPOP_GUIDS, account, encryptors);
         
-        ConsentSignature restoredSig = acct.getActiveConsentSignature();
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
         assertEquals("Test", restoredSig.getName());
         assertEquals("1970-01-01", restoredSig.getBirthdate());
         assertEquals("test", restoredSig.getImageData());
@@ -263,9 +269,9 @@ public class StormpathAccountTest {
         data.put("foo_consent_signatures", MAPPER.writeValueAsString(history));
         data.put("foo_consent_signatures_version", 2);
         
-        acct = new StormpathAccount(STUDY_ID, account, encryptors);
+        acct = new StormpathAccount(STUDY_ID, SUBPOP_GUIDS, account, encryptors);
         
-        ConsentSignature restoredSig = acct.getActiveConsentSignature();
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
         assertNull(restoredSig);
     }
     
@@ -320,5 +326,35 @@ public class StormpathAccountTest {
         
         assertEquals(1, acct.getRoles().size());
         assertEquals(DEVELOPER, acct.getRoles().iterator().next());
+    }
+    
+    @Test
+    public void multipleConsentsAreMaintainedSeparately() {
+        ConsentSignature sig1 = new ConsentSignature.Builder()
+                .withName("Name 1")
+                .withBirthdate("2000-10-10")
+                .withSignedOn(DateTime.now().getMillis())
+                .build();
+        
+        ConsentSignature sig2 = new ConsentSignature.Builder()
+                .withName("Name 2")
+                .withBirthdate("2000-02-02")
+                .withSignedOn(DateTime.now().getMillis())
+                .build();
+        acct.getConsentSignatureHistory(SUBPOP_GUID).add(sig1);
+        acct.getConsentSignatureHistory(SUBPOP_GUID_2).add(sig2);
+        
+        ConsentSignature sig1Retrieved = acct.getActiveConsentSignature(SUBPOP_GUID);
+        assertEquals(sig1, sig1Retrieved);
+        
+        ConsentSignature sig2Retrieved = acct.getActiveConsentSignature(SUBPOP_GUID_2);
+        assertEquals(sig2, sig2Retrieved);
+        
+        Map<String,List<ConsentSignature>> signatures = acct.getAllConsentSignatureHistories();
+        sig1Retrieved = signatures.get(SUBPOP_GUID).get(0);
+        assertEquals(sig1, sig1Retrieved);
+        
+        sig2Retrieved = signatures.get(SUBPOP_GUID_2).get(0);
+        assertEquals(sig2, sig2Retrieved);
     }
 }

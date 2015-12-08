@@ -10,8 +10,10 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
+import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.NotifyOperationsEmailProvider;
 import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
@@ -20,6 +22,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 
 public class ParticipantRosterGenerator implements Runnable {
@@ -42,14 +45,18 @@ public class ParticipantRosterGenerator implements Runnable {
     private final HealthCodeService healthCodeService;
     
     private final ParticipantOptionsService optionsService;
+    
+    private final SubpopulationService subpopService;
 
     public ParticipantRosterGenerator(Iterator<Account> accounts, Study study, SendMailService sendMailService,
-                    HealthCodeService healthCodeService, ParticipantOptionsService optionsService) {
+            HealthCodeService healthCodeService, ParticipantOptionsService optionsService,
+            SubpopulationService subpopService) {
         this.accounts = accounts;
         this.study = study;
         this.sendMailService = sendMailService;
         this.healthCodeService = healthCodeService;
         this.optionsService = optionsService;
+        this.subpopService = subpopService;
     }
 
     private String getHealthCode(Account account) {
@@ -75,9 +82,23 @@ public class ParticipantRosterGenerator implements Runnable {
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
                 Account account = accounts.next();
-                if (account.getActiveConsentSignature() != null) {
-                    
+                
+                boolean isConsented = false;
+                List<String> names = Lists.newArrayList();
+                for (String guid : account.getAllConsentSignatureHistories().keySet()) {
+                    ConsentSignature sig = account.getActiveConsentSignature(guid);
+                    if (sig != null) {
+                        // We've found an active consent, now we need the name of the subpopulation that this 
+                        // consent originated from.
+                        Subpopulation subpop = subpopService.getSubpopulation(study, guid);
+                        names.add(subpop.getName());
+                        isConsented = true;
+                    }
+                }
+                if (isConsented) {
+                    String subpopNames = Joiner.on(", ").join(names);
                     String healthCode = getHealthCode(account);
+                    
                     StudyParticipant participant = new StudyParticipant();
                     // Accounts exist that have signatures but no health codes. This may only be from testing, 
                     // but still, do not want roster generation to fail because of this. So we check for this.
@@ -90,6 +111,7 @@ public class ParticipantRosterGenerator implements Runnable {
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());
                     participant.setEmail(account.getEmail());
+                    participant.setSubpopulationNames(subpopNames);
                     for (String attribute : study.getUserProfileAttributes()) {
                         String value = account.getAttribute(attribute);
                         // Whether present or not, add an entry.

@@ -15,15 +15,11 @@ import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 
@@ -43,12 +39,12 @@ public class DynamoUserConsentDao implements UserConsentDao {
         checkNotNull(studyConsent);
         checkArgument(signedOn > 0L);
 
-        UserConsent activeConsent = getActiveUserConsent(healthCode, new StudyIdentifierImpl(studyConsent.getStudyKey()));
+        UserConsent activeConsent = getActiveUserConsent(healthCode, studyConsent.getSubpopulationGuid());
         if (activeConsent != null && activeConsent.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
             throw new BridgeServiceException("Consent already exists.", HttpStatus.SC_CONFLICT);
         }
         
-        DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, studyConsent.getStudyKey());
+        DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, studyConsent.getSubpopulationGuid());
         consent.setConsentCreatedOn(studyConsent.getCreatedOn());
         consent.setSignedOn(signedOn);
         mapper.save(consent);
@@ -57,12 +53,12 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void withdrawConsent(String healthCode, StudyIdentifier studyIdentifier, long withdrewOn) {
+    public void withdrawConsent(String healthCode, String subpopGuid, long withdrewOn) {
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(studyIdentifier);
+        checkNotNull(subpopGuid);
         checkArgument(withdrewOn > 0L);
         
-        DynamoUserConsent3 activeConsent = (DynamoUserConsent3)getActiveUserConsent(healthCode, studyIdentifier);
+        DynamoUserConsent3 activeConsent = (DynamoUserConsent3)getActiveUserConsent(healthCode, subpopGuid);
         if (activeConsent == null) {
             throw new BridgeServiceException("Consent not found.", HttpStatus.SC_NOT_FOUND);
         }
@@ -71,19 +67,19 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public boolean hasConsented(String healthCode, StudyIdentifier studyIdentifier) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(studyIdentifier);
+    public boolean hasConsented(String healthCode, String subpopGuid) {
+        checkNotNull(healthCode);
+        checkNotNull(subpopGuid);
         
-        return getActiveUserConsent(healthCode, studyIdentifier) != null;
+        return getActiveUserConsent(healthCode, subpopGuid) != null;
     }
 
     @Override
-    public UserConsent getActiveUserConsent(String healthCode, StudyIdentifier studyIdentifier) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(studyIdentifier);
+    public UserConsent getActiveUserConsent(String healthCode, String subpopGuid) {
+        checkNotNull(healthCode);
+        checkNotNull(subpopGuid);
         
-        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, subpopGuid);
 
         Condition condition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
@@ -96,12 +92,12 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
     
     @Override
-    public UserConsent getUserConsent(String healthCode, StudyIdentifier studyIdentifier, long signedOn) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(studyIdentifier);
+    public UserConsent getUserConsent(String healthCode, String subpopGuid, long signedOn) {
+        checkNotNull(healthCode);
+        checkNotNull(subpopGuid);
         checkArgument(signedOn > 0L);
         
-        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, subpopGuid);
         hashKey.setSignedOn(signedOn);
         
         DynamoUserConsent3 consent = mapper.load(hashKey);
@@ -112,11 +108,11 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
     
     @Override
-    public List<UserConsent> getUserConsentHistory(String healthCode, StudyIdentifier studyIdentifier) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(studyIdentifier);
+    public List<UserConsent> getUserConsentHistory(String healthCode, String subpopGuid) {
+        checkNotNull(healthCode);
+        checkNotNull(subpopGuid);
         
-        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, subpopGuid);
         
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
             .withHashKeyValues(hashKey);
@@ -124,32 +120,13 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return mapper.query(DynamoUserConsent3.class, query).stream()
                 .map(consent -> (UserConsent)consent).collect(Collectors.toList());
     }
-
+    
     @Override
-    public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
-        checkNotNull(studyIdentifier);
+    public void deleteAllConsents(String healthCode, String subpopGuid) {
+        checkNotNull(healthCode);
+        checkNotNull(subpopGuid);
         
-        Condition studyCondition = new Condition()
-                .withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
-        
-        Condition withdrewCondition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
-        
-        DynamoDBScanExpression scan = new DynamoDBScanExpression();
-        scan.setConsistentRead(true);
-        scan.addFilterCondition("studyIdentifier", studyCondition);
-        scan.addFilterCondition("withdrewOn", withdrewCondition);
-        
-        return mapper.scan(DynamoUserConsent3.class, scan).stream()
-                .map(consent -> consent.getHealthCode()).collect(Collectors.toSet()).size();
-    }
-
-    @Override
-    public void deleteAllConsents(String healthCode, StudyIdentifier studyIdentifier) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(studyIdentifier);
-        
-        List<UserConsent> consents = getUserConsentHistory(healthCode, studyIdentifier);
+        List<UserConsent> consents = getUserConsentHistory(healthCode, subpopGuid);
         if (!consents.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(consents);
             BridgeUtils.ifFailuresThrowException(failures);

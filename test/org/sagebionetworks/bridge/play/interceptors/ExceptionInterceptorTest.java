@@ -61,14 +61,12 @@ public class ExceptionInterceptorTest {
     @Test
     public void consentRequiredSessionSerializedCorrectly() throws Throwable {
         User user = new User();
-        user.setConsent(false);
         user.setEmail("email@email.com");
         user.setFirstName("firstName");
         user.setLastName("lastName");
         user.setHealthCode("healthCode");
         user.setId("userId");
         user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
-        user.setSignedMostRecentConsent(false);
         user.setStudyKey("test");
         user.getDataGroups().add("group1");
         user.setUsername("username");
@@ -103,7 +101,8 @@ public class ExceptionInterceptorTest {
         array = (ArrayNode)node.get("dataGroups");
         assertEquals(1, array.size());
         assertEquals("group1", array.get(0).asText());
+        assertEquals(0, node.get("consentStatuses").size());
         // And no further properties
-        assertEquals(11, node.size());
+        assertEquals(12, node.size());
     }
 }    

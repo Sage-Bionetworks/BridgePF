@@ -21,7 +21,19 @@ GET    /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.Su
 POST   /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.updateSubpopulation(guid: String)
 DELETE /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.deleteSubpopulation(guid: String)
 
-# Consents
+# Consents (now associated to a subpopulation)
+GET    /v3/subpopulations/:guid/consents/signature            @org.sagebionetworks.bridge.play.controllers.ConsentController.getConsentSignatureV2(guid: String)
+POST   /v3/subpopulations/:guid/consents/signature            @org.sagebionetworks.bridge.play.controllers.ConsentController.giveV3(guid: String)
+POST   /v3/subpopulations/:guid/consents/signature/withdraw   @org.sagebionetworks.bridge.play.controllers.ConsentController.withdrawConsentV2(guid: String)
+POST   /v3/subpopulations/:guid/consents/signature/email      @org.sagebionetworks.bridge.play.controllers.ConsentController.emailCopyV2(guid: String)
+GET    /v3/subpopulations/:guid/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getAllConsentsV2(guid: String)
+POST   /v3/subpopulations/:guid/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.addConsentV2(guid: String)
+GET    /v3/subpopulations/:guid/consents/recent               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsentV2(guid: String)
+GET    /v3/subpopulations/:guid/consents/published            @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getActiveConsentV2(guid: String)
+GET    /v3/subpopulations/:guid/consents/:timestamp           @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getConsentV2(guid: String, timestamp: String)
+POST   /v3/subpopulations/:guid/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.controllers.StudyConsentController.publishConsentV2(guid: String, timestamp: String)
+
+# Consents (these now return the default subpopulation... not that useful but will prevent anything from breaking)
 GET    /v3/consents/signature            @org.sagebionetworks.bridge.play.controllers.ConsentController.getConsentSignature
 POST   /v3/consents/signature            @org.sagebionetworks.bridge.play.controllers.ConsentController.giveV2
 POST   /v3/consents/signature/withdraw   @org.sagebionetworks.bridge.play.controllers.ConsentController.withdrawConsent

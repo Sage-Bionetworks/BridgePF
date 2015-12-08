@@ -13,6 +13,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.Period;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -251,5 +252,4 @@ public class TestUtils {
         }
         return set;
     }
-    
  }

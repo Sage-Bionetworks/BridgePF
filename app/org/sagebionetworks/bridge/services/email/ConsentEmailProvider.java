@@ -39,16 +39,18 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     private static final String SUB_TYPE_HTML = "html";
     private static final String MIME_TYPE_PDF = "application/pdf";
 
-    private User user;
     private Study study;
+    private String subpopGuid;
+    private User user;
     private ConsentSignature consentSignature;
     private SharingScope sharingScope;
     private StudyConsentService studyConsentService;
     private String consentTemplate;
 
-    public ConsentEmailProvider(Study study, User user, ConsentSignature consentSignature, SharingScope sharingScope,
+    public ConsentEmailProvider(Study study, String subpopGuid, User user, ConsentSignature consentSignature, SharingScope sharingScope,
         StudyConsentService studyConsentService, String consentTemplate) {
         this.study = study;
+        this.subpopGuid = subpopGuid;
         this.user = user;
         this.consentSignature = consentSignature;
         this.sharingScope = sharingScope;
@@ -116,7 +118,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
      * @return
      */
     private String createSignedDocument() {
-        StudyConsentView consent = studyConsentService.getActiveConsent(study.getStudyIdentifier());
+        StudyConsentView consent = studyConsentService.getActiveConsent(subpopGuid);
         String consentAgreementHTML = consent.getDocumentContent();
         String signingDate = FORMATTER.print(DateUtils.getCurrentMillisFromEpoch());
         String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();

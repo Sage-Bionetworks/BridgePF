@@ -25,36 +25,41 @@ public class ConsentController extends BaseController {
     private ParticipantOptionsService optionsService;
 
     @Autowired
-    public void setConsentService(ConsentService consentService) {
+    final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
     @Autowired
-    public void setOptionsService(ParticipantOptionsService optionsService) {
+    final void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
 
+    @Deprecated
     public Result getConsentSignature() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-
-        ConsentSignature sig = consentService.getConsentSignature(study, session.getUser());
-        return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
+        return getConsentSignatureV2(study.getIdentifier());
     }
 
     @Deprecated
     public Result giveV1() throws Exception {
-        return giveConsentForVersion(1);
+        final UserSession session = getAuthenticatedSession();
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+        return giveConsentForVersion(1, study.getIdentifier());
     }
 
+    @Deprecated
     public Result giveV2() throws Exception {
-        return giveConsentForVersion(2);
+        final UserSession session = getAuthenticatedSession();
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+        return giveV3(study.getIdentifier());
     }
 
+    @Deprecated
     public Result emailCopy() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-        consentService.emailConsentAgreement(study, session.getUser());
-        return okResult("Emailed consent.");
+        
+        return emailCopyV2(study.getIdentifier());
     }
 
     @Deprecated
@@ -74,18 +79,48 @@ public class ConsentController extends BaseController {
         return changeSharingScope(sharing.getSharingScope(), "Data sharing has been changed.");
     }
     
+    @Deprecated
     public Result withdrawConsent() throws Exception {
+        final UserSession session = getAuthenticatedAndConsentedSession();
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        return withdrawConsentV2(study.getIdentifier());
+    }
+
+    // V2: consent to a specific subpopulation
+    
+    public Result getConsentSignatureV2(String guid) throws Exception {
+        final UserSession session = getAuthenticatedAndConsentedSession();
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        ConsentSignature sig = consentService.getConsentSignature(study, guid, session.getUser());
+        return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
+    }
+    
+    public Result giveV3(String guid) throws Exception {
+        return giveConsentForVersion(2, guid);
+    }
+    
+    public Result withdrawConsentV2(String guid) throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawConsent(study, session.getUser(), withdrawal, withdrewOn);
+        consentService.withdrawConsent(study, guid, session.getUser(), withdrawal, withdrewOn);
         updateSessionUser(session, session.getUser());
         
         return okResult("User has been withdrawn from the study.");
     }
+    
+    public Result emailCopyV2(String guid) {
+        final UserSession session = getAuthenticatedAndConsentedSession();
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
 
+        consentService.emailConsentAgreement(study, guid, session.getUser());
+        return okResult("Emailed consent.");
+    }
+    
     Result changeSharingScope(SharingScope sharingScope, String message) {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final User user = session.getUser();
@@ -94,18 +129,20 @@ public class ConsentController extends BaseController {
         
         user.setSharingScope(sharingScope);
         updateSessionUser(session, user);
-        consentService.emailConsentAgreement(study, user);
+        // NOTE: This will change with multiple consents. In the transition period, the subpopulation GUID
+        // is the study identifier.
+        consentService.emailConsentAgreement(study, study.getIdentifier(), user);
         return okResult(message);
     }
 
-    private Result giveConsentForVersion(int version) throws Exception {
+    private Result giveConsentForVersion(int version, String subpopGuid) throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
         final ConsentSignature consent = parseJson(request(), ConsentSignature.class);
         final SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), version);
-        
-        final User user = consentService.consentToResearch(study, session.getUser(), consent,
+
+        final User user = consentService.consentToResearch(study, subpopGuid, session.getUser(), consent,
                 sharing.getSharingScope(), true);
 
         user.setSharingScope(sharing.getSharingScope());

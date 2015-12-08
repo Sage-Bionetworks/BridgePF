@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -82,7 +83,7 @@ public class ScheduledActivityServiceMockTest {
         when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 
         
         userConsentDao = mock(UserConsentDao.class);
-        when(userConsentDao.getActiveUserConsent(any(String.class), any(StudyIdentifier.class))).thenReturn(consent);
+        when(userConsentDao.getActiveUserConsent(eq(HEALTH_CODE), anyString())).thenReturn(consent);
         
         Map<String,DateTime> map = Maps.newHashMap();
         activityEventService = mock(ActivityEventService.class);

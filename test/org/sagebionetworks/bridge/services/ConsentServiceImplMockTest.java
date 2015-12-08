@@ -21,7 +21,11 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -31,6 +35,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -39,7 +44,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
@@ -47,19 +51,27 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+@RunWith(MockitoJUnitRunner.class)
 public class ConsentServiceImplMockTest {
 
     private static final long UNIX_TIMESTAMP = 1446044925219L;
     
     private ConsentServiceImpl consentService;
 
+    @Mock
     private AccountDao accountDao;
-    private JedisOps jedisOps;
+    @Mock
     private ParticipantOptionsService optionsService;
+    @Mock
     private SendMailService sendMailService;
+    @Mock
     private StudyConsentService studyConsentService;
+    @Mock
     private UserConsentDao userConsentDao;
+    @Mock
     private ActivityEventService activityEventService;
+    @Mock
+    private StudyService studyService;
 
     private Study study;
     private User user;
@@ -68,22 +80,14 @@ public class ConsentServiceImplMockTest {
     
     @Before
     public void before() {
-        accountDao = mock(AccountDao.class);
-        jedisOps = mock(JedisOps.class);
-        optionsService = mock(ParticipantOptionsService.class);
-        sendMailService = mock(SendMailService.class);
-        userConsentDao = mock(UserConsentDao.class);
-        activityEventService = mock(ActivityEventService.class);
-        studyConsentService = mock(StudyConsentService.class);
-
         consentService = new ConsentServiceImpl();
         consentService.setAccountDao(accountDao);
-        consentService.setStringOps(jedisOps);
         consentService.setOptionsService(optionsService);
         consentService.setSendMailService(sendMailService);
         consentService.setUserConsentDao(userConsentDao);
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
+        consentService.setStudyService(studyService);
         
         study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
         user = new User();
@@ -100,12 +104,12 @@ public class ConsentServiceImplMockTest {
     @Test
     public void activityEventFiredOnConsent() {
         StudyConsentView view = mock(StudyConsentView.class);
-        when(studyConsentService.getActiveConsent(any(Study.class))).thenReturn(view);
+        when(studyConsentService.getActiveConsent(any(String.class))).thenReturn(view);
         
         UserConsent consent = mock(UserConsent.class);
         when(userConsentDao.giveConsent(user.getHealthCode(), view.getStudyConsent(), UNIX_TIMESTAMP)).thenReturn(consent);
         
-        consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
+        consentService.consentToResearch(study, "GUID", user, consentSignature, SharingScope.NO_SHARING, false);
         
         verify(activityEventService).publishEnrollmentEvent(user.getHealthCode(), consent);
     }
@@ -117,7 +121,7 @@ public class ConsentServiceImplMockTest {
         study.setMinAgeOfConsent(30); // Test is good until 2044. So there.
         
         try {
-            consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
+            consentService.consentToResearch(study, "GUID", user, consentSignature, SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch(InvalidEntityException e) {
             verifyNoMoreInteractions(activityEventService);
@@ -126,10 +130,9 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void noActivityEventIfAlreadyConsented() {
-        user.setConsent(true);
-        
+        user.setConsentStatuses(Lists.newArrayList(new ConsentStatus("name", "GUID", true, true, true)));
         try {
-            consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
+            consentService.consentToResearch(study, "GUID", user, consentSignature, SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch(EntityAlreadyExistsException e) {
             verifyNoMoreInteractions(activityEventService);
@@ -142,7 +145,7 @@ public class ConsentServiceImplMockTest {
         when(userConsentDao.giveConsent(user.getHealthCode(), consent, UNIX_TIMESTAMP)).thenThrow(new RuntimeException());
         
         try {
-            consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
+            consentService.consentToResearch(study, "GUID", user, consentSignature, SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch(Throwable e) {
             verifyNoMoreInteractions(activityEventService);
@@ -151,13 +154,14 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void withdrawConsent() throws Exception {
-        account.getConsentSignatures().add(consentSignature);
-        consentService.withdrawConsent(study, user, new Withdrawal("For reasons."), UNIX_TIMESTAMP);
+        List<ConsentSignature> history = account.getConsentSignatureHistory("GUID");
+        history.add(consentSignature);
+        consentService.withdrawConsent(study, "GUID", user, new Withdrawal("For reasons."), UNIX_TIMESTAMP);
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         
-        verify(userConsentDao).withdrawConsent(user.getHealthCode(), study, UNIX_TIMESTAMP);
+        verify(userConsentDao).withdrawConsent(user.getHealthCode(), "GUID", UNIX_TIMESTAMP);
         verify(accountDao).getAccount(study, user.getEmail());
         verify(accountDao).updateAccount(any(Study.class), captor.capture());
         // It happens twice because we do it the first time to set up the test properly
@@ -168,10 +172,10 @@ public class ConsentServiceImplMockTest {
         
         Account account = captor.getValue();
         // Signature is there but has been marked withdrawn
-        assertNull(account.getActiveConsentSignature());
-        assertNotNull(account.getConsentSignatures().get(0).getWithdrewOn());
-        assertEquals(1, account.getConsentSignatures().size());
-        assertFalse(user.isConsent());
+        assertNull(account.getActiveConsentSignature("GUID"));
+        assertNotNull(account.getConsentSignatureHistory("GUID").get(0).getWithdrewOn());
+        assertEquals(1, account.getConsentSignatureHistory("GUID").size());
+        assertFalse(user.doesConsent());
         
         MimeTypeEmailProvider provider = emailCaptor.getValue();
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -191,7 +195,7 @@ public class ConsentServiceImplMockTest {
         when(accountDao.getAccount(any(), any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
         
         try {
-            consentService.withdrawConsent(study, user, new Withdrawal("For reasons."), DateTime.now().getMillis());
+            consentService.withdrawConsent(study, "GUID", user, new Withdrawal("For reasons."), DateTime.now().getMillis());
             fail("Should have thrown an exception");
         } catch(BridgeServiceException e) {
         }
@@ -202,16 +206,17 @@ public class ConsentServiceImplMockTest {
     @Test
     public void dynamoDbFailureConsistent() {
         SimpleAccount acct = new SimpleAccount();
-        acct.getConsentSignatures().add(new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1969-04-05").build());
+        List<ConsentSignature> signatures =  acct.getConsentSignatureHistory("GUID"); 
+        signatures.add(new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1969-04-05").build());
         
         when(accountDao.getAccount(study, user.getEmail())).thenReturn(acct);
-        doThrow(new BridgeServiceException("Something bad happend", 500)).when(userConsentDao)
-            .withdrawConsent("BBB", study, UNIX_TIMESTAMP);
+        doThrow(new BridgeServiceException("Something bad happend", 500)).when(userConsentDao).withdrawConsent("BBB",
+                "GUID", UNIX_TIMESTAMP);
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         
         try {
-            consentService.withdrawConsent(study, user, new Withdrawal("For reasons."), UNIX_TIMESTAMP);
+            consentService.withdrawConsent(study, "GUID", user, new Withdrawal("For reasons."), UNIX_TIMESTAMP);
             fail("Should have thrown an exception");
         } catch(BridgeServiceException e) {
         }
@@ -220,9 +225,9 @@ public class ConsentServiceImplMockTest {
         verifyNoMoreInteractions(sendMailService);
         
         Account account = captor.getAllValues().get(1);
-        assertEquals(1, account.getConsentSignatures().size());
-        assertNotNull(account.getActiveConsentSignature());
-        assertNull(account.getConsentSignatures().get(0).getWithdrewOn());
+        assertEquals(1, account.getConsentSignatureHistory("GUID").size());
+        assertNotNull(account.getActiveConsentSignature("GUID"));
+        assertNull(account.getConsentSignatureHistory("GUID").get(0).getWithdrewOn());
     }
 
     public static class SimpleAccount implements Account {
@@ -232,7 +237,7 @@ public class ConsentServiceImplMockTest {
         private String email;
         private String healthId;
         private StudyIdentifier studyId;
-        private List<ConsentSignature> signatures = Lists.newArrayList();
+        private Map<String,List<ConsentSignature>> signatures = Maps.newHashMap();
         private Map<String,String> attributes = Maps.newHashMap();
         private Set<Roles> roles = Sets.newHashSet();
         @Override
@@ -276,7 +281,12 @@ public class ConsentServiceImplMockTest {
             this.email = email;
         }
         @Override
-        public List<ConsentSignature> getConsentSignatures() {
+        public List<ConsentSignature> getConsentSignatureHistory(String subpopGuid) {
+            signatures.putIfAbsent(subpopGuid, Lists.newArrayList());
+            return signatures.get(subpopGuid);
+        }
+        @Override
+        public Map<String, List<ConsentSignature>> getAllConsentSignatureHistories() {
             return signatures;
         }
         @Override

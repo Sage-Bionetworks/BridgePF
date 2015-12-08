@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.junit.Assert.*;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
+import java.util.List;
+
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -10,13 +12,16 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
 
 public class UserSessionInfoTest {
 
     @Test
     public void userSessionInfoSerializesCorrectly() throws Exception {
+        List<ConsentStatus> statuses = Lists.newArrayList(new ConsentStatus("Consent", "AAA", true, true, false));
+        
         User user = new User();
-        user.setConsent(false);
+        user.setConsentStatuses(statuses);
         user.setEmail("test@test.com");
         user.setFirstName("first name");
         user.setLastName("last name");
@@ -24,7 +29,6 @@ public class UserSessionInfoTest {
         user.setId("user-identifier");
         user.getRoles().add(RESEARCHER);
         user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
-        user.setSignedMostRecentConsent(false);
         user.setStudyKey("study-identifier");
         user.getDataGroups().add("foo");
         user.setUsername("username");
@@ -40,6 +44,7 @@ public class UserSessionInfoTest {
         UserSessionInfo info = new UserSessionInfo(session);
         
         String json = BridgeObjectMapper.get().writeValueAsString(info);
+        System.out.println(json);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals(session.isAuthenticated(), node.get("authenticated").asBoolean());
@@ -53,8 +58,17 @@ public class UserSessionInfoTest {
         assertEquals("staging", node.get("environment").asText());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
+        JsonNode consentStatus = node.get("consentStatuses").get(0);
+        assertEquals("Consent", consentStatus.get("name").asText());
+        assertEquals("AAA", consentStatus.get("guid").asText());
+        assertTrue(consentStatus.get("required").asBoolean());
+        assertTrue(consentStatus.get("consented").asBoolean());
+        assertFalse(consentStatus.get("mostRecentConsent").asBoolean());
+        assertEquals("ConsentStatus", consentStatus.get("type").asText());
+        assertEquals(6, consentStatus.size());
+        
         // ... and no things that shouldn't be there
-        assertEquals(11, node.size());
+        assertEquals(12, node.size());
     }
     
 }

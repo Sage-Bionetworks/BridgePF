@@ -4,7 +4,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 public interface UserConsent extends BridgeEntity {
     
-    public String getStudyIdentifier();
+    public String getSubpopulationGuid();
 
     public long getConsentCreatedOn();
     

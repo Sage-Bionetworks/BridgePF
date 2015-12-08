@@ -189,7 +189,9 @@ public class ScheduledActivityService {
      * @return
      */
     private Map<String, DateTime> createEnrollmentEventFromConsent(ScheduleContext context, Map<String, DateTime> events) {
-        UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), context.getStudyIdentifier());
+        // NOTE: No idea what happens to enrollment, since there can be multiple enrollment dates. We will probably
+        // need to record the first enrollment and go from there.... can we schedule against different subpopulations? Please no.
+        UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), context.getStudyIdentifier().getIdentifier());
         Map<String,DateTime> newEvents = Maps.newHashMap();
         newEvents.putAll(events);
         newEvents.put("enrollment", new DateTime(consent.getSignedOn()));

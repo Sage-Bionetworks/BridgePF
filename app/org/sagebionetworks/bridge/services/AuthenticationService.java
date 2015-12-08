@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -15,13 +16,13 @@ public interface AuthenticationService {
 
     public UserSession getSession(String sessionToken);
 
-    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException;
+    public UserSession signIn(Study study, ScheduleContext context, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException;
 
     public void signOut(UserSession session);
 
     public void signUp(Study study, SignUp signUp, boolean isAnonSignUp);
 
-    public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException;
+    public UserSession verifyEmail(Study study, ScheduleContext context, EmailVerification verification) throws ConsentRequiredException;
     
     public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email);
 

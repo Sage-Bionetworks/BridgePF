@@ -22,21 +22,21 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
-import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.redis.JedisOps;
+import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -47,25 +47,23 @@ public class StudyServiceImpl implements StudyService {
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
+    private JedisOps jedisOps;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
     private DistributedLockDao lockDao;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
-    private StudyConsentService studyConsentService;
-    private StudyConsentDao studyConsentDao;
-    private SubpopulationDao subpopDao;
+    private SubpopulationService subpopService;
 
-    private StudyConsentForm defaultConsentDocument;
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
     private String defaultResetPasswordTemplate;
     private String defaultResetPasswordTemplateSubject;
     
-    @Value("classpath:study-defaults/consent-body.xhtml")
-    final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
+    @Autowired
+    final void setStringOps(JedisOps jedisOps) {
+        this.jedisOps = jedisOps;
     }
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -108,16 +106,8 @@ public class StudyServiceImpl implements StudyService {
         this.cacheProvider = cacheProvider;
     }
     @Autowired
-    final void setStudyConsentService(StudyConsentService studyConsentService) {
-        this.studyConsentService = studyConsentService;
-    }
-    @Autowired
-    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
-        this.studyConsentDao = studyConsentDao;
-    }
-    @Autowired
-    final void setSubpopulationDao(SubpopulationDao subpopDao) {
-        this.subpopDao = subpopDao;
+    final void setSubpopulationService(SubpopulationService subpopService) {
+        this.subpopService = subpopService;
     }
     
     @Override
@@ -159,9 +149,7 @@ public class StudyServiceImpl implements StudyService {
                 throw new EntityAlreadyExistsException(study);
             }
             
-            // The system is broken if the study does not have a consent. Create a default consent so the study is usable.
-            StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), defaultConsentDocument);
-            studyConsentService.publishConsent(study, view.getCreatedOn());
+            subpopService.createDefaultSubpopulation(study);
             
             study.setActive(true);
             study.setStrictUploadValidationEnabled(true);
@@ -232,12 +220,74 @@ public class StudyServiceImpl implements StudyService {
         try {
             lockId = lockDao.acquireLock(Study.class, identifier);
             studyDao.deleteStudy(existing);
-            studyConsentDao.deleteAllConsents(existing.getStudyIdentifier());
             directoryDao.deleteDirectoryForStudy(existing);
-            subpopDao.deleteAllSubpopulations(existing.getStudyIdentifier());
+            subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
             cacheProvider.removeStudy(identifier);
         } finally {
             lockDao.releaseLock(Study.class, identifier, lockId);
+        }
+    }
+    @Override
+    public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
+        throw new UnsupportedOperationException();
+        /*
+        checkNotNull(studyIdentifier);
+        
+        Condition studyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
+        
+        Condition withdrewCondition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
+        
+        DynamoDBScanExpression scan = new DynamoDBScanExpression();
+        scan.setConsistentRead(true);
+        scan.addFilterCondition("studyIdentifier", studyCondition);
+        scan.addFilterCondition("withdrewOn", withdrewCondition);
+        
+        return mapper.scan(DynamoUserConsent3.class, scan).stream()
+                .map(consent -> consent.getHealthCode()).collect(Collectors.toSet()).size();
+        */
+    }
+    @Override
+    public boolean isStudyAtEnrollmentLimit(Study study) {
+        throw new UnsupportedOperationException();
+        /*
+        if (study.getMaxNumOfParticipants() == 0) {
+            return false;
+        }
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+
+        long count = Long.MAX_VALUE;
+        String countString = jedisOps.get(key);
+        if (countString == null) {
+            // This is expensive but don't lock, it's better to do it twice slowly, than to throw an exception here.
+            jedisOps.setex(key, TWENTY_FOUR_HOURS, Long.toString(count));
+        } else {
+            count = Long.parseLong(countString);
+        }
+        return (count >= study.getMaxNumOfParticipants());
+        */
+    }
+    @Override
+    public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException {
+        if (study.getMaxNumOfParticipants() == 0) {
+            return;
+        }
+        if (isStudyAtEnrollmentLimit(study)) {
+            throw new StudyLimitExceededException(study);
+        }
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        jedisOps.incr(key);
+    }
+    @Override
+    public void decrementStudyEnrollment(Study study) {
+        if (study.getMaxNumOfParticipants() == 0) {
+            return;
+        }
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        String count = jedisOps.get(key);
+        if (count != null && Long.parseLong(count) > 0) {
+            jedisOps.decr(key);
         }
     }
     

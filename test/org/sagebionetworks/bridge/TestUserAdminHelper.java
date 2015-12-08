@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -134,11 +135,16 @@ public class TestUserAdminHelper {
         private Set<Roles> roles;
         private Set<String> dataGroups;
         private SignUp signUp;
+        private ScheduleContext context;
         
         private Builder(Class<?> cls) {
             this.cls = cls;
             this.signIn = true;
             this.consent = true;
+        }
+        public Builder withScheduleContext(ScheduleContext context) {
+            this.context = context;
+            return this;
         }
         public Builder withStudy(Study study) {
             this.study = study;
@@ -173,9 +179,12 @@ public class TestUserAdminHelper {
             if (study == null) {
                 study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
             }
+            if (context == null) {
+                context = new ScheduleContext.Builder().build();
+            }
             String name = makeRandomUserName(cls);
             SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
-            UserSession session = userAdminService.createUser(finalSignUp, study, signIn, consent);
+            UserSession session = userAdminService.createUser(finalSignUp, context, study, signIn, consent);
             return new TestUser(finalSignUp, study, session);
         }
     }

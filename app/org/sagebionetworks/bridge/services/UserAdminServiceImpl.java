@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.RedisKey;
@@ -97,7 +98,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     }
     
     @Override
-    public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser) {
+    public UserSession createUser(SignUp signUp, ScheduleContext context, Study study, boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
@@ -107,15 +108,17 @@ public class UserAdminServiceImpl implements UserAdminService {
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
         try {
-            newUserSession = authenticationService.signIn(study, signIn);
+            newUserSession = authenticationService.signIn(study, context, signIn);
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
                 String name = String.format("[Signature for %s]", signUp.getEmail());
                 ConsentSignature consent = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-                consentService.consentToResearch(study, newUserSession.getUser(), consent,
-                        SharingScope.NO_SHARING, false);
+                // NOTE: This will change with multiple consents. In the transition period, the subpopulation GUID
+                // is the study identifier.
+                consentService.consentToResearch(study, study.getIdentifier(), newUserSession.getUser(), 
+                        consent, SharingScope.NO_SHARING, false);
             }
         }
         if (!signUserIn) {
@@ -206,7 +209,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 if (!StringUtils.isBlank(healthCode)) {
                     User user = new User(account);
                     user.setHealthCode(healthCode);
-                    consentService.deleteAllConsents(study, user);
+                    consentService.deleteAllConsentsForUser(study, user);
                     healthDataService.deleteRecordsForHealthCode(healthCode);
                     scheduledActivityService.deleteActivitiesForUser(healthCode);
                     activityEventService.deleteActivityEvents(healthCode);

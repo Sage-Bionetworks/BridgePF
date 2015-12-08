@@ -27,12 +27,16 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
+import org.sagebionetworks.bridge.redis.JedisOps;
+import org.sagebionetworks.bridge.redis.RedisKey;
+
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -41,6 +45,9 @@ import com.google.common.collect.Sets;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyServiceImplTest {
+
+    @Resource
+    private JedisOps jedisOps;
 
     @Resource
     StudyServiceImpl studyService;
@@ -119,7 +126,7 @@ public class StudyServiceImplTest {
         reset(cache);
         
         // A default, active consent should be created for the study.
-        StudyConsentView view = studyConsentService.getActiveConsent(study.getStudyIdentifier());
+        StudyConsentView view = studyConsentService.getActiveConsent(study.getIdentifier());
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
         assertTrue(view.getActive());
         
@@ -151,7 +158,7 @@ public class StudyServiceImplTest {
         // Verify that all the dependent stuff has been deleted as well:
         assertNull(directoryDao.getDirectoryForStudy(study));
         assertEquals(0, subpopDao.getSubpopulations(study.getStudyIdentifier(), false, true).size());
-        assertEquals(0, studyConsentDao.getConsents(study).size());
+        assertEquals(0, studyConsentDao.getConsents(study.getIdentifier()).size());
         study = null;
     }
     
@@ -273,4 +280,49 @@ public class StudyServiceImplTest {
     public void cantDeleteApiStudy() {
         studyService.deleteStudy("api");
     }
+    
+    @Test
+    public void enforcesStudyEnrollmentLimit() {
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
+        try {
+            jedisOps.del(key);
+            
+            Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
+            study.setMaxNumOfParticipants(2);
+
+            // Set the cache so we avoid going to DynamoDB. We're testing the caching layer
+            // in the service test, we'll test the DAO in the DAO test.
+            jedisOps.del(key);
+
+            boolean limit = studyService.isStudyAtEnrollmentLimit(study);
+            assertFalse("No limit reached", limit);
+
+            studyService.incrementStudyEnrollment(study);
+            studyService.incrementStudyEnrollment(study);
+            limit = studyService.isStudyAtEnrollmentLimit(study);
+            assertTrue("Limit reached", limit);
+            try {
+                studyService.incrementStudyEnrollment(study);
+                fail("Should have thrown an exception");
+            } catch (StudyLimitExceededException e) {
+                assertEquals("This is a 473 error", 473, e.getStatusCode());
+            }
+        } finally {
+            jedisOps.del(key);
+        }
+    }
+
+    /* TODO: The implementation for this is outstanding.
+    @Test
+    public void getNumberOfParticipants() {
+        DynamoUserConsent3 consent = new DynamoUserConsent3(HEALTH_CODE, STUDY_IDENTIFIER.getIdentifier());
+        consent.setConsentCreatedOn(studyConsent.getCreatedOn());
+        consent.setSignedOn(DateTime.now().getMillis());
+        
+        mockMapperScanResponse(consent);
+        
+        long count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
+        assertEquals(1L, count);
+    }
+    */
 }

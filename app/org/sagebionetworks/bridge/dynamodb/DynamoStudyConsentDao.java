@@ -9,8 +9,6 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -27,14 +25,14 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     private DynamoDBMapper mapper;
 
     @Resource(name = "studyConsentDdbMapper")
-    public void setDdbMapper(DynamoDBMapper mapper) {
+    final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
     
     @Override
-    public StudyConsent addConsent(StudyIdentifier studyIdentifier, String storagePath, DateTime createdOn) {
+    public StudyConsent addConsent(String subpopGuid, String storagePath, DateTime createdOn) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setStudyKey(studyIdentifier.getIdentifier());
+        consent.setSubpopulationGuid(subpopGuid);
         consent.setCreatedOn(createdOn.getMillis());
         consent.setStoragePath(storagePath);
         mapper.save(consent);
@@ -44,12 +42,11 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     @Override
     public StudyConsent publish(StudyConsent studyConsent) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
-        hashKey.setStudyKey(studyConsent.getStudyKey());
+        hashKey.setSubpopulationGuid(studyConsent.getSubpopulationGuid());
         hashKey.setCreatedOn(studyConsent.getCreatedOn());
         DynamoStudyConsent1 consent = mapper.load(hashKey);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(studyConsent.getStudyKey());
-        StudyConsent activeConsent = getActiveConsent(studyId);
+        StudyConsent activeConsent = getActiveConsent(studyConsent.getSubpopulationGuid());
         
         consent.setActive(true);
         mapper.save(consent);
@@ -62,9 +59,9 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public StudyConsent getActiveConsent(StudyIdentifier studyIdentifier) {
+    public StudyConsent getActiveConsent(String subpopGuid) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
-        hashKey.setStudyKey(studyIdentifier.getIdentifier());
+        hashKey.setSubpopulationGuid(subpopGuid);
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
                 new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
@@ -80,9 +77,9 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public StudyConsent getMostRecentConsent(StudyIdentifier studyIdentifier) {
+    public StudyConsent getMostRecentConsent(String subpopGuid) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
-        hashKey.setStudyKey(studyIdentifier.getIdentifier());
+        hashKey.setSubpopulationGuid(subpopGuid);
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
                 new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
@@ -96,17 +93,17 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
     
     @Override
-    public StudyConsent getConsent(StudyIdentifier studyIdentifier, long timestamp) {
+    public StudyConsent getConsent(String subpopGuid, long timestamp) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setStudyKey(studyIdentifier.getIdentifier());
+        consent.setSubpopulationGuid(subpopGuid);
         consent.setCreatedOn(timestamp);
         return mapper.load(consent);
     }
 
     @Override
-    public List<StudyConsent> getConsents(StudyIdentifier studyIdentifier) {
+    public List<StudyConsent> getConsents(String subpopGuid) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
-        hashKey.setStudyKey(studyIdentifier.getIdentifier());
+        hashKey.setSubpopulationGuid(subpopGuid);
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
                 new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
@@ -120,9 +117,9 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
     
     @Override
-    public void deleteAllConsents(StudyIdentifier studyIdentifier) {
+    public void deleteAllConsents(String subpopGuid) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
-        hashKey.setStudyKey(studyIdentifier.getIdentifier());
+        hashKey.setSubpopulationGuid(subpopGuid);
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
                 new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)

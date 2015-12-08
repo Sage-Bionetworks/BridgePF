@@ -30,32 +30,39 @@ public class UserProfileServiceImpl implements UserProfileService {
     private HealthCodeService healthCodeService;
     
     private ParticipantOptionsService optionsService;
+    
+    private SubpopulationService subpopService;
 
     @Autowired
-    public void setAccountDao(AccountDao accountDao) {
+    final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     
     @Resource(name = "asyncExecutorService")
-    public void setExecutorService(ExecutorService executorService) {
+    final void setExecutorService(ExecutorService executorService) {
         this.executorService = executorService;
     }
     
     @Autowired
-    public void setSendMailService(SendMailService sendMailService) {
+    final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
     
     @Autowired
-    public void setHealthCodeSerivce(HealthCodeService healthCodeService) {
+    final void setHealthCodeSerivce(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
     
     @Autowired
-    public void setParticipantOptionsService(ParticipantOptionsService optionsService) {
+    final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
 
+    @Autowired
+    final void setSubpopulationService(SubpopulationService subpopService) {
+        this.subpopService = subpopService;
+    }
+    
     @Override
     public UserProfile getProfile(Study study, String email) {
         Account account = accountDao.getAccount(study, email);
@@ -90,7 +97,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         // Not clear though from this code, and could change with the implementation.
         Iterator<Account> accounts = accountDao.getStudyAccounts(study);
         executorService.submit(new ParticipantRosterGenerator(
-            accounts, study, sendMailService, healthCodeService, optionsService));
+            accounts, study, sendMailService, healthCodeService, optionsService, subpopService));
     }
 
     @Override

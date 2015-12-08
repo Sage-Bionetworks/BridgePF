@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.redis.RedisKey;
@@ -34,6 +35,7 @@ import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.SignUpValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
     private HealthCodeService healthCodeService;
+    private StudyService studyService;
+    
     private EmailVerificationValidator verificationValidator;
     private SignInValidator signInValidator;
     private PasswordResetValidator passwordResetValidator;
@@ -87,6 +91,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.healthCodeService = healthCodeService;
     }
     @Autowired
+    public void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+    @Autowired
     public void setEmailVerificationValidator(EmailVerificationValidator validator) {
         this.verificationValidator = validator;
     }
@@ -102,7 +110,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void setEmailValidator(EmailValidator validator) {
         this.emailValidator = validator;
     }
-
+    
     @Override
     public UserSession getSession(String sessionToken) {
         if (sessionToken == null) {
@@ -112,8 +120,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
-
+    public UserSession signIn(Study study, ScheduleContext context, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
         Validate.entityThrowingException(signInValidator, signIn);
@@ -123,7 +130,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             lockId = lockDao.acquireLock(SignIn.class, signInLock, LOCK_EXPIRE_IN_SECONDS);
             Account account = accountDao.authenticate(study, signIn);
-            UserSession session = getSessionFromAccount(study, account);
+            
+            UserSession session = getSessionFromAccount(study, context, account);
             cacheProvider.setUserSession(session);
 
             // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2) 
@@ -156,7 +164,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail(), LOCK_EXPIRE_IN_SECONDS);
-            if (consentService.isStudyAtEnrollmentLimit(study)) {
+            if (studyService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
             Account account = accountDao.signUp(study, signUp, isAnonSignUp);
@@ -183,13 +191,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException {
+    public UserSession verifyEmail(Study study, ScheduleContext context, EmailVerification verification) throws ConsentRequiredException {
         checkNotNull(verification, "Verification object cannot be null");
 
         Validate.entityThrowingException(verificationValidator, verification);
         
         Account account = accountDao.verifyEmail(study, verification);
-        UserSession session = getSessionFromAccount(study, account);
+        UserSession session = getSessionFromAccount(study, context, account);
         cacheProvider.setUserSession(session);
 
         if (!session.getUser().doesConsent()) {
@@ -235,7 +243,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
 
-    private UserSession getSessionFromAccount(final Study study, final Account account) {
+    private UserSession getSessionFromAccount(Study study, ScheduleContext context, Account account) {
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
@@ -246,14 +254,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
-
+        
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
-        
-        user.setSignedMostRecentConsent(consentService.hasUserSignedActiveConsent(study, user));
-        user.setConsent(consentService.hasUserConsentedToResearch(study, user));
 
+        context = new ScheduleContext.Builder().withContext(context).withUserDataGroups(user.getDataGroups()).build();
+        
+        user.setConsentStatuses(consentService.getConsentStatuses(context));
         session.setUser(user);
+        
         return session;
     }
 

@@ -17,8 +17,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -26,7 +24,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoStudyConsentDaoTest {
     
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("fake-study");
+    private static final String SUBPOP_GUID = "ABC";
     
     @Resource
     private DynamoStudyConsentDao studyConsentDao;
@@ -38,9 +36,9 @@ public class DynamoStudyConsentDaoTest {
 
     @After
     public void after() {
-        studyConsentDao.deleteAllConsents(STUDY_ID);
+        studyConsentDao.deleteAllConsents(SUBPOP_GUID);
 
-        assertEquals(0, studyConsentDao.getConsents(STUDY_ID).size());
+        assertEquals(0, studyConsentDao.getConsents(SUBPOP_GUID).size());
     }
 
     @Test
@@ -48,10 +46,10 @@ public class DynamoStudyConsentDaoTest {
         DateTime datetime = DateUtils.getCurrentDateTime();
         
         // Add consent version 1, inactive
-        final StudyConsent consent1 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
+        final StudyConsent consent1 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+datetime.getMillis(), datetime);
         assertNotNull(consent1);
         assertFalse(consent1.getActive());
-        assertNull(studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent1.getStudyKey())));
+        assertNull(studyConsentDao.getActiveConsent(consent1.getSubpopulationGuid()));
         
         // Make version1 active
         StudyConsent consent = studyConsentDao.publish(consent1);
@@ -60,36 +58,36 @@ public class DynamoStudyConsentDaoTest {
         datetime = DateUtils.getCurrentDateTime();
         
         // Add version 2
-        final StudyConsent consent2 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
+        final StudyConsent consent2 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+datetime.getMillis(), datetime);
         assertNotNull(consent2);
         
         // The most recent consent should be version 2
-        consent = studyConsentDao.getMostRecentConsent(STUDY_ID);
+        consent = studyConsentDao.getMostRecentConsent(SUBPOP_GUID);
         assertConsentsEqual(consent2, consent, false);
 
         // The active consent is still version 1
-        consent = studyConsentDao.getActiveConsent(STUDY_ID);
+        consent = studyConsentDao.getActiveConsent(SUBPOP_GUID);
         assertConsentsEqual(consent1, consent, true);
         
         // Now make consent 2 the active consent. It should be retrieved by active consent call
         studyConsentDao.publish(consent2);
-        consent = studyConsentDao.getActiveConsent(STUDY_ID);
+        consent = studyConsentDao.getActiveConsent(SUBPOP_GUID);
         assertConsentsEqual(consent2, consent, true);
         
         // And by the way, it's still also the most recent
-        consent = studyConsentDao.getMostRecentConsent(STUDY_ID);
+        consent = studyConsentDao.getMostRecentConsent(SUBPOP_GUID);
         assertConsentsEqual(consent2, consent, true);
         
         // Can still get version 1 using its timestamp
-        consent = studyConsentDao.getConsent(STUDY_ID, consent1.getCreatedOn());
+        consent = studyConsentDao.getConsent(SUBPOP_GUID, consent1.getCreatedOn());
         assertConsentsEqual(consent1, consent, false);
         
         // Add a third consent to test list of consents
         datetime = DateUtils.getCurrentDateTime();
-        final StudyConsent consent3 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
+        final StudyConsent consent3 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+datetime.getMillis(), datetime);
         
         // Get all consents. Should return in reverse order
-        List<StudyConsent> all = studyConsentDao.getConsents(STUDY_ID);
+        List<StudyConsent> all = studyConsentDao.getConsents(SUBPOP_GUID);
         assertEquals(3, all.size());
         assertConsentsEqual(consent3, all.get(0), false);
         assertConsentsEqual(consent2, all.get(1), true);
@@ -99,15 +97,15 @@ public class DynamoStudyConsentDaoTest {
     @Test
     public void crudStudyConsentWithS3Content() throws Exception {
         DateTime createdOn = DateTime.now();
-        String key = STUDY_ID.getIdentifier() + "." + createdOn.getMillis();
-        StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, key, createdOn);
+        String key = SUBPOP_GUID + "." + createdOn.getMillis();
+        StudyConsent consent = studyConsentDao.addConsent(SUBPOP_GUID, key, createdOn);
         assertNotNull(consent);
         assertFalse(consent.getActive());
-        assertNull(studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent.getStudyKey())));
+        assertNull(studyConsentDao.getActiveConsent(consent.getSubpopulationGuid()));
 
         // Now activate the consent
         consent = studyConsentDao.publish(consent);
-        StudyConsent newConsent = studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent.getStudyKey()));
+        StudyConsent newConsent = studyConsentDao.getActiveConsent(consent.getSubpopulationGuid());
         assertConsentsEqual(consent, newConsent, true);
         assertEquals(key, newConsent.getStoragePath());
     }
@@ -117,14 +115,14 @@ public class DynamoStudyConsentDaoTest {
         // Add a consent, activate it, add a consent, activate it, etc.
         for (int i=0; i < 3; i++) {
             DateTime createdOn = DateTime.now();
-            String key = STUDY_ID.getIdentifier() + "." + createdOn.getMillis();
+            String key = SUBPOP_GUID + "." + createdOn.getMillis();
             
-            StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, key, createdOn);
+            StudyConsent consent = studyConsentDao.addConsent(SUBPOP_GUID, key, createdOn);
             studyConsentDao.publish(consent);
         }
         
         // Only one should be active.
-        List<StudyConsent> allConsents = studyConsentDao.getConsents(STUDY_ID);
+        List<StudyConsent> allConsents = studyConsentDao.getConsents(SUBPOP_GUID);
         assertEquals(3, allConsents.size());
         assertTrue(allConsents.get(0).getActive());
         assertFalse(allConsents.get(1).getActive());
@@ -132,7 +130,7 @@ public class DynamoStudyConsentDaoTest {
         
         // Now move the active flag.
         studyConsentDao.publish(allConsents.get(2));
-        allConsents = studyConsentDao.getConsents(STUDY_ID);
+        allConsents = studyConsentDao.getConsents(SUBPOP_GUID);
         assertEquals(3, allConsents.size());
         assertFalse(allConsents.get(0).getActive());
         assertFalse(allConsents.get(1).getActive());
@@ -140,7 +138,7 @@ public class DynamoStudyConsentDaoTest {
         
         // Re-activating the same one changes nothing
         studyConsentDao.publish(allConsents.get(2));
-        allConsents = studyConsentDao.getConsents(STUDY_ID);
+        allConsents = studyConsentDao.getConsents(SUBPOP_GUID);
         assertEquals(3, allConsents.size());
         assertFalse(allConsents.get(0).getActive());
         assertFalse(allConsents.get(1).getActive());
@@ -149,7 +147,7 @@ public class DynamoStudyConsentDaoTest {
     
     private void assertConsentsEqual(StudyConsent existing, StudyConsent newOne, boolean isActive) {
         assertEquals(isActive, newOne.getActive());
-        assertEquals(existing.getStudyKey(), newOne.getStudyKey());
+        assertEquals(existing.getSubpopulationGuid(), newOne.getSubpopulationGuid());
         assertEquals(existing.getStoragePath(), newOne.getStoragePath());
         assertTrue(newOne.getCreatedOn() > 0);
     }

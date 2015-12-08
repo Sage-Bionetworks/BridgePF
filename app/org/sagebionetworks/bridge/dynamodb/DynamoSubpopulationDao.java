@@ -7,9 +7,11 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -28,11 +30,17 @@ import com.google.common.collect.ImmutableList;
 public class DynamoSubpopulationDao implements SubpopulationDao {
     
     private DynamoDBMapper mapper;
+    private StudyConsentDao studyConsentDao;
 
     /** DynamoDB mapper for the HealthDataRecord table. This is configured by Spring. */
     @Resource(name = "subpopulationDdbMapper")
-    public final void setMapper(DynamoDBMapper mapper) {
+    final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+    
+    @Autowired
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+        this.studyConsentDao = studyConsentDao;
     }
     
     @Override
@@ -104,6 +112,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         subpop.setName("Default Consent Group");
         subpop.setMinAppVersion(0);
         subpop.setDefaultGroup(true);
+        // The first group is required until the study designers say otherwise
+        subpop.setRequired(true); 
         mapper.save(subpop);
         return subpop;
     }
@@ -139,6 +149,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (subpop.isDefaultGroup()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }
+        studyConsentDao.deleteAllConsents(guid);
         subpop.setDeleted(true);
         mapper.save(subpop);
     }
@@ -148,9 +159,11 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         List<Subpopulation> subpops = getSubpopulations(studyId, false, true);
         
         if (!subpops.isEmpty()) {
+            for (Subpopulation subpop : subpops) {
+                studyConsentDao.deleteAllConsents(subpop.getGuid());
+            }
             List<FailedBatch> failures = mapper.batchDelete(subpops);
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }
-    
 }

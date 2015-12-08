@@ -2,9 +2,13 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
@@ -12,6 +16,8 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.validators.SubpopulationValidator;
@@ -21,14 +27,25 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class SubpopulationService {
 
     private SubpopulationDao subpopDao;
+    private StudyConsentService studyConsentService;
+    private StudyConsentForm defaultConsentDocument;
     
     @Autowired
     final void setSubpopulationDao(SubpopulationDao subpopDao) {
         this.subpopDao = subpopDao;
     }
+    @Autowired
+    final void setStudyConsentService(StudyConsentService studyConsentService) {
+        this.studyConsentService = studyConsentService;
+    }
+    @Value("classpath:study-defaults/consent-body.xhtml")
+    final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
+    }
     
     /**
-     * Create subpopulation. 
+     * Create subpopulation.
+     * @param study 
      * @param subpop
      * @return
      */
@@ -45,7 +62,23 @@ public class SubpopulationService {
     }
     
     /**
+     * Create a default subpopulation for a new study
+     * @param study
+     * @return
+     */
+    public Subpopulation createDefaultSubpopulation(Study study) {
+        String subpopGuid = study.getIdentifier();
+        if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
+            // The system is broken if the study does not have a consent. Create a default consent so the study is usable.
+            StudyConsentView view = studyConsentService.addConsent(subpopGuid, defaultConsentDocument);
+            studyConsentService.publishConsent(study, subpopGuid, view.getCreatedOn());
+        }
+        return subpopDao.createDefaultSubpopulation(study.getStudyIdentifier());
+    }
+    
+    /**
      * Update a subpopulation.
+     * @param study
      * @param subpop
      * @return
      */
@@ -75,13 +108,15 @@ public class SubpopulationService {
     
     /**
      * Get a specific subpopulation.
+     * @param studyId
+     * @param subpopGuid
      * @return subpopulation
      */
-    public Subpopulation getSubpopulation(StudyIdentifier studyId, String guid) {
+    public Subpopulation getSubpopulation(StudyIdentifier studyId, String subpopGuid) {
         checkNotNull(studyId);
-        checkNotNull(guid);
+        checkNotNull(subpopGuid);
         
-        return subpopDao.getSubpopulation(studyId, guid);
+        return subpopDao.getSubpopulation(studyId, subpopGuid);
     }
     
     /**
@@ -100,13 +135,23 @@ public class SubpopulationService {
     /**
      * Delete a subpopulation.
      * @param studyId
-     * @param guid
+     * @param subpopGuid
      */
-    public void deleteSubpopulation(StudyIdentifier studyId, String guid) {
+    public void deleteSubpopulation(StudyIdentifier studyId, String subpopGuid) {
         checkNotNull(studyId);
-        checkNotNull(guid);
+        checkNotNull(subpopGuid);
         
-        subpopDao.deleteSubpopulation(studyId, guid);
+        subpopDao.deleteSubpopulation(studyId, subpopGuid);
+    }
+    
+    /**
+     * Delete all the subpopulations for a study (being deleted).
+     * @param studyId
+     */
+    public void deleteAllSubpopulations(StudyIdentifier studyId) {
+        checkNotNull(studyId);
+        
+        subpopDao.deleteAllSubpopulations(studyId);
     }
 
 }

@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.HashMap;
-
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,29 +26,34 @@ public class UserSessionInfo {
     }
 
     private final boolean authenticated;
-    private final boolean signedMostRecentConsent;
     private final boolean consented;
+    private final boolean signedMostRecentConsent;
     private final SharingScope sharingScope;
     private final String sessionToken;
     private final String username;
     private final String environment;
     private final Set<Roles> roles;
     private final Set<String> dataGroups;
+    private final List<ConsentStatus> consentStatuses;
 
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
-        this.sessionToken = session.getSessionToken();
-        this.signedMostRecentConsent = session.getUser().hasSignedMostRecentConsent();
         this.consented = session.getUser().doesConsent();
+        this.signedMostRecentConsent = session.getUser().hasSignedMostRecentConsent();
+        this.sessionToken = session.getSessionToken();
         this.sharingScope = session.getUser().getSharingScope();
         this.username = session.getUser().getUsername();
         this.roles = BridgeUtils.nullSafeImmutableSet(session.getUser().getRoles());
         this.dataGroups = BridgeUtils.nullSafeImmutableSet(session.getUser().getDataGroups());
         this.environment = ENVIRONMENTS.get(session.getEnvironment());
+        this.consentStatuses = session.getUser().getConsentStatuses();
     }
 
     public boolean isAuthenticated() {
         return authenticated;
+    }
+    public List<ConsentStatus> getConsentStatuses() {
+        return consentStatuses;
     }
     public boolean isConsented() {
         return consented;
