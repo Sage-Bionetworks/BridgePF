@@ -73,4 +73,11 @@ public interface UserConsentDao {
      * call <code>withDrawConsent()</code> instead.
      */
     void deleteAllConsents(String healthCode, StudyIdentifier studyIdentifier);
+    
+    /**
+     * Copy existing consent record over from consent 2 table to consent 3 table.
+     * @param healthCode
+     * @param studyIdentifier
+     */
+    boolean migrateConsent(String healthCode, StudyIdentifier studyIdentifier);
 }

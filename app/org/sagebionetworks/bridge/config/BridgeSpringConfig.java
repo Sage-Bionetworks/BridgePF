@@ -54,10 +54,12 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
+import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -309,6 +311,12 @@ public class BridgeSpringConfig {
         return DynamoUtils.getMapper(DynamoStudyConsent1.class, bridgeConfig, client);
     }
 
+    @Bean(name = "subpopulationDdbMapper")
+    @Autowired
+    public DynamoDBMapper subpopulationDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoSubpopulation.class, bridgeConfig, client);
+    }
+    
     @Bean(name = "surveyMapper")
     @Autowired
     public DynamoDBMapper surveyDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
@@ -384,6 +392,12 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper surveyResponseDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
         return DynamoUtils.getMapper(DynamoSurveyResponse.class, bridgeConfig, client);
+    }
+    
+    @Bean(name = "userConsentDdbMapper2")
+    @Autowired
+    public DynamoDBMapper userConsentDdbMapper2(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoUserConsent2.class, bridgeConfig, client);
     }
     
     @Bean(name = "userConsentDdbMapper")

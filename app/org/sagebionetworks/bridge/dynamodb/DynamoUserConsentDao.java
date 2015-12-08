@@ -30,8 +30,14 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 @Component
 public class DynamoUserConsentDao implements UserConsentDao {
 
+    private DynamoDBMapper mapper2;
     private DynamoDBMapper mapper;
 
+    @Resource(name = "userConsentDdbMapper2")
+    public final void setDdbMapper2(DynamoDBMapper mapper2) {
+        this.mapper2 = mapper2;
+    }
+    
     @Resource(name = "userConsentDdbMapper")
     public final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
@@ -155,4 +161,43 @@ public class DynamoUserConsentDao implements UserConsentDao {
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }
+    
+    @Override
+    public boolean migrateConsent(String healthCode, StudyIdentifier studyIdentifier) {
+        DynamoUserConsent2 consent2 = getUserConsent2(healthCode, studyIdentifier.getIdentifier());
+        DynamoUserConsent3 consent3 = getUserConsent3(healthCode, studyIdentifier.getIdentifier());
+
+        if (consent2 != null && consent3 == null) {
+            DynamoUserConsent3 newConsent = new DynamoUserConsent3(healthCode, studyIdentifier.getIdentifier());
+            newConsent.setConsentCreatedOn(consent2.getConsentCreatedOn());
+            newConsent.setSignedOn(consent2.getSignedOn());
+            mapper.save(newConsent);
+            return true;
+        }
+        return false;
+    }
+    
+    private DynamoUserConsent2 getUserConsent2(String healthCode, String studyIdentifier) {
+        DynamoUserConsent2 hashKey = new DynamoUserConsent2(healthCode, studyIdentifier);
+
+        return mapper2.load(hashKey);
+    }
+
+    private DynamoUserConsent3 getUserConsent3(String healthCode, String studyIdentifier) {
+        // This record has a range key so there are multiple consents. Get the first one, for now.
+        List<DynamoUserConsent3> consents = getAllUserConsentRecords3(healthCode, studyIdentifier);
+        
+        return (consents.isEmpty()) ? null : consents.get(0);
+    }
+    private List<DynamoUserConsent3> getAllUserConsentRecords3(String healthCode, String studyIdentifier) {
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, studyIdentifier);
+
+        // Currently this is only one record. In the next phase of migration, remove scanIndexForward (maybe) and the limit.
+        DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
+                .withScanIndexForward(false)
+                .withLimit(1)
+                .withHashKeyValues(hashKey);
+
+        return mapper.query(DynamoUserConsent3.class, query);
+    }    
 }

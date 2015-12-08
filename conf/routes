@@ -13,6 +13,14 @@ POST   /v3/auth/signUp                  @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/verifyEmail             @org.sagebionetworks.bridge.play.controllers.AuthenticationController.verifyEmail
 POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resendEmailVerification
 
+# Study Subpopulations
+
+GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations
+POST   /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.createSubpopulation
+GET    /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getSubpopulation(guid: String)
+POST   /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.updateSubpopulation(guid: String)
+DELETE /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.deleteSubpopulation(guid: String)
+
 # Consents
 GET    /v3/consents/signature            @org.sagebionetworks.bridge.play.controllers.ConsentController.getConsentSignature
 POST   /v3/consents/signature            @org.sagebionetworks.bridge.play.controllers.ConsentController.giveV2
