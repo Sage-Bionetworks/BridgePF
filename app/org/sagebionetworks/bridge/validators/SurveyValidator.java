@@ -69,8 +69,7 @@ public class SurveyValidator implements Validator {
         // You can get all sorts of NPEs if survey is not valid and you look at the rules.
         // So don't.
         if (!errors.hasErrors()) {
-            List<SurveyQuestion> questions = survey.getUnmodifiableQuestionList();
-            validateRules(errors, questions);    
+            validateRules(errors, survey.getElements());    
         }
     }
     private void doValidateQuestion(SurveyQuestion question, Errors errors) {
@@ -118,28 +117,32 @@ public class SurveyValidator implements Validator {
             errors.popNestedPath();
         }
     }
-    private void validateRules(Errors errors, List<SurveyQuestion> questions) {
+    private void validateRules(Errors errors, List<SurveyElement> elements) {
         // Should not try and back-track in the survey.
         Set<String> alreadySeenIdentifiers = Sets.newHashSet();
-        for (int i=0; i < questions.size(); i++) {
-            SurveyQuestion question = questions.get(i);
-            for (SurveyRule rule : question.getConstraints().getRules()) {
-                if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                    errors.pushNestedPath("questions["+i+"]");
-                    rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());
-                    errors.popNestedPath();
+        for (int i=0; i < elements.size(); i++) {
+            SurveyElement element = elements.get(i);
+            if (element instanceof SurveyQuestion) {
+                for (SurveyRule rule : ((SurveyQuestion)element).getConstraints().getRules()) {
+                    if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                        errors.pushNestedPath("elements["+i+"]");
+                        rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());
+                        errors.popNestedPath();
+                    }
                 }
             }
-            alreadySeenIdentifiers.add(question.getIdentifier());
+            alreadySeenIdentifiers.add(element.getIdentifier());
         }
         // Now verify that all skipToTarget identifiers actually exist
-        for (int i=0; i < questions.size(); i++) {
-            SurveyQuestion question = questions.get(i);
-            for (SurveyRule rule : question.getConstraints().getRules()) {
-                if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                    errors.pushNestedPath("questions["+i+"]");
-                    rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
-                    errors.popNestedPath();
+        for (int i=0; i < elements.size(); i++) {
+            SurveyElement element = elements.get(i);
+            if (element instanceof SurveyQuestion) {
+                for (SurveyRule rule : ((SurveyQuestion)element).getConstraints().getRules()) {
+                    if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                        errors.pushNestedPath("elements["+i+"]");
+                        rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
+                        errors.popNestedPath();
+                    }
                 }
             }
         }
