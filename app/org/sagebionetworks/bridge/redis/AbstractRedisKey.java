@@ -2,12 +2,6 @@ package org.sagebionetworks.bridge.redis;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.EnumSet;
-
-import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.config.Environment;
-
 abstract class AbstractRedisKey implements RedisKey {
 
     @Override
