@@ -3,9 +3,12 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
+
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.studies.Subpopulation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -35,6 +38,18 @@ public class ConsentStatusTest {
         
         ConsentStatus status2 = BridgeObjectMapper.get().readValue(json, ConsentStatus.class);
         assertEquals(status, status2);
+    }
+
+    @Test
+    public void forSubpopulation() {
+    }
+
+    @Test
+    public void isUserConsented() {
+    }
+
+    @Test
+    public void isConsentCurrent() {
     }
     
 }

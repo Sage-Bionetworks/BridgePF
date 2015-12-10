@@ -209,7 +209,7 @@ public class ScheduledActivityService {
         Map<String,DateTime> newEvents = Maps.newHashMap();
         newEvents.putAll(events);
         newEvents.put("enrollment", new DateTime(signedOn));
-        logger.warn("Enrollment missing from activity event table, pulling from consent record");
+        logger.warn("Enrollment missing from activity event table, pulling from consent records");
         return newEvents;
     }
    
