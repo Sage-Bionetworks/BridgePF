@@ -36,6 +36,8 @@ import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.Lists;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -97,12 +99,12 @@ public class ConsentServiceImpl implements ConsentService {
         
         Account account = accountDao.getAccount(study, user.getEmail());
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
-        if (signature != null) {
-            return signature;
+        if (signature == null) {
+            throw new EntityNotFoundException(ConsentSignature.class);    
         }
-        throw new EntityNotFoundException(ConsentSignature.class);
+        return signature;
     }
-
+    
     @Override
     public User consentToResearch(Study study, String subpopGuid, User user, ConsentSignature consentSignature, 
             SharingScope sharingScope, boolean sendEmail) {
@@ -112,14 +114,15 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
-        if (user.doesConsent()) {
+        ConsentStatus status = getConsentStatus(user, subpopGuid);
+        if (status != null && status.isConsented()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
         ConsentAgeValidator validator = new ConsentAgeValidator(study);
         Validate.entityThrowingException(validator, consentSignature);
 
-        final StudyConsentView studyConsent = studyConsentService.getActiveConsent(study.getIdentifier());
-        final Account account = accountDao.getAccount(study, user.getEmail());
+        StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
+        Account account = accountDao.getAccount(study, user.getEmail());
 
         // Throws exception if we have exceeded enrollment limit.
         studyService.incrementStudyEnrollment(study);
@@ -157,6 +160,9 @@ public class ConsentServiceImpl implements ConsentService {
 
     @Override
     public List<ConsentStatus> getConsentStatuses(ScheduleContext context) {
+        checkNotNull(context);
+        checkNotNull(context.getHealthCode());
+        
         return subpopService.getSubpopulationForUser(context).stream().map(subpop -> {
             boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop.getGuid());
             boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop.getGuid());
@@ -168,7 +174,7 @@ public class ConsentServiceImpl implements ConsentService {
     public void withdrawConsent(Study study, String subpopGuid, User user, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(subpopGuid);
-        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(user);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
@@ -214,7 +220,7 @@ public class ConsentServiceImpl implements ConsentService {
             
             UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
             builder.withName(signature.getName())
-                .withStudyIdentifier(study.getIdentifier())
+                .withSubpopulationGuid(consent.getSubpopulationGuid())
                 .withBirthdate(signature.getBirthdate())
                 .withImageData(signature.getImageData())
                 .withImageMimeType(signature.getImageMimeType())
@@ -258,13 +264,22 @@ public class ConsentServiceImpl implements ConsentService {
         sendMailService.sendEmail(consentEmail);
     }
     
+    private ConsentStatus getConsentStatus(User user, String subpopGuid) {
+        for (ConsentStatus status : user.getConsentStatuses()) {
+            if (status.getGuid().equals(subpopGuid)) {
+                return status;
+            }
+        }
+        return null;
+    }
+    
     private boolean hasUserSignedActiveConsent(String healthCode, String subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
 
         UserConsent userConsent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
         StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(subpopGuid);
-
+        
         if (mostRecentConsent != null && userConsent != null) {
             return userConsent.getConsentCreatedOn() == mostRecentConsent.getCreatedOn();
         } else {
@@ -273,12 +288,17 @@ public class ConsentServiceImpl implements ConsentService {
     }
     
     private void updateSessionConsentStatuses(User user, String subpopGuid, boolean consented) {
-        for (int i=0; i < user.getConsentStatuses().size(); i++) {
-            ConsentStatus status = user.getConsentStatuses().get(i);
-            if (status.getGuid().equals(subpopGuid)) {
-                user.getConsentStatuses().set(i,
-                        new ConsentStatus(status.getName(), status.getGuid(), status.isRequired(), consented, consented));
+        if (user.getConsentStatuses() != null) {
+            List<ConsentStatus> updatedStatuses = Lists.newArrayList();
+            for (int i=0; i < user.getConsentStatuses().size(); i++) {
+                ConsentStatus status = user.getConsentStatuses().get(i);
+                if (status.getGuid().equals(subpopGuid)) {
+                    updatedStatuses.add(new ConsentStatus(status.getName(), status.getGuid(), status.isRequired(), consented, consented));
+                } else {
+                    updatedStatuses.add(status);
+                }
             }
+            user.setConsentStatuses(updatedStatuses);
         }
     }
 }

@@ -14,6 +14,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
@@ -38,7 +40,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StormPathUserAdminServiceTest {
 
-    private static final ScheduleContext CONTEXT = new ScheduleContext.Builder().build();
+    private static final ScheduleContext CONTEXT = new ScheduleContext.Builder()
+            .withStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER).build();
     
     // Decided not to use the helper class for this test because so many edge conditions are
     // being tested here.

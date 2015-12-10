@@ -286,8 +286,8 @@ class StormpathAccount implements Account {
     
     @Override
     public String toString() {
-        return String.format("StormpathAccount [username=%s, firstName=%s, lastName=%s, email=%s, roles=%s]",
-                getUsername(), getFirstName(), getLastName(), getEmail(), getRoles());
+        return String.format("StormpathAccount [username=%s, firstName=%s, lastName=%s, email=%s, roles=%s, signatures=%s]",
+                getUsername(), getFirstName(), getLastName(), getEmail(), getRoles(), getAllConsentSignatureHistories());
     }
 
 }

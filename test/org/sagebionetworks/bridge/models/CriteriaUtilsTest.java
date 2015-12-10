@@ -9,6 +9,7 @@ import java.util.Set;
 import org.junit.Test;
 import org.springframework.validation.Errors;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -97,6 +98,7 @@ public class CriteriaUtilsTest {
     @Test
     public void matchingWithMinimalContextDoesNotCrash() {
         ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier("api")
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT).build();
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, null, null)));
         assertFalse(CriteriaUtils.matchCriteria(context, new SimpleCriteria(Sets.newHashSet("group1"), EMPTY_SET, null, null)));
@@ -151,6 +153,7 @@ public class CriteriaUtilsTest {
     private ScheduleContext getContext() {
         return new ScheduleContext.Builder()
             .withClientInfo(ClientInfo.fromUserAgentCache("app/4"))
+            .withStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)
             .withUserDataGroups(Sets.newHashSet("group1", "group2")).build();
     }
 

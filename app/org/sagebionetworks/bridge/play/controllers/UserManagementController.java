@@ -37,6 +37,7 @@ public class UserManagementController extends BaseController {
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
         
         ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(getClientInfoFromUserAgentHeader()).build();
 
         userAdminService.createUser(signUp, context, study, false, consent);

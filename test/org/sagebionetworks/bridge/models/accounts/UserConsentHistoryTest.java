@@ -26,7 +26,7 @@ public class UserConsentHistoryTest {
         
         UserConsentHistory history = new UserConsentHistory.Builder()
            .withHealthCode("AAA")
-           .withStudyIdentifier("BBB")
+           .withSubpopulationGuid("BBB")
            .withConsentCreatedOn(consentCreatedOn)
            .withName("CCC")
            .withBirthdate("1980-04-02")
@@ -46,7 +46,7 @@ public class UserConsentHistoryTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("AAA", node.get("healthCode").asText());
-        assertEquals("BBB", node.get("studyIdentifier").asText());
+        assertEquals("BBB", node.get("subpopulationGuid").asText());
         assertEquals("2015-10-29T16:29:24.293Z", node.get("consentCreatedOn").asText());
         assertEquals("image/png", node.get("imageMimeType").asText());
         assertEquals("2015-10-29T16:29:42.504Z", node.get("signedOn").asText());

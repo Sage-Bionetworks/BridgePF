@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -15,6 +16,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
  *
  */
 @DynamoDBTable(tableName = "UserConsent3")
+@BridgeTypeName("UserConsent")
 public class DynamoUserConsent3 implements UserConsent {
     
     private String healthCodeSubpopGuid;

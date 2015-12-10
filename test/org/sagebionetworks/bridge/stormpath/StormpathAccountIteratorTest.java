@@ -9,10 +9,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -73,7 +77,7 @@ public class StormpathAccountIteratorTest {
         Directory dir1 = createDirectoryMock(study1, 10);
         Directory dir2 = createDirectoryMock(study2, 250);
         Directory dir3 = createDirectoryMock(study3, 110);
-        
+
         Client client = mock(Client.class);
         when(client.getResource(any(String.class),(Class<Directory>)any(Class.class))).thenReturn(dir1, dir2, dir3);
 
@@ -81,10 +85,23 @@ public class StormpathAccountIteratorTest {
         
         StudyService studyService = mock(StudyService.class);
         when(studyService.getStudies()).thenReturn(studyList);
+
+        SubpopulationService subpopService = mock(SubpopulationService.class);
+        when(subpopService.getSubpopulations(study1.getStudyIdentifier())).thenReturn(getSubpopulationList());
+        when(subpopService.getSubpopulations(study2.getStudyIdentifier())).thenReturn(getSubpopulationList());
+        when(subpopService.getSubpopulations(study3.getStudyIdentifier())).thenReturn(getSubpopulationList());
         
         accountDao.setStormpathClient(client);
         accountDao.setStudyService(studyService);
+        accountDao.setSubpopulationService(subpopService);
+        
         return accountDao;
+    }
+    
+    private List<Subpopulation> getSubpopulationList() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuid(BridgeUtils.generateGuid());
+        return Lists.newArrayList(subpop);
     }
     
     private Study createStudy(String href) {

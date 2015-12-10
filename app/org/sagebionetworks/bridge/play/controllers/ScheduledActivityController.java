@@ -97,8 +97,11 @@ public class ScheduledActivityController extends BaseController {
         }
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
 
-        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(session.getStudyIdentifier())
-                .withClientInfo(clientInfo).withTimeZone(zone).withEndsOn(endsOn)
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(session.getStudyIdentifier())
+                .withClientInfo(clientInfo)
+                .withTimeZone(zone)
+                .withEndsOn(endsOn)
                 .withHealthCode(session.getUser().getHealthCode()).build();
         return scheduledActivityService.getScheduledActivities(session.getUser(), context);
     }

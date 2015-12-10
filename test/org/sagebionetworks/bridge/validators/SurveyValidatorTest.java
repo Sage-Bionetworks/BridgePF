@@ -8,7 +8,10 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
@@ -17,6 +20,8 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
@@ -334,6 +339,37 @@ public class SurveyValidatorTest {
         } catch (InvalidEntityException e) {
             assertEquals("pattern is not a valid regular expression: ?", errorFor(e, "elements[8].constraints.pattern"));
         }
+    }
+    
+    @Test
+    public void willValidateRuleReferencesToNonQuestions() {
+        // ie this is valid because it is looking at identifiers in survey info screens.
+        Survey survey = new DynamoSurvey();
+        survey.setName("Name");
+        survey.setIdentifier("Identifier");
+        survey.setStudyIdentifier("study-key");
+        survey.setGuid("guid");
+        
+        StringConstraints constraints = new StringConstraints();
+        constraints.getRules().add(new SurveyRule(Operator.EQ, "No", "theend"));
+        
+        SurveyQuestion question = new DynamoSurveyQuestion();
+        question.setIdentifier("start");
+        question.setUiHint(UIHint.TEXTFIELD);
+        question.setPrompt("Prompt");
+        question.setConstraints(constraints);
+        
+        SurveyInfoScreen info = new DynamoSurveyInfoScreen();
+        info.setTitle("Title");
+        info.setPrompt("Prompt");
+        info.setIdentifier("theend");
+        
+        survey.getElements().add(question);
+        survey.getElements().add(info);
+        
+        // Anticlimactic, but this used to throw an exception, and it should not have,
+        // because the second element is a SurveyInfoScreen
+        Validate.entityThrowingException(validator, survey);
     }
     
 }

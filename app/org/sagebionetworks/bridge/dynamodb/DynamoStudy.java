@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -27,8 +26,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @BridgeTypeName("Study")
 @JsonFilter("filter")
 public final class DynamoStudy implements Study {
-
-    private static final String DOCS_HOST = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
     
     private String name;
     private String sponsorName;
@@ -265,20 +262,6 @@ public final class DynamoStudy implements Study {
     public void setActive(boolean active) {
         this.active = active;
     }
-    
-    /** {@inheritDoc} */
-    @Override
-    @DynamoDBIgnore
-    public String getConsentHTML() {
-        return String.format("http://%s/%s/consent.html", DOCS_HOST, identifier);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    @DynamoDBIgnore
-    public String getConsentPDF() {
-        return String.format("http://%s/%s/consent.pdf", DOCS_HOST, identifier);
-    }
 
     /** {@inheritDoc} */
     @Override
@@ -317,29 +300,11 @@ public final class DynamoStudy implements Study {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(identifier);
-        result = prime * result + Objects.hashCode(maxNumOfParticipants);
-        result = prime * result + Objects.hashCode(minAgeOfConsent);
-        result = prime * result + Objects.hashCode(name);
-        result = prime * result + Objects.hashCode(sponsorName);
-        result = prime * result + Objects.hashCode(supportEmail);
-        result = prime * result + Objects.hashCode(technicalEmail);
-        result = prime * result + Objects.hashCode(consentNotificationEmail);
-        result = prime * result + Objects.hashCode(stormpathHref);
-        result = prime * result + Objects.hashCode(version);
-        result = prime * result + Objects.hashCode(profileAttributes);
-        result = prime * result + Objects.hashCode(taskIdentifiers);
-        result = prime * result + Objects.hashCode(dataGroups);
-        result = prime * result + Objects.hashCode(passwordPolicy);
-        result = prime * result + Objects.hashCode(verifyEmailTemplate);
-        result = prime * result + Objects.hashCode(resetPasswordTemplate);
-        result = prime * result + Objects.hashCode(active);
-        result = prime * result + Objects.hashCode(strictUploadValidationEnabled);
-        result = prime * result + Objects.hashCode(healthCodeExportEnabled);
-        result = prime * result + Objects.hashCode(minSupportedAppVersions);
-        return result;
+        return Objects.hash(identifier, maxNumOfParticipants, minAgeOfConsent, name, sponsorName, 
+                supportEmail, technicalEmail, consentNotificationEmail, stormpathHref, version, 
+                profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate, 
+                resetPasswordTemplate, active, strictUploadValidationEnabled, healthCodeExportEnabled, 
+                minSupportedAppVersions);
     }
 
     @Override

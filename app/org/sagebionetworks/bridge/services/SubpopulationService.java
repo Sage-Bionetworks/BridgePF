@@ -58,6 +58,9 @@ public class SubpopulationService {
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
         
+        StudyConsentView view = studyConsentService.addConsent(subpop.getGuid(), defaultConsentDocument);
+        studyConsentService.publishConsent(study, subpop.getGuid(), view.getCreatedOn());
+        
         return subpopDao.createSubpopulation(subpop);
     }
     
@@ -68,8 +71,8 @@ public class SubpopulationService {
      */
     public Subpopulation createDefaultSubpopulation(Study study) {
         String subpopGuid = study.getIdentifier();
+        // Migrating, studies will already have consents so don't create and publish a new one.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
-            // The system is broken if the study does not have a consent. Create a default consent so the study is usable.
             StudyConsentView view = studyConsentService.addConsent(subpopGuid, defaultConsentDocument);
             studyConsentService.publishConsent(study, subpopGuid, view.getCreatedOn());
         }

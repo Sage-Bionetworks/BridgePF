@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
@@ -32,10 +33,13 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import com.google.common.collect.Sets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +47,8 @@ import org.springframework.stereotype.Component;
 
 @Component("studyService")
 public class StudyServiceImpl implements StudyService {
+    
+    private static final int TWENTY_FOUR_HOURS = (24*60*60);
 
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
@@ -55,6 +61,7 @@ public class StudyServiceImpl implements StudyService {
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
+    private UserConsentDao userConsentDao;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -108,6 +115,10 @@ public class StudyServiceImpl implements StudyService {
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
+    }
+    @Autowired
+    final void setUserConsentDao(UserConsentDao userConsentDao) {
+        this.userConsentDao = userConsentDao;
     }
     
     @Override
@@ -229,44 +240,34 @@ public class StudyServiceImpl implements StudyService {
     }
     @Override
     public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
-        throw new UnsupportedOperationException();
-        /*
-        checkNotNull(studyIdentifier);
+        Set<String> healthCodes = Sets.newHashSet();
         
-        Condition studyCondition = new Condition()
-                .withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
+        List<Subpopulation> subpops = subpopService.getSubpopulations(studyIdentifier);
+        for (Subpopulation subpop : subpops) {
+            Set<String> subpopCodes = userConsentDao.getParticipantHealthCodes(subpop.getGuid());
+            healthCodes.addAll(subpopCodes);
+        }
         
-        Condition withdrewCondition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
-        
-        DynamoDBScanExpression scan = new DynamoDBScanExpression();
-        scan.setConsistentRead(true);
-        scan.addFilterCondition("studyIdentifier", studyCondition);
-        scan.addFilterCondition("withdrewOn", withdrewCondition);
-        
-        return mapper.scan(DynamoUserConsent3.class, scan).stream()
-                .map(consent -> consent.getHealthCode()).collect(Collectors.toSet()).size();
-        */
+        return healthCodes.size();
     }
+    
     @Override
     public boolean isStudyAtEnrollmentLimit(Study study) {
-        throw new UnsupportedOperationException();
-        /*
         if (study.getMaxNumOfParticipants() == 0) {
             return false;
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-
         long count = Long.MAX_VALUE;
+        
+        // getNumberOfParticipants() is very expensive. Cache this.
         String countString = jedisOps.get(key);
         if (countString == null) {
-            // This is expensive but don't lock, it's better to do it twice slowly, than to throw an exception here.
+            count = getNumberOfParticipants(study); 
             jedisOps.setex(key, TWENTY_FOUR_HOURS, Long.toString(count));
         } else {
             count = Long.parseLong(countString);
         }
         return (count >= study.getMaxNumOfParticipants());
-        */
     }
     @Override
     public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException {

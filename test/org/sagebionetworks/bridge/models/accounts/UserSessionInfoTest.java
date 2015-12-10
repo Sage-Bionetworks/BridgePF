@@ -44,7 +44,6 @@ public class UserSessionInfoTest {
         UserSessionInfo info = new UserSessionInfo(session);
         
         String json = BridgeObjectMapper.get().writeValueAsString(info);
-        System.out.println(json);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals(session.isAuthenticated(), node.get("authenticated").asBoolean());

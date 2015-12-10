@@ -6,7 +6,6 @@ import nl.jqno.equalsverifier.Warning;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -60,8 +59,6 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
-        assertEqualsAndNotNull(study.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
-        assertEqualsAndNotNull(study.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
         assertEqualsAndNotNull((Long)study.getVersion(), (Long)node.get("version").asLong());
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
@@ -70,13 +67,6 @@ public class DynamoStudyTest {
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
         assertNotNull(supportedVersionsNode);
         assertEqualsAndNotNull(study.getMinSupportedAppVersions().get("iPhone OS"), (Integer)supportedVersionsNode.get("iPhone OS").asInt());
-        
-        
-        String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.html";
-        assertEquals(htmlURL, study.getConsentHTML());
-        
-        String pdfURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.pdf";
-        assertEquals(pdfURL, study.getConsentPDF());
         
         // Using the filtered view of a study, this should not include a couple of fields we don't expose to researchers.
         // Negates the need for a view wrapper object, is contextually adjustable, unlike @JsonIgnore.

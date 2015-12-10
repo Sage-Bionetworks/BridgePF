@@ -24,17 +24,11 @@ public class ScheduleContextValidator implements Validator {
     public void validate(Object object, Errors errors) {
         ScheduleContext context = (ScheduleContext)object;
         
-        if (context.getStudyIdentifier() == null) {
-            errors.rejectValue("studyId", "is required");
-        }
         if (context.getZone() == null) {
             errors.rejectValue("offset", "must set a time zone offset in format '±HH:MM'");
         }
         if (context.getHealthCode() == null) {
             errors.rejectValue("healthCode", "is required");
-        }
-        if (context.getClientInfo() == null) {
-            errors.rejectValue("clientInfo", "is required");
         }
         // Very the ending timestamp is not invalid.
         DateTime now = context.getNow();

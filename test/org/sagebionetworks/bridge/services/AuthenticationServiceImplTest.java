@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Sets;
@@ -50,6 +51,8 @@ import com.google.common.collect.Sets;
 public class AuthenticationServiceImplTest {
 
     private static final String TEST_DATA_GROUP = "group1";
+    
+    private ScheduleContext context;
 
     @Resource
     private CacheProvider cacheProvider;
@@ -77,6 +80,11 @@ public class AuthenticationServiceImplTest {
     @Before
     public void before() {
         testUser = helper.getBuilder(AuthenticationServiceImplTest.class).build();
+        
+        context = new ScheduleContext.Builder()
+                .withStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withHealthCode(testUser.getUser().getHealthCode()).build();
+        
         cacheProvider.removeStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         if (!study.getDataGroups().contains(TEST_DATA_GROUP)) {
@@ -92,17 +100,17 @@ public class AuthenticationServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoUsername() throws Exception {
-        authService.signIn(testUser.getStudy(), new SignIn(null, "bar"));
+        authService.signIn(testUser.getStudy(), context, new SignIn(null, "bar"));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
-        authService.signIn(testUser.getStudy(), new SignIn("foobar", null));
+        authService.signIn(testUser.getStudy(), context, new SignIn("foobar", null));
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
-        authService.signIn(testUser.getStudy(), new SignIn("foobar", "bar"));
+        authService.signIn(testUser.getStudy(), context, new SignIn("foobar", "bar"));
     }
 
     @Test
@@ -115,7 +123,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void signInWhenSignedIn() throws Exception {
         String sessionToken = testUser.getSessionToken();
-        UserSession newSession = authService.signIn(testUser.getStudy(), testUser.getSignIn());
+        UserSession newSession = authService.signIn(testUser.getStudy(), context, testUser.getSignIn());
         assertEquals("Username is for test2 user", testUser.getUsername(), newSession.getUser().getUsername());
         assertEquals("Should update the existing session instead of creating a new one.",
                 sessionToken, newSession.getSessionToken());
@@ -123,7 +131,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void signInSetsSharingScope() { 
-        UserSession newSession = authService.signIn(testUser.getStudy(), testUser.getSignIn());
+        UserSession newSession = authService.signIn(testUser.getStudy(), context, testUser.getSignIn());
         assertEquals(SharingScope.NO_SHARING, newSession.getUser().getSharingScope()); // this is the default.
     }
 
@@ -166,7 +174,7 @@ public class AuthenticationServiceImplTest {
                 .withConsent(false).withSignIn(false).build();
         try {
             // Create a user who has not consented.
-            authService.signIn(user.getStudy(), user.getSignIn());
+            authService.signIn(user.getStudy(), context, user.getSignIn());
             fail("Should have thrown consent exception");
         } catch (ConsentRequiredException e) {
         } finally {
@@ -191,7 +199,7 @@ public class AuthenticationServiceImplTest {
         TestUser researcher = helper.getBuilder(AuthenticationServiceImplTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.RESEARCHER).build();
         try {
-            authService.signIn(researcher.getStudy(), researcher.getSignIn());
+            authService.signIn(researcher.getStudy(), context, researcher.getSignIn());
             // no exception should have been thrown.
         } finally {
             helper.deleteUser(researcher);
@@ -203,7 +211,7 @@ public class AuthenticationServiceImplTest {
         TestUser researcher = helper.getBuilder(AuthenticationServiceImplTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.ADMIN).build();
         try {
-            authService.signIn(researcher.getStudy(), researcher.getSignIn());
+            authService.signIn(researcher.getStudy(), context, researcher.getSignIn());
             // no exception should have been thrown.
         } finally {
             helper.deleteUser(researcher);
@@ -265,7 +273,7 @@ public class AuthenticationServiceImplTest {
         TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class).withConsent(true)
                 .withDataGroups(dataGroups).build();
         try {
-            UserSession session = authService.signIn(user.getStudy(), user.getSignIn());
+            UserSession session = authService.signIn(user.getStudy(), context, user.getSignIn());
             // Verify we created a list and the anticipated group was not null
             assertEquals(1, session.getUser().getDataGroups().size()); 
             assertEquals(dataGroups, session.getUser().getDataGroups());

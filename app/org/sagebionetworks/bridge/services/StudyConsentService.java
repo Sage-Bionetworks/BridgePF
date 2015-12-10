@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
@@ -20,10 +19,8 @@ public interface StudyConsentService {
      *            form filled out by researcher including the path to the
      *            consent document and the minimum age required to consent.
      * @return the added consent document of type StudyConsent along with its document content
-     * @throws BridgeServiceException
      */
-    public StudyConsentView addConsent(String subpopGuid, StudyConsentForm form)
-            throws BridgeServiceException;
+    public StudyConsentView addConsent(String subpopGuid, StudyConsentForm form);
 
     /**
      * Gets the currently active consent document for the study.
@@ -31,9 +28,8 @@ public interface StudyConsentService {
      * @param subpopGuid
      *            the subpopulation associated with this consent
      * @return the currently active StudyConsent along with its document content
-     * @throws BridgeServiceException
      */
-    public StudyConsentView getActiveConsent(String subpopGuid) throws BridgeServiceException;
+    public StudyConsentView getActiveConsent(String subpopGuid);
 
     /**
      * Gets the most recently created consent document for the study.
@@ -41,9 +37,8 @@ public interface StudyConsentService {
      * @param subpopGuid
      *            the subpopulation associated with this consent
      * @return the most recent StudyConsent along with its document content
-     * @throws BridgeServiceException
      */
-    public StudyConsentView getMostRecentConsent(String subpopGuid) throws BridgeServiceException;
+    public StudyConsentView getMostRecentConsent(String subpopGuid);
     
     /**
      * Get all added consent documents for the study.
@@ -51,9 +46,8 @@ public interface StudyConsentService {
      * @param subpopGuid
      *            the subpopulation associated with this consent
      * @return list of all consent documents associated with study along with its document content
-     * @throws BridgeServiceException
      */
-    public List<StudyConsent> getAllConsents(String subpopGuid) throws BridgeServiceException;
+    public List<StudyConsent> getAllConsents(String subpopGuid);
 
     /**
      * Gets the consent document associated with the study created at the
@@ -64,9 +58,8 @@ public interface StudyConsentService {
      * @param timestamp
      *            time the consent document was added to the database.
      * @return the specified consent document along with its document content
-     * @throws BridgeServiceException
      */
-    public StudyConsentView getConsent(String subpopGuid, long timestamp) throws BridgeServiceException;
+    public StudyConsentView getConsent(String subpopGuid, long timestamp);
 
     /**
      * Set the specified consent document as active, setting all other consent documents 
@@ -79,8 +72,7 @@ public interface StudyConsentService {
      * @param timestamp
      *            time the consent document was added to the database.
      * @return the activated consent document along with its document content
-     * @throws BridgeServiceException
      */
-    public StudyConsentView publishConsent(Study study, String subpopGuid, long timestamp) throws BridgeServiceException;
+    public StudyConsentView publishConsent(Study study, String subpopGuid, long timestamp);
 
 }

@@ -5,21 +5,25 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 
@@ -41,7 +45,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
         UserConsent activeConsent = getActiveUserConsent(healthCode, studyConsent.getSubpopulationGuid());
         if (activeConsent != null && activeConsent.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
-            throw new BridgeServiceException("Consent already exists.", HttpStatus.SC_CONFLICT);
+            throw new EntityAlreadyExistsException(activeConsent);
         }
         
         DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, studyConsent.getSubpopulationGuid());
@@ -60,7 +64,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         
         DynamoUserConsent3 activeConsent = (DynamoUserConsent3)getActiveUserConsent(healthCode, subpopGuid);
         if (activeConsent == null) {
-            throw new BridgeServiceException("Consent not found.", HttpStatus.SC_NOT_FOUND);
+            throw new EntityNotFoundException(UserConsent.class);
         }
         activeConsent.setWithdrewOn(withdrewOn);
         mapper.save(activeConsent);
@@ -81,10 +85,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
         
         DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, subpopGuid);
 
-        Condition condition = new Condition().withComparisonOperator(ComparisonOperator.NULL);
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
             .withScanIndexForward(false)
-            .withQueryFilterEntry("withdrewOn", condition)
+            .withQueryFilterEntry("withdrewOn", new Condition().withComparisonOperator(ComparisonOperator.NULL))
             .withHashKeyValues(hashKey);
         
         List<DynamoUserConsent3> results = mapper.query(DynamoUserConsent3.class, query);
@@ -102,7 +105,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         
         DynamoUserConsent3 consent = mapper.load(hashKey);
         if (consent == null) {
-            throw new BridgeServiceException("Consent not found.", HttpStatus.SC_NOT_FOUND);   
+            throw new EntityNotFoundException(UserConsent.class);   
         }
         return consent;
     }
@@ -131,5 +134,23 @@ public class DynamoUserConsentDao implements UserConsentDao {
             List<FailedBatch> failures = mapper.batchDelete(consents);
             BridgeUtils.ifFailuresThrowException(failures);
         }
+    }
+    
+    @Override
+    public Set<String> getParticipantHealthCodes(String subpopGuid) {
+        checkNotNull(subpopGuid);
+        
+        // Note that although the mapper converts the studyIdentifier column name to 
+        // subpopulationGuid, we have to use the existing column name here
+        DynamoDBScanExpression scan = new DynamoDBScanExpression()
+                .withFilterConditionEntry("studyIdentifier", new Condition()
+                        .withComparisonOperator(ComparisonOperator.EQ)
+                        .withAttributeValueList(new AttributeValue(subpopGuid)))
+                .withFilterConditionEntry("withdrewOn", new Condition()
+                        .withComparisonOperator(ComparisonOperator.NULL));
+
+        return mapper.scan(DynamoUserConsent3.class, scan).stream()
+            .map(DynamoUserConsent3::getHealthCode)
+            .collect(Collectors.toSet());
     }
 }

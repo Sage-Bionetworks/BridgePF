@@ -14,7 +14,10 @@
   <logger name="org.sagebionetworks.bridge" level="DEBUG" additivity="false">
     <appender-ref ref="STDOUT" />
   </logger>
-  <logger name="org.springframework" level="INFO" additivity="false">
+  <logger name="org.sagebionetworks.bridge.play" level="ERROR" additivity="false">
+    <appender-ref ref="STDOUT" />
+  </logger>
+  <logger name="org.springframework" level="WARN" additivity="false">
     <appender-ref ref="STDOUT" />
   </logger>
 </configuration>

@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -27,6 +28,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
+import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -49,15 +51,17 @@ public class StudyConsentServiceImplTest {
 
     @Resource
     private StudyConsentService studyConsentService;
-
+    
     private Study study;
     
     @Before
     public void before() {
+        String id = TestUtils.randomName(StudyConsentServiceImplTest.class);
+        
         study = new DynamoStudy();
-        study.setIdentifier("study-key");
-        study.setName("A test study");
-        study.setSponsorName("A sponsor name");
+        study.setIdentifier(id);
+        study.setName(id);
+        study.setSponsorName(id);
     }
     
     @After
@@ -146,7 +150,9 @@ public class StudyConsentServiceImplTest {
 
         // Now retrieve the HTML version of the document and verify it has been updated.
         // Removing SSL because IOUtils doesn't support it and although we do it, we don't need to.
-        String htmlURL = study.getConsentHTML();
+        Subpopulation subpopulation = Subpopulation.create();
+        subpopulation.setGuid(SUBPOP_GUID);
+        String htmlURL = subpopulation.getConsentHTML();
         
         String retrievedContent = IOUtils.toString(new URL(htmlURL).openStream(), Charset.forName("UTF-8"));
         assertTrue(retrievedContent.contains(content));

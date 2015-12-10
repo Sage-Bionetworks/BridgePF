@@ -3,11 +3,13 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -23,6 +25,8 @@ import com.google.common.collect.Sets;
 @DynamoDBTable(tableName = "Subpopulation")
 @BridgeTypeName("Subpopulation")
 public final class DynamoSubpopulation implements Subpopulation {
+
+    private static final String DOCS_HOST = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
 
     private String studyIdentifier;
     private String guid;
@@ -153,6 +157,19 @@ public final class DynamoSubpopulation implements Subpopulation {
     @Override
     public void setVersion(Long version) {
         this.version = version;
+    }
+    /** {@inheritDoc} */
+    @Override
+    @DynamoDBIgnore
+    public String getConsentHTML() {
+        return String.format("http://%s/%s/consent.html", DOCS_HOST, guid);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @DynamoDBIgnore
+    public String getConsentPDF() {
+        return String.format("http://%s/%s/consent.pdf", DOCS_HOST, guid);
     }
     
     @Override

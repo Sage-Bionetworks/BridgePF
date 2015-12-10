@@ -167,7 +167,7 @@ public final class User implements BridgeEntity {
      * @return
      */
     public boolean doesConsent() {
-        return !consentStatuses.isEmpty() && consentStatuses.stream().allMatch(status -> !status.isRequired() || status.isConsented());
+        return ConsentStatus.isUserConsented(consentStatuses);
     }
 
     /**
@@ -175,7 +175,7 @@ public final class User implements BridgeEntity {
      * @return
      */
     public boolean hasSignedMostRecentConsent() {
-        return !consentStatuses.isEmpty() && consentStatuses.stream().allMatch(status -> !status.isRequired() || status.isMostRecentConsent());
+        return ConsentStatus.isConsentCurrent(consentStatuses);
     }
     
     @Override

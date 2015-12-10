@@ -180,11 +180,20 @@ public class TestUserAdminHelper {
                 study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
             }
             if (context == null) {
-                context = new ScheduleContext.Builder().build();
+                context = new ScheduleContext.Builder()
+                    .withStudyIdentifier(study.getStudyIdentifier())
+                    .withUserDataGroups(dataGroups)
+                    .build();
             }
             String name = makeRandomUserName(cls);
             SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
             UserSession session = userAdminService.createUser(finalSignUp, context, study, signIn, consent);
+            
+            // Add the health code
+            if (session != null) {
+                context = new ScheduleContext.Builder().withContext(context)
+                        .withHealthCode(session.getUser().getHealthCode()).build();
+            }
             return new TestUser(finalSignUp, study, session);
         }
     }

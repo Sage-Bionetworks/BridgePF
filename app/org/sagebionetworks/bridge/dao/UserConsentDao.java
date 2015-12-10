@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -36,7 +37,8 @@ public interface UserConsentDao {
 
     /**
      * Get the active user consent record (a consent that has not been withdrawn), 
-     * that consents the user to this study.
+     * that consents the user to this study. This method returns null if there is no 
+     * active consent (the user has consented to this subpopulation).
      * @param healthCode
      * @param subpopGuid
      * @return
@@ -66,4 +68,12 @@ public interface UserConsentDao {
      * call <code>withDrawConsent()</code> instead.
      */
     void deleteAllConsents(String healthCode, String subpopGuid);
+    
+    /**
+     * Get a set of unique health codes that have consented to this subpopulation's consent. Used to 
+     * calculate the number of participants in a study.
+     * @param subpopGuid
+     * @return
+     */
+    Set<String> getParticipantHealthCodes(String subpopGuid);
 }

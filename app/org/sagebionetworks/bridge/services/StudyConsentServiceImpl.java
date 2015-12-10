@@ -21,7 +21,6 @@ import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -61,17 +60,14 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.fullPageTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-
     @Autowired
     final void setValidator(StudyConsentValidator validator) {
         this.validator = validator;
     }
-    
     @Autowired
     final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
-    
     @Resource(name = "s3ConsentsHelper")
     final void setS3Helper(S3Helper helper) {
         this.s3Helper = helper;
@@ -87,7 +83,6 @@ public class StudyConsentServiceImpl implements StudyConsentService {
 
         DateTime createdOn = DateUtils.getCurrentDateTime();
         String storagePath = subpopGuid + "." + createdOn.getMillis();
-        
         try {
             s3Helper.writeBytesToS3(CONSENTS_BUCKET, storagePath, sanitizedContent.getBytes());
             StudyConsent consent = studyConsentDao.addConsent(subpopGuid, storagePath, createdOn);
@@ -125,11 +120,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     public List<StudyConsent> getAllConsents(String subpopGuid) {
         checkNotNull(subpopGuid);
         
-        List<StudyConsent> consents = studyConsentDao.getConsents(subpopGuid);
-        if (consents == null || consents.isEmpty()) {
-            throw new BadRequestException("There are no consent records.");
-        }
-        return consents;
+        return studyConsentDao.getConsents(subpopGuid);
     }
 
     @Override
@@ -196,7 +187,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         map.put("consent.body", resolvedHTML);
         resolvedHTML = BridgeUtils.resolveTemplate(fullPageTemplate, map);
         
-        String key = study.getIdentifier()+"/"+subpopGuid+"/consent.html";
+        String key = subpopGuid+"/consent.html";
         byte[] bytes = resolvedHTML.getBytes(Charset.forName(("UTF-8")));
         s3Helper.writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, bytes, MimeType.HTML);
         
@@ -208,7 +199,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
             renderer.createPDF(buffer);
             buffer.flush();
             
-            key = study.getIdentifier()+"/consent.pdf";
+            key = subpopGuid+"/consent.pdf";
             s3Helper.writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, buffer.toByteArray(), MimeType.PDF);
         }
     }

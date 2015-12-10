@@ -108,7 +108,7 @@ public class DynamoUserConsentDaoMockTest {
             userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());
             fail("Should have thrown exception");
         } catch(BridgeServiceException e) {
-            assertEquals("Consent already exists.", e.getMessage());
+            assertEquals("UserConsent already exists.", e.getMessage());
             assertEquals(HttpStatus.SC_CONFLICT, e.getStatusCode());
         }
         verify(mapper).query(any(), any());
@@ -168,7 +168,7 @@ public class DynamoUserConsentDaoMockTest {
             userConsentDao.withdrawConsent(HEALTH_CODE, SUBPOP_GUID, UNIX_TIMESTAMP);
             fail("Should have thrown exception.");
         } catch(BridgeServiceException e) {
-            assertEquals("Consent not found.", e.getMessage());
+            assertEquals("UserConsent not found.", e.getMessage());
             assertEquals(404, e.getStatusCode());
         }
         verify(mapper).query(any(), any());

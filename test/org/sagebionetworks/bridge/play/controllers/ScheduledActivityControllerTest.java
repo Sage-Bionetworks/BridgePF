@@ -70,6 +70,7 @@ public class ScheduledActivityControllerTest {
         User user = new User();
         user.setHealthCode("BBB");
         session.setUser(user);
+        session.setStudyIdentifier(TestConstants.TEST_STUDY);
         
         scheduledActivityService = mock(ScheduledActivityService.class);
         when(scheduledActivityService.getScheduledActivities(any(User.class), any(ScheduleContext.class))).thenReturn(list);

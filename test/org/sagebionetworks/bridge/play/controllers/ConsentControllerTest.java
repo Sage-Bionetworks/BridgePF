@@ -66,7 +66,7 @@ public class ConsentControllerTest {
                 node.put("scope", SharingScope.NO_SHARING.name().toLowerCase());
                 
                 // First, verify this header isn't on *every* endpoint
-                WSRequest request = WS.url(TEST_BASE_URL + "/v3/consents/signature");
+                WSRequest request = WS.url(TEST_BASE_URL + "/v3/users/self");
                 WSResponse response = request.post(node).get(TIMEOUT);
                 String headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
                 assertNull(headerValue);
@@ -86,7 +86,6 @@ public class ConsentControllerTest {
                 response = request.post(node).get(TIMEOUT);
                 headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
                 assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
-                
             }
         });
     }
@@ -99,7 +98,6 @@ public class ConsentControllerTest {
     public void invalidConsentCorrectlyReturns400() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
-                
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(STUDY_PROPERTY, testUser.getStudyIdentifier().getIdentifier());
                 node.put(USERNAME, testUser.getUsername());

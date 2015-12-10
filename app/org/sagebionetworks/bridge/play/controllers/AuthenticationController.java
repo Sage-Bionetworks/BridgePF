@@ -57,6 +57,7 @@ public class AuthenticationController extends BaseController {
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
         ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(study)
                 .withClientInfo(getClientInfoFromUserAgentHeader()).build();
         
         // In normal course of events (verify email, consent to research),
@@ -104,6 +105,7 @@ public class AuthenticationController extends BaseController {
         SignIn signIn = parseJson(request(), SignIn.class);
         Study study = getStudyOrThrowException(json);
         ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(study)
                 .withClientInfo(getClientInfoFromUserAgentHeader()).build();
         
         try {

@@ -128,7 +128,7 @@ public abstract class BaseController extends Controller {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());        
         verifySupportedVersionOrThrowException(study);
-        if (!session.getUser().isConsent()) {
+        if (!session.getUser().doesConsent()) {
             throw new ConsentRequiredException(session);
         }
         return session;

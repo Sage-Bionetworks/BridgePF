@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -14,17 +15,20 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import java.util.List;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
 
 import com.google.common.collect.ImmutableList;
@@ -34,6 +38,8 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class SubpopulationServiceTest {
 
+    private static final long CONSENT_CREATED_ON = DateTime.now().getMillis();
+    
     SubpopulationService service;
     
     @Mock
@@ -42,14 +48,22 @@ public class SubpopulationServiceTest {
     @Mock
     Study study;
     
+    @Mock
+    StudyConsentService studyConsentService;
+    
+    @Mock
+    StudyConsentView view; 
+    
     Subpopulation subpop;
     
     @Before
     public void before() {
         service = new SubpopulationService();
         service.setSubpopulationDao(dao);
+        service.setStudyConsentService(studyConsentService);
         
         subpop = Subpopulation.create();
+        subpop.setGuid(BridgeUtils.generateGuid());
         
         Set<String> dataGroups = Sets.newHashSet("group1","group2");
         when(study.getDataGroups()).thenReturn(dataGroups);
@@ -57,6 +71,11 @@ public class SubpopulationServiceTest {
         
         when(dao.createSubpopulation(any())).thenAnswer(returnsFirstArg());
         when(dao.updateSubpopulation(any())).thenAnswer(returnsFirstArg());
+        
+        when(view.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
+        
+        when(studyConsentService.addConsent(any(), any())).thenReturn(view);
+        when(studyConsentService.publishConsent(any(), any(), eq(CONSENT_CREATED_ON))).thenReturn(view);
     }
     
     // The contents of this exception are tested in the validator tests.
@@ -90,6 +109,8 @@ public class SubpopulationServiceTest {
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
         verify(dao).createSubpopulation(subpop);
+        verify(studyConsentService).addConsent(eq(result.getGuid()), any());
+        verify(studyConsentService).publishConsent(study, result.getGuid(), CONSENT_CREATED_ON);
     }
     @Test
     public void updateSubpopulation() {
@@ -141,6 +162,7 @@ public class SubpopulationServiceTest {
         // We test the matching logic in CriteriaUtilsTest as well as in the DAO. Here we just want
         // to verify it is being carried through.
         ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier("test-key")
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/4")).build();
         
         when(dao.getSubpopulationsForUser(context)).thenReturn(subpops);

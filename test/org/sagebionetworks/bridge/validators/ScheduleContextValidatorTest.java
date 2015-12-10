@@ -29,29 +29,12 @@ public class ScheduleContextValidatorTest {
     }
     
     @Test
-    public void clientInfoRequired() {
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("test-id")
-                .withEndsOn(DateTime.now().plusDays(2))
-                .withTimeZone(DateTimeZone.forOffsetHours(-3))
-                .withHealthCode("AAA")
-                .build();
-        try {
-            Validate.nonEntityThrowingException(validator, context);
-            fail("Should have thrown exception");
-        } catch(BadRequestException e) {
-            assertTrue(e.getMessage().contains("clientInfo is required"));
-        }
-    }
-    
-    @Test
     public void studyIdentifierTimeZoneHealthCodeAndEndsOnAlwaysRequired() {
-        ScheduleContext context = new ScheduleContext.Builder().build();
+        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier("test").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
-            assertTrue(e.getMessage().contains("studyId is required"));
             assertTrue(e.getMessage().contains("offset must set a time zone offset"));
             assertTrue(e.getMessage().contains("healthCode is required"));
             assertTrue(e.getMessage().contains("endsOn is required"));

@@ -1,12 +1,15 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.Subpopulation;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -62,5 +65,22 @@ public class DynamoSubpopulationTest {
         newSubpop.setDeleted(true);
         
         assertEquals(subpop, newSubpop);
+        
+        // Finally, check the publication site URLs
+        assertEqualsAndNotNull(newSubpop.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
+        assertEqualsAndNotNull(newSubpop.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
+
+        String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuid() + "/consent.html";
+        assertEquals(htmlURL, newSubpop.getConsentHTML());
+        
+        String pdfURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuid() + "/consent.pdf";
+        assertEquals(pdfURL, newSubpop.getConsentPDF());
     }
+    
+    void assertEqualsAndNotNull(Object expected, Object actual) {
+        assertNotNull(expected);
+        assertNotNull(actual);
+        assertEquals(expected, actual);
+    }
+    
 }

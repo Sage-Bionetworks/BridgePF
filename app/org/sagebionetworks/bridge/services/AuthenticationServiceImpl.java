@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -17,6 +19,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
@@ -133,7 +136,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             
             UserSession session = getSessionFromAccount(study, context, account);
             cacheProvider.setUserSession(session);
-
+            
             // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2) 
             // you've consented to research.
             if (!session.getUser().doesConsent() && !session.getUser().isInRole(Roles.ADMINISTRATIVE_ROLES)) {
@@ -258,9 +261,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
 
-        context = new ScheduleContext.Builder().withContext(context).withUserDataGroups(user.getDataGroups()).build();
+        // now that we know more about this user, we can expand on the request context.
+        context = new ScheduleContext.Builder()
+                .withContext(context)
+                .withHealthCode(healthCode)
+                .withUserDataGroups(user.getDataGroups())
+                .withStudyIdentifier(study.getIdentifier()) // probably already set
+                .build();
         
-        user.setConsentStatuses(consentService.getConsentStatuses(context));
+        List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        
+        user.setConsentStatuses(statuses);
         session.setUser(user);
         
         return session;

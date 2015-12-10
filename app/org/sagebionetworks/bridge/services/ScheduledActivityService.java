@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
@@ -60,6 +61,8 @@ public class ScheduledActivityService {
     
     private SurveyResponseService surveyResponseService;
     
+    private SubpopulationService subpopService;
+    
     @Autowired
     public final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
         this.activityDao = activityDao;
@@ -83,6 +86,10 @@ public class ScheduledActivityService {
     @Autowired
     public final void setSurveyResponseService(SurveyResponseService surveyResponseService) {
         this.surveyResponseService = surveyResponseService;
+    }
+    @Autowired
+    public final void setSubpopulationService(SubpopulationService subpopService) {
+        this.subpopService = subpopService;
     }
     
     public List<ScheduledActivity> getScheduledActivities(User user, ScheduleContext context) {
@@ -189,12 +196,19 @@ public class ScheduledActivityService {
      * @return
      */
     private Map<String, DateTime> createEnrollmentEventFromConsent(ScheduleContext context, Map<String, DateTime> events) {
-        // NOTE: No idea what happens to enrollment, since there can be multiple enrollment dates. We will probably
-        // need to record the first enrollment and go from there.... can we schedule against different subpopulations? Please no.
-        UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), context.getStudyIdentifier().getIdentifier());
+        // This should no longer happen, but in case a record was never migrated, go back to the consents to find the 
+        // enrollment date. It's the earliest of all the signature dates.
+        long signedOn = Long.MAX_VALUE;
+        List<Subpopulation> subpops = subpopService.getSubpopulations(context.getStudyIdentifier());
+        for (Subpopulation subpop : subpops) {
+            UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), subpop.getGuid());
+            if (consent != null && consent.getSignedOn() < signedOn) {
+                signedOn = consent.getSignedOn();
+            }
+        }
         Map<String,DateTime> newEvents = Maps.newHashMap();
         newEvents.putAll(events);
-        newEvents.put("enrollment", new DateTime(consent.getSignedOn()));
+        newEvents.put("enrollment", new DateTime(signedOn));
         logger.warn("Enrollment missing from activity event table, pulling from consent record");
         return newEvents;
     }

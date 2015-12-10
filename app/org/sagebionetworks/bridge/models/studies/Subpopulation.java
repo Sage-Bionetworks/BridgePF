@@ -58,5 +58,17 @@ public interface Subpopulation extends Criteria {
     public void setMaxAppVersion(Integer minAppVersion);
     public void setAllOfGroups(Set<String> allOfGroups);
     public void setNoneOfGroups(Set<String> noneOfGroups);
+    
+    /**
+     * URL for retrieving the HTML version of the published consent for this study.
+     * @return
+     */
+    public String getConsentHTML();
+    
+    /**
+     * URL for retrieving the PDF version of the published consent for this study.
+     * @return
+     */
+    public String getConsentPDF();
 
 }

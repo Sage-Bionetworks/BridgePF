@@ -16,6 +16,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.UserProfileService;
+import org.sagebionetworks.bridge.validators.DataGroupsValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -95,8 +97,10 @@ public class UserProfileController extends BaseController {
     
     public Result updateDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
         
         DataGroups dataGroups = parseJson(request(), DataGroups.class);
+        Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);
         
         optionsService.setStringSet(session.getStudyIdentifier(), 
                 session.getUser().getHealthCode(), DATA_GROUPS, dataGroups.getDataGroups());
