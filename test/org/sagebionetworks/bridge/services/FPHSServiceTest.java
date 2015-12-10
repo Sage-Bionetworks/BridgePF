@@ -10,9 +10,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -20,7 +18,6 @@ import static org.mockito.Mockito.when;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -28,6 +25,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class FPHSServiceTest {
 
@@ -84,26 +82,29 @@ public class FPHSServiceTest {
             service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
             fail("Exception should have been thrown");
         } catch(EntityNotFoundException e) {
+            verify(dao).verifyExternalId(externalId);
             verify(dao).registerExternalId(externalId);
             verifyNoMoreInteractions(dao);
+            // Options service will be called. The id may not be registered, if so, the call
+            // can be called again, the service calls are idempotent. Or else it actually was 
+            // recorded, in which case it's also fine, despite the exception.
+            verify(optionsService).getStringSet("BBB", DATA_GROUPS);
             verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
-            verify(optionsService, times(2)).setStringSet(eq(TEST_STUDY), eq("BBB"), eq(DATA_GROUPS), any());
-            verify(optionsService).deleteOption("BBB", ParticipantOption.EXTERNAL_IDENTIFIER);
+            verify(optionsService).setStringSet(TEST_STUDY, "BBB", DATA_GROUPS, Sets.newHashSet("football_player"));
+            verifyNoMoreInteractions(optionsService);
         }
     }
     
     @Test
     public void failureToSetExternalIdRollsBackRegistration() throws Exception {
-        doThrow(new RuntimeException()).when(dao).registerExternalId(any());
+        doThrow(new RuntimeException()).when(dao).verifyExternalId(any());
         try {
             service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
             fail("Exception should have been thrown");
         } catch(RuntimeException e) {
-            verify(dao).registerExternalId(externalId);
+            verify(dao).verifyExternalId(externalId);
             verifyNoMoreInteractions(dao);
-            verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
-            verify(optionsService).deleteOption("BBB", ParticipantOption.EXTERNAL_IDENTIFIER);
-            verify(optionsService, times(2)).setStringSet(eq(TEST_STUDY), eq("BBB"), eq(DATA_GROUPS), any());
+            verifyNoMoreInteractions(optionsService);
         }
     }
     

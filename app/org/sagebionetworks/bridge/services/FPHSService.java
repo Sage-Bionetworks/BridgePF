@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
@@ -51,20 +50,13 @@ public class FPHSService {
         if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
+        verifyExternalIdentifier(externalId);
+        
         Set<String> dataGroups = optionsService.getStringSet(healthCode, DATA_GROUPS);
         dataGroups.add("football_player");
-        
         optionsService.setString(studyId, healthCode, EXTERNAL_IDENTIFIER, externalId.getIdentifier());
         optionsService.setStringSet(studyId, healthCode, DATA_GROUPS, dataGroups);
-        try {
-            fphsDao.registerExternalId(externalId);
-        } catch(Exception e) {
-            // rollback
-            dataGroups.remove("football_player");
-            optionsService.deleteOption(healthCode, ParticipantOption.EXTERNAL_IDENTIFIER);
-            optionsService.setStringSet(studyId, healthCode, DATA_GROUPS, dataGroups);
-            throw e;
-        }
+        fphsDao.registerExternalId(externalId);
     }
     
     /**
