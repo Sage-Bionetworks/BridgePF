@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
 import java.util.List;
 
@@ -9,7 +10,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -84,8 +87,8 @@ public class FPHSServiceTest {
             verify(dao).registerExternalId(externalId);
             verifyNoMoreInteractions(dao);
             verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+            verify(optionsService, times(2)).setStringSet(eq(TEST_STUDY), eq("BBB"), eq(DATA_GROUPS), any());
             verify(optionsService).deleteOption("BBB", ParticipantOption.EXTERNAL_IDENTIFIER);
-            verifyNoMoreInteractions(optionsService);
         }
     }
     
@@ -100,7 +103,7 @@ public class FPHSServiceTest {
             verifyNoMoreInteractions(dao);
             verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
             verify(optionsService).deleteOption("BBB", ParticipantOption.EXTERNAL_IDENTIFIER);
-            verifyNoMoreInteractions(optionsService);
+            verify(optionsService, times(2)).setStringSet(eq(TEST_STUDY), eq("BBB"), eq(DATA_GROUPS), any());
         }
     }
     
