@@ -70,7 +70,8 @@ public class ParticipantRosterGenerator implements Runnable {
                 study, ParticipantOption.SHARING_SCOPE);
             OptionLookup emailLookup = optionsService.getOptionForAllStudyParticipants(
                 study, ParticipantOption.EMAIL_NOTIFICATIONS);
-            
+            OptionLookup externalIdLookup = optionsService.getOptionForAllStudyParticipants(
+                study, ParticipantOption.EXTERNAL_IDENTIFIER);
             int count = 0;
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
@@ -86,6 +87,7 @@ public class ParticipantRosterGenerator implements Runnable {
                         Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
                         participant.setSharingScope(sharing);
                         participant.setNotifyByEmail(notifyByEmail);
+                        participant.setExternalId(externalIdLookup.get(healthCode));
                     }
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());

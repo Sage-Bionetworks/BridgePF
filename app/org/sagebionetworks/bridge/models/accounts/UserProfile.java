@@ -20,6 +20,8 @@ public class UserProfile {
     public static final String EMAIL_FIELD = "email";
     public static final String USERNAME_FIELD = "username";
     public static final String HEALTH_CODE_FIELD = "healthCode";
+    public static final String EXTERNAL_ID_FIELD = "externalId";
+    
     /**
      * These fields are not part of the profile, but they are used on export to expose the participant option values, so
      * studies cannot override these values as extended user profile attributes.
