@@ -10,7 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import play.mvc.Result;

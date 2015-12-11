@@ -10,7 +10,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

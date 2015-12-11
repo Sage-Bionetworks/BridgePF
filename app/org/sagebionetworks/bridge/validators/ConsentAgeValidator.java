@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.validators;
 
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 
 public interface UserConsentDao {
 

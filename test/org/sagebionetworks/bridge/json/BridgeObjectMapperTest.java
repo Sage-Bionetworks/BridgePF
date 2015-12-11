@@ -6,7 +6,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 import com.fasterxml.jackson.databind.JsonNode;

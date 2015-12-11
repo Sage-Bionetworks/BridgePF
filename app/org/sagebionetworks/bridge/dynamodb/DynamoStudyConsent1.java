@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;

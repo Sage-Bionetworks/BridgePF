@@ -36,11 +36,12 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;

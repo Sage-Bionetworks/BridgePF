@@ -3,7 +3,8 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
+
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 
 public interface StudyConsentDao {
 

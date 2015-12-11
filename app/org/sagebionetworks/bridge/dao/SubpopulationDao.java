@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 public interface SubpopulationDao {
 

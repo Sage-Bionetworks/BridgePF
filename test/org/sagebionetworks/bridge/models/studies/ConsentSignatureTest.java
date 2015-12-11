@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 

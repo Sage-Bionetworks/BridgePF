@@ -6,6 +6,8 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 
 public class StudyConsentViewTest {
 

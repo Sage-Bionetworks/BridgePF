@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.accounts;
 import java.util.List;
 import java.util.Objects;
 
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

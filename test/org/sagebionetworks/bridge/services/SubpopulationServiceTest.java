@@ -28,8 +28,8 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

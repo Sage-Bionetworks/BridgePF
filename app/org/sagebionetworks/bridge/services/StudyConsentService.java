@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.services;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 
 public interface StudyConsentService {
 

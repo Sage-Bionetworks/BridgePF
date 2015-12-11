@@ -6,8 +6,8 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 /**
  * Encryption of account values is handled transparently by the account implementation. 

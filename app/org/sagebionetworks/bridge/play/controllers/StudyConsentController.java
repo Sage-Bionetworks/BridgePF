@@ -7,10 +7,10 @@ import java.util.List;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
