@@ -83,17 +83,17 @@ public class ParticipantRosterProviderTest {
         participant.put("recontact", "false");
         participant.put(UserProfile.SHARING_SCOPE_FIELD, SharingScope.NO_SHARING.name());
         participant.setHealthCode("AAA");
-        participant.setSubpopulationNames("Default Consent Group");
+        participant.setExternalId("abc");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
-        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "Phone", "Recontact", "Health Code", "Consent Groups");
+        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "External ID", "Phone", "Recontact", "Health Code");
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
-        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "(123) 456-7890", "false", "AAA", "Default Consent Group");
+        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "abc", "(123) 456-7890", "false", "AAA");
         assertEquals(output, provider.createParticipantTSV());
         
         participant.setLastName(null);
-        output = headerString + row("test@test.com","First","","Not Sharing","false","(123) 456-7890","false", "AAA", "Default Consent Group");
+        output = headerString + row("test@test.com","First","","Not Sharing","false","abc","(123) 456-7890","false", "AAA");
         assertEquals(output, provider.createParticipantTSV());
         
         participant.setFirstName(null);
@@ -114,8 +114,8 @@ public class ParticipantRosterProviderTest {
         
         // This is pretty broken, but you should still get output. 
         participants.add(numberTwo);
-        output = headerString + row("test@test.com","","Last","","false","","false", "AAA", "Default Consent Group") + row("test2@test.com","","","","","","","","");
-        assertEquals(output, provider.createParticipantTSV());
+        output = headerString + row("test@test.com","","Last","","false","", "","false", "AAA") + row("test2@test.com","","","","","","","","");
+        assertEquals("6", output, provider.createParticipantTSV());
         
         participants.clear();
         assertEquals(headerString, provider.createParticipantTSV());
@@ -131,16 +131,17 @@ public class ParticipantRosterProviderTest {
         participant.setEmail("test@test.com");
         participant.put("phone", "(123)\t456-7890"); // Tab snuck into this string should be converted to a space
         participant.setNotifyByEmail(Boolean.FALSE);
+        participant.setExternalId("abc");
         participant.put("recontact", "false");
         participant.put(UserProfile.SHARING_SCOPE_FIELD, SharingScope.NO_SHARING.name());
         participant.setHealthCode("AAA");
         participant.setSubpopulationNames("Default Consent Group");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
-        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "Phone", "Recontact", "Consent Groups");
+        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "External ID", "Phone", "Recontact");
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
-        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "(123) 456-7890", "false", "Default Consent Group");
+        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "abc", "(123) 456-7890", "false");
         assertEquals(output, provider.createParticipantTSV());
     }
     

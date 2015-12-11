@@ -82,6 +82,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
         append(sb, "Last Name", true);
         append(sb, "Sharing Scope", true);
         append(sb, "Email Notifications", true);
+        append(sb, "External ID", true);
         for (String attribute : study.getUserProfileAttributes()) {
             append(sb, StringUtils.capitalize(attribute), true);
         }
@@ -100,6 +101,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
             append(sb, participant.getLastName(), true);
             append(sb, (scope == null) ? "" : scope.getLabel(), true);
             append(sb, (notifyByEmail == null) ? "" : notifyByEmail.toString().toLowerCase(), true);
+            append(sb, participant.getExternalId(), true);
             for (String attribute : study.getUserProfileAttributes()) {
                 append(sb, participant.getEmpty(attribute), true);
             }

@@ -58,10 +58,11 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         participant.put("phone", "(123) 456-7890");
         participant.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         participant.setNotifyByEmail(Boolean.FALSE);
+        participant.setExternalId("abc");
         participant.setHealthCode("AAA");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
         
-        String header = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "Phone", "Recontact", "Health Code", "Consent Groups");
+        String header = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "External ID", "Phone", "Recontact", "Health Code");
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
         service.sendEmail(provider);
@@ -80,7 +81,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.UTF_8);
         
         assertTrue("Has right subject", rawMessage.contains("Study participants for Test Study"));
-        String output = header + row("test@test.com", "First", "Last", "All Qualified Researchers", "false", "(123) 456-7890", "", "AAA", "");
+        String output = header + row("test@test.com", "First", "Last", "All Qualified Researchers", "false", "abc", "(123) 456-7890", "", "AAA");
         
         assertTrue("TSV has the participant", rawMessage.contains(output));
         assertTrue("text description of participant", rawMessage.contains("There is 1 user enrolled in this study."));

@@ -92,6 +92,9 @@ public class ParticipantRosterGeneratorTest {
         when(healthCodeService.getMapping(anyString())).thenReturn(healthId);
         when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE)).thenReturn(sharingLookup);
         
+        OptionLookup externalIdLookup = mock(OptionLookup.class);
+        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.EXTERNAL_IDENTIFIER)).thenReturn(externalIdLookup);
+        
         Iterator<Account> iterator = buildAccountIterator();
         generator = new ParticipantRosterGenerator(iterator, study, sendMailService, healthCodeService, optionsService, subpopService);
     }

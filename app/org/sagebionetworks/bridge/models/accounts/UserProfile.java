@@ -21,6 +21,7 @@ public class UserProfile {
     public static final String USERNAME_FIELD = "username";
     public static final String HEALTH_CODE_FIELD = "healthCode";
     public static final String SUBPOPULATION_NAMES_FIELD = "subpopulations";
+    public static final String EXTERNAL_ID_FIELD = "externalId";
     
     /**
      * These fields are not part of the profile, but they are used on export to expose the participant option values, so

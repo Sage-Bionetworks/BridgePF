@@ -2,13 +2,8 @@ package org.sagebionetworks.bridge;
 
 import javax.annotation.PostConstruct;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthId;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
-import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -28,12 +23,7 @@ public class DefaultStudyBootstrapper {
 
     @PostConstruct
     public void initializeDatabase() {
-        DynamoInitializer.init(DynamoScheduledActivity.class);
-        DynamoInitializer.init(DynamoStudy.class);
-        DynamoInitializer.init(DynamoStudyConsent1.class);
-        DynamoInitializer.init(DynamoHealthCode.class);
-        DynamoInitializer.init(DynamoHealthId.class);
-        DynamoInitializer.init(DynamoHealthDataRecord.class);
+        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         try {
             studyService.getStudy("api");
         } catch (EntityNotFoundException e) {

@@ -3,12 +3,9 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.List;
-
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
