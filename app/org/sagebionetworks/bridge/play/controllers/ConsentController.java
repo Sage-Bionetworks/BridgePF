@@ -130,9 +130,6 @@ public class ConsentController extends BaseController {
         
         user.setSharingScope(sharingScope);
         updateSessionUser(session, user);
-        // NOTE: This will change with multiple consents. In the transition period, the subpopulation GUID
-        // is the study identifier.
-        consentService.emailConsentAgreement(study, SubpopulationGuid.create(study.getIdentifier()), user);
         return okResult(message);
     }
 

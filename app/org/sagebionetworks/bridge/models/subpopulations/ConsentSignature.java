@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.subpopulations;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -16,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.google.common.base.Preconditions;
 
 @JsonDeserialize(builder=ConsentSignature.Builder.class)
 @JsonFilter("filter")
@@ -115,7 +116,7 @@ public final class ConsentSignature implements BridgeEntity {
         private Long withdrewOn;
         
         public Builder withConsentSignature(ConsentSignature signature) {
-            Preconditions.checkNotNull(signature);
+            checkNotNull(signature);
             this.name = signature.name;
             this.birthdate = signature.birthdate;
             this.imageData = signature.imageData;

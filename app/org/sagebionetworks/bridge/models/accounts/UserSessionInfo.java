@@ -26,8 +26,6 @@ public class UserSessionInfo {
     }
 
     private final boolean authenticated;
-    private final boolean consented;
-    private final boolean signedMostRecentConsent;
     private final SharingScope sharingScope;
     private final String sessionToken;
     private final String username;
@@ -38,8 +36,6 @@ public class UserSessionInfo {
 
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
-        this.consented = session.getUser().doesConsent();
-        this.signedMostRecentConsent = session.getUser().hasSignedMostRecentConsent();
         this.sessionToken = session.getSessionToken();
         this.sharingScope = session.getUser().getSharingScope();
         this.username = session.getUser().getUsername();
@@ -56,10 +52,10 @@ public class UserSessionInfo {
         return consentStatuses;
     }
     public boolean isConsented() {
-        return consented;
+        return ConsentStatus.isUserConsented(consentStatuses);
     }
     public boolean isSignedMostRecentConsent() {
-        return signedMostRecentConsent;
+        return ConsentStatus.isConsentCurrent(consentStatuses);
     }
     public SharingScope getSharingScope() {
         return sharingScope;

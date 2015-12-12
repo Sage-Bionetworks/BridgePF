@@ -66,51 +66,51 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private EmailValidator emailValidator;
 
     @Autowired
-    public void setDistributedLockDao(DistributedLockDao lockDao) {
+    final void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
     @Autowired
-    public void setCacheProvider(CacheProvider cache) {
+    final void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
     }
     @Autowired
-    public void setBridgeConfig(BridgeConfig config) {
+    final void setBridgeConfig(BridgeConfig config) {
         this.config = config;
     }
     @Autowired
-    public void setConsentService(ConsentService consentService) {
+    final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
     @Autowired
-    public void setOptionsService(ParticipantOptionsService optionsService) {
+    final void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
     @Autowired
-    public void setAccountDao(AccountDao accountDao) {
+    final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     @Autowired
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
+    final void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
     @Autowired
-    public void setStudyService(StudyService studyService) {
+    final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
     @Autowired
-    public void setEmailVerificationValidator(EmailVerificationValidator validator) {
+    final void setEmailVerificationValidator(EmailVerificationValidator validator) {
         this.verificationValidator = validator;
     }
     @Autowired
-    public void setSignInValidator(SignInValidator validator) {
+    final void setSignInValidator(SignInValidator validator) {
         this.signInValidator = validator;
     }
     @Autowired
-    public void setPasswordResetValidator(PasswordResetValidator validator) {
+    final void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
     }
     @Autowired
-    public void setEmailValidator(EmailValidator validator) {
+    final void setEmailValidator(EmailValidator validator) {
         this.emailValidator = validator;
     }
     
