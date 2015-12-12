@@ -10,7 +10,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import org.springframework.stereotype.Component;
 
@@ -49,7 +48,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         hashKey.setCreatedOn(studyConsent.getCreatedOn());
         DynamoStudyConsent1 consent = mapper.load(hashKey);
         
-        StudyConsent activeConsent = getActiveConsent(new SubpopulationGuidImpl(studyConsent.getSubpopulationGuid()));
+        StudyConsent activeConsent = getActiveConsent(SubpopulationGuid.create(studyConsent.getSubpopulationGuid()));
         
         consent.setActive(true);
         mapper.save(consent);

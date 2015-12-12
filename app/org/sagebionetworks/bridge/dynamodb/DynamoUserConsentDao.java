@@ -15,9 +15,7 @@ import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import org.springframework.stereotype.Component;
 
@@ -40,20 +38,18 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public UserConsent giveConsent(String healthCode, StudyConsent studyConsent, long signedOn) {
+    public UserConsent giveConsent(String healthCode, SubpopulationGuid subpopGuid, long consentCreatedOn, long signedOn) {
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(studyConsent);
+        checkNotNull(subpopGuid);
         checkArgument(signedOn > 0L);
 
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(studyConsent.getSubpopulationGuid());
-        
         UserConsent activeConsent = getActiveUserConsent(healthCode, subpopGuid);
-        if (activeConsent != null && activeConsent.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
+        if (activeConsent != null && activeConsent.getConsentCreatedOn() == consentCreatedOn) {
             throw new EntityAlreadyExistsException(activeConsent);
         }
         
         DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, subpopGuid);
-        consent.setConsentCreatedOn(studyConsent.getCreatedOn());
+        consent.setConsentCreatedOn(consentCreatedOn);
         consent.setSignedOn(signedOn);
         mapper.save(consent);
 

@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.validators.SubpopulationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -72,7 +71,7 @@ public class SubpopulationService {
      * @return
      */
     public Subpopulation createDefaultSubpopulation(Study study) {
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(study.getIdentifier());
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(study.getIdentifier());
         // Migrating, studies will already have consents so don't create and publish a new one.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
             StudyConsentView view = studyConsentService.addConsent(subpopGuid, defaultConsentDocument);

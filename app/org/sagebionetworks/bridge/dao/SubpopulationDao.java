@@ -69,7 +69,8 @@ public interface SubpopulationDao {
     
     /**
      * Delete all subpopulations. This is a physical delete and not a logical delete, and is not exposed 
-     * in the API. This is used when deleting a study, as part of a test, for example.
+     * in the API. This deletes everything, including the default subpopulation. This is used when 
+     * deleting a study, as part of a test, for example.
      * @param studyId
      */
     public void deleteAllSubpopulations(StudyIdentifier studyId);

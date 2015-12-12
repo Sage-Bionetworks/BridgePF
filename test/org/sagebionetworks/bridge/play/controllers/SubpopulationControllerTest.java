@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
@@ -45,7 +44,7 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class SubpopulationControllerTest {
 
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("AAA");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("AAA");
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("test-key");
     private static final TypeReference<ResourceList<Subpopulation>> subpopType = new TypeReference<ResourceList<Subpopulation>>() {};
     

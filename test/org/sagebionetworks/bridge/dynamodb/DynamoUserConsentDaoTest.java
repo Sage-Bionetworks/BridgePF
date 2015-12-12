@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import com.google.common.collect.Sets;
 
@@ -36,7 +35,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class DynamoUserConsentDaoTest {
 
     private List<String> healthCodes;
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("subpop123");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("subpop123");
 
     @Resource
     private DynamoUserConsentDao userConsentDao;
@@ -72,7 +71,7 @@ public class DynamoUserConsentDaoTest {
         
         // Give consent
         long signedOn = DateTime.now().getMillis();
-        userConsentDao.giveConsent(healthCode(), consent, signedOn);
+        userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, consent.getCreatedOn(), signedOn);
         verifyActiveConsentExists();
 
         // Withdraw
@@ -92,7 +91,7 @@ public class DynamoUserConsentDaoTest {
 
         // Can give consent again because the previous consent is withdrawn
         long signedAgainOn = DateTime.now().getMillis();
-        userConsentDao.giveConsent(healthCode(), consent, signedAgainOn);
+        userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, consent.getCreatedOn(), signedAgainOn);
         verifyActiveConsentExists();
         verifyConsentExistsAt(signedAgainOn);
         verifyConsentExistsAt(signedOn); // this is still also true.
@@ -107,7 +106,7 @@ public class DynamoUserConsentDaoTest {
         final DynamoStudyConsent1 consent = createStudyConsent();
         for (int i=1; i < 6; i++) {
             healthCodes.add(BridgeUtils.generateGuid());
-            userConsentDao.giveConsent(healthCode(), consent, DateTime.now().getMillis());
+            userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, consent.getCreatedOn(), DateTime.now().getMillis());
         }
         Set<String> seekingHealthCodes = Sets.newHashSet(healthCodes.subList(healthCodes.size()-5, healthCodes.size()));
         
@@ -118,7 +117,7 @@ public class DynamoUserConsentDaoTest {
         count = userConsentDao.getParticipantHealthCodes(SUBPOP_GUID).size();
         assertEquals("Correct number of participants", 4, count);
         
-        userConsentDao.giveConsent(healthCode(), consent, DateTime.now().getMillis());
+        userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, consent.getCreatedOn(), DateTime.now().getMillis());
         Set<String> finalHealthCodes = userConsentDao.getParticipantHealthCodes(SUBPOP_GUID);
         
         assertEquals(seekingHealthCodes, finalHealthCodes);
@@ -129,10 +128,10 @@ public class DynamoUserConsentDaoTest {
         healthCodes.add(BridgeUtils.generateGuid());
         final DynamoStudyConsent1 consent = createStudyConsent();
         for (int i=0; i < 5; i++) {
-            userConsentDao.giveConsent(healthCode(), consent, DateTime.now().getMillis());
+            userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, consent.getCreatedOn(), DateTime.now().getMillis());
             userConsentDao.withdrawConsent(healthCode(), SUBPOP_GUID, DateTime.now().getMillis());
         }
-        userConsentDao.giveConsent(healthCode(), consent, DateTime.now().getMillis());
+        userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, consent.getCreatedOn(), DateTime.now().getMillis());
         
         List<UserConsent> consents = userConsentDao.getUserConsentHistory(healthCode(), SUBPOP_GUID);
         assertEquals(6, consents.size());
@@ -148,11 +147,11 @@ public class DynamoUserConsentDaoTest {
         DynamoStudyConsent1 secondConsent = createStudyConsent(DateTime.now().getMillis());
 
         long signedOn = DateTime.now().getMillis();
-        userConsentDao.giveConsent(healthCode(), secondConsent, signedOn);
+        userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, secondConsent.getCreatedOn(), signedOn);
         
         // You cannot sign the same study a second time
         try {
-            userConsentDao.giveConsent(healthCode(), secondConsent, signedOn);
+            userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, secondConsent.getCreatedOn(), signedOn);
         } catch(BridgeServiceException e) {
             assertEquals(409, e.getStatusCode());
             assertEquals("UserConsent already exists.", e.getMessage());
@@ -162,7 +161,7 @@ public class DynamoUserConsentDaoTest {
         long secondConsentCreatedOn = DateTime.now().getMillis();
         secondConsent = createStudyConsent(secondConsentCreatedOn);
         long signedOnAgain = signedOn + (100000);
-        userConsentDao.giveConsent(healthCode(), secondConsent, signedOnAgain);
+        userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, secondConsent.getCreatedOn(), signedOnAgain);
         
         List<UserConsent> consents = userConsentDao.getUserConsentHistory(healthCode(), SUBPOP_GUID);
         assertEquals(2, consents.size());
@@ -181,7 +180,7 @@ public class DynamoUserConsentDaoTest {
         final DynamoStudyConsent1 studyConsent = createStudyConsent();
         
         final long signedOn = DateTime.now().getMillis();
-        userConsentDao.giveConsent(healthCode(), studyConsent, signedOn);
+        userConsentDao.giveConsent(healthCode(), SUBPOP_GUID, studyConsent.getCreatedOn(), signedOn);
         
         UserConsent consent = userConsentDao.getUserConsent(healthCode(), SUBPOP_GUID, signedOn);
         assertEquals(signedOn, consent.getSignedOn());

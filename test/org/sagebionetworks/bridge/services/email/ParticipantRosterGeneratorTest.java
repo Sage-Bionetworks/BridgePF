@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantRosterGenerator;
@@ -219,7 +218,7 @@ public class ParticipantRosterGeneratorTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName(firstName + " " + lastName)
                 .withBirthdate("1970-02-02").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
 
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(subpopName);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(subpopName);
         
         List<ConsentSignature> list = Lists.newArrayList(sig);
         map.put(subpopGuid, list);

@@ -27,7 +27,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -38,9 +37,9 @@ public class StormpathAccountTest {
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("foo");
-    private static final SubpopulationGuid SUBPOP_GUID_2 = new SubpopulationGuidImpl("foo2");
-    private static final SubpopulationGuid SUBPOP_GUID_3 = new SubpopulationGuidImpl("foo3");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("foo");
+    private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("foo2");
+    private static final SubpopulationGuid SUBPOP_GUID_3 = SubpopulationGuid.create("foo3");
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("foo");
     private static final Set<SubpopulationGuid> SUBPOP_GUIDS = Sets.newHashSet(SUBPOP_GUID, SUBPOP_GUID_2,
             SUBPOP_GUID_3);

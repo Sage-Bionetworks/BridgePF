@@ -18,7 +18,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -27,7 +26,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoStudyConsentDaoTest {
     
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("ABC");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
     
     @Resource
     private DynamoStudyConsentDao studyConsentDao;

@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,7 +117,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 ConsentSignature consent = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
 
-                consentService.consentToResearch(study, new SubpopulationGuidImpl(study.getIdentifier()),
+                consentService.consentToResearch(study, SubpopulationGuid.create(study.getIdentifier()),
                         newUserSession.getUser(), consent, SharingScope.NO_SHARING, false);
             }
         }

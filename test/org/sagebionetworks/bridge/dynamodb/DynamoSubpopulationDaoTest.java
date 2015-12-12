@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Sets;
 
@@ -225,7 +225,7 @@ public class DynamoSubpopulationDaoTest {
     
     @Test(expected=EntityNotFoundException.class)
     public void deleteNotExistingSubpopulationThrowsException() {
-        dao.deleteSubpopulation(studyId, new SubpopulationGuidImpl("guidDoesNotExist"));
+        dao.deleteSubpopulation(studyId, SubpopulationGuid.create("guidDoesNotExist"));
     }
     
     /**

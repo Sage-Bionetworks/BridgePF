@@ -24,7 +24,7 @@ public class DynamoUserConsent3 implements UserConsent {
     private String subpopGuid;
     private long consentCreatedOn;
     private long signedOn;
-    // This field is Long because it can be null.
+    // This field is Long (not long) because it can be null.
     private Long withdrewOn;
     private Long version;
     

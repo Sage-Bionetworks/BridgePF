@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import play.mvc.Result;
@@ -54,14 +53,14 @@ public class SubpopulationController extends BaseController {
     }
     public Result getSubpopulation(String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         Subpopulation subpop = subpopService.getSubpopulation(session.getStudyIdentifier(), subpopGuid);
         return okResult(subpop);
     }
     public Result deleteSubpopulation(String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         subpopService.deleteSubpopulation(session.getStudyIdentifier(), subpopGuid);
         

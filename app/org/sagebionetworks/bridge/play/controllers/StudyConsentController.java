@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
@@ -81,7 +80,7 @@ public class StudyConsentController extends BaseController {
     public Result getAllConsentsV2(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
         subpopService.getSubpopulation(studyId, subpopGuid);
@@ -93,7 +92,7 @@ public class StudyConsentController extends BaseController {
     public Result getActiveConsentV2(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
         subpopService.getSubpopulation(studyId, subpopGuid);
@@ -105,7 +104,7 @@ public class StudyConsentController extends BaseController {
     public Result getMostRecentConsentV2(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
         subpopService.getSubpopulation(studyId, subpopGuid);
@@ -117,7 +116,7 @@ public class StudyConsentController extends BaseController {
     public Result getConsentV2(String guid, String createdOn) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
         subpopService.getSubpopulation(studyId, subpopGuid);
@@ -130,7 +129,7 @@ public class StudyConsentController extends BaseController {
     public Result addConsentV2(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
         subpopService.getSubpopulation(studyId, subpopGuid);
@@ -143,7 +142,7 @@ public class StudyConsentController extends BaseController {
     public Result publishConsentV2(String guid, String createdOn) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
         subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);

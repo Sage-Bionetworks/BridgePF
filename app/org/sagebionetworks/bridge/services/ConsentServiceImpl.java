@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
@@ -133,8 +132,8 @@ public class ConsentServiceImpl implements ConsentService {
         
         UserConsent userConsent = null;
         try {
-            userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent.getStudyConsent(),
-                    consentSignature.getSignedOn());
+            userConsent = userConsentDao.giveConsent(
+                    user.getHealthCode(), subpopGuid, studyConsent.getCreatedOn(), consentSignature.getSignedOn());
         } catch (Throwable e) {
             // If we can't save consent record, decrement and remove the signature before rethrowing
             studyService.decrementStudyEnrollment(study);
@@ -221,7 +220,7 @@ public class ConsentServiceImpl implements ConsentService {
             
             UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
             builder.withName(signature.getName())
-                .withSubpopulationGuid(new SubpopulationGuidImpl(consent.getSubpopulationGuid()))
+                .withSubpopulationGuid(SubpopulationGuid.create(consent.getSubpopulationGuid()))
                 .withBirthdate(signature.getBirthdate())
                 .withImageData(signature.getImageData())
                 .withImageMimeType(signature.getImageMimeType())

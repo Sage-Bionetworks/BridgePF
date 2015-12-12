@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public interface UserConsentDao {
@@ -12,12 +11,13 @@ public interface UserConsentDao {
     /**
      * Gives consent to the specified study.
      * @param healthCode
-     * @param studyConsent
+     * @param subpopGuid
+     * @param consentCreatedOn
      * @param signedOn
      * @return
      *      the consent record
      */
-    UserConsent giveConsent(String healthCode, StudyConsent studyConsent, long signedOn);
+    UserConsent giveConsent(String healthCode, SubpopulationGuid subpopGuid, long consentCreatedOn, long signedOn);
 
     /**
      * Withdraws consent to the specified study.

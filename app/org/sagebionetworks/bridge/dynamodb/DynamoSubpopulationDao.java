@@ -33,7 +33,6 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     private DynamoDBMapper mapper;
     private StudyConsentDao studyConsentDao;
 
-    /** DynamoDB mapper for the HealthDataRecord table. This is configured by Spring. */
     @Resource(name = "subpopulationDdbMapper")
     final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
@@ -50,11 +49,12 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         checkNotNull(subpop.getGuid());
         checkNotNull(subpop.getStudyIdentifier());
 
-        // guid should always be set in service, so it's okay to check with a checkNotNull. But 
-        // if version is present, that's a bad submission from the service user
+        // guid should always be set in service, so it's okay to check with a checkNotNull (returns 500). 
+        // But if version is present, that's a bad submission from the service user, return a 400
         if (subpop.getVersion() != null) { 
             throw new BadRequestException("Subpopulation does not appear to be new (includes version number).");
         }
+        
         // these are completely ignored, if submitted
         subpop.setDeleted(false); 
         subpop.setDefaultGroup(false);
@@ -68,7 +68,6 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         checkNotNull(subpop.getStudyIdentifier());
         
         // These have to be supplied by the user so if they don't exist, we want a 400-level exception,
-        // not a checkNotNull which translates to a 500 level response
         if (subpop.getVersion() == null || subpop.getGuid() == null) {
             throw new BadRequestException("Subpopulation appears to be a new object (no guid or version).");
         }

@@ -4,12 +4,12 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public class DynamoUserConsent3Test {
     @Test
     public void test() {
-        DynamoUserConsent3 userConsent = new DynamoUserConsent3("123", new SubpopulationGuidImpl("456"));
+        DynamoUserConsent3 userConsent = new DynamoUserConsent3("123", SubpopulationGuid.create("456"));
         
         assertEquals("123:456", userConsent.getHealthCodeSubpopGuid());
         assertEquals("123", userConsent.getHealthCode());

@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
@@ -26,7 +25,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SendEmailIntegTest {
 
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl(TEST_STUDY_IDENTIFIER);
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(TEST_STUDY_IDENTIFIER);
     
     private static final String IMG = "iVBORw0KGgoAAAANSUhEUgAAAFAAAAAtCAIAAAC2z3vlAAAAA3NCSVQICAjb" +
             "4U/gAAABhElEQVRoge1Z0Q7DIAgsy/7/l9nDkq5pEUUOMGvvaeuqcB6gMmLm7U54VTuQjdsRfotPiej7QQn4/Z" +

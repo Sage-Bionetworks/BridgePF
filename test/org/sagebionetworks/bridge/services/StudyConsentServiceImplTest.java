@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -40,7 +39,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class StudyConsentServiceImplTest {
     
     private static final String BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("ABC");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
 
     @Resource
     private StudyConsentDao studyConsentDao;

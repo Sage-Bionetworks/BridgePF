@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public class DynamoUserConsentTest {
 
@@ -13,14 +13,14 @@ public class DynamoUserConsentTest {
         // Test constructor 1
         String healthCode = "123";
         String studyIdentifier = "456";
-        DynamoUserConsent3 userConsent = new DynamoUserConsent3(healthCode, new SubpopulationGuidImpl(studyIdentifier));
+        DynamoUserConsent3 userConsent = new DynamoUserConsent3(healthCode, SubpopulationGuid.create(studyIdentifier));
         assertEquals(healthCode + ":" + studyIdentifier, userConsent.getHealthCodeSubpopGuid());
         assertEquals(healthCode, userConsent.getHealthCode());
         assertEquals(studyIdentifier, userConsent.getSubpopulationGuid());
 
         // Test constructor 2
         long consentTimestamp = 789L;
-        userConsent = new DynamoUserConsent3(healthCode, new SubpopulationGuidImpl(studyIdentifier));
+        userConsent = new DynamoUserConsent3(healthCode, SubpopulationGuid.create(studyIdentifier));
         userConsent.setConsentCreatedOn(consentTimestamp);
         assertEquals(healthCode + ":" + studyIdentifier, userConsent.getHealthCodeSubpopGuid());
         assertEquals(healthCode, userConsent.getHealthCode());
@@ -31,7 +31,7 @@ public class DynamoUserConsentTest {
         userConsent.setSignedOn(555L);
         userConsent.setVersion(777L);
 
-        DynamoUserConsent3 userConsentCopy = new DynamoUserConsent3(healthCode, new SubpopulationGuidImpl(studyIdentifier));
+        DynamoUserConsent3 userConsentCopy = new DynamoUserConsent3(healthCode, SubpopulationGuid.create(studyIdentifier));
         assertEquals(healthCode + ":" + studyIdentifier, userConsentCopy.getHealthCodeSubpopGuid());
         assertEquals(healthCode, userConsentCopy.getHealthCode());
         assertEquals(studyIdentifier, userConsentCopy.getSubpopulationGuid());

@@ -21,7 +21,6 @@ import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
-import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -57,7 +56,6 @@ public class StudyServiceImpl implements StudyService {
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
-    private DistributedLockDao lockDao;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
@@ -91,10 +89,6 @@ public class StudyServiceImpl implements StudyService {
     @Resource(name="uploadCertificateService")
     final void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
-    }
-    @Autowired
-    final void setDistributedLockDao(DistributedLockDao lockDao) {
-        this.lockDao = lockDao;
     }
     @Autowired
     final void setValidator(StudyValidator validator) {
@@ -147,38 +141,30 @@ public class StudyServiceImpl implements StudyService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
 
+        study.setActive(true);
+        study.setStrictUploadValidationEnabled(true);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
         Validate.entityThrowingException(validator, study);
 
-        String id = study.getIdentifier();
-        String lockId = null;
-        try {
-            lockId = lockDao.acquireLock(Study.class, id);
-
-            if (studyDao.doesIdentifierExist(study.getIdentifier())) {
-                throw new EntityAlreadyExistsException(study);
-            }
-            
-            subpopService.createDefaultSubpopulation(study);
-            
-            study.setActive(true);
-            study.setStrictUploadValidationEnabled(true);
-
-            String directory = directoryDao.createDirectoryForStudy(study);
-            study.setStormpathHref(directory);
-
-            // do not create certs for whitelisted studies (legacy studies)
-            if (!studyWhitelist.contains(study.getIdentifier())) {
-                uploadCertService.createCmsKeyPair(study.getStudyIdentifier());
-            }
-
-            study = studyDao.createStudy(study);
-            
-            cacheProvider.setStudy(study);
-        } finally {
-            lockDao.releaseLock(Study.class, id, lockId);
+        if (studyDao.doesIdentifierExist(study.getIdentifier())) {
+            throw new EntityAlreadyExistsException(study);
         }
+        
+        subpopService.createDefaultSubpopulation(study);
+        
+        String directory = directoryDao.createDirectoryForStudy(study);
+        study.setStormpathHref(directory);
+
+        // do not create certs for whitelisted studies (legacy studies)
+        if (!studyWhitelist.contains(study.getIdentifier())) {
+            uploadCertService.createCmsKeyPair(study.getStudyIdentifier());
+        }
+
+        study = studyDao.createStudy(study);
+        
+        cacheProvider.setStudy(study);
+
         return study;
     }
     @Override
@@ -214,6 +200,7 @@ public class StudyServiceImpl implements StudyService {
         
         return updatedStudy;
     }
+    
     @Override
     public void deleteStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
@@ -227,17 +214,12 @@ public class StudyServiceImpl implements StudyService {
         if (existing == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
         }
-        String lockId = null;
-        try {
-            lockId = lockDao.acquireLock(Study.class, identifier);
-            studyDao.deleteStudy(existing);
-            directoryDao.deleteDirectoryForStudy(existing);
-            subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
-            cacheProvider.removeStudy(identifier);
-        } finally {
-            lockDao.releaseLock(Study.class, identifier, lockId);
-        }
+        studyDao.deleteStudy(existing);
+        directoryDao.deleteDirectoryForStudy(existing);
+        subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
+        cacheProvider.removeStudy(identifier);
     }
+    
     @Override
     public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
         Set<String> healthCodes = Sets.newHashSet();

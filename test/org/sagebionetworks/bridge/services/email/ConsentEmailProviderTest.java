@@ -21,14 +21,13 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import com.google.common.collect.Sets;
 
 public class ConsentEmailProviderTest {
 
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("subpopGuid");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("subpopGuid");
     
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
     

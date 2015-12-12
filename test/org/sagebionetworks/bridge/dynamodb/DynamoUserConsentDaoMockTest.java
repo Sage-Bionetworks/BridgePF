@@ -27,7 +27,6 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
@@ -36,7 +35,7 @@ public class DynamoUserConsentDaoMockTest {
 
     private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
     private static final String HEALTH_CODE = "AAA";
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("GUID");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("test-study");
     
     DynamoUserConsentDao userConsentDao;
@@ -76,7 +75,7 @@ public class DynamoUserConsentDaoMockTest {
     }
     
     private DynamoUserConsent3 mockMapperResponse() {
-        DynamoUserConsent3 consent = new DynamoUserConsent3(HEALTH_CODE, new SubpopulationGuidImpl(STUDY_IDENTIFIER.getIdentifier()));
+        DynamoUserConsent3 consent = new DynamoUserConsent3(HEALTH_CODE, SubpopulationGuid.create(STUDY_IDENTIFIER.getIdentifier()));
         consent.setConsentCreatedOn(studyConsent.getCreatedOn());
         consent.setSignedOn(DateTime.now().getMillis());
         
@@ -86,7 +85,7 @@ public class DynamoUserConsentDaoMockTest {
     
     @Test
     public void giveConsent() {
-        userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());
+        userConsentDao.giveConsent(HEALTH_CODE, SUBPOP_GUID, studyConsent.getCreatedOn(), DateUtils.getCurrentMillisFromEpoch());
         
         ArgumentCaptor<DynamoUserConsent3> argCaptor3 = ArgumentCaptor.forClass(DynamoUserConsent3.class);
         
@@ -107,7 +106,7 @@ public class DynamoUserConsentDaoMockTest {
     public void giveConsentWhenConsentExists() {
         mockMapperResponse();
         try {
-            userConsentDao.giveConsent(HEALTH_CODE, studyConsent, DateUtils.getCurrentMillisFromEpoch());
+            userConsentDao.giveConsent(HEALTH_CODE, SUBPOP_GUID, studyConsent.getCreatedOn(), DateUtils.getCurrentMillisFromEpoch());
             fail("Should have thrown exception");
         } catch(BridgeServiceException e) {
             assertEquals("UserConsent already exists.", e.getMessage());

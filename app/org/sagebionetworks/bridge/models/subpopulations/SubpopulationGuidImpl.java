@@ -7,7 +7,7 @@ import java.util.Objects;
 public final class SubpopulationGuidImpl implements SubpopulationGuid {
     private final String guid;
     
-    public SubpopulationGuidImpl(String guid) {
+    SubpopulationGuidImpl(String guid) {
         checkNotNull(guid);
         this.guid = guid;
     }

@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.play.controllers.ConsentController;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
@@ -44,7 +43,7 @@ import play.test.Helpers;
 
 public class ConsentControllerMockedTest {
 
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("GUID");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
 
     private UserSession session;
@@ -101,7 +100,7 @@ public class ConsentControllerMockedTest {
 
         InOrder inOrder = inOrder(optionsService, consentService);
         inOrder.verify(optionsService).setEnum(study, "healthCode", SHARING_SCOPE, SharingScope.NO_SHARING);
-        inOrder.verify(consentService).emailConsentAgreement(study, new SubpopulationGuidImpl(study.getIdentifier()), user);
+        inOrder.verify(consentService).emailConsentAgreement(study, SubpopulationGuid.create(study.getIdentifier()), user);
     }
 
     @Test
@@ -110,7 +109,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, new SubpopulationGuidImpl(study.getIdentifier()), user)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, SubpopulationGuid.create(study.getIdentifier()), user)).thenReturn(sig);
 
         Result result = controller.getConsentSignature();
 
@@ -174,7 +173,7 @@ public class ConsentControllerMockedTest {
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, new SubpopulationGuidImpl(study.getIdentifier()), user,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), user,
                 new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
@@ -194,7 +193,7 @@ public class ConsentControllerMockedTest {
         JsonNode node = BridgeObjectMapper.get().readTree(response);
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
-        verify(consentService).withdrawConsent(study, new SubpopulationGuidImpl(study.getIdentifier()), user,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), user,
                 new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }

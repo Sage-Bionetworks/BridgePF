@@ -45,7 +45,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
@@ -56,7 +55,7 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class ConsentServiceImplMockTest {
 
-    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("GUID");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
     private static final long UNIX_TIMESTAMP = 1446044925219L;
     
     private ConsentServiceImpl consentService;
@@ -110,7 +109,7 @@ public class ConsentServiceImplMockTest {
         when(studyConsentService.getActiveConsent(any(SubpopulationGuid.class))).thenReturn(view);
         
         UserConsent consent = mock(UserConsent.class);
-        when(userConsentDao.giveConsent(user.getHealthCode(), view.getStudyConsent(), UNIX_TIMESTAMP)).thenReturn(consent);
+        when(userConsentDao.giveConsent(user.getHealthCode(), SUBPOP_GUID, view.getStudyConsent().getCreatedOn(), UNIX_TIMESTAMP)).thenReturn(consent);
         
         consentService.consentToResearch(study, SUBPOP_GUID, user, consentSignature, SharingScope.NO_SHARING, false);
         
@@ -145,7 +144,7 @@ public class ConsentServiceImplMockTest {
     @Test
     public void noActivityEventIfDaoFails() {
         StudyConsent consent = mock(StudyConsent.class);
-        when(userConsentDao.giveConsent(user.getHealthCode(), consent, UNIX_TIMESTAMP)).thenThrow(new RuntimeException());
+        when(userConsentDao.giveConsent(user.getHealthCode(), SUBPOP_GUID, consent.getCreatedOn(), UNIX_TIMESTAMP)).thenThrow(new RuntimeException());
         
         try {
             consentService.consentToResearch(study, SUBPOP_GUID, user, consentSignature, SharingScope.NO_SHARING, false);
