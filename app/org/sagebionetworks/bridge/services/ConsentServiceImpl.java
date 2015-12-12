@@ -264,7 +264,7 @@ public class ConsentServiceImpl implements ConsentService {
     
     private ConsentStatus getConsentStatus(User user, SubpopulationGuid subpopGuid) {
         for (ConsentStatus status : user.getConsentStatuses()) {
-            if (status.getGuid().equals(subpopGuid.getGuid())) {
+            if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
                 return status;
             }
         }
@@ -290,8 +290,8 @@ public class ConsentServiceImpl implements ConsentService {
             List<ConsentStatus> updatedStatuses = Lists.newArrayList();
             for (int i=0; i < user.getConsentStatuses().size(); i++) {
                 ConsentStatus status = user.getConsentStatuses().get(i);
-                if (status.getGuid().equals(subpopGuid)) {
-                    updatedStatuses.add(new ConsentStatus(status.getName(), status.getGuid(), status.isRequired(), consented, consented));
+                if (status.getSubpopulationGuid().equals(subpopGuid)) {
+                    updatedStatuses.add(new ConsentStatus(status.getName(), status.getSubpopulationGuid(), status.isRequired(), consented, consented));
                 } else {
                     updatedStatuses.add(status);
                 }
