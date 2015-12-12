@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -114,7 +115,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
-        ConsentStatus status = getConsentStatus(user, subpopGuid);
+        ConsentStatus status = ConsentStatus.forSubpopulation(user.getConsentStatuses(), subpopGuid);
         if (status != null && status.isConsented()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
@@ -125,7 +126,9 @@ public class ConsentServiceImpl implements ConsentService {
         Account account = accountDao.getAccount(study, user.getEmail());
 
         // Throws exception if we have exceeded enrollment limit.
-        studyService.incrementStudyEnrollment(study);
+        if (studyService.isStudyAtEnrollmentLimit(study)) {
+            throw new StudyLimitExceededException(study);
+        }
         
         account.getConsentSignatureHistory(subpopGuid).add(consentSignature);
         accountDao.updateAccount(study, account);
@@ -135,26 +138,26 @@ public class ConsentServiceImpl implements ConsentService {
             userConsent = userConsentDao.giveConsent(
                     user.getHealthCode(), subpopGuid, studyConsent.getCreatedOn(), consentSignature.getSignedOn());
         } catch (Throwable e) {
-            // If we can't save consent record, decrement and remove the signature before rethrowing
-            studyService.decrementStudyEnrollment(study);
             int len = account.getConsentSignatureHistory(subpopGuid).size();
             account.getConsentSignatureHistory(subpopGuid).remove(len-1);
             accountDao.updateAccount(study, account);
             throw e;
         }
-        
         // Save supplemental records, fire events, etc.
         if (userConsent != null){
             activityEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
         }
         optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, sharingScope);
+        
+        updateSessionConsentStatuses(user, subpopGuid, true);
+        studyService.incrementStudyEnrollment(study, user);
+        
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid, user, 
                 consentSignature, sharingScope, studyConsentService, consentTemplate);
 
             sendMailService.sendEmail(consentEmail);
         }
-        updateSessionConsentStatuses(user, subpopGuid, true);
         return user;
     }
 
@@ -181,6 +184,9 @@ public class ConsentServiceImpl implements ConsentService {
         Account account = accountDao.getAccount(study, user.getEmail());
         
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
+        if (active == null) {
+            throw new EntityNotFoundException(ConsentSignature.class);
+        }
         ConsentSignature withdrawn = new ConsentSignature.Builder()
             .withConsentSignature(active)
             .withWithdrewOn(withdrewOn).build();
@@ -197,16 +203,15 @@ public class ConsentServiceImpl implements ConsentService {
             accountDao.updateAccount(study, account);
             throw e;
         }
-        studyService.decrementStudyEnrollment(study);
-
         optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
         user.setSharingScope(SharingScope.NO_SHARING);
+        
+        updateSessionConsentStatuses(user, subpopGuid, false);
+        studyService.decrementStudyEnrollment(study, user);
         
         String externalId = optionsService.getString(user.getHealthCode(), EXTERNAL_IDENTIFIER);
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
-        
-        updateSessionConsentStatuses(user, subpopGuid, false);
     }
     
     @Override
@@ -238,6 +243,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(study);
         checkNotNull(user);
         
+        // May exceed the subpopulations the user matches, but that's okay
         List<Subpopulation> subpopGuids = subpopService.getSubpopulations(study);
         for (Subpopulation subpop : subpopGuids) {
             userConsentDao.deleteAllConsents(user.getHealthCode(), subpop);    
@@ -262,15 +268,6 @@ public class ConsentServiceImpl implements ConsentService {
         sendMailService.sendEmail(consentEmail);
     }
     
-    private ConsentStatus getConsentStatus(User user, SubpopulationGuid subpopGuid) {
-        for (ConsentStatus status : user.getConsentStatuses()) {
-            if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
-                return status;
-            }
-        }
-        return null;
-    }
-    
     private boolean hasUserSignedActiveConsent(String healthCode, SubpopulationGuid subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
@@ -290,7 +287,7 @@ public class ConsentServiceImpl implements ConsentService {
             List<ConsentStatus> updatedStatuses = Lists.newArrayList();
             for (int i=0; i < user.getConsentStatuses().size(); i++) {
                 ConsentStatus status = user.getConsentStatuses().get(i);
-                if (status.getSubpopulationGuid().equals(subpopGuid)) {
+                if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
                     updatedStatuses.add(new ConsentStatus(status.getName(), status.getSubpopulationGuid(), status.isRequired(), consented, consented));
                 } else {
                     updatedStatuses.add(status);

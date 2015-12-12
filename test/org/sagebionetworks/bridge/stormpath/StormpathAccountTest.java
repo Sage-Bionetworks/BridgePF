@@ -12,7 +12,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -29,7 +28,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
@@ -41,7 +39,7 @@ public class StormpathAccountTest {
     private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("foo2");
     private static final SubpopulationGuid SUBPOP_GUID_3 = SubpopulationGuid.create("foo3");
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("foo");
-    private static final Set<SubpopulationGuid> SUBPOP_GUIDS = Sets.newHashSet(SUBPOP_GUID, SUBPOP_GUID_2,
+    private static final List<? extends SubpopulationGuid> SUBPOP_GUIDS = Lists.newArrayList(SUBPOP_GUID, SUBPOP_GUID_2,
             SUBPOP_GUID_3);
 
     @SuppressWarnings("serial")

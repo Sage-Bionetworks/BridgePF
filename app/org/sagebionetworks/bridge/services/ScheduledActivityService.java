@@ -190,7 +190,7 @@ public class ScheduledActivityService {
     
     /**
      * No events have been recorded for this participant, so get an enrollment event from the consent records.
-     * We have back-filled this event, so this should no longer be needed, but is left here just in case.
+     * We have back-filled this event, so this should no longer be needed, but it is left here just in case.
      * @param user
      * @param events
      * @return

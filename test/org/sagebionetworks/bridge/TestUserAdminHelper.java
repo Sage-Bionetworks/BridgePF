@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -130,6 +131,7 @@ public class TestUserAdminHelper {
     public class Builder {
         private Class<?> cls;
         private Study study;
+        private SubpopulationGuid subpopGuid;
         private boolean signIn;
         private boolean consent;
         private Set<Roles> roles;
@@ -152,6 +154,10 @@ public class TestUserAdminHelper {
         }
         public Builder withSignIn(boolean signIn) {
             this.signIn = signIn;
+            return this;
+        }
+        public Builder withSubpopulation(SubpopulationGuid subpopGuid) {
+            this.subpopGuid = subpopGuid;
             return this;
         }
         public Builder withConsent(boolean consent) {
@@ -187,7 +193,7 @@ public class TestUserAdminHelper {
             }
             String name = makeRandomUserName(cls);
             SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
-            UserSession session = userAdminService.createUser(finalSignUp, context, study, signIn, consent);
+            UserSession session = userAdminService.createUser(finalSignUp, context, study, subpopGuid, signIn, consent);
             
             // Add the health code
             if (session != null) {

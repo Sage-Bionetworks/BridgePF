@@ -65,7 +65,7 @@ class StormpathAccount implements Account {
      */
     private Map<SubpopulationGuid,List<ConsentSignature>> allSignatures;
     
-    StormpathAccount(StudyIdentifier studyIdentifier, Set<SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
+    StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
         checkNotNull(studyIdentifier);
         checkNotNull(acct);

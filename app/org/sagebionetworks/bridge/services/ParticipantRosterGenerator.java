@@ -85,19 +85,9 @@ public class ParticipantRosterGenerator implements Runnable {
             while (accounts.hasNext()) {
                 Account account = accounts.next();
                 
-                boolean isConsented = false;
-                List<String> names = Lists.newArrayList();
-                for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
-                    ConsentSignature sig = account.getActiveConsentSignature(subpopGuid);
-                    if (sig != null) {
-                        // We've found an active consent, now we need the name of the subpopulation that this 
-                        // consent originated from.
-                        Subpopulation subpop = subpopService.getSubpopulation(study, subpopGuid);
-                        names.add(subpop.getName());
-                        isConsented = true;
-                    }
-                }
-                if (isConsented) {
+                // If we find no subpopulation names, this user hasn't consented to anything.
+                List<String> names = getSubpopulationNames(account);
+                if (!names.isEmpty()) {
                     String subpopNames = Joiner.on(", ").join(names);
                     String healthCode = getHealthCode(account);
                     
@@ -144,6 +134,19 @@ public class ParticipantRosterGenerator implements Runnable {
             String message = ExceptionUtils.getStackTrace(e);
             sendMailService.sendEmail(new NotifyOperationsEmailProvider(subject, message));
         }
+    }
+    
+    private List<String> getSubpopulationNames(Account account) {
+        List<String> names = Lists.newArrayList();
+        for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
+            ConsentSignature sig = account.getActiveConsentSignature(subpopGuid);
+            if (sig != null) {
+                // We've found an active consent, get the name of the subpopulation
+                Subpopulation subpop = subpopService.getSubpopulation(study, subpopGuid);
+                names.add(subpop.getName());
+            }
+        }
+        return names;
     }
 
 }

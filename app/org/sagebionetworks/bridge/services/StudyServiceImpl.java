@@ -25,8 +25,9 @@ import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -251,26 +252,38 @@ public class StudyServiceImpl implements StudyService {
         }
         return (count >= study.getMaxNumOfParticipants());
     }
+    
+    /**
+     * Increment the study enrollment cache if this user has signed their first consent (all subsequent 
+     * consents are ignored). Presumes that this has been called from something that has actively changed 
+     * the user's consent state.
+     */
     @Override
-    public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException {
+    public void incrementStudyEnrollment(Study study, User user) {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        if (isStudyAtEnrollmentLimit(study)) {
-            throw new StudyLimitExceededException(study);
+        if (ConsentStatus.hasOnlyOneSignedConsent(user.getConsentStatuses())) {
+            String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+            jedisOps.incr(key);
         }
-        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        jedisOps.incr(key);
     }
+    
+    /**
+     * Decrement the study if at this point, the user has no signed consents. Presumes that this has 
+     * been called from something that has actively changed the user's consent state.
+     */
     @Override
-    public void decrementStudyEnrollment(Study study) {
+    public void decrementStudyEnrollment(Study study, User user) {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        String count = jedisOps.get(key);
-        if (count != null && Long.parseLong(count) > 0) {
-            jedisOps.decr(key);
+        if (!ConsentStatus.isUserConsented(user.getConsentStatuses())) {
+            String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+            String count = jedisOps.get(key);
+            if (count != null && Long.parseLong(count) > 0) {
+                jedisOps.decr(key);
+            }
         }
     }
     

@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.stormpath;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
 import java.util.SortedMap;
 
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
@@ -14,11 +14,11 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 public final class StormpathAccountIterator implements Iterator<Account> {
 
     private final Study study;
-    private final Set<SubpopulationGuid> subpopGuids;
+    private final List<? extends SubpopulationGuid> subpopGuids;
     private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final Iterator<com.stormpath.sdk.account.Account> iterator;
     
-    public StormpathAccountIterator(Study study, Set<SubpopulationGuid> subpopGuids,
+    public StormpathAccountIterator(Study study, List<? extends SubpopulationGuid> subpopGuids,
             SortedMap<Integer, BridgeEncryptor> encryptors, Iterator<com.stormpath.sdk.account.Account> iterator) {
         checkNotNull(study);
         checkNotNull(subpopGuids);

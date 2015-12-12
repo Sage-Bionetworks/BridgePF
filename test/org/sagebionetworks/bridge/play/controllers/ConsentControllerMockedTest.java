@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -15,7 +14,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -98,9 +96,7 @@ public class ConsentControllerMockedTest {
     public void testChangeSharingScope() {
         controller.changeSharingScope(SharingScope.NO_SHARING, "message");
 
-        InOrder inOrder = inOrder(optionsService, consentService);
-        inOrder.verify(optionsService).setEnum(study, "healthCode", SHARING_SCOPE, SharingScope.NO_SHARING);
-        inOrder.verify(consentService).emailConsentAgreement(study, SubpopulationGuid.create(study.getIdentifier()), user);
+        verify(optionsService).setEnum(study, "healthCode", SHARING_SCOPE, SharingScope.NO_SHARING);
     }
 
     @Test

@@ -40,7 +40,7 @@ public class UserManagementController extends BaseController {
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(getClientInfoFromUserAgentHeader()).build();
 
-        userAdminService.createUser(signUp, context, study, false, consent);
+        userAdminService.createUser(signUp, context, study, null, false, consent);
 
         return createdResult("User created.");
     }

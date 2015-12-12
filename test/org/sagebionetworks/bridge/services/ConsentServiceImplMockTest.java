@@ -105,15 +105,19 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void activityEventFiredOnConsent() {
-        StudyConsentView view = mock(StudyConsentView.class);
-        when(studyConsentService.getActiveConsent(any(SubpopulationGuid.class))).thenReturn(view);
+        StudyConsent consent = mock(StudyConsent.class);
         
-        UserConsent consent = mock(UserConsent.class);
-        when(userConsentDao.giveConsent(user.getHealthCode(), SUBPOP_GUID, view.getStudyConsent().getCreatedOn(), UNIX_TIMESTAMP)).thenReturn(consent);
+        StudyConsentView view = mock(StudyConsentView.class);
+        when(view.getStudyConsent()).thenReturn(consent);
+        when(view.getCreatedOn()).thenReturn(UNIX_TIMESTAMP);
+        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
+        
+        UserConsent userConsent = mock(UserConsent.class);
+        when(userConsentDao.giveConsent(user.getHealthCode(), SUBPOP_GUID, UNIX_TIMESTAMP, UNIX_TIMESTAMP)).thenReturn(userConsent);
         
         consentService.consentToResearch(study, SUBPOP_GUID, user, consentSignature, SharingScope.NO_SHARING, false);
         
-        verify(activityEventService).publishEnrollmentEvent(user.getHealthCode(), consent);
+        verify(activityEventService).publishEnrollmentEvent(user.getHealthCode(), userConsent);
     }
 
     @Test

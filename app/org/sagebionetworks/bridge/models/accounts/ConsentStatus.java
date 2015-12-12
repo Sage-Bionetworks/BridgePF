@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.accounts;
 import java.util.List;
 import java.util.Objects;
 
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,9 +12,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class ConsentStatus {
 
-    public static ConsentStatus forSubpopulation(List<ConsentStatus> statuses, Subpopulation subpop) {
+    public static ConsentStatus forSubpopulation(List<ConsentStatus> statuses, SubpopulationGuid subpopGuid) {
         for (int i=0; i < statuses.size(); i++) {
-            if (statuses.get(i).getSubpopulationGuid().equals(subpop.getGuid())) {
+            if (statuses.get(i).getSubpopulationGuid().equals(subpopGuid.getGuid())) {
                 return statuses.get(i);
             }
         }
@@ -35,6 +35,16 @@ public final class ConsentStatus {
         return !statuses.isEmpty() && statuses.stream().allMatch(status -> {
             return !status.isRequired() || status.isMostRecentConsent();   
         });
+    }
+    
+    public static boolean hasOnlyOneSignedConsent(List<ConsentStatus> statuses) {
+        int count = 0;
+        for (ConsentStatus status : statuses) {
+            if (status.isConsented()) {
+                count ++;
+            }
+        }
+        return !statuses.isEmpty() && count == 1;
     }
     
     private final String name;

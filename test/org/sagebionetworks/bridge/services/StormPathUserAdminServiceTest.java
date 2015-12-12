@@ -98,7 +98,7 @@ public class StormPathUserAdminServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
-        testUser = userAdminService.createUser(signUp, CONTEXT, study, true, true).getUser();
+        testUser = userAdminService.createUser(signUp, CONTEXT, study, null, true, true).getUser();
 
         userAdminService.deleteUser(study, testUser.getEmail());
 
@@ -108,7 +108,7 @@ public class StormPathUserAdminServiceTest {
 
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session1 = userAdminService.createUser(signUp, CONTEXT, study, false, false);
+        UserSession session1 = userAdminService.createUser(signUp, CONTEXT, study, null, false, false);
         assertNull("No session", session1);
 
         try {
@@ -121,17 +121,17 @@ public class StormPathUserAdminServiceTest {
 
     // Next two test the same thing in two different ways.
     public void cannotCreateTheSameUserTwice() {
-        testUser = userAdminService.createUser(signUp, CONTEXT, study, true, true).getUser();
-        testUser = userAdminService.createUser(signUp, CONTEXT, study, true, true).getUser();
+        testUser = userAdminService.createUser(signUp, CONTEXT, study, null, true, true).getUser();
+        testUser = userAdminService.createUser(signUp, CONTEXT, study, null, true, true).getUser();
     }
     
     @Test
     public void cannotCreateUserWithSameUsernameOrEmail() {
-        testUser = userAdminService.createUser(signUp, CONTEXT, study, true, false).getUser();
+        testUser = userAdminService.createUser(signUp, CONTEXT, study, null, true, false).getUser();
         
         try {
             SignUp sameWithDifferentUsername = new SignUp(RandomStringUtils.randomAlphabetic(8), signUp.getEmail(), signUp.getPassword(), null, null);
-            userAdminService.createUser(sameWithDifferentUsername, CONTEXT, study, false, false);
+            userAdminService.createUser(sameWithDifferentUsername, CONTEXT, study, null, false, false);
             fail("Sign up with email already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) {
             assertEquals("Account already exists.", e.getMessage());
@@ -140,7 +140,7 @@ public class StormPathUserAdminServiceTest {
             String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
             String email = name+"@sagebridge.org";
             SignUp sameWithDifferentEmail = new SignUp(signUp.getUsername(), email, signUp.getPassword(), null, null);
-            userAdminService.createUser(sameWithDifferentEmail, CONTEXT, study, false, false);
+            userAdminService.createUser(sameWithDifferentEmail, CONTEXT, study, null, false, false);
             fail("Sign up with username already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) { 
             assertEquals("Account already exists.", e.getMessage());
@@ -149,7 +149,7 @@ public class StormPathUserAdminServiceTest {
 
     @Test
     public void testDeleteUserWhenSignedOut() {
-        UserSession session = userAdminService.createUser(signUp, CONTEXT, study, true, true);
+        UserSession session = userAdminService.createUser(signUp, CONTEXT, study, null, true, true);
         authService.signOut(session);
         assertNull(authService.getSession(session.getSessionToken()));
         // Shouldn't crash
@@ -159,7 +159,7 @@ public class StormPathUserAdminServiceTest {
 
     @Test
     public void testDeleteUserThatHasBeenDeleted() {
-        UserSession session = userAdminService.createUser(signUp, CONTEXT, study, true, true);
+        UserSession session = userAdminService.createUser(signUp, CONTEXT, study, null, true, true);
         userAdminService.deleteUser(study, session.getUser().getEmail());
         assertNull(authService.getSession(session.getSessionToken()));
         // Delete again shouldn't crash

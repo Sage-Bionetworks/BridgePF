@@ -99,7 +99,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     }
     
     @Override
-    public UserSession createUser(SignUp signUp, ScheduleContext context, Study study, boolean signUserIn, boolean consentUser) {
+    public UserSession createUser(SignUp signUp, ScheduleContext context, Study study, SubpopulationGuid subpopGuid, boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
@@ -117,7 +117,10 @@ public class UserAdminServiceImpl implements UserAdminService {
                 ConsentSignature consent = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
 
-                consentService.consentToResearch(study, SubpopulationGuid.create(study.getIdentifier()),
+                SubpopulationGuid consentTo = (subpopGuid == null) ? subpopGuid
+                        : SubpopulationGuid.create(study.getIdentifier());
+                
+                consentService.consentToResearch(study, consentTo,
                         newUserSession.getUser(), consent, SharingScope.NO_SHARING, false);
             }
         }
