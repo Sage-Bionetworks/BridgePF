@@ -14,7 +14,7 @@ public final class ConsentStatus {
 
     public static ConsentStatus forSubpopulation(List<ConsentStatus> statuses, Subpopulation subpop) {
         for (int i=0; i < statuses.size(); i++) {
-            if (statuses.get(i).getGuid().equals(subpop.getGuid())) {
+            if (statuses.get(i).getSubpopulationGuid().equals(subpop.getGuid())) {
                 return statuses.get(i);
             }
         }
@@ -38,16 +38,17 @@ public final class ConsentStatus {
     }
     
     private final String name;
-    private final String guid;
+    private final String subpopulationGuid;
     private final boolean required;
     private final boolean consented;
     private final boolean mostRecentConsent;
     
     @JsonCreator
-    public ConsentStatus(@JsonProperty("name") String name, @JsonProperty("guid") String guid,
-            @JsonProperty("required") boolean isRequired, @JsonProperty("consented") boolean isConsented, @JsonProperty("mostRecentConsent") boolean isMostRecentConsent) {
+    public ConsentStatus(@JsonProperty("name") String name, @JsonProperty("subpopulationGuid") String subpopulationGuid,
+            @JsonProperty("required") boolean isRequired, @JsonProperty("consented") boolean isConsented, 
+            @JsonProperty("mostRecentConsent") boolean isMostRecentConsent) {
         this.name = checkNotNull(name);
-        this.guid = checkNotNull(guid);
+        this.subpopulationGuid = checkNotNull(subpopulationGuid);
         this.required = isRequired;
         this.consented = isConsented;
         this.mostRecentConsent = isMostRecentConsent;
@@ -57,8 +58,8 @@ public final class ConsentStatus {
         return name;
     }
 
-    public String getGuid() {
-        return guid;
+    public String getSubpopulationGuid() {
+        return subpopulationGuid;
     }
 
     public boolean isRequired() {
@@ -75,7 +76,7 @@ public final class ConsentStatus {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, guid, required, consented, mostRecentConsent);
+        return Objects.hash(name, subpopulationGuid, required, consented, mostRecentConsent);
     }
 
     @Override
@@ -85,13 +86,14 @@ public final class ConsentStatus {
         if (obj == null || getClass() != obj.getClass())
             return false;
         ConsentStatus other = (ConsentStatus) obj;
-        return Objects.equals(name, other.name) && Objects.equals(guid, other.guid)
-                && Objects.equals(required, other.required) && Objects.equals(consented, other.consented) && Objects.equals(mostRecentConsent, other.mostRecentConsent);
+        return Objects.equals(name, other.name) && Objects.equals(subpopulationGuid, other.subpopulationGuid)
+                && Objects.equals(required, other.required) && Objects.equals(consented, other.consented)
+                && Objects.equals(mostRecentConsent, other.mostRecentConsent);
     }
 
     @Override
     public String toString() {
-        return "ConsentStatus [name="+name+", guid="+guid+", isRequired="+required+", isConsented="+ consented+", isMostRecentConsent="+mostRecentConsent+"]";
+        return "ConsentStatus [name="+name+", subpopulationGuid="+subpopulationGuid+", isRequired="+required+", isConsented="+ consented+", isMostRecentConsent="+mostRecentConsent+"]";
     }
     
 }

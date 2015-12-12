@@ -59,7 +59,7 @@ public class UserSessionInfoTest {
         
         JsonNode consentStatus = node.get("consentStatuses").get(0);
         assertEquals("Consent", consentStatus.get("name").asText());
-        assertEquals("AAA", consentStatus.get("guid").asText());
+        assertEquals("AAA", consentStatus.get("subpopulationGuid").asText());
         assertTrue(consentStatus.get("required").asBoolean());
         assertTrue(consentStatus.get("consented").asBoolean());
         assertFalse(consentStatus.get("mostRecentConsent").asBoolean());

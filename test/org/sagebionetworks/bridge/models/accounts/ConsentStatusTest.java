@@ -27,7 +27,7 @@ public class ConsentStatusTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("Name", node.get("name").asText());
-        assertEquals("GUID", node.get("guid").asText());
+        assertEquals("GUID", node.get("subpopulationGuid").asText());
         assertTrue(node.get("required").asBoolean());
         assertTrue(node.get("consented").asBoolean());
         assertTrue(node.get("mostRecentConsent").asBoolean());
