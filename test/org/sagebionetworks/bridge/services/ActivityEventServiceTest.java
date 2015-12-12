@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
 import com.google.common.collect.Lists;
@@ -108,7 +109,7 @@ public class ActivityEventServiceTest {
     public void canPublishConsent() {
         DateTime now = DateTime.now();
         
-        DynamoUserConsent3 consent = new DynamoUserConsent3("AAA-BBB-CCC", "test-study");
+        DynamoUserConsent3 consent = new DynamoUserConsent3("AAA-BBB-CCC", new SubpopulationGuidImpl("test-study"));
         consent.setConsentCreatedOn(now.minusDays(10).getMillis());
         consent.setSignedOn(now.getMillis());
         

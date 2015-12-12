@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 
@@ -126,7 +127,7 @@ public class StudyServiceImplTest {
         reset(cache);
         
         // A default, active consent should be created for the study.
-        StudyConsentView view = studyConsentService.getActiveConsent(study.getIdentifier());
+        StudyConsentView view = studyConsentService.getActiveConsent(new SubpopulationGuidImpl(study.getIdentifier()));
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
         assertTrue(view.getActive());
         
@@ -158,7 +159,7 @@ public class StudyServiceImplTest {
         // Verify that all the dependent stuff has been deleted as well:
         assertNull(directoryDao.getDirectoryForStudy(study));
         assertEquals(0, subpopDao.getSubpopulations(study.getStudyIdentifier(), false, true).size());
-        assertEquals(0, studyConsentDao.getConsents(study.getIdentifier()).size());
+        assertEquals(0, studyConsentDao.getConsents(new SubpopulationGuidImpl(study.getIdentifier())).size());
         study = null;
     }
     

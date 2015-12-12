@@ -28,6 +28,8 @@ import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.play.controllers.ConsentController;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
@@ -42,6 +44,7 @@ import play.test.Helpers;
 
 public class ConsentControllerMockedTest {
 
+    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("GUID");
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
 
     private UserSession session;
@@ -98,7 +101,7 @@ public class ConsentControllerMockedTest {
 
         InOrder inOrder = inOrder(optionsService, consentService);
         inOrder.verify(optionsService).setEnum(study, "healthCode", SHARING_SCOPE, SharingScope.NO_SHARING);
-        inOrder.verify(consentService).emailConsentAgreement(study, study.getIdentifier(), user);
+        inOrder.verify(consentService).emailConsentAgreement(study, new SubpopulationGuidImpl(study.getIdentifier()), user);
     }
 
     @Test
@@ -107,7 +110,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, study.getIdentifier(), user)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, new SubpopulationGuidImpl(study.getIdentifier()), user)).thenReturn(sig);
 
         Result result = controller.getConsentSignature();
 
@@ -171,7 +174,8 @@ public class ConsentControllerMockedTest {
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, study.getIdentifier(), user, new Withdrawal("Because, reasons."), 20000); 
+        verify(consentService).withdrawConsent(study, new SubpopulationGuidImpl(study.getIdentifier()), user,
+                new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
         DateTimeUtils.setCurrentMillisSystem();
@@ -190,7 +194,8 @@ public class ConsentControllerMockedTest {
         JsonNode node = BridgeObjectMapper.get().readTree(response);
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
-        verify(consentService).withdrawConsent(study, study.getIdentifier(), user, new Withdrawal(null), 20000);
+        verify(consentService).withdrawConsent(study, new SubpopulationGuidImpl(study.getIdentifier()), user,
+                new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
     
@@ -199,9 +204,9 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, "GUID", user)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, SUBPOP_GUID, user)).thenReturn(sig);
 
-        Result result = controller.getConsentSignatureV2("GUID");
+        Result result = controller.getConsentSignatureV2(SUBPOP_GUID.getGuid());
 
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -222,7 +227,7 @@ public class ConsentControllerMockedTest {
         
         ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
-        Result result = controller.giveV3("GUID");
+        Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
         String response = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(response);
@@ -238,7 +243,7 @@ public class ConsentControllerMockedTest {
         
         ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
-        Result result = controller.giveV3("GUID");
+        Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
         String response = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(response);
@@ -254,13 +259,13 @@ public class ConsentControllerMockedTest {
         Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
         
-        Result result = controller.withdrawConsentV2("GUID");
+        Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         String response = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(response);
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, "GUID", user, new Withdrawal("Because, reasons."), 20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
         DateTimeUtils.setCurrentMillisSystem();
@@ -273,12 +278,12 @@ public class ConsentControllerMockedTest {
         Context context = TestUtils.mockPlayContextWithJson(json);
         Http.Context.current.set(context);
         
-        Result result = controller.withdrawConsentV2("GUID");
+        Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         String response = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(response);
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
-        verify(consentService).withdrawConsent(study, "GUID", user, new Withdrawal(null), 20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal(null), 20000);
     }
     
     private ArgumentCaptor<ConsentSignature> setUpContextWithJson(String json) throws Exception{
@@ -286,7 +291,7 @@ public class ConsentControllerMockedTest {
         Http.Context.current.set(context);
         
         ArgumentCaptor<ConsentSignature> captor = ArgumentCaptor.forClass(ConsentSignature.class);
-        when(consentService.consentToResearch(any(Study.class), any(String.class), any(User.class), captor.capture(),
+        when(consentService.consentToResearch(any(Study.class), any(SubpopulationGuid.class), any(User.class), captor.capture(),
                 any(SharingScope.class), any(Boolean.class))).thenReturn(user);
         return captor;
     }

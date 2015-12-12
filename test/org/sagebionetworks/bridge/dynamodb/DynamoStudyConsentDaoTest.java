@@ -17,6 +17,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -25,7 +27,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoStudyConsentDaoTest {
     
-    private static final String SUBPOP_GUID = "ABC";
+    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("ABC");
     
     @Resource
     private DynamoStudyConsentDao studyConsentDao;
@@ -50,7 +52,7 @@ public class DynamoStudyConsentDaoTest {
         final StudyConsent consent1 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+datetime.getMillis(), datetime);
         assertNotNull(consent1);
         assertFalse(consent1.getActive());
-        assertNull(studyConsentDao.getActiveConsent(consent1.getSubpopulationGuid()));
+        assertNull(studyConsentDao.getActiveConsent(SUBPOP_GUID));
         
         // Make version1 active
         StudyConsent consent = studyConsentDao.publish(consent1);
@@ -102,11 +104,11 @@ public class DynamoStudyConsentDaoTest {
         StudyConsent consent = studyConsentDao.addConsent(SUBPOP_GUID, key, createdOn);
         assertNotNull(consent);
         assertFalse(consent.getActive());
-        assertNull(studyConsentDao.getActiveConsent(consent.getSubpopulationGuid()));
+        assertNull(studyConsentDao.getActiveConsent(SUBPOP_GUID));
 
         // Now activate the consent
         consent = studyConsentDao.publish(consent);
-        StudyConsent newConsent = studyConsentDao.getActiveConsent(consent.getSubpopulationGuid());
+        StudyConsent newConsent = studyConsentDao.getActiveConsent(SUBPOP_GUID);
         assertConsentsEqual(consent, newConsent, true);
         assertEquals(key, newConsent.getStoragePath());
     }

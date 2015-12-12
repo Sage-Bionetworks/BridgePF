@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.NotifyOperationsEmailProvider;
 import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
@@ -86,12 +87,12 @@ public class ParticipantRosterGenerator implements Runnable {
                 
                 boolean isConsented = false;
                 List<String> names = Lists.newArrayList();
-                for (String guid : account.getAllConsentSignatureHistories().keySet()) {
-                    ConsentSignature sig = account.getActiveConsentSignature(guid);
+                for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
+                    ConsentSignature sig = account.getActiveConsentSignature(subpopGuid);
                     if (sig != null) {
                         // We've found an active consent, now we need the name of the subpopulation that this 
                         // consent originated from.
-                        Subpopulation subpop = subpopService.getSubpopulation(study, guid);
+                        Subpopulation subpop = subpopService.getSubpopulation(study, subpopGuid);
                         names.add(subpop.getName());
                         isConsented = true;
                     }

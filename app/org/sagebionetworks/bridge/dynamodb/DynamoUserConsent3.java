@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -29,9 +30,9 @@ public class DynamoUserConsent3 implements UserConsent {
     
     public DynamoUserConsent3() {}
     
-    public DynamoUserConsent3(String healthCode, String subpopGuid) {
-        setHealthCodeSubpopGuid(healthCode + ":" + subpopGuid);
-        this.subpopGuid = subpopGuid;
+    public DynamoUserConsent3(String healthCode, SubpopulationGuid subpopGuid) {
+        setHealthCodeSubpopGuid(healthCode + ":" + subpopGuid.getGuid());
+        this.subpopGuid = subpopGuid.getGuid();
     }
     
     @DynamoDBHashKey(attributeName = "healthCodeStudy")

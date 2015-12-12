@@ -28,6 +28,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
@@ -43,6 +45,7 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class SubpopulationControllerTest {
 
+    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("AAA");
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("test-key");
     private static final TypeReference<ResourceList<Subpopulation>> subpopType = new TypeReference<ResourceList<Subpopulation>>() {};
     
@@ -165,9 +168,9 @@ public class SubpopulationControllerTest {
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid("AAA");
-        doReturn(subpop).when(subpopService).getSubpopulation(STUDY_IDENTIFIER, "AAA");
+        doReturn(subpop).when(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
         
-        Result result = controller.getSubpopulation("AAA");
+        Result result = controller.getSubpopulation(SUBPOP_GUID.getGuid());
         
         // Serialization has been tested elsewhere, we're not testing it all here, we're just
         // verifying the object is returned in the API
@@ -177,7 +180,7 @@ public class SubpopulationControllerTest {
         assertEquals("Subpopulation", node.get("type").asText());
         assertEquals("AAA", node.get("guid").asText());
         
-        verify(subpopService).getSubpopulation(STUDY_IDENTIFIER, "AAA");
+        verify(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
     
     @Test
@@ -185,13 +188,13 @@ public class SubpopulationControllerTest {
         Http.Context context = TestUtils.mockPlayContext();
         Http.Context.current.set(context);
 
-        Result result = controller.deleteSubpopulation("AAA");
+        Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid());
         assertEquals(200, result.status());
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         assertEquals("Subpopulation has been deleted.", node.get("message").asText());
         
-        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, "AAA");
+        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
 
     private List<Subpopulation> createSubpopulationList() {

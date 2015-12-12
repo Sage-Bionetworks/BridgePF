@@ -11,6 +11,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
@@ -41,52 +43,37 @@ public class StudyConsentController extends BaseController {
     @Deprecated
     public Result getAllConsents() throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        List<StudyConsent> consents = studyConsentService.getAllConsents(studyId.getIdentifier());
-        return okResult(consents);
+        return getAllConsentsV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     public Result getActiveConsent() throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        StudyConsentView consent = studyConsentService.getActiveConsent(studyId.getIdentifier());
-        return okResult(consent);
+        return getActiveConsentV2(session.getStudyIdentifier().getIdentifier());
     }
     
     @Deprecated
     public Result getMostRecentConsent() throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        StudyConsentView consent = studyConsentService.getMostRecentConsent(studyId.getIdentifier());
-        return okResult(consent);
+        return getMostRecentConsentV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     public Result getConsent(String createdOn) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        StudyConsentView consent = studyConsentService.getConsent(studyId.getIdentifier(), timestamp);
-        return okResult(consent);
+        return getConsentV2(session.getStudyIdentifier().getIdentifier(), createdOn);
     }
     
     @Deprecated
     public Result addConsent() throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        StudyConsentForm form = parseJson(request(), StudyConsentForm.class);
-        StudyConsentView studyConsent = studyConsentService.addConsent(studyId.getIdentifier(), form);
-        return createdResult(studyConsent);
+        return addConsentV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     public Result publishConsent(String createdOn) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        studyConsentService.publishConsent(study, study.getIdentifier(), timestamp);
-        return okResult("Consent document set as active.");
+        return publishConsentV2(session.getStudyIdentifier().getIdentifier(), createdOn);
     }
     
     // V2: consents associated to a subpopulation
@@ -94,69 +81,75 @@ public class StudyConsentController extends BaseController {
     public Result getAllConsentsV2(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        subpopService.getSubpopulation(studyId, guid);
+        subpopService.getSubpopulation(studyId, subpopGuid);
         
-        List<StudyConsent> consents = studyConsentService.getAllConsents(guid);
+        List<StudyConsent> consents = studyConsentService.getAllConsents(subpopGuid);
         return okResult(consents);
     }
 
     public Result getActiveConsentV2(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        subpopService.getSubpopulation(studyId, guid);
+        subpopService.getSubpopulation(studyId, subpopGuid);
         
-        StudyConsentView consent = studyConsentService.getActiveConsent(guid);
+        StudyConsentView consent = studyConsentService.getActiveConsent(subpopGuid);
         return okResult(consent);
     }
     
     public Result getMostRecentConsentV2(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        subpopService.getSubpopulation(studyId, guid);
+        subpopService.getSubpopulation(studyId, subpopGuid);
         
-        StudyConsentView consent = studyConsentService.getMostRecentConsent(guid);
+        StudyConsentView consent = studyConsentService.getMostRecentConsent(subpopGuid);
         return okResult(consent);
     }
 
     public Result getConsentV2(String guid, String createdOn) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        subpopService.getSubpopulation(studyId, guid);
+        subpopService.getSubpopulation(studyId, subpopGuid);
 
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        StudyConsentView consent = studyConsentService.getConsent(guid, timestamp);
+        StudyConsentView consent = studyConsentService.getConsent(subpopGuid, timestamp);
         return okResult(consent);
     }
     
     public Result addConsentV2(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        subpopService.getSubpopulation(studyId, guid);
+        subpopService.getSubpopulation(studyId, subpopGuid);
 
         StudyConsentForm form = parseJson(request(), StudyConsentForm.class);
-        StudyConsentView studyConsent = studyConsentService.addConsent(guid, form);
+        StudyConsentView studyConsent = studyConsentService.addConsent(subpopGuid, form);
         return createdResult(studyConsent);
     }
 
     public Result publishConsentV2(String guid, String createdOn) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        subpopService.getSubpopulation(study.getStudyIdentifier(), guid);
+        subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
 
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        studyConsentService.publishConsent(study, guid, timestamp);
+        studyConsentService.publishConsent(study, subpopGuid, timestamp);
         return okResult("Consent document set as active.");
     }
     

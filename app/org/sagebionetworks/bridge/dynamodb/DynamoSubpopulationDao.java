@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -72,7 +73,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             throw new BadRequestException("Subpopulation appears to be a new object (no guid or version).");
         }
         StudyIdentifier studyId = new StudyIdentifierImpl(subpop.getStudyIdentifier());
-        Subpopulation existing = getSubpopulation(studyId, subpop.getGuid());
+        Subpopulation existing = getSubpopulation(studyId, subpop);
         if (existing == null || existing.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
@@ -119,10 +120,10 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public Subpopulation getSubpopulation(StudyIdentifier studyId, String guid) {
+    public Subpopulation getSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
         hashKey.setStudyIdentifier(studyId.getIdentifier());
-        hashKey.setGuid(guid);
+        hashKey.setGuid(subpopGuid.getGuid());
         
         Subpopulation subpop = mapper.load(hashKey);
         if (subpop == null) {
@@ -141,15 +142,15 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public void deleteSubpopulation(StudyIdentifier studyId, String guid) {
-        Subpopulation subpop = getSubpopulation(studyId, guid);
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+        Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
         if (subpop == null || subpop.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
         if (subpop.isDefaultGroup()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }
-        studyConsentDao.deleteAllConsents(guid);
+        studyConsentDao.deleteAllConsents(subpopGuid);
         subpop.setDeleted(true);
         mapper.save(subpop);
     }
@@ -160,7 +161,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
-                studyConsentDao.deleteAllConsents(subpop.getGuid());
+                studyConsentDao.deleteAllConsents(subpop);
             }
             List<FailedBatch> failures = mapper.batchDelete(subpops);
             BridgeUtils.ifFailuresThrowException(failures);

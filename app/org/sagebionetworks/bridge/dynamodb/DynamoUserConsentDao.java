@@ -16,6 +16,8 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import org.springframework.stereotype.Component;
 
@@ -43,12 +45,14 @@ public class DynamoUserConsentDao implements UserConsentDao {
         checkNotNull(studyConsent);
         checkArgument(signedOn > 0L);
 
-        UserConsent activeConsent = getActiveUserConsent(healthCode, studyConsent.getSubpopulationGuid());
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(studyConsent.getSubpopulationGuid());
+        
+        UserConsent activeConsent = getActiveUserConsent(healthCode, subpopGuid);
         if (activeConsent != null && activeConsent.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
             throw new EntityAlreadyExistsException(activeConsent);
         }
         
-        DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, studyConsent.getSubpopulationGuid());
+        DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, subpopGuid);
         consent.setConsentCreatedOn(studyConsent.getCreatedOn());
         consent.setSignedOn(signedOn);
         mapper.save(consent);
@@ -57,7 +61,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void withdrawConsent(String healthCode, String subpopGuid, long withdrewOn) {
+    public void withdrawConsent(String healthCode, SubpopulationGuid subpopGuid, long withdrewOn) {
         checkArgument(isNotBlank(healthCode));
         checkNotNull(subpopGuid);
         checkArgument(withdrewOn > 0L);
@@ -71,7 +75,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public boolean hasConsented(String healthCode, String subpopGuid) {
+    public boolean hasConsented(String healthCode, SubpopulationGuid subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
         
@@ -79,7 +83,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public UserConsent getActiveUserConsent(String healthCode, String subpopGuid) {
+    public UserConsent getActiveUserConsent(String healthCode, SubpopulationGuid subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
         
@@ -95,7 +99,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
     
     @Override
-    public UserConsent getUserConsent(String healthCode, String subpopGuid, long signedOn) {
+    public UserConsent getUserConsent(String healthCode, SubpopulationGuid subpopGuid, long signedOn) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
         checkArgument(signedOn > 0L);
@@ -111,7 +115,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
     
     @Override
-    public List<UserConsent> getUserConsentHistory(String healthCode, String subpopGuid) {
+    public List<UserConsent> getUserConsentHistory(String healthCode, SubpopulationGuid subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
         
@@ -125,7 +129,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
     
     @Override
-    public void deleteAllConsents(String healthCode, String subpopGuid) {
+    public void deleteAllConsents(String healthCode, SubpopulationGuid subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
         
@@ -137,7 +141,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
     
     @Override
-    public Set<String> getParticipantHealthCodes(String subpopGuid) {
+    public Set<String> getParticipantHealthCodes(SubpopulationGuid subpopGuid) {
         checkNotNull(subpopGuid);
         
         // Note that although the mapper converts the studyIdentifier column name to 
@@ -145,7 +149,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoDBScanExpression scan = new DynamoDBScanExpression()
                 .withFilterConditionEntry("studyIdentifier", new Condition()
                         .withComparisonOperator(ComparisonOperator.EQ)
-                        .withAttributeValueList(new AttributeValue(subpopGuid)))
+                        .withAttributeValueList(new AttributeValue(subpopGuid.getGuid())))
                 .withFilterConditionEntry("withdrewOn", new Condition()
                         .withComparisonOperator(ComparisonOperator.NULL));
 

@@ -10,6 +10,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +46,7 @@ public class ConsentController extends BaseController {
     public Result giveV1() throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-        return giveConsentForVersion(1, study.getIdentifier());
+        return giveConsentForVersion(1, new SubpopulationGuidImpl(study.getIdentifier()));
     }
 
     @Deprecated
@@ -93,12 +95,12 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        ConsentSignature sig = consentService.getConsentSignature(study, guid, session.getUser());
+        ConsentSignature sig = consentService.getConsentSignature(study, new SubpopulationGuidImpl(guid), session.getUser());
         return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
     }
     
     public Result giveV3(String guid) throws Exception {
-        return giveConsentForVersion(2, guid);
+        return giveConsentForVersion(2, new SubpopulationGuidImpl(guid));
     }
     
     public Result withdrawConsentV2(String guid) throws Exception {
@@ -107,7 +109,7 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawConsent(study, guid, session.getUser(), withdrawal, withdrewOn);
+        consentService.withdrawConsent(study, new SubpopulationGuidImpl(guid), session.getUser(), withdrawal, withdrewOn);
         updateSessionUser(session, session.getUser());
         
         return okResult("User has been withdrawn from the study.");
@@ -117,7 +119,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        consentService.emailConsentAgreement(study, guid, session.getUser());
+        consentService.emailConsentAgreement(study, new SubpopulationGuidImpl(guid), session.getUser());
         return okResult("Emailed consent.");
     }
     
@@ -131,11 +133,11 @@ public class ConsentController extends BaseController {
         updateSessionUser(session, user);
         // NOTE: This will change with multiple consents. In the transition period, the subpopulation GUID
         // is the study identifier.
-        consentService.emailConsentAgreement(study, study.getIdentifier(), user);
+        consentService.emailConsentAgreement(study, new SubpopulationGuidImpl(study.getIdentifier()), user);
         return okResult(message);
     }
 
-    private Result giveConsentForVersion(int version, String subpopGuid) throws Exception {
+    private Result giveConsentForVersion(int version, SubpopulationGuid subpopGuid) throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 

@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public interface UserConsentDao {
 
@@ -25,7 +26,7 @@ public interface UserConsentDao {
      * @param withdrewOn
      * @return
      */
-    void withdrawConsent(String healthCode, String subpopGuid, long withdrewOn);
+    void withdrawConsent(String healthCode, SubpopulationGuid subpopGuid, long withdrewOn);
 
     /**
      * Whether the user has consented to the specified study.
@@ -33,7 +34,7 @@ public interface UserConsentDao {
      * @param subpopGuid
      * @return
      */
-    boolean hasConsented(String healthCode, String subpopGuid);
+    boolean hasConsented(String healthCode, SubpopulationGuid subpopGuid);
 
     /**
      * Get the active user consent record (a consent that has not been withdrawn), 
@@ -43,7 +44,7 @@ public interface UserConsentDao {
      * @param subpopGuid
      * @return
      */
-    UserConsent getActiveUserConsent(String healthCode, String subpopGuid);
+    UserConsent getActiveUserConsent(String healthCode, SubpopulationGuid subpopGuid);
 
     /**
      * Get a specific consent signature by the signing date. These are retrieved when reconstructing 
@@ -53,7 +54,7 @@ public interface UserConsentDao {
      * @param signedOn
      * @return
      */
-    UserConsent getUserConsent(String healthCode, String subpopGuid, long signedOn);
+    UserConsent getUserConsent(String healthCode, SubpopulationGuid subpopGuid, long signedOn);
     
     /**
      * Get the entire history of user consent records (including withdrawn consents, if any).
@@ -61,13 +62,13 @@ public interface UserConsentDao {
      * @param subpopGuid
      * @return
      */
-    List<UserConsent> getUserConsentHistory(String healthCode, String subpopGuid);
+    List<UserConsent> getUserConsentHistory(String healthCode, SubpopulationGuid subpopGuid);
     
     /**
      * Delete all consent records for a user, in order to clean up after tests. If withdrawing a user, 
      * call <code>withDrawConsent()</code> instead.
      */
-    void deleteAllConsents(String healthCode, String subpopGuid);
+    void deleteAllConsents(String healthCode, SubpopulationGuid subpopGuid);
     
     /**
      * Get a set of unique health codes that have consented to this subpopulation's consent. Used to 
@@ -75,5 +76,5 @@ public interface UserConsentDao {
      * @param subpopGuid
      * @return
      */
-    Set<String> getParticipantHealthCodes(String subpopGuid);
+    Set<String> getParticipantHealthCodes(SubpopulationGuid subpopGuid);
 }

@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public interface ConsentService {
 
@@ -21,7 +22,7 @@ public interface ConsentService {
      * @return
      * @throws EntityNotFoundException if no consent exists
      */
-    ConsentSignature getConsentSignature(Study study, String subpopGuid, User user);
+    ConsentSignature getConsentSignature(Study study, SubpopulationGuid subpopGuid, User user);
 
     /**
      * Consent this user to research. User will be updated to reflect consent.
@@ -37,7 +38,7 @@ public interface ConsentService {
      * @throws StudyLimitExceededException
      *      if enrolling the user would exceed the study enrollment limit
      */
-    User consentToResearch(Study study, String subpopGuid, User user, ConsentSignature consentSignature,
+    User consentToResearch(Study study, SubpopulationGuid subpopGuid, User user, ConsentSignature consentSignature,
             SharingScope sharingScope, boolean sendEmail);
     
     /**
@@ -59,7 +60,7 @@ public interface ConsentService {
      * @param withdrawal
      * @param withdrewOn
      */
-    void withdrawConsent(Study study, String subpopGuid, User user, Withdrawal withdrawal, long withdrewOn);
+    void withdrawConsent(Study study, SubpopulationGuid subpopGuid, User user, Withdrawal withdrawal, long withdrewOn);
     
     /**
      * Get a history of all consent records, whether withdrawn or not, including information from the 
@@ -70,7 +71,7 @@ public interface ConsentService {
      * @param subpopGuid
      * @param user
      */
-    List<UserConsentHistory> getUserConsentHistory(Study study, String subpopGuid, User user);
+    List<UserConsentHistory> getUserConsentHistory(Study study, SubpopulationGuid subpopGuid, User user);
 
     /**
      * Email the participant's signed consent agreement to the user's email address.
@@ -78,7 +79,7 @@ public interface ConsentService {
      * @param subpopGuid
      * @param user
      */
-    void emailConsentAgreement(Study study, String subpopGuid, User user);
+    void emailConsentAgreement(Study study, SubpopulationGuid subpopGuid, User user);
     
     /**
      * Delete all consent records, withdrawn or active, in the process of deleting a user account. This is 

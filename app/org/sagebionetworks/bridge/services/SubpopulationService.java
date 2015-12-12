@@ -20,6 +20,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.validators.SubpopulationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -58,8 +60,8 @@ public class SubpopulationService {
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
         
-        StudyConsentView view = studyConsentService.addConsent(subpop.getGuid(), defaultConsentDocument);
-        studyConsentService.publishConsent(study, subpop.getGuid(), view.getCreatedOn());
+        StudyConsentView view = studyConsentService.addConsent(subpop, defaultConsentDocument);
+        studyConsentService.publishConsent(study, subpop, view.getCreatedOn());
         
         return subpopDao.createSubpopulation(subpop);
     }
@@ -70,7 +72,7 @@ public class SubpopulationService {
      * @return
      */
     public Subpopulation createDefaultSubpopulation(Study study) {
-        String subpopGuid = study.getIdentifier();
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(study.getIdentifier());
         // Migrating, studies will already have consents so don't create and publish a new one.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
             StudyConsentView view = studyConsentService.addConsent(subpopGuid, defaultConsentDocument);
@@ -115,7 +117,7 @@ public class SubpopulationService {
      * @param subpopGuid
      * @return subpopulation
      */
-    public Subpopulation getSubpopulation(StudyIdentifier studyId, String subpopGuid) {
+    public Subpopulation getSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         
@@ -140,7 +142,7 @@ public class SubpopulationService {
      * @param studyId
      * @param subpopGuid
      */
-    public void deleteSubpopulation(StudyIdentifier studyId, String subpopGuid) {
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         

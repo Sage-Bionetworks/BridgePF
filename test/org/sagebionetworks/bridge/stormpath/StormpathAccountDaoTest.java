@@ -142,7 +142,7 @@ public class StormpathAccountDaoTest {
             account.setAttribute("phone", "123-456-7890");
             account.setHealthId("abc");
             account.setUsername(random);
-            account.getConsentSignatureHistory(subpop.getGuid()).add(sig);
+            account.getConsentSignatureHistory(subpop).add(sig);
             account.setAttribute("attribute_one", "value of attribute one");
             
             // Update Account
@@ -156,11 +156,11 @@ public class StormpathAccountDaoTest {
             assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
             assertEquals(account.getHealthId(), newAccount.getHealthId());
             assertEquals(account.getUsername(), newAccount.getUsername());
-            assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
-                    newAccount.getActiveConsentSignature(subpop.getGuid()));
-            assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
-                    newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
-            assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
+            assertEquals(account.getActiveConsentSignature(subpop), 
+                    newAccount.getActiveConsentSignature(subpop));
+            assertEquals(account.getActiveConsentSignature(subpop).getSignedOn(), 
+                    newAccount.getActiveConsentSignature(subpop).getSignedOn());
+            assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop).getSignedOn());
             assertEquals(1, newAccount.getRoles().size());
             assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
             assertEquals("value of attribute one", account.getAttribute("attribute_one"));

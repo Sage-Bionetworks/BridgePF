@@ -8,7 +8,6 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -29,6 +28,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
@@ -93,7 +94,7 @@ public class ConsentServiceImpl implements ConsentService {
     };
     
     @Override
-    public ConsentSignature getConsentSignature(Study study, String subpopGuid, User user) {
+    public ConsentSignature getConsentSignature(Study study, SubpopulationGuid subpopGuid, User user) {
         checkNotNull(subpopGuid);
         checkNotNull(user);
         
@@ -106,7 +107,7 @@ public class ConsentServiceImpl implements ConsentService {
     }
     
     @Override
-    public User consentToResearch(Study study, String subpopGuid, User user, ConsentSignature consentSignature, 
+    public User consentToResearch(Study study, SubpopulationGuid subpopGuid, User user, ConsentSignature consentSignature, 
             SharingScope sharingScope, boolean sendEmail) {
 
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
@@ -164,14 +165,14 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(context.getHealthCode());
         
         return subpopService.getSubpopulationForUser(context).stream().map(subpop -> {
-            boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop.getGuid());
-            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop.getGuid());
+            boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop);
+            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop);
             return new ConsentStatus(subpop.getName(), subpop.getGuid(), subpop.isRequired(), consented, mostRecent);
         }).collect(BridgeCollectors.toImmutableList());
     }
 
     @Override
-    public void withdrawConsent(Study study, String subpopGuid, User user, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawConsent(Study study, SubpopulationGuid subpopGuid, User user, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(subpopGuid);
         checkNotNull(user);
@@ -210,7 +211,7 @@ public class ConsentServiceImpl implements ConsentService {
     }
     
     @Override
-    public List<UserConsentHistory> getUserConsentHistory(Study study, String subpopGuid, User user) {
+    public List<UserConsentHistory> getUserConsentHistory(Study study, SubpopulationGuid subpopGuid, User user) {
         Account account = accountDao.getAccount(study, user.getEmail());
         
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
@@ -220,7 +221,7 @@ public class ConsentServiceImpl implements ConsentService {
             
             UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
             builder.withName(signature.getName())
-                .withSubpopulationGuid(consent.getSubpopulationGuid())
+                .withSubpopulationGuid(new SubpopulationGuidImpl(consent.getSubpopulationGuid()))
                 .withBirthdate(signature.getBirthdate())
                 .withImageData(signature.getImageData())
                 .withImageMimeType(signature.getImageMimeType())
@@ -238,16 +239,14 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(study);
         checkNotNull(user);
         
-        Set<String> subpopGuids = subpopService.getSubpopulations(study).stream()
-                .map(Subpopulation::getGuid)
-                .collect(BridgeCollectors.toImmutableSet());
-        for (String guid : subpopGuids) {
-            userConsentDao.deleteAllConsents(user.getHealthCode(), guid);    
+        List<Subpopulation> subpopGuids = subpopService.getSubpopulations(study);
+        for (Subpopulation subpop : subpopGuids) {
+            userConsentDao.deleteAllConsents(user.getHealthCode(), subpop);    
         }
     }
     
     @Override
-    public void emailConsentAgreement(Study study, String subpopGuid, User user) {
+    public void emailConsentAgreement(Study study, SubpopulationGuid subpopGuid, User user) {
         checkNotNull(study);
         checkNotNull(subpopGuid);
         checkNotNull(user);
@@ -264,16 +263,16 @@ public class ConsentServiceImpl implements ConsentService {
         sendMailService.sendEmail(consentEmail);
     }
     
-    private ConsentStatus getConsentStatus(User user, String subpopGuid) {
+    private ConsentStatus getConsentStatus(User user, SubpopulationGuid subpopGuid) {
         for (ConsentStatus status : user.getConsentStatuses()) {
-            if (status.getGuid().equals(subpopGuid)) {
+            if (status.getGuid().equals(subpopGuid.getGuid())) {
                 return status;
             }
         }
         return null;
     }
     
-    private boolean hasUserSignedActiveConsent(String healthCode, String subpopGuid) {
+    private boolean hasUserSignedActiveConsent(String healthCode, SubpopulationGuid subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
 
@@ -287,7 +286,7 @@ public class ConsentServiceImpl implements ConsentService {
         }
     }
     
-    private void updateSessionConsentStatuses(User user, String subpopGuid, boolean consented) {
+    private void updateSessionConsentStatuses(User user, SubpopulationGuid subpopGuid, boolean consented) {
         if (user.getConsentStatuses() != null) {
             List<ConsentStatus> updatedStatuses = Lists.newArrayList();
             for (int i=0; i < user.getConsentStatuses().size(); i++) {

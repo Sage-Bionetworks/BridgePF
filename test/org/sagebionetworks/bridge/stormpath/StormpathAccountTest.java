@@ -26,6 +26,8 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -36,11 +38,12 @@ public class StormpathAccountTest {
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
-    private static final String SUBPOP_GUID = "foo";
-    private static final String SUBPOP_GUID_2 = "foo2";
-    private static final String SUBPOP_GUID_3 = "foo3";
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(SUBPOP_GUID);
-    private static final Set<String> SUBPOP_GUIDS = Sets.newHashSet(SUBPOP_GUID, SUBPOP_GUID_2, SUBPOP_GUID_3);
+    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("foo");
+    private static final SubpopulationGuid SUBPOP_GUID_2 = new SubpopulationGuidImpl("foo2");
+    private static final SubpopulationGuid SUBPOP_GUID_3 = new SubpopulationGuidImpl("foo3");
+    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("foo");
+    private static final Set<SubpopulationGuid> SUBPOP_GUIDS = Sets.newHashSet(SUBPOP_GUID, SUBPOP_GUID_2,
+            SUBPOP_GUID_3);
 
     @SuppressWarnings("serial")
     private class StubCustomData extends HashMap<String,Object> implements CustomData {
@@ -70,11 +73,11 @@ public class StormpathAccountTest {
         BridgeEncryptor encryptor1 = mock(BridgeEncryptor.class);
         when(encryptor1.getVersion()).thenReturn(1);
         encryptDecryptValues(encryptor1, "1");
-        
+
         BridgeEncryptor encryptor2 = mock(BridgeEncryptor.class);
         when(encryptor2.getVersion()).thenReturn(2);
         encryptDecryptValues(encryptor2, "2");
-        
+          
         encryptors = new TreeMap<>();
         encryptors.put(1, encryptor1);
         encryptors.put(2, encryptor2);
@@ -350,7 +353,7 @@ public class StormpathAccountTest {
         ConsentSignature sig2Retrieved = acct.getActiveConsentSignature(SUBPOP_GUID_2);
         assertEquals(sig2, sig2Retrieved);
         
-        Map<String,List<ConsentSignature>> signatures = acct.getAllConsentSignatureHistories();
+        Map<SubpopulationGuid,List<ConsentSignature>> signatures = acct.getAllConsentSignatureHistories();
         sig1Retrieved = signatures.get(SUBPOP_GUID).get(0);
         assertEquals(sig1, sig1Retrieved);
         

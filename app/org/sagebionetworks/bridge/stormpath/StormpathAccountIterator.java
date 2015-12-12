@@ -9,15 +9,16 @@ import java.util.SortedMap;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public final class StormpathAccountIterator implements Iterator<Account> {
 
     private final Study study;
-    private final Set<String> subpopGuids;
+    private final Set<SubpopulationGuid> subpopGuids;
     private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final Iterator<com.stormpath.sdk.account.Account> iterator;
     
-    public StormpathAccountIterator(Study study, Set<String> subpopGuids,
+    public StormpathAccountIterator(Study study, Set<SubpopulationGuid> subpopGuids,
             SortedMap<Integer, BridgeEncryptor> encryptors, Iterator<com.stormpath.sdk.account.Account> iterator) {
         checkNotNull(study);
         checkNotNull(subpopGuids);

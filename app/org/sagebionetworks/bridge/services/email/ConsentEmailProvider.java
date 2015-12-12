@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
@@ -40,14 +41,14 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     private static final String MIME_TYPE_PDF = "application/pdf";
 
     private Study study;
-    private String subpopGuid;
+    private SubpopulationGuid subpopGuid;
     private User user;
     private ConsentSignature consentSignature;
     private SharingScope sharingScope;
     private StudyConsentService studyConsentService;
     private String consentTemplate;
 
-    public ConsentEmailProvider(Study study, String subpopGuid, User user, ConsentSignature consentSignature, SharingScope sharingScope,
+    public ConsentEmailProvider(Study study, SubpopulationGuid subpopGuid, User user, ConsentSignature consentSignature, SharingScope sharingScope,
         StudyConsentService studyConsentService, String consentTemplate) {
         this.study = study;
         this.subpopGuid = subpopGuid;

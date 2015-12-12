@@ -29,6 +29,8 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -38,7 +40,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class StudyConsentServiceImplTest {
     
     private static final String BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
-    private static final String SUBPOP_GUID = "ABC";
+    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("ABC");
 
     @Resource
     private StudyConsentDao studyConsentDao;
@@ -151,7 +153,7 @@ public class StudyConsentServiceImplTest {
         // Now retrieve the HTML version of the document and verify it has been updated.
         // Removing SSL because IOUtils doesn't support it and although we do it, we don't need to.
         Subpopulation subpopulation = Subpopulation.create();
-        subpopulation.setGuid(SUBPOP_GUID);
+        subpopulation.setGuid(SUBPOP_GUID.getGuid());
         String htmlURL = subpopulation.getConsentHTML();
         
         String retrievedContent = IOUtils.toString(new URL(htmlURL).openStream(), Charset.forName("UTF-8"));

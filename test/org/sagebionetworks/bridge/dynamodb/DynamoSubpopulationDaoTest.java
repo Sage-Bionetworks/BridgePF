@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import com.google.common.collect.Sets;
 
@@ -77,7 +78,7 @@ public class DynamoSubpopulationDaoTest {
         assertFalse(savedSubpop.isDefaultGroup()); // was not set to true
         
         // READ
-        Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
+        Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop);
         assertEquals(savedSubpop, retrievedSubpop);
         
         // UPDATE
@@ -95,8 +96,8 @@ public class DynamoSubpopulationDaoTest {
         assertEquals(1, allSubpops.size());
         
         // Logical delete works...
-        dao.deleteSubpopulation(studyId, finalSubpop.getGuid());
-        Subpopulation deletedSubpop = dao.getSubpopulation(studyId, finalSubpop.getGuid());
+        dao.deleteSubpopulation(studyId, finalSubpop);
+        Subpopulation deletedSubpop = dao.getSubpopulation(studyId, finalSubpop);
         assertTrue(deletedSubpop.isDeleted());
         
         // ... and it hides the subpop in the query used to find subpopulations for a user
@@ -133,7 +134,7 @@ public class DynamoSubpopulationDaoTest {
         
         // Cannot delete a required subpopulation
         try {
-            dao.deleteSubpopulation(studyId, subpop.getGuid());
+            dao.deleteSubpopulation(studyId, subpop);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
             assertEquals("Cannot delete the default subpopulation for a study.", e.getMessage());
@@ -198,7 +199,7 @@ public class DynamoSubpopulationDaoTest {
     @Test(expected = EntityNotFoundException.class)
     public void cannotUpdateASubpopThatIsDeleted() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
-        dao.deleteSubpopulation(studyId, subpop.getGuid());
+        dao.deleteSubpopulation(studyId, subpop);
         
         // This should now throw ENFE
         dao.updateSubpopulation(subpop);
@@ -224,7 +225,7 @@ public class DynamoSubpopulationDaoTest {
     
     @Test(expected=EntityNotFoundException.class)
     public void deleteNotExistingSubpopulationThrowsException() {
-        dao.deleteSubpopulation(studyId, "guidDoesNotExist");
+        dao.deleteSubpopulation(studyId, new SubpopulationGuidImpl("guidDoesNotExist"));
     }
     
     /**

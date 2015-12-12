@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 
 import com.amazonaws.regions.Region;
@@ -74,7 +75,7 @@ public class SendMailViaAmazonServiceConsentTest {
             "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
         
         studyConsentService = mock(StudyConsentService.class);
-        when(studyConsentService.getActiveConsent("api")).thenReturn(view);
+        when(studyConsentService.getActiveConsent(new SubpopulationGuidImpl("api"))).thenReturn(view);
     }
 
     @Test
@@ -84,8 +85,9 @@ public class SendMailViaAmazonServiceConsentTest {
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, study.getIdentifier(), user, consent,
-                        SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study,
+                new SubpopulationGuidImpl(study.getIdentifier()), user, consent, SharingScope.SPONSORS_AND_PARTNERS,
+                studyConsentService, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -117,8 +119,9 @@ public class SendMailViaAmazonServiceConsentTest {
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, study.getIdentifier(), user, consent,
-            SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study,
+                new SubpopulationGuidImpl(study.getIdentifier()), user, consent, SharingScope.SPONSORS_AND_PARTNERS,
+                studyConsentService, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));

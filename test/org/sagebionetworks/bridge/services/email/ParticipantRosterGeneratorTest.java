@@ -34,6 +34,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantRosterGenerator;
@@ -186,7 +188,7 @@ public class ParticipantRosterGeneratorTest {
         when(account.getFirstName()).thenReturn(firstName);
         when(account.getLastName()).thenReturn(lastName);
         
-        Map<String,List<ConsentSignature>> map = new HashMap<>();
+        Map<SubpopulationGuid,List<ConsentSignature>> map = new HashMap<>();
         addConsentToAccount(account, map, "Consent One", firstName, lastName);
         addConsentToAccount(account, map, "Consent Two", firstName, lastName);
         addConsentToAccount(account, map, "Consent Three", firstName, lastName);
@@ -195,7 +197,7 @@ public class ParticipantRosterGeneratorTest {
         return Lists.newArrayList(account).iterator();
     }
     
-    private Account createAccount(String email, String firstName, String lastName, String phone, String subpopulationName, boolean hasConsented) {
+    private Account createAccount(String email, String firstName, String lastName, String phone, String subpopName, boolean hasConsented) {
         Account account = mock(Account.class);
         when(account.getEmail()).thenReturn(email);
         when(account.getFirstName()).thenReturn(firstName);
@@ -204,25 +206,27 @@ public class ParticipantRosterGeneratorTest {
         when(account.getAttribute("phone")).thenReturn(phone);
         when(account.getAttribute("can_recontact")).thenReturn("true");
         
-        Map<String,List<ConsentSignature>> map = new HashMap<>();
+        Map<SubpopulationGuid,List<ConsentSignature>> map = new HashMap<>();
         if (hasConsented) {
-            addConsentToAccount(account, map, subpopulationName, firstName, lastName);
+            addConsentToAccount(account, map, subpopName, firstName, lastName);
         }
         when(account.getAllConsentSignatureHistories()).thenReturn(map);
         return account;
     }
     
-    private void addConsentToAccount(Account account, Map<String, List<ConsentSignature>> map, 
-            String subpopulationName, String firstName, String lastName) {
+    private void addConsentToAccount(Account account, Map<SubpopulationGuid, List<ConsentSignature>> map, 
+            String subpopName, String firstName, String lastName) {
         ConsentSignature sig = new ConsentSignature.Builder().withName(firstName + " " + lastName)
                 .withBirthdate("1970-02-02").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
 
+        SubpopulationGuid subpopGuid = new SubpopulationGuidImpl(subpopName);
+        
         List<ConsentSignature> list = Lists.newArrayList(sig);
-        map.put(subpopulationName, list);
-        when(account.getActiveConsentSignature(subpopulationName)).thenReturn(sig);
+        map.put(subpopGuid, list);
+        when(account.getActiveConsentSignature(subpopGuid)).thenReturn(sig);
         
         Subpopulation subpop = Subpopulation.create();
-        subpop.setName(subpopulationName);
-        when(subpopService.getSubpopulation(study, subpopulationName)).thenReturn(subpop);
+        subpop.setName(subpopGuid.getGuid());
+        when(subpopService.getSubpopulation(study, subpopGuid)).thenReturn(subpop);
     }
 }

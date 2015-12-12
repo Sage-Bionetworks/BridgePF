@@ -38,11 +38,14 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class ScheduledActivityServiceMockTest {
@@ -83,7 +86,7 @@ public class ScheduledActivityServiceMockTest {
         when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 
         
         userConsentDao = mock(UserConsentDao.class);
-        when(userConsentDao.getActiveUserConsent(eq(HEALTH_CODE), anyString())).thenReturn(consent);
+        when(userConsentDao.getActiveUserConsent(eq(HEALTH_CODE), any(SubpopulationGuid.class))).thenReturn(consent);
         
         Map<String,DateTime> map = Maps.newHashMap();
         activityEventService = mock(ActivityEventService.class);
@@ -118,6 +121,11 @@ public class ScheduledActivityServiceMockTest {
         SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
         when(surveyResponseService.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class), anyString())).thenReturn(surveyResponse);
+
+        Subpopulation subpopulation = Subpopulation.create();
+        
+        SubpopulationService subpopService = mock(SubpopulationService.class);
+        when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpopulation));
         
         service.setSchedulePlanService(schedulePlanService);
         service.setUserConsentDao(userConsentDao);
@@ -125,6 +133,7 @@ public class ScheduledActivityServiceMockTest {
         service.setSurveyResponseService(surveyResponseService);
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
+        service.setSubpopulationService(subpopService);
     }
     
     @Test(expected = BadRequestException.class)

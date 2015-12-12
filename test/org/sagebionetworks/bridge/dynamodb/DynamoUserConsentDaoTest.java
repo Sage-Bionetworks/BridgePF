@@ -23,6 +23,8 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import com.google.common.collect.Sets;
 
@@ -34,7 +36,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class DynamoUserConsentDaoTest {
 
     private List<String> healthCodes;
-    private static final String SUBPOP_GUID = "subpop123";
+    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("subpop123");
 
     @Resource
     private DynamoUserConsentDao userConsentDao;
@@ -183,7 +185,7 @@ public class DynamoUserConsentDaoTest {
         
         UserConsent consent = userConsentDao.getUserConsent(healthCode(), SUBPOP_GUID, signedOn);
         assertEquals(signedOn, consent.getSignedOn());
-        assertEquals(SUBPOP_GUID, consent.getSubpopulationGuid());
+        assertEquals(SUBPOP_GUID.getGuid(), consent.getSubpopulationGuid());
         assertNull(consent.getWithdrewOn());
         
         // Withdraw consent, you can still retrieve
@@ -192,7 +194,7 @@ public class DynamoUserConsentDaoTest {
         
         consent = userConsentDao.getUserConsent(healthCode(), SUBPOP_GUID, signedOn);
         assertEquals(signedOn, consent.getSignedOn());
-        assertEquals(SUBPOP_GUID, consent.getSubpopulationGuid());
+        assertEquals(SUBPOP_GUID.getGuid(), consent.getSubpopulationGuid());
         assertEquals((Long)withdrewOn, consent.getWithdrewOn());
     }
     
@@ -237,7 +239,7 @@ public class DynamoUserConsentDaoTest {
     
     private DynamoStudyConsent1 createStudyConsent(long createdOn) {
         final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setSubpopulationGuid(SUBPOP_GUID);
+        consent.setSubpopulationGuid(SUBPOP_GUID.getGuid());
         consent.setCreatedOn(createdOn);
         return consent;
     }

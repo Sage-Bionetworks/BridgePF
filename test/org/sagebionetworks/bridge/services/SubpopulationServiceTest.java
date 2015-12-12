@@ -30,6 +30,8 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -38,6 +40,7 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class SubpopulationServiceTest {
 
+    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("AAA");
     private static final long CONSENT_CREATED_ON = DateTime.now().getMillis();
     
     SubpopulationService service;
@@ -109,8 +112,8 @@ public class SubpopulationServiceTest {
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
         verify(dao).createSubpopulation(subpop);
-        verify(studyConsentService).addConsent(eq(result.getGuid()), any());
-        verify(studyConsentService).publishConsent(study, result.getGuid(), CONSENT_CREATED_ON);
+        verify(studyConsentService).addConsent(eq(result), any());
+        verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
     }
     @Test
     public void updateSubpopulation() {
@@ -150,11 +153,11 @@ public class SubpopulationServiceTest {
     @Test
     public void getSubpopulation() {
         Subpopulation subpop = Subpopulation.create();
-        when(dao.getSubpopulation(TEST_STUDY, "AAA")).thenReturn(subpop);
+        when(dao.getSubpopulation(TEST_STUDY, SUBPOP_GUID)).thenReturn(subpop);
 
-        Subpopulation result = service.getSubpopulation(TEST_STUDY, "AAA");
+        Subpopulation result = service.getSubpopulation(TEST_STUDY, SUBPOP_GUID);
         assertEquals(subpop, result);
-        verify(dao).getSubpopulation(TEST_STUDY, "AAA");
+        verify(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
     }
     @Test
     public void getSubpopulationForUser() {
@@ -174,8 +177,8 @@ public class SubpopulationServiceTest {
     }
     @Test
     public void deleteSubpopulation() {
-        service.deleteSubpopulation(TEST_STUDY, "AAA");
+        service.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID);
         
-        verify(dao).deleteSubpopulation(TEST_STUDY, "AAA");
+        verify(dao).deleteSubpopulation(TEST_STUDY, SUBPOP_GUID);
     }
 }

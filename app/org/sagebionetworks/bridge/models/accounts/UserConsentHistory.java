@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -21,7 +22,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(builder=UserConsentHistory.Builder.class)
 public final class UserConsentHistory {
     private final String healthCode;
-    private final String subpopulationGuid;
+    private final SubpopulationGuid subpopulationGuid;
     private final long consentCreatedOn;
     private final String name;
     private final String birthdate;
@@ -31,7 +32,7 @@ public final class UserConsentHistory {
     private final Long withdrewOn;
     private final boolean hasSignedActiveConsent;
     
-    private UserConsentHistory(String healthCode, String subpopGuid, long consentCreatedOn, String name,
+    private UserConsentHistory(String healthCode, SubpopulationGuid subpopGuid, long consentCreatedOn, String name,
             String birthdate, String imageData, String imageMimeType, long signedOn, Long withdrewOn,
             boolean hasSignedActiveConsent) {
         this.healthCode = healthCode;
@@ -51,7 +52,7 @@ public final class UserConsentHistory {
     }
 
     public String getSubpopulationGuid() {
-        return subpopulationGuid;
+        return subpopulationGuid.getGuid();
     }
 
     @JsonSerialize(using = DateTimeToLongSerializer.class)
@@ -91,7 +92,7 @@ public final class UserConsentHistory {
     
     public static class Builder {
         private String healthCode;
-        private String subpopGuid;
+        private SubpopulationGuid subpopGuid;
         private long consentCreatedOn;
         private String name;
         private String birthdate;
@@ -105,7 +106,7 @@ public final class UserConsentHistory {
             this.healthCode = healthCode;
             return this;
         }
-        public Builder withSubpopulationGuid(String guid) {
+        public Builder withSubpopulationGuid(SubpopulationGuid guid) {
             this.subpopGuid = guid;
             return this;
         }

@@ -244,7 +244,7 @@ public class StudyServiceImpl implements StudyService {
         
         List<Subpopulation> subpops = subpopService.getSubpopulations(studyIdentifier);
         for (Subpopulation subpop : subpops) {
-            Set<String> subpopCodes = userConsentDao.getParticipantHealthCodes(subpop.getGuid());
+            Set<String> subpopCodes = userConsentDao.getParticipantHealthCodes(subpop);
             healthCodes.addAll(subpopCodes);
         }
         

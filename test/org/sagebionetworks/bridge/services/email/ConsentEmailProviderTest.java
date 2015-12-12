@@ -20,12 +20,16 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import com.google.common.collect.Sets;
 
 public class ConsentEmailProviderTest {
 
+    private static final SubpopulationGuid SUBPOP_GUID = new SubpopulationGuidImpl("subpopGuid");
+    
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
     
     private static final String LEGACY_DOCUMENT = "<html><head></head><body>Passed through as is. |@@name@@|@@signing.date@@|@@email@@|@@sharing@@|</body></html>";
@@ -53,14 +57,14 @@ public class ConsentEmailProviderTest {
                 .withSignedOn(UNIX_TIMESTAMP).build();
         studyConsentService = mock(StudyConsentService.class);
         
-        provider = new ConsentEmailProvider(study, "subpopGuid", user, sig, SharingScope.NO_SHARING, 
+        provider = new ConsentEmailProvider(study, SUBPOP_GUID, user, sig, SharingScope.NO_SHARING, 
             studyConsentService, consentBodyTemplate);
     }
     
     @Test
     public void assemblesOriginalDocumentTypeToEmail() throws Exception {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), LEGACY_DOCUMENT);
-        when(studyConsentService.getActiveConsent("subpopGuid")).thenReturn(view);
+        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         MimeBodyPart body = email.getMessageParts().get(0);
@@ -78,7 +82,7 @@ public class ConsentEmailProviderTest {
     @Test
     public void assemblesNewDocumentTypeToEmail() throws Exception {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), NEW_DOCUMENT_FRAGMENT);
-        when(studyConsentService.getActiveConsent("subpopGuid")).thenReturn(view);
+        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         MimeBodyPart body = email.getMessageParts().get(0);

@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.subpopulations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

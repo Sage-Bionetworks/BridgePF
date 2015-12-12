@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuidImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -26,7 +27,7 @@ public class UserConsentHistoryTest {
         
         UserConsentHistory history = new UserConsentHistory.Builder()
            .withHealthCode("AAA")
-           .withSubpopulationGuid("BBB")
+           .withSubpopulationGuid(new SubpopulationGuidImpl("BBB"))
            .withConsentCreatedOn(consentCreatedOn)
            .withName("CCC")
            .withBirthdate("1980-04-02")
