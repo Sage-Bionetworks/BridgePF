@@ -170,7 +170,7 @@ public class ParticipantRosterGeneratorTest {
         ParticipantRosterProvider rosterProvider = (ParticipantRosterProvider)argument.getAllValues().get(0);
         
         StudyParticipant participant = rosterProvider.getParticipants().get(0);
-        assertEquals("Consent Two, Consent Three, Consent One", participant.getSubpopulationNames());
+        assertEquals("Consent One, Consent Three, Consent Two", participant.getSubpopulationNames());
     }
 
     private Iterator<Account> buildAccountIterator() {
