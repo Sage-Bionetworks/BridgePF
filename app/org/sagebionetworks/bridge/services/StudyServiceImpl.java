@@ -22,24 +22,16 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.redis.JedisOps;
-import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-
-import com.google.common.collect.Sets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,29 +40,21 @@ import org.springframework.stereotype.Component;
 @Component("studyService")
 public class StudyServiceImpl implements StudyService {
     
-    private static final int TWENTY_FOUR_HOURS = (24*60*60);
-
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
-    private JedisOps jedisOps;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
-    private UserConsentDao userConsentDao;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
     private String defaultResetPasswordTemplate;
     private String defaultResetPasswordTemplateSubject;
     
-    @Autowired
-    final void setStringOps(JedisOps jedisOps) {
-        this.jedisOps = jedisOps;
-    }
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
@@ -110,10 +94,6 @@ public class StudyServiceImpl implements StudyService {
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
-    }
-    @Autowired
-    final void setUserConsentDao(UserConsentDao userConsentDao) {
-        this.userConsentDao = userConsentDao;
     }
     
     @Override
@@ -219,72 +199,6 @@ public class StudyServiceImpl implements StudyService {
         directoryDao.deleteDirectoryForStudy(existing);
         subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
         cacheProvider.removeStudy(identifier);
-    }
-    
-    @Override
-    public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
-        Set<String> healthCodes = Sets.newHashSet();
-        
-        List<Subpopulation> subpops = subpopService.getSubpopulations(studyIdentifier);
-        for (Subpopulation subpop : subpops) {
-            Set<String> subpopCodes = userConsentDao.getParticipantHealthCodes(subpop);
-            healthCodes.addAll(subpopCodes);
-        }
-        
-        return healthCodes.size();
-    }
-    
-    @Override
-    public boolean isStudyAtEnrollmentLimit(Study study) {
-        if (study.getMaxNumOfParticipants() == 0) {
-            return false;
-        }
-        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        long count = Long.MAX_VALUE;
-        
-        // getNumberOfParticipants() is very expensive. Cache this.
-        String countString = jedisOps.get(key);
-        if (countString == null) {
-            count = getNumberOfParticipants(study); 
-            jedisOps.setex(key, TWENTY_FOUR_HOURS, Long.toString(count));
-        } else {
-            count = Long.parseLong(countString);
-        }
-        return (count >= study.getMaxNumOfParticipants());
-    }
-    
-    /**
-     * Increment the study enrollment cache if this user has signed their first consent (all subsequent 
-     * consents are ignored). Presumes that this has been called from something that has actively changed 
-     * the user's consent state.
-     */
-    @Override
-    public void incrementStudyEnrollment(Study study, User user) {
-        if (study.getMaxNumOfParticipants() == 0) {
-            return;
-        }
-        if (ConsentStatus.hasOnlyOneSignedConsent(user.getConsentStatuses())) {
-            String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-            jedisOps.incr(key);
-        }
-    }
-    
-    /**
-     * Decrement the study if at this point, the user has no signed consents. Presumes that this has 
-     * been called from something that has actively changed the user's consent state.
-     */
-    @Override
-    public void decrementStudyEnrollment(Study study, User user) {
-        if (study.getMaxNumOfParticipants() == 0) {
-            return;
-        }
-        if (!ConsentStatus.isUserConsented(user.getConsentStatuses())) {
-            String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-            String count = jedisOps.get(key);
-            if (count != null && Long.parseLong(count) > 0) {
-                jedisOps.decr(key);
-            }
-        }
     }
     
     /**

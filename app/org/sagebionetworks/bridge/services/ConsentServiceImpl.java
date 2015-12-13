@@ -50,10 +50,11 @@ public class ConsentServiceImpl implements ConsentService {
     private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
     private StudyConsentService studyConsentService;
-    private StudyService studyService;
+    private StudyEnrollmentService studyEnrollmentService;
     private UserConsentDao userConsentDao;
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
+    
     private String consentTemplate;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
@@ -85,8 +86,8 @@ public class ConsentServiceImpl implements ConsentService {
         this.activityEventService = activityEventService;
     }
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setStudyEnrollmentService(StudyEnrollmentService studyEnrollmentService) {
+        this.studyEnrollmentService = studyEnrollmentService;
     }
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
@@ -109,8 +110,8 @@ public class ConsentServiceImpl implements ConsentService {
     @Override
     public User consentToResearch(Study study, SubpopulationGuid subpopGuid, User user, ConsentSignature consentSignature, 
             SharingScope sharingScope, boolean sendEmail) {
-
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(subpopGuid, Validate.CANNOT_BE_NULL, "subpopulationGuid");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
@@ -126,7 +127,7 @@ public class ConsentServiceImpl implements ConsentService {
         Account account = accountDao.getAccount(study, user.getEmail());
 
         // Throws exception if we have exceeded enrollment limit.
-        if (studyService.isStudyAtEnrollmentLimit(study)) {
+        if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
             throw new StudyLimitExceededException(study);
         }
         
@@ -150,7 +151,7 @@ public class ConsentServiceImpl implements ConsentService {
         optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, sharingScope);
         
         updateSessionConsentStatuses(user, subpopGuid, true);
-        studyService.incrementStudyEnrollment(study, user);
+        studyEnrollmentService.incrementStudyEnrollment(study, user);
         
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid, user, 
@@ -207,7 +208,7 @@ public class ConsentServiceImpl implements ConsentService {
         user.setSharingScope(SharingScope.NO_SHARING);
         
         updateSessionConsentStatuses(user, subpopGuid, false);
-        studyService.decrementStudyEnrollment(study, user);
+        studyEnrollmentService.decrementStudyEnrollment(study, user);
         
         String externalId = optionsService.getString(user.getHealthCode(), EXTERNAL_IDENTIFIER);
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal, withdrewOn);
@@ -239,14 +240,14 @@ public class ConsentServiceImpl implements ConsentService {
     }
     
     @Override
-    public void deleteAllConsentsForUser(Study study, User user) {
+    public void deleteAllConsentsForUser(Study study, String healthCode) {
         checkNotNull(study);
-        checkNotNull(user);
+        checkNotNull(healthCode);
         
         // May exceed the subpopulations the user matches, but that's okay
         List<Subpopulation> subpopGuids = subpopService.getSubpopulations(study);
         for (Subpopulation subpop : subpopGuids) {
-            userConsentDao.deleteAllConsents(user.getHealthCode(), subpop);    
+            userConsentDao.deleteAllConsents(healthCode, subpop);    
         }
     }
     

@@ -86,7 +86,7 @@ public interface ConsentService {
      * used for tests, do not call this method to withdraw a user from a study, or we will not have auditable 
      * records about their participation.
      * @param study
-     * @param user
+     * @param healthCode
      */
-    void deleteAllConsentsForUser(Study study, User user);
+    void deleteAllConsentsForUser(Study study, String healthCode);
 }

@@ -98,8 +98,13 @@ public class UserAdminServiceImpl implements UserAdminService {
         this.optionsService = optionsService;
     }
     
+    /**
+     * Note that currently, the ability to consent someone to a subpopulation other than the default 
+     * subpopulation is not supported in the API.
+     */
     @Override
-    public UserSession createUser(SignUp signUp, ScheduleContext context, Study study, SubpopulationGuid subpopGuid, boolean signUserIn, boolean consentUser) {
+    public UserSession createUser(SignUp signUp, ScheduleContext context, Study study, SubpopulationGuid subpopGuid,
+            boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
@@ -117,7 +122,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 ConsentSignature consent = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
 
-                SubpopulationGuid consentTo = (subpopGuid == null) ? subpopGuid
+                SubpopulationGuid consentTo = (subpopGuid != null) ? subpopGuid
                         : SubpopulationGuid.create(study.getIdentifier());
                 
                 consentService.consentToResearch(study, consentTo,
@@ -210,9 +215,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 // We expect to have health code, but when tests fail, we can get users who have signed in 
                 // and do not have a health code.
                 if (!StringUtils.isBlank(healthCode)) {
-                    User user = new User(account);
-                    user.setHealthCode(healthCode);
-                    consentService.deleteAllConsentsForUser(study, user);
+                    consentService.deleteAllConsentsForUser(study, healthCode);
                     healthDataService.deleteRecordsForHealthCode(healthCode);
                     scheduledActivityService.deleteActivitiesForUser(healthCode);
                     activityEventService.deleteActivityEvents(healthCode);

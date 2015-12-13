@@ -58,7 +58,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
     private HealthCodeService healthCodeService;
-    private StudyService studyService;
+    private StudyEnrollmentService studyEnrollmentService;
     
     private EmailVerificationValidator verificationValidator;
     private SignInValidator signInValidator;
@@ -94,8 +94,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.healthCodeService = healthCodeService;
     }
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setStudyEnrollmentService(StudyEnrollmentService studyEnrollmentService) {
+        this.studyEnrollmentService = studyEnrollmentService;
     }
     @Autowired
     final void setEmailVerificationValidator(EmailVerificationValidator validator) {
@@ -167,7 +167,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail(), LOCK_EXPIRE_IN_SECONDS);
-            if (studyService.isStudyAtEnrollmentLimit(study)) {
+            if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
             Account account = accountDao.signUp(study, signUp, isAnonSignUp);

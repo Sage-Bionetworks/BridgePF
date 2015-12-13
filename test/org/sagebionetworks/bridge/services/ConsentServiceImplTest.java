@@ -41,8 +41,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-
-import com.google.common.base.Preconditions;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
@@ -104,7 +103,6 @@ public class ConsentServiceImplTest {
         subpopulation.setName("Genetics Contributors");
         subpopulation.setRequired(true);
         subpopulation = subpopService.createSubpopulation(study, subpopulation);
-        Preconditions.checkNotNull(subpopulation.getGuid());
         
         testUser = helper.getBuilder(ConsentServiceImplTest.class).withStudy(study).withConsent(false).build();
         
@@ -256,9 +254,7 @@ public class ConsentServiceImplTest {
     @Test
     public void withdrawConsent() {
         long originalSignedOn = DateTime.now().getMillis();
-        ConsentSignature consent = new ConsentSignature.Builder().withName("John Smith")
-                .withImageData("data").withImageMimeType("image/png").withBirthdate("1990-11-11")
-                .withSignedOn(originalSignedOn).build();
+        ConsentSignature consent = makeSignature(originalSignedOn);
 
         consentService.consentToResearch(testUser.getStudy(), subpopulation, testUser.getUser(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
@@ -320,5 +316,66 @@ public class ConsentServiceImplTest {
         assertEquals(originalSignedOn, withdrawnConsent.getSignedOn());
         assertEquals(userConsent.getWithdrewOn(), withdrawnConsent.getWithdrewOn());
         assertEquals(true, withdrawnConsent.isHasSignedActiveConsent());
+    }
+
+    private ConsentSignature makeSignature(long originalSignedOn) {
+        ConsentSignature consent = new ConsentSignature.Builder().withName("John Smith")
+                .withImageData("data").withImageMimeType("image/png").withBirthdate("1990-11-11")
+                .withSignedOn(originalSignedOn).build();
+        return consent;
+    }
+    
+    @Test
+    public void userCanConsentAndUnconsentToDifferentSubpopulations() {
+        // Make an optional subpopulation, it will have zero impact on this test... if all works correctly
+        Subpopulation optionalSubpop = Subpopulation.create();
+        optionalSubpop.setName("You Don't Really Have To Do This");
+        optionalSubpop.setRequired(false);
+        optionalSubpop = subpopService.createSubpopulation(study, optionalSubpop);
+        
+        // Get the other subpopulation
+        Subpopulation defaultSubpop = subpopService.getSubpopulation(study, SubpopulationGuid.create(study.getIdentifier()));
+
+        List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        assertEquals(3, statuses.size());
+        assertFalse(ConsentStatus.isUserConsented(statuses));
+        
+        consentService.consentToResearch(study, defaultSubpop, testUser.getUser(),
+                makeSignature(DateTime.now().getMillis()), SharingScope.NO_SHARING, false);
+        
+        statuses = consentService.getConsentStatuses(context);
+        assertFalse(ConsentStatus.isUserConsented(statuses));
+        
+        consentService.consentToResearch(study, subpopulation, testUser.getUser(),
+                makeSignature(DateTime.now().getMillis()), SharingScope.NO_SHARING, false);        
+        
+        statuses = consentService.getConsentStatuses(context);
+        assertTrue(ConsentStatus.isUserConsented(statuses)); // despite not signing the optional subpop
+        
+        consentService.withdrawConsent(study, defaultSubpop, testUser.getUser(), new Withdrawal("Nada"),
+                DateTime.now().getMillis());
+        
+        statuses = consentService.getConsentStatuses(context);
+        assertFalse(ConsentStatus.isUserConsented(statuses));
+        assertFalse(ConsentStatus.forSubpopulation(statuses, defaultSubpop).isConsented());
+        assertTrue(ConsentStatus.forSubpopulation(statuses, subpopulation).isConsented());
+        assertFalse(ConsentStatus.forSubpopulation(statuses, optionalSubpop).isConsented());
+        
+        // Just verify that it now doesn't appear to exist, so this is an exception
+        try {
+            consentService.withdrawConsent(study, defaultSubpop, testUser.getUser(), new Withdrawal("Nada"),
+                    DateTime.now().getMillis());
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+        
+        consentService.withdrawConsent(study, subpopulation, testUser.getUser(), new Withdrawal("Nada"),
+                DateTime.now().getMillis());
+        
+        statuses = consentService.getConsentStatuses(context);
+        assertFalse(ConsentStatus.isUserConsented(statuses));
+        assertFalse(ConsentStatus.forSubpopulation(statuses, defaultSubpop).isConsented());
+        assertFalse(ConsentStatus.forSubpopulation(statuses, subpopulation).isConsented());
+        assertFalse(ConsentStatus.forSubpopulation(statuses, optionalSubpop).isConsented()); // still false
     }
 }

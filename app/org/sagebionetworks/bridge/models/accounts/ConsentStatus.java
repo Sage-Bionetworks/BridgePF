@@ -22,6 +22,7 @@ public final class ConsentStatus {
     }
 
     public static boolean isUserConsented(List<ConsentStatus> statuses) {
+        checkNotNull(statuses);
         return !statuses.isEmpty() && statuses.stream().allMatch(status -> {
             return !status.isRequired() || status.isConsented();
         });
@@ -32,12 +33,14 @@ public final class ConsentStatus {
      * @return
      */
     public static boolean isConsentCurrent(List<ConsentStatus> statuses) {
+        checkNotNull(statuses);
         return !statuses.isEmpty() && statuses.stream().allMatch(status -> {
             return !status.isRequired() || status.isMostRecentConsent();   
         });
     }
     
     public static boolean hasOnlyOneSignedConsent(List<ConsentStatus> statuses) {
+        checkNotNull(statuses);
         int count = 0;
         for (ConsentStatus status : statuses) {
             if (status.isConsented()) {

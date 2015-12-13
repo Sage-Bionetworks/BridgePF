@@ -73,7 +73,7 @@ public class ConsentServiceImplMockTest {
     @Mock
     private ActivityEventService activityEventService;
     @Mock
-    private StudyService studyService;
+    private StudyEnrollmentService studyEnrollmentService;
 
     private Study study;
     private User user;
@@ -89,7 +89,7 @@ public class ConsentServiceImplMockTest {
         consentService.setUserConsentDao(userConsentDao);
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
-        consentService.setStudyService(studyService);
+        consentService.setStudyEnrollmentService(studyEnrollmentService);
         
         study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
         user = new User();

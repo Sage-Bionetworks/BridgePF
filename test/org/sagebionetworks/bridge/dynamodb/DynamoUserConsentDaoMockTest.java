@@ -35,7 +35,7 @@ public class DynamoUserConsentDaoMockTest {
 
     private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
     private static final String HEALTH_CODE = "AAA";
-    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("test-study");
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("test-study");
     
     DynamoUserConsentDao userConsentDao;
