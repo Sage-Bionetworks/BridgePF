@@ -36,7 +36,7 @@ public class ConsentSignatureTest {
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
     }
-
+    
     @Test
     public void nullName() {
         try {

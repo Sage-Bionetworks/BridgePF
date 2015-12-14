@@ -27,7 +27,7 @@ public interface StudyConsentService {
      * Gets the currently active consent document for the study.
      *
      * @param subpopGuid
-     *            the subpopulation associated with this consent
+     *          the subpopulation associated with this consent
      * @return the currently active StudyConsent along with its document content
      */
     public StudyConsentView getActiveConsent(SubpopulationGuid subpopGuid);

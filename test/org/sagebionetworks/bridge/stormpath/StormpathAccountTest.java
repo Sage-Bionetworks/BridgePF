@@ -328,6 +328,9 @@ public class StormpathAccountTest {
         assertEquals(DEVELOPER, acct.getRoles().iterator().next());
     }
     
+    // This tests the in memory representation of the signatures, see the 
+    // StormpathAccountDaoTest.canSetAndRetrieveConsentsForMultipleSubpopulations test where we test 
+    // encryption into and out of Stormpath.
     @Test
     public void multipleConsentsAreMaintainedSeparately() {
         ConsentSignature sig1 = new ConsentSignature.Builder()
@@ -350,11 +353,11 @@ public class StormpathAccountTest {
         ConsentSignature sig2Retrieved = acct.getActiveConsentSignature(SUBPOP_GUID_2);
         assertEquals(sig2, sig2Retrieved);
         
-        Map<SubpopulationGuid,List<ConsentSignature>> signatures = acct.getAllConsentSignatureHistories();
-        sig1Retrieved = signatures.get(SUBPOP_GUID).get(0);
+        Map<String,List<ConsentSignature>> signatures = acct.getAllConsentSignatureHistories();
+        sig1Retrieved = signatures.get(SUBPOP_GUID.getGuid()).get(0);
         assertEquals(sig1, sig1Retrieved);
         
-        sig2Retrieved = signatures.get(SUBPOP_GUID_2).get(0);
+        sig2Retrieved = signatures.get(SUBPOP_GUID_2.getGuid()).get(0);
         assertEquals(sig2, sig2Retrieved);
     }
 }

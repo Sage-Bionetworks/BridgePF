@@ -243,7 +243,7 @@ public class ConsentServiceImplMockTest {
         private String email;
         private String healthId;
         private StudyIdentifier studyId;
-        private Map<SubpopulationGuid,List<ConsentSignature>> signatures = Maps.newHashMap();
+        private Map<String,List<ConsentSignature>> signatures = Maps.newHashMap();
         private Map<String,String> attributes = Maps.newHashMap();
         private Set<Roles> roles = Sets.newHashSet();
         @Override
@@ -288,11 +288,11 @@ public class ConsentServiceImplMockTest {
         }
         @Override
         public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {
-            signatures.putIfAbsent(subpopGuid, Lists.newArrayList());
-            return signatures.get(subpopGuid);
+            signatures.putIfAbsent(subpopGuid.getGuid(), Lists.newArrayList());
+            return signatures.get(subpopGuid.getGuid());
         }
         @Override
-        public Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
+        public Map<String, List<ConsentSignature>> getAllConsentSignatureHistories() {
             return signatures;
         }
         @Override

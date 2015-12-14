@@ -96,6 +96,7 @@ public class ConsentServiceImpl implements ConsentService {
     
     @Override
     public ConsentSignature getConsentSignature(Study study, SubpopulationGuid subpopGuid, User user) {
+        checkNotNull(study);
         checkNotNull(subpopGuid);
         checkNotNull(user);
         
@@ -139,6 +140,7 @@ public class ConsentServiceImpl implements ConsentService {
             userConsent = userConsentDao.giveConsent(
                     user.getHealthCode(), subpopGuid, studyConsent.getCreatedOn(), consentSignature.getSignedOn());
         } catch (Throwable e) {
+            e.printStackTrace(); // REMOVEME
             int len = account.getConsentSignatureHistory(subpopGuid).size();
             account.getConsentSignatureHistory(subpopGuid).remove(len-1);
             accountDao.updateAccount(study, account);

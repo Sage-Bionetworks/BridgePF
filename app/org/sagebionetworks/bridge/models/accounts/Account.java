@@ -42,7 +42,7 @@ public interface Account extends BridgeEntity {
     
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid);
     
-    public Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
+    public Map<String,List<ConsentSignature>> getAllConsentSignatureHistories();
     
     public String getHealthId();
     public void setHealthId(String healthId);

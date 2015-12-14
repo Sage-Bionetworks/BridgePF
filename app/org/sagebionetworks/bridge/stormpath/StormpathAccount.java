@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,9 +60,11 @@ class StormpathAccount implements Account {
     private final String oldConsentSignatureKey;
     private final Set<Roles> roles;
     /**
-     * All signatures saved under a key that includes the subpopulation GUID.
+     * All signatures saved under a key that includes the subpopulation GUID. Don't
+     * use SubpopulationGuid interface as the key, because different implementations have different
+     * equals/hashCode values. Use the GUID string directly.
      */
-    private Map<SubpopulationGuid,List<ConsentSignature>> allSignatures;
+    private Map<String, List<ConsentSignature>> allSignatures;
     
     StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
@@ -84,22 +85,20 @@ class StormpathAccount implements Account {
         
         for (SubpopulationGuid subpopGuid : subpopGuids) {
             List<ConsentSignature> signatures = decryptJSONFrom(subpopGuid.getGuid()+CONSENT_SIGNATURES_SUFFIX, CONSENT_SIGNATURES_TYPE);
-            if (signatures == null) {
-                signatures = new ArrayList<>();
-            }   
-            if (signatures.isEmpty()) {
+            if (signatures == null || signatures.isEmpty()) {
                 ConsentSignature sig = decryptJSONFrom(subpopGuid.getGuid()+CONSENT_SIGNATURE_SUFFIX, ConsentSignature.class);
                 if (sig != null) {
-                    signatures.add(sig);
+                    getConsentSignatureHistory(subpopGuid).add(sig);
                 }
+            } else {
+                getConsentSignatureHistory(subpopGuid).addAll(signatures);
             }
-            allSignatures.put(subpopGuid, signatures);
         }
     }
     
     com.stormpath.sdk.account.Account getAccount() {
-        for (Map.Entry<SubpopulationGuid, List<ConsentSignature>> entry : allSignatures.entrySet()) {
-            encryptJSONTo(entry.getKey().getGuid() + CONSENT_SIGNATURES_SUFFIX, entry.getValue());
+        for (Map.Entry<String, List<ConsentSignature>> entry : allSignatures.entrySet()) {
+            encryptJSONTo(entry.getKey()+CONSENT_SIGNATURES_SUFFIX, entry.getValue());
         }
         return acct;
     }
@@ -164,11 +163,11 @@ class StormpathAccount implements Account {
     };
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {
-        allSignatures.putIfAbsent(subpopGuid, Lists.newArrayList());
-        return allSignatures.get(subpopGuid);
+        allSignatures.putIfAbsent(subpopGuid.getGuid(), Lists.newArrayList());
+        return allSignatures.get(subpopGuid.getGuid());
     }
     @Override
-    public Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
+    public Map<String, List<ConsentSignature>> getAllConsentSignatureHistories() {
         return allSignatures;
     }
     @Override
@@ -187,6 +186,7 @@ class StormpathAccount implements Account {
     private void encryptJSONTo(String key, Object value) {
         if (value == null) {
             acct.getCustomData().remove(key);
+            acct.getCustomData().remove(key+VERSION_SUFFIX);
             return;
         }
         try {

@@ -187,7 +187,7 @@ public class ParticipantRosterGeneratorTest {
         when(account.getFirstName()).thenReturn(firstName);
         when(account.getLastName()).thenReturn(lastName);
         
-        Map<SubpopulationGuid,List<ConsentSignature>> map = new HashMap<>();
+        Map<String,List<ConsentSignature>> map = new HashMap<>();
         addConsentToAccount(account, map, "Consent One", firstName, lastName);
         addConsentToAccount(account, map, "Consent Two", firstName, lastName);
         addConsentToAccount(account, map, "Consent Three", firstName, lastName);
@@ -205,7 +205,7 @@ public class ParticipantRosterGeneratorTest {
         when(account.getAttribute("phone")).thenReturn(phone);
         when(account.getAttribute("can_recontact")).thenReturn("true");
         
-        Map<SubpopulationGuid,List<ConsentSignature>> map = new HashMap<>();
+        Map<String,List<ConsentSignature>> map = new HashMap<>();
         if (hasConsented) {
             addConsentToAccount(account, map, subpopName, firstName, lastName);
         }
@@ -213,7 +213,7 @@ public class ParticipantRosterGeneratorTest {
         return account;
     }
     
-    private void addConsentToAccount(Account account, Map<SubpopulationGuid, List<ConsentSignature>> map, 
+    private void addConsentToAccount(Account account, Map<String, List<ConsentSignature>> map, 
             String subpopName, String firstName, String lastName) {
         ConsentSignature sig = new ConsentSignature.Builder().withName(firstName + " " + lastName)
                 .withBirthdate("1970-02-02").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
@@ -221,7 +221,7 @@ public class ParticipantRosterGeneratorTest {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(subpopName);
         
         List<ConsentSignature> list = Lists.newArrayList(sig);
-        map.put(subpopGuid, list);
+        map.put(subpopGuid.getGuid(), list);
         when(account.getActiveConsentSignature(subpopGuid)).thenReturn(sig);
         
         Subpopulation subpop = Subpopulation.create();
