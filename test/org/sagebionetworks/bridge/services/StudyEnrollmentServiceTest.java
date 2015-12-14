@@ -7,6 +7,9 @@ import static org.junit.Assert.assertTrue;
 import javax.annotation.Resource;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
@@ -22,6 +25,8 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 
 import com.google.common.collect.Lists;
 
+@ContextConfiguration("classpath:test-context.xml")
+@RunWith(SpringJUnit4ClassRunner.class)
 public class StudyEnrollmentServiceTest {
     
     private static final String NUM_PARTICIPANTS_KEY = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
