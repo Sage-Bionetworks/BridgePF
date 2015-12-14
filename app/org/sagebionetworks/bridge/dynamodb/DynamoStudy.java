@@ -35,6 +35,8 @@ public final class DynamoStudy implements Study {
     private String identifier;
     private String stormpathHref;
     private String supportEmail;
+    private Long synapseDataAccessTeamId;
+    private String synapseProjectId;
     private String technicalEmail;
     private String consentNotificationEmail;
     private int minAgeOfConsent;
@@ -159,6 +161,30 @@ public final class DynamoStudy implements Study {
     @Override
     public void setSupportEmail(String supportEmail) {
         this.supportEmail = supportEmail;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Long getSynapseDataAccessTeamId() {
+        return synapseDataAccessTeamId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSynapseDataAccessTeamId(Long teamId) {
+        this.synapseDataAccessTeamId = teamId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getSynapseProjectId() {
+        return synapseProjectId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSynapseProjectId(String projectId) {
+        this.synapseProjectId = projectId;
     }
 
     /** {@inheritDoc} */
@@ -325,6 +351,8 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(name);
         result = prime * result + Objects.hashCode(sponsorName);
         result = prime * result + Objects.hashCode(supportEmail);
+        result = prime * result + Objects.hashCode(synapseDataAccessTeamId);
+        result = prime * result + Objects.hashCode(synapseProjectId);
         result = prime * result + Objects.hashCode(technicalEmail);
         result = prime * result + Objects.hashCode(consentNotificationEmail);
         result = prime * result + Objects.hashCode(stormpathHref);
@@ -363,6 +391,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(taskIdentifiers, other.taskIdentifiers)
                 && Objects.equals(dataGroups, other.dataGroups)
                 && Objects.equals(sponsorName, other.sponsorName)
+                && Objects.equals(synapseDataAccessTeamId, other.synapseDataAccessTeamId)
+                && Objects.equals(synapseProjectId, other.synapseProjectId)
                 && Objects.equals(technicalEmail, other.technicalEmail)
                 && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
                 && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
@@ -373,13 +403,14 @@ public final class DynamoStudy implements Study {
     public String toString() {
         return String.format(
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
-                            + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
+                            + "maxNumOfParticipants=%s, supportEmail=%s, synapseDataAccessTeamId=%s, "
+                            + "synapseProjectId=%s, technicalEmail=%s, consentNotificationEmail=%s, "
                             + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
                             + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, "
                             + "healthCodeExportEnabled=%s, minSupportedAppVersions=%s]",
             name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
-            supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
-            dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
-            healthCodeExportEnabled, minSupportedAppVersions);
+            supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
+            profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate,
+            strictUploadValidationEnabled, healthCodeExportEnabled, minSupportedAppVersions);
     }
 }

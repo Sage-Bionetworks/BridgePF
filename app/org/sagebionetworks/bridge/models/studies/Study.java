@@ -90,7 +90,19 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     public String getSupportEmail();
     public void setSupportEmail(String email);
-    
+
+    /** Synapse team ID that is granted read access to exported health data records. */
+    Long getSynapseDataAccessTeamId();
+
+    /** @see #getSynapseDataAccessTeamId */
+    void setSynapseDataAccessTeamId(Long teamId);
+
+    /** The Synapse project to export health data records to. */
+    String getSynapseProjectId();
+
+    /** @see #getSynapseProjectId */
+    void setSynapseProjectId(String projectId);
+
     /**
      * The email address for a technical contact who can coordinate with the Bridge Server team on 
      * issues related either to client development or hand-offs of the study data through the 
