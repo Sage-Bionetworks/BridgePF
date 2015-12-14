@@ -65,7 +65,6 @@ public class StormpathAccountDaoTest {
     }
     
     @Test
-    @Ignore
     public void getStudyAccounts() {
         Iterator<Account> i = accountDao.getStudyAccounts(study);
         
@@ -74,7 +73,6 @@ public class StormpathAccountDaoTest {
     }
     
     @Test
-    @Ignore
     public void getAllAccounts() {
         Iterator<Account> i = accountDao.getAllAccounts(); 
         
@@ -83,14 +81,12 @@ public class StormpathAccountDaoTest {
     }
     
     @Test
-    @Ignore
     public void returnsNulWhenThereIsNoAccount() {
         Account account = accountDao.getAccount(study, "thisemaildoesntexist@stormpath.com");
         assertNull(account);
     }
     
     @Test
-    @Ignore
     public void canAuthenticate() {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
@@ -109,7 +105,6 @@ public class StormpathAccountDaoTest {
     }
     
     @Test
-    @Ignore
     public void badPasswordReportedAs404() {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
@@ -129,13 +124,11 @@ public class StormpathAccountDaoTest {
     }
     
     @Test(expected = EntityNotFoundException.class)
-    @Ignore
     public void cannotAuthenticate() {
         accountDao.authenticate(study, new SignIn("bridge-testing+noone@sagebridge.org", "belgium"));
     }
     
     @Test
-    @Ignore
     public void crudAccount() {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
@@ -204,7 +197,6 @@ public class StormpathAccountDaoTest {
     }
     
     @Test
-    @Ignore
     public void canResendEmailVerification() throws Exception {
         String random = RandomStringUtils.randomAlphabetic(5);
         SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null); 
