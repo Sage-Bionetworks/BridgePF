@@ -44,6 +44,8 @@ public class DynamoStudyTest {
         
         assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
+        assertEqualsAndNotNull(study.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());
+        assertEqualsAndNotNull(study.getSynapseProjectId(), node.get("synapseProjectId").textValue());
         assertEqualsAndNotNull(study.getTechnicalEmail(), node.get("technicalEmail").asText());
         assertEqualsAndNotNull(study.getSponsorName(), node.get("sponsorName").asText());
         assertEqualsAndNotNull(study.getName(), node.get("name").asText());

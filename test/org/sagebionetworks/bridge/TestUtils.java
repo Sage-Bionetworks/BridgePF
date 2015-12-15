@@ -189,6 +189,8 @@ public class TestUtils {
         study.setMaxNumOfParticipants(200);
         study.setSponsorName("The Council on Test Studies");
         study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
+        study.setSynapseDataAccessTeamId(1234L);
+        study.setSynapseProjectId("test-synapse-project-id");
         study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
         study.setSupportEmail("bridge-testing+support@sagebase.org");
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
