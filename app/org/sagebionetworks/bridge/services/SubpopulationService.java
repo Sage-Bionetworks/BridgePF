@@ -93,6 +93,10 @@ public class SubpopulationService {
         checkNotNull(subpop);
         
         subpop.setStudyIdentifier(study.getIdentifier());
+        
+        // Verify this subpopulation is part of the study
+        getSubpopulation(study, subpop);
+        
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
         
@@ -146,6 +150,9 @@ public class SubpopulationService {
     public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
+        
+        // Verify this subpopulation is part of the study
+        getSubpopulation(studyId, subpopGuid);
         
         subpopDao.deleteSubpopulation(studyId, subpopGuid);
     }

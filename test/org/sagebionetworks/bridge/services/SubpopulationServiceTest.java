@@ -5,8 +5,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -174,10 +174,12 @@ public class SubpopulationServiceTest {
         assertEquals(subpops, results);
         verify(dao).getSubpopulationsForUser(context);
     }
+    
     @Test
     public void deleteSubpopulation() {
         service.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID);
         
         verify(dao).deleteSubpopulation(TEST_STUDY, SUBPOP_GUID);
     }
+    
 }

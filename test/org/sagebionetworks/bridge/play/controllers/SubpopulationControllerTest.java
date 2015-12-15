@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -19,7 +20,9 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -195,7 +198,52 @@ public class SubpopulationControllerTest {
         
         verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
-
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getAllSubpopulationsRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.getAllSubpopulations();
+        verifyNoMoreInteractions(subpopService);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void createSubpopulationRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.createSubpopulation();
+        verifyNoMoreInteractions(subpopService);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void updateSubpopulationRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.updateSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
+        verifyNoMoreInteractions(subpopService);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getSubpopulationRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
+        verifyNoMoreInteractions(subpopService);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void deleteSubpopulationRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
+        verifyNoMoreInteractions(subpopService);
+    }
+    
     private List<Subpopulation> createSubpopulationList() {
         Subpopulation subpop1 = Subpopulation.create();
         subpop1.setName("Name 1");

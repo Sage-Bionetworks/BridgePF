@@ -47,6 +47,7 @@ public class SubpopulationController extends BaseController {
         
         Subpopulation subpop = parseJson(request(), Subpopulation.class);
         subpop.setGuid(guid);
+        
         subpop = subpopService.updateSubpopulation(study, subpop);
         
         return okResult(new GuidVersionHolder(subpop.getGuid(), subpop.getVersion()));
@@ -54,7 +55,7 @@ public class SubpopulationController extends BaseController {
     public Result getSubpopulation(String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
-        
+
         Subpopulation subpop = subpopService.getSubpopulation(session.getStudyIdentifier(), subpopGuid);
         return okResult(subpop);
     }

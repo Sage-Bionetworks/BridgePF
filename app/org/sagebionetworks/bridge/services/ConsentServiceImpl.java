@@ -291,7 +291,8 @@ public class ConsentServiceImpl implements ConsentService {
             for (int i=0; i < user.getConsentStatuses().size(); i++) {
                 ConsentStatus status = user.getConsentStatuses().get(i);
                 if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
-                    updatedStatuses.add(new ConsentStatus(status.getName(), status.getSubpopulationGuid(), status.isRequired(), consented, consented));
+                    ConsentStatus updatedStatus = new ConsentStatus(status.getName(), status.getSubpopulationGuid(), status.isRequired(), consented, consented);
+                    updatedStatuses.add(updatedStatus);
                 } else {
                     updatedStatuses.add(status);
                 }
