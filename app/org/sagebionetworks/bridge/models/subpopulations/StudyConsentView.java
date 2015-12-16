@@ -26,6 +26,10 @@ public class StudyConsentView {
         this.documentContent = documentContent;
     }
 
+    public String getSubpopulationGuid() {
+        return consent.getSubpopulationGuid();
+    }
+    
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getCreatedOn() {
         return consent.getCreatedOn();

@@ -271,7 +271,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
         
-        user.setConsentStatuses(statuses);
+        user.setConsentStatuses(ConsentStatus.toMap(statuses));
         session.setUser(user);
         
         return session;

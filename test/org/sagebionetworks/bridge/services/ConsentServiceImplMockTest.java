@@ -136,7 +136,9 @@ public class ConsentServiceImplMockTest {
     
     @Test
     public void noActivityEventIfAlreadyConsented() {
-        user.setConsentStatuses(Lists.newArrayList(new ConsentStatus("name", "GUID", true, true, true)));
+        ConsentStatus status = new ConsentStatus.Builder().withName("name").withGuid(SUBPOP_GUID)
+                .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
+        user.setConsentStatuses(ConsentStatus.toMap(status));
         try {
             consentService.consentToResearch(study, SUBPOP_GUID, user, consentSignature, SharingScope.NO_SHARING, false);
             fail("Exception expected.");

@@ -117,7 +117,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
-        ConsentStatus status = ConsentStatus.forSubpopulation(user.getConsentStatuses(), subpopGuid);
+        ConsentStatus status = ConsentStatus.forSubpopulation(user.getConsentStatuses().values(), subpopGuid);
         if (status != null && status.isConsented()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
@@ -172,7 +172,9 @@ public class ConsentServiceImpl implements ConsentService {
         return subpopService.getSubpopulationForUser(context).stream().map(subpop -> {
             boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop);
             boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop);
-            return new ConsentStatus(subpop.getName(), subpop.getGuid(), subpop.isRequired(), consented, mostRecent);
+            return new ConsentStatus.Builder().withName(subpop.getName())
+                    .withGuid(subpop) .withRequired(subpop.isRequired()).withConsented(consented)
+                    .withSignedMostRecentConsent(mostRecent).build();
         }).collect(BridgeCollectors.toImmutableList());
     }
 
@@ -291,13 +293,14 @@ public class ConsentServiceImpl implements ConsentService {
             for (int i=0; i < user.getConsentStatuses().size(); i++) {
                 ConsentStatus status = user.getConsentStatuses().get(i);
                 if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
-                    ConsentStatus updatedStatus = new ConsentStatus(status.getName(), status.getSubpopulationGuid(), status.isRequired(), consented, consented);
+                    ConsentStatus updatedStatus = new ConsentStatus.Builder().withConsentStatus(status)
+                            .withConsented(consented).withSignedMostRecentConsent(consented).build();
                     updatedStatuses.add(updatedStatus);
                 } else {
                     updatedStatuses.add(status);
                 }
             }
-            user.setConsentStatuses(updatedStatuses);
+            user.setConsentStatuses(ConsentStatus.toMap(updatedStatuses));
         }
     }
 }

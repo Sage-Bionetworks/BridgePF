@@ -98,7 +98,7 @@ public class StudyEnrollmentService {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        if (ConsentStatus.hasOnlyOneSignedConsent(user.getConsentStatuses())) {
+        if (ConsentStatus.hasOnlyOneSignedConsent(user.getConsentStatuses().values())) {
             String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
             jedisOps.incr(key);
         }
@@ -115,7 +115,7 @@ public class StudyEnrollmentService {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        if (!ConsentStatus.isUserConsented(user.getConsentStatuses())) {
+        if (!ConsentStatus.isUserConsented(user.getConsentStatuses().values())) {
             String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
             String count = jedisOps.get(key);
             if (count != null && Long.parseLong(count) > 0) {

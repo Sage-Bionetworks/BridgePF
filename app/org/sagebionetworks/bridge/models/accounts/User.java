@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -13,10 +13,11 @@ import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 @BridgeTypeName("User")
@@ -35,10 +36,10 @@ public final class User implements BridgeEntity {
     private SharingScope sharingScope;
     private Set<Roles> roles = Sets.newHashSet();
     private Set<String> dataGroups = Sets.newHashSet();
-    private List<ConsentStatus> consentStatuses;
+    private Map<SubpopulationGuid,ConsentStatus> consentStatuses;
 
     public User() {
-        this.consentStatuses = ImmutableList.of();
+        this.consentStatuses = ImmutableMap.of();
     }
 
     public User(Account account) {
@@ -154,12 +155,12 @@ public final class User implements BridgeEntity {
         return roleSet != null && !Collections.disjoint(roles, roleSet);
     }
     
-    public List<ConsentStatus> getConsentStatuses() {
+    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses() {
         return consentStatuses;
     }
     
-    public void setConsentStatuses(List<ConsentStatus> consentStatuses) {
-        this.consentStatuses = (consentStatuses == null) ? ImmutableList.of() : ImmutableList.copyOf(consentStatuses);
+    public void setConsentStatuses(Map<SubpopulationGuid,ConsentStatus> consentStatuses) {
+        this.consentStatuses = (consentStatuses == null) ? ImmutableMap.of() : ImmutableMap.copyOf(consentStatuses);
     }
 
     /**
@@ -167,7 +168,7 @@ public final class User implements BridgeEntity {
      * @return
      */
     public boolean doesConsent() {
-        return ConsentStatus.isUserConsented(consentStatuses);
+        return ConsentStatus.isUserConsented(consentStatuses.values());
     }
 
     /**
@@ -175,7 +176,7 @@ public final class User implements BridgeEntity {
      * @return
      */
     public boolean hasSignedMostRecentConsent() {
-        return ConsentStatus.isConsentCurrent(consentStatuses);
+        return ConsentStatus.isConsentCurrent(consentStatuses.values());
     }
     
     @Override

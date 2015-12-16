@@ -221,7 +221,7 @@ public class ConsentServiceImplTest {
 
         ConsentStatus status = ConsentStatus.forSubpopulation(consentService.getConsentStatuses(context), subpopulation);
         assertTrue("Should be consented", status.isConsented());
-        assertTrue("Should have signed most recent consent.", status.isMostRecentConsent());
+        assertTrue("Should have signed most recent consent.", status.getSignedMostRecentConsent());
 
         // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
         StudyConsent newStudyConsent = studyConsentService.addConsent(subpopulation, defaultConsentDocument)
@@ -229,7 +229,7 @@ public class ConsentServiceImplTest {
 
         status = ConsentStatus.forSubpopulation(consentService.getConsentStatuses(context), subpopulation);
         assertTrue("Should be consented", status.isConsented());
-        assertTrue("Still most recent consent", status.isMostRecentConsent());
+        assertTrue("Still most recent consent", status.getSignedMostRecentConsent());
 
         // Public the new study consent. User is consented and but has no longer signed the most recent consent.
         newStudyConsent = studyConsentService
@@ -237,7 +237,7 @@ public class ConsentServiceImplTest {
 
         status = ConsentStatus.forSubpopulation(consentService.getConsentStatuses(context), subpopulation);
         assertTrue("Should be consented", status.isConsented());
-        assertFalse("New consent activated. Should no longer have signed most recent consent. ", status.isMostRecentConsent());
+        assertFalse("New consent activated. Should no longer have signed most recent consent. ", status.getSignedMostRecentConsent());
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
         consentService.withdrawConsent(testUser.getStudy(), subpopulation, testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
@@ -248,7 +248,7 @@ public class ConsentServiceImplTest {
 
         status = ConsentStatus.forSubpopulation(consentService.getConsentStatuses(context), subpopulation);
         assertTrue("Should still be consented.", status.isConsented());
-        assertTrue("Should again have signed most recent consent.", status.isMostRecentConsent());
+        assertTrue("Should again have signed most recent consent.", status.getSignedMostRecentConsent());
     }
     
     @Test

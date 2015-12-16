@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Map;
+
 import javax.annotation.Resource;
 
 import org.junit.Test;
@@ -20,6 +22,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 
@@ -30,6 +33,11 @@ import com.google.common.collect.Lists;
 public class StudyEnrollmentServiceTest {
     
     private static final String NUM_PARTICIPANTS_KEY = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
+    
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
+    
+    private static final ConsentStatus CONSENT_STATUS = new ConsentStatus.Builder().withName("name")
+            .withGuid(SUBPOP_GUID).withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
     
     @Resource
     private StudyEnrollmentService studyEnrollmentService;
@@ -52,8 +60,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void enforcesStudyEnrollmentLimit() {
         User user = new User();
-        user.setConsentStatuses(
-            Lists.newArrayList(new ConsentStatus("Consent", "guid", true, true, true)));
+        user.setConsentStatuses(ConsentStatus.toMap(CONSENT_STATUS));
         
         try {
             jedisOps.del(NUM_PARTICIPANTS_KEY);
@@ -80,8 +87,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void studyEnrollmentNotIncrementedOnSubsequentConsents() {
         User user = new User();
-        user.setConsentStatuses(
-            Lists.newArrayList(new ConsentStatus("Consent", "guid", true, true, true)));
+        user.setConsentStatuses(ConsentStatus.toMap(CONSENT_STATUS));
         
         try {
             jedisOps.del(NUM_PARTICIPANTS_KEY);
@@ -94,11 +100,13 @@ public class StudyEnrollmentServiceTest {
             studyEnrollmentService.incrementStudyEnrollment(study, user);
             assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
             
+            ConsentStatus consent2 = new ConsentStatus.Builder().withName("Consent")
+                    .withGuid(SubpopulationGuid.create("guid2")).withConsented(true).withRequired(true)
+                    .withSignedMostRecentConsent(true).build();
             // On subsequent consents, user is not added and enrollment is not increased
-            user.setConsentStatuses(Lists.newArrayList(
-                new ConsentStatus("Consent", "guid", true, true, true),
-                new ConsentStatus("Consent", "guid2", true, true, true)
-            ));
+            
+            Map<SubpopulationGuid, ConsentStatus> map = ConsentStatus.toMap(Lists.newArrayList(CONSENT_STATUS, consent2));
+            user.setConsentStatuses(map);
             studyEnrollmentService.incrementStudyEnrollment(study, user);
             studyEnrollmentService.incrementStudyEnrollment(study, user);
             studyEnrollmentService.incrementStudyEnrollment(study, user);
@@ -112,8 +120,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void decrementingStudyWorks() {
         User user = new User();
-        user.setConsentStatuses(
-            Lists.newArrayList(new ConsentStatus("Consent", "guid", true, false, true)));
+        user.setConsentStatuses(ConsentStatus.toMap(CONSENT_STATUS));
         
         try {
             jedisOps.del(NUM_PARTICIPANTS_KEY);
@@ -140,8 +147,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void studyEnrollmentNotDecrementedUntilLastWithdrawal() {
         User user = new User();
-        user.setConsentStatuses(
-            Lists.newArrayList(new ConsentStatus("Consent", "guid", true, true, true)));
+        user.setConsentStatuses(ConsentStatus.toMap(CONSENT_STATUS));
         
         try {
             jedisOps.del(NUM_PARTICIPANTS_KEY);
@@ -156,8 +162,7 @@ public class StudyEnrollmentServiceTest {
             assertEquals("2", jedisOps.get(NUM_PARTICIPANTS_KEY));
             
             // With one consent not signed, this will decrement.
-            user.setConsentStatuses(
-                    Lists.newArrayList(new ConsentStatus("Consent", "guid", true, false, true)));
+            user.setConsentStatuses(ConsentStatus.toMap(CONSENT_STATUS));
             studyEnrollmentService.decrementStudyEnrollment(study, user);
             assertEquals("1", jedisOps.get(NUM_PARTICIPANTS_KEY));
         } finally {

@@ -26,8 +26,11 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import com.google.common.collect.Sets;
 
@@ -44,6 +47,9 @@ public class DynamoSubpopulationDaoTest {
     
     @Resource
     DynamoSubpopulationDao dao;
+    
+    @Resource
+    StudyConsentService studyConsentService;
     
     @BeforeClass
     public static void beforeClass() {
@@ -70,12 +76,14 @@ public class DynamoSubpopulationDaoTest {
         subpop.setDescription("Description");
         subpop.setMinAppVersion(2);
         subpop.setMaxAppVersion(10);
+        subpop.setRequired(true);
         
         // CREATE
         Subpopulation savedSubpop = dao.createSubpopulation(subpop);
         assertNotNull(savedSubpop.getGuid());
         assertNotNull(savedSubpop.getVersion());
         assertFalse(savedSubpop.isDefaultGroup()); // was not set to true
+        assertTrue(savedSubpop.isRequired());
         
         // READ
         Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop);
@@ -84,10 +92,14 @@ public class DynamoSubpopulationDaoTest {
         // UPDATE
         retrievedSubpop.setName("Name 2");
         retrievedSubpop.setDescription("Description 2");
+        retrievedSubpop.setRequired(false);
         Subpopulation finalSubpop = dao.updateSubpopulation(retrievedSubpop);
         
         // With this change, they should be equivalent using value equality
         retrievedSubpop.setVersion(finalSubpop.getVersion());
+        assertEquals("Name 2", retrievedSubpop.getName());
+        assertEquals("Description 2", retrievedSubpop.getDescription());
+        assertFalse(retrievedSubpop.isRequired());
         assertEquals(retrievedSubpop, finalSubpop);
 
         // Some further things that should be true:
@@ -121,6 +133,8 @@ public class DynamoSubpopulationDaoTest {
     public void getSubpopulationsWillCreateDefault() {
         List<Subpopulation> subpops = dao.getSubpopulations(studyId, true, false);
         assertEquals(1, subpops.size());
+        assertTrue(subpops.get(0).isDefaultGroup());
+        assertTrue(subpops.get(0).isRequired());
 
         Subpopulation subpop = subpops.get(0);
         assertEquals("Default Consent Group", subpop.getName());
@@ -258,6 +272,30 @@ public class DynamoSubpopulationDaoTest {
                 .build();
         List<Subpopulation> results = dao.getSubpopulationsForUser(context);
         assertTrue(results.isEmpty());
+    }
+    
+    @Test
+    public void deleteAllSubpopulationsDeletesConsents() {
+        Subpopulation subpop = createSubpop("Name", null, null, null);
+        
+        // We have to step back to the service level to create some related consents...
+        // Consents are created at the service level for this subpopulation, so there's 
+        // no default created
+        StudyConsentForm form = new StudyConsentForm("<p>Document content.</p>");
+        studyConsentService.addConsent(subpop, form);
+        
+        // There is now a consent, as we expect
+        List<StudyConsent> consents = studyConsentService.getAllConsents(subpop);
+        assertFalse(consents.isEmpty());
+        
+        // Delete and verify all are deleted
+        dao.deleteAllSubpopulations(studyId);
+        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false, true);
+        assertTrue(subpopulations.isEmpty());
+        
+        // These have been deleted as well.
+        consents = studyConsentService.getAllConsents(subpop);
+        assertTrue(consents.isEmpty());
     }
     
     private Subpopulation createSubpop(String name, Integer min, Integer max, String group) {

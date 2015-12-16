@@ -1,27 +1,48 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+@JsonDeserialize(builder=ConsentStatus.Builder.class)
 public final class ConsentStatus {
 
-    public static ConsentStatus forSubpopulation(List<ConsentStatus> statuses, SubpopulationGuid subpopGuid) {
-        for (int i=0; i < statuses.size(); i++) {
-            if (statuses.get(i).getSubpopulationGuid().equals(subpopGuid.getGuid())) {
-                return statuses.get(i);
+    public static Map<SubpopulationGuid,ConsentStatus> toMap(ConsentStatus... statuses) {
+        return ConsentStatus.toMap(Lists.newArrayList(statuses));
+    }
+    
+    public static Map<SubpopulationGuid,ConsentStatus> toMap(List<ConsentStatus> statuses) {
+        ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>();
+        if (statuses != null) {
+            for (ConsentStatus status : statuses) {
+                builder.put(SubpopulationGuid.create(status.getSubpopulationGuid()), status);
             }
+        }
+        return builder.build();
+    }
+    
+    public static ConsentStatus forSubpopulation(Collection<ConsentStatus> statuses, SubpopulationGuid subpopGuid) {
+        for (ConsentStatus status : statuses) {
+            if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
+                return status;
+            }
+            
         }
         return null;
     }
 
-    public static boolean isUserConsented(List<ConsentStatus> statuses) {
+    public static boolean isUserConsented(Collection<ConsentStatus> statuses) {
         checkNotNull(statuses);
         return !statuses.isEmpty() && statuses.stream().allMatch(status -> {
             return !status.isRequired() || status.isConsented();
@@ -32,14 +53,14 @@ public final class ConsentStatus {
      * Are all the required consents up-to-date?
      * @return
      */
-    public static boolean isConsentCurrent(List<ConsentStatus> statuses) {
+    public static boolean isConsentCurrent(Collection<ConsentStatus> statuses) {
         checkNotNull(statuses);
         return !statuses.isEmpty() && statuses.stream().allMatch(status -> {
-            return !status.isRequired() || status.isMostRecentConsent();   
+            return !status.isRequired() || status.getSignedMostRecentConsent();   
         });
     }
     
-    public static boolean hasOnlyOneSignedConsent(List<ConsentStatus> statuses) {
+    public static boolean hasOnlyOneSignedConsent(Collection<ConsentStatus> statuses) {
         checkNotNull(statuses);
         int count = 0;
         for (ConsentStatus status : statuses) {
@@ -54,17 +75,17 @@ public final class ConsentStatus {
     private final String subpopulationGuid;
     private final boolean required;
     private final boolean consented;
-    private final boolean mostRecentConsent;
+    private final boolean signedMostRecentConsent;
     
     @JsonCreator
-    public ConsentStatus(@JsonProperty("name") String name, @JsonProperty("subpopulationGuid") String subpopulationGuid,
+    ConsentStatus(@JsonProperty("name") String name, @JsonProperty("subpopulationGuid") String subpopulationGuid,
             @JsonProperty("required") boolean isRequired, @JsonProperty("consented") boolean isConsented, 
-            @JsonProperty("mostRecentConsent") boolean isMostRecentConsent) {
+            @JsonProperty("signedMostRecentConsent") boolean signedMostRecentConsent) {
         this.name = checkNotNull(name);
         this.subpopulationGuid = checkNotNull(subpopulationGuid);
         this.required = isRequired;
         this.consented = isConsented;
-        this.mostRecentConsent = isMostRecentConsent;
+        this.signedMostRecentConsent = signedMostRecentConsent;
     }
     
     public String getName() {
@@ -83,13 +104,13 @@ public final class ConsentStatus {
         return consented;
     }
     
-    public boolean isMostRecentConsent() {
-        return mostRecentConsent;
+    public boolean getSignedMostRecentConsent() {
+        return signedMostRecentConsent;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, subpopulationGuid, required, consented, mostRecentConsent);
+        return Objects.hash(name, subpopulationGuid, required, consented, signedMostRecentConsent);
     }
 
     @Override
@@ -101,12 +122,57 @@ public final class ConsentStatus {
         ConsentStatus other = (ConsentStatus) obj;
         return Objects.equals(name, other.name) && Objects.equals(subpopulationGuid, other.subpopulationGuid)
                 && Objects.equals(required, other.required) && Objects.equals(consented, other.consented)
-                && Objects.equals(mostRecentConsent, other.mostRecentConsent);
+                && Objects.equals(signedMostRecentConsent, other.signedMostRecentConsent);
     }
 
     @Override
     public String toString() {
-        return "ConsentStatus [name="+name+", subpopulationGuid="+subpopulationGuid+", isRequired="+required+", isConsented="+ consented+", isMostRecentConsent="+mostRecentConsent+"]";
+        return "ConsentStatus [name="+name+", subpopulationGuid="+subpopulationGuid+", isRequired="+required+", isConsented="+ consented+", hasSignedMostRecentConsent="+signedMostRecentConsent+"]";
+    }
+    
+    public static class Builder {
+        private String name;
+        private SubpopulationGuid subpopulationGuid;
+        private boolean required;
+        private boolean consented;
+        private boolean signedMostRecentConsent;
+        
+        public Builder withConsentStatus(ConsentStatus status) {
+            this.name = status.getName();
+            this.subpopulationGuid = SubpopulationGuid.create(status.getSubpopulationGuid());
+            this.required = status.isRequired();
+            this.consented = status.isConsented();
+            this.signedMostRecentConsent = status.getSignedMostRecentConsent();
+            return this;
+        }
+        public Builder withName(String name) {
+            this.name = name;
+            return this;
+        }
+        public Builder withGuid(SubpopulationGuid subpopGuid) {
+            this.subpopulationGuid = subpopGuid;
+            return this;
+        }
+        @JsonProperty("subpopulationGuid")
+        private Builder withGuid(String subpopulationGuid) {
+            this.subpopulationGuid = SubpopulationGuid.create(subpopulationGuid);
+            return this;
+        }
+        public Builder withRequired(boolean required) {
+            this.required = required;
+            return this;
+        }
+        public Builder withConsented(boolean consented) {
+            this.consented = consented;
+            return this;
+        }
+        public Builder withSignedMostRecentConsent(boolean signedMostRecentConsent) {
+            this.signedMostRecentConsent = signedMostRecentConsent;
+            return this;
+        }
+        public ConsentStatus build() {
+            return new ConsentStatus(name, subpopulationGuid.getGuid(), required, consented, signedMostRecentConsent);
+        }
     }
     
 }

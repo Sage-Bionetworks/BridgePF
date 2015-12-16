@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -9,6 +8,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 /**
  * Greatly trimmed user session object that is embedded in the initial render of the
@@ -32,7 +32,7 @@ public class UserSessionInfo {
     private final String environment;
     private final Set<Roles> roles;
     private final Set<String> dataGroups;
-    private final List<ConsentStatus> consentStatuses;
+    private final Map<SubpopulationGuid,ConsentStatus> consentStatuses;
 
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
@@ -48,14 +48,14 @@ public class UserSessionInfo {
     public boolean isAuthenticated() {
         return authenticated;
     }
-    public List<ConsentStatus> getConsentStatuses() {
+    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses() {
         return consentStatuses;
     }
     public boolean isConsented() {
-        return ConsentStatus.isUserConsented(consentStatuses);
+        return ConsentStatus.isUserConsented(consentStatuses.values());
     }
     public boolean isSignedMostRecentConsent() {
-        return ConsentStatus.isConsentCurrent(consentStatuses);
+        return ConsentStatus.isConsentCurrent(consentStatuses.values());
     }
     public SharingScope getSharingScope() {
         return sharingScope;

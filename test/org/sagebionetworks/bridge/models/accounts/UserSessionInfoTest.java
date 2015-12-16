@@ -3,25 +3,26 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.junit.Assert.*;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
-import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
 
 public class UserSessionInfoTest {
 
     @Test
     public void userSessionInfoSerializesCorrectly() throws Exception {
-        List<ConsentStatus> statuses = Lists.newArrayList(new ConsentStatus("Consent", "AAA", true, true, false));
+        Map<SubpopulationGuid, ConsentStatus> map = ConsentStatus
+                .toMap(new ConsentStatus("Consent", "AAA", true, true, false));
         
         User user = new User();
-        user.setConsentStatuses(statuses);
+        user.setConsentStatuses(map);
         user.setEmail("test@test.com");
         user.setFirstName("first name");
         user.setLastName("last name");
@@ -56,13 +57,15 @@ public class UserSessionInfoTest {
         assertEquals("foo", node.get("dataGroups").get(0).asText());
         assertEquals("staging", node.get("environment").asText());
         assertEquals("UserSessionInfo", node.get("type").asText());
+
+        JsonNode consentMap = node.get("consentStatuses");
         
-        JsonNode consentStatus = node.get("consentStatuses").get(0);
+        JsonNode consentStatus = consentMap.get("AAA");
         assertEquals("Consent", consentStatus.get("name").asText());
         assertEquals("AAA", consentStatus.get("subpopulationGuid").asText());
         assertTrue(consentStatus.get("required").asBoolean());
         assertTrue(consentStatus.get("consented").asBoolean());
-        assertFalse(consentStatus.get("mostRecentConsent").asBoolean());
+        assertFalse(consentStatus.get("signedMostRecentConsent").asBoolean());
         assertEquals("ConsentStatus", consentStatus.get("type").asText());
         assertEquals(6, consentStatus.size());
         
