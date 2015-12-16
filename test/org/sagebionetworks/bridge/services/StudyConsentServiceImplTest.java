@@ -152,7 +152,7 @@ public class StudyConsentServiceImplTest {
         // Now retrieve the HTML version of the document and verify it has been updated.
         // Removing SSL because IOUtils doesn't support it and although we do it, we don't need to.
         Subpopulation subpopulation = Subpopulation.create();
-        subpopulation.setGuid(SUBPOP_GUID.getGuid());
+        subpopulation.setGuid(SUBPOP_GUID);
         String htmlURL = subpopulation.getConsentHTML();
         
         String retrievedContent = IOUtils.toString(new URL(htmlURL).openStream(), Charset.forName("UTF-8"));

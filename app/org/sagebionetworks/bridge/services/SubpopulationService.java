@@ -58,14 +58,14 @@ public class SubpopulationService {
         checkNotNull(study);
         checkNotNull(subpop);
         
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier(study.getIdentifier());
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
         
         // Create a default consent for this subpopulation.
-        StudyConsentView view = studyConsentService.addConsent(subpop, defaultConsentDocument);
-        studyConsentService.publishConsent(study, subpop, view.getCreatedOn());
+        StudyConsentView view = studyConsentService.addConsent(subpop.getGuid(), defaultConsentDocument);
+        studyConsentService.publishConsent(study, subpop.getGuid(), view.getCreatedOn());
         
         return subpopDao.createSubpopulation(subpop);
     }
@@ -99,7 +99,7 @@ public class SubpopulationService {
         subpop.setStudyIdentifier(study.getIdentifier());
         
         // Verify this subpopulation is part of the study
-        getSubpopulation(study, subpop);
+        getSubpopulation(study, subpop.getGuid());
         
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);

@@ -201,7 +201,7 @@ public class ScheduledActivityService {
         long signedOn = Long.MAX_VALUE;
         List<Subpopulation> subpops = subpopService.getSubpopulations(context.getStudyIdentifier());
         for (Subpopulation subpop : subpops) {
-            UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), subpop);
+            UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), subpop.getGuid());
             if (consent != null && consent.getSignedOn() < signedOn) {
                 signedOn = consent.getSignedOn();
             }

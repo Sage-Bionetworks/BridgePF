@@ -13,6 +13,7 @@ import javax.annotation.Resource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -71,7 +72,7 @@ public class DynamoSubpopulationDaoTest {
     public void crudSubpopulationOK() {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setMinAppVersion(2);
@@ -80,13 +81,13 @@ public class DynamoSubpopulationDaoTest {
         
         // CREATE
         Subpopulation savedSubpop = dao.createSubpopulation(subpop);
-        assertNotNull(savedSubpop.getGuid());
+        assertNotNull(savedSubpop.getGuidString());
         assertNotNull(savedSubpop.getVersion());
         assertFalse(savedSubpop.isDefaultGroup()); // was not set to true
         assertTrue(savedSubpop.isRequired());
         
         // READ
-        Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop);
+        Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
         assertEquals(savedSubpop, retrievedSubpop);
         
         // UPDATE
@@ -108,8 +109,8 @@ public class DynamoSubpopulationDaoTest {
         assertEquals(1, allSubpops.size());
         
         // Logical delete works...
-        dao.deleteSubpopulation(studyId, finalSubpop);
-        Subpopulation deletedSubpop = dao.getSubpopulation(studyId, finalSubpop);
+        dao.deleteSubpopulation(studyId, finalSubpop.getGuid());
+        Subpopulation deletedSubpop = dao.getSubpopulation(studyId, finalSubpop.getGuid());
         assertTrue(deletedSubpop.isDeleted());
         
         // ... and it hides the subpop in the query used to find subpopulations for a user
@@ -138,7 +139,7 @@ public class DynamoSubpopulationDaoTest {
 
         Subpopulation subpop = subpops.get(0);
         assertEquals("Default Consent Group", subpop.getName());
-        assertEquals(studyId.getIdentifier(), subpop.getGuid());
+        assertEquals(studyId.getIdentifier(), subpop.getGuidString());
         assertTrue(subpop.isDefaultGroup());
         
         // Cannot set this group to be unrequired
@@ -148,7 +149,7 @@ public class DynamoSubpopulationDaoTest {
         
         // Cannot delete a required subpopulation
         try {
-            dao.deleteSubpopulation(studyId, subpop);
+            dao.deleteSubpopulation(studyId, subpop.getGuid());
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
             assertEquals("Cannot delete the default subpopulation for a study.", e.getMessage());
@@ -182,7 +183,7 @@ public class DynamoSubpopulationDaoTest {
     @Test
     public void cannotDeleteOrRequireSubpopOnCreate() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier("AAA");
         subpop.setDeleted(true);
         subpop.setDefaultGroup(true);
@@ -206,14 +207,14 @@ public class DynamoSubpopulationDaoTest {
     @Test(expected = EntityNotFoundException.class)
     public void cannotUpdateASubpopThatDoesNotExist() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         dao.updateSubpopulation(subpop);
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void cannotUpdateASubpopThatIsDeleted() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
-        dao.deleteSubpopulation(studyId, subpop);
+        dao.deleteSubpopulation(studyId, subpop.getGuid());
         
         // This should now throw ENFE
         dao.updateSubpopulation(subpop);
@@ -224,9 +225,9 @@ public class DynamoSubpopulationDaoTest {
         // This is not currently called outside of the DAO but it will be when creating studies.
         Subpopulation subpop = dao.createDefaultSubpopulation(studyId);
         assertEquals("Default Consent Group", subpop.getName());
-        assertEquals(studyId.getIdentifier(), subpop.getGuid());
+        assertEquals(studyId.getIdentifier(), subpop.getGuidString());
         assertEquals(studyId.getIdentifier(), subpop.getStudyIdentifier());
-        assertNotNull(subpop.getGuid());
+        assertNotNull(subpop.getGuidString());
         assertNotNull(subpop.getVersion());
     }
     
@@ -278,23 +279,22 @@ public class DynamoSubpopulationDaoTest {
     public void deleteAllSubpopulationsDeletesConsents() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
         
-        // We have to step back to the service level to create some related consents...
         // Consents are created at the service level for this subpopulation, so there's 
-        // no default created
+        // no default created. We create a consent.
         StudyConsentForm form = new StudyConsentForm("<p>Document content.</p>");
-        studyConsentService.addConsent(subpop, form);
+        studyConsentService.addConsent(subpop.getGuid(), form);
         
         // There is now a consent, as we expect
-        List<StudyConsent> consents = studyConsentService.getAllConsents(subpop);
+        List<StudyConsent> consents = studyConsentService.getAllConsents(subpop.getGuid());
         assertFalse(consents.isEmpty());
         
-        // Delete and verify all are deleted
+        // Delete all subpopulations and verify they are all deleted
         dao.deleteAllSubpopulations(studyId);
         List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false, true);
         assertTrue(subpopulations.isEmpty());
         
-        // These have been deleted as well.
-        consents = studyConsentService.getAllConsents(subpop);
+        // As a consequence, consents have all been deleted as well
+        consents = studyConsentService.getAllConsents(subpop.getGuid());
         assertTrue(consents.isEmpty());
     }
     
@@ -302,7 +302,7 @@ public class DynamoSubpopulationDaoTest {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setName(name);
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         if (min != null) {
             subpop.setMinAppVersion(min);
         }

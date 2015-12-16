@@ -6,6 +6,7 @@ import java.util.Set;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -15,6 +16,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -57,13 +59,24 @@ public final class DynamoSubpopulation implements Subpopulation {
         this.studyIdentifier = studyIdentifier;
     }
     @Override
-    @DynamoDBRangeKey
-    public String getGuid() {
+    @DynamoDBRangeKey(attributeName="guid")
+    @JsonProperty("guid")
+    public String getGuidString() {
         return guid;
     }
     @Override
-    public void setGuid(String guid) {
+    public void setGuidString(String guid) {
         this.guid = guid;
+    }
+    @Override
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SubpopulationGuid getGuid() {
+        return (guid == null) ? null : SubpopulationGuid.create(guid);
+    }    
+    @Override
+    public void setGuid(SubpopulationGuid subpopGuid) {
+        this.guid = (subpopGuid == null) ? null : subpopGuid.getGuid();
     }
     @DynamoDBAttribute
     @Override

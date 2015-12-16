@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -34,6 +35,26 @@ public class ConsentStatusTest {
         EqualsVerifier.forClass(ConsentStatus.class).allFieldsShouldBeUsed().verify(); 
     }
     
+    @Test
+    public void toMapVarargs() {
+        Map<SubpopulationGuid,ConsentStatus> map = ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT, TestConstants.REQUIRED_UNSIGNED);
+
+        SubpopulationGuid guid = SubpopulationGuid.create(TestConstants.REQUIRED_SIGNED_CURRENT.getSubpopulationGuid());
+        SubpopulationGuid guid2 = SubpopulationGuid.create(TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid());
+        
+        assertEquals(TestConstants.REQUIRED_SIGNED_CURRENT, map.get(guid));
+        assertEquals(TestConstants.REQUIRED_UNSIGNED, map.get(guid2));
+    }
+    
+    @Test
+    public void toMapList() {
+        Map<SubpopulationGuid,ConsentStatus> map = ConsentStatus.toMap(Lists.newArrayList(TestConstants.REQUIRED_SIGNED_CURRENT));
+
+        SubpopulationGuid guid = SubpopulationGuid.create(TestConstants.REQUIRED_SIGNED_CURRENT.getSubpopulationGuid());
+        
+        assertEquals(TestConstants.REQUIRED_SIGNED_CURRENT, map.get(guid));
+    }
+    
     // Will be stored as JSON in the the session, via the User object, so it must serialize.
     @Test
     public void canSerialize() throws Exception {
@@ -57,16 +78,16 @@ public class ConsentStatusTest {
     @Test
     public void forSubpopulation() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setGuid("test");
+        subpop.setGuidString("test");
         
-        assertNull(ConsentStatus.forSubpopulation(statuses, subpop));
+        assertNull(ConsentStatus.forSubpopulation(statuses, subpop.getGuid()));
         
         ConsentStatus status1 = new ConsentStatus("Name1", "foo", false, false, false);
         ConsentStatus status2 = new ConsentStatus("Name2", "test", false, false, false);
         statuses.add(status1);
         statuses.add(status2);
         
-        assertEquals(status2, ConsentStatus.forSubpopulation(statuses, subpop));
+        assertEquals(status2, ConsentStatus.forSubpopulation(statuses, subpop.getGuid()));
     }
 
     @Test

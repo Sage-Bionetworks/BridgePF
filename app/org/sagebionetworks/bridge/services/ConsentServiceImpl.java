@@ -170,11 +170,11 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(context.getHealthCode());
         
         return subpopService.getSubpopulationForUser(context).stream().map(subpop -> {
-            boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop);
-            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop);
-            return new ConsentStatus.Builder().withName(subpop.getName())
-                    .withGuid(subpop) .withRequired(subpop.isRequired()).withConsented(consented)
-                    .withSignedMostRecentConsent(mostRecent).build();
+            boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop.getGuid());
+            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop.getGuid());
+            return new ConsentStatus.Builder().withName(subpop.getName()).withGuid(subpop.getGuid())
+                    .withRequired(subpop.isRequired()).withConsented(consented).withSignedMostRecentConsent(mostRecent)
+                    .build();
         }).collect(BridgeCollectors.toImmutableList());
     }
 
@@ -251,7 +251,7 @@ public class ConsentServiceImpl implements ConsentService {
         // May exceed the subpopulations the user matches, but that's okay
         List<Subpopulation> subpopGuids = subpopService.getSubpopulations(study);
         for (Subpopulation subpop : subpopGuids) {
-            userConsentDao.deleteAllConsents(healthCode, subpop);    
+            userConsentDao.deleteAllConsents(healthCode, subpop.getGuid());    
         }
     }
     

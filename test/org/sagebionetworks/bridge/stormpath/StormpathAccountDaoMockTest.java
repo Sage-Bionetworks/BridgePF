@@ -145,7 +145,7 @@ public class StormpathAccountDaoMockTest {
 
     private SubpopulationService mockSubpopService() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setGuid(study.getIdentifier());
+        subpop.setGuidString(study.getIdentifier());
         SubpopulationService subpopService = mock(SubpopulationService.class);
         when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(Lists.newArrayList(subpop));
         return subpopService;

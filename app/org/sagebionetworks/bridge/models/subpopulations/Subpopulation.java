@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.Criteria;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as=DynamoSubpopulation.class)
-public interface Subpopulation extends Criteria, SubpopulationGuid {
+public interface Subpopulation extends Criteria {
 
     public static Subpopulation create() {
         return new DynamoSubpopulation();
@@ -16,9 +16,12 @@ public interface Subpopulation extends Criteria, SubpopulationGuid {
     
     public void setStudyIdentifier(String studyIdentifier);
     public String getStudyIdentifier();
-    
-    public void setGuid(String guid);
-    public String getGuid();
+
+    public void setGuidString(String guid);
+    public String getGuidString();
+
+    public void setGuid(SubpopulationGuid guid);
+    public SubpopulationGuid getGuid();
     
     public void setName(String name);
     public String getName();

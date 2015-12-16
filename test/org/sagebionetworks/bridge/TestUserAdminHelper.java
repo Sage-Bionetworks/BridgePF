@@ -150,7 +150,7 @@ public class TestUserAdminHelper {
             this.signIn = signIn;
             return this;
         }
-        public Builder withSubpopulation(SubpopulationGuid subpopGuid) {
+        public Builder withGuid(SubpopulationGuid subpopGuid) {
             this.subpopGuid = subpopGuid;
             return this;
         }

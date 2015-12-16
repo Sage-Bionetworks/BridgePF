@@ -100,7 +100,7 @@ public class StormpathAccountIteratorTest {
     
     private List<Subpopulation> getSubpopulationList() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         return Lists.newArrayList(subpop);
     }
     

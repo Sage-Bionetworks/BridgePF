@@ -36,7 +36,7 @@ public class SubpopulationValidatorTest {
         subpop.setRequired(true);
         subpop.setStudyIdentifier("test-study");
         subpop.setVersion(3L);
-        subpop.setGuid("AAA");
+        subpop.setGuidString("AAA");
         
         Validate.entityThrowingException(validator, subpop);
     }

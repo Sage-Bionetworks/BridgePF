@@ -74,7 +74,7 @@ public class SubpopulationServiceTest {
         service.setDefaultConsentForm(form);
         
         subpop = Subpopulation.create();
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         
         Set<String> dataGroups = Sets.newHashSet("group1","group2");
         when(study.getDataGroups()).thenReturn(dataGroups);
@@ -109,19 +109,19 @@ public class SubpopulationServiceTest {
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setStudyIdentifier("junk-you-cannot-set");
-        subpop.setGuid("cannot-set-guid");
+        subpop.setGuidString("cannot-set-guid");
         subpop.setDefaultGroup(false);
         
         Subpopulation result = service.createSubpopulation(study, subpop);
         assertEquals("Name", result.getName());
-        assertNotNull(result.getGuid());
-        assertNotEquals("cannot-set-guid", result.getGuid());
+        assertNotNull(result.getGuidString());
+        assertNotEquals("cannot-set-guid", result.getGuidString());
         assertFalse(result.isDeleted());
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
         verify(dao).createSubpopulation(subpop);
-        verify(studyConsentService).addConsent(eq(result), any());
-        verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
+        verify(studyConsentService).addConsent(eq(result.getGuid()), any());
+        verify(studyConsentService).publishConsent(study, result.getGuid(), CONSENT_CREATED_ON);
     }
     
     @Test
@@ -169,7 +169,7 @@ public class SubpopulationServiceTest {
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setStudyIdentifier("junk-you-cannot-set");
-        subpop.setGuid("guid");
+        subpop.setGuidString("guid");
         subpop.setDefaultGroup(false);
         subpop.setDeleted(true);
         
@@ -177,7 +177,7 @@ public class SubpopulationServiceTest {
         
         Subpopulation result = service.updateSubpopulation(study, subpop);
         assertEquals("Name", result.getName());
-        assertEquals("guid", result.getGuid());
+        assertEquals("guid", result.getGuidString());
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
         verify(dao).updateSubpopulation(subpop);

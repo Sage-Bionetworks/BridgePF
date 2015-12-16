@@ -147,7 +147,7 @@ public class StormpathAccountDaoTest {
             account.setAttribute("phone", "123-456-7890");
             account.setHealthId("abc");
             account.setUsername(random);
-            account.getConsentSignatureHistory(subpop).add(sig);
+            account.getConsentSignatureHistory(subpop.getGuid()).add(sig);
             account.setAttribute("attribute_one", "value of attribute one");
             
             // Update Account
@@ -161,11 +161,11 @@ public class StormpathAccountDaoTest {
             assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
             assertEquals(account.getHealthId(), newAccount.getHealthId());
             assertEquals(account.getUsername(), newAccount.getUsername());
-            assertEquals(account.getActiveConsentSignature(subpop), 
-                    newAccount.getActiveConsentSignature(subpop));
-            assertEquals(account.getActiveConsentSignature(subpop).getSignedOn(), 
-                    newAccount.getActiveConsentSignature(subpop).getSignedOn());
-            assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop).getSignedOn());
+            assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
+                    newAccount.getActiveConsentSignature(subpop.getGuid()));
+            assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
+                    newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
+            assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
             assertEquals(1, newAccount.getRoles().size());
             assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
             assertEquals("value of attribute one", account.getAttribute("attribute_one"));
@@ -214,9 +214,9 @@ public class StormpathAccountDaoTest {
         // Need to mock out the retrieval of these two subpopulations for the purpose
         // of this test
         Subpopulation subpop1 = Subpopulation.create();
-        subpop1.setGuid("test1");
+        subpop1.setGuidString("test1");
         Subpopulation subpop2 = Subpopulation.create();
-        subpop2.setGuid("test2");
+        subpop2.setGuidString("test2");
         
         SubpopulationService mockSubpopService = mock(SubpopulationService.class);
         when(mockSubpopService.getSubpopulations(study)).thenReturn(Lists.newArrayList(subpop1, subpop2));
@@ -239,21 +239,21 @@ public class StormpathAccountDaoTest {
         try {
             Account account = accountDao.signUp(study, signUp, false); // don't send email
             
-            account.getConsentSignatureHistory(subpop1).add(sig1);
-            account.getConsentSignatureHistory(subpop2).add(sig2);
+            account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
+            account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);
             accountDao.updateAccount(study, account);
             
             account = accountDao.getAccount(study, account.getEmail());
             
-            List<ConsentSignature> history1 = account.getConsentSignatureHistory(subpop1);
+            List<ConsentSignature> history1 = account.getConsentSignatureHistory(subpop1.getGuid());
             assertEquals(1, history1.size());
             assertEquals(sig1, history1.get(0));
-            assertEquals(sig1, account.getActiveConsentSignature(subpop1));
+            assertEquals(sig1, account.getActiveConsentSignature(subpop1.getGuid()));
             
-            List<ConsentSignature> history2 = account.getConsentSignatureHistory(subpop2);
+            List<ConsentSignature> history2 = account.getConsentSignatureHistory(subpop2.getGuid());
             assertEquals(1, history2.size());
             assertEquals(sig2, history2.get(0));
-            assertEquals(sig2, account.getActiveConsentSignature(subpop2));
+            assertEquals(sig2, account.getActiveConsentSignature(subpop2.getGuid()));
 
         } finally {
             accountDao.deleteAccount(study, signUp.getEmail());

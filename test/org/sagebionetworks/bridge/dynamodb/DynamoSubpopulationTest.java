@@ -30,7 +30,7 @@ public class DynamoSubpopulationTest {
         Subpopulation subpop = new DynamoSubpopulation();
         subpop.setName("Name");
         subpop.setDescription("Description");
-        subpop.setGuid("guid");
+        subpop.setGuidString("guid");
         subpop.setStudyIdentifier("study-key");
         subpop.setMinAppVersion(2);
         subpop.setMaxAppVersion(10);
@@ -70,10 +70,10 @@ public class DynamoSubpopulationTest {
         assertEqualsAndNotNull(newSubpop.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
         assertEqualsAndNotNull(newSubpop.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
 
-        String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuid() + "/consent.html";
+        String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuidString() + "/consent.html";
         assertEquals(htmlURL, newSubpop.getConsentHTML());
         
-        String pdfURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuid() + "/consent.pdf";
+        String pdfURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuidString() + "/consent.pdf";
         assertEquals(pdfURL, newSubpop.getConsentPDF());
     }
     

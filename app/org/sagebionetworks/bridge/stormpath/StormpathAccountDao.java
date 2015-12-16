@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,10 +112,10 @@ public class StormpathAccountDao implements AccountDao {
         // Otherwise default pagination is 25 records per request (100 is the limit, or we'd go higher).
         // Also eagerly fetch custom data, which we typically examine every time for every user.
         AccountCriteria criteria = Accounts.criteria().limitTo(100).withCustomData().withGroupMemberships();
-        List<? extends SubpopulationGuid> subpops = subpopService.getSubpopulations(study);
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
         
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        return new StormpathAccountIterator(study, subpops, encryptors, directory.getAccounts(criteria).iterator());
+        return new StormpathAccountIterator(study, subpopGuids, encryptors, directory.getAccounts(criteria).iterator());
     }
 
     @Override
@@ -123,10 +124,10 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(verification);
         
         try {
-            List<? extends SubpopulationGuid> subpops = subpopService.getSubpopulations(study);
+            List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
             
             com.stormpath.sdk.account.Account acct = client.verifyAccountEmail(verification.getSptoken());
-            return (acct == null) ? null : new StormpathAccount(study, subpops, acct, encryptors);
+            return (acct == null) ? null : new StormpathAccount(study, subpopGuids, acct, encryptors);
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
         }
@@ -185,12 +186,12 @@ public class StormpathAccountDao implements AccountDao {
         
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-            List<? extends SubpopulationGuid> subpops = subpopService.getSubpopulations(study);
+            List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
             
             UsernamePasswordRequest request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword(), directory);
             AuthenticationResult result = application.authenticateAccount(request);
             if (result.getAccount() != null) {
-                return new StormpathAccount(study.getStudyIdentifier(), subpops, result.getAccount(), encryptors);
+                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, result.getAccount(), encryptors);
             }
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
@@ -204,13 +205,13 @@ public class StormpathAccountDao implements AccountDao {
         checkArgument(isNotBlank(email));
 
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        List<? extends Subpopulation> subpops = subpopService.getSubpopulations(study);
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
 
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
                 .withCustomData().withGroups().withGroupMemberships());
         if (accounts.iterator().hasNext()) {
             com.stormpath.sdk.account.Account acct = accounts.iterator().next();
-            return new StormpathAccount(study.getStudyIdentifier(), subpops, acct, encryptors);
+            return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
         }
         return null;
     }
@@ -220,10 +221,10 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(study);
         checkNotNull(signUp);
         
-        List<? extends SubpopulationGuid> subpops = subpopService.getSubpopulations(study);
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
         
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
-        Account account = new StormpathAccount(study.getStudyIdentifier(), subpops, acct, encryptors);
+        Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
         account.setUsername(signUp.getUsername());
         account.setEmail(signUp.getEmail());
         account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
@@ -328,5 +329,12 @@ public class StormpathAccountDao implements AccountDao {
                 acct.addGroup(group);
             }
         }
+    }
+    
+    private List<SubpopulationGuid> getSubpopulationGuids(StudyIdentifier studyId) {
+        return subpopService.getSubpopulations(studyId)
+                .stream()
+                .map(Subpopulation::getGuid)
+                .collect(BridgeCollectors.toImmutableList());
     }
 }

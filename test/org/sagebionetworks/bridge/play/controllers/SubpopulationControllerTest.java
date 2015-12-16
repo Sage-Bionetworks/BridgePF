@@ -111,7 +111,7 @@ public class SubpopulationControllerTest {
         Http.Context.current.set(context);
         
         Subpopulation createdSubpop = Subpopulation.create();
-        createdSubpop.setGuid("AAA");
+        createdSubpop.setGuidString("AAA");
         createdSubpop.setVersion(1L);
         doReturn(createdSubpop).when(subpopService).createSubpopulation(eq(study), captor.capture());
 
@@ -140,7 +140,7 @@ public class SubpopulationControllerTest {
         Http.Context.current.set(context);
         
         Subpopulation createdSubpop = Subpopulation.create();
-        createdSubpop.setGuid("AAA");
+        createdSubpop.setGuidString("AAA");
         createdSubpop.setVersion(1L);
         doReturn(createdSubpop).when(subpopService).updateSubpopulation(eq(study), captor.capture());
 
@@ -153,7 +153,7 @@ public class SubpopulationControllerTest {
         assertEquals("GuidVersionHolder", node.get("type").asText());
         
         Subpopulation created = captor.getValue();
-        assertEquals("AAA", created.getGuid());
+        assertEquals("AAA", created.getGuidString());
         assertEquals("Name", created.getName());
         assertEquals("Description", created.getDescription());
         assertTrue(created.isDefaultGroup());
@@ -169,7 +169,7 @@ public class SubpopulationControllerTest {
         Http.Context.current.set(context);
         
         Subpopulation subpop = Subpopulation.create();
-        subpop.setGuid("AAA");
+        subpop.setGuidString("AAA");
         doReturn(subpop).when(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
         
         Result result = controller.getSubpopulation(SUBPOP_GUID.getGuid());

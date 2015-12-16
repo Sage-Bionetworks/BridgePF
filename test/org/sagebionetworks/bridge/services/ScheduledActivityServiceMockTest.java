@@ -82,9 +82,9 @@ public class ScheduledActivityServiceMockTest {
 
         // Each subpopulation pulls a consent with different signOn dates, we want to use the lowest one.
         Subpopulation subpop1 = Subpopulation.create();
-        subpop1.setGuid("guid1");
+        subpop1.setGuidString("guid1");
         Subpopulation subpop2 = Subpopulation.create();
-        subpop2.setGuid("guid2");
+        subpop2.setGuidString("guid2");
         
         SubpopulationService subpopService = mock(SubpopulationService.class);
         when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpop1, subpop2));
@@ -99,8 +99,8 @@ public class ScheduledActivityServiceMockTest {
         when(consent2.getSignedOn()).thenReturn(ENROLLMENT.getMillis());
         
         userConsentDao = mock(UserConsentDao.class);
-        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, subpop1)).thenReturn(consent1);
-        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, subpop2)).thenReturn(consent2);
+        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, subpop1.getGuid())).thenReturn(consent1);
+        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, subpop2.getGuid())).thenReturn(consent2);
         
         Map<String,DateTime> map = Maps.newHashMap();
         activityEventService = mock(ActivityEventService.class);

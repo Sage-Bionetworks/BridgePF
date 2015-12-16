@@ -46,7 +46,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public Subpopulation createSubpopulation(Subpopulation subpop) {
         checkNotNull(subpop);
-        checkNotNull(subpop.getGuid());
+        checkNotNull(subpop.getGuidString());
         checkNotNull(subpop.getStudyIdentifier());
 
         // guid should always be set in service, so it's okay to check with a checkNotNull (returns 500). 
@@ -68,11 +68,11 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         checkNotNull(subpop.getStudyIdentifier());
         
         // These have to be supplied by the user so if they don't exist, we want a 400-level exception,
-        if (subpop.getVersion() == null || subpop.getGuid() == null) {
+        if (subpop.getVersion() == null || subpop.getGuidString() == null) {
             throw new BadRequestException("Subpopulation appears to be a new object (no guid or version).");
         }
         StudyIdentifier studyId = new StudyIdentifierImpl(subpop.getStudyIdentifier());
-        Subpopulation existing = getSubpopulation(studyId, subpop);
+        Subpopulation existing = getSubpopulation(studyId, subpop.getGuid());
         if (existing == null || existing.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
@@ -108,7 +108,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     public Subpopulation createDefaultSubpopulation(StudyIdentifier studyId) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
-        subpop.setGuid(studyId.getIdentifier());
+        subpop.setGuidString(studyId.getIdentifier());
         subpop.setName("Default Consent Group");
         subpop.setMinAppVersion(0);
         subpop.setDefaultGroup(true);
@@ -122,7 +122,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     public Subpopulation getSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
         hashKey.setStudyIdentifier(studyId.getIdentifier());
-        hashKey.setGuid(subpopGuid.getGuid());
+        hashKey.setGuidString(subpopGuid.getGuid());
         
         Subpopulation subpop = mapper.load(hashKey);
         if (subpop == null) {
@@ -157,10 +157,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public void deleteAllSubpopulations(StudyIdentifier studyId) {
         List<Subpopulation> subpops = getSubpopulations(studyId, false, true);
-        
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
-                studyConsentDao.deleteAllConsents(subpop);
+                studyConsentDao.deleteAllConsents(subpop.getGuid());
             }
             List<FailedBatch> failures = mapper.batchDelete(subpops);
             BridgeUtils.ifFailuresThrowException(failures);

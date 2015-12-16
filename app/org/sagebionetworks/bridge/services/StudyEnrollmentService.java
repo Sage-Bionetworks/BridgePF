@@ -12,8 +12,10 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import com.google.common.collect.Sets;
 
@@ -55,9 +57,11 @@ public class StudyEnrollmentService {
     public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
         Set<String> healthCodes = Sets.newHashSet();
         
-        List<Subpopulation> subpops = subpopService.getSubpopulations(studyIdentifier);
-        for (Subpopulation subpop : subpops) {
-            Set<String> subpopCodes = userConsentDao.getParticipantHealthCodes(subpop);
+        List<SubpopulationGuid> guids = subpopService.getSubpopulations(studyIdentifier).stream()
+                .map(Subpopulation::getGuid).collect(BridgeCollectors.toImmutableList());
+        
+        for (SubpopulationGuid guid : guids) {
+            Set<String> subpopCodes = userConsentDao.getParticipantHealthCodes(guid);
             healthCodes.addAll(subpopCodes);
         }
         
