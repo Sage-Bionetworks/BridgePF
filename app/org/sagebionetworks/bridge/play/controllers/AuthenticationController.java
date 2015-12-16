@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -15,7 +16,6 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -56,13 +56,11 @@ public class AuthenticationController extends BaseController {
         JsonNode json = requestToJSON(request());
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(study)
-                .withClientInfo(getClientInfoFromUserAgentHeader()).build();
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
-        UserSession session = authenticationService.verifyEmail(study, context, emailVerification);
+        UserSession session = authenticationService.verifyEmail(study, clientInfo, emailVerification);
         setSessionToken(session.getSessionToken());
         return okResult(new UserSessionInfo(session));
     }
@@ -104,12 +102,10 @@ public class AuthenticationController extends BaseController {
         JsonNode json = requestToJSON(request());
         SignIn signIn = parseJson(request(), SignIn.class);
         Study study = getStudyOrThrowException(json);
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(study)
-                .withClientInfo(getClientInfoFromUserAgentHeader()).build();
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
         try {
-            session = authenticationService.signIn(study, context, signIn);
+            session = authenticationService.signIn(study, clientInfo, signIn);
         } catch(ConsentRequiredException e) {
             setSessionToken(e.getUserSession().getSessionToken());
             throw e;

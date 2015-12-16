@@ -43,6 +43,10 @@ public class SubpopulationService {
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
     }
+    // For testing to stub out this object rather than loading from disk
+    final void setDefaultConsentForm(StudyConsentForm form) {
+        this.defaultConsentDocument = form;
+    }
     
     /**
      * Create subpopulation.

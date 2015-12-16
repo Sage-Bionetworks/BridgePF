@@ -290,8 +290,8 @@ public class ConsentServiceImpl implements ConsentService {
     private void updateSessionConsentStatuses(User user, SubpopulationGuid subpopGuid, boolean consented) {
         if (user.getConsentStatuses() != null) {
             List<ConsentStatus> updatedStatuses = Lists.newArrayList();
-            for (int i=0; i < user.getConsentStatuses().size(); i++) {
-                ConsentStatus status = user.getConsentStatuses().get(i);
+            
+            for (ConsentStatus status : user.getConsentStatuses().values()) {
                 if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
                     ConsentStatus updatedStatus = new ConsentStatus.Builder().withConsentStatus(status)
                             .withConsented(consented).withSignedMostRecentConsent(consented).build();

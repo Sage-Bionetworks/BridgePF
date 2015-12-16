@@ -2,9 +2,11 @@ package org.sagebionetworks.bridge;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public class TestConstants {
     public static final String DUMMY_IMAGE_DATA = "VGhpcyBpc24ndCBhIHJlYWwgaW1hZ2Uu";
@@ -39,4 +41,24 @@ public class TestConstants {
      * secondary index, and this does not currently support consistent reads.
      */
     public static final int GSI_WAIT_DURATION = 2000;
+
+    public static final ConsentStatus REQUIRED_SIGNED_CURRENT = new ConsentStatus.Builder().withName("Name1")
+            .withGuid(SubpopulationGuid.create("foo1")).withRequired(true).withConsented(true)
+            .withSignedMostRecentConsent(true).build();
+    public static final ConsentStatus REQUIRED_SIGNED_OBSOLETE = new ConsentStatus.Builder().withName("Name1")
+            .withGuid(SubpopulationGuid.create("foo2")).withRequired(true).withConsented(true)
+            .withSignedMostRecentConsent(false).build();
+    public static final ConsentStatus OPTIONAL_SIGNED_CURRENT = new ConsentStatus.Builder().withName("Name1")
+            .withGuid(SubpopulationGuid.create("foo3")).withRequired(false).withConsented(true)
+            .withSignedMostRecentConsent(true).build();
+    public static final ConsentStatus OPTIONAL_SIGNED_OBSOLETE = new ConsentStatus.Builder().withName("Name1")
+            .withGuid(SubpopulationGuid.create("foo4")).withRequired(false).withConsented(true)
+            .withSignedMostRecentConsent(false).build();
+    public static final ConsentStatus REQUIRED_UNSIGNED = new ConsentStatus.Builder().withName("Name1")
+            .withGuid(SubpopulationGuid.create("foo5")).withRequired(true).withConsented(false)
+            .withSignedMostRecentConsent(false).build();
+    public static final ConsentStatus OPTIONAL_UNSIGNED = new ConsentStatus.Builder().withName("Name1")
+            .withGuid(SubpopulationGuid.create("foo6")).withRequired(false).withConsented(false)
+            .withSignedMostRecentConsent(false).build();
+    
 }

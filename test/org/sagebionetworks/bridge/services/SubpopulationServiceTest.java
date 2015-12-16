@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -19,15 +20,19 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -56,13 +61,17 @@ public class SubpopulationServiceTest {
     @Mock
     StudyConsentView view; 
     
+    @Mock
+    StudyConsentForm form;
+    
     Subpopulation subpop;
     
     @Before
-    public void before() {
+    public void before() throws Exception {
         service = new SubpopulationService();
         service.setSubpopulationDao(dao);
         service.setStudyConsentService(studyConsentService);
+        service.setDefaultConsentForm(form);
         
         subpop = Subpopulation.create();
         subpop.setGuid(BridgeUtils.generateGuid());
@@ -114,6 +123,46 @@ public class SubpopulationServiceTest {
         verify(studyConsentService).addConsent(eq(result), any());
         verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
     }
+    
+    @Test
+    public void createDefaultSubpopulationWhereNoConsents() {
+        Study study = new DynamoStudy();
+        study.setIdentifier("test-study");
+        
+        StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "");
+        
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
+        
+        ArgumentCaptor<StudyConsentForm> captor = ArgumentCaptor.forClass(StudyConsentForm.class);
+        
+        when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(Lists.newArrayList());
+        when(studyConsentService.addConsent(eq(defaultGuid), any())).thenReturn(view);
+        
+        // No consents, so we add and publish one.
+        service.createDefaultSubpopulation(study);
+        verify(studyConsentService).addConsent(any(), captor.capture());
+        verify(studyConsentService).publishConsent(eq(study), eq(defaultGuid), any(Long.class));
+        
+        // This used the default document.
+        assertEquals(form, captor.getValue());
+    }
+    
+    @Test
+    public void createDefaultSubpopulationWhereConsentsExist() {
+        Study study = new DynamoStudy();
+        study.setIdentifier("test-study");
+        
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
+        
+        when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(Lists.newArrayList(new DynamoStudyConsent1()));
+        
+        service.createDefaultSubpopulation(study);
+        
+        // Consents exist... don't add any
+        verify(studyConsentService, never()).addConsent(any(), any());
+    }
+    
+    
     @Test
     public void updateSubpopulation() {
         Subpopulation subpop = Subpopulation.create();

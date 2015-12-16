@@ -330,7 +330,7 @@ public final class DynamoStudy implements Study {
                 supportEmail, technicalEmail, consentNotificationEmail, stormpathHref, version, 
                 profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate, 
                 resetPasswordTemplate, active, strictUploadValidationEnabled, healthCodeExportEnabled, 
-                minSupportedAppVersions);
+                minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId);
     }
 
     @Override

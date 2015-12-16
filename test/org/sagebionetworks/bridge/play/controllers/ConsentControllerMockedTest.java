@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -279,6 +280,71 @@ public class ConsentControllerMockedTest {
         assertEquals("User has been withdrawn from the study.", node.get("message").asText());
         
         verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal(null), 20000);
+    }
+    
+    @Test
+    public void emailCopyV2() throws Exception {
+        Result result = controller.emailCopyV2(SUBPOP_GUID.getGuid());
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("Emailed consent.", node.get("message").asText());
+        
+        verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, user);
+    }
+    
+    @Test
+    public void consentSignatureHasServerSignedOnValueV2() throws Exception {
+        // signedOn will be set on the server
+        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        
+        ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
+        
+        Result result = controller.giveV3("test-subpop");
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("Consent to research has been recorded.", node.get("message").asText());
+
+        verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("test-subpop")), eq(user),
+                captor.capture(), eq(SharingScope.NO_SHARING), eq(true));
+        
+        validateSignature(captor.getValue());
+    }
+    
+    @Test
+    public void canWithdrawConsentV2() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed(20000);
+        String json = "{\"reason\":\"Because, reasons.\"}";
+        Context context = TestUtils.mockPlayContextWithJson(json);
+        Http.Context.current.set(context);
+        
+        Result result = controller.withdrawConsentV2("test-subpop");
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        
+        // Should call the service and withdraw
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), user,
+                new Withdrawal("Because, reasons."), 20000);
+        
+        verify(cacheProvider).setUserSession(session);
+        DateTimeUtils.setCurrentMillisSystem();
+    }
+
+    @Test
+    public void canWithdrawConsentWithNoReasonV2() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed(20000);
+        String json = "{}";
+        Context context = TestUtils.mockPlayContextWithJson(json);
+        Http.Context.current.set(context);
+        
+        Result result = controller.withdrawConsentV2("test-subpop");
+        String response = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(response);
+        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), user,
+                new Withdrawal(null), 20000);
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     private ArgumentCaptor<ConsentSignature> setUpContextWithJson(String json) throws Exception{

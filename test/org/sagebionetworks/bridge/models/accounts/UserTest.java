@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -63,10 +63,10 @@ public class UserTest {
     @Test
     public void immutableConsentStatuses() {
         User user = new User();
-        assertTrue(user.getConsentStatuses() instanceof ImmutableList);
+        assertTrue(user.getConsentStatuses() instanceof ImmutableMap);
         
         user.setConsentStatuses(new HashMap<>());
-        assertTrue(user.getConsentStatuses() instanceof ImmutableList);
+        assertTrue(user.getConsentStatuses() instanceof ImmutableMap);
     }
     
     @Test

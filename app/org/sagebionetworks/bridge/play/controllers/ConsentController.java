@@ -37,30 +37,26 @@ public class ConsentController extends BaseController {
     @Deprecated
     public Result getConsentSignature() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = studyService.getStudy(session.getStudyIdentifier());
-        return getConsentSignatureV2(study.getIdentifier());
+        return getConsentSignatureV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     public Result giveV1() throws Exception {
         final UserSession session = getAuthenticatedSession();
-        final Study study = studyService.getStudy(session.getStudyIdentifier());
-        return giveConsentForVersion(1, SubpopulationGuid.create(study.getIdentifier()));
+        return giveConsentForVersion(1, SubpopulationGuid.create(session.getStudyIdentifier().getIdentifier()));
     }
 
     @Deprecated
     public Result giveV2() throws Exception {
         final UserSession session = getAuthenticatedSession();
-        final Study study = studyService.getStudy(session.getStudyIdentifier());
-        return giveV3(study.getIdentifier());
+        return giveConsentForVersion(2, SubpopulationGuid.create(session.getStudyIdentifier().getIdentifier()));
     }
 
     @Deprecated
     public Result emailCopy() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        return emailCopyV2(study.getIdentifier());
+        return emailCopyV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated

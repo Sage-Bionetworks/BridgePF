@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -123,7 +124,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession signIn(Study study, ScheduleContext context, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
+    public UserSession signIn(Study study, ClientInfo clientInfo, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
         Validate.entityThrowingException(signInValidator, signIn);
@@ -134,7 +135,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             lockId = lockDao.acquireLock(SignIn.class, signInLock, LOCK_EXPIRE_IN_SECONDS);
             Account account = accountDao.authenticate(study, signIn);
             
-            UserSession session = getSessionFromAccount(study, context, account);
+            UserSession session = getSessionFromAccount(study, clientInfo, account);
             cacheProvider.setUserSession(session);
             
             // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2) 
@@ -194,13 +195,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession verifyEmail(Study study, ScheduleContext context, EmailVerification verification) throws ConsentRequiredException {
+    public UserSession verifyEmail(Study study, ClientInfo clientInfo, EmailVerification verification) throws ConsentRequiredException {
         checkNotNull(verification, "Verification object cannot be null");
 
         Validate.entityThrowingException(verificationValidator, verification);
         
         Account account = accountDao.verifyEmail(study, verification);
-        UserSession session = getSessionFromAccount(study, context, account);
+        UserSession session = getSessionFromAccount(study, clientInfo, account);
         cacheProvider.setUserSession(session);
 
         if (!session.getUser().doesConsent()) {
@@ -246,7 +247,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
 
-    private UserSession getSessionFromAccount(Study study, ScheduleContext context, Account account) {
+    private UserSession getSessionFromAccount(Study study, ClientInfo clientInfo, Account account) {
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
@@ -262,8 +263,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
 
         // now that we know more about this user, we can expand on the request context.
-        context = new ScheduleContext.Builder()
-                .withContext(context)
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withClientInfo(clientInfo)
                 .withHealthCode(healthCode)
                 .withUserDataGroups(user.getDataGroups())
                 .withStudyIdentifier(study.getIdentifier()) // probably already set

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -22,7 +21,7 @@ public final class ConsentStatus {
         return ConsentStatus.toMap(Lists.newArrayList(statuses));
     }
     
-    public static Map<SubpopulationGuid,ConsentStatus> toMap(List<ConsentStatus> statuses) {
+    public static Map<SubpopulationGuid,ConsentStatus> toMap(Collection<ConsentStatus> statuses) {
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>();
         if (statuses != null) {
             for (ConsentStatus status : statuses) {
