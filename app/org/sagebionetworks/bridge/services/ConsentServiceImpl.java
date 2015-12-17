@@ -100,6 +100,9 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(subpopGuid);
         checkNotNull(user);
         
+        // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
+        subpopService.getSubpopulation(study, subpopGuid);
+        
         Account account = accountDao.getAccount(study, user.getEmail());
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
         if (signature == null) {
@@ -118,6 +121,12 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
         ConsentStatus status = ConsentStatus.forSubpopulation(user.getConsentStatuses().values(), subpopGuid);
+        // There will be a status object for each subpopulation the user is mapped to. If 
+        // there's no status object, then in effect the subpopulation does not exist for 
+        // this user and they should get back a 404.
+        if (status == null) {
+            throw new EntityNotFoundException(Subpopulation.class);
+        }
         if (status != null && status.isConsented()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
@@ -276,7 +285,7 @@ public class ConsentServiceImpl implements ConsentService {
     private boolean hasUserSignedActiveConsent(String healthCode, SubpopulationGuid subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
-
+        
         UserConsent userConsent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
         StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(subpopGuid);
         

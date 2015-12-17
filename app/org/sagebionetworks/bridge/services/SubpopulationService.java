@@ -57,7 +57,7 @@ public class SubpopulationService {
     public Subpopulation createSubpopulation(Study study, Subpopulation subpop) {
         checkNotNull(study);
         checkNotNull(subpop);
-        
+
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier(study.getIdentifier());
         Validator validator = new SubpopulationValidator(study.getDataGroups());
@@ -97,7 +97,7 @@ public class SubpopulationService {
         checkNotNull(subpop);
         
         subpop.setStudyIdentifier(study.getIdentifier());
-        
+
         // Verify this subpopulation is part of the study
         getSubpopulation(study, subpop.getGuid());
         
@@ -155,9 +155,7 @@ public class SubpopulationService {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         
-        // Verify this subpopulation is part of the study
-        getSubpopulation(studyId, subpopGuid);
-        
+        // Will throw EntityNotFoundException if the subpopulation is not in the study
         subpopDao.deleteSubpopulation(studyId, subpopGuid);
     }
     
