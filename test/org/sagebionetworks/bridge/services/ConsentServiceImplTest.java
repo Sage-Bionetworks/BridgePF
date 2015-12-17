@@ -207,7 +207,7 @@ public class ConsentServiceImplTest {
             assertTrue(e.getMessage().contains("years of age or older"));
         }
     }
-
+    
     @Test
     public void checkConsentUpToDate() {
         // Working here with a consent stream in a different population than the default population for the 
@@ -218,26 +218,27 @@ public class ConsentServiceImplTest {
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
 
-        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        ConsentStatus status = statuses.get(defaultSubpopulation.getGuid());
-        assertConsented(statuses);
-        assertTrue("Should have signed most recent consent.", status.getSignedMostRecentConsent());
+        // There are two places where you can get statuses, the original service, or the user. Verify both each time
+        assertConsented(consentService.getConsentStatuses(context), true);
+        assertConsented(testUser.getUser().getConsentStatuses(), true);
 
         // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
         StudyConsent newStudyConsent = studyConsentService.addConsent(defaultSubpopulation.getGuid(), defaultConsentDocument)
                 .getStudyConsent();
 
-        status = statuses.get(defaultSubpopulation.getGuid());
-        assertConsented(statuses);
-        assertTrue("Still most recent consent", status.getSignedMostRecentConsent());
+        assertConsented(consentService.getConsentStatuses(context), true);
+        assertConsented(testUser.getUser().getConsentStatuses(), true);
 
         // Public the new study consent. User is consented and but has no longer signed the most recent consent.
         newStudyConsent = studyConsentService
                 .publishConsent(study, defaultSubpopulation.getGuid(), newStudyConsent.getCreatedOn()).getStudyConsent();
 
-        status = statuses.get(defaultSubpopulation.getGuid());
-        assertConsented(statuses);
-        assertFalse("New consent activated. Should no longer have signed most recent consent. ", status.getSignedMostRecentConsent());
+        // We need to manually update because the users consent status won't change due to changes in consents 
+        // or subpopulations. Not until the session is refreshed. 
+        testUser.getUser().setConsentStatuses(consentService.getConsentStatuses(context));
+        
+        assertConsented(consentService.getConsentStatuses(context), false);
+        assertConsented(testUser.getUser().getConsentStatuses(), false);
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
         consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
@@ -246,9 +247,8 @@ public class ConsentServiceImplTest {
             new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(DateTime.now().getMillis()).build(),
             SharingScope.SPONSORS_AND_PARTNERS, false);
 
-        status = statuses.get(defaultSubpopulation.getGuid());
-        assertConsented(statuses);
-        assertTrue("Should again have signed most recent consent.", status.getSignedMostRecentConsent());
+        assertConsented(consentService.getConsentStatuses(context), true);
+        assertConsented(testUser.getUser().getConsentStatuses(), true);
     }
     
     @Test
@@ -261,7 +261,7 @@ public class ConsentServiceImplTest {
 
         // Consent exists, user is consented
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        assertConsented(statuses);
+        assertConsented(statuses, true);
         assertNotNull(consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser()));
         
         // Now withdraw consent
@@ -351,7 +351,7 @@ public class ConsentServiceImplTest {
                 makeSignature(DateTime.now().getMillis()), SharingScope.NO_SHARING, false);        
         
         statuses = consentService.getConsentStatuses(context);
-        assertConsented(statuses);
+        assertConsented(statuses, true);
         
         consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), new Withdrawal("Nada"),
                 DateTime.now().getMillis());
@@ -379,10 +379,17 @@ public class ConsentServiceImplTest {
         assertFalse(statuses.get(optionalSubpop.getGuid()).isConsented()); // still false
     }
 
-    private void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses) {
+    public void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses, boolean signedMostRecent) {
         assertTrue(ConsentStatus.isUserConsented(statuses));
         assertTrue(testUser.getUser().doesConsent());
         assertTrue(ConsentStatus.isUserConsented(testUser.getUser().getConsentStatuses()));
+        if (signedMostRecent) {
+            assertTrue(ConsentStatus.isConsentCurrent(statuses));
+            assertTrue(testUser.getUser().hasSignedMostRecentConsent());
+        } else {
+            assertFalse(ConsentStatus.isConsentCurrent(statuses));
+            assertFalse(testUser.getUser().hasSignedMostRecentConsent());
+        }
     }
     
     private void assertNotConsented(Map<SubpopulationGuid,ConsentStatus> statuses) {
