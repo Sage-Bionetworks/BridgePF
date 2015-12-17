@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -27,11 +28,15 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
 public class StormpathAccountTest {
+    
+    private static final TypeReference<List<ConsentSignature>> CONSENT_SIGNATURES_TYPE = new TypeReference<List<ConsentSignature>>() {};
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
@@ -328,11 +333,8 @@ public class StormpathAccountTest {
         assertEquals(DEVELOPER, acct.getRoles().iterator().next());
     }
     
-    // This tests the in memory representation of the signatures, see the 
-    // StormpathAccountDaoTest.canSetAndRetrieveConsentsForMultipleSubpopulations test where we test 
-    // encryption into and out of Stormpath.
     @Test
-    public void multipleConsentsAreMaintainedSeparately() {
+    public void multipleConsentsAreMaintainedSeparately() throws Exception {
         ConsentSignature sig1 = new ConsentSignature.Builder()
                 .withName("Name 1")
                 .withBirthdate("2000-10-10")
@@ -359,5 +361,21 @@ public class StormpathAccountTest {
         
         sig2Retrieved = signatures.get(SUBPOP_GUID_2).get(0);
         assertEquals(sig2, sig2Retrieved);
+        
+        // Retrieve the Stormpath implementation to update customData. Verify that the data is passed as is
+        // to customData stub.
+        acct.getAccount();
+        
+        Integer version = (Integer)data.get(SUBPOP_GUID.getGuid()+"_consent_signatures_version");
+        assertEquals(new Integer(2), version);
+        
+        // The mock implementation of customData prefixes stuff... we'll unprefix it and parse it into JSON 
+        String contentJson = (String)data.get(SUBPOP_GUID.getGuid()+"_consent_signatures");
+        assertTrue(contentJson.startsWith("encrypted-2-"));
+        
+        String json = contentJson.substring("encrypted-2-".length(), contentJson.length());
+        
+        List<ConsentSignature> returnedSignatures = BridgeObjectMapper.get().readValue(json, CONSENT_SIGNATURES_TYPE);
+        assertEquals(sig1, returnedSignatures.get(0));
     }
 }
