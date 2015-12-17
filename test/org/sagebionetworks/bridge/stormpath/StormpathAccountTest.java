@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
@@ -333,6 +332,8 @@ public class StormpathAccountTest {
         assertEquals(DEVELOPER, acct.getRoles().iterator().next());
     }
     
+    // see the StormpathAccountDaoTest.canSetAndRetrieveConsentsForMultipleSubpopulations test where we 
+    // test encryption into and out of Stormpath.
     @Test
     public void multipleConsentsAreMaintainedSeparately() throws Exception {
         ConsentSignature sig1 = new ConsentSignature.Builder()
