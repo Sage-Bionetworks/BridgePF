@@ -42,6 +42,7 @@ public class DynamoSubpopulationTest {
         subpop.setVersion(3L);
         
         String json = BridgeObjectMapper.get().writeValueAsString(subpop);
+        System.out.println(json);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         // This does not need to be passed to the user; the user is never allowed to set it.

@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -142,7 +143,15 @@ public class ConsentServiceImplTest {
         
         long signedOn = signature.getSignedOn();
         
-        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), signature, SharingScope.NO_SHARING, false);
+        // Before consent if you ask, no sharing
+        SharingScope scope = optionsService.getEnum(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE, SharingScope.class);
+        assertEquals(SharingScope.NO_SHARING, scope);
+        
+        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), signature, SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
+        
+        // Verify we just set the options
+        scope = optionsService.getEnum(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE, SharingScope.class);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertEquals(1, statuses.size());
@@ -162,6 +171,10 @@ public class ConsentServiceImplTest {
         statuses = consentService.getConsentStatuses(context);
         assertFalse(ConsentStatus.isUserConsented(statuses));
         
+        // No more sharing status
+        scope = optionsService.getEnum(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE, SharingScope.class);
+        assertEquals(SharingScope.NO_SHARING, scope);
+        
         // Consent signature is no longer found, it's effectively deleted
         try {
             consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser());
@@ -170,6 +183,7 @@ public class ConsentServiceImplTest {
         }
         
         // However we have a historical record of the consent, including a revocation date
+        // data is exported with the sharing status set at the time it was exported
         List<UserConsentHistory> histories = consentService.getUserConsentHistory(testUser.getStudy(),
                 defaultSubpopulation.getGuid(), testUser.getUser());
         assertEquals(1, histories.size());
