@@ -205,7 +205,6 @@ public class SubpopulationControllerTest {
         doReturn(user).when(session).getUser(); // no developer role
         
         controller.getAllSubpopulations();
-        verifyNoMoreInteractions(subpopService);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -214,7 +213,6 @@ public class SubpopulationControllerTest {
         doReturn(user).when(session).getUser(); // no developer role
         
         controller.createSubpopulation();
-        verifyNoMoreInteractions(subpopService);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -223,7 +221,6 @@ public class SubpopulationControllerTest {
         doReturn(user).when(session).getUser(); // no developer role
         
         controller.updateSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
-        verifyNoMoreInteractions(subpopService);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -232,7 +229,6 @@ public class SubpopulationControllerTest {
         doReturn(user).when(session).getUser(); // no developer role
         
         controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
-        verifyNoMoreInteractions(subpopService);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -241,7 +237,6 @@ public class SubpopulationControllerTest {
         doReturn(user).when(session).getUser(); // no developer role
         
         controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
-        verifyNoMoreInteractions(subpopService);
     }
     
     private List<Subpopulation> createSubpopulationList() {
