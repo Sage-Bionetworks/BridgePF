@@ -39,7 +39,6 @@ import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -303,18 +302,17 @@ public class ConsentServiceImpl implements ConsentService {
     
     private void updateSessionConsentStatuses(User user, SubpopulationGuid subpopGuid, boolean consented) {
         if (user.getConsentStatuses() != null) {
-            List<ConsentStatus> updatedStatuses = Lists.newArrayList();
-            
-            for (ConsentStatus status : user.getConsentStatuses().values()) {
-                if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
-                    ConsentStatus updatedStatus = new ConsentStatus.Builder().withConsentStatus(status)
+            ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
+            for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : user.getConsentStatuses().entrySet()) {
+                if (entry.getKey().equals(subpopGuid)) {
+                    ConsentStatus updatedStatus = new ConsentStatus.Builder().withConsentStatus(entry.getValue())
                             .withConsented(consented).withSignedMostRecentConsent(consented).build();
-                    updatedStatuses.add(updatedStatus);
+                    builder.put(subpopGuid, updatedStatus);
                 } else {
-                    updatedStatuses.add(status);
+                    builder.put(entry.getKey(), entry.getValue());
                 }
             }
-            user.setConsentStatuses(ConsentStatus.toMap(updatedStatuses));
+            user.setConsentStatuses(builder.build());
         }
     }
 }

@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.google.common.collect.ImmutableMap;
@@ -96,7 +97,7 @@ public class UserTest {
         
         // All required consents are consented, even one that's not up-to-date
         user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(
+        user.setConsentStatuses(TestUtils.toMap(
             new ConsentStatus("Name", "guid1", true, true, false),
             new ConsentStatus("Name", "guid2", true, true, true),
             new ConsentStatus("Name", "guid3", false, false, false)
@@ -105,7 +106,7 @@ public class UserTest {
         
         // A required consent is not consented
         user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(
+        user.setConsentStatuses(TestUtils.toMap(
             new ConsentStatus("Name", "guid1", true, true, false),
             new ConsentStatus("Name", "guid2", true, false, false),
             new ConsentStatus("Name", "guid3", false, false, false)
@@ -122,7 +123,7 @@ public class UserTest {
         
         // All required consents are consented, even one that's not up-to-date
         user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(
+        user.setConsentStatuses(TestUtils.toMap(
             new ConsentStatus("Name", "guid1", true, true, false),
             new ConsentStatus("Name", "guid2", true, true, true),
             new ConsentStatus("Name", "guid3", false, false, false)
@@ -131,7 +132,7 @@ public class UserTest {
         
         // A required consent is not consented
         user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(
+        user.setConsentStatuses(TestUtils.toMap(
             new ConsentStatus("Name", "guid1", true, true, false),
             new ConsentStatus("Name", "guid2", true, false, false),
             new ConsentStatus("Name", "guid3", false, false, false)
@@ -139,7 +140,7 @@ public class UserTest {
         assertFalse(user.hasSignedMostRecentConsent());
         
         user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(
+        user.setConsentStatuses(TestUtils.toMap(
             new ConsentStatus("Name", "guid1", true, true, true),
             new ConsentStatus("Name", "guid3", false, false, false)
         ));

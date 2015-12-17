@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import java.util.Map;
 
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -18,7 +20,7 @@ public class UserSessionInfoTest {
 
     @Test
     public void userSessionInfoSerializesCorrectly() throws Exception {
-        Map<SubpopulationGuid, ConsentStatus> map = ConsentStatus
+        Map<SubpopulationGuid, ConsentStatus> map = TestUtils
                 .toMap(new ConsentStatus("Consent", "AAA", true, true, false));
         
         User user = new User();

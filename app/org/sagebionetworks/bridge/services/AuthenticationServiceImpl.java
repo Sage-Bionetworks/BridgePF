@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
-import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
@@ -270,9 +271,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .withStudyIdentifier(study.getIdentifier()) // probably already set
                 .build();
         
-        List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         
-        user.setConsentStatuses(ConsentStatus.toMap(statuses));
+        user.setConsentStatuses(statuses);
         session.setUser(user);
         
         return session;

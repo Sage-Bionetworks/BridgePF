@@ -68,7 +68,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void enforcesStudyEnrollmentLimit() {
         User user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
+        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         study.setIdentifier("test");
@@ -85,7 +85,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void studyEnrollmentNotIncrementedOnSubsequentConsents() {
         User user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
+        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         study.setIdentifier("test");
@@ -99,7 +99,7 @@ public class StudyEnrollmentServiceTest {
                 .withSignedMostRecentConsent(true).build();
         // On subsequent consents, user is not added and enrollment is not increased
         
-        Map<SubpopulationGuid, ConsentStatus> map = ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT, consent2);
+        Map<SubpopulationGuid, ConsentStatus> map = TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT, consent2);
         user.setConsentStatuses(map);
         studyEnrollmentService.incrementStudyEnrollment(study, user);
         studyEnrollmentService.incrementStudyEnrollment(study, user);
@@ -111,7 +111,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void decrementingStudyWorks() {
         User user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(TestConstants.REQUIRED_UNSIGNED));
+        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
         
         jedisOps.del(NUM_PARTICIPANTS_KEY);
         jedisOps.setnx(NUM_PARTICIPANTS_KEY, "2");
@@ -134,7 +134,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void studyEnrollmentNotDecrementedUntilLastWithdrawal() {
         User user = new User();
-        user.setConsentStatuses(ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
+        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         jedisOps.del(NUM_PARTICIPANTS_KEY);
         jedisOps.setnx(NUM_PARTICIPANTS_KEY, "2");
@@ -148,7 +148,7 @@ public class StudyEnrollmentServiceTest {
         assertEquals("2", jedisOps.get(NUM_PARTICIPANTS_KEY));
         
         // With no signed consents, this will decrement.
-        user.setConsentStatuses(ConsentStatus.toMap(TestConstants.REQUIRED_UNSIGNED));
+        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
         studyEnrollmentService.decrementStudyEnrollment(study, user);
         assertEquals("1", jedisOps.get(NUM_PARTICIPANTS_KEY));
     }

@@ -171,7 +171,7 @@ public final class User implements BridgeEntity {
      * @return
      */
     public boolean doesConsent() {
-        return ConsentStatus.isUserConsented(consentStatuses.values());
+        return ConsentStatus.isUserConsented(consentStatuses);
     }
 
     /**
@@ -179,7 +179,7 @@ public final class User implements BridgeEntity {
      * @return
      */
     public boolean hasSignedMostRecentConsent() {
-        return ConsentStatus.isConsentCurrent(consentStatuses.values());
+        return ConsentStatus.isConsentCurrent(consentStatuses);
     }
     
     @Override

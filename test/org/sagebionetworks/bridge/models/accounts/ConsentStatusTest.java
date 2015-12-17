@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
@@ -17,7 +16,6 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -34,28 +32,6 @@ public class ConsentStatusTest {
     @Test
     public void hashCodeEquals() {
         EqualsVerifier.forClass(ConsentStatus.class).allFieldsShouldBeUsed().verify(); 
-    }
-    
-    @Test
-    public void toMapVarargs() {
-        Map<SubpopulationGuid,ConsentStatus> map = ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT, TestConstants.REQUIRED_UNSIGNED);
-
-        SubpopulationGuid guid = SubpopulationGuid.create(TestConstants.REQUIRED_SIGNED_CURRENT.getSubpopulationGuid());
-        SubpopulationGuid guid2 = SubpopulationGuid.create(TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid());
-        
-        assertEquals(TestConstants.REQUIRED_SIGNED_CURRENT, map.get(guid));
-        assertEquals(TestConstants.REQUIRED_UNSIGNED, map.get(guid2));
-    }
-    
-    @Test
-    public void toMapList() {
-        Map<SubpopulationGuid,ConsentStatus> map = ConsentStatus.toMap(Lists.newArrayList(TestConstants.REQUIRED_SIGNED_CURRENT, TestConstants.REQUIRED_UNSIGNED));
-
-        SubpopulationGuid guid = SubpopulationGuid.create(TestConstants.REQUIRED_SIGNED_CURRENT.getSubpopulationGuid());
-        SubpopulationGuid guid2 = SubpopulationGuid.create(TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid());
-        
-        assertEquals(TestConstants.REQUIRED_SIGNED_CURRENT, map.get(guid));
-        assertEquals(TestConstants.REQUIRED_UNSIGNED, map.get(guid2));
     }
     
     // Will be stored as JSON in the the session, via the User object, so it must serialize.
@@ -92,33 +68,33 @@ public class ConsentStatusTest {
         
         assertEquals(status2, statuses.get(subpop.getGuid()));
     }
-
-    private SubpopulationGuid guid(ConsentStatus status) {
-        return SubpopulationGuid.create(status.getSubpopulationGuid());
+    
+    private void add(ConsentStatus status) {
+        statuses.put(SubpopulationGuid.create(status.getSubpopulationGuid()), status);
     }
     
     @Test
     public void isUserConsented() {
         assertFalse(ConsentStatus.isUserConsented(statuses));
         
-        statuses.put(guid(TestConstants.REQUIRED_UNSIGNED), TestConstants.REQUIRED_UNSIGNED);
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.OPTIONAL_SIGNED_CURRENT);
-        statuses.add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);
+        add(TestConstants.REQUIRED_UNSIGNED);
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.OPTIONAL_SIGNED_CURRENT);
+        add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);
         assertFalse(ConsentStatus.isUserConsented(statuses));
         
         statuses.clear();
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.REQUIRED_UNSIGNED);
-        statuses.add(TestConstants.OPTIONAL_UNSIGNED);
-        statuses.add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.REQUIRED_UNSIGNED);
+        add(TestConstants.OPTIONAL_UNSIGNED);
+        add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);
         assertFalse(ConsentStatus.isUserConsented(statuses));
 
         statuses.clear();
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.REQUIRED_SIGNED_OBSOLETE);
-        statuses.add(TestConstants.OPTIONAL_UNSIGNED);
-        statuses.add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.REQUIRED_SIGNED_OBSOLETE);
+        add(TestConstants.OPTIONAL_UNSIGNED);
+        add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);
         assertTrue(ConsentStatus.isUserConsented(statuses));
     }
 
@@ -126,20 +102,20 @@ public class ConsentStatusTest {
     public void isConsentCurrent() {
         assertFalse(ConsentStatus.isConsentCurrent(statuses));
         
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.REQUIRED_SIGNED_OBSOLETE);
-        statuses.add(TestConstants.OPTIONAL_UNSIGNED);
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.REQUIRED_SIGNED_OBSOLETE);
+        add(TestConstants.OPTIONAL_UNSIGNED);
         assertFalse(ConsentStatus.isConsentCurrent(statuses));
         
         statuses.clear();
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.OPTIONAL_SIGNED_OBSOLETE); // only required consents are considered 
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.OPTIONAL_SIGNED_OBSOLETE); // only required consents are considered 
         assertTrue(ConsentStatus.isConsentCurrent(statuses));
         
         statuses.clear();
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.OPTIONAL_UNSIGNED);
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.OPTIONAL_UNSIGNED);
         assertTrue(ConsentStatus.isConsentCurrent(statuses));
     }
     
@@ -147,20 +123,20 @@ public class ConsentStatusTest {
     public void hasOnlyOneSignedConsent() {
         assertFalse(ConsentStatus.hasOnlyOneSignedConsent(statuses));
         
-        statuses.add(TestConstants.REQUIRED_UNSIGNED);
-        statuses.add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);
+        add(TestConstants.REQUIRED_UNSIGNED);
+        add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);
         assertTrue(ConsentStatus.hasOnlyOneSignedConsent(statuses));
         
         statuses.clear();
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.REQUIRED_SIGNED_OBSOLETE);
-        statuses.add(TestConstants.REQUIRED_UNSIGNED);
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.REQUIRED_SIGNED_OBSOLETE);
+        add(TestConstants.REQUIRED_UNSIGNED);
         assertFalse(ConsentStatus.hasOnlyOneSignedConsent(statuses));
         
         statuses.clear();
-        statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
-        statuses.add(TestConstants.REQUIRED_UNSIGNED);
-        statuses.add(TestConstants.OPTIONAL_UNSIGNED);
+        add(TestConstants.REQUIRED_SIGNED_CURRENT);
+        add(TestConstants.REQUIRED_UNSIGNED);
+        add(TestConstants.OPTIONAL_UNSIGNED);
         assertTrue(ConsentStatus.hasOnlyOneSignedConsent(statuses));
     }
 }

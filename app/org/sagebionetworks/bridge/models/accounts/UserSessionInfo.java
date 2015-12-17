@@ -56,10 +56,10 @@ public class UserSessionInfo {
         return consentStatuses;
     }
     public boolean isConsented() {
-        return ConsentStatus.isUserConsented(consentStatuses.values());
+        return ConsentStatus.isUserConsented(consentStatuses);
     }
     public boolean isSignedMostRecentConsent() {
-        return ConsentStatus.isConsentCurrent(consentStatuses.values());
+        return ConsentStatus.isConsentCurrent(consentStatuses);
     }
     public SharingScope getSharingScope() {
         return sharingScope;

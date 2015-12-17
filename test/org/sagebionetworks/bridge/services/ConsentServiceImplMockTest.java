@@ -103,7 +103,7 @@ public class ConsentServiceImplMockTest {
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1990-01-01")
                 .withSignedOn(UNIX_TIMESTAMP).build();
         
-        user.setConsentStatuses(ConsentStatus.toMap(
+        user.setConsentStatuses(TestUtils.toMap(
                 new ConsentStatus.Builder().withName("Name").withGuid(SUBPOP_GUID).withConsented(false).withRequired(true).build()));
         
         account = spy(new SimpleAccount()); // mock(Account.class);
@@ -174,7 +174,7 @@ public class ConsentServiceImplMockTest {
     public void noActivityEventIfAlreadyConsented() {
         ConsentStatus status = new ConsentStatus.Builder().withName("name").withGuid(SUBPOP_GUID)
                 .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
-        user.setConsentStatuses(ConsentStatus.toMap(status));
+        user.setConsentStatuses(TestUtils.toMap(status));
         try {
             consentService.consentToResearch(study, SUBPOP_GUID, user, consentSignature, SharingScope.NO_SHARING, false);
             fail("Exception expected.");

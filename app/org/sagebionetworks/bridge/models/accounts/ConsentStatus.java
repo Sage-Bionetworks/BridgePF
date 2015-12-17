@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
@@ -9,37 +8,11 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonDeserialize(builder=ConsentStatus.Builder.class)
 public final class ConsentStatus {
-
-    public static Map<SubpopulationGuid,ConsentStatus> toMap(ConsentStatus... statuses) {
-        return ConsentStatus.toMap(Lists.newArrayList(statuses));
-    }
-    
-    public static Map<SubpopulationGuid,ConsentStatus> toMap(Collection<ConsentStatus> statuses) {
-        ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>();
-        if (statuses != null) {
-            for (ConsentStatus status : statuses) {
-                builder.put(SubpopulationGuid.create(status.getSubpopulationGuid()), status);
-            }
-        }
-        return builder.build();
-    }
-    
-    public static ConsentStatus forSubpopulation(Collection<ConsentStatus> statuses, SubpopulationGuid subpopGuid) {
-        for (ConsentStatus status : statuses) {
-            if (status.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
-                return status;
-            }
-            
-        }
-        return null;
-    }
 
     /**
      * Has the user consented to all the required consents?
