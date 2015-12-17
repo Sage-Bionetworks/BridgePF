@@ -12,11 +12,12 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import org.apache.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -45,7 +46,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
         UserConsent activeConsent = getActiveUserConsent(healthCode, subpopGuid);
         if (activeConsent != null && activeConsent.getConsentCreatedOn() == consentCreatedOn) {
-            throw new EntityAlreadyExistsException(activeConsent);
+            // We don't throw EntityAlreadyExistsException here because UserConsent isn't an object in the API
+            throw new BridgeServiceException("UserConsent already exists.", HttpStatus.SC_CONFLICT);
         }
         
         DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, subpopGuid);

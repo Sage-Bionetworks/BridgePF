@@ -77,7 +77,6 @@ public class AuthenticationControllerTest {
     public void canSignOut() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
-                try {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(STUDY_PROPERTY, testUser.getStudyIdentifier().getIdentifier());
                 node.put(USERNAME, testUser.getUsername());
@@ -90,7 +89,7 @@ public class AuthenticationControllerTest {
 
                 // All of a sudden, there's no cookie being set. I have no idea why.
                 assertNotNull("There's a cookie", cookie);
-
+                
                 String sessionToken = cookie.getValue();
                 assertTrue("Cookie is not empty", StringUtils.isNotBlank(sessionToken));
 
@@ -103,9 +102,6 @@ public class AuthenticationControllerTest {
 
                 String output = jedisOps.get(sessionToken);
                 assertNull("Should no longer be session data", output);
-                } catch(Exception e) {
-                    e.printStackTrace();
-                }
             }
         });
     }
@@ -132,9 +128,6 @@ public class AuthenticationControllerTest {
                     request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
                     response = request.get().get(TIMEOUT);
                     assertEquals("{\"message\":\"Caller does not have permission to access this service.\"}", response.getBody());
-
-                } catch(Exception e) {
-                    e.printStackTrace();
                 } finally {
                     if (secondStudy != null) {
                         studyService.deleteStudy(secondStudy.getIdentifier());
@@ -146,7 +139,6 @@ public class AuthenticationControllerTest {
     
     @Test
     public void adminUserGetsExceptionAccessingParticipantAPI() {
-        try{
         TestUser dev = helper.getBuilder(AuthenticationControllerTest.class).withConsent(false).withSignIn(false)
                 .withStudy(testUser.getStudy()).withRoles(Roles.DEVELOPER).build();
         
@@ -171,8 +163,6 @@ public class AuthenticationControllerTest {
                     assertEquals(412, response.getStatus());
                     assertTrue(bodyString.contains("\"authenticated\":true"));
                     assertTrue(bodyString.contains("\"consented\":false"));
-                } catch(Exception e) {
-                    e.printStackTrace();
                 } finally {
                     if (dev != null) {
                         helper.deleteUser(dev);    
@@ -180,9 +170,6 @@ public class AuthenticationControllerTest {
                 }
             }
         });
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
     }
     
     private void saveSecondStudy() {

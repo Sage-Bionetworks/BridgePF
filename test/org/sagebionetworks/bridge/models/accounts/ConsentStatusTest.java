@@ -48,7 +48,7 @@ public class ConsentStatusTest {
     
     @Test
     public void toMapList() {
-        Map<SubpopulationGuid,ConsentStatus> map = ConsentStatus.toMap(Lists.newArrayList(TestConstants.REQUIRED_SIGNED_CURRENT));
+        Map<SubpopulationGuid,ConsentStatus> map = ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT);
 
         SubpopulationGuid guid = SubpopulationGuid.create(TestConstants.REQUIRED_SIGNED_CURRENT.getSubpopulationGuid());
         

@@ -59,12 +59,7 @@ class StormpathAccount implements Account {
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
     private final Set<Roles> roles;
-    /**
-     * All signatures saved under a key that includes the subpopulation GUID. Don't
-     * use SubpopulationGuid interface as the key, because different implementations have different
-     * equals/hashCode values. Use the GUID string directly.
-     */
-    private Map<String, List<ConsentSignature>> allSignatures;
+    private Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
     
     StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
@@ -97,8 +92,8 @@ class StormpathAccount implements Account {
     }
     
     com.stormpath.sdk.account.Account getAccount() {
-        for (Map.Entry<String, List<ConsentSignature>> entry : allSignatures.entrySet()) {
-            encryptJSONTo(entry.getKey()+CONSENT_SIGNATURES_SUFFIX, entry.getValue());
+        for (Map.Entry<SubpopulationGuid, List<ConsentSignature>> entry : allSignatures.entrySet()) {
+            encryptJSONTo(entry.getKey().getGuid()+CONSENT_SIGNATURES_SUFFIX, entry.getValue());
         }
         return acct;
     }
@@ -163,11 +158,11 @@ class StormpathAccount implements Account {
     };
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {
-        allSignatures.putIfAbsent(subpopGuid.getGuid(), Lists.newArrayList());
-        return allSignatures.get(subpopGuid.getGuid());
+        allSignatures.putIfAbsent(subpopGuid, Lists.newArrayList());
+        return allSignatures.get(subpopGuid);
     }
     @Override
-    public Map<String, List<ConsentSignature>> getAllConsentSignatureHistories() {
+    public Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
         return allSignatures;
     }
     @Override

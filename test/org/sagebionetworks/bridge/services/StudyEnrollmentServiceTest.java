@@ -30,8 +30,6 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 
-import com.google.common.collect.Lists;
-
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyEnrollmentServiceTest {
@@ -101,7 +99,7 @@ public class StudyEnrollmentServiceTest {
                 .withSignedMostRecentConsent(true).build();
         // On subsequent consents, user is not added and enrollment is not increased
         
-        Map<SubpopulationGuid, ConsentStatus> map = ConsentStatus.toMap(Lists.newArrayList(TestConstants.REQUIRED_SIGNED_CURRENT, consent2));
+        Map<SubpopulationGuid, ConsentStatus> map = ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT, consent2);
         user.setConsentStatuses(map);
         studyEnrollmentService.incrementStudyEnrollment(study, user);
         studyEnrollmentService.incrementStudyEnrollment(study, user);

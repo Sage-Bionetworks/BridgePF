@@ -138,12 +138,11 @@ public class ParticipantRosterGenerator implements Runnable {
     
     private List<String> getSubpopulationNames(Account account) {
         List<String> names = Lists.newArrayList();
-        for (String guid : account.getAllConsentSignatureHistories().keySet()) {
-            SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
-            ConsentSignature sig = account.getActiveConsentSignature(subpopGuid);
+        for (SubpopulationGuid guid : account.getAllConsentSignatureHistories().keySet()) {
+            ConsentSignature sig = account.getActiveConsentSignature(guid);
             if (sig != null) {
                 // We've found an active consent, get the name of the subpopulation
-                Subpopulation subpop = subpopService.getSubpopulation(study, subpopGuid);
+                Subpopulation subpop = subpopService.getSubpopulation(study, guid);
                 names.add(subpop.getName());
             }
         }

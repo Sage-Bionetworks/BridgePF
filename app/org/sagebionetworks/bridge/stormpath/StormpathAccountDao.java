@@ -69,23 +69,23 @@ public class StormpathAccountDao implements AccountDao {
     private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Resource(name = "stormpathApplication")
-    public void setStormpathApplication(Application application) {
+    public final void setStormpathApplication(Application application) {
         this.application = application;
     }
     @Resource(name = "stormpathClient")
-    public void setStormpathClient(Client client) {
+    public final void setStormpathClient(Client client) {
         this.client = client;
     }
     @Autowired
-    public void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
     @Autowired
-    public void setSubpopulationService(SubpopulationService subpopService) {
+    public final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
     @Resource(name="encryptorList")
-    public void setEncryptors(List<BridgeEncryptor> list) {
+    public final void setEncryptors(List<BridgeEncryptor> list) {
         for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }

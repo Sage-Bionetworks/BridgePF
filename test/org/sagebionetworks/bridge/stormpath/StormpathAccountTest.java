@@ -353,11 +353,11 @@ public class StormpathAccountTest {
         ConsentSignature sig2Retrieved = acct.getActiveConsentSignature(SUBPOP_GUID_2);
         assertEquals(sig2, sig2Retrieved);
         
-        Map<String,List<ConsentSignature>> signatures = acct.getAllConsentSignatureHistories();
-        sig1Retrieved = signatures.get(SUBPOP_GUID.getGuid()).get(0);
+        Map<SubpopulationGuid,List<ConsentSignature>> signatures = acct.getAllConsentSignatureHistories();
+        sig1Retrieved = signatures.get(SUBPOP_GUID).get(0);
         assertEquals(sig1, sig1Retrieved);
         
-        sig2Retrieved = signatures.get(SUBPOP_GUID_2.getGuid()).get(0);
+        sig2Retrieved = signatures.get(SUBPOP_GUID_2).get(0);
         assertEquals(sig2, sig2Retrieved);
     }
 }

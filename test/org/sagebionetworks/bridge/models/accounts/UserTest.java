@@ -137,5 +137,13 @@ public class UserTest {
             new ConsentStatus("Name", "guid3", false, false, false)
         ));
         assertFalse(user.hasSignedMostRecentConsent());
+        
+        user = new User();
+        user.setConsentStatuses(ConsentStatus.toMap(
+            new ConsentStatus("Name", "guid1", true, true, true),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        // Again, we don't count optional consents, only required consents.
+        assertTrue(user.hasSignedMostRecentConsent());
     }
 }

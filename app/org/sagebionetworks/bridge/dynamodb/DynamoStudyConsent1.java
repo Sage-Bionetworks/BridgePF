@@ -26,7 +26,6 @@ public final class DynamoStudyConsent1 implements StudyConsent {
 
     @Override
     @DynamoDBHashKey(attributeName="studyKey")
-    @JsonIgnore
     public String getSubpopulationGuid() {
         return subpopGuid;
     }
