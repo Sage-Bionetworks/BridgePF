@@ -81,6 +81,7 @@ public class EmailController extends BaseController {
 
             return ok("You have been unsubscribed from future email.");
         } catch(Throwable throwable) {
+            throwable.printStackTrace();
             return ok(throwable.getMessage());
         }
     }

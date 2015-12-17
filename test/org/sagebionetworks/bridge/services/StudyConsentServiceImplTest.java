@@ -61,8 +61,8 @@ public class StudyConsentServiceImplTest {
         
         study = new DynamoStudy();
         study.setIdentifier(id);
-        study.setName(id);
-        study.setSponsorName(id);
+        study.setName("StudyConsentServiceImplTest Name");
+        study.setSponsorName("StudyConsentServiceImplTest Sponsor");
     }
     
     @After

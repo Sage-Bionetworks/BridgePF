@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -48,7 +49,7 @@ public interface ConsentService {
      * @param context
      * @return
      */
-    List<ConsentStatus> getConsentStatuses(ScheduleContext context);
+    Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(ScheduleContext context);
 
     /**
      * Withdraw consent in this study. The withdrawal date is recorded and the user can no longer 

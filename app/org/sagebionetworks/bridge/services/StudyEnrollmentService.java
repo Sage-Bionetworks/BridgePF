@@ -102,7 +102,7 @@ public class StudyEnrollmentService {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        if (ConsentStatus.hasOnlyOneSignedConsent(user.getConsentStatuses().values())) {
+        if (ConsentStatus.hasOnlyOneSignedConsent(user.getConsentStatuses())) {
             String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
             jedisOps.incr(key);
         }

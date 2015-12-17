@@ -18,16 +18,17 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class ConsentStatusTest {
 
-    private List<ConsentStatus> statuses;
+    private Map<SubpopulationGuid,ConsentStatus> statuses;
     
     @Before
     public void before() {
-        statuses = Lists.newArrayList();
+        statuses = Maps.newHashMap();
     }
     
     @Test
@@ -48,11 +49,13 @@ public class ConsentStatusTest {
     
     @Test
     public void toMapList() {
-        Map<SubpopulationGuid,ConsentStatus> map = ConsentStatus.toMap(TestConstants.REQUIRED_SIGNED_CURRENT);
+        Map<SubpopulationGuid,ConsentStatus> map = ConsentStatus.toMap(Lists.newArrayList(TestConstants.REQUIRED_SIGNED_CURRENT, TestConstants.REQUIRED_UNSIGNED));
 
         SubpopulationGuid guid = SubpopulationGuid.create(TestConstants.REQUIRED_SIGNED_CURRENT.getSubpopulationGuid());
+        SubpopulationGuid guid2 = SubpopulationGuid.create(TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid());
         
         assertEquals(TestConstants.REQUIRED_SIGNED_CURRENT, map.get(guid));
+        assertEquals(TestConstants.REQUIRED_UNSIGNED, map.get(guid2));
     }
     
     // Will be stored as JSON in the the session, via the User object, so it must serialize.
@@ -80,21 +83,25 @@ public class ConsentStatusTest {
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString("test");
         
-        assertNull(ConsentStatus.forSubpopulation(statuses, subpop.getGuid()));
+        assertNull(statuses.get(subpop.getGuid()));
         
         ConsentStatus status1 = new ConsentStatus("Name1", "foo", false, false, false);
         ConsentStatus status2 = new ConsentStatus("Name2", "test", false, false, false);
-        statuses.add(status1);
-        statuses.add(status2);
+        statuses.put(subpop.getGuid(), status1);
+        statuses.put(subpop.getGuid(), status2);
         
-        assertEquals(status2, ConsentStatus.forSubpopulation(statuses, subpop.getGuid()));
+        assertEquals(status2, statuses.get(subpop.getGuid()));
     }
 
+    private SubpopulationGuid guid(ConsentStatus status) {
+        return SubpopulationGuid.create(status.getSubpopulationGuid());
+    }
+    
     @Test
     public void isUserConsented() {
         assertFalse(ConsentStatus.isUserConsented(statuses));
         
-        statuses.add(TestConstants.REQUIRED_UNSIGNED);
+        statuses.put(guid(TestConstants.REQUIRED_UNSIGNED), TestConstants.REQUIRED_UNSIGNED);
         statuses.add(TestConstants.REQUIRED_SIGNED_CURRENT);
         statuses.add(TestConstants.OPTIONAL_SIGNED_CURRENT);
         statuses.add(TestConstants.OPTIONAL_SIGNED_OBSOLETE);

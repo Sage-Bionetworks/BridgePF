@@ -46,9 +46,9 @@ public final class ConsentStatus {
      * @param statuses
      * @return
      */
-    public static boolean isUserConsented(Collection<ConsentStatus> statuses) {
+    public static boolean isUserConsented(Map<SubpopulationGuid,ConsentStatus> statuses) {
         checkNotNull(statuses);
-        return !statuses.isEmpty() && statuses.stream().allMatch(status -> {
+        return !statuses.isEmpty() && statuses.values().stream().allMatch(status -> {
             return !status.isRequired() || status.isConsented();
         });
     }
@@ -58,17 +58,17 @@ public final class ConsentStatus {
      * @param statuses
      * @return
      */
-    public static boolean isConsentCurrent(Collection<ConsentStatus> statuses) {
+    public static boolean isConsentCurrent(Map<SubpopulationGuid,ConsentStatus> statuses) {
         checkNotNull(statuses);
-        return !statuses.isEmpty() && statuses.stream().allMatch(status -> {
+        return !statuses.isEmpty() && statuses.values().stream().allMatch(status -> {
             return !status.isRequired() || status.getSignedMostRecentConsent();   
         });
     }
     
-    public static boolean hasOnlyOneSignedConsent(Collection<ConsentStatus> statuses) {
+    public static boolean hasOnlyOneSignedConsent(Map<SubpopulationGuid,ConsentStatus> statuses) {
         checkNotNull(statuses);
         int count = 0;
-        for (ConsentStatus status : statuses) {
+        for (ConsentStatus status : statuses.values()) {
             if (status.isConsented()) {
                 count ++;
             }

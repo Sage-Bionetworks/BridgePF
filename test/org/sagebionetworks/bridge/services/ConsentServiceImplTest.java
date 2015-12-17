@@ -10,6 +10,7 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -117,7 +118,7 @@ public class ConsentServiceImplTest {
     @Test
     public void userHasNotGivenConsent() {
         // These are all the consents that apply to the user, and none of them are signed
-        List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
         
         List<UserConsentHistory> histories = consentService.getUserConsentHistory(testUser.getStudy(),
@@ -143,7 +144,7 @@ public class ConsentServiceImplTest {
         
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), signature, SharingScope.NO_SHARING, false);
         
-        List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertEquals(1, statuses.size());
         assertTrue(ConsentStatus.isUserConsented(statuses));
 
@@ -217,8 +218,8 @@ public class ConsentServiceImplTest {
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
 
-        List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        ConsentStatus status = ConsentStatus.forSubpopulation(statuses, defaultSubpopulation.getGuid());
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        ConsentStatus status = statuses.get(defaultSubpopulation.getGuid());
         assertConsented(statuses);
         assertTrue("Should have signed most recent consent.", status.getSignedMostRecentConsent());
 
@@ -226,7 +227,7 @@ public class ConsentServiceImplTest {
         StudyConsent newStudyConsent = studyConsentService.addConsent(defaultSubpopulation.getGuid(), defaultConsentDocument)
                 .getStudyConsent();
 
-        status = ConsentStatus.forSubpopulation(consentService.getConsentStatuses(context), defaultSubpopulation.getGuid());
+        status = statuses.get(defaultSubpopulation.getGuid());
         assertConsented(statuses);
         assertTrue("Still most recent consent", status.getSignedMostRecentConsent());
 
@@ -234,7 +235,7 @@ public class ConsentServiceImplTest {
         newStudyConsent = studyConsentService
                 .publishConsent(study, defaultSubpopulation.getGuid(), newStudyConsent.getCreatedOn()).getStudyConsent();
 
-        status = ConsentStatus.forSubpopulation(consentService.getConsentStatuses(context), defaultSubpopulation.getGuid());
+        status = statuses.get(defaultSubpopulation.getGuid());
         assertConsented(statuses);
         assertFalse("New consent activated. Should no longer have signed most recent consent. ", status.getSignedMostRecentConsent());
 
@@ -245,7 +246,7 @@ public class ConsentServiceImplTest {
             new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(DateTime.now().getMillis()).build(),
             SharingScope.SPONSORS_AND_PARTNERS, false);
 
-        status = ConsentStatus.forSubpopulation(consentService.getConsentStatuses(context), defaultSubpopulation.getGuid());
+        status = statuses.get(defaultSubpopulation.getGuid());
         assertConsented(statuses);
         assertTrue("Should again have signed most recent consent.", status.getSignedMostRecentConsent());
     }
@@ -259,7 +260,7 @@ public class ConsentServiceImplTest {
                 SharingScope.SPONSORS_AND_PARTNERS, false);
 
         // Consent exists, user is consented
-        List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertConsented(statuses);
         assertNotNull(consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser()));
         
@@ -334,9 +335,9 @@ public class ConsentServiceImplTest {
         // Users don't see consent status updates in their sessions when subpopulations are 
         // added. So we force that here for the tests. In production, sessions will have
         // to time or users will have to reconsent before these updates get picked up.
-        testUser.getUser().setConsentStatuses(ConsentStatus.toMap(consentService.getConsentStatuses(context)));
+        testUser.getUser().setConsentStatuses(consentService.getConsentStatuses(context));
         
-        List<ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertEquals(3, statuses.size());
         assertNotConsented(statuses);
         
@@ -357,9 +358,9 @@ public class ConsentServiceImplTest {
         
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
-        assertFalse(ConsentStatus.forSubpopulation(statuses, defaultSubpopulation.getGuid()).isConsented());
-        assertTrue(ConsentStatus.forSubpopulation(statuses, requiredSubpop.getGuid()).isConsented());
-        assertFalse(ConsentStatus.forSubpopulation(statuses, optionalSubpop.getGuid()).isConsented());
+        assertFalse(statuses.get(defaultSubpopulation.getGuid()).isConsented());
+        assertTrue(statuses.get(requiredSubpop.getGuid()).isConsented());
+        assertFalse(statuses.get(optionalSubpop.getGuid()).isConsented());
         // Just verify that it now doesn't appear to exist, so this is an exception
         try {
             consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), new Withdrawal("Nada"),
@@ -373,21 +374,21 @@ public class ConsentServiceImplTest {
         
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
-        assertFalse(ConsentStatus.forSubpopulation(statuses, defaultSubpopulation.getGuid()).isConsented());
-        assertFalse(ConsentStatus.forSubpopulation(statuses, requiredSubpop.getGuid()).isConsented());
-        assertFalse(ConsentStatus.forSubpopulation(statuses, optionalSubpop.getGuid()).isConsented()); // still false
+        assertFalse(statuses.get(defaultSubpopulation.getGuid()).isConsented());
+        assertFalse(statuses.get(requiredSubpop.getGuid()).isConsented());
+        assertFalse(statuses.get(optionalSubpop.getGuid()).isConsented()); // still false
     }
 
-    private void assertConsented(List<ConsentStatus> statuses) {
+    private void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses) {
         assertTrue(ConsentStatus.isUserConsented(statuses));
         assertTrue(testUser.getUser().doesConsent());
-        assertTrue(ConsentStatus.isUserConsented(testUser.getUser().getConsentStatuses().values()));
+        assertTrue(ConsentStatus.isUserConsented(testUser.getUser().getConsentStatuses()));
     }
     
-    private void assertNotConsented(List<ConsentStatus> statuses) {
+    private void assertNotConsented(Map<SubpopulationGuid,ConsentStatus> statuses) {
         assertFalse(ConsentStatus.isUserConsented(statuses));
         assertFalse(testUser.getUser().doesConsent());
-        assertFalse(ConsentStatus.isUserConsented(testUser.getUser().getConsentStatuses().values()));
+        assertFalse(ConsentStatus.isUserConsented(testUser.getUser().getConsentStatuses()));
     }
     
     private ConsentSignature makeSignature(long originalSignedOn) {

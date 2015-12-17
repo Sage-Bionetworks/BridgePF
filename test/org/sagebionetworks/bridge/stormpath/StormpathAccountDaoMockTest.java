@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.stormpath;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -13,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -51,10 +54,14 @@ public class StormpathAccountDaoMockTest {
         Client client = mock(Client.class);
         Tenant tenant = mock(Tenant.class);
         when(client.getCurrentTenant()).thenReturn(tenant);
+        
+        when(client.verifyAccountEmail("tokenAAA")).thenReturn(mock(com.stormpath.sdk.account.Account.class));
+        
         dao.setStormpathClient(client);
         dao.setSubpopulationService(mockSubpopService());
         
-        dao.verifyEmail(study, verification);
+        Account account = dao.verifyEmail(study, verification);
+        assertNotNull(account);
         verify(client).verifyAccountEmail("tokenAAA");
     }
 
@@ -118,11 +125,11 @@ public class StormpathAccountDaoMockTest {
         StormpathAccountDao dao = new StormpathAccountDao();
         
         Directory directory = mock(Directory.class);
-        com.stormpath.sdk.account.Account account = mock(com.stormpath.sdk.account.Account.class);
-        when(account.getCustomData()).thenReturn(mock(CustomData.class));
+        com.stormpath.sdk.account.Account stormpathAccount = mock(com.stormpath.sdk.account.Account.class);
+        when(stormpathAccount.getCustomData()).thenReturn(mock(CustomData.class));
         Client client = mock(Client.class);
         
-        when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(account);
+        when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(stormpathAccount);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
         dao.setStormpathClient(client);
         dao.setSubpopulationService(mockSubpopService());
@@ -130,8 +137,9 @@ public class StormpathAccountDaoMockTest {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
         SignUp signUp = new SignUp(random, email, PASSWORD, null, null);
-        dao.signUp(study, signUp, false);
-
+        Account account = dao.signUp(study, signUp, false);
+        assertNotNull(account);
+        
         ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);
         verify(directory).createAccount(argument.capture(), anyBoolean());
         

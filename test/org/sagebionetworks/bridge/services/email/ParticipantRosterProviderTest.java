@@ -102,12 +102,16 @@ public class ParticipantRosterProviderTest {
         output = headerString + row("test@test.com","","Last","Not Sharing","false","abc","(123) 456-7890","false", "AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
+        participant.setExternalId(null);
+        output = headerString + row("test@test.com","","Last","Not Sharing","false","","(123) 456-7890","false", "AAA", "Default Consent Group");
+        assertEquals(output, provider.createParticipantTSV());
+        
         participant.remove("phone");
-        output = headerString + row("test@test.com","","Last","Not Sharing","false","abc","","false", "AAA", "Default Consent Group");
+        output = headerString + row("test@test.com","","Last","Not Sharing","false","","","false", "AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
         participant.remove(UserProfile.SHARING_SCOPE_FIELD);
-        output = headerString + row("test@test.com","","Last","","false","abc","","false","AAA", "Default Consent Group");
+        output = headerString + row("test@test.com","","Last","","false","","","false","AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
         StudyParticipant numberTwo = new StudyParticipant();
@@ -115,7 +119,7 @@ public class ParticipantRosterProviderTest {
         
         // This is pretty broken, but you should still get output. 
         participants.add(numberTwo);
-        output = headerString + row("test@test.com","","Last","","false","abc","","false", "AAA", "Default Consent Group") + row("test2@test.com","","","","","","","","","");
+        output = headerString + row("test@test.com","","Last","","false","","","false", "AAA", "Default Consent Group") + row("test2@test.com","","","","","","","","","");
         assertEquals(output, provider.createParticipantTSV());
         
         participants.clear();

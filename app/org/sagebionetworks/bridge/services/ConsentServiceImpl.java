@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -37,6 +38,7 @@ import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,7 +122,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
-        ConsentStatus status = ConsentStatus.forSubpopulation(user.getConsentStatuses().values(), subpopGuid);
+        ConsentStatus status = user.getConsentStatuses().get(subpopGuid);
         // There will be a status object for each subpopulation the user is mapped to. If 
         // there's no status object, then in effect the subpopulation does not exist for 
         // this user and they should get back a 404.
@@ -173,17 +175,21 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public List<ConsentStatus> getConsentStatuses(ScheduleContext context) {
+    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(ScheduleContext context) {
         checkNotNull(context);
         checkNotNull(context.getHealthCode());
         
-        return subpopService.getSubpopulationForUser(context).stream().map(subpop -> {
+        ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
+        for (Subpopulation subpop : subpopService.getSubpopulationForUser(context)) {
             boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop.getGuid());
             boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop.getGuid());
-            return new ConsentStatus.Builder().withName(subpop.getName()).withGuid(subpop.getGuid())
-                    .withRequired(subpop.isRequired()).withConsented(consented).withSignedMostRecentConsent(mostRecent)
+            ConsentStatus status = new ConsentStatus.Builder().withName(subpop.getName())
+                    .withGuid(subpop.getGuid()).withRequired(subpop.isRequired())
+                    .withConsented(consented).withSignedMostRecentConsent(mostRecent)
                     .build();
-        }).collect(BridgeCollectors.toImmutableList());
+            builder.put(subpop.getGuid(), status);
+        }
+        return builder.build();
     }
 
     @Override
