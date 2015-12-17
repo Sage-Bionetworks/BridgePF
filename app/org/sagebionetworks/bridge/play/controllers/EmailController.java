@@ -10,6 +10,10 @@ import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -19,6 +23,7 @@ import play.mvc.Result;
 
 @Controller
 public class EmailController extends BaseController {
+    private final Logger LOG = LoggerFactory.getLogger(EmailController.class);
 
     private AccountDao accountDao;
     private ParticipantOptionsService optionsService;
@@ -81,7 +86,13 @@ public class EmailController extends BaseController {
 
             return ok("You have been unsubscribed from future email.");
         } catch(Throwable throwable) {
-            return ok(throwable.getMessage());
+            String errorMsg = "Unknown error";
+            if (StringUtils.isNotBlank(throwable.getMessage())) {
+                errorMsg = throwable.getMessage();
+            }
+
+            LOG.error("Error unsubscribing: " + errorMsg, throwable);
+            return ok(errorMsg);
         }
     }
 
