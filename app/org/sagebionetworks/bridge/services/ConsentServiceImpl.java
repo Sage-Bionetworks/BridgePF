@@ -221,10 +221,15 @@ public class ConsentServiceImpl implements ConsentService {
             accountDao.updateAccount(study, account);
             throw e;
         }
-        optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
-        user.setSharingScope(SharingScope.NO_SHARING);
         
+        // Update the user's consent status
         updateSessionConsentStatuses(user, subpopGuid, false);
+        
+        // Only turn of sharing if the upshot of your change in consents is that you are not consented.
+        if (!user.doesConsent()) {
+            optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
+            user.setSharingScope(SharingScope.NO_SHARING);
+        }
         studyEnrollmentService.decrementStudyEnrollment(study, user);
         
         String externalId = optionsService.getString(user.getHealthCode(), EXTERNAL_IDENTIFIER);

@@ -356,19 +356,23 @@ public class ConsentServiceImplTest {
         assertNotConsented(statuses);
         
         consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getUser(),
-                makeSignature(DateTime.now().getMillis()), SharingScope.NO_SHARING, false);
+                makeSignature(DateTime.now().getMillis()), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
         
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
         
         consentService.consentToResearch(study, requiredSubpop.getGuid(), testUser.getUser(),
-                makeSignature(DateTime.now().getMillis()), SharingScope.NO_SHARING, false);        
+                makeSignature(DateTime.now().getMillis()), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);        
         
         statuses = consentService.getConsentStatuses(context);
         assertConsented(statuses, true);
         
         consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), new Withdrawal("Nada"),
                 DateTime.now().getMillis());
+        
+        // your sharing has been turned off because not all required consents are signed
+        SharingScope scope = optionsService.getEnum(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE, SharingScope.class);
+        assertEquals(SharingScope.NO_SHARING, scope);
         
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
@@ -392,8 +396,8 @@ public class ConsentServiceImplTest {
         assertFalse(statuses.get(requiredSubpop.getGuid()).isConsented());
         assertFalse(statuses.get(optionalSubpop.getGuid()).isConsented()); // still false
     }
-
-    public void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses, boolean signedMostRecent) {
+    
+    private void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses, boolean signedMostRecent) {
         assertTrue(ConsentStatus.isUserConsented(statuses));
         assertTrue(testUser.getUser().doesConsent());
         assertTrue(ConsentStatus.isUserConsented(testUser.getUser().getConsentStatuses()));
