@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -44,6 +45,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
@@ -74,6 +76,8 @@ public class ConsentServiceImplMockTest {
     private ActivityEventService activityEventService;
     @Mock
     private StudyEnrollmentService studyEnrollmentService;
+    @Mock
+    private SubpopulationService subpopService;
 
     private Study study;
     private User user;
@@ -90,6 +94,7 @@ public class ConsentServiceImplMockTest {
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
         consentService.setStudyEnrollmentService(studyEnrollmentService);
+        consentService.setSubpopulationService(subpopService);
         
         study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
         user = new User();
@@ -98,9 +103,40 @@ public class ConsentServiceImplMockTest {
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1990-01-01")
                 .withSignedOn(UNIX_TIMESTAMP).build();
         
+        user.setConsentStatuses(ConsentStatus.toMap(
+                new ConsentStatus.Builder().withName("Name").withGuid(SUBPOP_GUID).withConsented(false).withRequired(true).build()));
+        
         account = spy(new SimpleAccount()); // mock(Account.class);
         when(accountDao.getAccount(any(Study.class), any(String.class))).thenReturn(account);
         
+        StudyConsentView studyConsentView = mock(StudyConsentView.class);
+        when(studyConsentView.getCreatedOn()).thenReturn(1000L);
+        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(studyConsentView);
+    }
+    
+    @Test
+    public void userCannotGetConsentForSubpopulationToWhichTheyAreNotMapped() {
+        SubpopulationGuid badGuid = SubpopulationGuid.create("not-correct");
+        
+        when(subpopService.getSubpopulation(study, badGuid)).thenThrow(new EntityNotFoundException(Subpopulation.class));
+        try {
+            consentService.getConsentSignature(study, SubpopulationGuid.create("not-correct"), user);
+            fail("Should have thrown exception.");
+        } catch(EntityNotFoundException e) {
+            assertEquals("Subpopulation not found.", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void userCannotConsentToSubpopulationToWhichTheyAreNotMapped() {
+        SubpopulationGuid badGuid = SubpopulationGuid.create("not-correct");
+        
+        try {
+            consentService.consentToResearch(study, badGuid, user, consentSignature, SharingScope.NO_SHARING, false);
+            fail("Should have thrown exception.");
+        } catch(EntityNotFoundException e) {
+            assertEquals("Subpopulation not found.", e.getMessage());
+        }
     }
     
     @Test

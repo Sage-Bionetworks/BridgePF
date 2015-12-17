@@ -146,10 +146,9 @@ public class ConsentServiceImpl implements ConsentService {
         
         UserConsent userConsent = null;
         try {
-            userConsent = userConsentDao.giveConsent(
-                    user.getHealthCode(), subpopGuid, studyConsent.getCreatedOn(), consentSignature.getSignedOn());
+            userConsent = userConsentDao.giveConsent(user.getHealthCode(), subpopGuid, studyConsent.getCreatedOn(),
+                    consentSignature.getSignedOn());
         } catch (Throwable e) {
-            e.printStackTrace(); // REMOVEME
             int len = account.getConsentSignatureHistory(subpopGuid).size();
             account.getConsentSignatureHistory(subpopGuid).remove(len-1);
             accountDao.updateAccount(study, account);
