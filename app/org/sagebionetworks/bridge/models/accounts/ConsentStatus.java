@@ -41,6 +41,11 @@ public final class ConsentStatus {
         return null;
     }
 
+    /**
+     * Has the user consented to all the required consents?
+     * @param statuses
+     * @return
+     */
     public static boolean isUserConsented(Collection<ConsentStatus> statuses) {
         checkNotNull(statuses);
         return !statuses.isEmpty() && statuses.stream().allMatch(status -> {
@@ -50,6 +55,7 @@ public final class ConsentStatus {
 
     /**
      * Are all the required consents up-to-date?
+     * @param statuses
      * @return
      */
     public static boolean isConsentCurrent(Collection<ConsentStatus> statuses) {
