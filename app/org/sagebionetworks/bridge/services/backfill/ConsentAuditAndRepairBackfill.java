@@ -124,8 +124,20 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
                 }
                 
             } else if (!account.getConsentSignatures().isEmpty()) {
-                // This is an error state, one of these should be active, it should be impossible to get here.
-                callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but there's no active signature: " + account.getId()));
+                // This can happen because people withdraw from a study. It's okay, but interesting... we still wonder if this person
+                // has a record.
+                StudyIdentifier studyId = account.getStudyIdentifier();
+                String healthCode = getHealthCode(task, callback, account);
+                if (healthCode != null) {
+                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, studyId);
+                    if (consent == null) {
+                        callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no active signature and no DDB consent record (error state?): " + account.getId()));
+                    } else {
+                        callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no active signature (expected withdrawn state): " + account.getId()));
+                    }
+                } else {
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no healthCode (error state): " + account.getId()));    
+                }
             }
         }
         callback.newRecords(getBackfillRecordFactory().createOnly(task, "Repaired "+repaired+" out of "+total+" records."));
