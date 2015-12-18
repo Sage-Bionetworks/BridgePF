@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +29,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
@@ -367,11 +370,20 @@ public class StormpathAccountTest {
         // to customData stub.
         acct.getAccount();
         
-        Integer version = (Integer)data.get(SUBPOP_GUID.getGuid()+"_consent_signatures_version");
+        // These are being stored in customData correctly... it's still a stub implementation without 
+        // encryption though... see StormpathAccountDaoTest.canSetAndRetrieveConsentsForMultipleSubpopulations()
+        // where this is really tested against Stormpath, including encryption.
+        verifyOneConsentStream(SUBPOP_GUID, sig1);
+        verifyOneConsentStream(SUBPOP_GUID_2, sig2);
+    }
+
+    private void verifyOneConsentStream(SubpopulationGuid guid, ConsentSignature sig1)
+            throws IOException, JsonParseException, JsonMappingException {
+        Integer version = (Integer)data.get(guid.getGuid()+"_consent_signatures_version");
         assertEquals(new Integer(2), version);
         
         // The mock implementation of customData prefixes stuff... we'll unprefix it and parse it into JSON 
-        String contentJson = (String)data.get(SUBPOP_GUID.getGuid()+"_consent_signatures");
+        String contentJson = (String)data.get(guid.getGuid()+"_consent_signatures");
         assertTrue(contentJson.startsWith("encrypted-2-"));
         
         String json = contentJson.substring("encrypted-2-".length(), contentJson.length());
