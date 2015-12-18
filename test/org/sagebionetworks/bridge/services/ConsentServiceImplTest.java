@@ -111,13 +111,12 @@ public class ConsentServiceImplTest {
     }
 
     @After
-    public void afterDeleteUser() {
-        helper.deleteUser(testUser);
-    }
-    
-    @After
-    public void afterDeleteStudy() {
-        studyService.deleteStudy(study.getIdentifier());
+    public void after() {
+        try {
+            helper.deleteUser(testUser);    
+        } finally {
+            studyService.deleteStudy(study.getIdentifier());    
+        }
     }
 
     @Test
