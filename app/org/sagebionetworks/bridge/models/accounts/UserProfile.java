@@ -20,6 +20,7 @@ public class UserProfile {
     public static final String EMAIL_FIELD = "email";
     public static final String USERNAME_FIELD = "username";
     public static final String HEALTH_CODE_FIELD = "healthCode";
+    public static final String SUBPOPULATION_NAMES_FIELD = "subpopulations";
     public static final String EXTERNAL_ID_FIELD = "externalId";
     
     /**

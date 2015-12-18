@@ -5,6 +5,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public interface UserAdminService {
 
@@ -16,6 +17,8 @@ public interface UserAdminService {
      *            sign up information for the target user
      * @param userStudy
      *            the study of the target user
+     * @param subpopGuid
+     *            the subpopulation to consent to (if null, it will use the default/study subpopulation).
      * @param signUserIn
      *            sign user into Bridge web application in as part of the creation process
      * @param consentUser
@@ -24,7 +27,8 @@ public interface UserAdminService {
      *
      * @throws BridgeServiceException
      */
-    public UserSession createUser(SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser);
+    public UserSession createUser(SignUp signUp, Study userStudy, SubpopulationGuid subpopGuid,
+            boolean signUserIn, boolean consentUser);
 
     /**
      * Delete the target user.

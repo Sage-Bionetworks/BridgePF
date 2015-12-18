@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.subpopulations;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -26,6 +26,10 @@ public class StudyConsentView {
         this.documentContent = documentContent;
     }
 
+    public String getSubpopulationGuid() {
+        return consent.getSubpopulationGuid();
+    }
+    
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getCreatedOn() {
         return consent.getCreatedOn();

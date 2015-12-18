@@ -6,12 +6,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -59,6 +62,15 @@ public class UserTest {
     }
     
     @Test
+    public void immutableConsentStatuses() {
+        User user = new User();
+        assertTrue(user.getConsentStatuses() instanceof ImmutableMap);
+        
+        user.setConsentStatuses(new HashMap<>());
+        assertTrue(user.getConsentStatuses() instanceof ImmutableMap);
+    }
+    
+    @Test
     public void userIsInRoleSet() {
         User user = new User();
         user.setRoles(Sets.newHashSet(Roles.ADMIN, Roles.DEVELOPER));
@@ -67,5 +79,72 @@ public class UserTest {
         
         user = new User();
         assertFalse(user.isInRole(Roles.ADMINISTRATIVE_ROLES));
+    }
+    
+    @Test
+    public void noConsentsProperlySetsBooleans() {
+        User user = new User();
+        assertFalse(user.doesConsent());
+        assertFalse(user.hasSignedMostRecentConsent());
+    }
+    
+    @Test
+    public void hasUserConsentedWorks() {
+        // Empty consent list... you are not considered consented
+        User user = new User();
+        user.setConsentStatuses(new HashMap<>());
+        assertFalse(user.doesConsent());
+        
+        // All required consents are consented, even one that's not up-to-date
+        user = new User();
+        user.setConsentStatuses(TestUtils.toMap(
+            new ConsentStatus("Name", "guid1", true, true, false),
+            new ConsentStatus("Name", "guid2", true, true, true),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        assertTrue(user.doesConsent());
+        
+        // A required consent is not consented
+        user = new User();
+        user.setConsentStatuses(TestUtils.toMap(
+            new ConsentStatus("Name", "guid1", true, true, false),
+            new ConsentStatus("Name", "guid2", true, false, false),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        assertFalse(user.doesConsent());
+    }
+    
+    @Test
+    public void areConsentsUpToDateWorks() {
+        // Empty consent list... you are not considered consented
+        User user = new User();
+        user.setConsentStatuses(new HashMap<>());
+        assertFalse(user.hasSignedMostRecentConsent());
+        
+        // All required consents are consented, even one that's not up-to-date
+        user = new User();
+        user.setConsentStatuses(TestUtils.toMap(
+            new ConsentStatus("Name", "guid1", true, true, false),
+            new ConsentStatus("Name", "guid2", true, true, true),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        assertFalse(user.hasSignedMostRecentConsent());
+        
+        // A required consent is not consented
+        user = new User();
+        user.setConsentStatuses(TestUtils.toMap(
+            new ConsentStatus("Name", "guid1", true, true, false),
+            new ConsentStatus("Name", "guid2", true, false, false),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        assertFalse(user.hasSignedMostRecentConsent());
+        
+        user = new User();
+        user.setConsentStatuses(TestUtils.toMap(
+            new ConsentStatus("Name", "guid1", true, true, true),
+            new ConsentStatus("Name", "guid3", false, false, false)
+        ));
+        // Again, we don't count optional consents, only required consents.
+        assertTrue(user.hasSignedMostRecentConsent());
     }
 }

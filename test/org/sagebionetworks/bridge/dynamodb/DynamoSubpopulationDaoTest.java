@@ -24,9 +24,13 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import com.google.common.collect.Sets;
 
@@ -43,6 +47,9 @@ public class DynamoSubpopulationDaoTest {
     
     @Resource
     DynamoSubpopulationDao dao;
+    
+    @Resource
+    StudyConsentService studyConsentService;
     
     @BeforeClass
     public static void beforeClass() {
@@ -64,17 +71,19 @@ public class DynamoSubpopulationDaoTest {
     public void crudSubpopulationOK() {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setMinAppVersion(2);
         subpop.setMaxAppVersion(10);
+        subpop.setRequired(true);
         
         // CREATE
         Subpopulation savedSubpop = dao.createSubpopulation(subpop);
-        assertNotNull(savedSubpop.getGuid());
+        assertNotNull(savedSubpop.getGuidString());
         assertNotNull(savedSubpop.getVersion());
         assertFalse(savedSubpop.isDefaultGroup()); // was not set to true
+        assertTrue(savedSubpop.isRequired());
         
         // READ
         Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
@@ -83,10 +92,14 @@ public class DynamoSubpopulationDaoTest {
         // UPDATE
         retrievedSubpop.setName("Name 2");
         retrievedSubpop.setDescription("Description 2");
+        retrievedSubpop.setRequired(false);
         Subpopulation finalSubpop = dao.updateSubpopulation(retrievedSubpop);
         
         // With this change, they should be equivalent using value equality
         retrievedSubpop.setVersion(finalSubpop.getVersion());
+        assertEquals("Name 2", retrievedSubpop.getName());
+        assertEquals("Description 2", retrievedSubpop.getDescription());
+        assertFalse(retrievedSubpop.isRequired());
         assertEquals(retrievedSubpop, finalSubpop);
 
         // Some further things that should be true:
@@ -120,10 +133,12 @@ public class DynamoSubpopulationDaoTest {
     public void getSubpopulationsWillCreateDefault() {
         List<Subpopulation> subpops = dao.getSubpopulations(studyId, true, false);
         assertEquals(1, subpops.size());
+        assertTrue(subpops.get(0).isDefaultGroup());
+        assertTrue(subpops.get(0).isRequired());
 
         Subpopulation subpop = subpops.get(0);
         assertEquals("Default Consent Group", subpop.getName());
-        assertEquals(studyId.getIdentifier(), subpop.getGuid());
+        assertEquals(studyId.getIdentifier(), subpop.getGuidString());
         assertTrue(subpop.isDefaultGroup());
         
         // Cannot set this group to be unrequired
@@ -167,7 +182,7 @@ public class DynamoSubpopulationDaoTest {
     @Test
     public void cannotDeleteOrRequireSubpopOnCreate() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier("AAA");
         subpop.setDeleted(true);
         subpop.setDefaultGroup(true);
@@ -191,7 +206,7 @@ public class DynamoSubpopulationDaoTest {
     @Test(expected = EntityNotFoundException.class)
     public void cannotUpdateASubpopThatDoesNotExist() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         dao.updateSubpopulation(subpop);
     }
     
@@ -209,9 +224,9 @@ public class DynamoSubpopulationDaoTest {
         // This is not currently called outside of the DAO but it will be when creating studies.
         Subpopulation subpop = dao.createDefaultSubpopulation(studyId);
         assertEquals("Default Consent Group", subpop.getName());
-        assertEquals(studyId.getIdentifier(), subpop.getGuid());
+        assertEquals(studyId.getIdentifier(), subpop.getGuidString());
         assertEquals(studyId.getIdentifier(), subpop.getStudyIdentifier());
-        assertNotNull(subpop.getGuid());
+        assertNotNull(subpop.getGuidString());
         assertNotNull(subpop.getVersion());
     }
     
@@ -224,7 +239,7 @@ public class DynamoSubpopulationDaoTest {
     
     @Test(expected=EntityNotFoundException.class)
     public void deleteNotExistingSubpopulationThrowsException() {
-        dao.deleteSubpopulation(studyId, "guidDoesNotExist");
+        dao.deleteSubpopulation(studyId, SubpopulationGuid.create("guidDoesNotExist"));
     }
     
     /**
@@ -259,11 +274,34 @@ public class DynamoSubpopulationDaoTest {
         assertTrue(results.isEmpty());
     }
     
+    @Test
+    public void deleteAllSubpopulationsDeletesConsents() {
+        Subpopulation subpop = createSubpop("Name", null, null, null);
+        
+        // Consents are created at the service level for this subpopulation, so there's 
+        // no default created. We create a consent.
+        StudyConsentForm form = new StudyConsentForm("<p>Document content.</p>");
+        studyConsentService.addConsent(subpop.getGuid(), form);
+        
+        // There is now a consent, as we expect
+        List<StudyConsent> consents = studyConsentService.getAllConsents(subpop.getGuid());
+        assertFalse(consents.isEmpty());
+        
+        // Delete all subpopulations and verify they are all deleted
+        dao.deleteAllSubpopulations(studyId);
+        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false, true);
+        assertTrue(subpopulations.isEmpty());
+        
+        // As a consequence, consents have all been deleted as well
+        consents = studyConsentService.getAllConsents(subpop.getGuid());
+        assertTrue(consents.isEmpty());
+    }
+    
     private Subpopulation createSubpop(String name, Integer min, Integer max, String group) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setName(name);
-        subpop.setGuid(BridgeUtils.generateGuid());
+        subpop.setGuidString(BridgeUtils.generateGuid());
         if (min != null) {
             subpop.setMinAppVersion(min);
         }

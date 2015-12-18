@@ -18,9 +18,10 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
@@ -39,16 +40,18 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     private static final String SUB_TYPE_HTML = "html";
     private static final String MIME_TYPE_PDF = "application/pdf";
 
-    private User user;
     private Study study;
+    private SubpopulationGuid subpopGuid;
+    private User user;
     private ConsentSignature consentSignature;
     private SharingScope sharingScope;
     private StudyConsentService studyConsentService;
     private String consentTemplate;
 
-    public ConsentEmailProvider(Study study, User user, ConsentSignature consentSignature, SharingScope sharingScope,
+    public ConsentEmailProvider(Study study, SubpopulationGuid subpopGuid, User user, ConsentSignature consentSignature, SharingScope sharingScope,
         StudyConsentService studyConsentService, String consentTemplate) {
         this.study = study;
+        this.subpopGuid = subpopGuid;
         this.user = user;
         this.consentSignature = consentSignature;
         this.sharingScope = sharingScope;
@@ -116,7 +119,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
      * @return
      */
     private String createSignedDocument() {
-        StudyConsentView consent = studyConsentService.getActiveConsent(study.getStudyIdentifier());
+        StudyConsentView consent = studyConsentService.getActiveConsent(subpopGuid);
         String consentAgreementHTML = consent.getDocumentContent();
         String signingDate = FORMATTER.print(DateUtils.getCurrentMillisFromEpoch());
         String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();

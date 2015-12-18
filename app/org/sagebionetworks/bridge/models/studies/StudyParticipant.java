@@ -13,6 +13,12 @@ public final class StudyParticipant extends HashMap<String,String> {
         return (value == null) ? "" : value;
     }
     
+    public String getSubpopulationNames() {
+        return getEmpty(UserProfile.SUBPOPULATION_NAMES_FIELD);
+    }
+    public void setSubpopulationNames(String subpopNames) {
+        put(UserProfile.SUBPOPULATION_NAMES_FIELD, subpopNames);
+    }
     public String getFirstName() {
         return getEmpty(UserProfile.FIRST_NAME_FIELD);
     }

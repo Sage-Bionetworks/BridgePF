@@ -13,8 +13,9 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
@@ -24,6 +25,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SendEmailIntegTest {
 
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(TEST_STUDY_IDENTIFIER);
+    
     private static final String IMG = "iVBORw0KGgoAAAANSUhEUgAAAFAAAAAtCAIAAAC2z3vlAAAAA3NCSVQICAjb" +
             "4U/gAAABhElEQVRoge1Z0Q7DIAgsy/7/l9nDkq5pEUUOMGvvaeuqcB6gMmLm7U54VTuQjdsRfotPiej7QQn4/Z" +
             "3um0uBro62mJyei1ifdp+wFYtzxuewc72iIeewE0RC4GDntw75JSY8pK82rAiKka8/ZoVFGqKLEzonpMMoYd11" +
@@ -58,7 +61,7 @@ public class SendEmailIntegTest {
         user.setEmail("bridge-testing@sagebase.org");
         final Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
-        sendEmailService.sendEmail(new ConsentEmailProvider(study, user, signature, 
+        sendEmailService.sendEmail(new ConsentEmailProvider(study, SUBPOP_GUID, user, signature, 
             SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate));
     }
     

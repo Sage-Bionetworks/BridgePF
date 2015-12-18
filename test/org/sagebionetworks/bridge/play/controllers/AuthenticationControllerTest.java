@@ -18,7 +18,6 @@ import static play.test.Helpers.testServer;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -90,7 +89,7 @@ public class AuthenticationControllerTest {
 
                 // All of a sudden, there's no cookie being set. I have no idea why.
                 assertNotNull("There's a cookie", cookie);
-
+                
                 String sessionToken = cookie.getValue();
                 assertTrue("Cookie is not empty", StringUtils.isNotBlank(sessionToken));
 
@@ -123,13 +122,12 @@ public class AuthenticationControllerTest {
                     WSResponse response = request.post(node).get(TIMEOUT);
                     WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
-                    // Now, try and access schedules in the wrong study (one with a plan), you do not get it.
+                    // Now, try and access the wrong study, you do not get it.
                     // There's actually no easy way to request another study at this point...
                     request = WS.url(TEST_BASE_URL + STUDIES_URL + secondStudy.getIdentifier());
                     request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
                     response = request.get().get(TIMEOUT);
                     assertEquals("{\"message\":\"Caller does not have permission to access this service.\"}", response.getBody());
-                    
                 } finally {
                     if (secondStudy != null) {
                         studyService.deleteStudy(secondStudy.getIdentifier());
@@ -142,7 +140,7 @@ public class AuthenticationControllerTest {
     @Test
     public void adminUserGetsExceptionAccessingParticipantAPI() {
         TestUser dev = helper.getBuilder(AuthenticationControllerTest.class).withConsent(false).withSignIn(false)
-                .withRoles(Roles.DEVELOPER).build();
+                .withStudy(testUser.getStudy()).withRoles(Roles.DEVELOPER).build();
         
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -175,7 +173,7 @@ public class AuthenticationControllerTest {
     }
     
     private void saveSecondStudy() {
-        String id = RandomStringUtils.randomAlphabetic(7).toLowerCase();
+        String id = TestUtils.randomName(AuthenticationControllerTest.class);
         secondStudy = TestUtils.getValidStudy(AuthenticationControllerTest.class);
         secondStudy.setIdentifier(id);
         studyService.createStudy(secondStudy);

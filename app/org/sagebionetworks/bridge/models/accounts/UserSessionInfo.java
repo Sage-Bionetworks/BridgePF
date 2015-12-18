@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.HashMap;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -9,6 +8,10 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.json.SubpopulationGuidDeserializer;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * Greatly trimmed user session object that is embedded in the initial render of the
@@ -26,35 +29,36 @@ public class UserSessionInfo {
     }
 
     private final boolean authenticated;
-    private final boolean signedMostRecentConsent;
-    private final boolean consented;
     private final SharingScope sharingScope;
     private final String sessionToken;
     private final String username;
     private final String environment;
     private final Set<Roles> roles;
     private final Set<String> dataGroups;
+    private final Map<SubpopulationGuid,ConsentStatus> consentStatuses;
 
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
         this.sessionToken = session.getSessionToken();
-        this.signedMostRecentConsent = session.getUser().hasSignedMostRecentConsent();
-        this.consented = session.getUser().doesConsent();
         this.sharingScope = session.getUser().getSharingScope();
         this.username = session.getUser().getUsername();
         this.roles = BridgeUtils.nullSafeImmutableSet(session.getUser().getRoles());
         this.dataGroups = BridgeUtils.nullSafeImmutableSet(session.getUser().getDataGroups());
         this.environment = ENVIRONMENTS.get(session.getEnvironment());
+        this.consentStatuses = session.getUser().getConsentStatuses();
     }
 
     public boolean isAuthenticated() {
         return authenticated;
     }
+    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses() {
+        return consentStatuses;
+    }
     public boolean isConsented() {
-        return consented;
+        return ConsentStatus.isUserConsented(consentStatuses);
     }
     public boolean isSignedMostRecentConsent() {
-        return signedMostRecentConsent;
+        return ConsentStatus.isConsentCurrent(consentStatuses);
     }
     public SharingScope getSharingScope() {
         return sharingScope;

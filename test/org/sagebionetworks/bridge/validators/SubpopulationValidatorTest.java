@@ -10,7 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.google.common.collect.Sets;
 
@@ -36,7 +36,7 @@ public class SubpopulationValidatorTest {
         subpop.setRequired(true);
         subpop.setStudyIdentifier("test-study");
         subpop.setVersion(3L);
-        subpop.setGuid("AAA");
+        subpop.setGuidString("AAA");
         
         Validate.entityThrowingException(validator, subpop);
     }

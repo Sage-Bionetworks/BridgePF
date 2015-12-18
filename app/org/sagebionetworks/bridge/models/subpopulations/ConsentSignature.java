@@ -1,4 +1,6 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.subpopulations;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Objects;
 
@@ -114,6 +116,7 @@ public final class ConsentSignature implements BridgeEntity {
         private Long withdrewOn;
         
         public Builder withConsentSignature(ConsentSignature signature) {
+            checkNotNull(signature);
             this.name = signature.name;
             this.birthdate = signature.birthdate;
             this.imageData = signature.imageData;

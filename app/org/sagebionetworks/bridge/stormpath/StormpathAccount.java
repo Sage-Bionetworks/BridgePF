@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 
@@ -16,12 +16,15 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  * Account values are decrypted with the appropriate Encryptor implementation based on the version 
@@ -53,15 +56,12 @@ class StormpathAccount implements Account {
     private final StudyIdentifier studyIdentifier;
     private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final String healthIdKey;
-    private final String consentSignatureKey;
-    private final String consentSignaturesKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
     private final Set<Roles> roles;
+    private Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
     
-    private List<ConsentSignature> signatures;
-    
-    StormpathAccount(StudyIdentifier studyIdentifier, com.stormpath.sdk.account.Account acct,
+    StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
         checkNotNull(studyIdentifier);
         checkNotNull(acct);
@@ -73,26 +73,28 @@ class StormpathAccount implements Account {
         this.studyIdentifier = studyIdentifier;
         this.encryptors = encryptors;
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
-        this.consentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
-        this.consentSignaturesKey = studyId + CONSENT_SIGNATURES_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.roles = BridgeUtils.convertRolesQuietly(acct.getGroups());
+        this.allSignatures = Maps.newHashMap();
         
-        signatures = decryptJSONFrom(consentSignaturesKey, CONSENT_SIGNATURES_TYPE);
-        if (signatures == null) {
-            signatures = new ArrayList<>();
-        }
-        if (signatures.isEmpty()) {
-            ConsentSignature sig = decryptJSONFrom(consentSignatureKey, ConsentSignature.class);
-            if (sig != null) {
-                signatures.add(sig);
+        for (SubpopulationGuid subpopGuid : subpopGuids) {
+            List<ConsentSignature> signatures = decryptJSONFrom(subpopGuid.getGuid()+CONSENT_SIGNATURES_SUFFIX, CONSENT_SIGNATURES_TYPE);
+            if (signatures == null || signatures.isEmpty()) {
+                ConsentSignature sig = decryptJSONFrom(subpopGuid.getGuid()+CONSENT_SIGNATURE_SUFFIX, ConsentSignature.class);
+                if (sig != null) {
+                    getConsentSignatureHistory(subpopGuid).add(sig);
+                }
+            } else {
+                getConsentSignatureHistory(subpopGuid).addAll(signatures);
             }
         }
     }
     
     com.stormpath.sdk.account.Account getAccount() {
-        encryptJSONTo(consentSignaturesKey, signatures);
+        for (Map.Entry<SubpopulationGuid, List<ConsentSignature>> entry : allSignatures.entrySet()) {
+            encryptJSONTo(entry.getKey().getGuid()+CONSENT_SIGNATURES_SUFFIX, entry.getValue());
+        }
         return acct;
     }
     
@@ -155,8 +157,13 @@ class StormpathAccount implements Account {
         encryptTo(healthIdKey, healthId);
     };
     @Override
-    public List<ConsentSignature> getConsentSignatures() {
-        return signatures;
+    public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {
+        allSignatures.putIfAbsent(subpopGuid, Lists.newArrayList());
+        return allSignatures.get(subpopGuid);
+    }
+    @Override
+    public Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
+        return allSignatures;
     }
     @Override
     public StudyIdentifier getStudyIdentifier() {
@@ -170,28 +177,11 @@ class StormpathAccount implements Account {
     public String getId() {
         return acct.getHref().split("/accounts/")[1];
     }
-    
-    /* May use to encrypt first/last name, though these could just be stored in customData as well
-    private Object[] encryptFieldValue(String field, String value) {
-        if (value == null) {
-            return new Object[] {null, value};
-        }
-        Encryptor encryptor = encryptors.get(encryptors.lastKey());
-        return new Object[] {encryptors.lastKey(), encryptor.encrypt(value)};
-    }
-    private String decryptFieldValue(String field, String encryptedValue) {
-        Integer version = (Integer)acct.getCustomData().get(field+VERSION_SUFFIX);
-        if (version == null) {
-            return encryptedValue;
-        }
-        Encryptor encryptor = encryptors.get(version);
-        return (encryptor == null) ? encryptedValue : encryptor.decrypt(encryptedValue);
-    }
-    */
 
     private void encryptJSONTo(String key, Object value) {
         if (value == null) {
             acct.getCustomData().remove(key);
+            acct.getCustomData().remove(key+VERSION_SUFFIX);
             return;
         }
         try {
@@ -292,8 +282,8 @@ class StormpathAccount implements Account {
     
     @Override
     public String toString() {
-        return String.format("StormpathAccount [username=%s, firstName=%s, lastName=%s, email=%s, roles=%s]",
-                getUsername(), getFirstName(), getLastName(), getEmail(), getRoles());
+        return String.format("StormpathAccount [username=%s, firstName=%s, lastName=%s, email=%s, roles=%s, signatures=%s]",
+                getUsername(), getFirstName(), getLastName(), getEmail(), getRoles(), getAllConsentSignatureHistories());
     }
 
 }

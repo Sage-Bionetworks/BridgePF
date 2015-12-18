@@ -7,17 +7,20 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -28,24 +31,30 @@ import com.google.common.collect.ImmutableList;
 public class DynamoSubpopulationDao implements SubpopulationDao {
     
     private DynamoDBMapper mapper;
+    private StudyConsentDao studyConsentDao;
 
-    /** DynamoDB mapper for the HealthDataRecord table. This is configured by Spring. */
     @Resource(name = "subpopulationDdbMapper")
-    public final void setMapper(DynamoDBMapper mapper) {
+    final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+    
+    @Autowired
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+        this.studyConsentDao = studyConsentDao;
     }
     
     @Override
     public Subpopulation createSubpopulation(Subpopulation subpop) {
         checkNotNull(subpop);
-        checkNotNull(subpop.getGuid());
+        checkNotNull(subpop.getGuidString());
         checkNotNull(subpop.getStudyIdentifier());
 
-        // guid should always be set in service, so it's okay to check with a checkNotNull. But 
-        // if version is present, that's a bad submission from the service user
+        // guid should always be set in service, so it's okay to check with a checkNotNull (returns 500). 
+        // But if version is present, that's a bad submission from the service user, return a 400
         if (subpop.getVersion() != null) { 
             throw new BadRequestException("Subpopulation does not appear to be new (includes version number).");
         }
+        
         // these are completely ignored, if submitted
         subpop.setDeleted(false); 
         subpop.setDefaultGroup(false);
@@ -59,8 +68,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         checkNotNull(subpop.getStudyIdentifier());
         
         // These have to be supplied by the user so if they don't exist, we want a 400-level exception,
-        // not a checkNotNull which translates to a 500 level response
-        if (subpop.getVersion() == null || subpop.getGuid() == null) {
+        if (subpop.getVersion() == null || subpop.getGuidString() == null) {
             throw new BadRequestException("Subpopulation appears to be a new object (no guid or version).");
         }
         StudyIdentifier studyId = new StudyIdentifierImpl(subpop.getStudyIdentifier());
@@ -100,19 +108,21 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     public Subpopulation createDefaultSubpopulation(StudyIdentifier studyId) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
-        subpop.setGuid(studyId.getIdentifier());
+        subpop.setGuidString(studyId.getIdentifier());
         subpop.setName("Default Consent Group");
         subpop.setMinAppVersion(0);
         subpop.setDefaultGroup(true);
+        // The first group is required until the study designers say otherwise
+        subpop.setRequired(true); 
         mapper.save(subpop);
         return subpop;
     }
     
     @Override
-    public Subpopulation getSubpopulation(StudyIdentifier studyId, String guid) {
+    public Subpopulation getSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
         hashKey.setStudyIdentifier(studyId.getIdentifier());
-        hashKey.setGuid(guid);
+        hashKey.setGuidString(subpopGuid.getGuid());
         
         Subpopulation subpop = mapper.load(hashKey);
         if (subpop == null) {
@@ -131,14 +141,15 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public void deleteSubpopulation(StudyIdentifier studyId, String guid) {
-        Subpopulation subpop = getSubpopulation(studyId, guid);
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+        Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
         if (subpop == null || subpop.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
         if (subpop.isDefaultGroup()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }
+        studyConsentDao.deleteAllConsents(subpopGuid);
         subpop.setDeleted(true);
         mapper.save(subpop);
     }
@@ -146,11 +157,12 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public void deleteAllSubpopulations(StudyIdentifier studyId) {
         List<Subpopulation> subpops = getSubpopulations(studyId, false, true);
-        
         if (!subpops.isEmpty()) {
+            for (Subpopulation subpop : subpops) {
+                studyConsentDao.deleteAllConsents(subpop.getGuid());
+            }
             List<FailedBatch> failures = mapper.batchDelete(subpops);
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }
-    
 }

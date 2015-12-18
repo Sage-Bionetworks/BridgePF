@@ -21,8 +21,6 @@ import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
-import org.sagebionetworks.bridge.dao.DistributedLockDao;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -31,40 +29,32 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component("studyService")
 public class StudyServiceImpl implements StudyService {
-
+    
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
-    private DistributedLockDao lockDao;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
-    private StudyConsentService studyConsentService;
-    private StudyConsentDao studyConsentDao;
+    private SubpopulationService subpopService;
 
-    private StudyConsentForm defaultConsentDocument;
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
     private String defaultResetPasswordTemplate;
     private String defaultResetPasswordTemplateSubject;
     
-    @Value("classpath:study-defaults/consent-body.xhtml")
-    final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
-    }
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
@@ -86,10 +76,6 @@ public class StudyServiceImpl implements StudyService {
         this.uploadCertService = uploadCertService;
     }
     @Autowired
-    final void setDistributedLockDao(DistributedLockDao lockDao) {
-        this.lockDao = lockDao;
-    }
-    @Autowired
     final void setValidator(StudyValidator validator) {
         this.validator = validator;
     }
@@ -106,12 +92,8 @@ public class StudyServiceImpl implements StudyService {
         this.cacheProvider = cacheProvider;
     }
     @Autowired
-    final void setStudyConsentService(StudyConsentService studyConsentService) {
-        this.studyConsentService = studyConsentService;
-    }
-    @Autowired
-    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
-        this.studyConsentDao = studyConsentDao;
+    final void setSubpopulationService(SubpopulationService subpopService) {
+        this.subpopService = subpopService;
     }
     
     @Override
@@ -140,40 +122,30 @@ public class StudyServiceImpl implements StudyService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
 
+        study.setActive(true);
+        study.setStrictUploadValidationEnabled(true);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
         Validate.entityThrowingException(validator, study);
 
-        String id = study.getIdentifier();
-        String lockId = null;
-        try {
-            lockId = lockDao.acquireLock(Study.class, id);
-
-            if (studyDao.doesIdentifierExist(study.getIdentifier())) {
-                throw new EntityAlreadyExistsException(study);
-            }
-            
-            // The system is broken if the study does not have a consent. Create a default consent so the study is usable.
-            StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), defaultConsentDocument);
-            studyConsentService.publishConsent(study, view.getCreatedOn());
-            
-            study.setActive(true);
-            study.setStrictUploadValidationEnabled(true);
-
-            String directory = directoryDao.createDirectoryForStudy(study);
-            study.setStormpathHref(directory);
-
-            // do not create certs for whitelisted studies (legacy studies)
-            if (!studyWhitelist.contains(study.getIdentifier())) {
-                uploadCertService.createCmsKeyPair(study.getStudyIdentifier());
-            }
-
-            study = studyDao.createStudy(study);
-            
-            cacheProvider.setStudy(study);
-        } finally {
-            lockDao.releaseLock(Study.class, id, lockId);
+        if (studyDao.doesIdentifierExist(study.getIdentifier())) {
+            throw new EntityAlreadyExistsException(study);
         }
+        
+        subpopService.createDefaultSubpopulation(study);
+        
+        String directory = directoryDao.createDirectoryForStudy(study);
+        study.setStormpathHref(directory);
+
+        // do not create certs for whitelisted studies (legacy studies)
+        if (!studyWhitelist.contains(study.getIdentifier())) {
+            uploadCertService.createCmsKeyPair(study.getStudyIdentifier());
+        }
+
+        study = studyDao.createStudy(study);
+        
+        cacheProvider.setStudy(study);
+
         return study;
     }
     @Override
@@ -209,6 +181,7 @@ public class StudyServiceImpl implements StudyService {
         
         return updatedStudy;
     }
+    
     @Override
     public void deleteStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
@@ -222,16 +195,10 @@ public class StudyServiceImpl implements StudyService {
         if (existing == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
         }
-        String lockId = null;
-        try {
-            lockId = lockDao.acquireLock(Study.class, identifier);
-            studyDao.deleteStudy(existing);
-            studyConsentDao.deleteAllConsents(existing.getStudyIdentifier());
-            directoryDao.deleteDirectoryForStudy(existing);
-            cacheProvider.removeStudy(identifier);
-        } finally {
-            lockDao.releaseLock(Study.class, identifier, lockId);
-        }
+        studyDao.deleteStudy(existing);
+        directoryDao.deleteDirectoryForStudy(existing);
+        subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
+        cacheProvider.removeStudy(identifier);
     }
     
     /**

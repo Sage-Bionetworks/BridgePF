@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -18,20 +18,19 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @DynamoDBTable(tableName = "StudyConsent1")
 public final class DynamoStudyConsent1 implements StudyConsent {
 
-    private String studyKey;
+    private String subpopGuid;
     private long createdOn;
     private boolean active;
     private String storagePath;
     private Long version;
 
     @Override
-    @DynamoDBHashKey
-    @JsonIgnore
-    public String getStudyKey() {
-        return studyKey;
+    @DynamoDBHashKey(attributeName="studyKey")
+    public String getSubpopulationGuid() {
+        return subpopGuid;
     }
-    public void setStudyKey(String studyKey) {
-        this.studyKey = studyKey;
+    public void setSubpopulationGuid(String subpopGuid) {
+        this.subpopGuid = subpopGuid;
     }
 
     @Override
@@ -75,14 +74,7 @@ public final class DynamoStudyConsent1 implements StudyConsent {
     
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hash(active);
-        result = prime * result + Objects.hash(createdOn);
-        result = prime * result + Objects.hash(storagePath);
-        result = prime * result + Objects.hash(studyKey);
-        result = prime * result + Objects.hash(version);
-        return result;
+        return Objects.hash(active, createdOn, storagePath, subpopGuid, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -91,14 +83,14 @@ public final class DynamoStudyConsent1 implements StudyConsent {
         if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoStudyConsent1 other = (DynamoStudyConsent1) obj;
-        return (Objects.equals(active, other.active) && Objects.equals(createdOn, other.createdOn) && 
-                Objects.equals(storagePath, other.storagePath) &&
-                Objects.equals(studyKey, other.studyKey) && Objects.equals(version, other.version));
+        return (Objects.equals(active, other.active) && Objects.equals(createdOn, other.createdOn)
+                && Objects.equals(storagePath, other.storagePath) && Objects.equals(subpopGuid, other.subpopGuid)
+                && Objects.equals(version, other.version));
     }
     
     @Override
     public String toString() {
-        return String.format("DynamoStudyConsent1 [studyKey=%s, createdOn=%s, active=%s, storagePath=%s, version=%s]",
-            studyKey, createdOn, active, storagePath, version);
+        return String.format("DynamoStudyConsent1 [subpopGuid=%s, createdOn=%s, active=%s, storagePath=%s, version=%s]",
+            subpopGuid, createdOn, active, storagePath, version);
     }
 }

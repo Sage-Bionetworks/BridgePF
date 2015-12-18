@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -21,7 +22,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(builder=UserConsentHistory.Builder.class)
 public final class UserConsentHistory {
     private final String healthCode;
-    private final String studyIdentifier;
+    private final SubpopulationGuid subpopulationGuid;
     private final long consentCreatedOn;
     private final String name;
     private final String birthdate;
@@ -31,11 +32,11 @@ public final class UserConsentHistory {
     private final Long withdrewOn;
     private final boolean hasSignedActiveConsent;
     
-    private UserConsentHistory(String healthCode, String studyIdentifier, long consentCreatedOn, String name,
+    private UserConsentHistory(String healthCode, SubpopulationGuid subpopGuid, long consentCreatedOn, String name,
             String birthdate, String imageData, String imageMimeType, long signedOn, Long withdrewOn,
             boolean hasSignedActiveConsent) {
         this.healthCode = healthCode;
-        this.studyIdentifier = studyIdentifier;
+        this.subpopulationGuid = subpopGuid;
         this.consentCreatedOn = consentCreatedOn;
         this.name = name;
         this.birthdate = birthdate;
@@ -50,8 +51,8 @@ public final class UserConsentHistory {
         return healthCode;
     }
 
-    public String getStudyIdentifier() {
-        return studyIdentifier;
+    public String getSubpopulationGuid() {
+        return subpopulationGuid.getGuid();
     }
 
     @JsonSerialize(using = DateTimeToLongSerializer.class)
@@ -91,7 +92,7 @@ public final class UserConsentHistory {
     
     public static class Builder {
         private String healthCode;
-        private String studyIdentifier;
+        private SubpopulationGuid subpopGuid;
         private long consentCreatedOn;
         private String name;
         private String birthdate;
@@ -105,8 +106,8 @@ public final class UserConsentHistory {
             this.healthCode = healthCode;
             return this;
         }
-        public Builder withStudyIdentifier(String studyIdentifier) {
-            this.studyIdentifier = studyIdentifier;
+        public Builder withSubpopulationGuid(SubpopulationGuid guid) {
+            this.subpopGuid = guid;
             return this;
         }
         @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
@@ -146,14 +147,14 @@ public final class UserConsentHistory {
         }
         public UserConsentHistory build() {
             // validation not necessary, this is only created internally.
-            return new UserConsentHistory(healthCode, studyIdentifier, consentCreatedOn, name,
+            return new UserConsentHistory(healthCode, subpopGuid, consentCreatedOn, name,
                     birthdate, imageData, imageMimeType, signedOn, withdrewOn, hasSignedActiveConsent);
         }
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(healthCode, studyIdentifier, consentCreatedOn, name, birthdate, imageData, imageMimeType,
+        return Objects.hash(healthCode, subpopulationGuid, consentCreatedOn, name, birthdate, imageData, imageMimeType,
                 signedOn, withdrewOn, hasSignedActiveConsent);
     }
 
@@ -165,7 +166,7 @@ public final class UserConsentHistory {
             return false;
         UserConsentHistory other = (UserConsentHistory) obj;
         return (Objects.equals(healthCode, other.healthCode) &&
-                Objects.equals(studyIdentifier, other.studyIdentifier) &&
+                Objects.equals(subpopulationGuid, other.subpopulationGuid) &&
                 Objects.equals(consentCreatedOn, other.consentCreatedOn) &&
                 Objects.equals(name, other.name) &&
                 Objects.equals(birthdate, other.birthdate) &&
@@ -178,8 +179,8 @@ public final class UserConsentHistory {
     
     @Override
     public String toString() {
-        return String.format("UserConsentHistory [healthCode=[REDACTED], studyIdentifier=%s, consentCreatedOn=%s, name=[REDACTED], birthdate=[REDACTED], imageData=[REDACTED], imageMimeType=%s, signedOn=%s, withdrewOn=%s, hasSignedActiveConsent=%s]",
-            studyIdentifier, consentCreatedOn, imageMimeType, signedOn, withdrewOn, hasSignedActiveConsent);
+        return String.format("UserConsentHistory [healthCode=[REDACTED], subpopulationGuid=%s, consentCreatedOn=%s, name=[REDACTED], birthdate=[REDACTED], imageData=[REDACTED], imageMimeType=%s, signedOn=%s, withdrewOn=%s, hasSignedActiveConsent=%s]",
+            subpopulationGuid, consentCreatedOn, imageMimeType, signedOn, withdrewOn, hasSignedActiveConsent);
     }
     
 }

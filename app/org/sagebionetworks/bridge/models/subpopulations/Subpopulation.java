@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.subpopulations;
 
 import java.util.Set;
 
@@ -16,9 +16,12 @@ public interface Subpopulation extends Criteria {
     
     public void setStudyIdentifier(String studyIdentifier);
     public String getStudyIdentifier();
-    
-    public void setGuid(String guid);
-    public String getGuid();
+
+    public void setGuidString(String guid);
+    public String getGuidString();
+
+    public void setGuid(SubpopulationGuid guid);
+    public SubpopulationGuid getGuid();
     
     public void setName(String name);
     public String getName();
@@ -58,5 +61,17 @@ public interface Subpopulation extends Criteria {
     public void setMaxAppVersion(Integer minAppVersion);
     public void setAllOfGroups(Set<String> allOfGroups);
     public void setNoneOfGroups(Set<String> noneOfGroups);
+    
+    /**
+     * URL for retrieving the HTML version of the published consent for this study.
+     * @return
+     */
+    public String getConsentHTML();
+    
+    /**
+     * URL for retrieving the PDF version of the published consent for this study.
+     * @return
+     */
+    public String getConsentPDF();
 
 }

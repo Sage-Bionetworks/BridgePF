@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.subpopulations;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -7,9 +7,9 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 public interface StudyConsent extends BridgeEntity {
 
     /**
-     * The study associated with this consent.
+     * The subpopulation associated with this consent.
      */
-    String getStudyKey();
+    String getSubpopulationGuid();
 
     /**
      * Timestamp when this consent is created.

@@ -1,12 +1,14 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 /**
  * Encryption of account values is handled transparently by the account implementation. 
@@ -14,9 +16,10 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
  */
 public interface Account extends BridgeEntity {
 
-    public default ConsentSignature getActiveConsentSignature() {
-        if (!getConsentSignatures().isEmpty()) {
-            ConsentSignature signature = getConsentSignatures().get(getConsentSignatures().size()-1);
+    public default ConsentSignature getActiveConsentSignature(SubpopulationGuid subpopGuid) {
+        List<ConsentSignature> history = getConsentSignatureHistory(subpopGuid);
+        if (!history.isEmpty()) {
+            ConsentSignature signature = history.get(history.size()-1);
             return (signature.getWithdrewOn() == null) ? signature : null;
         }
         return null;
@@ -37,7 +40,9 @@ public interface Account extends BridgeEntity {
     public String getEmail();
     public void setEmail(String email);
     
-    public List<ConsentSignature> getConsentSignatures();
+    public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid);
+    
+    public Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
     
     public String getHealthId();
     public void setHealthId(String healthId);

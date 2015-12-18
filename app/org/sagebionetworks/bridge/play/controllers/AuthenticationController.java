@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -55,9 +56,11 @@ public class AuthenticationController extends BaseController {
         JsonNode json = requestToJSON(request());
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+        
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
-        UserSession session = authenticationService.verifyEmail(study, emailVerification);
+        UserSession session = authenticationService.verifyEmail(study, clientInfo, emailVerification);
         setSessionToken(session.getSessionToken());
         return okResult(new UserSessionInfo(session));
     }
@@ -89,19 +92,20 @@ public class AuthenticationController extends BaseController {
      *
      * @param retryCounter the number of retries, excluding the initial try
      */
-    private Result signInWithRetry(final int retryCounter) throws Exception {
-
+    private Result signInWithRetry(int retryCounter) throws Exception {
         UserSession session = getSessionIfItExists();
         if (session != null) {
             setSessionToken(session.getSessionToken());
             return okResult(new UserSessionInfo(session));
         }
 
-        final JsonNode json = requestToJSON(request());
-        final SignIn signIn = parseJson(request(), SignIn.class);
-        final Study study = getStudyOrThrowException(json);
+        JsonNode json = requestToJSON(request());
+        SignIn signIn = parseJson(request(), SignIn.class);
+        Study study = getStudyOrThrowException(json);
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+        
         try {
-            session = authenticationService.signIn(study, signIn);
+            session = authenticationService.signIn(study, clientInfo, signIn);
         } catch(ConsentRequiredException e) {
             setSessionToken(e.getUserSession().getSessionToken());
             throw e;
@@ -113,7 +117,6 @@ public class AuthenticationController extends BaseController {
             }
             throw e;
         }
-
         setSessionToken(session.getSessionToken());
         return okResult(new UserSessionInfo(session));
     }

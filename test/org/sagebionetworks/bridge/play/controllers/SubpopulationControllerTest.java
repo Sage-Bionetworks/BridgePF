@@ -19,7 +19,9 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -27,7 +29,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
@@ -43,6 +46,7 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class SubpopulationControllerTest {
 
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("AAA");
     private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("test-key");
     private static final TypeReference<ResourceList<Subpopulation>> subpopType = new TypeReference<ResourceList<Subpopulation>>() {};
     
@@ -106,7 +110,7 @@ public class SubpopulationControllerTest {
         Http.Context.current.set(context);
         
         Subpopulation createdSubpop = Subpopulation.create();
-        createdSubpop.setGuid("AAA");
+        createdSubpop.setGuidString("AAA");
         createdSubpop.setVersion(1L);
         doReturn(createdSubpop).when(subpopService).createSubpopulation(eq(study), captor.capture());
 
@@ -135,7 +139,7 @@ public class SubpopulationControllerTest {
         Http.Context.current.set(context);
         
         Subpopulation createdSubpop = Subpopulation.create();
-        createdSubpop.setGuid("AAA");
+        createdSubpop.setGuidString("AAA");
         createdSubpop.setVersion(1L);
         doReturn(createdSubpop).when(subpopService).updateSubpopulation(eq(study), captor.capture());
 
@@ -148,7 +152,7 @@ public class SubpopulationControllerTest {
         assertEquals("GuidVersionHolder", node.get("type").asText());
         
         Subpopulation created = captor.getValue();
-        assertEquals("AAA", created.getGuid());
+        assertEquals("AAA", created.getGuidString());
         assertEquals("Name", created.getName());
         assertEquals("Description", created.getDescription());
         assertTrue(created.isDefaultGroup());
@@ -164,10 +168,10 @@ public class SubpopulationControllerTest {
         Http.Context.current.set(context);
         
         Subpopulation subpop = Subpopulation.create();
-        subpop.setGuid("AAA");
-        doReturn(subpop).when(subpopService).getSubpopulation(STUDY_IDENTIFIER, "AAA");
+        subpop.setGuidString("AAA");
+        doReturn(subpop).when(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
         
-        Result result = controller.getSubpopulation("AAA");
+        Result result = controller.getSubpopulation(SUBPOP_GUID.getGuid());
         
         // Serialization has been tested elsewhere, we're not testing it all here, we're just
         // verifying the object is returned in the API
@@ -177,7 +181,7 @@ public class SubpopulationControllerTest {
         assertEquals("Subpopulation", node.get("type").asText());
         assertEquals("AAA", node.get("guid").asText());
         
-        verify(subpopService).getSubpopulation(STUDY_IDENTIFIER, "AAA");
+        verify(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
     
     @Test
@@ -185,15 +189,55 @@ public class SubpopulationControllerTest {
         Http.Context context = TestUtils.mockPlayContext();
         Http.Context.current.set(context);
 
-        Result result = controller.deleteSubpopulation("AAA");
+        Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid());
         assertEquals(200, result.status());
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         assertEquals("Subpopulation has been deleted.", node.get("message").asText());
         
-        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, "AAA");
+        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
-
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getAllSubpopulationsRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.getAllSubpopulations();
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void createSubpopulationRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.createSubpopulation();
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void updateSubpopulationRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.updateSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getSubpopulationRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void deleteSubpopulationRequiresDeveloper() throws Exception {
+        User user = new User();
+        doReturn(user).when(session).getUser(); // no developer role
+        
+        controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
+    }
+    
     private List<Subpopulation> createSubpopulationList() {
         Subpopulation subpop1 = Subpopulation.create();
         subpop1.setName("Name 1");

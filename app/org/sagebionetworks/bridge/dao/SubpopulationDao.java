@@ -3,8 +3,9 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public interface SubpopulationDao {
 
@@ -41,7 +42,7 @@ public interface SubpopulationDao {
      * Get a specific subpopulation. This always returns the subpopulation whether it is logically deleted or not. 
      * @return subpopulation
      */
-    public Subpopulation getSubpopulation(StudyIdentifier studyId, String guid);
+    public Subpopulation getSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid);
     
     /**
      * Get all subpopulations for a user that match the provided ScheduleContext information. Returns an empty
@@ -64,11 +65,12 @@ public interface SubpopulationDao {
      * @param studyId
      * @param guid
      */
-    public void deleteSubpopulation(StudyIdentifier studyId, String guid);
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid);
     
     /**
      * Delete all subpopulations. This is a physical delete and not a logical delete, and is not exposed 
-     * in the API. This is used when deleting a study, as part of a test, for example.
+     * in the API. This deletes everything, including the default subpopulation. This is used when 
+     * deleting a study, as part of a test, for example.
      * @param studyId
      */
     public void deleteAllSubpopulations(StudyIdentifier studyId);

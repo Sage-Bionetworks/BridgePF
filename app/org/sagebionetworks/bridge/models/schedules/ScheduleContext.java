@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -200,15 +202,16 @@ public final class ScheduleContext {
         }
         
         public ScheduleContext build() {
+            checkNotNull(studyId, "studyId cannot be null");
+            // pretty much everything else is optional. I would like healthCode to be required, but it's not:
+            // we use these selection criteria to select subpopulations on sign up.
             if (now == null) {
                 now = (zone == null) ? DateTime.now() : DateTime.now(zone);
             }
-            ScheduleContext context = new ScheduleContext(studyId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
-            // Not validating here. There are many tests to confirm that the scheduler will work with different 
-            // time windows, but the validator ensures the context object is within the declared allowable
-            // time window. This is validated in ScheduledActivityService.
-            //Validate.nonEntityThrowingException(VALIDATOR, context);
-            return context;
+            if (clientInfo == null) {
+                clientInfo = ClientInfo.UNKNOWN_CLIENT;
+            }
+            return new ScheduleContext(studyId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
         }
     }
     

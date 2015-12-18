@@ -1,45 +1,42 @@
 package org.sagebionetworks.bridge.stormpath;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.anyBoolean;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.Iterator;
+import java.util.List;
 
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
-import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
+import org.sagebionetworks.bridge.services.SubpopulationService;
+
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
-import com.stormpath.sdk.directory.Directory;
-import com.stormpath.sdk.resource.ResourceException;
-import com.stormpath.sdk.tenant.Tenant;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -52,12 +49,18 @@ public class StormpathAccountDaoTest {
     
     @Resource
     private StudyServiceImpl studyService;
+
+    @Resource
+    private SubpopulationService subpopService;
     
     private Study study;
+    
+    private Subpopulation subpop;
     
     @Before
     public void setUp() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
+        subpop = subpopService.getSubpopulations(study).get(0);
     }
     
     @Test
@@ -130,6 +133,7 @@ public class StormpathAccountDaoTest {
         String email = "bridge-testing+"+random+"@sagebridge.org";
         Account account = null;
         try {
+            // Sign Up
             long signedOn = DateUtils.getCurrentMillisFromEpoch();
             ConsentSignature sig = new ConsentSignature.Builder().withName("Test Test").withBirthdate("1970-01-01")
                     .withSignedOn(signedOn).build();
@@ -143,9 +147,10 @@ public class StormpathAccountDaoTest {
             account.setAttribute("phone", "123-456-7890");
             account.setHealthId("abc");
             account.setUsername(random);
-            account.getConsentSignatures().add(sig);
+            account.getConsentSignatureHistory(subpop.getGuid()).add(sig);
             account.setAttribute("attribute_one", "value of attribute one");
             
+            // Update Account
             accountDao.updateAccount(study, account);
             Account newAccount = accountDao.getAccount(study, account.getEmail());
             assertNotNull(newAccount.getEmail());
@@ -156,9 +161,11 @@ public class StormpathAccountDaoTest {
             assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
             assertEquals(account.getHealthId(), newAccount.getHealthId());
             assertEquals(account.getUsername(), newAccount.getUsername());
-            assertEquals(account.getActiveConsentSignature(), newAccount.getActiveConsentSignature());
-            assertEquals(account.getActiveConsentSignature().getSignedOn(), newAccount.getActiveConsentSignature().getSignedOn());
-            assertEquals(signedOn, newAccount.getActiveConsentSignature().getSignedOn());
+            assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
+                    newAccount.getActiveConsentSignature(subpop.getGuid()));
+            assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
+                    newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
+            assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
             assertEquals(1, newAccount.getRoles().size());
             assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
             assertEquals("value of attribute one", account.getAttribute("attribute_one"));
@@ -201,102 +208,57 @@ public class StormpathAccountDaoTest {
             accountDao.deleteAccount(study, signUp.getEmail());
         }
     }
-
-    @Test
-    public void verifyEmail() {
-        StormpathAccountDao dao = new StormpathAccountDao();
-        
-        EmailVerification verification = new EmailVerification("tokenAAA");
-        
-        Client client = mock(Client.class);
-        Tenant tenant = mock(Tenant.class);
-        when(client.getCurrentTenant()).thenReturn(tenant);
-        dao.setStormpathClient(client);
-        
-        dao.verifyEmail(study, verification);
-        verify(client).verifyAccountEmail("tokenAAA");
-    }
-
-    @Test
-    public void requestResetPassword() {
-        String emailString = "bridge-tester+43@sagebridge.org";
-        
-        Application application = mock(Application.class);
-        Directory directory = mock(Directory.class);
-        Client client = mock(Client.class);
-        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
-        
-        StormpathAccountDao dao = new StormpathAccountDao();
-        dao.setStormpathApplication(application);
-        dao.setStormpathClient(client);
-        
-        dao.requestResetPassword(study, new Email(study.getStudyIdentifier(), emailString));
-        
-        verify(client).getResource(study.getStormpathHref(), Directory.class);
-        verify(application).sendPasswordResetEmail(emailString, directory);
-    }
-    
-    @Test(expected = BridgeServiceException.class)
-    public void requestPasswordRequestThrowsException() {
-        String emailString = "bridge-tester+43@sagebridge.org";
-        
-        Application application = mock(Application.class);
-        Directory directory = mock(Directory.class);
-        Client client = mock(Client.class);
-        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
-        
-        StormpathAccountDao dao = new StormpathAccountDao();
-        dao.setStormpathApplication(application);
-        dao.setStormpathClient(client);
-        
-        com.stormpath.sdk.error.Error error = mock(com.stormpath.sdk.error.Error.class);
-        ResourceException e = new ResourceException(error);
-        when(application.sendPasswordResetEmail(emailString, directory)).thenThrow(e);
-        dao.setStormpathApplication(application);
-        
-        dao.requestResetPassword(study, new Email(study.getStudyIdentifier(), emailString));
-    }
-
-    @Test
-    public void resetPassword() {
-        StormpathAccountDao dao = new StormpathAccountDao();
-        PasswordReset passwordReset = new PasswordReset("password", "sptoken");
-        
-        Application application = mock(Application.class);
-        dao.setStormpathApplication(application);
-        
-        dao.resetPassword(passwordReset);
-        verify(application).resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
-        verifyNoMoreInteractions(application);
-    }
     
     @Test
-    public void stormpathAccountCorrectlyInitialized() {
-        StormpathAccountDao dao = new StormpathAccountDao();
+    public void canSetAndRetrieveConsentsForMultipleSubpopulations() {
+        // Need to mock out the retrieval of these two subpopulations for the purpose
+        // of this test
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setGuidString("test1");
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setGuidString("test2");
         
-        Directory directory = mock(Directory.class);
-        com.stormpath.sdk.account.Account account = mock(com.stormpath.sdk.account.Account.class);
-        when(account.getCustomData()).thenReturn(mock(CustomData.class));
-        Client client = mock(Client.class);
+        SubpopulationService mockSubpopService = mock(SubpopulationService.class);
+        when(mockSubpopService.getSubpopulations(study)).thenReturn(Lists.newArrayList(subpop1, subpop2));
+        accountDao.setSubpopulationService(mockSubpopService);
         
-        when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(account);
-        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
-        dao.setStormpathClient(client);
+        ConsentSignature sig1 = new ConsentSignature.Builder()
+                .withName("Name 1")
+                .withBirthdate("2000-10-10")
+                .withSignedOn(DateTime.now().getMillis())
+                .build();
         
+        ConsentSignature sig2 = new ConsentSignature.Builder()
+                .withName("Name 2")
+                .withBirthdate("2000-02-02")
+                .withSignedOn(DateTime.now().getMillis())
+                .build();
+
         String random = RandomStringUtils.randomAlphabetic(5);
-        String email = "bridge-testing+"+random+"@sagebridge.org";
-        SignUp signUp = new SignUp(random, email, PASSWORD, null, null);
-        dao.signUp(study, signUp, false);
+        SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null); 
+        try {
+            Account account = accountDao.signUp(study, signUp, false); // don't send email
+            
+            account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
+            account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);
+            accountDao.updateAccount(study, account);
+            
+            account = accountDao.getAccount(study, account.getEmail());
+            
+            List<ConsentSignature> history1 = account.getConsentSignatureHistory(subpop1.getGuid());
+            assertEquals(1, history1.size());
+            assertEquals(sig1, history1.get(0));
+            assertEquals(sig1, account.getActiveConsentSignature(subpop1.getGuid()));
+            
+            List<ConsentSignature> history2 = account.getConsentSignatureHistory(subpop2.getGuid());
+            assertEquals(1, history2.size());
+            assertEquals(sig2, history2.get(0));
+            assertEquals(sig2, account.getActiveConsentSignature(subpop2.getGuid()));
 
-        ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);
-        verify(directory).createAccount(argument.capture(), anyBoolean());
+        } finally {
+            accountDao.deleteAccount(study, signUp.getEmail());
+        }
         
-        com.stormpath.sdk.account.Account acct = argument.getValue();
-        verify(acct).setSurname("<EMPTY>");
-        verify(acct).setGivenName("<EMPTY>");
-        verify(acct).setUsername(random);
-        verify(acct).setEmail(email);
-        verify(acct).setPassword(PASSWORD);
     }
-
+    
 }

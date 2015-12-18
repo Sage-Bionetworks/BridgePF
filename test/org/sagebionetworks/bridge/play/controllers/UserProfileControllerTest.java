@@ -5,10 +5,13 @@ import static play.test.Helpers.contentAsString;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -21,6 +24,7 @@ import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -74,6 +78,20 @@ public class UserProfileControllerTest {
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("Data groups updated.", node.get("message").asText());
+    }
+    
+    @SuppressWarnings({"unchecked"})
+    @Test
+    public void invalidDataGroupsRejected() throws Exception {
+        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}"));
+        UserProfileController controller = controllerForExternalIdTests();
+        try {
+            controller.updateDataGroups();
+            fail("Should have thrown an exception");
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("DataGroups is invalid"));
+            verify(optionsService, never()).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), any(Set.class));
+        }
     }
 
     @Test

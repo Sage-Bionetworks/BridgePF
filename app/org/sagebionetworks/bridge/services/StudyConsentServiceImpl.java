@@ -21,16 +21,15 @@ import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.validators.StudyConsentValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -62,36 +61,32 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.fullPageTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-
     @Autowired
-    public void setValidator(StudyConsentValidator validator) {
+    final void setValidator(StudyConsentValidator validator) {
         this.validator = validator;
     }
-    
     @Autowired
-    public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
-    
     @Resource(name = "s3ConsentsHelper")
-    public void set(S3Helper helper) {
+    final void setS3Helper(S3Helper helper) {
         this.s3Helper = helper;
     }
     
     @Override
-    public StudyConsentView addConsent(StudyIdentifier studyIdentifier, StudyConsentForm form) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
-        checkNotNull(form, "Study consent is null");
+    public StudyConsentView addConsent(SubpopulationGuid subpopGuid, StudyConsentForm form) {
+        checkNotNull(subpopGuid);
+        checkNotNull(form);
         
         String sanitizedContent = sanitizeHTML(form.getDocumentContent());
         Validate.entityThrowingException(validator, new StudyConsentForm(sanitizedContent));
-        
+
         DateTime createdOn = DateUtils.getCurrentDateTime();
-        String storagePath = studyIdentifier.getIdentifier() + "." + createdOn.getMillis();
-        
+        String storagePath = subpopGuid.getGuid() + "." + createdOn.getMillis();
         try {
             s3Helper.writeBytesToS3(CONSENTS_BUCKET, storagePath, sanitizedContent.getBytes());
-            StudyConsent consent = studyConsentDao.addConsent(studyIdentifier, storagePath, createdOn);
+            StudyConsent consent = studyConsentDao.addConsent(subpopGuid, storagePath, createdOn);
             return new StudyConsentView(consent, sanitizedContent);
         } catch(Throwable t) {
             throw new BridgeServiceException(t);
@@ -99,10 +94,10 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
 
     @Override
-    public StudyConsentView getActiveConsent(StudyIdentifier studyIdentifier) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
+    public StudyConsentView getActiveConsent(SubpopulationGuid subpopGuid) {
+        checkNotNull(subpopGuid);
         
-        StudyConsent consent = studyConsentDao.getActiveConsent(studyIdentifier);
+        StudyConsent consent = studyConsentDao.getActiveConsent(subpopGuid);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -111,10 +106,10 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
     
     @Override
-    public StudyConsentView getMostRecentConsent(StudyIdentifier studyIdentifier) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
+    public StudyConsentView getMostRecentConsent(SubpopulationGuid subpopGuid) {
+        checkNotNull(subpopGuid);
         
-        StudyConsent consent = studyConsentDao.getMostRecentConsent(studyIdentifier);
+        StudyConsent consent = studyConsentDao.getMostRecentConsent(subpopGuid);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -123,22 +118,18 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
 
     @Override
-    public List<StudyConsent> getAllConsents(StudyIdentifier studyIdentifier) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
+    public List<StudyConsent> getAllConsents(SubpopulationGuid subpopGuid) {
+        checkNotNull(subpopGuid);
         
-        List<StudyConsent> consents = studyConsentDao.getConsents(studyIdentifier);
-        if (consents == null || consents.isEmpty()) {
-            throw new BadRequestException("There are no consent records.");
-        }
-        return consents;
+        return studyConsentDao.getConsents(subpopGuid);
     }
 
     @Override
-    public StudyConsentView getConsent(StudyIdentifier studyIdentifier, long timestamp) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
+    public StudyConsentView getConsent(SubpopulationGuid subpopGuid, long timestamp) {
+        checkNotNull(subpopGuid);
         checkArgument(timestamp > 0, "Timestamp is 0");
         
-        StudyConsent consent = studyConsentDao.getConsent(studyIdentifier, timestamp);
+        StudyConsent consent = studyConsentDao.getConsent(subpopGuid, timestamp);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -147,18 +138,19 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
 
     @Override
-    public StudyConsentView publishConsent(Study study, long timestamp) {
-        checkNotNull(study, "Study is null");
+    public StudyConsentView publishConsent(Study study, SubpopulationGuid subpopGuid, long timestamp) {
+        checkNotNull(study);
+        checkNotNull(subpopGuid);
         checkArgument(timestamp > 0, "Timestamp is 0");
         
-        StudyConsent consent = studyConsentDao.getConsent(study.getStudyIdentifier(), timestamp);
+        StudyConsent consent = studyConsentDao.getConsent(subpopGuid, timestamp);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
         // Only if we can publish the document, do we mark it as published in the database.
         String documentContent = loadDocumentContent(consent);
         try {
-            publishFormatsToS3(study, documentContent);
+            publishFormatsToS3(study, subpopGuid, documentContent);
             consent = studyConsentDao.publish(consent);
         } catch(IOException | DocumentException e) {
             throw new BridgeServiceException(e.getMessage());
@@ -183,7 +175,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         return document.body().html();
     }
     
-    private void publishFormatsToS3(Study study, String bodyTemplate) throws DocumentException, IOException {
+    private void publishFormatsToS3(Study study, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
         Map<String,String> map = Maps.newHashMap();
         map.put("studyName", study.getName());
         map.put("supportEmail", study.getSupportEmail());
@@ -196,7 +188,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         map.put("consent.body", resolvedHTML);
         resolvedHTML = BridgeUtils.resolveTemplate(fullPageTemplate, map);
         
-        String key = study.getIdentifier()+"/consent.html";
+        String key = subpopGuid.getGuid()+"/consent.html";
         byte[] bytes = resolvedHTML.getBytes(Charset.forName(("UTF-8")));
         s3Helper.writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, bytes, MimeType.HTML);
         
@@ -208,7 +200,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
             renderer.createPDF(buffer);
             buffer.flush();
             
-            key = study.getIdentifier()+"/consent.pdf";
+            key = subpopGuid.getGuid()+"/consent.pdf";
             s3Helper.writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, buffer.toByteArray(), MimeType.PDF);
         }
     }

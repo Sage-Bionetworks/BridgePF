@@ -8,7 +8,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
+
 import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.Resource;
 

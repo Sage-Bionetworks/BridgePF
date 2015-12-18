@@ -1,13 +1,17 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -27,7 +31,7 @@ public class DynamoSubpopulationTest {
         Subpopulation subpop = new DynamoSubpopulation();
         subpop.setName("Name");
         subpop.setDescription("Description");
-        subpop.setGuid("guid");
+        subpop.setGuidString("guid");
         subpop.setStudyIdentifier("study-key");
         subpop.setMinAppVersion(2);
         subpop.setMaxAppVersion(10);
@@ -62,5 +66,53 @@ public class DynamoSubpopulationTest {
         newSubpop.setDeleted(true);
         
         assertEquals(subpop, newSubpop);
+        
+        // Finally, check the publication site URLs
+        assertEqualsAndNotNull(newSubpop.getConsentHTML(), JsonUtils.asText(node, "consentHTML"));
+        assertEqualsAndNotNull(newSubpop.getConsentPDF(), JsonUtils.asText(node, "consentPDF"));
+
+        String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuidString() + "/consent.html";
+        assertEquals(htmlURL, newSubpop.getConsentHTML());
+        
+        String pdfURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuidString() + "/consent.pdf";
+        assertEquals(pdfURL, newSubpop.getConsentPDF());
     }
+    
+    @Test
+    public void guidAndGuidStringInterchangeable() throws Exception {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuid(SubpopulationGuid.create("abc"));
+        assertEquals("abc", subpop.getGuid().getGuid());
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(subpop);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        assertEquals("abc", node.get("guid").asText());
+        assertNull(node.get("guidString"));
+        
+        Subpopulation newSubpop = BridgeObjectMapper.get().readValue(json, Subpopulation.class);
+        assertEquals("abc", newSubpop.getGuidString());
+        assertEquals("abc", newSubpop.getGuid().getGuid());
+
+        subpop = Subpopulation.create();
+        subpop.setGuidString("abc");
+        assertEquals("abc", subpop.getGuidString());
+        
+        json = BridgeObjectMapper.get().writeValueAsString(subpop);
+        node = BridgeObjectMapper.get().readTree(json);
+        
+        assertEquals("abc", node.get("guid").asText());
+        assertNull(node.get("guidString"));
+        
+        newSubpop = BridgeObjectMapper.get().readValue(json, Subpopulation.class);
+        assertEquals("abc", newSubpop.getGuidString());
+        assertEquals("abc", newSubpop.getGuid().getGuid());
+    }
+    
+    void assertEqualsAndNotNull(Object expected, Object actual) {
+        assertNotNull(expected);
+        assertNotNull(actual);
+        assertEquals(expected, actual);
+    }
+    
 }

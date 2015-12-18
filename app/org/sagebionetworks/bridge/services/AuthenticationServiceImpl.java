@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
+import java.util.Map;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -16,7 +18,9 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
@@ -25,8 +29,10 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
@@ -34,6 +40,7 @@ import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.SignUpValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,56 +60,62 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
     private HealthCodeService healthCodeService;
+    private StudyEnrollmentService studyEnrollmentService;
+    
     private EmailVerificationValidator verificationValidator;
     private SignInValidator signInValidator;
     private PasswordResetValidator passwordResetValidator;
     private EmailValidator emailValidator;
 
     @Autowired
-    public void setDistributedLockDao(DistributedLockDao lockDao) {
+    final void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
     @Autowired
-    public void setCacheProvider(CacheProvider cache) {
+    final void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
     }
     @Autowired
-    public void setBridgeConfig(BridgeConfig config) {
+    final void setBridgeConfig(BridgeConfig config) {
         this.config = config;
     }
     @Autowired
-    public void setConsentService(ConsentService consentService) {
+    final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
     @Autowired
-    public void setOptionsService(ParticipantOptionsService optionsService) {
+    final void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
     @Autowired
-    public void setAccountDao(AccountDao accountDao) {
+    final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     @Autowired
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
+    final void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
     @Autowired
-    public void setEmailVerificationValidator(EmailVerificationValidator validator) {
+    final void setStudyEnrollmentService(StudyEnrollmentService studyEnrollmentService) {
+        this.studyEnrollmentService = studyEnrollmentService;
+    }
+    @Autowired
+    final void setEmailVerificationValidator(EmailVerificationValidator validator) {
         this.verificationValidator = validator;
     }
     @Autowired
-    public void setSignInValidator(SignInValidator validator) {
+    final void setSignInValidator(SignInValidator validator) {
         this.signInValidator = validator;
     }
     @Autowired
-    public void setPasswordResetValidator(PasswordResetValidator validator) {
+    final void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
     }
     @Autowired
-    public void setEmailValidator(EmailValidator validator) {
+    final void setEmailValidator(EmailValidator validator) {
         this.emailValidator = validator;
     }
-
+    
     @Override
     public UserSession getSession(String sessionToken) {
         if (sessionToken == null) {
@@ -112,8 +125,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
-
+    public UserSession signIn(Study study, ClientInfo clientInfo, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
         Validate.entityThrowingException(signInValidator, signIn);
@@ -123,9 +135,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             lockId = lockDao.acquireLock(SignIn.class, signInLock, LOCK_EXPIRE_IN_SECONDS);
             Account account = accountDao.authenticate(study, signIn);
-            UserSession session = getSessionFromAccount(study, account);
+            
+            UserSession session = getSessionFromAccount(study, clientInfo, account);
             cacheProvider.setUserSession(session);
-
+            
             // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2) 
             // you've consented to research.
             if (!session.getUser().doesConsent() && !session.getUser().isInRole(Roles.ADMINISTRATIVE_ROLES)) {
@@ -156,7 +169,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail(), LOCK_EXPIRE_IN_SECONDS);
-            if (consentService.isStudyAtEnrollmentLimit(study)) {
+            if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
             Account account = accountDao.signUp(study, signUp, isAnonSignUp);
@@ -183,13 +196,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException {
+    public UserSession verifyEmail(Study study, ClientInfo clientInfo, EmailVerification verification) throws ConsentRequiredException {
         checkNotNull(verification, "Verification object cannot be null");
 
         Validate.entityThrowingException(verificationValidator, verification);
         
         Account account = accountDao.verifyEmail(study, verification);
-        UserSession session = getSessionFromAccount(study, account);
+        UserSession session = getSessionFromAccount(study, clientInfo, account);
         cacheProvider.setUserSession(session);
 
         if (!session.getUser().doesConsent()) {
@@ -235,7 +248,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
 
-    private UserSession getSessionFromAccount(final Study study, final Account account) {
+    private UserSession getSessionFromAccount(Study study, ClientInfo clientInfo, Account account) {
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
@@ -246,14 +259,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
-
+        
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
-        
-        user.setSignedMostRecentConsent(consentService.hasUserSignedActiveConsent(study, user));
-        user.setConsent(consentService.hasUserConsentedToResearch(study, user));
 
+        // now that we know more about this user, we can expand on the request context.
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withClientInfo(clientInfo)
+                .withHealthCode(healthCode)
+                .withUserDataGroups(user.getDataGroups())
+                .withStudyIdentifier(study.getIdentifier()) // probably already set
+                .build();
+        
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        
+        user.setConsentStatuses(statuses);
         session.setUser(user);
+        
         return session;
     }
 

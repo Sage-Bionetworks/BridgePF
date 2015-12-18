@@ -654,7 +654,6 @@ public class SurveyControllerTest {
         when(service.getSurvey(keys)).thenReturn(survey);
         setUserSession("api");
         session.getUser().setRoles(Collections.emptySet());
-        session.getUser().setConsent(false);
         
         try {
             controller.getSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());

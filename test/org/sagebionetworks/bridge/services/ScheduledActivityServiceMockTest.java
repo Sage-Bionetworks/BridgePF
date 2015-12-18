@@ -37,11 +37,13 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class ScheduledActivityServiceMockTest {
@@ -77,12 +79,28 @@ public class ScheduledActivityServiceMockTest {
         
         schedulePlanService = mock(SchedulePlanService.class);
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
+
+        // Each subpopulation pulls a consent with different signOn dates, we want to use the lowest one.
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setGuidString("guid1");
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setGuidString("guid2");
         
-        UserConsent consent = mock(DynamoUserConsent3.class);
-        when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 
+        SubpopulationService subpopService = mock(SubpopulationService.class);
+        when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpop1, subpop2));
+        
+        // If this enrollment date (Long.MAX_VALUE) is used in the changePublishedAndAbsoluteSurveyActivity()
+        // test, it breaks Joda Time. So success of that test verifies we're taking the lower of the 
+        // to signOn dates
+        UserConsent consent1 = mock(DynamoUserConsent3.class);
+        when(consent1.getSignedOn()).thenReturn(Long.MAX_VALUE);
+        
+        UserConsent consent2 = mock(DynamoUserConsent3.class);
+        when(consent2.getSignedOn()).thenReturn(ENROLLMENT.getMillis());
         
         userConsentDao = mock(UserConsentDao.class);
-        when(userConsentDao.getActiveUserConsent(any(String.class), any(StudyIdentifier.class))).thenReturn(consent);
+        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, subpop1.getGuid())).thenReturn(consent1);
+        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, subpop2.getGuid())).thenReturn(consent2);
         
         Map<String,DateTime> map = Maps.newHashMap();
         activityEventService = mock(ActivityEventService.class);
@@ -117,13 +135,14 @@ public class ScheduledActivityServiceMockTest {
         SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
         when(surveyResponseService.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class), anyString())).thenReturn(surveyResponse);
-        
+
         service.setSchedulePlanService(schedulePlanService);
         service.setUserConsentDao(userConsentDao);
         service.setSurveyService(surveyService);
         service.setSurveyResponseService(surveyResponseService);
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
+        service.setSubpopulationService(subpopService);
     }
     
     @Test(expected = BadRequestException.class)
@@ -236,7 +255,7 @@ public class ScheduledActivityServiceMockTest {
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(activityDao).saveActivities(argument.capture());
-
+        
         boolean foundActivity3 = false;
         for (ScheduledActivity schActivity : (List<ScheduledActivity>)argument.getValue()) {
             // ignoring tapTest

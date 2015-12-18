@@ -34,8 +34,8 @@ public class UserManagementController extends BaseController {
         SignUp signUp = parseJson(request(), SignUp.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
-
-        userAdminService.createUser(signUp, study, false, consent);
+        
+        userAdminService.createUser(signUp, study, null, false, consent);
 
         return createdResult("User created.");
     }

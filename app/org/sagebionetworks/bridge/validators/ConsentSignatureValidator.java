@@ -1,9 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
+
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 import com.google.common.base.Strings;
 

@@ -89,6 +89,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
         if (study.isHealthCodeExportEnabled()) {
             append(sb, "Health Code", true);
         }
+        append(sb, "Consent Groups", true);
         sb.append(NEWLINE);
         for (int i=0; i < participants.size(); i++) {
             StudyParticipant participant = participants.get(i);
@@ -107,6 +108,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
             if (study.isHealthCodeExportEnabled()) {
                 append(sb, participant.getHealthCode(), true);
             }
+            append(sb, participant.getSubpopulationNames(), true);
             sb.append(NEWLINE);
         }
         return sb.toString();

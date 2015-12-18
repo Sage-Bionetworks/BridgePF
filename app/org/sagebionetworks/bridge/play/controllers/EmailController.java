@@ -90,7 +90,6 @@ public class EmailController extends BaseController {
             if (StringUtils.isNotBlank(throwable.getMessage())) {
                 errorMsg = throwable.getMessage();
             }
-
             LOG.error("Error unsubscribing: " + errorMsg, throwable);
             return ok(errorMsg);
         }

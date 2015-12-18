@@ -14,13 +14,15 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,8 +98,13 @@ public class UserAdminServiceImpl implements UserAdminService {
         this.optionsService = optionsService;
     }
     
+    /**
+     * Note that currently, the ability to consent someone to a subpopulation other than the default 
+     * subpopulation is not supported in the API.
+     */
     @Override
-    public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser) {
+    public UserSession createUser(SignUp signUp, Study study, SubpopulationGuid subpopGuid,
+            boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
@@ -107,15 +114,19 @@ public class UserAdminServiceImpl implements UserAdminService {
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
         try {
-            newUserSession = authenticationService.signIn(study, signIn);
+            newUserSession = authenticationService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn);
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
                 String name = String.format("[Signature for %s]", signUp.getEmail());
                 ConsentSignature consent = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-                consentService.consentToResearch(study, newUserSession.getUser(), consent,
-                        SharingScope.NO_SHARING, false);
+
+                SubpopulationGuid consentTo = (subpopGuid != null) ? subpopGuid
+                        : SubpopulationGuid.create(study.getIdentifier());
+                
+                consentService.consentToResearch(study, consentTo,
+                        newUserSession.getUser(), consent, SharingScope.NO_SHARING, false);
             }
         }
         if (!signUserIn) {
@@ -204,9 +215,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 // We expect to have health code, but when tests fail, we can get users who have signed in 
                 // and do not have a health code.
                 if (!StringUtils.isBlank(healthCode)) {
-                    User user = new User(account);
-                    user.setHealthCode(healthCode);
-                    consentService.deleteAllConsents(study, user);
+                    consentService.deleteAllConsentsForUser(study, healthCode);
                     healthDataService.deleteRecordsForHealthCode(healthCode);
                     scheduledActivityService.deleteActivitiesForUser(healthCode);
                     activityEventService.deleteActivityEvents(healthCode);

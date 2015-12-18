@@ -27,7 +27,12 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.SubpopulationService;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,22 +65,27 @@ public class StormpathAccountDao implements AccountDao {
     private Application application;
     private Client client;
     private StudyService studyService;
+    private SubpopulationService subpopService;
     private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Resource(name = "stormpathApplication")
-    public void setStormpathApplication(Application application) {
+    public final void setStormpathApplication(Application application) {
         this.application = application;
     }
     @Resource(name = "stormpathClient")
-    public void setStormpathClient(Client client) {
+    public final void setStormpathClient(Client client) {
         this.client = client;
     }
     @Autowired
-    public void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
+    @Autowired
+    public final void setSubpopulationService(SubpopulationService subpopService) {
+        this.subpopService = subpopService;
+    }
     @Resource(name="encryptorList")
-    public void setEncryptors(List<BridgeEncryptor> list) {
+    public final void setEncryptors(List<BridgeEncryptor> list) {
         for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
@@ -102,9 +112,10 @@ public class StormpathAccountDao implements AccountDao {
         // Otherwise default pagination is 25 records per request (100 is the limit, or we'd go higher).
         // Also eagerly fetch custom data, which we typically examine every time for every user.
         AccountCriteria criteria = Accounts.criteria().limitTo(100).withCustomData().withGroupMemberships();
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
         
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        return new StormpathAccountIterator(study, encryptors, directory.getAccounts(criteria).iterator());
+        return new StormpathAccountIterator(study, subpopGuids, encryptors, directory.getAccounts(criteria).iterator());
     }
 
     @Override
@@ -113,14 +124,16 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(verification);
         
         try {
+            List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
+            
             com.stormpath.sdk.account.Account acct = client.verifyAccountEmail(verification.getSptoken());
-            return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
+            return (acct == null) ? null : new StormpathAccount(study, subpopGuids, acct, encryptors);
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
         }
         return null;
     }
-
+    
     @Override
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(studyIdentifier);
@@ -173,11 +186,12 @@ public class StormpathAccountDao implements AccountDao {
         
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
+            List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
             
             UsernamePasswordRequest request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword(), directory);
             AuthenticationResult result = application.authenticateAccount(request);
             if (result.getAccount() != null) {
-                return new StormpathAccount(study.getStudyIdentifier(), result.getAccount(), encryptors);
+                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, result.getAccount(), encryptors);
             }
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
@@ -191,12 +205,13 @@ public class StormpathAccountDao implements AccountDao {
         checkArgument(isNotBlank(email));
 
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
+
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
                 .withCustomData().withGroups().withGroupMemberships());
         if (accounts.iterator().hasNext()) {
             com.stormpath.sdk.account.Account acct = accounts.iterator().next();
-            return new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
+            return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
         }
         return null;
     }
@@ -206,8 +221,10 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(study);
         checkNotNull(signUp);
         
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
+        
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
-        Account account = new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
+        Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
         account.setUsername(signUp.getUsername());
         account.setEmail(signUp.getEmail());
         account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
@@ -286,7 +303,7 @@ public class StormpathAccountDao implements AccountDao {
             throw new ServiceUnavailableException(e);
         }
     }
-    
+
     private void updateGroups(Directory directory, Account account) {
         Set<String> roles = Sets.newHashSet();
         for (Roles role : account.getRoles()) {
@@ -312,5 +329,12 @@ public class StormpathAccountDao implements AccountDao {
                 acct.addGroup(group);
             }
         }
+    }
+    
+    private List<SubpopulationGuid> getSubpopulationGuids(StudyIdentifier studyId) {
+        return subpopService.getSubpopulations(studyId)
+                .stream()
+                .map(Subpopulation::getGuid)
+                .collect(BridgeCollectors.toImmutableList());
     }
 }

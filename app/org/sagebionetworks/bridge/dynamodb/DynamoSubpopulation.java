@@ -3,16 +3,20 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.studies.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -23,6 +27,8 @@ import com.google.common.collect.Sets;
 @DynamoDBTable(tableName = "Subpopulation")
 @BridgeTypeName("Subpopulation")
 public final class DynamoSubpopulation implements Subpopulation {
+
+    private static final String DOCS_HOST = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
 
     private String studyIdentifier;
     private String guid;
@@ -53,13 +59,24 @@ public final class DynamoSubpopulation implements Subpopulation {
         this.studyIdentifier = studyIdentifier;
     }
     @Override
-    @DynamoDBRangeKey
-    public String getGuid() {
+    @DynamoDBRangeKey(attributeName="guid")
+    @JsonProperty("guid")
+    public String getGuidString() {
         return guid;
     }
     @Override
-    public void setGuid(String guid) {
+    public void setGuidString(String guid) {
         this.guid = guid;
+    }
+    @Override
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SubpopulationGuid getGuid() {
+        return (guid == null) ? null : SubpopulationGuid.create(guid);
+    }    
+    @Override
+    public void setGuid(SubpopulationGuid subpopGuid) {
+        this.guid = (subpopGuid == null) ? null : subpopGuid.getGuid();
     }
     @DynamoDBAttribute
     @Override
@@ -153,6 +170,19 @@ public final class DynamoSubpopulation implements Subpopulation {
     @Override
     public void setVersion(Long version) {
         this.version = version;
+    }
+    /** {@inheritDoc} */
+    @Override
+    @DynamoDBIgnore
+    public String getConsentHTML() {
+        return String.format("http://%s/%s/consent.html", DOCS_HOST, guid);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @DynamoDBIgnore
+    public String getConsentPDF() {
+        return String.format("http://%s/%s/consent.pdf", DOCS_HOST, guid);
     }
     
     @Override

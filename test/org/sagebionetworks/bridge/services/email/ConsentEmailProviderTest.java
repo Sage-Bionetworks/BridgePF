@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -18,16 +17,18 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import com.google.common.collect.Sets;
 
 public class ConsentEmailProviderTest {
 
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("subpopGuid");
+    
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
     
     private static final String LEGACY_DOCUMENT = "<html><head></head><body>Passed through as is. |@@name@@|@@signing.date@@|@@email@@|@@sharing@@|</body></html>";
@@ -55,14 +56,14 @@ public class ConsentEmailProviderTest {
                 .withSignedOn(UNIX_TIMESTAMP).build();
         studyConsentService = mock(StudyConsentService.class);
         
-        provider = new ConsentEmailProvider(study, user, sig, SharingScope.NO_SHARING, 
+        provider = new ConsentEmailProvider(study, SUBPOP_GUID, user, sig, SharingScope.NO_SHARING, 
             studyConsentService, consentBodyTemplate);
     }
     
     @Test
     public void assemblesOriginalDocumentTypeToEmail() throws Exception {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), LEGACY_DOCUMENT);
-        when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);
+        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         MimeBodyPart body = email.getMessageParts().get(0);
@@ -80,7 +81,7 @@ public class ConsentEmailProviderTest {
     @Test
     public void assemblesNewDocumentTypeToEmail() throws Exception {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), NEW_DOCUMENT_FRAGMENT);
-        when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);
+        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         MimeBodyPart body = email.getMessageParts().get(0);

@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -15,42 +17,46 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
  *
  */
 @DynamoDBTable(tableName = "UserConsent3")
+@BridgeTypeName("UserConsent")
 public class DynamoUserConsent3 implements UserConsent {
     
-    // The only timestamp that can be null is withdrewOn.
-    private String healthCodeStudy;
-    private String studyIdentifier;
+    private String healthCodeSubpopGuid;
+    private String subpopGuid;
     private long consentCreatedOn;
     private long signedOn;
+    // This field is Long (not long) because it can be null.
     private Long withdrewOn;
     private Long version;
     
     public DynamoUserConsent3() {}
     
-    public DynamoUserConsent3(String healthCode, String studyIdentifier) {
-        setHealthCodeStudy(healthCode + ":" + studyIdentifier);
-        this.studyIdentifier = studyIdentifier;
+    public DynamoUserConsent3(String healthCode, SubpopulationGuid subpopGuid) {
+        setHealthCodeSubpopGuid(healthCode + ":" + subpopGuid.getGuid());
+        this.subpopGuid = subpopGuid.getGuid();
     }
     
-    @DynamoDBHashKey
-    public String getHealthCodeStudy() {
-        return healthCodeStudy;
+    @DynamoDBHashKey(attributeName = "healthCodeStudy")
+    public String getHealthCodeSubpopGuid() {
+        return healthCodeSubpopGuid;
     }
-    public void setHealthCodeStudy(String healthCodeStudy) {
-        this.healthCodeStudy = healthCodeStudy;
+    public void setHealthCodeSubpopGuid(String healthCodeSubpopGuid) {
+        this.healthCodeSubpopGuid = healthCodeSubpopGuid;
+        if (healthCodeSubpopGuid != null && healthCodeSubpopGuid.contains(":")) {
+            this.subpopGuid = healthCodeSubpopGuid.split(":")[1];
+        }
     }
     @DynamoDBIgnore
     public String getHealthCode() {
-        return (healthCodeStudy != null && healthCodeStudy.contains(":")) ?
-                healthCodeStudy.split(":")[0] : null;
+        return (healthCodeSubpopGuid != null && healthCodeSubpopGuid.contains(":")) ?
+                healthCodeSubpopGuid.split(":")[0] : null;
     }
     @Override
-    @DynamoDBAttribute
-    public String getStudyIdentifier() {
-        return studyIdentifier;
+    @DynamoDBAttribute(attributeName="studyIdentifier")
+    public String getSubpopulationGuid() {
+        return subpopGuid;
     }
-    public void setStudyIdentifier(String studyIdentifier) {
-        this.studyIdentifier = studyIdentifier;
+    public void setSubpopulationGuid(String subpopGuid) {
+        this.subpopGuid = subpopGuid;
     }
     @Override
     @DynamoDBAttribute
@@ -89,8 +95,8 @@ public class DynamoUserConsent3 implements UserConsent {
     
     @Override
     public String toString() {
-        return String.format("DynamoUserConsent3 [healthCodeStudy=%s, studyIdentifier=%s, consentCreatedOn=%s, version=%s, signedOn=%s, withdrewOn=%s]",
-                healthCodeStudy, studyIdentifier, consentCreatedOn, version, signedOn, withdrewOn);
+        return String.format("DynamoUserConsent3 [healthCodeSubpopGuid=%s, subpopGuid=%s, consentCreatedOn=%s, version=%s, signedOn=%s, withdrewOn=%s]",
+                healthCodeSubpopGuid, subpopGuid, consentCreatedOn, version, signedOn, withdrewOn);
     }
     
 }

@@ -6,6 +6,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 
 public class HealthCodeUtil {
+    @SuppressWarnings("resource")
     public static void main(String[] args) {
         // usage
         if (args.length == 0) {
