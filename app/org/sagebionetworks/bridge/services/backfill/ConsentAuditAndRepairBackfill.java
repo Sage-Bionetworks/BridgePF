@@ -141,8 +141,8 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
     private long getSignedOnDate(StringBuilder sb, DateTime enrollment, long syntheticSignedOn) {
         long signedOn = syntheticSignedOn;
         if (enrollment != null) {
-            sb.append(", enrollment event on " + enrollment.getMillis());
             signedOn = enrollment.getMillis();
+            sb.append(", enrollment event on " + enrollment.getMillis());
         } else {
             sb.append(", no enrollment event for signedOn date, using " + syntheticSignedOn);
         }
@@ -157,25 +157,4 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
         callback.newRecords(getBackfillRecordFactory().createOnly(task, "No health code found: " + account.getId()));
         return null;
     }
-    
-    /*
-            userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent.getStudyConsent(),
-                    consentSignature.getSignedOn());
-        } catch (Throwable e) {
-            // If we can't save consent record, decrement and remove the signature before rethrowing
-            decrementStudyEnrollment(study);
-            int len = account.getConsentSignatures().size();
-            account.getConsentSignatures().remove(len-1);
-            accountDao.updateAccount(study, account);
-            throw e;
-        }
-        
-        // Save supplemental records, fire events, etc.
-        if (userConsent != null){
-            activityEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
-        }
-        optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, sharingScope);
-     */
-    
-    
 }
