@@ -12,12 +12,10 @@ import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.SubpopulationGuidDeserializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -38,7 +36,6 @@ public final class User implements BridgeEntity {
     private SharingScope sharingScope;
     private Set<Roles> roles = Sets.newHashSet();
     private Set<String> dataGroups = Sets.newHashSet();
-    @JsonDeserialize(keyUsing = SubpopulationGuidDeserializer.class)
     private Map<SubpopulationGuid,ConsentStatus> consentStatuses;
 
     public User() {

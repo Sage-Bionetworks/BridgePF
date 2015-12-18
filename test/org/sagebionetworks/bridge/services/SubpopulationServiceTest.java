@@ -130,18 +130,20 @@ public class SubpopulationServiceTest {
         study.setIdentifier("test-study");
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "");
-        
+        Subpopulation subpop = Subpopulation.create();
         SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
         
         ArgumentCaptor<StudyConsentForm> captor = ArgumentCaptor.forClass(StudyConsentForm.class);
         
         when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(Lists.newArrayList());
         when(studyConsentService.addConsent(eq(defaultGuid), any())).thenReturn(view);
+        when(dao.createDefaultSubpopulation(study.getStudyIdentifier())).thenReturn(subpop);
         
         // No consents, so we add and publish one.
-        service.createDefaultSubpopulation(study);
+        Subpopulation returnValue = service.createDefaultSubpopulation(study);
         verify(studyConsentService).addConsent(any(), captor.capture());
         verify(studyConsentService).publishConsent(eq(study), eq(defaultGuid), any(Long.class));
+        assertEquals(subpop, returnValue);
         
         // This used the default document.
         assertEquals(form, captor.getValue());
@@ -153,10 +155,12 @@ public class SubpopulationServiceTest {
         study.setIdentifier("test-study");
         
         SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
-        
+        Subpopulation subpop = Subpopulation.create();
         when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(Lists.newArrayList(new DynamoStudyConsent1()));
+        when(dao.createDefaultSubpopulation(study.getStudyIdentifier())).thenReturn(subpop);
         
-        service.createDefaultSubpopulation(study);
+        Subpopulation returnValue = service.createDefaultSubpopulation(study);
+        assertEquals(subpop, returnValue);
         
         // Consents exist... don't add any
         verify(studyConsentService, never()).addConsent(any(), any());

@@ -35,7 +35,6 @@ public class UserSessionInfo {
     private final String environment;
     private final Set<Roles> roles;
     private final Set<String> dataGroups;
-    @JsonDeserialize(keyUsing = SubpopulationGuidDeserializer.class)
     private final Map<SubpopulationGuid,ConsentStatus> consentStatuses;
 
     public UserSessionInfo(UserSession session) {

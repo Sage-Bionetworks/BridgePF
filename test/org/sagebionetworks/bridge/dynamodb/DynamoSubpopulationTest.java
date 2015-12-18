@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -42,7 +43,6 @@ public class DynamoSubpopulationTest {
         subpop.setVersion(3L);
         
         String json = BridgeObjectMapper.get().writeValueAsString(subpop);
-        System.out.println(json);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         // This does not need to be passed to the user; the user is never allowed to set it.
@@ -76,6 +76,37 @@ public class DynamoSubpopulationTest {
         
         String pdfURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuidString() + "/consent.pdf";
         assertEquals(pdfURL, newSubpop.getConsentPDF());
+    }
+    
+    @Test
+    public void guidAndGuidStringInterchangeable() throws Exception {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuid(SubpopulationGuid.create("abc"));
+        assertEquals("abc", subpop.getGuid().getGuid());
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(subpop);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        assertEquals("abc", node.get("guid").asText());
+        assertNull(node.get("guidString"));
+        
+        Subpopulation newSubpop = BridgeObjectMapper.get().readValue(json, Subpopulation.class);
+        assertEquals("abc", newSubpop.getGuidString());
+        assertEquals("abc", newSubpop.getGuid().getGuid());
+
+        subpop = Subpopulation.create();
+        subpop.setGuidString("abc");
+        assertEquals("abc", subpop.getGuidString());
+        
+        json = BridgeObjectMapper.get().writeValueAsString(subpop);
+        node = BridgeObjectMapper.get().readTree(json);
+        
+        assertEquals("abc", node.get("guid").asText());
+        assertNull(node.get("guidString"));
+        
+        newSubpop = BridgeObjectMapper.get().readValue(json, Subpopulation.class);
+        assertEquals("abc", newSubpop.getGuidString());
+        assertEquals("abc", newSubpop.getGuid().getGuid());
     }
     
     void assertEqualsAndNotNull(Object expected, Object actual) {

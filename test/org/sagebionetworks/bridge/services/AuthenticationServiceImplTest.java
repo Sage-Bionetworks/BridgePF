@@ -342,17 +342,20 @@ public class AuthenticationServiceImplTest {
         // User is consenting
         TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class)
                 .withConsent(true).withSignIn(true).build();
-        
-        SubpopulationGuid guid = SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier());
-        
-        // This is the object we pass back to the user, we want to see the statuses copied or present
-        // all the way from the user to the sessionInfo. We test elsewhere that these are properly 
-        // serialized/deserialized (SubpopulationGuidDeserializer)
-        UserSessionInfo sessionInfo = new UserSessionInfo(user.getSession());
-        
-        ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
-        assertTrue(status.isConsented());
-        assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
+        try {
+            SubpopulationGuid guid = SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier());
+            
+            // This is the object we pass back to the user, we want to see the statuses copied or present
+            // all the way from the user to the sessionInfo. We test elsewhere that these are properly 
+            // serialized/deserialized (SubpopulationGuidDeserializer)
+            UserSessionInfo sessionInfo = new UserSessionInfo(user.getSession());
+            
+            ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
+            assertTrue(status.isConsented());
+            assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
+        } finally {
+            helper.deleteUser(user);
+        }
     }
     
 }
