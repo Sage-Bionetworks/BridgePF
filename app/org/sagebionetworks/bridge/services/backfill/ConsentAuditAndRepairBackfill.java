@@ -16,9 +16,10 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
@@ -79,13 +80,15 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
             Account account = i.next();
             total++;
             callback.newRecords(getBackfillRecordFactory().createOnly(task, "Looking at: " + account.getId()));
+            StudyIdentifier studyId = account.getStudyIdentifier();
+            SubpopulationGuid subpopGuid = SubpopulationGuid.create(studyId.getIdentifier());
             
-            ConsentSignature signature = account.getActiveConsentSignature();
+            ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
             if (signature != null) {
-                StudyIdentifier studyId = account.getStudyIdentifier();
+                
                 String healthCode = getHealthCode(task, callback, account);
                 if (healthCode != null) {
-                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, studyId);
+                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
                     if (consent == null) {
                         
                         // User has signature but no consent record. Try to repair and report on it.
@@ -96,13 +99,13 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
                         
                         // We have to assume the active consent, information about the consent that was signed is contained
                         // in the DDB record that is missing.
-                        StudyConsent studyConsent = studyConsentDao.getActiveConsent(studyId);
+                        StudyConsent studyConsent = studyConsentDao.getActiveConsent(subpopGuid);
                         
                         if (studyConsent != null) {
                             long signedOn = getSignedOnDate(sb, enrollment, syntheticSignedOn);
                             
                             // Give consent
-                            consent = userConsentDao.giveConsent(healthCode, studyConsent, signedOn);
+                            consent = userConsentDao.giveConsent(healthCode, subpopGuid, studyConsent.getCreatedOn(), signedOn);
                             repaired++;
                             
                             // Create an enrollment event
@@ -123,13 +126,12 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
                     }
                 }
                 
-            } else if (!account.getConsentSignatures().isEmpty()) {
+            } else if (!account.getConsentSignatureHistory(subpopGuid).isEmpty()) {
                 // This can happen because people withdraw from a study. It's okay, but interesting... we still wonder if this person
                 // has a record.
-                StudyIdentifier studyId = account.getStudyIdentifier();
                 String healthCode = getHealthCode(task, callback, account);
                 if (healthCode != null) {
-                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, studyId);
+                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
                     if (consent == null) {
                         callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no active signature and no DDB consent record (error state?): " + account.getId()));
                     } else {
