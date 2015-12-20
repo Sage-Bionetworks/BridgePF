@@ -8,10 +8,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.json.SubpopulationGuidDeserializer;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * Greatly trimmed user session object that is embedded in the initial render of the

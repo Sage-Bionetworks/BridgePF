@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -27,7 +28,10 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.FPHSService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -44,15 +48,19 @@ public class FPHSControllerTest {
     private User user;
     private AuthenticationService authenticationService;
     private FPHSService fphsService;
+    private ConsentService consentService;
     
     @Before
     public void before() {
         fphsService = mock(FPHSService.class);
         authenticationService = mock(AuthenticationService.class);
+        consentService = mock(ConsentService.class);
         
         controller = spy(new FPHSController());
         controller.setFPHSService(fphsService);
         controller.setAuthenticationService(authenticationService);
+        controller.setConsentService(consentService);
+        controller.setCacheProvider(mock(CacheProvider.class));
     }
     
     private JsonNode resultToJson(Result result) throws Exception {
@@ -83,15 +91,17 @@ public class FPHSControllerTest {
         when(fphsService.getExternalIdentifiers()).thenReturn(identifiers);
     }
     
-    private void setUserSession() {
+    private User setUserSession() {
         user = new User();
         user.setHealthCode("BBB");
         
         UserSession session = mock(UserSession.class);
         when(session.getUser()).thenReturn(user);
+        when(session.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("test-study"));
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession();
+        return user;
     }
     
     @Test
@@ -140,16 +150,18 @@ public class FPHSControllerTest {
             assertEquals("Not signed in.", e.getMessage());
         }
     }
-    
+
     @Test
     public void registrationOK() throws Exception {
-        setUserSession();
+        User user = setUserSession();
         setExternalIdentifierPost(new ExternalIdentifier("foo"));
-        
+
         Result result = controller.registerExternalIdentifier();
         JsonNode node = resultToJson(result);
-        
         assertEquals("External identifier added to user profile.", node.get("message").asText());
+
+        assertEquals(Sets.newHashSet("football_player"), user.getDataGroups());
+        verify(consentService).getConsentStatuses(any(ScheduleContext.class));
     }
     
     @Test
