@@ -16,7 +16,6 @@ import javax.annotation.Resource;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -40,11 +39,6 @@ public class DynamoUserConsentDaoTest {
     @Resource
     private DynamoUserConsentDao userConsentDao;
 
-    @BeforeClass
-    public static void beforeClass() {
-        DynamoInitializer.init(DynamoUserConsent3.class);
-    }
-    
     @Before
     public void before() {
         healthCodes = new ArrayList<>();

@@ -19,7 +19,6 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -60,12 +59,6 @@ public class DynamoSurveyDaoTest {
 
     private TestSurvey testSurvey;
     private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
-
-    @BeforeClass
-    public static void beforeClass() {
-    	DynamoInitializer.init(DynamoUploadSchema.class);
-        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
-    }
 
     @Before
     public void before() {

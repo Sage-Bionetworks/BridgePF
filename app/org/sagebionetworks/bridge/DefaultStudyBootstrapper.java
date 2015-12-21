@@ -35,8 +35,7 @@ public class DefaultStudyBootstrapper {
             study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
             study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
             study.setSupportEmail("support@sagebridge.org");
-            // This is stormpath api (dev) directory.
-            study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
+            study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/3OBNJsxNxvaaK5nSFwv8RD");
             study.getUserProfileAttributes().add("phone");
             study.getUserProfileAttributes().add("can_be_recontacted");
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));

@@ -12,7 +12,6 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,11 +43,6 @@ public class DynamoParticipantOptionsDaoTest {
     @Resource
     StudyServiceImpl studyService;
 
-    @BeforeClass
-    public static void beforeClass() {
-        DynamoInitializer.init(DynamoParticipantOptions.class);
-    }
-    
     @Before
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);

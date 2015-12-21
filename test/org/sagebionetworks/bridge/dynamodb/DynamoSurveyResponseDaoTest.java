@@ -54,7 +54,6 @@ public class DynamoSurveyResponseDaoTest {
 
     @BeforeClass
     public static void initialSetUp() {
-        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyResponse.class);
         DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
     }

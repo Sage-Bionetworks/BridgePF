@@ -13,7 +13,6 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
@@ -43,11 +42,6 @@ public class DynamoStudyDaoTest {
     @Resource
     DynamoStudyDao studyDao;
 
-    @BeforeClass
-    public static void beforeClass() {
-        DynamoInitializer.init(DynamoStudy.class);
-    }
-    
     @Before
     public void before() {
         // Clear the set before each test, because JUnit seems to not do this automatically.

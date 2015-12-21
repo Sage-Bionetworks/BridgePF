@@ -40,7 +40,7 @@ public class DefaultStudyBootstrapperTest {
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
         assertEquals("bridge-testing+technical@sagebase.org", study.getTechnicalEmail());
         assertEquals("support@sagebridge.org", study.getSupportEmail());
-        assertEquals("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM", study.getStormpathHref());
+        assertEquals("https://enterprise.stormpath.io/v1/directories/3OBNJsxNxvaaK5nSFwv8RD", study.getStormpathHref());
         assertEquals(Sets.newHashSet("phone", "can_be_recontacted"), study.getUserProfileAttributes());
         assertEquals(new PasswordPolicy(2, false, false, false, false), study.getPasswordPolicy());
     }

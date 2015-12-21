@@ -20,7 +20,6 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -59,11 +58,6 @@ public class DynamoScheduledActivityDaoTest {
     private SchedulePlan plan;
     
     private User user;
-    
-    @BeforeClass
-    public static void beforeClass() {
-    	DynamoInitializer.init(DynamoSchedulePlan.class);
-    }
     
     @Before
     public void before() {

@@ -12,7 +12,6 @@ import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -30,11 +29,6 @@ public class DynamoStudyConsentDaoTest {
     
     @Resource
     private DynamoStudyConsentDao studyConsentDao;
-
-    @Before
-    public void before() {
-        DynamoInitializer.init(DynamoStudyConsent1.class);
-    }
 
     @After
     public void after() {
