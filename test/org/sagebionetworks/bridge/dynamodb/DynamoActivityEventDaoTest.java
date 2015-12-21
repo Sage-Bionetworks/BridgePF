@@ -27,7 +27,6 @@ public class DynamoActivityEventDaoTest {
     
     @Before
     public void before() {
-        DynamoInitializer.init(DynamoActivityEvent.class);
         DynamoTestUtil.clearTable(DynamoActivityEvent.class);
     }
     

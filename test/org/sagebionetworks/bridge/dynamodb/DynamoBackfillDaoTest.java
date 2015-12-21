@@ -33,7 +33,6 @@ public class DynamoBackfillDaoTest {
 
     @Before
     public void before() {
-        DynamoInitializer.init(DynamoBackfillTask.class, DynamoBackfillRecord.class);
         DynamoTestUtil.clearTable(DynamoBackfillTask.class);
         DynamoTestUtil.clearTable(DynamoBackfillRecord.class);
     }

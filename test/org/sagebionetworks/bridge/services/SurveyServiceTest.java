@@ -16,12 +16,8 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -61,11 +57,6 @@ public class SurveyServiceTest {
 
     private TestSurvey testSurvey;
     private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
-
-    @BeforeClass
-    public static void beforeClass() {
-        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
-    }
 
     @Before
     public void before() {

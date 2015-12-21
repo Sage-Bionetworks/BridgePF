@@ -11,7 +11,6 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,11 +33,6 @@ public class DynamoFPHSExternalIdentifierDaoTest {
     
     private List<String> idsToDelete;
     
-    @BeforeClass
-    public static void beforeClass() {
-        DynamoInitializer.init(DynamoFPHSExternalIdentifier.class);
-    }
-
     @Before
     public void before() {
         idsToDelete = Lists.newArrayList();
