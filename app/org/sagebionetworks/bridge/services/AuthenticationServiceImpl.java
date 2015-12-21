@@ -247,7 +247,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         accountDao.resetPassword(passwordReset);
     }
-
+    
     private UserSession getSessionFromAccount(Study study, ClientInfo clientInfo, Account account) {
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
