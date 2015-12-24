@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -57,11 +58,17 @@ public class AuthenticationController extends BaseController {
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-        
+
+        UserSession session = authenticationService.verifyEmail(study, clientInfo, emailVerification);
+        writeSessionInfoToMetrics(session);
+        setSessionToken(session.getSessionToken());
+
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
-        UserSession session = authenticationService.verifyEmail(study, clientInfo, emailVerification);
-        setSessionToken(session.getSessionToken());
+        if (!session.getUser().doesConsent()) {
+            throw new ConsentRequiredException(session);
+        }
+
         return okResult(new UserSessionInfo(session));
     }
 
@@ -94,30 +101,34 @@ public class AuthenticationController extends BaseController {
      */
     private Result signInWithRetry(int retryCounter) throws Exception {
         UserSession session = getSessionIfItExists();
-        if (session != null) {
-            setSessionToken(session.getSessionToken());
-            return okResult(new UserSessionInfo(session));
+        if (session == null) {
+            JsonNode json = requestToJSON(request());
+            SignIn signIn = parseJson(request(), SignIn.class);
+            Study study = getStudyOrThrowException(json);
+            ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+
+            try {
+                session = authenticationService.signIn(study, clientInfo, signIn);
+            } catch (ConcurrentModificationException e) {
+                if (retryCounter > 0) {
+                    final long retryDelayInMillis = 200;
+                    Thread.sleep(retryDelayInMillis);
+                    return signInWithRetry(retryCounter - 1);
+                }
+                throw e;
+            }
+            writeSessionInfoToMetrics(session);
         }
 
-        JsonNode json = requestToJSON(request());
-        SignIn signIn = parseJson(request(), SignIn.class);
-        Study study = getStudyOrThrowException(json);
-        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-        
-        try {
-            session = authenticationService.signIn(study, clientInfo, signIn);
-        } catch(ConsentRequiredException e) {
-            setSessionToken(e.getUserSession().getSessionToken());
-            throw e;
-        } catch(ConcurrentModificationException e) {
-            if (retryCounter > 0) {
-                final long retryDelayInMillis = 200;
-                Thread.sleep(retryDelayInMillis);
-                return signInWithRetry(retryCounter - 1);
-            }
-            throw e;
-        }
+        // Set session token. This way, even if we get a ConsentRequiredException, users are still able to sign consent
         setSessionToken(session.getSessionToken());
+
+        // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
+        // you've consented to research.
+        if (!session.getUser().doesConsent() && !session.getUser().isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+            throw new ConsentRequiredException(session);
+        }
+
         return okResult(new UserSessionInfo(session));
     }
 

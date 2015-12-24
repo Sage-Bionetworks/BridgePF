@@ -94,6 +94,10 @@ public class IosSchemaValidationHandler2Test {
                         .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("blob.json.blob")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("date.json.date")
+                        .withType(UploadFieldType.CALENDAR_DATE).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("date.json.timestampAsDate")
+                        .withType(UploadFieldType.CALENDAR_DATE).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
@@ -367,6 +371,9 @@ public class IosSchemaValidationHandler2Test {
                 "   },{\n" +
                 "       \"filename\":\"blob.json\",\n" +
                 "       \"timestamp\":\"2015-04-13T18:47:20-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"date.json\",\n" +
+                "       \"timestamp\":\"2015-04-13T18:47:41-07:00\"\n" +
                 "   }],\n" +
                 "   \"item\":\"json-data\"\n" +
                 "}";
@@ -382,10 +389,17 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode blobJsonNode = BridgeObjectMapper.get().readTree(blobJsonText);
 
+        String dateJsonText = "{\n" +
+                "   \"date\":\"2015-12-25\",\n" +
+                "   \"timestampAsDate\":\"2015-12-25T14:41-0800\"\n" +
+                "}";
+        JsonNode dateJsonNode = BridgeObjectMapper.get().readTree(dateJsonText);
+
         context.setJsonDataMap(ImmutableMap.of(
                 "info.json", infoJsonNode,
                 "string.json", stringJsonNode,
-                "blob.json", blobJsonNode));
+                "blob.json", blobJsonNode,
+                "date.json", dateJsonNode));
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
 
         // execute
@@ -400,8 +414,10 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(1, dataNode.size());
+        assertEquals(3, dataNode.size());
         assertEquals("This is a string", dataNode.get("string.json.string").textValue());
+        assertEquals("2015-12-25", dataNode.get("date.json.date").textValue());
+        assertEquals("2015-12-25", dataNode.get("date.json.timestampAsDate").textValue());
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
         assertEquals(1, attachmentMap.size());

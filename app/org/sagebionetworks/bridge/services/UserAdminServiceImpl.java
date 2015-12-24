@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -112,23 +111,20 @@ public class UserAdminServiceImpl implements UserAdminService {
         authenticationService.signUp(study, signUp, false);
 
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
-        UserSession newUserSession = null;
-        try {
-            newUserSession = authenticationService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn);
-        } catch (ConsentRequiredException e) {
-            newUserSession = e.getUserSession();
-            if (consentUser) {
-                String name = String.format("[Signature for %s]", signUp.getEmail());
-                ConsentSignature consent = new ConsentSignature.Builder().withName(name)
-                        .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
+        UserSession newUserSession = authenticationService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn);
 
-                SubpopulationGuid consentTo = (subpopGuid != null) ? subpopGuid
-                        : SubpopulationGuid.create(study.getIdentifier());
-                
-                consentService.consentToResearch(study, consentTo,
-                        newUserSession.getUser(), consent, SharingScope.NO_SHARING, false);
-            }
+        if (consentUser) {
+            String name = String.format("[Signature for %s]", signUp.getEmail());
+            ConsentSignature consent = new ConsentSignature.Builder().withName(name)
+                    .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
+
+            SubpopulationGuid consentTo = (subpopGuid != null) ? subpopGuid
+                    : SubpopulationGuid.create(study.getIdentifier());
+
+            consentService.consentToResearch(study, consentTo,
+                    newUserSession.getUser(), consent, SharingScope.NO_SHARING, false);
         }
+
         if (!signUserIn) {
             authenticationService.signOut(newUserSession);
             newUserSession = null;

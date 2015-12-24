@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -165,20 +164,6 @@ public class AuthenticationServiceImplTest {
         authService.resetPassword(new PasswordReset("newpassword", "resettoken"));
     }
 
-    @Test
-    public void unconsentedUserMustSignTOU() throws Exception {
-        TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class)
-                .withConsent(false).withSignIn(false).build();
-        try {
-            // Create a user who has not consented.
-            authService.signIn(user.getStudy(), ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
-            fail("Should have thrown consent exception");
-        } catch (ConsentRequiredException e) {
-        } finally {
-            helper.deleteUser(user);
-        }
-    }
-    
     @Test
     public void canResendEmailVerification() throws Exception {
         TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class)

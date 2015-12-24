@@ -36,6 +36,11 @@ public class Metrics {
         return Metrics.getCacheKey(json.get("request_id").asText());
     }
 
+    /** The JSON node backing this metrics object. This is used primarily for testing. */
+    public ObjectNode getJson() {
+        return json;
+    }
+
     public String toJsonString() {
         return json.toString();
     }

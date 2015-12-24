@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.stormpath;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -8,6 +11,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.http.HttpStatus;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +22,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -148,6 +153,37 @@ public class StormpathAccountDaoMockTest {
         verify(acct).setUsername(random);
         verify(acct).setEmail(email);
         verify(acct).setPassword(PASSWORD);
+    }
+
+    @Test
+    public void accountDisabled() {
+        // mock stormpath client
+        Directory mockDirectory = mock(Directory.class);
+        Client mockClient = mock(Client.class);
+        when(mockClient.getResource(study.getStormpathHref(), Directory.class)).thenReturn(mockDirectory);
+
+        // mock stormpath application - Don't check the args to Application.authenticateAccount(). This is tested
+        // elsewhere.
+        com.stormpath.sdk.error.Error mockError = mock(com.stormpath.sdk.error.Error.class);
+        when(mockError.getCode()).thenReturn(7101);
+        ResourceException spException = new ResourceException(mockError);
+
+        Application mockApplication = mock(Application.class);
+        when(mockApplication.authenticateAccount(any())).thenThrow(spException);
+
+        // setup dao
+        StormpathAccountDao dao = new StormpathAccountDao();
+        dao.setSubpopulationService(mockSubpopService());
+        dao.setStormpathApplication(mockApplication);
+        dao.setStormpathClient(mockClient);
+
+        // execute and validate
+        try {
+            dao.authenticate(study, new SignIn("dummy-user", PASSWORD));
+            fail("expected exception");
+        } catch (BridgeServiceException ex) {
+            assertEquals(HttpStatus.SC_LOCKED, ex.getStatusCode());
+        }
     }
 
     private SubpopulationService mockSubpopService() {

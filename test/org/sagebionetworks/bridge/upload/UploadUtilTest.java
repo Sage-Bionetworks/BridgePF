@@ -4,10 +4,60 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.junit.Test;
 
 // This file exists to support a hack, but we should still test it anyway.
 public class UploadUtilTest {
+    @Test
+    public void nullCalendarDate() {
+        assertNull(UploadUtil.parseIosCalendarDate(null));
+    }
+
+    @Test
+    public void emptyCalendarDate() {
+        assertNull(UploadUtil.parseIosCalendarDate(""));
+    }
+
+    @Test
+    public void blankCalendarDate() {
+        assertNull(UploadUtil.parseIosCalendarDate("   "));
+    }
+
+    @Test
+    public void shortMalformedCalendarDate() {
+        assertNull(UploadUtil.parseIosCalendarDate("Xmas2015"));
+    }
+
+    @Test
+    public void longMalformedCalendarDate() {
+        assertNull(UploadUtil.parseIosCalendarDate("December 25 2015"));
+    }
+
+    @Test
+    public void validCalendarDate() {
+        LocalDate date = UploadUtil.parseIosCalendarDate("2015-12-25");
+        assertEquals(2015, date.getYear());
+        assertEquals(12, date.getMonthOfYear());
+        assertEquals(25, date.getDayOfMonth());
+    }
+
+    @Test
+    public void timestampCalendarDate() {
+        LocalDate date = UploadUtil.parseIosCalendarDate("2015-12-25T14:33-0800");
+        assertEquals(2015, date.getYear());
+        assertEquals(12, date.getMonthOfYear());
+        assertEquals(25, date.getDayOfMonth());
+    }
+
+    @Test
+    public void truncatesIntoValidCalendarDate() {
+        LocalDate date = UploadUtil.parseIosCalendarDate("2015-12-25 @ lunchtime");
+        assertEquals(2015, date.getYear());
+        assertEquals(12, date.getMonthOfYear());
+        assertEquals(25, date.getDayOfMonth());
+    }
+
     @Test
     public void nullTimestamp() {
         assertNull(UploadUtil.parseIosTimestamp(null));

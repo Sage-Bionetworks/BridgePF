@@ -494,6 +494,18 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
                         "Upload ID %s field %s could not be converted from JSON: %s", uploadId, fieldName,
                         ex.getMessage()));
             }
+        } else if (fieldDef.getType().equals(UploadFieldType.CALENDAR_DATE)) {
+            // Older iOS apps submit a timestamp instead of a calendar date. Use this hack to convert it back.
+            String dateStr = fieldValue.textValue();
+            LocalDate parsedDate = UploadUtil.parseIosCalendarDate(dateStr);
+            if (parsedDate != null) {
+                dataMap.put(fieldName, parsedDate.toString());
+            } else {
+                String warnMsg = "Upload ID " + uploadId + " field " + fieldName + " has invalid calendar date " +
+                        dateStr;
+                logger.warn(warnMsg);
+                context.addMessage(warnMsg);
+            }
         } else {
             dataMap.set(fieldName, fieldValue);
         }
