@@ -147,17 +147,21 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete) {
         Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
-        if (subpop == null || subpop.isDeleted()) {
+        if (subpop == null || (!physicalDelete && subpop.isDeleted())) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
         if (subpop.isDefaultGroup()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }
         studyConsentDao.deleteAllConsents(subpopGuid);
-        subpop.setDeleted(true);
-        mapper.save(subpop);
+        if (physicalDelete) {
+            mapper.delete(subpop);
+        } else {
+            subpop.setDeleted(true);
+            mapper.save(subpop);
+        }
     }
 
     @Override

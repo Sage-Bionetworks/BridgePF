@@ -102,7 +102,7 @@ public class DynamoSubpopulationDaoTest {
         assertEquals(1, allSubpops.size());
         
         // Logical delete works...
-        dao.deleteSubpopulation(studyId, finalSubpop.getGuid());
+        dao.deleteSubpopulation(studyId, finalSubpop.getGuid(), false);
         Subpopulation deletedSubpop = dao.getSubpopulation(studyId, finalSubpop.getGuid());
         assertTrue(deletedSubpop.isDeleted());
         
@@ -142,7 +142,7 @@ public class DynamoSubpopulationDaoTest {
         
         // Cannot delete a required subpopulation
         try {
-            dao.deleteSubpopulation(studyId, subpop.getGuid());
+            dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
             assertEquals("Cannot delete the default subpopulation for a study.", e.getMessage());
@@ -177,7 +177,7 @@ public class DynamoSubpopulationDaoTest {
     public void cannotDeleteOrRequireSubpopOnCreate() {
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString(BridgeUtils.generateGuid());
-        subpop.setStudyIdentifier("AAA");
+        subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setDeleted(true);
         subpop.setDefaultGroup(true);
         
@@ -207,7 +207,7 @@ public class DynamoSubpopulationDaoTest {
     @Test(expected = EntityNotFoundException.class)
     public void cannotUpdateASubpopThatIsDeleted() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
-        dao.deleteSubpopulation(studyId, subpop.getGuid());
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
         
         // This should now throw ENFE
         dao.updateSubpopulation(subpop);
@@ -233,7 +233,7 @@ public class DynamoSubpopulationDaoTest {
     
     @Test(expected=EntityNotFoundException.class)
     public void deleteNotExistingSubpopulationThrowsException() {
-        dao.deleteSubpopulation(studyId, SubpopulationGuid.create("guidDoesNotExist"));
+        dao.deleteSubpopulation(studyId, SubpopulationGuid.create("guidDoesNotExist"), false);
     }
     
     /**
@@ -266,6 +266,17 @@ public class DynamoSubpopulationDaoTest {
                 .build();
         List<Subpopulation> results = dao.getSubpopulationsForUser(context);
         assertTrue(results.isEmpty());
+    }
+    
+    @Test
+    public void canPermanentlyDeleteOneSubpopulation() {
+        Subpopulation subpop = createSubpop("Name", null, null, null);
+        
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), true);
+        
+        // This requests all subpopulations including the just-deleted subpopulation
+        List<Subpopulation> subpops = dao.getSubpopulations(studyId, false, true);
+        assertEquals(0, subpops.size());
     }
     
     @Test

@@ -181,8 +181,7 @@ public class TestUserAdminHelper {
             }
             String name = makeRandomUserName(cls);
             SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
-            UserSession session = userAdminService.createUser(finalSignUp, study, subpopGuid,
-                    signIn, consent);
+            UserSession session = userAdminService.createUser(finalSignUp, study, subpopGuid, signIn, consent);
             
             return new TestUser(finalSignUp, study, session);
         }

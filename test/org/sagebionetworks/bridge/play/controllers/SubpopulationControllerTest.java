@@ -68,9 +68,11 @@ public class SubpopulationControllerTest {
     @Captor
     private ArgumentCaptor<Subpopulation> captor;
     
+    private User user;
+    
     @Before
     public void before() throws Exception {
-        User user = new User();
+        user = new User();
         user.setRoles(Sets.newHashSet(Roles.DEVELOPER));
         
         controller.setSubpopulationService(subpopService);
@@ -189,13 +191,39 @@ public class SubpopulationControllerTest {
         Http.Context context = TestUtils.mockPlayContext();
         Http.Context.current.set(context);
 
-        Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid());
+        Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), null);
         assertEquals(200, result.status());
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         assertEquals("Subpopulation has been deleted.", node.get("message").asText());
         
-        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
+        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, false);
+    }
+    
+    @Test
+    public void researchersCannotSubmitPhysicalDelete() throws Exception {
+        Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
+        assertEquals(200, result.status());
+        String json = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        // Message does not indicate a physical delete, false is submitted
+        assertEquals("Subpopulation has been deleted.", node.get("message").asText());
+        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, false);
+    }
+
+    @Test
+    public void adminCanSubmitPhysicalDelete() throws Exception {
+        user.setRoles(Sets.newHashSet(Roles.ADMIN));
+        
+        Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
+        assertEquals(200, result.status());
+        String json = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        // Message does not indicate a physical delete, false is submitted
+        assertEquals("Subpopulation has been permanently deleted.", node.get("message").asText());
+        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, true);
     }
     
     @Test(expected = UnauthorizedException.class)

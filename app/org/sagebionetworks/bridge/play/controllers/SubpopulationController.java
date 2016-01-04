@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -59,13 +61,20 @@ public class SubpopulationController extends BaseController {
         Subpopulation subpop = subpopService.getSubpopulation(session.getStudyIdentifier(), subpopGuid);
         return okResult(subpop);
     }
-    public Result deleteSubpopulation(String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+    public Result deleteSubpopulation(String guid, String physicalDeleteString) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        // However you cannot physically delete unless you are an admin.
+        boolean physicalDelete = ("true".equals(physicalDeleteString));
+        if (!session.getUser().isInRole(Roles.ADMIN)) {
+            physicalDelete = false;
+        }
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        subpopService.deleteSubpopulation(session.getStudyIdentifier(), subpopGuid);
-        
-        return okResult("Subpopulation has been deleted.");
+        subpopService.deleteSubpopulation(session.getStudyIdentifier(), subpopGuid, physicalDelete);
+
+        String message = (physicalDelete) ? "Subpopulation has been permanently deleted." : "Subpopulation has been deleted.";
+        return okResult(message);
     }
 
 }

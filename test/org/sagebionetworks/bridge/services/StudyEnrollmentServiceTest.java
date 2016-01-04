@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
@@ -10,7 +9,6 @@ import java.util.Map;
 import javax.annotation.Resource;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -34,7 +32,7 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyEnrollmentServiceTest {
     
-    private static final String NUM_PARTICIPANTS_KEY = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
+    //private static final String NUM_PARTICIPANTS_KEY = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
     
     @Resource
     private StudyEnrollmentService studyEnrollmentService;
@@ -54,15 +52,14 @@ public class StudyEnrollmentServiceTest {
     @Resource
     private TestUserAdminHelper helper;
 
-    @Before
-    public void before() {
-        jedisOps.del(NUM_PARTICIPANTS_KEY);
-        assertNull(jedisOps.get(NUM_PARTICIPANTS_KEY));
-    }
+    private Study study;
+    
+    private String numParticipantsKey;
     
     @After
     public void after() {
-        jedisOps.del(NUM_PARTICIPANTS_KEY);
+        jedisOps.del(numParticipantsKey);
+        subpopService.deleteAllSubpopulations(study.getStudyIdentifier());
     }
     
     @Test
@@ -70,16 +67,16 @@ public class StudyEnrollmentServiceTest {
         User user = new User();
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
-        Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
-        study.setIdentifier("test");
+        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         study.setMaxNumOfParticipants(2);
+        numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
 
         boolean limit = studyEnrollmentService.isStudyAtEnrollmentLimit(study);
         assertFalse("No limit reached", limit);
         studyEnrollmentService.incrementStudyEnrollment(study, user);
         studyEnrollmentService.incrementStudyEnrollment(study, user);
         assertTrue("Limit reached", studyEnrollmentService.isStudyAtEnrollmentLimit(study));
-        assertEquals("2", jedisOps.get(NUM_PARTICIPANTS_KEY));
+        assertEquals("2", jedisOps.get(numParticipantsKey));
     }
     
     @Test
@@ -87,10 +84,10 @@ public class StudyEnrollmentServiceTest {
         User user = new User();
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
-        Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
-        study.setIdentifier("test");
+        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         study.setMaxNumOfParticipants(2);
-
+        numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        
         studyEnrollmentService.incrementStudyEnrollment(study, user);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
         
@@ -105,7 +102,7 @@ public class StudyEnrollmentServiceTest {
         studyEnrollmentService.incrementStudyEnrollment(study, user);
         studyEnrollmentService.incrementStudyEnrollment(study, user);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
-        assertEquals("1", jedisOps.get(NUM_PARTICIPANTS_KEY));
+        assertEquals("1", jedisOps.get(numParticipantsKey));
     }
     
     @Test
@@ -113,12 +110,12 @@ public class StudyEnrollmentServiceTest {
         User user = new User();
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
         
-        jedisOps.del(NUM_PARTICIPANTS_KEY);
-        jedisOps.setnx(NUM_PARTICIPANTS_KEY, "2");
-        
-        Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
-        study.setIdentifier("test");
+        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         study.setMaxNumOfParticipants(2);
+        numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        
+        jedisOps.del(numParticipantsKey);
+        jedisOps.setnx(numParticipantsKey, "2");
 
         studyEnrollmentService.decrementStudyEnrollment(study, user);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
@@ -128,7 +125,7 @@ public class StudyEnrollmentServiceTest {
         studyEnrollmentService.decrementStudyEnrollment(study, user);
         studyEnrollmentService.decrementStudyEnrollment(study, user);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
-        assertEquals("0", jedisOps.get(NUM_PARTICIPANTS_KEY));
+        assertEquals("0", jedisOps.get(numParticipantsKey));
     }
     
     @Test
@@ -136,27 +133,28 @@ public class StudyEnrollmentServiceTest {
         User user = new User();
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
-        jedisOps.del(NUM_PARTICIPANTS_KEY);
-        jedisOps.setnx(NUM_PARTICIPANTS_KEY, "2");
-        
-        Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
-        study.setIdentifier("test");
+        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         study.setMaxNumOfParticipants(2);
-
+        numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        
+        jedisOps.del(numParticipantsKey);
+        jedisOps.setnx(numParticipantsKey, "2");
+        
         // With a signed consent, this does not decrement, because user is still in study
         studyEnrollmentService.decrementStudyEnrollment(study, user);
-        assertEquals("2", jedisOps.get(NUM_PARTICIPANTS_KEY));
+        assertEquals("2", jedisOps.get(numParticipantsKey));
         
         // With no signed consents, this will decrement.
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
         studyEnrollmentService.decrementStudyEnrollment(study, user);
-        assertEquals("1", jedisOps.get(NUM_PARTICIPANTS_KEY));
+        assertEquals("1", jedisOps.get(numParticipantsKey));
     }
     
     @Test
     public void getNumberOfParticipants() {
-        Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         study = studyService.createStudy(study);
+        numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         
         Subpopulation subpop1 = Subpopulation.create();
         subpop1.setName("Group 1");
