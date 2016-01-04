@@ -24,6 +24,9 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.collect.ImmutableList;
 
@@ -91,6 +94,12 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         DynamoDBQueryExpression<DynamoSubpopulation> query = 
                 new DynamoDBQueryExpression<DynamoSubpopulation>().withHashKeyValues(hashKey);
         
+        if (!includeDeleted) {
+            query.withQueryFilterEntry("deleted", new Condition()
+               .withComparisonOperator(ComparisonOperator.EQ)
+               .withAttributeValueList(new AttributeValue().withN("0")));
+        }
+
         // Get all the records because we only create a default if there are no physical records, 
         // regardless of the deletion status.
         List<DynamoSubpopulation> subpops = mapper.query(DynamoSubpopulation.class, query);
@@ -98,10 +107,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             Subpopulation subpop = createDefaultSubpopulation(studyId);
             return ImmutableList.of(subpop);
         }
-        // Now filter out deleted subpopulations, if requested
-        return subpops.stream()
-            .filter(subpop -> includeDeleted || !subpop.isDeleted())
-            .collect(toImmutableList());
+        return ImmutableList.copyOf(subpops);
     }
     
     @Override

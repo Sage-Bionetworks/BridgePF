@@ -107,7 +107,7 @@ public class DynamoSubpopulationDaoTest {
         assertTrue(deletedSubpop.isDeleted());
         
         // ... and it hides the subpop in the query used to find subpopulations for a user
-        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, true, false);
+        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false, false);
         assertEquals(0, subpopulations.size());
     }
     
