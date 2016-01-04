@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -299,6 +300,9 @@ public class StormpathAccountDao implements AccountDao {
         case 7104: // Account not found in the directory
         case 2016: // Property value does not match a known resource. Somehow this equals not found.
             throw new EntityNotFoundException(Account.class);
+        case 7101:
+            // Account is disabled for administrative reasons. This throws 423 LOCKED (WebDAV, not pure HTTP)
+            throw new BridgeServiceException("Account disabled, please contact user support", HttpStatus.SC_LOCKED);
         default:
             throw new ServiceUnavailableException(e);
         }

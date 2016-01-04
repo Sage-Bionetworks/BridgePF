@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -19,7 +20,6 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -97,12 +97,10 @@ public class StormPathUserAdminServiceTest {
         UserSession session1 = userAdminService.createUser(signUp, study, null, false, false);
         assertNull("No session", session1);
 
-        try {
-            authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, new SignIn(signUp.getEmail(), signUp.getPassword()));
-            fail("Should throw a consent required exception");
-        } catch (ConsentRequiredException e) {
-            testUser = e.getUserSession().getUser();
-        }
+        UserSession session = authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, new SignIn(signUp.getEmail(),
+                signUp.getPassword()));
+        testUser = session.getUser();
+        assertFalse(testUser.doesConsent());
     }
 
     // Next two test the same thing in two different ways.

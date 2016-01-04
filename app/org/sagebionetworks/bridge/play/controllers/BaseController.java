@@ -28,6 +28,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
+
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import play.Logger;
@@ -82,19 +84,11 @@ public abstract class BaseController extends Controller {
      */
     UserSession getSessionIfItExists() {
         final String sessionToken = getSessionToken();
-        if (sessionToken == null){
+        if (StringUtils.isBlank(sessionToken)){
             return null;
         }
         final UserSession session = authenticationService.getSession(sessionToken);
-        final Metrics metrics = getMetrics();
-        if (metrics != null && session != null) {
-            metrics.setSessionId(session.getInternalSessionToken());
-            User user = session.getUser();
-            if (user != null) {
-                metrics.setUserId(user.getId());
-            }
-            metrics.setStudy(session.getStudyIdentifier().getIdentifier());
-        }
+        writeSessionInfoToMetrics(session);
         return session;
     }
 
@@ -103,19 +97,9 @@ public abstract class BaseController extends Controller {
      * User does not have to give consent. 
      */
     UserSession getAuthenticatedSession() throws NotAuthenticatedException {
-        final String sessionToken = getSessionToken();
-        if (sessionToken == null || sessionToken.isEmpty()) {
-            throw new NotAuthenticatedException();
-        }
-        final UserSession session = authenticationService.getSession(sessionToken);
+        final UserSession session = getSessionIfItExists();
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
-        }
-        final Metrics metrics = getMetrics();
-        if (metrics != null && session != null) {
-            metrics.setSessionId(session.getInternalSessionToken());
-            metrics.setUserId(session.getUser().getId());
-            metrics.setStudy(session.getStudyIdentifier().getIdentifier());
         }
         return session;
     }
@@ -153,7 +137,8 @@ public abstract class BaseController extends Controller {
         cacheProvider.setUserSession(session);
     }
 
-    private String getSessionToken() {
+    /** Package-scoped to make available in unit tests. */
+    String getSessionToken() {
         String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
             Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
@@ -264,5 +249,18 @@ public abstract class BaseController extends Controller {
         final String requestId = RequestUtils.getRequestId(request());
         final String cacheKey = Metrics.getCacheKey(requestId);
         return (Metrics)Cache.get(cacheKey);
+    }
+
+    /** Writes the user's stormpath token, internal session ID, and study ID to the metrics. */
+    protected void writeSessionInfoToMetrics(UserSession session) {
+        Metrics metrics = getMetrics();
+        if (metrics != null && session != null) {
+            metrics.setSessionId(session.getInternalSessionToken());
+            User user = session.getUser();
+            if (user != null) {
+                metrics.setUserId(user.getId());
+            }
+            metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+        }
     }
 }

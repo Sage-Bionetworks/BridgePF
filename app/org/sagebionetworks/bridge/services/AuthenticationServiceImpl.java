@@ -8,7 +8,6 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -125,7 +124,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession signIn(Study study, ClientInfo clientInfo, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
+    public UserSession signIn(Study study, ClientInfo clientInfo, SignIn signIn) throws EntityNotFoundException {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
         Validate.entityThrowingException(signInValidator, signIn);
@@ -138,12 +137,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             
             UserSession session = getSessionFromAccount(study, clientInfo, account);
             cacheProvider.setUserSession(session);
-            
-            // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2) 
-            // you've consented to research.
-            if (!session.getUser().doesConsent() && !session.getUser().isInRole(Roles.ADMINISTRATIVE_ROLES)) {
-                throw new ConsentRequiredException(session);
-            }
             return session;
         } finally {
             if (lockId != null) {
@@ -204,10 +197,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Account account = accountDao.verifyEmail(study, verification);
         UserSession session = getSessionFromAccount(study, clientInfo, account);
         cacheProvider.setUserSession(session);
-
-        if (!session.getUser().doesConsent()) {
-            throw new ConsentRequiredException(session);
-        }
         return session;
     }
     

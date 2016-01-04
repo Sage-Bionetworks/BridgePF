@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +11,39 @@ import org.sagebionetworks.bridge.json.DateUtils;
 /** Utility class that contains static utility methods for handling uploads. */
 public class UploadUtil {
     private static final Logger logger = LoggerFactory.getLogger(UploadUtil.class);
+
+    /**
+     * <p>
+     * For some reason, the iOS are inserting arbitrary times into calendar dates. We need to convert them back to
+     * calendar dates. This method simply detects if the string is too long and then truncates it into 10 characters,
+     * then tries to parse the result.
+     * </p>
+     * <p>
+     * Note that converting timestamps into calendar dates is inherently ambiguous, since a single timestamp can
+     * represent two (or more) calendar dates. Example: 2015-12-23T00:00Z vs 2015-12-22T16:00-08:00
+     * </p>
+     *
+     * @param dateStr
+     *         string to parse into a calendar date
+     * @return parsed LocalDate, or null if it couldn't be parsed
+     */
+    public static LocalDate parseIosCalendarDate(String dateStr) {
+        if (StringUtils.isBlank(dateStr)) {
+            return null;
+        }
+
+        if (dateStr.length() > 10) {
+            logger.warn("Non-standard calendar date in upload data: " + dateStr);
+            dateStr = dateStr.substring(0, 10);
+        }
+
+        try {
+            return DateUtils.parseCalendarDate(dateStr);
+        } catch (IllegalArgumentException ex) {
+            logger.warn("Malformatted calendar date in upload data: " + dateStr);
+            return null;
+        }
+    }
 
     /**
      * For some reason, the iOS apps are sometimes sending timestamps in form "YYYY-MM-DD hh:mm:ss +ZZZZ", which is
@@ -39,7 +73,7 @@ public class UploadUtil {
 
         try {
             return DateUtils.parseISODateTime(timestampStr);
-        } catch (RuntimeException ex) {
+        } catch (IllegalArgumentException ex) {
             logger.warn("Malformatted timestamp in upload data: " + timestampStr);
             return null;
         }
