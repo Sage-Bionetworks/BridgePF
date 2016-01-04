@@ -26,7 +26,7 @@ public class DynamoStudyTest {
     @Test
     public void equalsHashCode() {
         // studyIdentifier is derived from the identifier
-        EqualsVerifier.forClass(DynamoStudy.class).allFieldsShouldBeUsedExcept("studyIdentifier")
+        EqualsVerifier.forClass(DynamoStudy.class).allFieldsShouldBeUsed()
             .suppress(Warning.NONFINAL_FIELDS)
             .withPrefabValues(ObjectMapper.class, new ObjectMapper(), new ObjectMapper())
             .withPrefabValues(JsonFactory.class, new JsonFactory(), new JsonFactory()).verify();

@@ -118,14 +118,12 @@ public abstract class BaseController extends Controller {
         return session;
     }
     
-    UserSession getAuthenticatedSession(Roles... roles) {
-        checkNotNull(roles);
+    UserSession getAuthenticatedSession(Roles role) {
+        checkNotNull(role);
         
         UserSession session = getAuthenticatedSession();
-        for (Roles role : roles) {
-            if (session.getUser().isInRole(role)) {
-                return session;
-            }
+        if (session.getUser().isInRole(role)) {
+            return session;
         }
         throw new UnauthorizedException();
     }
