@@ -32,8 +32,6 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyEnrollmentServiceTest {
     
-    //private static final String NUM_PARTICIPANTS_KEY = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
-    
     @Resource
     private StudyEnrollmentService studyEnrollmentService;
     
