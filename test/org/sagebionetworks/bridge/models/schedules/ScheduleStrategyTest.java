@@ -120,7 +120,7 @@ public class ScheduleStrategyTest {
         assertTrue("40% users assigned to B", Math.abs(countsByLabel.get("B").intValue() - 400) < 50);
         assertTrue("20% users assigned to C", Math.abs(countsByLabel.get("C").intValue() - 200) < 50);
     }
-
+    
     private DynamoSchedulePlan createABSchedulePlan() {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         // plan.setGuid("a71eecc3-5e75-4a11-91f4-c587999cbb20");

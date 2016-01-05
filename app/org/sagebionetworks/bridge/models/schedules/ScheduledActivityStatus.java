@@ -41,4 +41,10 @@ public enum ScheduledActivityStatus {
     public static final Set<ScheduledActivityStatus> DELETABLE_STATUSES = EnumSet.of(ScheduledActivityStatus.SCHEDULED,
             ScheduledActivityStatus.AVAILABLE, ScheduledActivityStatus.EXPIRED);
     
+    /**
+     * This activity has been found in database, it should be scheduled, but whether we return it or not ultimately 
+     * depends on whether it should be visible. All the visible statuses are enumerated here.
+     */
+    public static final Set<ScheduledActivityStatus> VISIBLE_STATUSES = EnumSet.of(ScheduledActivityStatus.SCHEDULED,
+            ScheduledActivityStatus.AVAILABLE, ScheduledActivityStatus.STARTED);    
 }

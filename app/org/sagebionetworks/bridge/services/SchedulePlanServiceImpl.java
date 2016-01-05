@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
-import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
@@ -22,16 +21,12 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.google.common.collect.Sets;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 
 @Component
 public class SchedulePlanServiceImpl implements SchedulePlanService {
-    
-    private static final Set<String> DATA_GROUPS = Sets.newHashSet();
     
     private SchedulePlanDao schedulePlanDao;
     private SurveyService surveyService;
@@ -69,7 +64,7 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         plan.setStudyKey(study.getIdentifier());
 
         // Delete existing GUIDs so this is a new object (or recreate them)
-        Validate.entityThrowingException(new SchedulePlanValidator(DATA_GROUPS, study.getTaskIdentifiers()), plan);
+        Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
         updateGuids(plan);
 
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
@@ -85,7 +80,7 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
         // Plan must always be in user's study
         plan.setStudyKey(study.getIdentifier());
         
-        Validate.entityThrowingException(new SchedulePlanValidator(DATA_GROUPS, study.getTaskIdentifiers()), plan);
+        Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);

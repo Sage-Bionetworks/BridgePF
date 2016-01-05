@@ -13,7 +13,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @Type(name="SimpleScheduleStrategy", value=SimpleScheduleStrategy.class),
-    @Type(name="ABTestScheduleStrategy", value=ABTestScheduleStrategy.class)
+    @Type(name="ABTestScheduleStrategy", value=ABTestScheduleStrategy.class),
+    @Type(name="CriteriaScheduleStrategy", value=CriteriaScheduleStrategy.class)
 })
 public interface ScheduleStrategy {
     

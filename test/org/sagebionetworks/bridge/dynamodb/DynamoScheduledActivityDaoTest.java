@@ -171,7 +171,6 @@ public class DynamoScheduledActivityDaoTest {
 
         // Get one schedule plan GUID to delete and the initial count
         int initialCount = activities.size();
-        String taskRunForActivityDeleted = findAnActivityFor(activities, testPlan).getRunKey();
         
         activityDao.deleteActivitiesForSchedulePlan(testPlan.getGuid());
         
@@ -193,14 +192,6 @@ public class DynamoScheduledActivityDaoTest {
         
         activityDao.deleteActivitiesForSchedulePlan(testPlan2.getGuid());
         activities = activityDao.getActivities(context);
-        
-        // We've verified that activities are deleted (above), but the one we finished, although not returned 
-        // when we query for tasks, will return false when we ask if its run key has not occurred. Because it's
-        // still in the table.
-        assertFalse(activityDao.activityRunHasNotOccurred(context.getHealthCode(), finishedActivity.getRunKey()));
-
-        // This is true, it was deleted, so it's like it never happened
-        assertTrue(activityDao.activityRunHasNotOccurred(context.getHealthCode(), taskRunForActivityDeleted));
     }
     
     private List<SchedulePlan> getSchedulePlans() {

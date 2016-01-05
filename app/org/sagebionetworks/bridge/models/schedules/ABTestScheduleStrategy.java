@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -129,27 +130,19 @@ public final class ABTestScheduleStrategy implements ScheduleStrategy {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((groups == null) ? 0 : groups.hashCode());
-        return result;
+        return Objects.hashCode(groups);
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
         ABTestScheduleStrategy other = (ABTestScheduleStrategy) obj;
-        if (groups == null) {
-            if (other.groups != null)
-                return false;
-        } else if (!groups.equals(other.groups))
-            return false;
-        return true;
+        return Objects.equals(groups, other.groups);
     }
+
     @Override
     public String toString() {
         return "ABTestScheduleStrategy [groups=" + groups + "]";

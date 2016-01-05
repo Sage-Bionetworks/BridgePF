@@ -26,14 +26,6 @@ public interface ScheduledActivityDao {
     public List<ScheduledActivity> getActivities(ScheduleContext context);
     
     /**
-     * Have any of the activities for this run key been created?
-     * @param healthCode
-     * @param runKey
-     * @return
-     */
-    public boolean activityRunHasNotOccurred(String healthCode, String runKey);
-    
-    /**
      * Save activities (activities will only be saved if they are not in the database).
      * @param activities
      */
@@ -67,5 +59,11 @@ public interface ScheduledActivityDao {
      * @param schedulePlanGuid
      */
     public void deleteActivitiesForSchedulePlan(String schedulePlanGuid);
+    
+    /**
+     * Delete set of activities.
+     * @param activities
+     */
+    public void deleteActivities(List<ScheduledActivity> activities);
     
 }

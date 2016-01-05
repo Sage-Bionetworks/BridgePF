@@ -70,14 +70,18 @@ public class ScheduleController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withUser(session.getUser()).withClientInfo(clientInfo).build();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
+        
         for (SchedulePlan plan : plans) {
-            ScheduleContext context = new ScheduleContext.Builder()
-                    .withUser(session.getUser()).withClientInfo(clientInfo).build();
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
-            schedules.add(schedule);
+            if (schedule != null) {
+                schedules.add(schedule);
+            }
         }
         return okResult(schedules);
     }

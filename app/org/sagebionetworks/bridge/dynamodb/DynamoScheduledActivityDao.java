@@ -18,7 +18,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -28,17 +27,11 @@ import com.google.common.collect.Lists;
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     private DynamoDBMapper mapper;
-    private DynamoIndexHelper runKeyIndex;
     private DynamoIndexHelper schedulePlanIndex;
     
     @Resource(name = "activityDdbMapper")
     public final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
-    }
-    
-    @Resource(name = "activityRunKeyIndex")
-    public final void setActivityRunKeyIndex(DynamoIndexHelper index) {
-        this.runKeyIndex = index;
     }
     
     @Resource(name = "activitySchedulePlanGuidIndex")
@@ -80,25 +73,11 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         
         List<ScheduledActivity> activities = Lists.newArrayList();
         for (DynamoScheduledActivity activity : queryResults) {
-            // Although we don't create activities for applications that are of the wrong version for a schedule,
-            // we do create activities into the future, and that means activities can get out of sync with the version 
-            // of the app requesting activities. We must filter here, as well as when we retrieve schedule plans for 
-            // scheduling.
-            if (context.getClientInfo().isTargetedAppVersion(activity.getMinAppVersion(), activity.getMaxAppVersion())) {
-                activity.setTimeZone(context.getZone());
-                activities.add(activity);
-            }
+            activity.setTimeZone(context.getZone());
+            activities.add(activity);
         }
         Collections.sort(activities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
         return activities;
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public boolean activityRunHasNotOccurred(String healthCode, String runKey) {
-        RangeKeyCondition rangeKeyCondition = new RangeKeyCondition("runKey").eq(runKey);
-        int count = runKeyIndex.queryKeyCount("healthCode", healthCode, rangeKeyCondition);
-        return (count == 0);
     }
     
     /** {@inheritDoc} */
@@ -130,14 +109,11 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         
         PaginatedQueryList<DynamoScheduledActivity> queryResults = mapper.query(DynamoScheduledActivity.class, query);
         
-        // Confirmed that you have to transfer these activities to a list or the batchDelete does not work. 
-        List<DynamoScheduledActivity> activitiesToDelete = Lists.newArrayListWithCapacity(queryResults.size());
+        // Confirmed that you have to transfer these activities to a list or the batchDelete does not work.
+        List<ScheduledActivity> activitiesToDelete = Lists.newArrayListWithCapacity(queryResults.size());
         activitiesToDelete.addAll(queryResults);
-        
-        if (!activitiesToDelete.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
-            BridgeUtils.ifFailuresThrowException(failures);
-        }
+
+        deleteActivities(activitiesToDelete);
     }
     
     /** {@inheritDoc} */
@@ -152,10 +128,16 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
                 .filter(act -> ScheduledActivityStatus.DELETABLE_STATUSES.contains(act.getStatus()))
                 .collect(Collectors.toList());
         
-        if (!activitiesToDelete.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
+        deleteActivities(activitiesToDelete);
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void deleteActivities(List<ScheduledActivity> activities) {
+        if (!activities.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(activities);
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }
-
+    
 }

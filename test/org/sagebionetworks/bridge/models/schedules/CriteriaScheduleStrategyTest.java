@@ -273,10 +273,8 @@ public class CriteriaScheduleStrategyTest {
     }
     
     private Schedule getSchedule(Set<String> dataGroups) {
-        User user = getUser();
-        user.setDataGroups(dataGroups);
         ScheduleContext context = new ScheduleContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT).withUser(user).build();
+                .withUserDataGroups(dataGroups).build();
         return strategy.getScheduleForUser(plan, context);
     }
     

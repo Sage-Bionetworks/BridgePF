@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -60,19 +59,6 @@ public class BridgeUtils {
     
     public static String generateGuid() {
         return UUID.randomUUID().toString();
-    }
-    
-    /**
-     * Identifies a set of scheduled activities from a single run of a schedule. 
-     * @param scheduledActivity
-     * @param context
-     * @return
-     */
-    public static String generateScheduledActivityRunKey(ScheduledActivity scheduledActivity, String schedulePlanGuid) {
-        checkNotNull(scheduledActivity);
-        checkNotNull(scheduledActivity.getScheduledOn());
-        checkNotNull(schedulePlanGuid);
-        return String.format("%s:%s", schedulePlanGuid, scheduledActivity.getScheduledOn().toLocalDateTime());
     }
     
     /**

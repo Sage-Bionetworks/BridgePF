@@ -103,8 +103,6 @@ public class DynamoScheduledActivityTest {
         schActivity.setGuid("AAA-BBB-CCC");
         schActivity.setHealthCode("FFF-GGG-HHH");
         schActivity.setPersistent(true);
-        schActivity.setMinAppVersion(1);
-        schActivity.setMaxAppVersion(3);
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(schActivity);
@@ -115,8 +113,6 @@ public class DynamoScheduledActivityTest {
         assertEquals(expiresOnString, node.get("expiresOn").asText());
         assertEquals("scheduled", node.get("status").asText());
         assertEquals("ScheduledActivity", node.get("type").asText());
-        assertEquals(1, node.get("minAppVersion").asInt());
-        assertEquals(3, node.get("maxAppVersion").asInt());
         assertTrue(node.get("persistent").asBoolean());
         
         JsonNode activityNode = node.get("activity");
@@ -235,7 +231,6 @@ public class DynamoScheduledActivityTest {
         act.setLocalScheduledOn(LocalDateTime.parse("2015-10-01T10:10:10.000"));
         act.setLocalExpiresOn(LocalDateTime.parse("2015-10-01T14:10:10.000"));
         act.setHidesOn(DateTime.parse("2015-10-01T14:10:10.000-06:00").getMillis());
-        act.setRunKey("runKey");
         act.setHealthCode("healthCode");
         act.setGuid("activityGuid");
         act.setSchedulePlanGuid("schedulePlanGuid");
@@ -243,8 +238,6 @@ public class DynamoScheduledActivityTest {
         act.setStartedOn(DateTime.parse("2015-10-10T08:08:08.000Z").getMillis());
         act.setFinishedOn(DateTime.parse("2015-12-05T08:08:08.000Z").getMillis());
         act.setPersistent(true);
-        act.setMinAppVersion(1);
-        act.setMaxAppVersion(2);
         
         String json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(act);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -253,8 +246,6 @@ public class DynamoScheduledActivityTest {
         assertEquals("2015-10-10T08:08:08.000Z", node.get("startedOn").asText());
         assertEquals("2015-12-05T08:08:08.000Z", node.get("finishedOn").asText());
         assertEquals("true", node.get("persistent").asText());
-        assertEquals("1", node.get("minAppVersion").asText());
-        assertEquals("2", node.get("maxAppVersion").asText());
         assertEquals("finished", node.get("status").asText());
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
