@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -47,7 +48,9 @@ public class ScheduleController extends BaseController {
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(session.getStudyIdentifier(), plan, session.getUser());
+            ScheduleContext context = new ScheduleContext.Builder()
+                    .withUser(session.getUser()).withClientInfo(clientInfo).build();
+            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             schedules.add(schedule);
         }
         
@@ -71,7 +74,9 @@ public class ScheduleController extends BaseController {
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(session.getStudyIdentifier(), plan, session.getUser());
+            ScheduleContext context = new ScheduleContext.Builder()
+                    .withUser(session.getUser()).withClientInfo(clientInfo).build();
+            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             schedules.add(schedule);
         }
         return okResult(schedules);

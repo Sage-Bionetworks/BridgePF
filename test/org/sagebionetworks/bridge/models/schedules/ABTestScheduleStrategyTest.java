@@ -12,8 +12,17 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableList;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 public class ABTestScheduleStrategyTest {
 
+    @Test
+    public void equalsHashCode() {
+        EqualsVerifier.forClass(ABTestScheduleStrategy.class).allFieldsShouldBeUsed()
+            .suppress(Warning.NONFINAL_FIELDS).verify();
+    }
+    
     @Test
     public void testScheduleCollector() {
         StudyIdentifier studyId = new StudyIdentifierImpl("test-study");

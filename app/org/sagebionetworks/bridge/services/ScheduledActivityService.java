@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
@@ -105,7 +104,7 @@ public class ScheduledActivityService {
         ScheduleContext newContext = new ScheduleContext.Builder()
             .withContext(context)
             .withEvents(events).build();
-        Multimap<String,ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(user, newContext);
+        Multimap<String,ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
         
         List<ScheduledActivity> scheduledActivitiesToSave = Lists.newArrayList();
         for (String runKey : scheduledActivities.keySet()) {
@@ -213,14 +212,14 @@ public class ScheduledActivityService {
         return newEvents;
     }
    
-    private Multimap<String,ScheduledActivity> scheduleActivitiesForPlans(User user, ScheduleContext context) {
-        StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
+    private Multimap<String,ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
+        StudyIdentifier studyId = context.getStudyIdentifier();
         
         Multimap<String,ScheduledActivity> scheduledActivities = ArrayListMultimap.create();
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getClientInfo(), studyId);
         
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);
+            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             
             List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
             for (ScheduledActivity activity : activities) {

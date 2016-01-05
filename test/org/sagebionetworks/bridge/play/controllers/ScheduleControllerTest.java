@@ -61,6 +61,7 @@ public class ScheduleControllerTest {
         controller.setSchedulePlanService(schedulePlanService);
         
         User user = new User();
+        user.setStudyKey("study-test");
         
         UserSession session = mock(UserSession.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);

@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.List;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.validation.Errors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -24,19 +22,19 @@ public interface ScheduleStrategy {
      * (the implementation for assigning schedules), however, it needs to be idempotent (each 
      * call for a user must return the same schedule), and it must be possible to enumerate all 
      * possible schedules that can be returned by this strategy.
-     * @param studyIdentifier
      * @param plan
-     * @param user
+     * @param context
      * @return
      */
-    public Schedule getScheduleForUser(StudyIdentifier studyIdentifier, SchedulePlan plan, User user);
+    public Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context);
     
     /**
      * Validate that the strategy implementation instance is valid.
+     * @param dataGroups
      * @param taskIdentifiers
      * @param errors
      */
-    public void validate(Set<String> taskIdentifiers, Errors errors);
+    public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors);
     
     /**
      * Get all possible schedules that this schedule strategy might schedule. This can be used to 

@@ -122,7 +122,7 @@ public class TestUtils {
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, User user, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(context.getStudyIdentifier(), plan, user);
+            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             scheduledActivities.addAll(schedule.getScheduler().getScheduledActivities(plan, context));
         }
         Collections.sort(scheduledActivities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);

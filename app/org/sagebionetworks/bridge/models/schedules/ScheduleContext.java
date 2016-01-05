@@ -9,6 +9,7 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -153,6 +154,14 @@ public final class ScheduleContext {
         private DateTime now;
         private Set<String> userDataGroups;
         
+        public Builder withUser(User user) {
+            if (user != null) {
+                this.healthCode = user.getHealthCode();
+                this.studyId = new StudyIdentifierImpl(user.getStudyKey());
+                this.userDataGroups = user.getDataGroups();                
+            }
+            return this;
+        }
         public Builder withStudyIdentifier(String studyId) {
             if (studyId != null) {
                 this.studyId = new StudyIdentifierImpl(studyId);    

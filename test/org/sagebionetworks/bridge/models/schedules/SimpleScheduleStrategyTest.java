@@ -11,8 +11,17 @@ import org.sagebionetworks.bridge.TestUtils;
 
 import com.google.common.collect.ImmutableList;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 public class SimpleScheduleStrategyTest {
 
+    @Test
+    public void equalsHashCode() {
+        EqualsVerifier.forClass(SimpleScheduleStrategy.class).allFieldsShouldBeUsed()
+            .suppress(Warning.NONFINAL_FIELDS).verify();
+    }
+    
     @Test
     public void testScheduleCollector() {
         SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
