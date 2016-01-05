@@ -109,6 +109,11 @@ public class DynamoSubpopulationDaoTest {
         // ... and it hides the subpop in the query used to find subpopulations for a user
         List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false, false);
         assertEquals(0, subpopulations.size());
+        
+        // However, the subpopulation has not been physically deleted and can be retrieved as part of the list
+        allSubpops = dao.getSubpopulations(studyId, false, true);
+        assertEquals(1, allSubpops.size());
+        assertEquals(deletedSubpop.getGuid(), allSubpops.get(0).getGuid());
     }
     
     @Test(expected = BadRequestException.class)
@@ -300,6 +305,26 @@ public class DynamoSubpopulationDaoTest {
         // As a consequence, consents have all been deleted as well
         consents = studyConsentService.getAllConsents(subpop.getGuid());
         assertTrue(consents.isEmpty());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void logicallyDeletingLogicallyDeletedSubpopThrowsNotFoundException() {
+        Subpopulation subpop = createSubpop("Name", null, null, null);
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
+        
+        // This should just appear to not exist and throw a 404 exception
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
+    }
+    
+    @Test
+    public void physicallyDeletingLogicallyDeletedSubpopWorks() {
+        Subpopulation subpop = createSubpop("Name", null, null, null);
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
+        
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), true);
+        
+        List<Subpopulation> allSubpops = dao.getSubpopulations(studyId, false, true);
+        assertTrue(allSubpops.isEmpty());
     }
     
     private Subpopulation createSubpop(String name, Integer min, Integer max, String group) {

@@ -72,12 +72,13 @@ public class SubpopulationController extends BaseController {
         if (!session.getUser().isInRole(DELETE_ROLES)) {
             throw new UnauthorizedException();
         }
+        // Only admins can request a physical delete.
+        boolean physicalDelete = ("true".equals(physicalDeleteString));
+        if (physicalDelete && session.getUser().isInRole(DEVELOPER)) {
+            throw new UnauthorizedException();
+        }
         
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
-        
-        // Only admins can request a physical delete.
-        boolean physicalDelete = (session.getUser().isInRole(ADMIN) && "true".equals(physicalDeleteString));
-        
         subpopService.deleteSubpopulation(session.getStudyIdentifier(), subpopGuid, physicalDelete);
 
         String message = (physicalDelete) ? "Subpopulation has been permanently deleted." : "Subpopulation has been deleted.";
