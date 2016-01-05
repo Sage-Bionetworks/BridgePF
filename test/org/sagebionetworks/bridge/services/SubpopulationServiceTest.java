@@ -230,9 +230,9 @@ public class SubpopulationServiceTest {
     
     @Test
     public void deleteSubpopulation() {
-        service.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        service.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
         
-        verify(dao).deleteSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        verify(dao).deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
     }
     
 }

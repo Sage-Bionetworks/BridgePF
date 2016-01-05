@@ -370,7 +370,7 @@ public class ConsentServiceImplTest {
         statuses = consentService.getConsentStatuses(context);
         assertConsented(statuses, true);
         
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), new Withdrawal("Nada"),
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL,
                 DateTime.now().getMillis());
         
         // your sharing has been turned off because not all required consents are signed
@@ -384,14 +384,12 @@ public class ConsentServiceImplTest {
         assertFalse(statuses.get(optionalSubpop.getGuid()).isConsented());
         // Just verify that it now doesn't appear to exist, so this is an exception
         try {
-            consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), new Withdrawal("Nada"),
-                    DateTime.now().getMillis());
+            consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
         
-        consentService.withdrawConsent(study, requiredSubpop.getGuid(), testUser.getUser(), new Withdrawal("Nada"),
-                DateTime.now().getMillis());
+        consentService.withdrawConsent(study, requiredSubpop.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
         
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);

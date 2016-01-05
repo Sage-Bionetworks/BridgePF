@@ -64,8 +64,10 @@ public interface SubpopulationDao {
      * one has signed a consent for this subpopulation and need to keep the consent document around. 
      * @param studyId
      * @param guid
+     * @param physicalDelete physically delete this subpopulation from the database. This is only done via an 
+     *      admin-api for the purposes of cleanup after integration tests. 
      */
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid);
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete);
     
     /**
      * Delete all subpopulations. This is a physical delete and not a logical delete, and is not exposed 

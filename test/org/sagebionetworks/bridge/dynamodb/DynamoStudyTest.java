@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,7 +27,7 @@ public class DynamoStudyTest {
     @Test
     public void equalsHashCode() {
         // studyIdentifier is derived from the identifier
-        EqualsVerifier.forClass(DynamoStudy.class).allFieldsShouldBeUsedExcept("studyIdentifier")
+        EqualsVerifier.forClass(DynamoStudy.class).allFieldsShouldBeUsed()
             .suppress(Warning.NONFINAL_FIELDS)
             .withPrefabValues(ObjectMapper.class, new ObjectMapper(), new ObjectMapper())
             .withPrefabValues(JsonFactory.class, new JsonFactory(), new JsonFactory()).verify();
@@ -96,6 +97,16 @@ public class DynamoStudyTest {
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
         assertEquals(study, deserStudy);
+    }
+    
+    @Test
+    public void settingStringOrObjectStudyIdentifierSetsTheOther() {
+        DynamoStudy study = new DynamoStudy();
+        study.setIdentifier("test-study");
+        assertEquals(study.getStudyIdentifier(), new StudyIdentifierImpl("test-study"));
+        
+        study.setIdentifier(null);
+        assertNull(study.getStudyIdentifier());
     }
     
     void assertEqualsAndNotNull(Object expected, Object actual) {
