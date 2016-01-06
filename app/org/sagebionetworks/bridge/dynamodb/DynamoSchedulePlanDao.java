@@ -58,8 +58,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         
         ArrayList<SchedulePlan> plans = Lists.newArrayListWithCapacity(dynamoPlans.size());
         for(DynamoSchedulePlan dynamoPlan : dynamoPlans) {
-            // We will continue to filter app version based on stored min/max in the activities. But future 
-            // filtering will be moved to the ContestScheduleStrategy encapsulated in a schedule plan.  
+            // We will continue to filter app version based min/max values for a plan. This is in use in prod. 
+            // But future filtering will be moved to the ContextScheduleStrategy encapsulated in a schedule plan.  
             if (clientInfo.isTargetedAppVersion(dynamoPlan.getMinAppVersion(), dynamoPlan.getMaxAppVersion())) {
                 plans.add(dynamoPlan);
             }

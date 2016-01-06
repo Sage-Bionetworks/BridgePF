@@ -107,7 +107,7 @@ public class ScheduledActivityServiceMockTest {
         when(activityEventService.getActivityEventMap(anyString())).thenReturn(map);
         
         ScheduleContext context = createScheduleContext(endsOn);
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
         activityDao = mock(DynamoScheduledActivityDao.class);
         when(activityDao.getActivity(anyString(), anyString())).thenAnswer(invocation -> {
@@ -162,7 +162,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void rejectsListOfActivitiesWithNullElement() {
         ScheduleContext context = createScheduleContext(endsOn);
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         scheduledActivities.set(0, (DynamoScheduledActivity)null);
         
         service.updateScheduledActivities("AAA", scheduledActivities);
@@ -171,7 +171,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void rejectsListOfActivitiesWithTaskThatLacksGUID() {
         ScheduleContext context = createScheduleContext(endsOn);
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         scheduledActivities.get(0).setGuid(null);
         
         service.updateScheduledActivities("AAA", scheduledActivities);
@@ -181,7 +181,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void updateActivitiesWorks() {
         ScheduleContext context = createScheduleContext(endsOn);
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
         // 4-5 activities (depending on time of day), finish two, these should publish events, 
         // the third with a startedOn timestamp will be saved, so 3 activities sent to the DAO
@@ -219,7 +219,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expected = BridgeServiceException.class)
     public void activityListWithNullsRejected() {
         ScheduleContext context = createScheduleContext(endsOn);
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         activities.set(0, null);
         
         service.updateScheduledActivities("BBB", activities);
@@ -228,7 +228,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expected = BridgeServiceException.class)
     public void activityListWithNullGuidRejected() {
         ScheduleContext context = createScheduleContext(endsOn);
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         activities.get(1).setGuid(null);
         
         service.updateScheduledActivities("BBB", activities);

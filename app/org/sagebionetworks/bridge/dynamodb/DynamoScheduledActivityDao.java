@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -61,18 +62,19 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
             return ImmutableList.of();
         }
         List<Object> activitiesToLoad = new ArrayList<Object>(activities);
-        Map<String,List<Object>> results = mapper.batchLoad(activitiesToLoad);
+        Map<String,List<Object>> resultMap = mapper.batchLoad(activitiesToLoad);
         
         // there's only one table of results returned.
-        List<Object> activitiesLoaded = Iterables.getFirst(results.values(), ImmutableList.of()); 
+        List<Object> activitiesLoaded = Iterables.getFirst(resultMap.values(), ImmutableList.of()); 
         
-        ImmutableList.Builder<ScheduledActivity> builder = new ImmutableList.Builder<>();
+        List<ScheduledActivity> results = Lists.newArrayListWithCapacity(activitiesLoaded.size());
         for (Object object : activitiesLoaded) {
             ScheduledActivity activity = (ScheduledActivity)object;
             activity.setTimeZone(timeZone);
-            builder.add(activity);
+            results.add(activity);
         }
-        return builder.build();
+        Collections.sort(results, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
+        return results;
     }
     
     /** {@inheritDoc} */
@@ -108,7 +110,10 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         List<ScheduledActivity> activitiesToDelete = Lists.newArrayListWithCapacity(queryResults.size());
         activitiesToDelete.addAll(queryResults);
 
-        deleteActivities(activitiesToDelete);
+        if (!activitiesToDelete.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
     }
     
     /** {@inheritDoc} */
@@ -123,14 +128,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
                 .filter(act -> ScheduledActivityStatus.DELETABLE_STATUSES.contains(act.getStatus()))
                 .collect(Collectors.toList());
         
-        deleteActivities(activitiesToDelete);
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public void deleteActivities(List<ScheduledActivity> activities) {
-        if (!activities.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(activities);
+        if (!activitiesToDelete.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }

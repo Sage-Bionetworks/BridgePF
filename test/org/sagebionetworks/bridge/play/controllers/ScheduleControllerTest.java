@@ -52,7 +52,7 @@ public class ScheduleControllerTest {
         studyId = new StudyIdentifierImpl(TestUtils.randomName(ScheduleControllerTest.class));
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app name/9");
         
-        // This filer is done in the bowels of the DAO; tested elsewhere
+        // This filter is done in the bowels of the DAO; tested elsewhere
         List<SchedulePlan> plans = Lists.newArrayList();
         for (SchedulePlan plan : TestUtils.getSchedulePlans(studyId)) {
             if (clientInfo.isTargetedAppVersion(plan.getMinAppVersion(), plan.getMaxAppVersion())) {

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
@@ -63,11 +64,11 @@ public class CriteriaScheduleStrategyTest {
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         
         setUpStrategyWithAppVersions();
-        setUpStrategyNoCriteria();
+        setUpStrategyWithRequiredAndProhibitedDataGroups();
         
         String json = mapper.writeValueAsString(strategy);
-        
         JsonNode node = mapper.readTree(json);
+
         assertEquals("CriteriaScheduleStrategy", node.get("type").asText());
         assertNotNull(node.get("scheduleCriteria"));
         
@@ -79,6 +80,14 @@ public class CriteriaScheduleStrategyTest {
         assertNotNull(child1.get("allOfGroups"));
         assertNotNull(child1.get("noneOfGroups"));
         assertNotNull(child1.get("schedule"));
+        
+        JsonNode child2 = array.get(1);
+        Set<String> allOfGroups = arrayToSet(child2.get("allOfGroups"));
+        assertTrue(allOfGroups.contains("req1"));
+        assertTrue(allOfGroups.contains("req2"));
+        Set<String> noneOfGroups = arrayToSet(child2.get("noneOfGroups"));
+        assertTrue(noneOfGroups.contains("proh1"));
+        assertTrue(noneOfGroups.contains("proh2"));
         
         // But mostly, if this isn't all serialized, and then deserialized, these won't be equal
         CriteriaScheduleStrategy newStrategy = mapper.readValue(json, CriteriaScheduleStrategy.class);
@@ -257,6 +266,14 @@ public class CriteriaScheduleStrategyTest {
         }
     }
     
+    private Set<String> arrayToSet(JsonNode array) {
+        Set<String> set = Sets.newHashSet();
+        for (int i=0; i < array.size(); i++) {
+            set.add(array.get(i).asText());
+        }
+        return set;
+    }
+    
     private Schedule makeValidSchedule(String label) {
         Schedule schedule = new Schedule();
         schedule.setLabel(label);
@@ -322,4 +339,10 @@ public class CriteriaScheduleStrategyTest {
             .withSchedule(strategyWithProhibitedDataGroups).build());
     }
 
+    private void setUpStrategyWithRequiredAndProhibitedDataGroups() {
+        strategy.addCriteria(new ScheduleCriteria.Builder()
+            .addRequiredGroup("req1", "req2")
+            .addProhibitedGroup("proh1","proh2")
+            .withSchedule(strategyWithAppVersions).build());
+    }
 }

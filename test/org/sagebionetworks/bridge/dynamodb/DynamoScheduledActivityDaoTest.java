@@ -1,9 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -62,7 +60,6 @@ public class DynamoScheduledActivityDaoTest {
     
     @Before
     public void before() {
-
         Study study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setTaskIdentifiers(Sets.newHashSet("tapTest"));
@@ -113,58 +110,42 @@ public class DynamoScheduledActivityDaoTest {
             .withEndsOn(endsOn)
             .withEvents(eventMap()).build();
         
-        List<ScheduledActivity> activitiesToSchedule = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> activitiesToSchedule = TestUtils.runSchedulerForActivities(context);
         activityDao.saveActivities(activitiesToSchedule);
         
-        List<ScheduledActivity> activities = activityDao.getActivities(context.getZone(), activitiesToSchedule);
-        assertFalse("activities were created", activities.isEmpty());
+        List<ScheduledActivity> savedActivities = activityDao.getActivities(context.getZone(), activitiesToSchedule);
+        
+        assertEquals("activities were created", activitiesToSchedule, savedActivities);
         
         // Have activities gotten injected time zone? We have to do this during construction using the time zone
         // sent with this call/request.
-        assertEquals(DateTimeZone.UTC, ((DynamoScheduledActivity)activities.get(0)).getTimeZone());
+        assertEquals(DateTimeZone.UTC, ((DynamoScheduledActivity)savedActivities.get(0)).getTimeZone());
         
-        // Delete most information in activities and delete one by finishing it. This does not remove it from the 
-        // database, however. Its status is just marked FINISHED
-        cleanActivities(activities);
-        ScheduledActivity activity = activities.get(1);
+        // Create a new list of activities removing some that are saved, and adding new ones.
+        List<ScheduledActivity> reducedSet = activitiesToSchedule.subList(0, activitiesToSchedule.size()-2);
+        List<ScheduledActivity> anotherSet = TestUtils.runSchedulerForActivities(getSchedulePlans(), context);
+        anotherSet.addAll(reducedSet);
+        
+        // You get back the intersection of activities that have been saved, only.
+        List<ScheduledActivity> intersection = activityDao.getActivities(context.getZone(), anotherSet);
+        assertEquals(reducedSet, intersection);
+        
+        // Finish and delete
+        
+        // Finish one of the activities.  
+        ScheduledActivity activity = savedActivities.get(1);
         activity.setFinishedOn(context.getNow().getMillis());
         assertEquals("activity deleted", ScheduledActivityStatus.DELETED, activity.getStatus());
         activityDao.updateActivities(user.getHealthCode(), Lists.newArrayList(activity));
         
-        // Finishing a task does not remove it from the results... nothing now removes items from results except
-        // a real physical delete
-        List<ScheduledActivity> newActivities = activityDao.getActivities(context.getZone(), activities);
-        assertEquals(activities.size(), newActivities.size());
+        // This does not remove it from the database, however.
+        List<ScheduledActivity> newActivities = activityDao.getActivities(context.getZone(), savedActivities);
+        assertEquals(savedActivities.size(), newActivities.size());
         
-        // This is a physical delete however, and they will really be gone.
+        // This is a physical delete, and the activities will be gone.
         activityDao.deleteActivitiesForUser(user.getHealthCode());
-        activities = activityDao.getActivities(context.getZone(), activities);
-        assertEquals("all activities deleted", 0, activities.size());
-    }
-    
-    @Test
-    public void deleteActivities() throws Exception {
-        DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
-        
-        ScheduleContext context = new ScheduleContext.Builder()
-            .withUser(user)
-            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(DateTimeZone.UTC)
-            .withEndsOn(endsOn)
-            .withEvents(eventMap()).build();
-        
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
-
-        // just sanity check that we did schedule some tasks before saving them.
-        int length = activities.size();
-        assertTrue(length > 1);
-        activityDao.saveActivities(activities);
-        
-        // This is a physical delete, they will really be gone from the database.
-        activityDao.deleteActivities(activities);
-        
-        activities = activityDao.getActivities(context.getZone(), activities);
-        assertTrue(activities.isEmpty());
+        savedActivities = activityDao.getActivities(context.getZone(), savedActivities);
+        assertEquals("all activities deleted", 0, savedActivities.size());
     }
     
     @Test
@@ -172,24 +153,22 @@ public class DynamoScheduledActivityDaoTest {
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
-            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(DateTimeZone.UTC)
-            .withEndsOn(endsOn)
-            .withHealthCode(user.getHealthCode())
-            .withEvents(eventMap()).build();
+                .withUser(user)
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withTimeZone(DateTimeZone.UTC)
+                .withEndsOn(endsOn)
+                .withEvents(eventMap()).build();
         
         // Schedule plans are specific to this test because we're going to delete them;
         List<SchedulePlan> plans = getSchedulePlans();
         SchedulePlan testPlan = plans.get(0);
-        SchedulePlan testPlan2 = plans.get(1);
         
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(plans, user, context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(plans, context);
         activityDao.saveActivities(activities);
 
         // Get one schedule plan GUID to delete and the initial count
         int initialCount = activities.size();
-        
+        assertTrue("there are activities", initialCount > 1);
         activityDao.deleteActivitiesForSchedulePlan(testPlan.getGuid());
         
         activities = activityDao.getActivities(context.getZone(), activities);
@@ -198,22 +177,6 @@ public class DynamoScheduledActivityDaoTest {
         // and the supplied schedulePlanGuid cannot be found in any of the activities that still exist
         for (ScheduledActivity activity : activities) {
             assertNotEquals(testPlan.getGuid(), activity.getSchedulePlanGuid());
-        }
-        
-        // Finally, verify that finished activities are not physically deleted. 
-        ScheduledActivity finishedActivity = findAnActivityFor(activities, testPlan2);
-        finishedActivity.setFinishedOn(DateTime.now().getMillis());
-        activityDao.saveActivities(activities);
-        
-        finishedActivity = activityDao.getActivity(context.getHealthCode(), finishedActivity.getGuid());
-        assertNotNull("Finished activity finished, not deleted", finishedActivity);
-        assertTrue("Finished activity has finishedOn timestamp", finishedActivity.getFinishedOn() > 0L);
-        
-        // This deletes everything, however.
-        activityDao.deleteActivitiesForSchedulePlan(testPlan2.getGuid());
-        List<ScheduledActivity> newActivities = activityDao.getActivities(context.getZone(), activities);
-        for (ScheduledActivity newAct : newActivities) {
-            assertNotEquals("New activities do not include the deleted plan", testPlan2.getGuid(), newAct.getGuid());
         }
     }
     
@@ -247,22 +210,6 @@ public class DynamoScheduledActivityDaoTest {
         plans.add(testPlan3);
         
         return plans;
-    }
-    
-    private ScheduledActivity findAnActivityFor(List<ScheduledActivity> activities, SchedulePlan plan) {
-        for (ScheduledActivity activity : activities) {
-            if (activity.getSchedulePlanGuid().equals(plan.getGuid())) {
-                return activity;
-            }
-        }
-        throw new IllegalArgumentException("An activity for the schedule plan was not found.");
-    }
-
-    private void cleanActivities(List<ScheduledActivity> activities) {
-        for (ScheduledActivity schActivity : activities) {
-            schActivity.setStartedOn(null);
-            schActivity.setFinishedOn(null);
-        }
     }
     
 }

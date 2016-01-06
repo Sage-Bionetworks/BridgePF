@@ -45,13 +45,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private LocalDateTime localScheduledOn;
     private LocalDateTime localExpiresOn;
     private Activity activity;
-    private Long hidesOn;
     private boolean persistent;
     private DateTimeZone timeZone;
-
-    public DynamoScheduledActivity() {
-        setHidesOn(new Long(Long.MAX_VALUE));
-    }
 
     @Override
     @DynamoDBIgnore
@@ -144,18 +139,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     public void setLocalExpiresOn(LocalDateTime localExpiresOn) {
         this.localExpiresOn = localExpiresOn;
-    }
-
-    @DynamoDBAttribute
-    @Override
-    @JsonIgnore
-    public Long getHidesOn() {
-        return this.hidesOn;
-    }
-
-    @Override
-    public void setHidesOn(Long hidesOn) {
-        this.hidesOn = hidesOn;
     }
 
     @DynamoDBHashKey
@@ -255,7 +238,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @Override
     public int hashCode() {
         return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, healthCode,
-                hidesOn, persistent, timeZone, schedulePlanGuid);
+                persistent, timeZone, schedulePlanGuid);
     }
 
     @Override
@@ -268,8 +251,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         return (Objects.equals(activity, other.activity) && Objects.equals(localExpiresOn, other.localExpiresOn)
                 && Objects.equals(localScheduledOn, other.localScheduledOn) && Objects.equals(guid, other.guid)
                 && Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn)
-                && Objects.equals(healthCode, other.healthCode) && Objects.equals(hidesOn, other.hidesOn)
-                && Objects.equals(persistent, other.persistent)
+                && Objects.equals(healthCode, other.healthCode) && Objects.equals(persistent, other.persistent)
                 && Objects.equals(timeZone, other.timeZone) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
     }
 

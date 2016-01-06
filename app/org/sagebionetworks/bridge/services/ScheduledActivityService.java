@@ -96,10 +96,11 @@ public class ScheduledActivityService {
         Validate.nonEntityThrowingException(VALIDATOR, context);
         
         // Add events for scheduling
+        Map<String, DateTime> events = createEventsMap(context);
         ScheduleContext newContext = new ScheduleContext.Builder()
-            .withContext(context).withEvents(createEventsMap(context)).build();
+            .withContext(context).withEvents(events).build();
         
-        // Get saved activities, scheduled activities, and compare them
+        // Get scheduled activities, persisted activities, and compare them
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
         List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
         ScheduledActivityOperations operations = new ScheduledActivityOperations(scheduledActivities, dbActivities);
@@ -132,11 +133,9 @@ public class ScheduledActivityService {
                 ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
                 if (schActivity.getStartedOn() != null) {
                     dbActivity.setStartedOn(schActivity.getStartedOn());
-                    dbActivity.setHidesOn(new Long(Long.MAX_VALUE));
                 }
                 if (schActivity.getFinishedOn() != null) {
                     dbActivity.setFinishedOn(schActivity.getFinishedOn());
-                    dbActivity.setHidesOn(schActivity.getFinishedOn());
                     activityEventService.publishActivityFinishedEvent(dbActivity);
                 }
                 activitiesToSave.add(dbActivity);

@@ -20,7 +20,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -122,12 +121,12 @@ public class TestUtils {
         return "test-" + midFix + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
 
-    public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, User user, ScheduleContext context) {
+    public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
             if (context.getClientInfo().isTargetedAppVersion(plan.getMinAppVersion(), plan.getMaxAppVersion())) {
                 Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
-                // It's become possible for no schedule to match a user.
+                // It's become possible for a user to match no schedule
                 if (schedule != null) {
                     scheduledActivities.addAll(schedule.getScheduler().getScheduledActivities(plan, context));    
                 }
@@ -137,8 +136,8 @@ public class TestUtils {
         return scheduledActivities;
     }
     
-    public static List<ScheduledActivity> runSchedulerForActivities(User user, ScheduleContext context) {
-        return runSchedulerForActivities(getSchedulePlans(context.getStudyIdentifier()), user, context);
+    public static List<ScheduledActivity> runSchedulerForActivities(ScheduleContext context) {
+        return runSchedulerForActivities(getSchedulePlans(context.getStudyIdentifier()), context);
     }
     
     public static List<SchedulePlan> getSchedulePlans(StudyIdentifier studyId) {

@@ -60,10 +60,4 @@ public interface ScheduledActivityDao {
      */
     public void deleteActivitiesForSchedulePlan(String schedulePlanGuid);
     
-    /**
-     * Delete set of activities.
-     * @param activities
-     */
-    public void deleteActivities(List<ScheduledActivity> activities);
-    
 }

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -35,6 +37,15 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
         }
     }    
     
+    /**
+     * Iterate through the list of schedules and return the first schedule that matches 
+     * the criteria submitted for this user and this request (so order matters). Can 
+     * return null, and this is accounted for now elsewehere in the code.
+     * @param plan
+     * @param context
+     * @return schedule that matches users's criteria, or null if no schedules match the 
+     *      criteria.
+     */
     @Override
     public Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context) {
         for (ScheduleCriteria criteria : scheduleCriteria) {
@@ -138,6 +149,7 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
                 return this;
             }
             public ScheduleCriteria build() {
+                checkNotNull(schedule);
                 return new ScheduleCriteria(schedule, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups);
             }
         }

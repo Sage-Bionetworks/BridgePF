@@ -98,10 +98,6 @@ public interface ScheduledActivity extends BridgeEntity {
 
     public void setFinishedOn(Long finishedOn);
 
-    public Long getHidesOn();
-
-    public void setHidesOn(Long hidesOn);
-
     public boolean getPersistent();
 
     public void setPersistent(boolean persistent);

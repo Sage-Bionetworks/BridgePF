@@ -143,7 +143,7 @@ public class DynamoScheduledActivityDaoMockTest {
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
 
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         mockBatchLoad(activities);
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
 
@@ -173,7 +173,7 @@ public class DynamoScheduledActivityDaoMockTest {
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
 
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         mockBatchLoad(activities);
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
         
@@ -208,7 +208,7 @@ public class DynamoScheduledActivityDaoMockTest {
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
 
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         mockBatchLoad(activities);
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
 

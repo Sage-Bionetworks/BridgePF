@@ -230,7 +230,6 @@ public class DynamoScheduledActivityTest {
         act.setTimeZone(DateTimeZone.forOffsetHours(-6));
         act.setLocalScheduledOn(LocalDateTime.parse("2015-10-01T10:10:10.000"));
         act.setLocalExpiresOn(LocalDateTime.parse("2015-10-01T14:10:10.000"));
-        act.setHidesOn(DateTime.parse("2015-10-01T14:10:10.000-06:00").getMillis());
         act.setHealthCode("healthCode");
         act.setGuid("activityGuid");
         act.setSchedulePlanGuid("schedulePlanGuid");

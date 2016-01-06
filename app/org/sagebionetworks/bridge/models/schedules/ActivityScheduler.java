@@ -75,7 +75,6 @@ public abstract class ActivityScheduler {
                     schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
                     if (expiresOn != null) {
                         schActivity.setExpiresOn(expiresOn);
-                        schActivity.setHidesOn(expiresOn.getMillis());
                     }
                     scheduledActivities.add(schActivity);
                 }
