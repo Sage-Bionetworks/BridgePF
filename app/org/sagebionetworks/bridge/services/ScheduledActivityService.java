@@ -3,13 +3,12 @@ package org.sagebionetworks.bridge.services;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.stream.Collectors.toList;
-import static java.util.Comparator.comparing;
 
 import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -24,7 +23,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -99,40 +97,22 @@ public class ScheduledActivityService {
         
         // Add events for scheduling
         ScheduleContext newContext = new ScheduleContext.Builder()
-            .withContext(context)
-            .withEvents(createEventsMap(context)).build();
+            .withContext(context).withEvents(createEventsMap(context)).build();
         
         // Get saved activities, scheduled activities, and compare them
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
-        List<ScheduledActivity> dbActivities = activityDao.getActivities(context);
+        List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
         ScheduledActivityOperations operations = new ScheduledActivityOperations(scheduledActivities, dbActivities);
         
-        // runKey removed: this saved the time involved in iterating over activities in a schedule, which is negligible,
-        // and was very complex to do in addition to this comparison operation (returning started activities, even when 
-        // they would no longer be scheduled, for example, is trickier if you keep the run key).
-        
-        // delete
-        if (!operations.getDeletes().isEmpty()) {
-            activityDao.deleteActivities(operations.getDeletes());
+        // if a survey activity, it may need a survey response generated (currently we're not using these though).
+        for (ScheduledActivity schActivity : operations.getSaves()) {
+            Activity activity = createSurveyResponseIfNeeded(
+                    context.getStudyIdentifier(), context.getHealthCode(), schActivity.getActivity());
+            schActivity.setActivity(activity);
         }
-        
-        // save
-        if (!operations.getSaves().isEmpty()) {
-            // if a survey activity, it may need a survey response generated (currently we're not using this though).
-            for (ScheduledActivity schActivity : operations.getSaves()) {
-                // Create a survey response if this is a survey activity, and add details to the scheduld activity record
-                Activity activity = createResponseActivityIfNeeded(context.getStudyIdentifier(),
-                        context.getHealthCode(), schActivity.getActivity());
-                schActivity.setActivity(activity);
-            }
-            activityDao.saveActivities(operations.getSaves().stream().collect(toList()));
-        }
-        
-        // return results
-        return operations.getResults().stream()
-            .filter(activity -> ScheduledActivityStatus.VISIBLE_STATUSES.contains(activity.getStatus()))
-            .sorted(comparing(ScheduledActivity::getScheduledOn))
-            .collect(toList());
+        activityDao.saveActivities(operations.getSaves());
+
+        return operations.getResults();
     }
     
     public void updateScheduledActivities(String healthCode, List<ScheduledActivity> scheduledActivities) {
@@ -162,9 +142,7 @@ public class ScheduledActivityService {
                 activitiesToSave.add(dbActivity);
             }
         }
-        if (!activitiesToSave.isEmpty()) {
-            activityDao.updateActivities(healthCode, activitiesToSave);    
-        }
+        activityDao.updateActivities(healthCode, activitiesToSave);
     }
     
     public void deleteActivitiesForUser(String healthCode) {
@@ -217,7 +195,7 @@ public class ScheduledActivityService {
     }
    
     private List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
-        List<ScheduledActivity> list = Lists.newArrayList();
+        List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getClientInfo(),
                 context.getStudyIdentifier());
@@ -225,13 +203,13 @@ public class ScheduledActivityService {
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             if (schedule != null) {
                 List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
-                list.addAll(activities);
+                scheduledActivities.addAll(activities);    
             }
         }
-        return list;
+        return scheduledActivities;
     }
     
-    private Activity createResponseActivityIfNeeded(StudyIdentifier studyIdentifier, String healthCode, Activity activity) {
+    private Activity createSurveyResponseIfNeeded(StudyIdentifier studyIdentifier, String healthCode, Activity activity) {
         // If this activity is a task activity, or the survey response for this survey has already been determined
         // and added to the activity, then do not generate a survey response for this activity.
         if (activity.getActivityType() == ActivityType.TASK || activity.getSurveyResponse() != null) {

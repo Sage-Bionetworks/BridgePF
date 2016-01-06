@@ -221,7 +221,7 @@ public class CriteriaScheduleStrategyTest {
     }
     
     @Test
-    public void validatePasses() {
+    public void validates() {
         setUpStrategyWithAppVersions();
         setUpStrategyWithOneRequiredDataGroup();
         setUpStrategyWithProhibitedDataGroups();
@@ -274,6 +274,7 @@ public class CriteriaScheduleStrategyTest {
     
     private Schedule getSchedule(Set<String> dataGroups) {
         ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier("test-study")
                 .withUserDataGroups(dataGroups).build();
         return strategy.getScheduleForUser(plan, context);
     }

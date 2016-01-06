@@ -102,7 +102,7 @@ public final class ABTestScheduleStrategy implements ScheduleStrategy {
             percentage += group.getPercentage();
         }
         if (percentage != 100) {
-        	errors.rejectValue("scheduleGroups", "groups must add up to 100% (not "+percentage+"%; give 20% as 20, for example)");
+        	errors.rejectValue("scheduleGroups", "groups must add up to 100%");
         }
         for (int i=0; i < groups.size(); i++) {
             ScheduleGroup group = groups.get(i);

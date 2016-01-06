@@ -114,7 +114,7 @@ public class SchedulePlanValidatorTest {
         SchedulePlan plan = getValidABTestStrategy();
         ((ABTestScheduleStrategy)plan.getStrategy()).getScheduleGroups().get(0).setPercentage(10);
         
-        assertMessage(plan, "strategy.scheduleGroups groups must add up to 100% (not 40%; give 20% as 20, for example)", "strategy.scheduleGroups");
+        assertMessage(plan, "strategy.scheduleGroups groups must add up to 100%", "strategy.scheduleGroups");
     }
     
     @Test

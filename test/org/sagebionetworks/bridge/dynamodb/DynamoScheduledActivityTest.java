@@ -251,7 +251,7 @@ public class DynamoScheduledActivityTest {
         assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
         assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
         // all the above, plus activity, and nothing else
-        assertEquals(11, TestUtils.getFieldNamesSet(node).size());
+        assertEquals(9, TestUtils.getFieldNamesSet(node).size());
 
         JsonNode activityNode = node.get("activity");
         assertEquals("Activity1", activityNode.get("label").asText());

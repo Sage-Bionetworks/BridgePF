@@ -1,7 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -9,18 +10,18 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
+
+import org.joda.time.DateTimeZone;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 @Component
@@ -55,29 +56,23 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     /** {@inheritDoc} */
     @Override
-    public List<ScheduledActivity> getActivities(ScheduleContext context) {
-        DynamoScheduledActivity hashKey = new DynamoScheduledActivity();
-        hashKey.setHealthCode(context.getHealthCode());
-
-        // Exclude everything hidden before *now*
-        AttributeValue attribute = new AttributeValue().withN(Long.toString(context.getNow().getMillis()));
-        Condition condition = new Condition()
-            .withComparisonOperator(ComparisonOperator.GT)
-            .withAttributeValueList(attribute);
-
-        DynamoDBQueryExpression<DynamoScheduledActivity> query = new DynamoDBQueryExpression<DynamoScheduledActivity>()
-            .withQueryFilterEntry("hidesOn", condition)
-            .withHashKeyValues(hashKey);
-
-        PaginatedQueryList<DynamoScheduledActivity> queryResults = mapper.query(DynamoScheduledActivity.class, query);
-        
-        List<ScheduledActivity> activities = Lists.newArrayList();
-        for (DynamoScheduledActivity activity : queryResults) {
-            activity.setTimeZone(context.getZone());
-            activities.add(activity);
+    public List<ScheduledActivity> getActivities(DateTimeZone timeZone, List<ScheduledActivity> activities) {
+        if (activities.isEmpty()) {
+            return ImmutableList.of();
         }
-        Collections.sort(activities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
-        return activities;
+        List<Object> activitiesToLoad = new ArrayList<Object>(activities);
+        Map<String,List<Object>> results = mapper.batchLoad(activitiesToLoad);
+        
+        // there's only one table of results returned.
+        List<Object> activitiesLoaded = Iterables.getFirst(results.values(), ImmutableList.of()); 
+        
+        ImmutableList.Builder<ScheduledActivity> builder = new ImmutableList.Builder<>();
+        for (Object object : activitiesLoaded) {
+            ScheduledActivity activity = (ScheduledActivity)object;
+            activity.setTimeZone(timeZone);
+            builder.add(activity);
+        }
+        return builder.build();
     }
     
     /** {@inheritDoc} */

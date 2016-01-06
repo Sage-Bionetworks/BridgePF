@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.joda.time.DateTime;
 import org.joda.time.Period;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -48,6 +49,8 @@ import com.google.common.collect.Sets;
 
 public class TestUtils {
     
+    private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
+
     public abstract static class FailableRunnable implements Runnable {
         public abstract void testCode() throws Exception;
         @Override
@@ -122,10 +125,12 @@ public class TestUtils {
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, User user, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
-            // It's become possible for no schedule to match a user.
-            if (schedule != null) {
-                scheduledActivities.addAll(schedule.getScheduler().getScheduledActivities(plan, context));    
+            if (context.getClientInfo().isTargetedAppVersion(plan.getMinAppVersion(), plan.getMaxAppVersion())) {
+                Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
+                // It's become possible for no schedule to match a user.
+                if (schedule != null) {
+                    scheduledActivities.addAll(schedule.getScheduler().getScheduledActivities(plan, context));    
+                }
             }
         }
         Collections.sort(scheduledActivities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
@@ -265,6 +270,18 @@ public class TestUtils {
      */
     public static Survey getSurvey(boolean makeNew) {
         return new TestSurvey(makeNew);
+    }
+    
+    public static Schedule getSchedule(String label) {
+        Activity activity = new Activity.Builder().withLabel("Test survey")
+                        .withSurvey("identifier", "ABC", TEST_CREATED_ON).build();
+
+        Schedule schedule = new Schedule();
+        schedule.setLabel(label);
+        schedule.addActivity(activity);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 0 8 ? * TUE *");
+        return schedule;
     }
     
     public static Set<String> getFieldNamesSet(JsonNode node) {

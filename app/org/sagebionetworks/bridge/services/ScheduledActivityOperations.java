@@ -1,45 +1,40 @@
 package org.sagebionetworks.bridge.services;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.Comparator.comparing;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
- * On each request we compare the activities scheduled for a user against what is persisted 
- * in the database, calculating new activities to save and invalid activities to delete.
+ * If scheduled activity is not in the database, add it to the list of items to be saved as well as to the 
+ * results (unless it has expired; in this case it will never be used). Otherwise, add the persisted version 
+ * of the activity to the results. Return the results sorted by scheduled time, limited only to the statuses 
+ * that are visible to the user.
  */
 public class ScheduledActivityOperations {
 
     private final List<ScheduledActivity> saves = Lists.newArrayList();
-    private final List<ScheduledActivity> deletes = Lists.newArrayList();
     private final List<ScheduledActivity> results = Lists.newArrayList();
     
-    private final List<String> scheduledGuids;
-    private final List<String> dbGuids;
-
     public ScheduledActivityOperations(List<ScheduledActivity> scheduledActivities, List<ScheduledActivity> dbActivities) {
-        this.scheduledGuids = scheduledActivities.stream().map(ScheduledActivity::getGuid).collect(toList());
-        this.dbGuids = dbActivities.stream().map(ScheduledActivity::getGuid).collect(toList());
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
         
-        for (ScheduledActivity activity : dbActivities) {
-            // Once started, persisted activity is included in results
-            // activity is scheduled and persisted, include the persisted version in results
-            if (scheduledGuids.contains(activity.getGuid()) || (activity.getStatus() == ScheduledActivityStatus.STARTED)) {
-                results.add(activity);
-            } else {
-                // but if it's in database and not scheduled, it's obsolete, delete it
-                deletes.add(activity);
-            }
-        }
-        // Are scheduled activities new? Save them and include in results
         for (ScheduledActivity activity : scheduledActivities) {
-            if (!dbGuids.contains(activity.getGuid())) {
-                saves.add(activity);
+            ScheduledActivity dbActivity = dbMap.get(activity.getGuid());
+            if (dbActivity != null) {
+                results.add(dbActivity);
+            } else {
+                // but don't save expired tasks, there is no point
+                if (activity.getStatus() != ScheduledActivityStatus.EXPIRED) {
+                    saves.add(activity);    
+                }
                 results.add(activity);
             }
         }
@@ -48,11 +43,12 @@ public class ScheduledActivityOperations {
     public List<ScheduledActivity> getSaves() {
         return this.saves;
     }
-    public List<ScheduledActivity> getDeletes() {
-        return this.deletes;
-    }
+    
     public List<ScheduledActivity> getResults() {
-        return this.results;
+        return this.results.stream()
+            .filter(activity -> ScheduledActivityStatus.VISIBLE_STATUSES.contains(activity.getStatus()))
+            .sorted(comparing(ScheduledActivity::getScheduledOn))
+            .collect(toImmutableList());
     }
     
 }

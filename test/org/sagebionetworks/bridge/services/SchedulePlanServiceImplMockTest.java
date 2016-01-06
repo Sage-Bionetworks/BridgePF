@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -12,7 +13,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy.ScheduleCriteria;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -30,6 +37,7 @@ public class SchedulePlanServiceImplMockTest {
     public void before() {
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setDataGroups(Sets.newHashSet("AAA"));
         study.setTaskIdentifiers(Sets.newHashSet("CCC"));
         
         service = new SchedulePlanServiceImpl();
@@ -79,6 +87,49 @@ public class SchedulePlanServiceImplMockTest {
         service.deleteSchedulePlan(TEST_STUDY, "BBB");
         
         verify(activityService).deleteActivitiesForSchedulePlan("BBB");
+    }
+    
+    @Test
+    public void validatesOnCreate() {
+        // Check that 1) validation is called and 2) the study's enumerations are used in the validation
+        SchedulePlan plan = createInvalidSchedulePlan();
+        try {
+            service.createSchedulePlan(study, plan);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: CCC.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
+            assertEquals("strategy.scheduleCriteria[0].allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].allOfGroups").get(0));
+        }
+    }
+    
+    @Test
+    public void validatesOnUpdate() {
+        // Check that 1) validation is called and 2) the study's enumerations are used in the validation
+        SchedulePlan plan = createInvalidSchedulePlan();
+        try {
+            service.updateSchedulePlan(study, plan);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: CCC.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
+            assertEquals("strategy.scheduleCriteria[0].allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].allOfGroups").get(0));
+        }
+    }
+    
+    private SchedulePlan createInvalidSchedulePlan() {
+        Schedule schedule = new Schedule();
+        schedule.addActivity(new Activity.Builder().withTask("DDD").build());
+        
+        ScheduleCriteria criteria = new ScheduleCriteria.Builder()
+                .withSchedule(schedule)
+                .addRequiredGroup("FFF")
+                .build();
+        
+        CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
+        strategy.addCriteria(criteria);
+        
+        SchedulePlan plan = new DynamoSchedulePlan();
+        plan.setStrategy(strategy);
+        return plan;
     }
     
     private DynamoStudy getAnotherStudy() {

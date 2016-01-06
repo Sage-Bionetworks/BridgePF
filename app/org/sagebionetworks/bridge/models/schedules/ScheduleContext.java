@@ -154,6 +154,7 @@ public final class ScheduleContext {
         private DateTime now;
         private Set<String> userDataGroups;
         
+        // Much more common to have a user than these separate pieces of information
         public Builder withUser(User user) {
             if (user != null) {
                 this.healthCode = user.getHealthCode();
@@ -196,6 +197,10 @@ public final class ScheduleContext {
         }
         public Builder withUserDataGroups(Set<String> userDataGroups) {
             this.userDataGroups = userDataGroups;
+            return this;
+        }
+        public Builder withNow(DateTime now) {
+            this.now = now;
             return this;
         }
         public Builder withContext(ScheduleContext context) {

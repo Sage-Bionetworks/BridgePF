@@ -158,6 +158,7 @@ public class ScheduledActivityServiceTest {
         
         // This is easy, Dave has the later activities and that's it, at this point.
         activities = service.getScheduledActivities(testUser.getUser(), getContextWith2DayWindow(MSK));
+        
         assertEquals(2, activities.size());
         assertEquals(msk3+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk4+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());

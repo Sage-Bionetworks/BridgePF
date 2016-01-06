@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -107,6 +108,13 @@ public class DynamoScheduledActivityDaoMockTest {
             .thenReturn(queryResults);
     }
     
+    @SuppressWarnings("unchecked")
+    private void mockBatchLoad(final List<ScheduledActivity> activities) {
+        Map<String,List<Object>> results = Maps.newHashMap();
+        results.put("some-table-name", new ArrayList<Object>(activities));
+        when(mapper.batchLoad(any(List.class))).thenReturn(results);
+    }
+    
     @Test
     public void getScheduledActivities() throws Exception {
         ScheduledActivity activity = activityDao.getActivity("AAA", "BBB");
@@ -136,8 +144,8 @@ public class DynamoScheduledActivityDaoMockTest {
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
-        mockQuery(activities);
-        List<ScheduledActivity> activities2 = activityDao.getActivities(context);
+        mockBatchLoad(activities);
+        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
 
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
         // Expired activities are not returned, so this starts on the 12th
@@ -147,8 +155,7 @@ public class DynamoScheduledActivityDaoMockTest {
         assertScheduledActivity(activities2.get(3), ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
         assertScheduledActivity(activities2.get(4), ACTIVITY_2_REF, "2015-04-14T13:00:00-07:00");
 
-        verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
-                        (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class));
+        verify(mapper).batchLoad((List<Object>)any());
         verifyNoMoreInteractions(mapper);
     }
 
@@ -167,9 +174,9 @@ public class DynamoScheduledActivityDaoMockTest {
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
-        mockQuery(activities);
-        List<ScheduledActivity> activities2 = activityDao.getActivities(context);
-
+        mockBatchLoad(activities);
+        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
+        
         // The test schedules have these appVersions applied to them
         // SchedulePlan DDD/Activity 1: version 2-5
         // SchedulePlan BBB/Activity 2: version 9+
@@ -182,8 +189,7 @@ public class DynamoScheduledActivityDaoMockTest {
         assertScheduledActivity(activities2.get(1), ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
         assertScheduledActivity(activities2.get(2), ACTIVITY_3_REF, "2015-04-15T13:00:00-07:00");
 
-        verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
-                        (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class));
+        verify(mapper).batchLoad((List<Object>)any());
         verifyNoMoreInteractions(mapper);
     }
     
@@ -203,9 +209,8 @@ public class DynamoScheduledActivityDaoMockTest {
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(user, context);
-        mockQuery(activities);
-
-        List<ScheduledActivity> activities2 = activityDao.getActivities(context);
+        mockBatchLoad(activities);
+        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
 
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
         assertScheduledActivity(activities2.get(0), ACTIVITY_2_REF, "2015-04-12T13:00:00.000-07:00");
@@ -217,8 +222,7 @@ public class DynamoScheduledActivityDaoMockTest {
         assertScheduledActivity(activities2.get(6), ACTIVITY_3_REF, "2015-04-15T13:00:00.000-07:00");
         assertScheduledActivity(activities2.get(7), ACTIVITY_2_REF, "2015-04-16T13:00:00.000-07:00");
 
-        verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
-                        (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class));
+        verify(mapper).batchLoad((List<Object>)any());
         verifyNoMoreInteractions(mapper);
     }
 

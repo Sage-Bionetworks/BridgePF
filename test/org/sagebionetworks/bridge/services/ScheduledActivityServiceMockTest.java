@@ -117,7 +117,7 @@ public class ScheduledActivityServiceMockTest {
             schActivity.setGuid((String)args[1]);
             return schActivity;
         });
-        when(activityDao.getActivities(context)).thenReturn(scheduledActivities);
+        when(activityDao.getActivities(context.getZone(), scheduledActivities)).thenReturn(scheduledActivities);
         
         Survey survey = new DynamoSurvey();
         survey.setGuid("guid");

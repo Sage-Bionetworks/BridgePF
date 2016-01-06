@@ -9,9 +9,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.validation.Errors;
+
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -20,7 +23,9 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -30,6 +35,7 @@ import org.sagebionetworks.bridge.services.SchedulePlanService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import play.mvc.Result;
@@ -53,6 +59,23 @@ public class ScheduleControllerTest {
                 plans.add(plan);
             }
         }
+        // add a plan that will returns null for a schedule, this is not included in the final list.
+        // This seems possible given the matching going on, we need to fail gracefully
+        SchedulePlan plan = new DynamoSchedulePlan();
+        plan.setStrategy(new ScheduleStrategy() {
+            @Override
+            public Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context) {
+                return null;
+            }
+            @Override
+            public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors) {
+            }
+            @Override
+            public List<Schedule> getAllPossibleSchedules() {
+                return ImmutableList.of();
+            }
+        });
+        plans.add(plan);
         
         SchedulePlanService schedulePlanService = mock(SchedulePlanService.class);
         when(schedulePlanService.getSchedulePlans(clientInfo, studyId)).thenReturn(plans);
