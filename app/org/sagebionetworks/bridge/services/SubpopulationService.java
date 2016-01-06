@@ -150,13 +150,15 @@ public class SubpopulationService {
      * Delete a subpopulation.
      * @param studyId
      * @param subpopGuid
+     * @param physicalDelete if true, will physically remove the record from the database. Otherwise, it is 
+     *      marked deleted in the database.
      */
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         
         // Will throw EntityNotFoundException if the subpopulation is not in the study
-        subpopDao.deleteSubpopulation(studyId, subpopGuid);
+        subpopDao.deleteSubpopulation(studyId, subpopGuid, physicalDelete);
     }
     
     /**

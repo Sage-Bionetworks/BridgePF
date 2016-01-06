@@ -40,7 +40,6 @@ public final class DynamoStudy implements Study {
     private int maxNumOfParticipants;
     private Long version;
     private boolean active;
-    private StudyIdentifier studyIdentifier;
     private Set<String> profileAttributes;
     private Set<String> taskIdentifiers;
     private Set<String> dataGroups;
@@ -91,10 +90,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public void setIdentifier(String identifier) {
-        if (identifier != null) {
-            this.identifier = identifier;
-            this.studyIdentifier = new StudyIdentifierImpl(identifier);
-        }
+        this.identifier = identifier;
     }
 
     /** {@inheritDoc} */
@@ -102,7 +98,7 @@ public final class DynamoStudy implements Study {
     @JsonIgnore
     @DynamoDBIgnore
     public StudyIdentifier getStudyIdentifier() {
-        return studyIdentifier;
+        return (identifier == null) ? null : new StudyIdentifierImpl(identifier);
     }
 
     /** {@inheritDoc} */
