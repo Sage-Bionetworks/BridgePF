@@ -60,7 +60,7 @@ public class ScheduleControllerTest {
             }
         }
         // add a plan that will returns null for a schedule, this is not included in the final list.
-        // This seems possible given the matching going on, we need to fail gracefully
+        // This is now possible and should not cause an error or a gap in the returned array.
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setStrategy(new ScheduleStrategy() {
             @Override

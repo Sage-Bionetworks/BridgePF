@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
 import java.util.List;
@@ -76,6 +77,35 @@ public class ScheduledActivityOperationsTest {
         ScheduledActivityOperations operations = new ScheduledActivityOperations(scheduled, db);
         assertEquals(EMPTY_SET, toGuids(operations.getResults()));
         assertEquals(EMPTY_SET, toGuids(operations.getSaves()));
+    }
+    
+    @Test
+    public void finishedTasksExcludedFromResults() {
+        List<ScheduledActivity> scheduled = createActivities("AAA", "BBB", "CCC");
+        List<ScheduledActivity> db = createActivities("AAA", "BBB");
+        db.get(0).setFinishedOn(DateTime.now().getMillis()); // AAA will not be in results
+        
+        ScheduledActivityOperations operations = new ScheduledActivityOperations(scheduled, db);
+        assertEquals(Sets.newHashSet("BBB","CCC"), toGuids(operations.getResults()));
+        assertEquals(Sets.newHashSet("CCC"), toGuids(operations.getSaves()));
+    }
+    
+    @Test
+    public void newAndExistingActivitiesAreMerged() {
+        List<ScheduledActivity> scheduled = createActivities("AAA", "BBB", "CCC");
+        List<ScheduledActivity> db = createActivities("AAA","CCC");
+        ScheduledActivity activity = db.stream()
+                .filter(act -> act.getGuid().equals("AAA")).findFirst().get();
+        activity.setStartedOn(DateTime.now().getMillis());
+        
+        ScheduledActivityOperations operations = new ScheduledActivityOperations(scheduled, db);
+        assertEquals(Sets.newHashSet("AAA","BBB","CCC"), toGuids(operations.getResults()));
+        assertEquals(Sets.newHashSet("BBB"), toGuids(operations.getSaves()));
+        
+        activity = operations.getResults().stream()
+                .filter(act -> act.getGuid().equals("AAA")).findFirst().get();
+        assertTrue(activity.getStartedOn() > 0L);
+        
     }
     
     private List<ScheduledActivity> createActivities(String... guids) {

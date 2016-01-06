@@ -100,11 +100,11 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyNoCriteria();
         
         // First returned because context has no version info
-        Schedule schedule = getSchedule(ClientInfo.UNKNOWN_CLIENT);
+        Schedule schedule = getScheduleFromStrategy(ClientInfo.UNKNOWN_CLIENT);
         assertEquals(strategyWithAppVersions, schedule);
         
         // Context version info outside minimum range of first criteria, last one returned
-        schedule = getSchedule(ClientInfo.fromUserAgentCache("app/2"));
+        schedule = getScheduleFromStrategy(ClientInfo.fromUserAgentCache("app/2"));
         assertEquals(strategyNoCriteria, schedule);
     }
     
@@ -114,11 +114,11 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyNoCriteria();
         
         // First one is returned because client has no version info
-        Schedule schedule = getSchedule(ClientInfo.UNKNOWN_CLIENT);
+        Schedule schedule = getScheduleFromStrategy(ClientInfo.UNKNOWN_CLIENT);
         assertEquals(strategyWithAppVersions, schedule);
         
         // Context version info outside maximum range of first criteria, last one returned
-        schedule = getSchedule(ClientInfo.fromUserAgentCache("app/44"));
+        schedule = getScheduleFromStrategy(ClientInfo.fromUserAgentCache("app/44"));
         assertEquals(strategyNoCriteria, schedule);
     }
     
@@ -128,11 +128,11 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyNoCriteria();
         
         // context has a group required by first group, it's returned
-        Schedule schedule = getSchedule(Sets.newHashSet("group1"));
+        Schedule schedule = getScheduleFromStrategy(Sets.newHashSet("group1"));
         assertEquals(strategyWithOneRequiredDataGroup, schedule);
         
         // context does not have a required group, last one returned
-        schedule = getSchedule(Sets.newHashSet("someRandomToken"));
+        schedule = getScheduleFromStrategy(Sets.newHashSet("someRandomToken"));
         assertEquals(strategyNoCriteria, schedule);
     }
     
@@ -142,15 +142,15 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyNoCriteria();
         
         // context has all the required groups so the first one is returned
-        Schedule schedule = getSchedule(Sets.newHashSet("group1","group2","group3"));
+        Schedule schedule = getScheduleFromStrategy(Sets.newHashSet("group1","group2","group3"));
         assertEquals(strategyWithRequiredDataGroups, schedule);
         
         // context does not have *any* the required groups, last one returned
-        schedule = getSchedule(Sets.newHashSet("someRandomToken"));
+        schedule = getScheduleFromStrategy(Sets.newHashSet("someRandomToken"));
         assertEquals(strategyNoCriteria, schedule);
         
         // context does not have *all* the required groups, last one returned
-        schedule = getSchedule(Sets.newHashSet("group1"));
+        schedule = getScheduleFromStrategy(Sets.newHashSet("group1"));
         assertEquals(strategyNoCriteria, schedule);
     }
     
@@ -160,11 +160,11 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyNoCriteria();
         
         // Group not prohibited so first schedule returned
-        Schedule schedule = getSchedule(Sets.newHashSet("groupNotProhibited"));
+        Schedule schedule = getScheduleFromStrategy(Sets.newHashSet("groupNotProhibited"));
         assertEquals(strategyWithOneProhibitedDataGroup, schedule);
         
         // this group is prohibited so second schedule is returned
-        schedule = getSchedule(Sets.newHashSet("group1"));
+        schedule = getScheduleFromStrategy(Sets.newHashSet("group1"));
         assertEquals(strategyNoCriteria, schedule);
     }
     
@@ -174,15 +174,15 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyNoCriteria();
         
         // context has a prohibited group, so the last schedule is returned
-        Schedule schedule = getSchedule(Sets.newHashSet("group1"));
+        Schedule schedule = getScheduleFromStrategy(Sets.newHashSet("group1"));
         assertEquals(strategyNoCriteria, schedule);
         
         // context has one of the prohibited groups, same thing
-        schedule = getSchedule(Sets.newHashSet("foo","group1"));
+        schedule = getScheduleFromStrategy(Sets.newHashSet("foo","group1"));
         assertEquals(strategyNoCriteria, schedule);
         
         // context has no prohibited groups, first schedule is returned
-        schedule = getSchedule(Sets.newHashSet());
+        schedule = getScheduleFromStrategy(Sets.newHashSet());
         assertEquals(strategyWithProhibitedDataGroups, schedule);
     }
     
@@ -274,6 +274,13 @@ public class CriteriaScheduleStrategyTest {
         return set;
     }
     
+    private User getUser() {
+        User user = new User();
+        user.setHealthCode("AAA");
+        user.setStudyKey(TEST_STUDY_IDENTIFIER);
+        return user;
+    }
+    
     private Schedule makeValidSchedule(String label) {
         Schedule schedule = new Schedule();
         schedule.setLabel(label);
@@ -282,25 +289,18 @@ public class CriteriaScheduleStrategyTest {
         return schedule;
     }
 
-    private Schedule getSchedule(ClientInfo info) {
+    private Schedule getScheduleFromStrategy(ClientInfo info) {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier("test-study")
                 .withClientInfo(info).build();
         return strategy.getScheduleForUser(plan, context);
     }
     
-    private Schedule getSchedule(Set<String> dataGroups) {
+    private Schedule getScheduleFromStrategy(Set<String> dataGroups) {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier("test-study")
                 .withUserDataGroups(dataGroups).build();
         return strategy.getScheduleForUser(plan, context);
-    }
-    
-    private User getUser() {
-        User user = new User();
-        user.setHealthCode("AAA");
-        user.setStudyKey(TEST_STUDY_IDENTIFIER);
-        return user;
     }
     
     private void setUpStrategyWithAppVersions() {

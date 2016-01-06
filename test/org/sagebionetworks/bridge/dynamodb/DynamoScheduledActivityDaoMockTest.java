@@ -63,7 +63,6 @@ public class DynamoScheduledActivityDaoMockTest {
     
     private DynamoScheduledActivity testSchActivity;
     
-    @SuppressWarnings("unchecked")
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
@@ -76,9 +75,6 @@ public class DynamoScheduledActivityDaoMockTest {
         
         // This is the part that will need to be expanded per test.
         mapper = mock(DynamoDBMapper.class);
-        when(mapper.query((Class<DynamoScheduledActivity>) any(Class.class),
-            (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
-            .thenReturn(null);
         when(mapper.load(any(DynamoScheduledActivity.class))).thenReturn(testSchActivity);
         activityDao = new DynamoScheduledActivityDao();
         activityDao.setDdbMapper(mapper);
@@ -90,7 +86,8 @@ public class DynamoScheduledActivityDaoMockTest {
     }
     
     @SuppressWarnings("unchecked")
-    private void mockQuery(final List<ScheduledActivity> activities) {
+    private void mockMapperResults(final List<ScheduledActivity> activities) {
+        // Mocks loading one of the supplied activities.
         when(mapper.load(any())).thenAnswer(invocation -> {
             DynamoScheduledActivity thisSchActivity = invocation.getArgumentAt(0, DynamoScheduledActivity.class);
             for (ScheduledActivity schActivity : activities) {
@@ -100,16 +97,15 @@ public class DynamoScheduledActivityDaoMockTest {
             }
             return null;
         });
+        // Mocks a query that returns all of the activities.
         final PaginatedQueryList<DynamoScheduledActivity> queryResults = (PaginatedQueryList<DynamoScheduledActivity>) mock(PaginatedQueryList.class);
         when(queryResults.iterator()).thenReturn(((List<DynamoScheduledActivity>)(List<?>)activities).iterator());
         when(queryResults.toArray()).thenReturn(activities.toArray());
         when(mapper.query((Class<DynamoScheduledActivity>) any(Class.class),
             (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
             .thenReturn(queryResults);
-    }
-    
-    @SuppressWarnings("unchecked")
-    private void mockBatchLoad(final List<ScheduledActivity> activities) {
+        
+        // Mock a batch load of the activities
         Map<String,List<Object>> results = Maps.newHashMap();
         results.put("some-table-name", new ArrayList<Object>(activities));
         when(mapper.batchLoad(any(List.class))).thenReturn(results);
@@ -129,9 +125,15 @@ public class DynamoScheduledActivityDaoMockTest {
         activityDao.getActivity("AAA", "BBB");
     }
 
+    /**
+     * Testing retrieval of activities has gotten much simpler as we just load the activities we 
+     * are asked to load. This test verifies that the happy path works of returning all the results, 
+     * sorted.
+     * @throws Exception
+     */
     @SuppressWarnings("unchecked")
     @Test
-    public void testOfFirstPeriod() throws Exception {
+    public void testGetActivities() throws Exception {
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
@@ -144,7 +146,7 @@ public class DynamoScheduledActivityDaoMockTest {
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
-        mockBatchLoad(activities);
+        mockMapperResults(activities);
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
 
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
@@ -158,48 +160,12 @@ public class DynamoScheduledActivityDaoMockTest {
         verify(mapper).batchLoad((List<Object>)any());
         verifyNoMoreInteractions(mapper);
     }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    public void activitySchedulerFiltersActivities() throws Exception {
-        DateTime endsOn = NOW.plus(Period.parse("P4D"));
-        Map<String, DateTime> events = Maps.newHashMap();
-        events.put("enrollment", ENROLLMENT);
-        ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
-            .withClientInfo(ClientInfo.fromUserAgentCache("App/5"))
-            .withTimeZone(PACIFIC_TIME_ZONE)
-            .withEndsOn(endsOn)
-            .withHealthCode(HEALTH_CODE)
-            .withEvents(events).build();
-
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
-        mockBatchLoad(activities);
-        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
-        
-        // The test schedules have these appVersions applied to them
-        // SchedulePlan DDD/Activity 1: version 2-5
-        // SchedulePlan BBB/Activity 2: version 9+
-        // SchedulePlan CCC/Activity 3: version 5-8
-        // Activity_1 and Activity_3 will match v5, Activity_2 will not. These results are 
-        // just like the next test of 4 days, but without the Activity_2 activity
-        // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
-        assertEquals(3, activities2.size());
-        assertScheduledActivity(activities2.get(0), ACTIVITY_3_REF, "2015-04-13T13:00:00-07:00");
-        assertScheduledActivity(activities2.get(1), ACTIVITY_1_REF, "2015-04-14T13:00:00-07:00");
-        assertScheduledActivity(activities2.get(2), ACTIVITY_3_REF, "2015-04-15T13:00:00-07:00");
-
-        verify(mapper).batchLoad((List<Object>)any());
-        verifyNoMoreInteractions(mapper);
-    }
     
     @SuppressWarnings("unchecked")
-    @Test
-    public void testOfSecondPeriodWithDifferentStartTime() throws Exception {
-        DateTime endsOn = NOW.plus(Period.parse("P4D"));
+    public void testOnlyPersistedActivitiesReturned() {
+        DateTime endsOn = NOW.plus(Period.parse("P2D"));
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
-
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
@@ -209,55 +175,44 @@ public class DynamoScheduledActivityDaoMockTest {
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
-        mockBatchLoad(activities);
+        // Only mock the return of one of these activities
+        mockMapperResults(Lists.newArrayList(activities.get(0)));
+        
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
 
-        // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
-        assertScheduledActivity(activities2.get(0), ACTIVITY_2_REF, "2015-04-12T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(1), ACTIVITY_2_REF, "2015-04-13T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(2), ACTIVITY_3_REF, "2015-04-13T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(3), ACTIVITY_1_REF, "2015-04-14T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(4), ACTIVITY_2_REF, "2015-04-14T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(5), ACTIVITY_2_REF, "2015-04-15T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(6), ACTIVITY_3_REF, "2015-04-15T13:00:00.000-07:00");
-        assertScheduledActivity(activities2.get(7), ACTIVITY_2_REF, "2015-04-16T13:00:00.000-07:00");
+        // Regardless of the requested activities, only the ones in the db are returned (in this case, there's 1).
+        assertEquals(1, activities2.size());
+        assertScheduledActivity(activities2.get(0), ACTIVITY_2_REF, "2015-04-12T13:00:00-07:00");
 
         verify(mapper).batchLoad((List<Object>)any());
         verifyNoMoreInteractions(mapper);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked","rawtypes"})
     @Test
     public void canDeleteActivities() {
-        DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
-        activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
-        activity1.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
-        activity1.setLocalExpiresOn(LocalDateTime.parse("2015-04-12T23:00:00"));
-        activity1.setStartedOn(DateTime.parse("2015-04-12T18:30:23").getMillis());
-        activity1.setGuid(BridgeUtils.generateGuid());
-
-        DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
-        activity2.setActivity(TestConstants.TEST_3_ACTIVITY);
-        activity2.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
-        activity2.setLocalExpiresOn(LocalDateTime.parse("2015-04-12T23:00:00"));
-        activity2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01").getMillis());
-        activity2.setGuid(BridgeUtils.generateGuid());
-
-        mockQuery(Lists.newArrayList(activity1, activity2));
+        mockMapperResults(Lists.newArrayList(new DynamoScheduledActivity(), new DynamoScheduledActivity()));
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<DynamoDBQueryExpression> queryArg = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
         activityDao.deleteActivitiesForUser("AAA");
 
+        // This doesn't verify that the query was done with the "AAA" key
         verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
-                        (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class));
+                        (DynamoDBQueryExpression<DynamoScheduledActivity>) queryArg.capture());
+        
         verify(mapper).batchDelete(argument.capture());
         verifyNoMoreInteractions(mapper);
 
+        DynamoDBQueryExpression query = queryArg.getValue();
+        ScheduledActivity activity = (ScheduledActivity)query.getHashKeyValues();
+        assertEquals("AAA", activity.getHealthCode());
+        
         // Both activities were passed in to be deleted.
         assertEquals(2, argument.getValue().size());
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     @Test
     public void canUpdateActivities() {
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
@@ -274,12 +229,16 @@ public class DynamoScheduledActivityDaoMockTest {
         activity2.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());
         activity2.setGuid(BridgeUtils.generateGuid());
         
+        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
+        
         List<ScheduledActivity> activities = Lists.newArrayList(activity1, activity2);
         activityDao.updateActivities(HEALTH_CODE, activities);
 
         // These activities have been updated.
-        verify(mapper).batchSave(any(List.class));
+        verify(mapper).batchSave(argument.capture());
         verifyNoMoreInteractions(mapper);
+        
+        assertEquals(activities, argument.getValue());
     }
     
     private void assertScheduledActivity(ScheduledActivity schActivity, String ref, String dateString) {
