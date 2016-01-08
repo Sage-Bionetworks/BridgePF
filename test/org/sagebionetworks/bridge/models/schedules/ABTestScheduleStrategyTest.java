@@ -24,9 +24,10 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -37,7 +38,7 @@ import nl.jqno.equalsverifier.Warning;
  */
 public class ABTestScheduleStrategyTest {
 
-    private BridgeObjectMapper mapper = BridgeObjectMapper.get();
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     private ArrayList<User> users;
     private Study study;
 
@@ -75,9 +76,9 @@ public class ABTestScheduleStrategyTest {
     @Test
     public void canRountripABTestingPlan() throws Exception {
         DynamoSchedulePlan plan = createABSchedulePlan();
-        String output = new BridgeObjectMapper().writeValueAsString(plan);
+        String output = MAPPER.writeValueAsString(plan);
 
-        JsonNode node = mapper.readTree(output);
+        JsonNode node = MAPPER.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
 
         assertEquals("Plan with AB testing strategy was serialized/deserialized", plan, newPlan);
@@ -99,20 +100,14 @@ public class ABTestScheduleStrategyTest {
             schedules.add(schedule);
         }
 
-        // We want 4 in A, 4 in B and 2 in C
-        // and they should not be in order...
-        Map<String, Integer> countsByLabel = Maps.newHashMap();
+        // We want 4 in A, 4 in B and 2 in C, and they should not be in order...
+        Multiset<String> countsByLabel = HashMultiset.create();
         for (Schedule schedule : schedules) {
-            Integer count = countsByLabel.get(schedule.getLabel());
-            if (count == null) {
-                countsByLabel.put(schedule.getLabel(), 1);
-            } else {
-                countsByLabel.put(schedule.getLabel(), ++count);
-            }
+            countsByLabel.add(schedule.getLabel());
         }
-        assertTrue("40% users assigned to A", Math.abs(countsByLabel.get("A").intValue() - 400) < 50);
-        assertTrue("40% users assigned to B", Math.abs(countsByLabel.get("B").intValue() - 400) < 50);
-        assertTrue("20% users assigned to C", Math.abs(countsByLabel.get("C").intValue() - 200) < 50);
+        assertTrue("40% users assigned to A", Math.abs(countsByLabel.count("A") - 400) < 50);
+        assertTrue("40% users assigned to B", Math.abs(countsByLabel.count("B") - 400) < 50);
+        assertTrue("20% users assigned to C", Math.abs(countsByLabel.count("C") - 200) < 50);
     }
     
     @Test

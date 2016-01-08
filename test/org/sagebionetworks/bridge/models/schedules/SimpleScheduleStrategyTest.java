@@ -31,7 +31,7 @@ import nl.jqno.equalsverifier.Warning;
  */
 public class SimpleScheduleStrategyTest {
 
-    private BridgeObjectMapper mapper = BridgeObjectMapper.get();
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     private Study study;
 
     @Before
@@ -56,8 +56,8 @@ public class SimpleScheduleStrategyTest {
         plan.setStudyKey(study.getIdentifier());
         plan.setStrategy(strategy);
 
-        String output = new BridgeObjectMapper().writeValueAsString(plan);
-        JsonNode node = mapper.readTree(output);
+        String output = MAPPER.writeValueAsString(plan);
+        JsonNode node = MAPPER.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
 
         assertEquals("Plan with simple strategy was serialized/deserialized", plan, newPlan);

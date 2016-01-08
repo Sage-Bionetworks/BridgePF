@@ -60,10 +60,12 @@ public class ScheduleContextTest {
         User user = new User();
         user.setStudyKey("test-study");
         user.setHealthCode("AAA");
+        user.setId("aUserId");
         user.setDataGroups(Sets.newHashSet("A","B"));
         
         ScheduleContext context = new ScheduleContext.Builder().withUser(user).build();
         assertEquals(user.getStudyKey(), context.getStudyIdentifier().getIdentifier());
+        assertEquals(user.getId(), context.getUserId());
         assertEquals(user.getHealthCode(), context.getHealthCode());
         assertEquals(user.getDataGroups(), context.getUserDataGroups());
         
@@ -84,6 +86,7 @@ public class ScheduleContextTest {
         // All the individual fields work
         context = new ScheduleContext.Builder()
                 .withClientInfo(clientInfo)
+                .withUserId("userId")
                 .withStudyIdentifier(studyId)
                 .withTimeZone(PST)
                 .withEndsOn(endsOn)
@@ -92,6 +95,7 @@ public class ScheduleContextTest {
                 .withUserDataGroups(dataGroups)
                 .withNow(now).build();
         assertEquals(studyId, context.getStudyIdentifier());
+        assertEquals("userId", context.getUserId());
         assertEquals(clientInfo, context.getClientInfo());
         assertEquals(PST, context.getZone());
         assertEquals(endsOn, context.getEndsOn());

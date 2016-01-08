@@ -1,13 +1,19 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Comparator.comparing;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -21,18 +27,15 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -41,7 +44,7 @@ import com.google.common.collect.Maps;
 @Component
 public class ScheduledActivityService {
     
-    private static final Logger logger = LoggerFactory.getLogger(ScheduledActivityService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ScheduledActivityService.class);
     
     private static final ScheduleContextValidator VALIDATOR = new ScheduleContextValidator();
     private static final List<SurveyAnswer> EMPTY_ANSWERS = ImmutableList.of();
@@ -103,17 +106,18 @@ public class ScheduledActivityService {
         // Get scheduled activities, persisted activities, and compare them
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
         List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
-        ScheduledActivityOperations operations = new ScheduledActivityOperations(scheduledActivities, dbActivities);
+        
+        List<ScheduledActivity> saves = updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
         
         // if a survey activity, it may need a survey response generated (currently we're not using these though).
-        for (ScheduledActivity schActivity : operations.getSaves()) {
+        for (ScheduledActivity schActivity : saves) {
             Activity activity = createSurveyResponseIfNeeded(
                     context.getStudyIdentifier(), context.getHealthCode(), schActivity.getActivity());
             schActivity.setActivity(activity);
         }
-        activityDao.saveActivities(operations.getSaves());
+        activityDao.saveActivities(saves);
 
-        return operations.getResults();
+        return orderActivities(scheduledActivities);
     }
     
     public void updateScheduledActivities(String healthCode, List<ScheduledActivity> scheduledActivities) {
@@ -156,6 +160,31 @@ public class ScheduledActivityService {
         activityDao.deleteActivitiesForSchedulePlan(schedulePlanGuid);
     }
     
+    protected List<ScheduledActivity> updateActivitiesAndCollectSaves(List<ScheduledActivity> scheduledActivities, List<ScheduledActivity> dbActivities) {
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
+        
+        List<ScheduledActivity> saves = Lists.newArrayList();
+        for (int i=0; i < scheduledActivities.size(); i++) {
+            ScheduledActivity activity = scheduledActivities.get(i);
+            
+            ScheduledActivity dbActivity = dbMap.get(activity.getGuid());
+            if (dbActivity != null) {
+                scheduledActivities.set(i, dbActivity);
+            } else if (activity.getStatus() != ScheduledActivityStatus.EXPIRED) {
+                saves.add(activity);    
+            }
+            
+        }
+        return saves;
+    }
+    
+    protected List<ScheduledActivity> orderActivities(List<ScheduledActivity> activities) {
+        return activities.stream()
+            .filter(activity -> ScheduledActivityStatus.VISIBLE_STATUSES.contains(activity.getStatus()))
+            .sorted(comparing(ScheduledActivity::getScheduledOn))
+            .collect(toImmutableList());
+    }
+    
     /**
      * @param user
      * @return
@@ -189,7 +218,7 @@ public class ScheduledActivityService {
         Map<String,DateTime> newEvents = Maps.newHashMap();
         newEvents.putAll(events);
         newEvents.put("enrollment", new DateTime(signedOn));
-        logger.warn("Enrollment missing from activity event table, pulling from consent records");
+        LOG.warn("Enrollment missing from activity event table, pulling from consent records");
         return newEvents;
     }
    
@@ -203,6 +232,8 @@ public class ScheduledActivityService {
             if (schedule != null) {
                 List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
                 scheduledActivities.addAll(activities);    
+            } else {
+                LOG.warn("Schedule plan "+plan.getLabel()+" has no schedule for user "+context.getUserId());
             }
         }
         return scheduledActivities;

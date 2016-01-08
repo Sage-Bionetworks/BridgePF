@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 public final class ScheduleContext {
     
     private final StudyIdentifier studyId;
+    private final String userId; // for debugging purposes only.
     private final ClientInfo clientInfo;
     private final DateTimeZone zone;
     private final DateTime endsOn;
@@ -34,9 +35,10 @@ public final class ScheduleContext {
     private final DateTime now;
     private final Set<String> userDataGroups;
     
-    private ScheduleContext(StudyIdentifier studyId, ClientInfo clientInfo, DateTimeZone zone, DateTime endsOn, String healthCode,
+    private ScheduleContext(StudyIdentifier studyId, String userId, ClientInfo clientInfo, DateTimeZone zone, DateTime endsOn, String healthCode,
                     Map<String, DateTime> events, DateTime now, Set<String> userDataGroups) {
         this.studyId = studyId;
+        this.userId = userId;
         this.clientInfo = clientInfo;
         this.zone = zone;
         this.endsOn = endsOn;
@@ -52,6 +54,14 @@ public final class ScheduleContext {
      */
     public StudyIdentifier getStudyIdentifier() {
         return studyId;
+    }
+    
+    /**
+     * The user id (not the health code). Only used for debugging purposes.
+     * @return
+     */
+    public String getUserId() {
+        return userId;
     }
     
     /**
@@ -121,7 +131,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
+        return Objects.hash(studyId, userId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
     }
 
     @Override
@@ -132,6 +142,7 @@ public final class ScheduleContext {
             return false;
         ScheduleContext other = (ScheduleContext) obj;
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
+                Objects.equals(userId, other.userId) &&
                 Objects.equals(clientInfo, other.clientInfo) && 
                 Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
                 Objects.equals(studyId, other.studyId) && Objects.equals(now, other.now) && 
@@ -140,12 +151,13 @@ public final class ScheduleContext {
 
     @Override
     public String toString() {
-        return "ScheduleContext [studyId=" + studyId + ", clientInfo=" + clientInfo + ", zone=" + zone + ", endsOn=" + 
-                endsOn + ", events=" + events + ", userDataGroups=" + userDataGroups + "]";
+        return "ScheduleContext [studyId=" + studyId + ", userId=" + userId + ", clientInfo=" + clientInfo + ", zone="
+                + zone + ", endsOn=" + endsOn + ", events=" + events + ", userDataGroups=" + userDataGroups + "]";
     }
     
     public static class Builder {
         private StudyIdentifier studyId;
+        private String userId;
         private ClientInfo clientInfo;
         private DateTimeZone zone;
         private DateTime endsOn;
@@ -156,6 +168,7 @@ public final class ScheduleContext {
         
         public Builder withUser(User user) {
             if (user != null) {
+                this.userId = user.getId();
                 this.healthCode = user.getHealthCode();
                 this.studyId = new StudyIdentifierImpl(user.getStudyKey());
                 this.userDataGroups = user.getDataGroups();                
@@ -165,6 +178,12 @@ public final class ScheduleContext {
         public Builder withStudyIdentifier(String studyId) {
             if (studyId != null) {
                 this.studyId = new StudyIdentifierImpl(studyId);    
+            }
+            return this;
+        }
+        public Builder withUserId(String userId) {
+            if (userId != null) {
+                this.userId = userId;    
             }
             return this;
         }
@@ -204,6 +223,7 @@ public final class ScheduleContext {
         }
         public Builder withContext(ScheduleContext context) {
             this.studyId = context.studyId;
+            this.userId = context.userId;
             this.clientInfo = context.clientInfo;
             this.zone = context.zone;
             this.endsOn = context.endsOn;
@@ -224,7 +244,7 @@ public final class ScheduleContext {
             if (clientInfo == null) {
                 clientInfo = ClientInfo.UNKNOWN_CLIENT;
             }
-            return new ScheduleContext(studyId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
+            return new ScheduleContext(studyId, userId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
         }
     }
     

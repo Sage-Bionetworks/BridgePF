@@ -39,6 +39,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -239,6 +240,15 @@ public class DynamoScheduledActivityDaoMockTest {
         verifyNoMoreInteractions(mapper);
         
         assertEquals(activities, argument.getValue());
+    }
+    
+    @Test
+    public void callGetActivitiesWithEmptyListReturnsEmptyList() {
+        List<ScheduledActivity> activities = activityDao.getActivities(DateTimeZone.UTC, new ArrayList<>());
+        assertTrue(activities.isEmpty());
+        assertTrue(activities instanceof ImmutableList);
+        
+        verifyNoMoreInteractions(mapper);
     }
     
     private void assertScheduledActivity(ScheduledActivity schActivity, String ref, String dateString) {

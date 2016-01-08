@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -11,11 +12,15 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -45,8 +50,11 @@ import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 public class ScheduledActivityServiceMockTest {
+    
+    private static final HashSet<Object> EMPTY_SET = Sets.newHashSet();
 
     private static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
     
@@ -289,7 +297,147 @@ public class ScheduledActivityServiceMockTest {
     @Test(expected = IllegalArgumentException.class)
     public void deleteActivitiesForSchedulePlanRejectsBadValue() {
         service.deleteActivitiesForUser("  ");
-    }    
+    }
+
+    @Test
+    public void newActivitiesIncludedInSaveAndResults() {
+        List<ScheduledActivity> scheduled = createActivities("AAA", "BBB");
+        List<ScheduledActivity> db = createActivities("BBB");
+        
+        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        scheduled = service.orderActivities(scheduled);
+        
+        assertEquals(Sets.newHashSet("AAA","BBB"), toGuids(scheduled));
+        assertEquals(Sets.newHashSet("AAA"), toGuids(saves));
+    }
+    
+    @Test
+    public void persistedAndScheduledIncludedInResults() {
+        List<ScheduledActivity> scheduled = createActivities("CCC");
+        List<ScheduledActivity> db = createActivities("CCC");
+        db.get(0).setStartedOn(DateTime.now().getMillis());
+        
+        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        scheduled = service.orderActivities(scheduled);
+        
+        // Verifying that it exists in scheduled and was replaced with persisted version
+        assertNotNull(scheduled.get(0).getStartedOn());
+        assertEquals(EMPTY_SET, toGuids(saves));
+    }
+    
+    @Test
+    public void startedNotScheduledIncludedInResults() {
+        List<ScheduledActivity> scheduled = createActivities("AAA", "CCC");
+        List<ScheduledActivity> db = createActivities("CCC");
+        db.get(0).setStartedOn(new Long(1234L)); // started, not scheduled
+        
+        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        scheduled = service.orderActivities(scheduled);
+        
+        assertEquals(Sets.newHashSet("AAA","CCC"), toGuids(scheduled));
+        assertEquals(Sets.newHashSet("AAA"), toGuids(saves));
+    }
+    
+    @Test
+    public void expiredTasksExcludedFromCalculations() {
+        DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+        
+        // create activities in the past that are now expired.
+        List<ScheduledActivity> scheduled = createOldActivities(PST, "AAA","BBB");
+        List<ScheduledActivity> db = createOldActivities(PST, "AAA","CCC");
+        
+        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        scheduled = service.orderActivities(scheduled);
+        
+        assertTrue(scheduled.isEmpty());
+        assertEquals(EMPTY_SET, toGuids(saves));
+    }
+    
+    @Test
+    public void finishedTasksExcludedFromResults() {
+        List<ScheduledActivity> scheduled = createActivities("AAA", "BBB", "CCC");
+        List<ScheduledActivity> db = createActivities("AAA", "BBB");
+        db.get(0).setFinishedOn(DateTime.now().getMillis()); // AAA will not be in results
+        
+        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        scheduled = service.orderActivities(scheduled);
+        
+        assertEquals(Sets.newHashSet("BBB","CCC"), toGuids(scheduled));
+        assertEquals(Sets.newHashSet("CCC"), toGuids(saves));
+    }
+    
+    @Test
+    public void newAndExistingActivitiesAreMerged() {
+        List<ScheduledActivity> scheduled = createActivities("AAA", "BBB", "CCC");
+        List<ScheduledActivity> db = createActivities("AAA","CCC");
+        ScheduledActivity activity = db.stream()
+                .filter(act -> act.getGuid().equals("AAA")).findFirst().get();
+        activity.setStartedOn(DateTime.now().getMillis());
+        
+        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        scheduled = service.orderActivities(scheduled);
+        
+        assertEquals(Sets.newHashSet("AAA","BBB","CCC"), toGuids(scheduled));
+        assertEquals(Sets.newHashSet("BBB"), toGuids(saves));
+        
+        activity = scheduled.stream()
+                .filter(act -> act.getGuid().equals("AAA")).findFirst().get();
+        assertTrue(activity.getStartedOn() > 0L);
+        
+    }
+    
+    @Test
+    public void orderActivitieFiltersAndSorts() {
+        DateTime time1 = DateTime.parse("2014-10-01T00:00:00.000Z");
+        DateTime time2 = DateTime.parse("2014-10-02T00:00:00.000Z");
+        DateTime time3 = DateTime.parse("2014-10-03T00:00:00.000Z");
+        DateTime time4 = DateTime.parse("2014-10-04T00:00:00.000Z");
+        
+        List<ScheduledActivity> list = createActivities("AAA", "BBB", "CCC", "DDD");
+        list.get(0).setScheduledOn(time2);
+        list.get(1).setScheduledOn(time1);
+        list.get(2).setScheduledOn(time4);
+        list.get(3).setScheduledOn(time3);
+        list.get(3).setExpiresOn(DateTime.now().minusDays(1));
+        
+        List<ScheduledActivity> result = service.orderActivities(list);
+        assertEquals(3, result.size());
+        assertEquals(time1, result.get(0).getScheduledOn());
+        assertEquals(time2, result.get(1).getScheduledOn());
+        assertEquals(time4, result.get(2).getScheduledOn());
+        
+    }
+    
+    private List<ScheduledActivity> createActivities(String... guids) {
+        List<ScheduledActivity> list = Lists.newArrayListWithCapacity(guids.length);
+        for (String guid : guids) {
+            ScheduledActivity activity = ScheduledActivity.create();
+            activity.setGuid(guid);
+            activity.setTimeZone(DateTimeZone.UTC);
+            activity.setScheduledOn(DateTime.now());
+            list.add(activity);
+        }
+        return list;
+    }
+    
+    private List<ScheduledActivity> createOldActivities(DateTimeZone timeZone, String... guids) {
+        DateTime startedOn = DateTime.now().minusMonths(6);
+        DateTime expiresOn = DateTime.now().minusMonths(5);
+        List<ScheduledActivity> list = Lists.newArrayListWithCapacity(guids.length);
+        for (String guid : guids) {
+            ScheduledActivity activity = ScheduledActivity.create();
+            activity.setTimeZone(timeZone);
+            activity.setGuid(guid);
+            activity.setScheduledOn(startedOn);
+            activity.setExpiresOn(expiresOn);
+            list.add(activity);
+        }
+        return list;
+    }
+    
+    private Set<String> toGuids(List<ScheduledActivity> activities) {
+        return activities.stream().map(ScheduledActivity::getGuid).collect(Collectors.toSet());
+    }
     
     private ScheduleContext createScheduleContext(DateTime endsOn) {
         Map<String,DateTime> events = Maps.newHashMap();
