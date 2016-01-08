@@ -134,7 +134,8 @@ public class ScheduledActivityService {
                 throw new BadRequestException(String.format("Task #%s has no GUID", i));
             }
             if (schActivity.getStartedOn() != null || schActivity.getFinishedOn() != null) {
-                ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
+                // We do not need to add the time zone here. Not returning these to the user.
+                ScheduledActivity dbActivity = activityDao.getActivity(null, healthCode, schActivity.getGuid());
                 if (schActivity.getStartedOn() != null) {
                     dbActivity.setStartedOn(schActivity.getStartedOn());
                 }

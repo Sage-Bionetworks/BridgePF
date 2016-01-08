@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -118,7 +118,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
         activityDao = mock(DynamoScheduledActivityDao.class);
-        when(activityDao.getActivity(anyString(), anyString())).thenAnswer(invocation -> {
+        when(activityDao.getActivity(eq(DateTimeZone.UTC), anyString(), anyString())).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
             schActivity.setHealthCode((String)args[0]);
@@ -205,7 +205,7 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
-        verify(activityDao, times(3)).getActivity(anyString(), anyString());
+        verify(activityDao, times(3)).getActivity(eq(DateTimeZone.UTC), anyString(), anyString());
         // Two activities have been finished and generate activity finished events
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         

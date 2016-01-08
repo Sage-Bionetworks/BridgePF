@@ -10,11 +10,12 @@ public interface ScheduledActivityDao {
     
     /**
      * Load an individual activity.
+     * @param timeZone
      * @param healthCode
      * @param guid
      * @return
      */
-    public ScheduledActivity getActivity(String healthCode, String guid);
+    public ScheduledActivity getActivity(DateTimeZone timeZone, String healthCode, String guid);
    
     /**
      * Get a list of activities for a user. The list is derived from the scheduler.

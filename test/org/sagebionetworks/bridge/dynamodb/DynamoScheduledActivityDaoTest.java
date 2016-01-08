@@ -122,7 +122,7 @@ public class DynamoScheduledActivityDaoTest {
         assertEquals(DateTimeZone.UTC, ((DynamoScheduledActivity)savedActivities.get(0)).getTimeZone());
         
         // Verify getActivity() works
-        ScheduledActivity savedActivity = activityDao.getActivity(context.getHealthCode(), savedActivities.get(0).getGuid());
+        ScheduledActivity savedActivity = activityDao.getActivity(context.getZone(), context.getHealthCode(), savedActivities.get(0).getGuid());
         assertEquals(savedActivities.get(0), savedActivity);
         
         // Create a new list of activities removing some that are saved, and adding new ones.
