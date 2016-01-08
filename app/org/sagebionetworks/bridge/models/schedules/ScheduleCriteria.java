@@ -25,8 +25,8 @@ public final class ScheduleCriteria implements Criteria {
         this.schedule = schedule;
         this.minAppVersion = minAppVersion;
         this.maxAppVersion = maxAppVersion;
-        this.allOfGroups = allOfGroups;
-        this.noneOfGroups = noneOfGroups;
+        this.allOfGroups = (allOfGroups != null) ? allOfGroups : Sets.newHashSet();
+        this.noneOfGroups = (noneOfGroups != null) ? noneOfGroups : Sets.newHashSet();
     }
     public Schedule getSchedule() {
         return schedule;

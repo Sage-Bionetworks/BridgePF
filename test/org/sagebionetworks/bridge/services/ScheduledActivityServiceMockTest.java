@@ -118,11 +118,11 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
         activityDao = mock(DynamoScheduledActivityDao.class);
-        when(activityDao.getActivity(eq(DateTimeZone.UTC), anyString(), anyString())).thenAnswer(invocation -> {
+        when(activityDao.getActivity(any(), anyString(), anyString())).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
-            schActivity.setHealthCode((String)args[0]);
-            schActivity.setGuid((String)args[1]);
+            schActivity.setHealthCode((String)args[1]);
+            schActivity.setGuid((String)args[2]);
             return schActivity;
         });
         when(activityDao.getActivities(context.getZone(), scheduledActivities)).thenReturn(scheduledActivities);
@@ -205,7 +205,7 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
-        verify(activityDao, times(3)).getActivity(eq(DateTimeZone.UTC), anyString(), anyString());
+        verify(activityDao, times(3)).getActivity(eq(null), anyString(), anyString());
         // Two activities have been finished and generate activity finished events
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         
