@@ -8,11 +8,15 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -21,8 +25,16 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 
 @Component
 public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDao {
+    private static final String CONFIG_KEY_ADD_LIMIT = "fphs.id.add.limit";
 
+    private int addLimit;
     private DynamoDBMapper mapper;
+
+    /** Gets the add limit from Config. */
+    @Autowired
+    public final void setConfig(Config config) {
+        addLimit = config.getInt(CONFIG_KEY_ADD_LIMIT);
+    }
     
     @Resource(name = "fphsExternalIdDdbMapper")
     public final void setMapper(DynamoDBMapper mapper) {
@@ -70,7 +82,13 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
     @Override
     public void addExternalIds(List<FPHSExternalIdentifier> externalIds) {
         checkNotNull(externalIds);
-        
+
+        // If the list is too large, this will hit DDB throttling limits and also take forever.
+        // If the list is too large, throw a BadRequestException.
+        if (externalIds.size() > addLimit) {
+            throw new BadRequestException("ID list too large; size=" + externalIds.size() + ", limit=" + addLimit);
+        }
+
         if (!externalIds.isEmpty()) {
             List<DynamoFPHSExternalIdentifier> idsToSave = externalIds.stream().filter(id -> {
                 return mapper.load(id) == null;

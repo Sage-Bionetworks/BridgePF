@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -15,6 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -40,9 +42,7 @@ public class DynamoFPHSExternalIdentifierDaoTest {
     
     @After
     public void after() {
-        for (String identifier: idsToDelete) {
-            dao.deleteExternalId(identifier);    
-        }
+        idsToDelete.forEach(dao::deleteExternalId);
     }
     
     private String getId() {
@@ -168,7 +168,18 @@ public class DynamoFPHSExternalIdentifierDaoTest {
         FPHSExternalIdentifier found = getById(results, id1);
         assertFalse(found.isRegistered());
     }
-    
+
+    @Test(expected = BadRequestException.class)
+    public void addExternalIdsExceedsLimit() {
+        List<FPHSExternalIdentifier> idList = new ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            String id = getId();
+            idList.add(new DynamoFPHSExternalIdentifier(id));
+            idsToDelete.add(id);
+        }
+        dao.addExternalIds(idList);
+    }
+
     private FPHSExternalIdentifier getById(List<FPHSExternalIdentifier> identifiers, FPHSExternalIdentifier externalId) {
         for (FPHSExternalIdentifier identifier : identifiers) {
             if (identifier.getExternalId().equals(externalId.getExternalId())) {
