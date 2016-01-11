@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+
+import java.util.Set;
+
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
@@ -36,6 +39,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private String uploadId;
     private ParticipantOption.SharingScope userSharingScope;
     private String userExternalId;
+    private Set<String> userDataGroups;
     private Long version;
 
     /** {@inheritDoc} */
@@ -182,6 +186,18 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public Set<String> getUserDataGroups() {
+        return userDataGroups;
+    }
+    
+    /** @see #getUserDataGroups() */
+    public void setUserDataGroups(Set<String> userDataGroups) {
+        // DDB doesn't support empty sets, use null reference for empty set. This is also enforced by the builder.
+        this.userDataGroups = (userDataGroups != null && !userDataGroups.isEmpty()) ? userDataGroups : null;
+    }
+    
+    /** {@inheritDoc} */
     @DynamoDBVersionAttribute
     public Long getVersion() {
         return version;
@@ -210,6 +226,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
             record.setUploadId(getUploadId());
             record.setUserSharingScope(getUserSharingScope());
             record.setUserExternalId(getUserExternalId());
+            record.setUserDataGroups(getUserDataGroups());
             record.setVersion(getVersion());
             return record;
         }
