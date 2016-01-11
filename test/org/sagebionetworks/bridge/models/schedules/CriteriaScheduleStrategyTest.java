@@ -216,8 +216,9 @@ public class CriteriaScheduleStrategyTest {
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/44"))
                 .withUser(user).build();
         
-        // First two don't match because app version is wrong and missing required groups
-        // The last is returned because the context has no prohibited groups
+        // First two ScheduleCriteria don't match; the first because the app version is wrong 
+        // and the second because the user does not have a required data group. The last ScheduleCriteria 
+        // matches and returns the last schedule in the list
         Schedule schedule = strategy.getScheduleForUser(PLAN, context);
         assertEquals(SCHEDULE_FOR_STRATEGY_WITH_PROHIBITED_DATA_GROUPS, schedule);
     }
