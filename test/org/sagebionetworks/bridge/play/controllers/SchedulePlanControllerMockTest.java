@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
-import org.sagebionetworks.bridge.services.SchedulePlanServiceImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.mvc.Http;
@@ -43,7 +42,7 @@ public class SchedulePlanControllerMockTest {
         when(studyService.getStudy(study.getStudyIdentifier())).thenReturn(study);
         controller.setStudyService(studyService);
         
-        SchedulePlanService schedulePlanService = new SchedulePlanServiceImpl();
+        SchedulePlanService schedulePlanService = new SchedulePlanService();
         controller.setSchedulePlanService(schedulePlanService);
         
         UserSession session = mock(UserSession.class);

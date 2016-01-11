@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyConsentService;
+
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;

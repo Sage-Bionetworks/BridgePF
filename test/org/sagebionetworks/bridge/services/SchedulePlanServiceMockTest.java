@@ -4,11 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-
-import static org.mockito.Mockito.any;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
@@ -37,7 +37,7 @@ public class SchedulePlanServiceMockTest {
     private Study study;
     private String surveyGuid1;
     private String surveyGuid2;
-    private SchedulePlanServiceImpl service;
+    private SchedulePlanService service;
     
     private SchedulePlanDao mockSchedulePlanDao;
     private SurveyService mockSurveyService;
@@ -47,13 +47,13 @@ public class SchedulePlanServiceMockTest {
     public void before() {
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
-        study.setTaskIdentifiers(Sets.newHashSet("tapTest", "taskGuid"));
+        study.setTaskIdentifiers(Sets.newHashSet("tapTest", "taskGuid", "CCC"));
         
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
         mockActivityService = mock(ScheduledActivityService.class);
         
-        service = new SchedulePlanServiceImpl();
+        service = new SchedulePlanService();
         service.setSchedulePlanDao(mockSchedulePlanDao);
         service.setSurveyService(mockSurveyService);
         service.setScheduledActivityService(mockActivityService);
@@ -160,6 +160,58 @@ public class SchedulePlanServiceMockTest {
             }
         }
         
+    }
+    @Test
+    public void schedulePlanSetsStudyIdentifierOnCreate() {
+        DynamoStudy anotherStudy = getAnotherStudy();
+        SchedulePlan plan = getSchedulePlan();
+        // Just pass it back, the service should set the studyKey
+        when(mockSchedulePlanDao.createSchedulePlan(any(), any())).thenReturn(plan);
+        
+        plan = service.createSchedulePlan(anotherStudy, plan);
+        assertEquals("another-study", plan.getStudyKey());
+    }
+    
+    @Test
+    public void schedulePlanSetsStudyIdentifierOnUpdate() {
+        DynamoStudy anotherStudy = getAnotherStudy();
+        SchedulePlan plan = getSchedulePlan();
+        // Just pass it back, the service should set the studyKey
+        when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
+        
+        plan = service.updateSchedulePlan(anotherStudy, plan);
+        assertEquals("another-study", plan.getStudyKey());
+    }
+    
+    @Test
+    public void cleansUpScheduledActivitiesOnUpdate() {
+        SchedulePlan plan = getSchedulePlan();
+        when(mockSchedulePlanDao.updateSchedulePlan(study.getStudyIdentifier(), plan)).thenReturn(plan);
+        
+        service.updateSchedulePlan(study, plan);
+        verify(mockActivityService).deleteActivitiesForSchedulePlan("BBB");
+    }
+    
+    @Test
+    public void cleansUpScheduledActivitiesOnDelete() {
+        service.deleteSchedulePlan(TEST_STUDY, "BBB");
+        
+        verify(mockActivityService).deleteActivitiesForSchedulePlan("BBB");
+    }
+    
+    private DynamoStudy getAnotherStudy() {
+        DynamoStudy anotherStudy = new DynamoStudy();
+        anotherStudy.setIdentifier("another-study");
+        anotherStudy.setTaskIdentifiers(Sets.newHashSet("CCC"));
+        return anotherStudy;
+    }
+    
+    private SchedulePlan getSchedulePlan() {
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
+        plan.setLabel("Label");
+        plan.setGuid("BBB");
+        plan.getStrategy().getAllPossibleSchedules().get(0).setExpires("P3D");
+        return plan;
     }
     
     private SchedulePlan createSchedulePlan() {

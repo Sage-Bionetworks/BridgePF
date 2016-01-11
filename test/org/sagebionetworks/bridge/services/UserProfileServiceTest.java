@@ -23,19 +23,19 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class UserProfileServiceImplTest {
+public class UserProfileServiceTest {
     
     @Resource
     private TestUserAdminHelper helper;
     
     @Resource
-    private UserProfileServiceImpl profileService;
+    private UserProfileService profileService;
     
     private TestUser testUser;
     
     @Before
     public void before() {
-        testUser = helper.getBuilder(UserProfileServiceImplTest.class).build();
+        testUser = helper.getBuilder(UserProfileServiceTest.class).build();
     }
     
     @After

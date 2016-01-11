@@ -34,11 +34,11 @@ import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 
 import com.google.common.collect.Lists;
 
-public class SurveyResponseServiceImplTest {
+public class SurveyResponseServiceTest {
     
     private static final long timeOfSurveyAnswer = DateTime.now().getMillis();
 
-    private SurveyResponseServiceImpl service;
+    private SurveyResponseService service;
     
     private DynamoSurveyResponseDao surveyResponseDao;
     
@@ -53,7 +53,7 @@ public class SurveyResponseServiceImplTest {
     public void before() {
         survey = getSurvey();
         
-        service = new SurveyResponseServiceImpl();
+        service = new SurveyResponseService();
         
         surveyDao = mock(DynamoSurveyDao.class);
         when(surveyDao.getSurvey(any(GuidCreatedOnVersionHolder.class))).thenReturn(survey);

@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.services.StudyServiceImpl;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import org.springframework.test.context.ContextConfiguration;
@@ -48,7 +48,7 @@ public class StormpathAccountDaoTest {
     private StormpathAccountDao accountDao;
     
     @Resource
-    private StudyServiceImpl studyService;
+    private StudyService studyService;
 
     @Resource
     private SubpopulationService subpopService;

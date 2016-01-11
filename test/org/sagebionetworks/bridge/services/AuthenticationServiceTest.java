@@ -50,7 +50,7 @@ import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class AuthenticationServiceImplTest {
+public class AuthenticationServiceTest {
 
     private static final String TEST_DATA_GROUP = "group1";
 
@@ -58,7 +58,7 @@ public class AuthenticationServiceImplTest {
     private CacheProvider cacheProvider;
 
     @Resource
-    private AuthenticationServiceImpl authService;
+    private AuthenticationService authService;
 
     @Resource
     private ParticipantOptionsService optionsService;
@@ -70,7 +70,7 @@ public class AuthenticationServiceImplTest {
     private HealthCodeService healthCodeService;
     
     @Resource
-    private StudyServiceImpl studyService;
+    private StudyService studyService;
 
     @Resource
     private TestUserAdminHelper helper;
@@ -79,7 +79,7 @@ public class AuthenticationServiceImplTest {
 
     @Before
     public void before() {
-        testUser = helper.getBuilder(AuthenticationServiceImplTest.class).build();
+        testUser = helper.getBuilder(AuthenticationServiceTest.class).build();
 
         cacheProvider.removeStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -166,7 +166,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void canResendEmailVerification() throws Exception {
-        TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class)
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
         try {
             Email email = new Email(testUser.getStudyIdentifier(), user.getEmail());
@@ -178,7 +178,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        TestUser researcher = helper.getBuilder(AuthenticationServiceImplTest.class)
+        TestUser researcher = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.RESEARCHER).build();
         try {
             authService.signIn(researcher.getStudy(), ClientInfo.UNKNOWN_CLIENT, researcher.getSignIn());
@@ -190,7 +190,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void createAdminAndSignInWithoutConsentError() {
-        TestUser researcher = helper.getBuilder(AuthenticationServiceImplTest.class)
+        TestUser researcher = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.ADMIN).build();
         try {
             authService.signIn(researcher.getStudy(), ClientInfo.UNKNOWN_CLIENT, researcher.getSignIn());
@@ -228,7 +228,7 @@ public class AuthenticationServiceImplTest {
         Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
         Set<String> list = Sets.newHashSet("group1");
-        String name = TestUtils.randomName(AuthenticationServiceImplTest.class);
+        String name = TestUtils.randomName(AuthenticationServiceTest.class);
         String email = "bridge-testing+"+name+"@sagebase.org";
         
         try {
@@ -252,7 +252,7 @@ public class AuthenticationServiceImplTest {
     public void userCreatedWithDataGroupsHasThemOnSignIn() throws Exception {
         Set<String> dataGroups = Sets.newHashSet(TEST_DATA_GROUP);
         
-        TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class).withConsent(true)
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class).withConsent(true)
                 .withDataGroups(dataGroups).build();
         try {
             UserSession session = authService.signIn(user.getStudy(), ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
@@ -268,7 +268,7 @@ public class AuthenticationServiceImplTest {
     public void invalidDataGroupsAreRejected() throws Exception {
         try {
             Set<String> dataGroups = Sets.newHashSet("bugleboy");
-            helper.getBuilder(AuthenticationServiceImplTest.class).withConsent(false).withSignIn(false)
+            helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false)
                     .withDataGroups(dataGroups).build();
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
@@ -284,7 +284,7 @@ public class AuthenticationServiceImplTest {
         // Verify that requestResetPassword is called in this case
         authService = spy(authService);
         
-        TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class)
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
         try {
             authService.signUp(user.getStudy(), user.getSignUp(), true);
@@ -297,7 +297,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
         // In particular, it must not throw an EntityNotFoundException
-        TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class)
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
         try {
             Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
@@ -310,7 +310,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void requestResetPasswordLooksSuccessfulWhenNoAccount() throws Exception {
         // In particular, it must not throw an EntityNotFoundException
-        TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class)
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
         try {
             Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
@@ -325,7 +325,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void consentStatusesPresentInSession() {
         // User is consenting
-        TestUser user = helper.getBuilder(AuthenticationServiceImplTest.class)
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
         try {
             SubpopulationGuid guid = SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier());

@@ -42,13 +42,13 @@ import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class StudyServiceImplTest {
+public class StudyServiceTest {
 
     @Resource
-    StudyServiceImpl studyService;
+    StudyService studyService;
     
     @Resource
-    StudyConsentServiceImpl studyConsentService;
+    StudyConsentService studyConsentService;
     
     @Resource
     DirectoryDao directoryDao;
@@ -82,7 +82,7 @@ public class StudyServiceImplTest {
     
     @Test
     public void cannotCreateAnExistingStudyWithAVersion() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study = TestUtils.getValidStudy(StudyServiceTest.class);
         study = studyService.createStudy(study);
         try {
             study = studyService.createStudy(study);
@@ -93,14 +93,14 @@ public class StudyServiceImplTest {
     
     @Test(expected=EntityAlreadyExistsException.class)
     public void cannotCreateAStudyWithAVersion() {
-        Study testStudy = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        Study testStudy = TestUtils.getValidStudy(StudyServiceTest.class);
         testStudy.setVersion(1L);
         testStudy = studyService.createStudy(testStudy);
     }
     
     @Test
     public void crudStudy() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study = TestUtils.getValidStudy(StudyServiceTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setTaskIdentifiers(null);
         study.setActive(false);
@@ -126,7 +126,7 @@ public class StudyServiceImplTest {
         assertTrue(newStudy.isActive());
         assertTrue(newStudy.isStrictUploadValidationEnabled());
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
-        assertEquals("Test Study [StudyServiceImplTest]", newStudy.getName());
+        assertEquals("Test Study [StudyServiceTest]", newStudy.getName());
         assertEquals(200, newStudy.getMaxNumOfParticipants());
         assertEquals(18, newStudy.getMinAgeOfConsent());
         assertEquals(Sets.newHashSet("beta_users", "production_users"), newStudy.getDataGroups());
@@ -156,7 +156,7 @@ public class StudyServiceImplTest {
     
     @Test
     public void canUpdatePasswordPolicyAndEmailTemplates() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(null);
@@ -206,7 +206,7 @@ public class StudyServiceImplTest {
     
     @Test
     public void defaultsAreUsedWhenNotProvided() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(new EmailTemplate("   ", null, MimeType.TEXT));
@@ -221,7 +221,7 @@ public class StudyServiceImplTest {
     
     @Test
     public void problematicHtmlIsRemovedFromTemplates() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setVerifyEmailTemplate(new EmailTemplate("<b>This is not allowed [ve]</b>", "<p>Test [ve] ${url}</p><script></script>", MimeType.HTML));
         study.setResetPasswordTemplate(new EmailTemplate("<b>This is not allowed [rp]</b>", "<p>Test [rp] ${url}</p>", MimeType.TEXT));
         study = studyService.createStudy(study);
@@ -239,7 +239,7 @@ public class StudyServiceImplTest {
     
     @Test
     public void adminsCanSomeValuesResearchersCannot() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setMaxNumOfParticipants(200);
         study.setHealthCodeExportEnabled(false);
         study = studyService.createStudy(study);
@@ -261,7 +261,7 @@ public class StudyServiceImplTest {
     
     @Test(expected=InvalidEntityException.class)
     public void updateWithNoTemplatesIsInvalid() {
-        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study = TestUtils.getValidStudy(StudyServiceTest.class);
         study = studyService.createStudy(study);
         
         study.setVerifyEmailTemplate(null);

@@ -32,7 +32,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.controllers.UserProfileController;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -146,7 +145,7 @@ public class UserProfileControllerTest {
         Study study = new DynamoStudy();
         study.setDataGroups(Sets.newHashSet("group1", "group2"));
         
-        optionsService = mock(ParticipantOptionsServiceImpl.class);
+        optionsService = mock(ParticipantOptionsService.class);
         StudyService studyService = mock(StudyService.class);
         when(studyService.getStudy((StudyIdentifier)any())).thenReturn(study);
         

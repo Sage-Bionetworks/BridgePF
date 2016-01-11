@@ -53,7 +53,7 @@ public class SurveyServiceTest {
     UploadSchemaService schemaService;
 
     @Resource
-    SurveyServiceImpl surveyService;
+    SurveyService surveyService;
 
     private TestSurvey testSurvey;
     private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
