@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
@@ -42,13 +43,19 @@ public class CriteriaScheduleStrategyTest {
     private static final Schedule SCHEDULE_FOR_STRATEGY_WITH_ALL_REQUIREMENTS = makeValidSchedule(
             "Strategy with all requirements");
     
-    private static final CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
     private static final SchedulePlanValidator VALIDATOR = new SchedulePlanValidator(Sets.newHashSet(),
             Sets.newHashSet(TestConstants.TEST_3_ACTIVITY.getTask().getIdentifier()));;
     private static final SchedulePlan PLAN = new DynamoSchedulePlan();
     static {
         PLAN.setLabel("Schedule plan label");
         PLAN.setStudyKey(TEST_STUDY_IDENTIFIER);
+    }
+    
+    private CriteriaScheduleStrategy strategy;
+    
+    @Before
+    public void before() {
+        strategy = new CriteriaScheduleStrategy();
         PLAN.setStrategy(strategy);
     }
     
