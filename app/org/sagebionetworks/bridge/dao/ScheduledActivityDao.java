@@ -2,36 +2,29 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
+import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 
 public interface ScheduledActivityDao {
     
     /**
      * Load an individual activity.
+     * @param timeZone
      * @param healthCode
      * @param guid
      * @return
      */
-    public ScheduledActivity getActivity(String healthCode, String guid);
-    
+    public ScheduledActivity getActivity(DateTimeZone timeZone, String healthCode, String guid);
+   
     /**
-     * Get a user's scheduled activities up to a target timestamp. This returns all activities that are not expired,
-     * deleted or finished, as well as future activities that are scheduled but should not be started yet. Activities
-     * are not necessarily saved in the database, however.
-     * 
-     * @param context
-     * @return
-     */
-    public List<ScheduledActivity> getActivities(ScheduleContext context);
-    
-    /**
-     * Have any of the activities for this run key been created?
+     * Get a list of activities for a user. The list is derived from the scheduler.
      * @param healthCode
-     * @param runKey
+     * @param timeZone
+     * @param activityGuids
      * @return
      */
-    public boolean activityRunHasNotOccurred(String healthCode, String runKey);
+    public List<ScheduledActivity> getActivities(DateTimeZone timeZone, List<ScheduledActivity> activities);
     
     /**
      * Save activities (activities will only be saved if they are not in the database).

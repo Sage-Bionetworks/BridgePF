@@ -8,10 +8,14 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -25,6 +29,8 @@ import com.google.common.collect.Lists;
 @Controller
 public class ScheduleController extends BaseController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ScheduleController.class);
+    
     private SchedulePlanService schedulePlanService;
     
     @Autowired
@@ -40,16 +46,7 @@ public class ScheduleController extends BaseController {
     
     @Deprecated
     public Result getSchedulesV3() throws Exception {
-        UserSession session = getAuthenticatedAndConsentedSession();
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-        
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
-        List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
-        for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(session.getStudyIdentifier(), plan, session.getUser());
-            schedules.add(schedule);
-        }
+        List<Schedule> schedules = getSchedulesInternal();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(new ResourceList<Schedule>(schedules));
         ArrayNode items = (ArrayNode)node.get("items");
@@ -64,16 +61,29 @@ public class ScheduleController extends BaseController {
     }
     
     public Result getSchedules() throws Exception {
+        List<Schedule> schedules = getSchedulesInternal();
+        return okResult(schedules);
+    }
+    
+    private List<Schedule> getSchedulesInternal() {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withUser(session.getUser()).withClientInfo(clientInfo).build();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
+
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(session.getStudyIdentifier(), plan, session.getUser());
-            schedules.add(schedule);
+            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
+            if (schedule != null) {
+                schedules.add(schedule);
+            } else {
+                LOG.warn("Schedule plan "+plan.getLabel()+" has no schedule for user "+session.getUser().getId());
+            }
         }
-        return okResult(schedules);
+        return schedules;
     }
 }

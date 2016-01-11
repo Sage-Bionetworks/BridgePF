@@ -41,4 +41,9 @@ public enum ScheduledActivityStatus {
     public static final Set<ScheduledActivityStatus> DELETABLE_STATUSES = EnumSet.of(ScheduledActivityStatus.SCHEDULED,
             ScheduledActivityStatus.AVAILABLE, ScheduledActivityStatus.EXPIRED);
     
+    /**
+     * Activities that should be seen by users. Expired, deleted and finished tasks are no longer visible.
+     */
+    public static final Set<ScheduledActivityStatus> VISIBLE_STATUSES = EnumSet.of(ScheduledActivityStatus.SCHEDULED,
+            ScheduledActivityStatus.AVAILABLE, ScheduledActivityStatus.STARTED);    
 }

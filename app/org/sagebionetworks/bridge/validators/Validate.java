@@ -91,7 +91,7 @@ public class Validate {
             throw new InvalidEntityException(entity, message, map);
         }
     }
-    private static Map<String,List<String>> convertErrorsToSimpleMap(Errors errors) {
+    public static Map<String,List<String>> convertErrorsToSimpleMap(Errors errors) {
         Map<String,List<String>> map = Maps.newHashMap();
         
         if (errors.hasGlobalErrors()) {

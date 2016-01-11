@@ -19,7 +19,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -46,16 +45,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private LocalDateTime localScheduledOn;
     private LocalDateTime localExpiresOn;
     private Activity activity;
-    private String runKey;
-    private Long hidesOn;
     private boolean persistent;
     private DateTimeZone timeZone;
-    private Integer minAppVersion;
-    private Integer maxAppVersion;
-
-    public DynamoScheduledActivity() {
-        setHidesOn(new Long(Long.MAX_VALUE));
-    }
 
     @Override
     @DynamoDBIgnore
@@ -148,31 +139,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     public void setLocalExpiresOn(LocalDateTime localExpiresOn) {
         this.localExpiresOn = localExpiresOn;
-    }
-
-    @DynamoDBAttribute
-    @Override
-    @JsonIgnore
-    public Long getHidesOn() {
-        return this.hidesOn;
-    }
-
-    @Override
-    public void setHidesOn(Long hidesOn) {
-        this.hidesOn = hidesOn;
-    }
-
-    @DynamoDBAttribute
-    @Override
-    @JsonIgnore
-    @DynamoDBIndexRangeKey(localSecondaryIndexName = "hashKey-runKey-index")
-    public String getRunKey() {
-        return this.runKey;
-    }
-
-    @Override
-    public void setRunKey(String runKey) {
-        this.runKey = runKey;
     }
 
     @DynamoDBHashKey
@@ -270,29 +236,9 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     }
 
     @Override
-    public Integer getMinAppVersion() {
-        return minAppVersion;
-    }
-
-    @Override
-    public void setMinAppVersion(Integer minAppVersion) {
-        this.minAppVersion = minAppVersion;
-    }
-
-    @Override
-    public Integer getMaxAppVersion() {
-        return maxAppVersion;
-    }
-
-    @Override
-    public void setMaxAppVersion(Integer maxAppVersion) {
-        this.maxAppVersion = maxAppVersion;
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, healthCode, runKey,
-                hidesOn, persistent, timeZone, minAppVersion, maxAppVersion, schedulePlanGuid);
+        return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, healthCode,
+                persistent, timeZone, schedulePlanGuid);
     }
 
     @Override
@@ -305,17 +251,15 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         return (Objects.equals(activity, other.activity) && Objects.equals(localExpiresOn, other.localExpiresOn)
                 && Objects.equals(localScheduledOn, other.localScheduledOn) && Objects.equals(guid, other.guid)
                 && Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn)
-                && Objects.equals(healthCode, other.healthCode) && Objects.equals(hidesOn, other.hidesOn)
-                && Objects.equals(runKey, other.runKey) && Objects.equals(persistent, other.persistent)
-                && Objects.equals(timeZone, other.timeZone) && Objects.equals(minAppVersion, other.minAppVersion)
-                && Objects.equals(maxAppVersion, other.maxAppVersion) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
+                && Objects.equals(healthCode, other.healthCode) && Objects.equals(persistent, other.persistent)
+                && Objects.equals(timeZone, other.timeZone) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
     }
 
     @Override
     public String toString() {
         return String.format(
-                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, minAppVersion=%s, maxAppVersion=%s, activity=%s, schedulePlanGuid=%s]",
+                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s]",
                 healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, timeZone,
-                minAppVersion, maxAppVersion, activity, schedulePlanGuid);
+                activity, schedulePlanGuid);
     }
 }
