@@ -1,15 +1,22 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.validation.Errors;
+
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 
@@ -17,13 +24,29 @@ import com.google.common.collect.Sets;
 
 public class SchedulePlanValidatorTest {
 
+    private static final Set<String> DATA_GROUPS = Sets.newHashSet("dataGroup");
+    private static final Set<String> TASK_IDENTIFIERS = Sets.newHashSet("tapTest");
+    
     private SchedulePlanValidator validator;
 
     @Before
     public void before() throws Exception {
-        validator = new SchedulePlanValidator(Sets.newHashSet("tapTest"));
+        validator = new SchedulePlanValidator(DATA_GROUPS, TASK_IDENTIFIERS);
     }
 
+    @Test
+    public void enumeratedValuesArePassedToScheduleStrategyValidator() {
+        SchedulePlan plan = new DynamoSchedulePlan();
+        ScheduleStrategy strategy = mock(ScheduleStrategy.class);
+        plan.setStrategy(strategy);
+        
+        Errors errors = mock(Errors.class);
+        
+        validator.validate((Object)plan, errors);
+        
+        verify(strategy).validate(DATA_GROUPS, TASK_IDENTIFIERS, errors);
+    }
+    
     @Test
     public void validSchedulePlan() {
         SchedulePlan plan = getValidSimpleStrategy();
@@ -91,7 +114,7 @@ public class SchedulePlanValidatorTest {
         SchedulePlan plan = getValidABTestStrategy();
         ((ABTestScheduleStrategy)plan.getStrategy()).getScheduleGroups().get(0).setPercentage(10);
         
-        assertMessage(plan, "strategy.scheduleGroups groups must add up to 100% (not 40%; give 20% as 20, for example)", "strategy.scheduleGroups");
+        assertMessage(plan, "strategy.scheduleGroups groups must add up to 100%", "strategy.scheduleGroups");
     }
     
     @Test

@@ -105,9 +105,7 @@ public class ConsentServiceTest {
         
         testUser = helper.getBuilder(ConsentServiceTest.class).withStudy(study).withConsent(false).build();
         
-        context = new ScheduleContext.Builder()
-            .withStudyIdentifier(study)
-            .withHealthCode(testUser.getUser().getHealthCode()).build();
+        context = new ScheduleContext.Builder().withUser(testUser.getUser()).build();
     }
 
     @After

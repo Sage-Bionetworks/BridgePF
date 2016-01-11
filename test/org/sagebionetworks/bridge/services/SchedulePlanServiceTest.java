@@ -16,8 +16,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
-import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy.ScheduleGroup;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.ABTestGroup;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -105,7 +105,7 @@ public class SchedulePlanServiceTest {
         
         // Walk down the object graph and verify that data is there.
         ABTestScheduleStrategy strategy = (ABTestScheduleStrategy)retrieved.getStrategy();
-        ScheduleGroup group = strategy.getScheduleGroups().get(0);
+        ABTestGroup group = strategy.getScheduleGroups().get(0);
         Activity activity = group.getSchedule().getActivities().get(0);
         assertEquals("Do AAA task", activity.getLabel());
     }

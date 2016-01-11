@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
+import java.util.Set;
+
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -26,6 +29,7 @@ public abstract class HealthDataRecordBuilder {
     private LocalDate uploadDate;
     private String uploadId;
     private String userExternalId;
+    private Set<String> userDataGroups;
     private ParticipantOption.SharingScope userSharingScope;
     private Long version;
 
@@ -42,6 +46,7 @@ public abstract class HealthDataRecordBuilder {
         uploadDate = record.getUploadDate();
         uploadId = record.getUploadId();
         userExternalId = record.getUserExternalId();
+        userDataGroups = record.getUserDataGroups();
         userSharingScope = record.getUserSharingScope();
         version = record.getVersion();
         return this;
@@ -171,13 +176,24 @@ public abstract class HealthDataRecordBuilder {
     public String getUserExternalId() {
         return userExternalId;
     }
-        
+    
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserExternalId */
     public HealthDataRecordBuilder withUserExternalId(String externalId) {
         this.userExternalId = externalId;
         return this;
     }
+    
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserDataGroups */
+    public Set<String> getUserDataGroups() {
+        return (userDataGroups == null || userDataGroups.isEmpty()) ? null : userDataGroups;
+    }
 
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserDataGroups */
+    public HealthDataRecordBuilder withUserDataGroups(Set<String> userDataGroups) {
+        this.userDataGroups = userDataGroups;
+        return this;
+    }
+    
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getVersion */
     public Long getVersion() {
         return version;

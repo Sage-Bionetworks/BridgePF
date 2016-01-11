@@ -98,25 +98,8 @@ public interface ScheduledActivity extends BridgeEntity {
 
     public void setFinishedOn(Long finishedOn);
 
-    public Long getHidesOn();
-
-    public void setHidesOn(Long hidesOn);
-
-    public String getRunKey();
-
-    public void setRunKey(String runKey);
-
     public boolean getPersistent();
 
     public void setPersistent(boolean persistent);
     
-    public void setMinAppVersion(Integer minAppVersion);
-    
-    public Integer getMinAppVersion();
-    
-    public void setMaxAppVersion(Integer maxAppVersion);
-    
-    public Integer getMaxAppVersion();
-    
-
 }
