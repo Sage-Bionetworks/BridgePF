@@ -229,8 +229,7 @@ public class CriteriaScheduleStrategyTest {
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/6")) // in range
                 .withUser(user).build();
         
-        // First two don't match because app version is wrong and missing required groups
-        // The last is returned because the context has no prohibited groups
+        // Matches the first schedule, not the second schedule (although it also matches)
         Schedule schedule = strategy.getScheduleForUser(PLAN, context);
         assertEquals(SCHEDULE_FOR_STRATEGY_WITH_ALL_REQUIREMENTS, schedule);
     }
