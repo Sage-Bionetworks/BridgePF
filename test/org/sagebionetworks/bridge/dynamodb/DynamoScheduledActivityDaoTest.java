@@ -101,12 +101,15 @@ public class DynamoScheduledActivityDaoTest {
 
     @Test
     public void createUpdateDeleteActivities() throws Exception {
+        // Let's use an interesting time zone so we can verify it is being used.
+        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+        
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withUser(user)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(DateTimeZone.UTC)
+            .withTimeZone(MSK)
             .withEndsOn(endsOn)
             .withEvents(eventMap()).build();
         
@@ -119,11 +122,13 @@ public class DynamoScheduledActivityDaoTest {
         
         // Have activities gotten injected time zone? We have to do this during construction using the time zone
         // sent with this call/request.
-        assertEquals(DateTimeZone.UTC, ((DynamoScheduledActivity)savedActivities.get(0)).getTimeZone());
+        assertEquals(MSK, ((DynamoScheduledActivity)savedActivities.get(0)).getTimeZone());
         
         // Verify getActivity() works
         ScheduledActivity savedActivity = activityDao.getActivity(context.getZone(), context.getHealthCode(), savedActivities.get(0).getGuid());
         assertEquals(savedActivities.get(0), savedActivity);
+        assertEquals(context.getZone(), savedActivity.getTimeZone());
+        assertEquals(MSK, savedActivity.getScheduledOn().getZone());
         
         // Create a new list of activities removing some that are saved, and adding new ones.
         List<ScheduledActivity> reducedSet = activitiesToSchedule.subList(0, activitiesToSchedule.size()-2);
