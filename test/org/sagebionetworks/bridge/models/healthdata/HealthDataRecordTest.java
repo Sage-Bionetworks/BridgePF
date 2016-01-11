@@ -80,7 +80,9 @@ public class HealthDataRecordTest {
                 .withSchemaId("required schema").withSchemaRevision(3).withStudyId("required study")
                 .withUploadDate(uploadDate).withUploadId("optional upload ID")
                 .withUserExternalId("optional external ID")
-                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS).withVersion(42L).build();
+                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
+                .withUserDataGroups(USER_DATA_GROUPS)
+                .withVersion(42L).build();
 
         // validate
         assertEquals("required healthcode", record.getHealthCode());
@@ -93,6 +95,7 @@ public class HealthDataRecordTest {
         assertEquals("optional upload ID", record.getUploadId());
         assertEquals("optional external ID", record.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
+        assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
         assertEquals(42, record.getVersion().longValue());
 
         assertEquals(1, record.getData().size());
@@ -113,6 +116,7 @@ public class HealthDataRecordTest {
         assertEquals("optional upload ID", copyRecord.getUploadId());
         assertEquals("optional external ID", copyRecord.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, copyRecord.getUserSharingScope());
+        assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
         assertEquals(42, copyRecord.getVersion().longValue());
 
         assertEquals(1, copyRecord.getData().size());
@@ -120,7 +124,6 @@ public class HealthDataRecordTest {
 
         assertEquals(1, copyRecord.getMetadata().size());
         assertEquals("myMetaValue", copyRecord.getMetadata().get("myMetadata").asText());
-
     }
     
     @Test
