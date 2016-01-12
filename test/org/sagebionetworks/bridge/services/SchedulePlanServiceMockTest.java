@@ -52,6 +52,7 @@ public class SchedulePlanServiceMockTest {
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setTaskIdentifiers(Sets.newHashSet("tapTest", "taskGuid", "CCC"));
+        study.setDataGroups(Sets.newHashSet("AAA"));
         
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
@@ -211,7 +212,7 @@ public class SchedulePlanServiceMockTest {
             service.createSchedulePlan(study, plan);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: CCC.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
+            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].allOfGroups").get(0));
         }
     }
@@ -224,7 +225,7 @@ public class SchedulePlanServiceMockTest {
             service.updateSchedulePlan(study, plan);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: CCC.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
+            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].allOfGroups").get(0));
         }
     }
