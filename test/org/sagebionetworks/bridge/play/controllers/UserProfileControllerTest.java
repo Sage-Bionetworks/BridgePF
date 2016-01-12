@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static play.test.Helpers.contentAsString;
 
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -16,6 +17,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
@@ -27,16 +29,21 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.play.controllers.UserProfileController;
+import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import play.mvc.Http;
@@ -44,8 +51,12 @@ import play.mvc.Result;
 import play.test.Helpers;
 
 public class UserProfileControllerTest {
-
+    
+    private static final Map<SubpopulationGuid,ConsentStatus> CONSENT_STATUSES_MAP = Maps.newHashMap();
+    
     private ParticipantOptionsService optionsService;
+    
+    private ConsentService consentService;
     
     private UserSession session;
     
@@ -74,10 +85,15 @@ public class UserProfileControllerTest {
         Result result = controller.updateDataGroups();
         
         ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
+        ArgumentCaptor<ScheduleContext> contextCaptor = ArgumentCaptor.forClass(ScheduleContext.class);
+        
         verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
+        verify(consentService).getConsentStatuses(contextCaptor.capture());
         
         Set<String> dataGroups = (Set<String>)captor.getValue();
         assertEquals(dataGroupSet, dataGroups);
+        
+        assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
         
         assertEquals(dataGroupSet, session.getUser().getDataGroups());
         
@@ -139,6 +155,7 @@ public class UserProfileControllerTest {
     
     private UserSession mockSession() {
         User user = new User();
+        user.setStudyKey(TEST_STUDY.getIdentifier());
         user.setHealthCode("healthCode");
         
         session = mock(UserSession.class);
@@ -149,9 +166,13 @@ public class UserProfileControllerTest {
     
     private UserProfileController controllerForExternalIdTests() {
         Study study = new DynamoStudy();
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setDataGroups(Sets.newHashSet("group1", "group2"));
 
         CacheProvider cacheProvider = mock(CacheProvider.class);
+        consentService = mock(ConsentService.class);
+        
+        when(consentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUSES_MAP);
         
         optionsService = mock(ParticipantOptionsService.class);
         StudyService studyService = mock(StudyService.class);
@@ -161,6 +182,7 @@ public class UserProfileControllerTest {
         controller.setStudyService(studyService);
         controller.setParticipantOptionsService(optionsService);
         controller.setCacheProvider(cacheProvider);
+        controller.setConsentService(consentService);
         doReturn(mockSession()).when(controller).getAuthenticatedSession();
 
         return controller;
