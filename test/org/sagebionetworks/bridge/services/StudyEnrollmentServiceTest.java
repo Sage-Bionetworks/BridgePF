@@ -65,7 +65,7 @@ public class StudyEnrollmentServiceTest {
         User user = new User();
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
-        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
 
@@ -82,7 +82,7 @@ public class StudyEnrollmentServiceTest {
         User user = new User();
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
-        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         
@@ -108,7 +108,7 @@ public class StudyEnrollmentServiceTest {
         User user = new User();
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
         
-        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         
@@ -131,7 +131,7 @@ public class StudyEnrollmentServiceTest {
         User user = new User();
         user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
-        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         
@@ -150,7 +150,7 @@ public class StudyEnrollmentServiceTest {
     
     @Test
     public void getNumberOfParticipants() {
-        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study = studyService.createStudy(study);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         
@@ -162,7 +162,7 @@ public class StudyEnrollmentServiceTest {
         subpop2.setName("Group 2");
         subpopService.createSubpopulation(study, subpop2);
         
-        TestUserAdminHelper.Builder builder = helper.getBuilder(StudyServiceImplTest.class).withStudy(study)
+        TestUserAdminHelper.Builder builder = helper.getBuilder(StudyServiceTest.class).withStudy(study)
                 .withConsent(true);
         
         TestUser user1 = builder.withGuid(subpop1.getGuid()).build();

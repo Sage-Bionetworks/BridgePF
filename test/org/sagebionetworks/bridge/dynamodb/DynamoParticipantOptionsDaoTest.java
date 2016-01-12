@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.StudyServiceImpl;
+import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.Sets;
 
@@ -41,7 +41,7 @@ public class DynamoParticipantOptionsDaoTest {
     DynamoParticipantOptionsDao optionsDao;
     
     @Resource
-    StudyServiceImpl studyService;
+    StudyService studyService;
 
     @Before
     public void before() {

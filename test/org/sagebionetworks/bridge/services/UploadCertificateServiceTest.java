@@ -32,7 +32,7 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class UploadCertificateServiceImplTest {
+public class UploadCertificateServiceTest {
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
     private static final String CERT_BUCKET = CONFIG.getProperty("upload.cms.cert.bucket");

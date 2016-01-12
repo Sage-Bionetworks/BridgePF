@@ -33,16 +33,16 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-public class ParticipantOptionsServiceImplTest {
+public class ParticipantOptionsServiceTest {
     
     private static final String HEALTH_CODE = "AAA";
     
-    private ParticipantOptionsServiceImpl service;
+    private ParticipantOptionsService service;
     private ParticipantOptionsDao mockDao;
     
     @Before
     public void before() {
-        service = new ParticipantOptionsServiceImpl();
+        service = new ParticipantOptionsService();
         mockDao = mock(ParticipantOptionsDao.class);
         service.setParticipantOptionsDao(mockDao);
         

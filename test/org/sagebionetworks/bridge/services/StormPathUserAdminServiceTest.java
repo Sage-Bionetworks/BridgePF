@@ -38,16 +38,16 @@ public class StormPathUserAdminServiceTest {
     // being tested here.
 
     @Resource
-    AuthenticationServiceImpl authService;
+    AuthenticationService authService;
 
     @Resource
     BridgeConfig bridgeConfig;
 
     @Resource
-    StudyServiceImpl studyService;
+    StudyService studyService;
 
     @Resource
-    UserAdminServiceImpl userAdminService;
+    UserAdminService userAdminService;
     
     private Study study;
 

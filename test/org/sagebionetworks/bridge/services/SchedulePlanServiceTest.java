@@ -31,7 +31,7 @@ import com.google.common.collect.Sets;
 public class SchedulePlanServiceTest {
 
     @Resource
-    SchedulePlanServiceImpl schedulePlanService;
+    SchedulePlanService schedulePlanService;
     
     private Study study;
     

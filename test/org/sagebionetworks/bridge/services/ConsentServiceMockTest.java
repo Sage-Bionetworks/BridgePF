@@ -55,12 +55,12 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ConsentServiceImplMockTest {
+public class ConsentServiceMockTest {
 
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
     private static final long UNIX_TIMESTAMP = 1446044925219L;
     
-    private ConsentServiceImpl consentService;
+    private ConsentService consentService;
 
     @Mock
     private AccountDao accountDao;
@@ -86,7 +86,7 @@ public class ConsentServiceImplMockTest {
     
     @Before
     public void before() {
-        consentService = new ConsentServiceImpl();
+        consentService = new ConsentService();
         consentService.setAccountDao(accountDao);
         consentService.setOptionsService(optionsService);
         consentService.setSendMailService(sendMailService);
@@ -96,7 +96,7 @@ public class ConsentServiceImplMockTest {
         consentService.setStudyEnrollmentService(studyEnrollmentService);
         consentService.setSubpopulationService(subpopService);
         
-        study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
         user = new User();
         user.setHealthCode("BBB");
         user.setEmail("bbb@bbb.com");
@@ -224,9 +224,9 @@ public class ConsentServiceImplMockTest {
         MimeTypeEmailProvider provider = emailCaptor.getValue();
         MimeTypeEmail email = provider.getMimeTypeEmail();
         
-        assertEquals("\"Test Study [ConsentServiceImplMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
+        assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
         assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
-        assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceImplMockTest]", email.getSubject());
+        assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceMockTest]", email.getSubject());
         assertEquals("<p>User   &lt;bbb@bbb.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>", 
                     email.getMessageParts().get(0).getContent());
         
