@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -46,6 +47,8 @@ public class UserProfileControllerTest {
 
     private ParticipantOptionsService optionsService;
     
+    private UserSession session;
+    
     @Test
     public void canSubmitExternalIdentifier() throws Exception {
         Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}"));
@@ -63,6 +66,7 @@ public class UserProfileControllerTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
+        Set<String> dataGroupSet = Sets.newHashSet("group1");
         Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}"));
         
         UserProfileController controller = controllerForExternalIdTests();
@@ -73,7 +77,9 @@ public class UserProfileControllerTest {
         verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
         
         Set<String> dataGroups = (Set<String>)captor.getValue();
-        assertEquals(Sets.newHashSet("group1"), dataGroups);
+        assertEquals(dataGroupSet, dataGroups);
+        
+        assertEquals(dataGroupSet, session.getUser().getDataGroups());
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("Data groups updated.", node.get("message").asText());
@@ -135,7 +141,7 @@ public class UserProfileControllerTest {
         User user = new User();
         user.setHealthCode("healthCode");
         
-        UserSession session = mock(UserSession.class);
+        session = mock(UserSession.class);
         when(session.getUser()).thenReturn(user);
         when(session.getStudyIdentifier()).thenReturn(TEST_STUDY);
         return session;
@@ -144,6 +150,8 @@ public class UserProfileControllerTest {
     private UserProfileController controllerForExternalIdTests() {
         Study study = new DynamoStudy();
         study.setDataGroups(Sets.newHashSet("group1", "group2"));
+
+        CacheProvider cacheProvider = mock(CacheProvider.class);
         
         optionsService = mock(ParticipantOptionsService.class);
         StudyService studyService = mock(StudyService.class);
@@ -152,6 +160,7 @@ public class UserProfileControllerTest {
         UserProfileController controller = spy(new UserProfileController());
         controller.setStudyService(studyService);
         controller.setParticipantOptionsService(optionsService);
+        controller.setCacheProvider(cacheProvider);
         doReturn(mockSession()).when(controller).getAuthenticatedSession();
 
         return controller;

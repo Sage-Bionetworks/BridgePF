@@ -104,6 +104,11 @@ public class UserProfileController extends BaseController {
         
         optionsService.setStringSet(session.getStudyIdentifier(), 
                 session.getUser().getHealthCode(), DATA_GROUPS, dataGroups.getDataGroups());
+        
+        User user = session.getUser();
+        user.setDataGroups(dataGroups.getDataGroups());
+        updateSessionUser(session, user);
+        
         return okResult("Data groups updated.");
     }
 
