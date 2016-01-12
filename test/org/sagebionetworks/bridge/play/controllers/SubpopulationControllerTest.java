@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -216,7 +217,17 @@ public class SubpopulationControllerTest {
         
         // Message indicates a physical (permanent) delete, true is submitted
         assertEquals("Subpopulation has been permanently deleted.", node.get("message").asText());
-        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, true);
+        
+        user.setRoles(Sets.newHashSet(Roles.DEVELOPER, Roles.ADMIN));
+        result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
+        assertEquals(200, result.status());
+        json = Helpers.contentAsString(result);
+        node = BridgeObjectMapper.get().readTree(json);
+        
+        // Message indicates a physical (permanent) delete, true is submitted
+        assertEquals("Subpopulation has been permanently deleted.", node.get("message").asText());
+        
+        verify(subpopService, times(2)).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, true);
     }
     
     @Test(expected = UnauthorizedException.class)

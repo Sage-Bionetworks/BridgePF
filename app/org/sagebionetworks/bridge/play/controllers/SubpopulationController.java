@@ -74,7 +74,7 @@ public class SubpopulationController extends BaseController {
         }
         // Only admins can request a physical delete.
         boolean physicalDelete = ("true".equals(physicalDeleteString));
-        if (physicalDelete && session.getUser().isInRole(DEVELOPER)) {
+        if (physicalDelete && !session.getUser().isInRole(ADMIN)) {
             throw new UnauthorizedException();
         }
         
