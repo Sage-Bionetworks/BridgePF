@@ -3,17 +3,22 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.UserProfileService;
 import org.sagebionetworks.bridge.validators.DataGroupsValidator;
@@ -33,19 +38,25 @@ public class UserProfileController extends BaseController {
     
     private ParticipantOptionsService optionsService;
     
+    private ConsentService consentService;
+    
     private ViewCache viewCache;
 
     @Autowired
-    public void setUserProfileService(UserProfileService userProfileService) {
+    public final void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
     @Autowired
-    public void setParticipantOptionsService(ParticipantOptionsService optionsService) {
+    public final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
     @Autowired
-    public void setViewCache(ViewCache viewCache) {
+    public final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
+    }
+    @Autowired
+    public final void setConsentService(ConsentService consentService) {
+        this.consentService = consentService;
     }
 
     public Result getUserProfile() throws Exception {
@@ -107,8 +118,16 @@ public class UserProfileController extends BaseController {
         
         User user = session.getUser();
         user.setDataGroups(dataGroups.getDataGroups());
+
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withUser(user)
+                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withUserDataGroups(dataGroups.getDataGroups())
+                .build();
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        user.setConsentStatuses(statuses);
+                
         updateSessionUser(session, user);
-        
         return okResult("Data groups updated.");
     }
 
