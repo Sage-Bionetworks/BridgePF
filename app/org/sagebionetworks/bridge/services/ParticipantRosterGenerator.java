@@ -90,7 +90,7 @@ public class ParticipantRosterGenerator implements Runnable {
                 try {
                     Thread.sleep(60);
                 } catch (InterruptedException ex) {
-                    // Interruptios should never happen. Set interrupt status for hygiene.
+                    // Interruptions should never happen. Set interrupt status for hygiene.
                     Thread.currentThread().interrupt();
                 }
 
