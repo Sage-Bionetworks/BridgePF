@@ -84,7 +84,16 @@ public class ParticipantRosterGenerator implements Runnable {
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
                 Account account = accounts.next();
-                
+
+                // Rate limit, so we don't end up consuming DDB as fast as possible. 60 millisecond sleep is
+                // ~16.7 accounts/sec. This will allow us to process 60k accounts in an hour.
+                try {
+                    Thread.sleep(60);
+                } catch (InterruptedException ex) {
+                    // Interruptios should never happen. Set interrupt status for hygiene.
+                    Thread.currentThread().interrupt();
+                }
+
                 // If we find no subpopulation names, this user hasn't consented to anything.
                 List<String> names = getSubpopulationNames(account);
                 if (!names.isEmpty()) {
