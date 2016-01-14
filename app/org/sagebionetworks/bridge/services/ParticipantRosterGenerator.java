@@ -1,9 +1,15 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -24,7 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 public class ParticipantRosterGenerator implements Runnable {
 
@@ -59,27 +67,19 @@ public class ParticipantRosterGenerator implements Runnable {
         this.optionsService = optionsService;
         this.subpopService = subpopService;
     }
-
-    private String getHealthCode(Account account) {
-        if (account.getHealthId() != null) {
-            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-            if (healthId != null && healthId.getCode() != null) {
-                return healthId.getCode();
-            }
-        }
-        return null;
-    }
     
     @Override
     public void run() {
         logger.debug("Running participant roster generator...");
         try {
-            OptionLookup sharingLookup = optionsService.getOptionForAllStudyParticipants(
-                study, ParticipantOption.SHARING_SCOPE);
-            OptionLookup emailLookup = optionsService.getOptionForAllStudyParticipants(
-                study, ParticipantOption.EMAIL_NOTIFICATIONS);
-            OptionLookup externalIdLookup = optionsService.getOptionForAllStudyParticipants(
-                study, ParticipantOption.EXTERNAL_IDENTIFIER);
+            ImmutableMap<SubpopulationGuid,Subpopulation> mapping = getSubpopulationNameMapping();
+            
+            Map<ParticipantOption,OptionLookup> studyLookup = optionsService.getAllOptionsForAllStudyParticipants(study);
+            OptionLookup sharingScopes = studyLookup.get(SHARING_SCOPE);
+            OptionLookup emailNotifications = studyLookup.get(EMAIL_NOTIFICATIONS);
+            OptionLookup externalIds = studyLookup.get(EXTERNAL_IDENTIFIER);
+            OptionLookup dataGroups = studyLookup.get(DATA_GROUPS);
+            
             int count = 0;
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
@@ -95,7 +95,7 @@ public class ParticipantRosterGenerator implements Runnable {
                 }
 
                 // If we find no subpopulation names, this user hasn't consented to anything.
-                List<String> names = getSubpopulationNames(account);
+                List<String> names = getSubpopulationNames(account, mapping);
                 if (!names.isEmpty()) {
                     String subpopNames = Joiner.on(", ").join(names);
                     String healthCode = getHealthCode(account);
@@ -104,11 +104,12 @@ public class ParticipantRosterGenerator implements Runnable {
                     // Accounts exist that have signatures but no health codes. This may only be from testing, 
                     // but still, do not want roster generation to fail because of this. So we check for this.
                     if (healthCode != null) {
-                        SharingScope sharing = sharingLookup.getSharingScope(healthCode);
-                        Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
+                        SharingScope sharing = sharingScopes.getSharingScope(healthCode);
+                        Boolean notifyByEmail = Boolean.valueOf(emailNotifications.get(healthCode));
                         participant.setSharingScope(sharing);
                         participant.setNotifyByEmail(notifyByEmail);
-                        participant.setExternalId(externalIdLookup.get(healthCode));
+                        participant.setExternalId(externalIds.get(healthCode));
+                        participant.setDataGroups(dataGroups.getDataGroups(healthCode));
                     }
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());
@@ -144,15 +145,27 @@ public class ParticipantRosterGenerator implements Runnable {
             sendMailService.sendEmail(new NotifyOperationsEmailProvider(subject, message));
         }
     }
+
+    private String getHealthCode(Account account) {
+        if (account.getHealthId() != null) {
+            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+            if (healthId != null && healthId.getCode() != null) {
+                return healthId.getCode();
+            }
+        }
+        return null;
+    }
     
-    private List<String> getSubpopulationNames(Account account) {
+    private ImmutableMap<SubpopulationGuid,Subpopulation> getSubpopulationNameMapping() {
+        return Maps.uniqueIndex(subpopService.getSubpopulations(study.getStudyIdentifier()), Subpopulation::getGuid);
+    }
+    
+    private List<String> getSubpopulationNames(Account account, ImmutableMap<SubpopulationGuid,Subpopulation> mapping) {
         List<String> names = Lists.newArrayList();
         for (SubpopulationGuid guid : account.getAllConsentSignatureHistories().keySet()) {
             ConsentSignature sig = account.getActiveConsentSignature(guid);
             if (sig != null) {
-                // We've found an active consent, get the name of the subpopulation
-                Subpopulation subpop = subpopService.getSubpopulation(study, guid);
-                names.add(subpop.getName());
+                names.add(mapping.get(guid).getName());
             }
         }
         return names;

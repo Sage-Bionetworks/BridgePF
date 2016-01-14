@@ -32,7 +32,7 @@ public class ParticipantOptionsService {
     /**
      * Get all options and their values set for a participant as a map of key/value pairs.
      * If a value is not set, the value will be null in the map. Map will be returned whether 
-     * any values have been set for this participant or not.
+     * any values have been set for this participant or not. 
      * @param healthCode
      * @return
      */
@@ -40,6 +40,18 @@ public class ParticipantOptionsService {
         checkArgument(isNotBlank(healthCode));
         
         return optionsDao.getAllParticipantOptions(healthCode);
+    }
+    
+    /**
+     * Get all options for all participants in a study. For batch operations on all participants in a 
+     * study that require multiple entries per participant from the participant options table, this is 
+     * the most efficient way to get those values.
+     * 
+     * @param studyIdentifier
+     *   
+     */
+    public Map<ParticipantOption,OptionLookup> getAllOptionsForAllStudyParticipants(StudyIdentifier studyIdentifier) {
+        return optionsDao.getAllOptionsForAllStudyParticipants(studyIdentifier);
     }
 
     /**

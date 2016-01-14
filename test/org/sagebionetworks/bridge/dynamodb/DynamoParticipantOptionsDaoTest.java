@@ -115,4 +115,43 @@ public class DynamoParticipantOptionsDaoTest {
         optionsDao.deleteAllParticipantOptions(healthCode+"3");
     }
     
+    @Test
+    public void getAllOptionsForAllStudyParticipants() {
+        optionsDao.setOption(study, healthCode, EXTERNAL_IDENTIFIER, TEST_EXT_ID);
+        optionsDao.setOption(study, healthCode+"2", EXTERNAL_IDENTIFIER, TEST_EXT_ID_2);
+        optionsDao.setOption(study, healthCode+"3", EXTERNAL_IDENTIFIER, TEST_EXT_ID_3);
+        
+        Set<String> dataGroups1 = Sets.newHashSet("group1");
+        Set<String> dataGroups2 = Sets.newHashSet("group1","group2");
+        Set<String> dataGroups3 = Sets.newHashSet("group1","group2","group3");
+        optionsDao.setOption(study, healthCode, DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups1));
+        optionsDao.setOption(study, healthCode+"2", DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups2));
+        optionsDao.setOption(study, healthCode+"3", DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups3));
+        
+        optionsDao.setOption(study, healthCode, SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS.name());
+        optionsDao.setOption(study, healthCode+"2", SHARING_SCOPE, SharingScope.NO_SHARING.name());
+        optionsDao.setOption(study, healthCode+"3", SHARING_SCOPE, SharingScope.SPONSORS_AND_PARTNERS.name());
+        
+        Map<ParticipantOption,OptionLookup> map = optionsDao.getAllOptionsForAllStudyParticipants(study);
+        
+        OptionLookup externalIds = map.get(EXTERNAL_IDENTIFIER);
+        OptionLookup dataGroups = map.get(DATA_GROUPS);
+        OptionLookup sharingScope = map.get(SHARING_SCOPE);
+        
+        assertEquals(TEST_EXT_ID, externalIds.get(healthCode));
+        assertEquals(TEST_EXT_ID_2, externalIds.get(healthCode+"2"));
+        assertEquals(TEST_EXT_ID_3, externalIds.get(healthCode+"3"));
+        
+        assertEquals(dataGroups1, dataGroups.getDataGroups(healthCode));
+        assertEquals(dataGroups2, dataGroups.getDataGroups(healthCode+"2"));
+        assertEquals(dataGroups3, dataGroups.getDataGroups(healthCode+"3"));
+        
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, sharingScope.getSharingScope(healthCode));
+        assertEquals(SharingScope.NO_SHARING, sharingScope.getSharingScope(healthCode+"2"));
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, sharingScope.getSharingScope(healthCode+"3"));
+        
+        // healthCode options are deleted in the @After method
+        optionsDao.deleteAllParticipantOptions(healthCode+"2");
+        optionsDao.deleteAllParticipantOptions(healthCode+"3");
+    }
 }

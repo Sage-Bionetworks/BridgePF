@@ -1,5 +1,10 @@
 package org.sagebionetworks.bridge.services.email;
 
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -8,6 +13,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
@@ -42,6 +48,7 @@ import org.sagebionetworks.bridge.services.SendMailService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -70,7 +77,15 @@ public class ParticipantRosterGeneratorTest {
     private OptionLookup sharingLookup;
     
     @Mock
+    private OptionLookup dataGroupsLookup;
+    
+    @Mock
+    private OptionLookup externalIdLookup;
+    
+    @Mock
     private SubpopulationService subpopService;
+    
+    private List<Subpopulation> studySubpopulations;
     
     @Before
     public void before() {
@@ -86,15 +101,21 @@ public class ParticipantRosterGeneratorTest {
             }
         };
         
-        when(emailLookup.get(anyString())).thenReturn(Boolean.TRUE.toString());
-        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.EMAIL_NOTIFICATIONS)).thenReturn(emailLookup);
-
-        when(sharingLookup.getSharingScope(anyString())).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
-        when(healthCodeService.getMapping(anyString())).thenReturn(healthId);
-        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE)).thenReturn(sharingLookup);
+        studySubpopulations = Lists.newArrayList();
+        when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(studySubpopulations);
         
-        OptionLookup externalIdLookup = mock(OptionLookup.class);
-        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.EXTERNAL_IDENTIFIER)).thenReturn(externalIdLookup);
+        when(healthCodeService.getMapping(anyString())).thenReturn(healthId);
+        
+        when(emailLookup.get(anyString())).thenReturn(Boolean.TRUE.toString());
+        when(dataGroupsLookup.getDataGroups(anyString())).thenReturn(Sets.newHashSet("data-group-1"));
+        when(sharingLookup.getSharingScope(anyString())).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+
+        Map<ParticipantOption,OptionLookup> map = Maps.newHashMap();
+        map.put(DATA_GROUPS, dataGroupsLookup);
+        map.put(EMAIL_NOTIFICATIONS, emailLookup);
+        map.put(SHARING_SCOPE, sharingLookup);
+        map.put(EXTERNAL_IDENTIFIER, externalIdLookup);
+        when(optionsService.getAllOptionsForAllStudyParticipants(study)).thenReturn(map);
         
         Iterator<Account> iterator = buildAccountIterator();
         generator = new ParticipantRosterGenerator(iterator, study, sendMailService, healthCodeService, optionsService, subpopService);
@@ -122,6 +143,7 @@ public class ParticipantRosterGeneratorTest {
         assertEquals("(206) 111-2222", p.get("phone"));
         assertEquals("true", p.get("can_recontact"));
         assertEquals("healthCode", p.getHealthCode());
+        assertEquals("data-group-1", p.getDataGroups());
         assertNull(p.get("another_attribute"));
 
         // Notification was sent to sysops
@@ -173,6 +195,10 @@ public class ParticipantRosterGeneratorTest {
         assertTrue(subpopNames.contains("Consent One"));
         assertTrue(subpopNames.contains("Consent Two"));
         assertTrue(subpopNames.contains("Consent Three"));
+        
+        // Service is called only once despite the presence of multiple accounts.
+        verify(subpopService, times(1)).getSubpopulations(study.getStudyIdentifier());
+        verifyNoMoreInteractions(subpopService);
     }
 
     private Iterator<Account> buildAccountIterator() {
@@ -229,6 +255,7 @@ public class ParticipantRosterGeneratorTest {
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setName(subpopGuid.getGuid());
-        when(subpopService.getSubpopulation(study, subpopGuid)).thenReturn(subpop);
+        subpop.setGuid(subpopGuid);
+        studySubpopulations.add(subpop);
     }
 }

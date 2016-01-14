@@ -178,5 +178,16 @@ public class ParticipantOptionsServiceTest {
         verifyNoMoreInteractions(mockDao);
     }
     
+    @Test
+    public void getAllOptionsForAllStudyParticipants() {
+        Map<ParticipantOption,OptionLookup> map = Maps.newHashMap();
+        when(mockDao.getAllOptionsForAllStudyParticipants(TEST_STUDY)).thenReturn(map);
+        
+        Map<ParticipantOption,OptionLookup> result = service.getAllOptionsForAllStudyParticipants(TEST_STUDY);
+        assertEquals(map, result);
+        
+        verify(mockDao).getAllOptionsForAllStudyParticipants(TEST_STUDY);
+        verifyNoMoreInteractions(mockDao);
+    }
     
 }
