@@ -150,7 +150,6 @@ public class DynamoParticipantOptionsDaoTest {
         assertEquals(SharingScope.NO_SHARING, sharingScope.getSharingScope(healthCode+"2"));
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, sharingScope.getSharingScope(healthCode+"3"));
         
-        
         // healthCode options are deleted in the @After method
         optionsDao.deleteAllParticipantOptions(healthCode+"2");
         optionsDao.deleteAllParticipantOptions(healthCode+"3");
