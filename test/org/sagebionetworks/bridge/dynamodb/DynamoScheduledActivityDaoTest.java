@@ -180,7 +180,10 @@ public class DynamoScheduledActivityDaoTest {
         int initialCount = activities.size();
         assertTrue("there are activities", initialCount > 1);
         activityDao.deleteActivitiesForSchedulePlan(testPlan.getGuid());
-        
+
+        // Sleep before getting because of eventual consistency issues.
+        Thread.sleep(5000);
+
         activities = activityDao.getActivities(context.getZone(), activities);
         // The count is now less than before
         assertTrue(initialCount > activities.size());
