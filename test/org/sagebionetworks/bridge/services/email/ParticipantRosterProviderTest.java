@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -84,34 +85,37 @@ public class ParticipantRosterProviderTest {
         participant.put(UserProfile.SHARING_SCOPE_FIELD, SharingScope.NO_SHARING.name());
         participant.setHealthCode("AAA");
         participant.setExternalId("abc");
+        
+        // Force the order of these
+        participant.setDataGroups(Sets.newHashSet("group1"));
         participant.setSubpopulationNames("Default Consent Group");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
-        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "External ID", "Phone", "Recontact", "Health Code", "Consent Groups");
+        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "External ID", "Data Groups", "Phone", "Recontact", "Health Code", "Consent Groups");
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
-        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "abc", "(123) 456-7890", "false", "AAA", "Default Consent Group");
+        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "abc", "group1", "(123) 456-7890", "false", "AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
         participant.setLastName(null);
-        output = headerString + row("test@test.com","First","","Not Sharing","false","abc","(123) 456-7890","false", "AAA", "Default Consent Group");
+        output = headerString + row("test@test.com","First","","Not Sharing","false","abc","group1","(123) 456-7890","false", "AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
         participant.setFirstName(null);
         participant.setLastName("Last");
-        output = headerString + row("test@test.com","","Last","Not Sharing","false","abc","(123) 456-7890","false", "AAA", "Default Consent Group");
+        output = headerString + row("test@test.com","","Last","Not Sharing","false","abc","group1","(123) 456-7890","false", "AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
         participant.setExternalId(null);
-        output = headerString + row("test@test.com","","Last","Not Sharing","false","","(123) 456-7890","false", "AAA", "Default Consent Group");
+        output = headerString + row("test@test.com","","Last","Not Sharing","false","","group1","(123) 456-7890","false", "AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
         participant.remove("phone");
-        output = headerString + row("test@test.com","","Last","Not Sharing","false","","","false", "AAA", "Default Consent Group");
+        output = headerString + row("test@test.com","","Last","Not Sharing","false","","group1","","false", "AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
         participant.remove(UserProfile.SHARING_SCOPE_FIELD);
-        output = headerString + row("test@test.com","","Last","","false","","","false","AAA", "Default Consent Group");
+        output = headerString + row("test@test.com","","Last","","false","","group1","","false","AAA", "Default Consent Group");
         assertEquals(output, provider.createParticipantTSV());
         
         StudyParticipant numberTwo = new StudyParticipant();
@@ -119,7 +123,7 @@ public class ParticipantRosterProviderTest {
         
         // This is pretty broken, but you should still get output. 
         participants.add(numberTwo);
-        output = headerString + row("test@test.com","","Last","","false","","","false", "AAA", "Default Consent Group") + row("test2@test.com","","","","","","","","","");
+        output = headerString + row("test@test.com","","Last","","false","","group1","","false", "AAA", "Default Consent Group") + row("test2@test.com","","","","","","","","","","");
         assertEquals(output, provider.createParticipantTSV());
         
         participants.clear();
@@ -143,11 +147,11 @@ public class ParticipantRosterProviderTest {
         participant.setSubpopulationNames("Default Consent Group");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
-        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "External ID", "Phone", "Recontact", "Consent Groups");
+        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "External ID", "Data Groups", "Phone", "Recontact", "Consent Groups");
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
-        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "abc", "(123) 456-7890", "false", "Default Consent Group");
-        
+        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "abc", "", "(123) 456-7890", "false", "Default Consent Group");
+
         assertEquals(output, provider.createParticipantTSV());
     }
     

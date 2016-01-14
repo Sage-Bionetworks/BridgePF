@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.models.studies;
 
 import java.util.HashMap;
+import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
+
+import com.google.common.base.Joiner;
 
 @SuppressWarnings("serial")
 public final class StudyParticipant extends HashMap<String,String> {
@@ -59,6 +63,14 @@ public final class StudyParticipant extends HashMap<String,String> {
     public void setNotifyByEmail(Boolean notifyByEmail) {
         if (notifyByEmail != null) {
             put(UserProfile.NOTIFY_BY_EMAIL_FIELD, notifyByEmail.toString());    
+        }
+    }
+    public String getDataGroups() {
+        return getEmpty(UserProfile.DATA_GROUPS_FIELD);
+    }
+    public void setDataGroups(Set<String> dataGroups) {
+        if (dataGroups != null) {
+            put(UserProfile.DATA_GROUPS_FIELD, BridgeUtils.setToCommaList(dataGroups));    
         }
     }
     public String getHealthCode() {

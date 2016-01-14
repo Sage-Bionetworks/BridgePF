@@ -91,6 +91,34 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
 
     @Override
+    public Map<ParticipantOption,OptionLookup> getAllOptionsForAllStudyParticipants(StudyIdentifier studyIdentifier) {
+        // For each option type, create a map for that to an OptionLookup that allows you to retrieve the value 
+        // by healthcode.
+        Map<ParticipantOption,OptionLookup> map = Maps.newHashMap();
+        for (ParticipantOption optionType : ParticipantOption.values()) {
+            map.put(optionType, new OptionLookup(optionType.getDefaultValue()));
+        }
+        
+        DynamoDBScanExpression scan = new DynamoDBScanExpression();
+
+        Condition condition = new Condition();
+        condition.withComparisonOperator(ComparisonOperator.EQ);
+        condition.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
+        scan.addFilterCondition("studyKey", condition);
+        
+        List<DynamoParticipantOptions> mappings = mapper.scan(DynamoParticipantOptions.class, scan);
+        
+        for (DynamoParticipantOptions mapping : mappings) {
+            for (ParticipantOption optionType : ParticipantOption.values()) {
+                String defaultValue = optionType.getDefaultValue();
+                String value = mapping.getOptions().get(optionType.name());
+                map.get(optionType).put(mapping.getHealthCode(), (value != null) ? value : defaultValue);
+            } 
+        }
+        return map;
+    }
+    
+    @Override
     public Map<ParticipantOption,String> getAllParticipantOptions(String healthCode) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
