@@ -7,9 +7,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
+
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.format.ISODateTimeFormat;
@@ -31,12 +35,15 @@ public class HealthDataRecordTest {
     // We want to do as much testing as possible through the generic interface, so we have this DAO that we use just
     // for getRecordBuilder().
     private static final HealthDataDao DAO = new DynamoHealthDataDao();
+    
+    private static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1", "group2");
 
     @Test
     public void testBuilder() {
         // build
         HealthDataRecord record = DAO.getRecordBuilder().withHealthCode("dummy healthcode")
-                .withSchemaId("dummy schema").withSchemaRevision(3).withStudyId("dummy study").build();
+                .withSchemaId("dummy schema").withSchemaRevision(3).withStudyId("dummy study")
+                .withUserDataGroups(USER_DATA_GROUPS).build();
 
         // validate
         assertEquals("dummy healthcode", record.getHealthCode());
@@ -44,6 +51,7 @@ public class HealthDataRecordTest {
         assertEquals("dummy schema", record.getSchemaId());
         assertEquals(3, record.getSchemaRevision());
         assertEquals("dummy study", record.getStudyId());
+        assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
 
         assertTrue(record.getData().isObject());
         assertEquals(0, record.getData().size());
@@ -72,7 +80,9 @@ public class HealthDataRecordTest {
                 .withSchemaId("required schema").withSchemaRevision(3).withStudyId("required study")
                 .withUploadDate(uploadDate).withUploadId("optional upload ID")
                 .withUserExternalId("optional external ID")
-                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS).withVersion(42L).build();
+                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
+                .withUserDataGroups(USER_DATA_GROUPS)
+                .withVersion(42L).build();
 
         // validate
         assertEquals("required healthcode", record.getHealthCode());
@@ -85,6 +95,7 @@ public class HealthDataRecordTest {
         assertEquals("optional upload ID", record.getUploadId());
         assertEquals("optional external ID", record.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
+        assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
         assertEquals(42, record.getVersion().longValue());
 
         assertEquals(1, record.getData().size());
@@ -105,6 +116,7 @@ public class HealthDataRecordTest {
         assertEquals("optional upload ID", copyRecord.getUploadId());
         assertEquals("optional external ID", copyRecord.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, copyRecord.getUserSharingScope());
+        assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
         assertEquals(42, copyRecord.getVersion().longValue());
 
         assertEquals(1, copyRecord.getData().size());
@@ -112,7 +124,13 @@ public class HealthDataRecordTest {
 
         assertEquals(1, copyRecord.getMetadata().size());
         assertEquals("myMetaValue", copyRecord.getMetadata().get("myMetadata").asText());
-
+    }
+    
+    @Test
+    public void emptyDataGroupSetConvertedToNull() {
+        HealthDataRecord record = DAO.getRecordBuilder().withUserDataGroups(new HashSet<>()).buildUnvalidated();
+        
+        assertNull(record.getUserDataGroups());
     }
 
     @Test(expected = InvalidEntityException.class)

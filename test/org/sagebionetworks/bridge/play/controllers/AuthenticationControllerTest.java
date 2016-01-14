@@ -30,8 +30,8 @@ import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
-import org.sagebionetworks.bridge.services.SchedulePlanServiceImpl;
-import org.sagebionetworks.bridge.services.StudyServiceImpl;
+import org.sagebionetworks.bridge.services.SchedulePlanService;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -54,10 +54,10 @@ public class AuthenticationControllerTest {
     private TestUserAdminHelper helper;
     
     @Resource
-    private StudyServiceImpl studyService;
+    private StudyService studyService;
     
     @Resource
-    private SchedulePlanServiceImpl schedulePlanService;
+    private SchedulePlanService schedulePlanService;
     
     private TestUser testUser;
     

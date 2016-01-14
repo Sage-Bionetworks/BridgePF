@@ -51,13 +51,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class ConsentServiceImplTest {
+public class ConsentServiceTest {
     
     private static final Long UNIX_TIMESTAMP = DateTime.now().getMillis();
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
     
     @Resource
-    private ConsentServiceImpl consentService;
+    private ConsentService consentService;
     
     @Resource
     private StudyConsentService studyConsentService;
@@ -97,17 +97,15 @@ public class ConsentServiceImplTest {
 
     @Before
     public void before() {
-        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study = studyService.createStudy(study);
         
         // Default is always created, so use it for this test.
         defaultSubpopulation = subpopService.getSubpopulations(study).get(0);
         
-        testUser = helper.getBuilder(ConsentServiceImplTest.class).withStudy(study).withConsent(false).build();
+        testUser = helper.getBuilder(ConsentServiceTest.class).withStudy(study).withConsent(false).build();
         
-        context = new ScheduleContext.Builder()
-            .withStudyIdentifier(study)
-            .withHealthCode(testUser.getUser().getHealthCode()).build();
+        context = new ScheduleContext.Builder().withUser(testUser.getUser()).build();
     }
 
     @After

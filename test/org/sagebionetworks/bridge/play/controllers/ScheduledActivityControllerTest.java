@@ -59,7 +59,6 @@ public class ScheduledActivityControllerTest {
         schActivity.setGuid(BridgeUtils.generateGuid());
         schActivity.setScheduledOn(DateTime.now(DateTimeZone.UTC).minusDays(1));
         schActivity.setActivity(TestConstants.TEST_3_ACTIVITY);
-        schActivity.setRunKey(BridgeUtils.generateScheduledActivityRunKey(schActivity, BridgeUtils.generateGuid()));
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
         String json = BridgeObjectMapper.get().writeValueAsString(list);
@@ -69,8 +68,8 @@ public class ScheduledActivityControllerTest {
         UserSession session = new UserSession();
         User user = new User();
         user.setHealthCode("BBB");
+        user.setStudyKey(TestConstants.TEST_STUDY_IDENTIFIER);
         session.setUser(user);
-        session.setStudyIdentifier(TestConstants.TEST_STUDY);
         
         scheduledActivityService = mock(ScheduledActivityService.class);
         when(scheduledActivityService.getScheduledActivities(any(User.class), any(ScheduleContext.class))).thenReturn(list);

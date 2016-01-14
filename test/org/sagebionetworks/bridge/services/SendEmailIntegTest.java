@@ -43,7 +43,7 @@ public class SendEmailIntegTest {
     private StudyConsentService studyConsentService;
     
     @Resource
-    private SendMailViaAmazonService sendEmailService;
+    private SendMailService sendEmailService;
 
     private String consentBodyTemplate;
     

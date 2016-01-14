@@ -1,11 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.springframework.validation.Errors;
 
@@ -17,7 +16,7 @@ import com.google.common.collect.ImmutableList;
  * schedules that perform A/B tests, and probably other strategies.
  */
 @BridgeTypeName("SimpleScheduleStrategy")
-public class SimpleScheduleStrategy implements ScheduleStrategy {
+public final class SimpleScheduleStrategy implements ScheduleStrategy {
 
     private Schedule schedule;
 
@@ -30,12 +29,12 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     }
     
     @Override
-    public Schedule getScheduleForUser(StudyIdentifier studyIdentifier, SchedulePlan plan, User user) {
+    public Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context) {
         return schedule;
     }
     
     @Override
-    public void validate(Set<String> taskIdentifiers, Errors errors) {
+    public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors) {
         if (schedule == null) {
             errors.rejectValue("schedule", "is required");
         } else {
@@ -55,27 +54,17 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((schedule == null) ? 0 : schedule.hashCode());
-        return result;
+        return Objects.hashCode(schedule);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
         SimpleScheduleStrategy other = (SimpleScheduleStrategy) obj;
-        if (schedule == null) {
-            if (other.schedule != null)
-                return false;
-        } else if (!schedule.equals(other.schedule))
-            return false;
-        return true;
+        return Objects.equals(schedule, other.schedule);
     }
 
     @Override

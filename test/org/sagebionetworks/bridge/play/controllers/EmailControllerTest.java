@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.play.controllers.EmailController;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.data.DynamicForm;
@@ -60,7 +59,7 @@ public class EmailControllerTest {
     }
     
     private EmailController createController(String email) {
-        optionsService = mock(ParticipantOptionsServiceImpl.class);
+        optionsService = mock(ParticipantOptionsService.class);
         
         Account account = mock(Account.class);
         when(account.getHealthId()).thenReturn("healthId");

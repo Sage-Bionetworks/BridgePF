@@ -26,7 +26,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class HealthCodeServiceImplTest {
+public class HealthCodeServiceTest {
 
     @Resource
     private StudyService studyService;
@@ -58,7 +58,7 @@ public class HealthCodeServiceImplTest {
     @Test
     public void invalidHealthIdReturnsNull() {
         HealthIdDao dao = mock(HealthIdDao.class);
-        HealthCodeServiceImpl healthCodeService = new HealthCodeServiceImpl();
+        HealthCodeService healthCodeService = new HealthCodeService();
         healthCodeService.setHealthIdDao(dao);
 
         HealthId healthId = healthCodeService.getMapping(null);
@@ -73,7 +73,7 @@ public class HealthCodeServiceImplTest {
         when(dao.getCode("123")).thenReturn("abc");
         when(dao.getCode("456")).thenReturn(null);
         
-        HealthCodeServiceImpl healthCodeService = new HealthCodeServiceImpl();
+        HealthCodeService healthCodeService = new HealthCodeService();
         healthCodeService.setHealthIdDao(dao);
         
         // valid

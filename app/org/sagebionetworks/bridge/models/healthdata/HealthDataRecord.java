@@ -3,6 +3,9 @@ package org.sagebionetworks.bridge.models.healthdata;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+
+import java.util.Set;
+
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
@@ -63,6 +66,12 @@ public interface HealthDataRecord extends BridgeEntity {
      */
     String getUserExternalId();
 
+    /**
+     * The data groups assigned to the user submitting this health data. This set will be null if there are no data 
+     * groups assigned to the user.
+     */
+    Set<String> getUserDataGroups();
+    
     /**
      * Record version. This is used to detect concurrency conflicts. For creating new health data records, this field
      * should be left unspecified. For updating records, this field should match the version of the most recent GET

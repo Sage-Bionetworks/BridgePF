@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -138,7 +139,7 @@ public class ConsentController extends BaseController {
 
         final User user = consentService.consentToResearch(study, subpopGuid, session.getUser(), consent,
                 sharing.getSharingScope(), true);
-
+        
         user.setSharingScope(sharing.getSharingScope());
         updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());

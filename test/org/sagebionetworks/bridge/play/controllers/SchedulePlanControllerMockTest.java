@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
-import org.sagebionetworks.bridge.services.SchedulePlanServiceImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.mvc.Http;
@@ -43,7 +42,7 @@ public class SchedulePlanControllerMockTest {
         when(studyService.getStudy(study.getStudyIdentifier())).thenReturn(study);
         controller.setStudyService(studyService);
         
-        SchedulePlanService schedulePlanService = new SchedulePlanServiceImpl();
+        SchedulePlanService schedulePlanService = new SchedulePlanService();
         controller.setSchedulePlanService(schedulePlanService);
         
         UserSession session = mock(UserSession.class);
@@ -79,7 +78,7 @@ public class SchedulePlanControllerMockTest {
             controller.updateSchedulePlan("test-study");
         } catch(InvalidEntityException e) {
             assertMessage(e, "label", "cannot be missing, null, or blank");
-            assertMessage(e, "strategy.scheduleGroups", "groups must add up to 100% (not 70%; give 20% as 20, for example)");
+            assertMessage(e, "strategy.scheduleGroups", "groups must add up to 100%");
             assertMessage(e, "strategy.scheduleGroups[0].schedule.activities", "are required");
             assertMessage(e, "strategy.scheduleGroups[0].schedule.scheduleType", "is required");
             assertMessage(e, "strategy.scheduleGroups[1].schedule.scheduleType", "is required");

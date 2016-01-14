@@ -36,7 +36,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class StudyConsentServiceImplTest {
+public class StudyConsentServiceTest {
     
     private static final String BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
@@ -57,12 +57,12 @@ public class StudyConsentServiceImplTest {
     
     @Before
     public void before() {
-        String id = TestUtils.randomName(StudyConsentServiceImplTest.class);
+        String id = TestUtils.randomName(StudyConsentServiceTest.class);
         
         study = new DynamoStudy();
         study.setIdentifier(id);
-        study.setName("StudyConsentServiceImplTest Name");
-        study.setSponsorName("StudyConsentServiceImplTest Sponsor");
+        study.setName("StudyConsentServiceTest Name");
+        study.setSponsorName("StudyConsentServiceTest Sponsor");
     }
     
     @After
