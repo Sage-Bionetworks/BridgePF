@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.exceptions;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 @SuppressWarnings("serial")
+@NoStackTraceException
 public class PublishedSurveyException extends BridgeServiceException {
     
     private final Survey survey;

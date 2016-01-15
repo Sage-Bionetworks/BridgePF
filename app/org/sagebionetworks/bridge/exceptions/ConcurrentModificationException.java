@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @SuppressWarnings("serial")
+@NoStackTraceException
 public class ConcurrentModificationException extends BridgeServiceException {
     
     private BridgeEntity entity;
