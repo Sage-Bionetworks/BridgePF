@@ -52,8 +52,6 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceTest {
 
-    private static final String TEST_DATA_GROUP = "group1";
-
     @Resource
     private CacheProvider cacheProvider;
 
@@ -80,13 +78,6 @@ public class AuthenticationServiceTest {
     @Before
     public void before() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).build();
-
-        cacheProvider.removeStudy(TestConstants.TEST_STUDY_IDENTIFIER);
-        Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
-        if (!study.getDataGroups().contains(TEST_DATA_GROUP)) {
-            study.getDataGroups().add(TEST_DATA_GROUP);
-            studyService.updateStudy(study, true);
-        }
     }
 
     @After
@@ -250,15 +241,13 @@ public class AuthenticationServiceTest {
     
     @Test
     public void userCreatedWithDataGroupsHasThemOnSignIn() throws Exception {
-        Set<String> dataGroups = Sets.newHashSet(TEST_DATA_GROUP);
-        
         TestUser user = helper.getBuilder(AuthenticationServiceTest.class).withConsent(true)
-                .withDataGroups(dataGroups).build();
+                .withDataGroups(TestConstants.TEST_DATA_GROUPS).build();
         try {
             UserSession session = authService.signIn(user.getStudy(), ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
             // Verify we created a list and the anticipated group was not null
             assertEquals(1, session.getUser().getDataGroups().size()); 
-            assertEquals(dataGroups, session.getUser().getDataGroups());
+            assertEquals(TestConstants.TEST_DATA_GROUPS, session.getUser().getDataGroups());
         } finally {
             helper.deleteUser(user);
         }

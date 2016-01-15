@@ -9,6 +9,8 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.google.common.collect.Sets;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,8 +39,8 @@ public class DefaultStudyBootstrapper {
             study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
             study.setSupportEmail("support@sagebridge.org");
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/3OBNJsxNxvaaK5nSFwv8RD");
-            study.getUserProfileAttributes().add("phone");
-            study.getUserProfileAttributes().add("can_be_recontacted");
+            study.setDataGroups(TestConstants.TEST_DATA_GROUPS);
+            study.setUserProfileAttributes(Sets.newHashSet("phone","can_be_recontacted"));
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             studyService.createStudy(study);
         }
