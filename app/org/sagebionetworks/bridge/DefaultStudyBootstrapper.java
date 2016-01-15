@@ -40,6 +40,7 @@ public class DefaultStudyBootstrapper {
             study.setSupportEmail("support@sagebridge.org");
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/3OBNJsxNxvaaK5nSFwv8RD");
             study.setDataGroups(TestConstants.TEST_DATA_GROUPS);
+            study.setTaskIdentifiers(TestConstants.TEST_TASK_IDENTIFIERS);
             study.setUserProfileAttributes(Sets.newHashSet("phone","can_be_recontacted"));
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             studyService.createStudy(study);
