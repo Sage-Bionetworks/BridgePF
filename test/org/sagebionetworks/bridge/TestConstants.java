@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import java.util.Set;
-
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -9,8 +7,6 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-
-import com.google.common.collect.Sets;
 
 public class TestConstants {
     public static final String DUMMY_IMAGE_DATA = "VGhpcyBpc24ndCBhIHJlYWwgaW1hZ2Uu";
@@ -39,16 +35,6 @@ public class TestConstants {
     public static final Activity TEST_1_ACTIVITY = new Activity.Builder().withLabel("Activity1").withPublishedSurvey("identifier1","AAA").build();
     public static final Activity TEST_2_ACTIVITY = new Activity.Builder().withLabel("Activity2").withPublishedSurvey("identifier2","BBB").build();
     public static final Activity TEST_3_ACTIVITY = new Activity.Builder().withLabel("Activity3").withGuid("AAA").withTask("tapTest").build();
-    
-    /**
-     * The data group set in the test (api) study. This includes groups that are required for the SDK integration tests.
-     */
-    public static final Set<String> TEST_DATA_GROUPS = Sets.newHashSet("sdk-int-1","sdk-int-2", "group1");
-    
-    /**
-     * The task identifiers set in the test (api) study. This includes task identifiers that are required for the SDK integration tests.
-     */
-    public static final Set<String> TEST_TASK_IDENTIFIERS = Sets.newHashSet("task:AAA", "task:BBB", "task:CCC", "CCC", "task1");
     
     /**
      * During tests, must sometimes pause because the underlying query uses a DynamoDB global 

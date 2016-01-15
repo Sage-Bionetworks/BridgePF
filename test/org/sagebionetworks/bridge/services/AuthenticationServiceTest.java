@@ -22,8 +22,8 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import org.sagebionetworks.bridge.DefaultStudyBootstrapper;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
@@ -241,13 +241,14 @@ public class AuthenticationServiceTest {
     
     @Test
     public void userCreatedWithDataGroupsHasThemOnSignIn() throws Exception {
+        int numOfGroups = DefaultStudyBootstrapper.TEST_DATA_GROUPS.size();
         TestUser user = helper.getBuilder(AuthenticationServiceTest.class).withConsent(true)
-                .withDataGroups(TestConstants.TEST_DATA_GROUPS).build();
+                .withDataGroups(DefaultStudyBootstrapper.TEST_DATA_GROUPS).build();
         try {
             UserSession session = authService.signIn(user.getStudy(), ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
             // Verify we created a list and the anticipated group was not null
-            assertEquals(1, session.getUser().getDataGroups().size()); 
-            assertEquals(TestConstants.TEST_DATA_GROUPS, session.getUser().getDataGroups());
+            assertEquals(numOfGroups, session.getUser().getDataGroups().size()); 
+            assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getUser().getDataGroups());
         } finally {
             helper.deleteUser(user);
         }
