@@ -285,8 +285,8 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void deleteScheduledActivitiesForSchedulePlan() {
-        service.deleteActivitiesForSchedulePlan("BBB");
-        verify(activityDao).deleteActivitiesForSchedulePlan("BBB");
+        service.deleteActivitiesForSchedulePlan("BBB", 50);
+        verify(activityDao).deleteActivitiesForSchedulePlanIfUnderThreshold("BBB", 50);
     }
     
     @Test(expected = IllegalArgumentException.class)

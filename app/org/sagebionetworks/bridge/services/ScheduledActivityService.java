@@ -155,10 +155,10 @@ public class ScheduledActivityService {
         activityDao.deleteActivitiesForUser(healthCode);
     }
     
-    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid) {
+    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid, int threshold) {
         checkArgument(isNotBlank(schedulePlanGuid));
         
-        activityDao.deleteActivitiesForSchedulePlan(schedulePlanGuid);
+        activityDao.deleteActivitiesForSchedulePlanIfUnderThreshold(schedulePlanGuid, threshold);
     }
     
     protected List<ScheduledActivity> updateActivitiesAndCollectSaves(List<ScheduledActivity> scheduledActivities, List<ScheduledActivity> dbActivities) {

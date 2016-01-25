@@ -120,19 +120,24 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     /** {@inheritDoc} */
     @Override
-    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid) {
+    public void deleteActivitiesForSchedulePlanIfUnderThreshold(String schedulePlanGuid, int threshold) {
         ScheduledActivity activity = new DynamoScheduledActivity();
         activity.setSchedulePlanGuid(schedulePlanGuid);
 
-        List<ScheduledActivity> activitiesToDelete = schedulePlanIndex
-                .query(DynamoScheduledActivity.class, "schedulePlanGuid", schedulePlanGuid, null)
-                .stream()
-                .filter(act -> ScheduledActivityStatus.DELETABLE_STATUSES.contains(act.getStatus()))
-                .collect(Collectors.toList());
-        
-        if (!activitiesToDelete.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
-            BridgeUtils.ifFailuresThrowException(failures);
+        // Do not attempt deletion once number of tasks exceeds a given threshold (hopefully low enough to 
+        // indicate that the objects were part of a test, or that a study is still in development).
+        int count = schedulePlanIndex.queryKeyCount("schedulePlanGuid", schedulePlanGuid, null);
+        if (count > 0 && count < threshold) {
+            List<ScheduledActivity> activitiesToDelete = schedulePlanIndex
+                    .query(DynamoScheduledActivity.class, "schedulePlanGuid", schedulePlanGuid, null)
+                    .stream()
+                    .filter(act -> ScheduledActivityStatus.DELETABLE_STATUSES.contains(act.getStatus()))
+                    .collect(Collectors.toList());
+            
+            if (!activitiesToDelete.isEmpty()) {
+                List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
+                BridgeUtils.ifFailuresThrowException(failures);
+            }
         }
     }
     

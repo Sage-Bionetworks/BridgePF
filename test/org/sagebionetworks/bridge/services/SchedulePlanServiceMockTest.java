@@ -19,6 +19,8 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -194,14 +196,14 @@ public class SchedulePlanServiceMockTest {
         when(mockSchedulePlanDao.updateSchedulePlan(study.getStudyIdentifier(), plan)).thenReturn(plan);
         
         service.updateSchedulePlan(study, plan);
-        verify(mockActivityService).deleteActivitiesForSchedulePlan("BBB");
+        verify(mockActivityService).deleteActivitiesForSchedulePlan("BBB", BridgeConstants.SCHEDULED_ACTIVITIES_DELETE_THRESHOLD);
     }
     
     @Test
     public void cleansUpScheduledActivitiesOnDelete() {
         service.deleteSchedulePlan(TEST_STUDY, "BBB");
         
-        verify(mockActivityService).deleteActivitiesForSchedulePlan("BBB");
+        verify(mockActivityService).deleteActivitiesForSchedulePlan("BBB", BridgeConstants.SCHEDULED_ACTIVITIES_DELETE_THRESHOLD);
     }
     
     @Test

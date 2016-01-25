@@ -5,6 +5,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -80,7 +81,8 @@ public class SchedulePlanService {
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
         plan = schedulePlanDao.updateSchedulePlan(studyId, plan);
-        activityService.deleteActivitiesForSchedulePlan(plan.getGuid());
+        
+        activityService.deleteActivitiesForSchedulePlan(plan.getGuid(), BridgeConstants.SCHEDULED_ACTIVITIES_DELETE_THRESHOLD);
         return plan;
     }
 
@@ -90,7 +92,7 @@ public class SchedulePlanService {
         
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
         
-        activityService.deleteActivitiesForSchedulePlan(guid);
+        activityService.deleteActivitiesForSchedulePlan(guid, BridgeConstants.SCHEDULED_ACTIVITIES_DELETE_THRESHOLD);
     }
     
     /**

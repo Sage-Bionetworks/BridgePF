@@ -7,8 +7,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 
-import com.google.common.base.Joiner;
-
 @SuppressWarnings("serial")
 public final class StudyParticipant extends HashMap<String,String> {
     

@@ -62,6 +62,8 @@ public class DynamoScheduledActivityDaoMockTest {
 
     private DynamoScheduledActivityDao activityDao;
     
+    private DynamoIndexHelper schedulePlanIndex;
+    
     private DynamoScheduledActivity testSchActivity;
     
     @Before
@@ -74,11 +76,14 @@ public class DynamoScheduledActivityDaoMockTest {
 
         testSchActivity = new DynamoScheduledActivity();
         
+        schedulePlanIndex = mock(DynamoIndexHelper.class);
+        
         // This is the part that will need to be expanded per test.
         mapper = mock(DynamoDBMapper.class);
         when(mapper.load(any(DynamoScheduledActivity.class))).thenReturn(testSchActivity);
         activityDao = new DynamoScheduledActivityDao();
         activityDao.setDdbMapper(mapper);
+        activityDao.setActivitySchedulePlanGuidIndex(schedulePlanIndex);
     }
 
     @After
@@ -249,6 +254,31 @@ public class DynamoScheduledActivityDaoMockTest {
         assertTrue(activities instanceof ImmutableList);
         
         verifyNoMoreInteractions(mapper);
+    }
+    
+    @Test
+    public void deleteThresholdIsRespected() {
+        when(schedulePlanIndex.queryKeyCount("schedulePlanGuid", "BBB", null)).thenReturn(100);
+        
+        activityDao.deleteActivitiesForSchedulePlanIfUnderThreshold("BBB", 2);
+        verify(schedulePlanIndex).queryKeyCount("schedulePlanGuid", "BBB", null);
+        verifyNoMoreInteractions(mapper);
+    }
+    
+    @Test
+    public void deleteOccursWhenUnderThreshold() {
+        DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
+        activity1.setHealthCode(HEALTH_CODE);
+        activity1.setGuid(BridgeUtils.generateGuid());
+        List<DynamoScheduledActivity> results = Lists.newArrayList(activity1);
+        
+        when(schedulePlanIndex.queryKeyCount("schedulePlanGuid", "BBB", null)).thenReturn(results.size());
+        when(schedulePlanIndex.query(DynamoScheduledActivity.class, "schedulePlanGuid", "BBB", null)).thenReturn(results);
+        mockMapperResults(Lists.newArrayList(new DynamoScheduledActivity(), new DynamoScheduledActivity()));
+        
+        activityDao.deleteActivitiesForSchedulePlanIfUnderThreshold("BBB", 2);
+        verify(schedulePlanIndex).queryKeyCount("schedulePlanGuid", "BBB", null);
+        verify(mapper).batchDelete(results);
     }
     
     private void assertScheduledActivity(ScheduledActivity schActivity, String ref, String dateString) {

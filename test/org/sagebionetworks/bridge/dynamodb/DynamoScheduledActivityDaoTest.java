@@ -21,6 +21,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -179,7 +181,7 @@ public class DynamoScheduledActivityDaoTest {
         // Get one schedule plan GUID to delete and the initial count
         int initialCount = activities.size();
         assertTrue("there are activities", initialCount > 1);
-        activityDao.deleteActivitiesForSchedulePlan(testPlan.getGuid());
+        activityDao.deleteActivitiesForSchedulePlanIfUnderThreshold(testPlan.getGuid(), BridgeConstants.SCHEDULED_ACTIVITIES_DELETE_THRESHOLD);
 
         // Sleep before getting because of eventual consistency issues.
         Thread.sleep(5000);
