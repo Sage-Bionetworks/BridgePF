@@ -45,7 +45,6 @@ public class SchedulePlanServiceMockTest {
     
     private SchedulePlanDao mockSchedulePlanDao;
     private SurveyService mockSurveyService;
-    private ScheduledActivityService mockActivityService;
     
     @Before
     public void before() {
@@ -56,12 +55,10 @@ public class SchedulePlanServiceMockTest {
         
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
-        mockActivityService = mock(ScheduledActivityService.class);
         
         service = new SchedulePlanService();
         service.setSchedulePlanDao(mockSchedulePlanDao);
         service.setSurveyService(mockSurveyService);
-        service.setScheduledActivityService(mockActivityService);
         
         Survey survey1 = TestUtils.getSurvey(false);
         survey1.setIdentifier("identifier1");
@@ -186,22 +183,6 @@ public class SchedulePlanServiceMockTest {
         
         plan = service.updateSchedulePlan(anotherStudy, plan);
         assertEquals("another-study", plan.getStudyKey());
-    }
-    
-    @Test
-    public void cleansUpScheduledActivitiesOnUpdate() {
-        SchedulePlan plan = getSchedulePlan();
-        when(mockSchedulePlanDao.updateSchedulePlan(study.getStudyIdentifier(), plan)).thenReturn(plan);
-        
-        service.updateSchedulePlan(study, plan);
-        verify(mockActivityService).deleteActivitiesForSchedulePlan("BBB");
-    }
-    
-    @Test
-    public void cleansUpScheduledActivitiesOnDelete() {
-        service.deleteSchedulePlan(TEST_STUDY, "BBB");
-        
-        verify(mockActivityService).deleteActivitiesForSchedulePlan("BBB");
     }
     
     @Test

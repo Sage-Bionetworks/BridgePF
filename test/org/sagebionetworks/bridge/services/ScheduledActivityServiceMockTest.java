@@ -283,12 +283,6 @@ public class ScheduledActivityServiceMockTest {
         verify(activityDao).deleteActivitiesForUser("AAA");
     }
     
-    @Test
-    public void deleteScheduledActivitiesForSchedulePlan() {
-        service.deleteActivitiesForSchedulePlan("BBB");
-        verify(activityDao).deleteActivitiesForSchedulePlan("BBB");
-    }
-    
     @Test(expected = IllegalArgumentException.class)
     public void deleteActivitiesForUserRejectsBadValue() {
         service.deleteActivitiesForUser(null);
