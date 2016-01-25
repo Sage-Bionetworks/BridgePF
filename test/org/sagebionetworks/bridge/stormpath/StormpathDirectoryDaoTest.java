@@ -24,8 +24,8 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.Application;
+import com.stormpath.sdk.application.ApplicationAccountStoreMapping;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.AccountCreationPolicy;
 import com.stormpath.sdk.directory.Directory;
@@ -152,7 +152,7 @@ public class StormpathDirectoryDaoTest {
     
     private boolean containsMapping(String href) {
         Application app = getApplication();
-        for (AccountStoreMapping mapping : app.getAccountStoreMappings()) {
+        for (ApplicationAccountStoreMapping mapping : app.getAccountStoreMappings()) {
             if (mapping.getAccountStore().getHref().equals(href)) {
                 return true;    
             }

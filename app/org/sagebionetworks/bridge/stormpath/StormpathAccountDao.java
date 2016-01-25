@@ -49,6 +49,7 @@ import com.stormpath.sdk.account.VerificationEmailRequest;
 import com.stormpath.sdk.account.VerificationEmailRequestBuilder;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.application.Applications;
+import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.AuthenticationResult;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
@@ -189,7 +190,10 @@ public class StormpathAccountDao implements AccountDao {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
             
-            UsernamePasswordRequest request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword(), directory);
+            AuthenticationRequest<?,?> request = UsernamePasswordRequest.builder()
+                    .setUsernameOrEmail(signIn.getUsername())
+                    .setPassword(signIn.getPassword())
+                    .inAccountStore(directory).build();
             AuthenticationResult result = application.authenticateAccount(request);
             if (result.getAccount() != null) {
                 return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, result.getAccount(), encryptors);
