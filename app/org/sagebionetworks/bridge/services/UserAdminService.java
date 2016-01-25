@@ -126,26 +126,33 @@ public class UserAdminService {
 
         authenticationService.signUp(study, signUp, false);
 
-        SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
-        UserSession newUserSession = authenticationService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn);
+        try {
+            SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
+            UserSession newUserSession = authenticationService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn);
 
-        if (consentUser) {
-            String name = String.format("[Signature for %s]", signUp.getEmail());
-            ConsentSignature consent = new ConsentSignature.Builder().withName(name)
-                    .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
+            if (consentUser) {
+                String name = String.format("[Signature for %s]", signUp.getEmail());
+                ConsentSignature consent = new ConsentSignature.Builder().withName(name)
+                        .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
 
-            SubpopulationGuid consentTo = (subpopGuid != null) ? subpopGuid
-                    : SubpopulationGuid.create(study.getIdentifier());
+                SubpopulationGuid consentTo = (subpopGuid != null) ? subpopGuid
+                        : SubpopulationGuid.create(study.getIdentifier());
 
-            consentService.consentToResearch(study, consentTo,
-                    newUserSession.getUser(), consent, SharingScope.NO_SHARING, false);
+                consentService.consentToResearch(study, consentTo,
+                        newUserSession.getUser(), consent, SharingScope.NO_SHARING, false);
+            }
+
+            if (!signUserIn) {
+                authenticationService.signOut(newUserSession);
+                newUserSession = null;
+            }
+            return newUserSession;
+        } catch (RuntimeException ex) {
+            // Created the account, but failed to process the account properly. To avoid leaving behind a bunch of test
+            // accounts, delete this account.
+            deleteUser(study, signUp.getEmail());
+            throw ex;
         }
-
-        if (!signUserIn) {
-            authenticationService.signOut(newUserSession);
-            newUserSession = null;
-        }
-        return newUserSession;
     }
 
     /**
