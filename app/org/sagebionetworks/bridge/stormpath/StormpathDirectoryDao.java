@@ -21,9 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Maps;
-import com.stormpath.sdk.application.AccountStoreMapping;
-import com.stormpath.sdk.application.AccountStoreMappingCriteria;
-import com.stormpath.sdk.application.AccountStoreMappings;
+import com.stormpath.sdk.application.ApplicationAccountStoreMapping;
+import com.stormpath.sdk.application.ApplicationAccountStoreMappingCriteria;
+import com.stormpath.sdk.application.ApplicationAccountStoreMappings;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.AccountCreationPolicy;
@@ -43,7 +43,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
 
     private static final Logger logger = LoggerFactory.getLogger(StormpathDirectoryDao.class);
 
-    private static final AccountStoreMappingCriteria asmCriteria = AccountStoreMappings.criteria().limitTo(100);
+    private static final ApplicationAccountStoreMappingCriteria asmCriteria = ApplicationAccountStoreMappings.criteria().limitTo(100);
     private BridgeConfig config;
     private Client client;
 
@@ -74,9 +74,9 @@ public class StormpathDirectoryDao implements DirectoryDao {
         adjustPasswordPolicies(study, directory);
         adjustVerifyEmailPolicies(study, directory);
         
-        AccountStoreMapping mapping = getApplicationMapping(directory.getHref(), app);
+        ApplicationAccountStoreMapping mapping = getApplicationMapping(directory.getHref(), app);
         if (mapping == null) {
-            mapping = client.instantiate(AccountStoreMapping.class);
+            mapping = client.instantiate(ApplicationAccountStoreMapping.class);
             mapping.setAccountStore(directory);
             mapping.setApplication(app);
             mapping.setDefaultAccountStore(Boolean.FALSE);
@@ -133,11 +133,11 @@ public class StormpathDirectoryDao implements DirectoryDao {
         Directory existing = getDirectoryForStudy(study);
         
         // delete the mapping
-        AccountStoreMapping mapping = getApplicationMapping(existing.getHref(), app);
+        ApplicationAccountStoreMapping mapping = getApplicationMapping(existing.getHref(), app);
         if (mapping != null) {
             mapping.delete();
         } else {
-            logger.warn("AccountStoreMapping not found: " + app.getName() + ", " + existing.getHref());
+            logger.warn("ApplicationAccountStoreMapping not found: " + app.getName() + ", " + existing.getHref());
         }
 
         // delete the directory
@@ -163,10 +163,10 @@ public class StormpathDirectoryDao implements DirectoryDao {
         return client.getResource(config.getStormpathApplicationHref(), Application.class);
     }
     
-    private static AccountStoreMapping getApplicationMapping(String href, Application app) {
+    private static ApplicationAccountStoreMapping getApplicationMapping(String href, Application app) {
         // This is tedious but I see no way to search for or make a reference to this 
         // mapping without iterating through the application's mappings.
-        for (AccountStoreMapping mapping : app.getAccountStoreMappings(asmCriteria)) {
+        for (ApplicationAccountStoreMapping mapping : app.getApplicationAccountStoreMappings(asmCriteria)) {
             if (mapping.getAccountStore().getHref().equals(href)) {
                 return mapping;
             }
@@ -177,8 +177,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private void adjustPasswordPolicies(Study study, Directory directory) {
         PasswordPolicy passwordPolicy = directory.getPasswordPolicy();
         
-        // According to the documentation, there is only one...
-        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().iterator().next();
+        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().single();
         updateTemplate(study, template, study.getResetPasswordTemplate(), "resetPassword");
         
         PasswordStrength strength = passwordPolicy.getStrength();
@@ -199,8 +198,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private void adjustVerifyEmailPolicies(Study study, Directory directory) {
         AccountCreationPolicy policy = directory.getAccountCreationPolicy();
         
-        // According to the documentation, there is only one...
-        ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().iterator().next();
+        ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
         updateTemplate(study, template, study.getVerifyEmailTemplate(), "verifyEmail");
         
         policy.setVerificationEmailStatus(EmailStatus.ENABLED);
