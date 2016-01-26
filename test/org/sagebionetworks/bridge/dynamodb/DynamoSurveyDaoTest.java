@@ -17,6 +17,7 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,10 +26,12 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -63,6 +66,8 @@ public class DynamoSurveyDaoTest {
     @Before
     public void before() {
         testSurvey = new TestSurvey(true);
+        // remove all but two questions to reduce DDB usage.
+        testSurvey.setElements(testSurvey.getElements().subList(0, 2));
         surveysToDelete = new HashSet<>();
     }
 
@@ -205,20 +210,21 @@ public class DynamoSurveyDaoTest {
         
         // Now, alter these, and verify they are altered
         survey.getElements().remove(0);
-        survey.getElements().get(6).setIdentifier("new gender");
+        survey.getElements().get(0).setIdentifier("new gender");
         surveyDao.updateSurvey(survey);
 
         survey = surveyDao.getSurvey(survey);
 
         assertEquals("Survey has one less question", count-1, survey.getElements().size());
         
-        SurveyQuestion restored = (SurveyQuestion)survey.getElements().get(6);
-        MultiValueConstraints mvc = (MultiValueConstraints)restored.getConstraints();
+        SurveyQuestion restored = (SurveyQuestion)survey.getElements().get(0);
+        DateConstraints dc = (DateConstraints)restored.getConstraints();
         
         assertEquals("Survey has updated the one question's identifier", "new gender", restored.getIdentifier());
-        MultiValueConstraints sc = (MultiValueConstraints)restored.getConstraints();
-        assertEquals("Constraints have correct enumeration", mvc.getEnumeration(), sc.getEnumeration());
-        assertEquals("Question has the correct UIHint", UIHint.LIST, restored.getUiHint());
+        
+        assertNotNull("Constraints have earliestValue", dc.getEarliestValue());
+        assertNotNull("Constraints have latestValue", dc.getLatestValue());
+        assertEquals("Question has the correct UIHint", UIHint.DATEPICKER, restored.getUiHint());
     }
 
     @Test(expected = ConcurrentModificationException.class)
@@ -290,34 +296,13 @@ public class DynamoSurveyDaoTest {
         assertEquals(UploadSchemaType.IOS_SURVEY, uploadSchema.getSchemaType());
 
         List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
-        assertEquals(9, fieldDefList.size());
+        assertEquals(2, fieldDefList.size());
 
         assertEquals("high_bp", fieldDefList.get(0).getName());
         assertEquals(UploadFieldType.BOOLEAN, fieldDefList.get(0).getType());
 
         assertEquals("last_checkup", fieldDefList.get(1).getName());
         assertEquals(UploadFieldType.CALENDAR_DATE, fieldDefList.get(1).getType());
-
-        assertEquals("last_reading", fieldDefList.get(2).getName());
-        assertEquals(UploadFieldType.TIMESTAMP, fieldDefList.get(2).getType());
-
-        assertEquals("deleuterium_dosage", fieldDefList.get(3).getName());
-        assertEquals(UploadFieldType.FLOAT, fieldDefList.get(3).getType());
-
-        assertEquals("bp_x_day", fieldDefList.get(4).getName());
-        assertEquals(UploadFieldType.INT, fieldDefList.get(4).getType());
-
-        assertEquals("time_for_appt", fieldDefList.get(5).getName());
-        assertEquals(UploadFieldType.STRING, fieldDefList.get(5).getType());
-
-        assertEquals("deleuterium_x_day", fieldDefList.get(6).getName());
-        assertEquals(UploadFieldType.STRING, fieldDefList.get(6).getType());
-
-        assertEquals("feeling", fieldDefList.get(7).getName());
-        assertEquals(UploadFieldType.INLINE_JSON_BLOB, fieldDefList.get(7).getType());
-
-        assertEquals("name", fieldDefList.get(8).getName());
-        assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDefList.get(8).getType());
 
         // validate get most recently published survey
         Survey pubSurvey = surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());

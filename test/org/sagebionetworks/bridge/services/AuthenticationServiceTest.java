@@ -22,8 +22,8 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import org.sagebionetworks.bridge.DefaultStudyBootstrapper;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
@@ -52,8 +52,6 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceTest {
 
-    private static final String TEST_DATA_GROUP = "group1";
-
     @Resource
     private CacheProvider cacheProvider;
 
@@ -80,13 +78,6 @@ public class AuthenticationServiceTest {
     @Before
     public void before() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).build();
-
-        cacheProvider.removeStudy(TestConstants.TEST_STUDY_IDENTIFIER);
-        Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
-        if (!study.getDataGroups().contains(TEST_DATA_GROUP)) {
-            study.getDataGroups().add(TEST_DATA_GROUP);
-            studyService.updateStudy(study, true);
-        }
     }
 
     @After
@@ -250,15 +241,14 @@ public class AuthenticationServiceTest {
     
     @Test
     public void userCreatedWithDataGroupsHasThemOnSignIn() throws Exception {
-        Set<String> dataGroups = Sets.newHashSet(TEST_DATA_GROUP);
-        
+        int numOfGroups = DefaultStudyBootstrapper.TEST_DATA_GROUPS.size();
         TestUser user = helper.getBuilder(AuthenticationServiceTest.class).withConsent(true)
-                .withDataGroups(dataGroups).build();
+                .withDataGroups(DefaultStudyBootstrapper.TEST_DATA_GROUPS).build();
         try {
             UserSession session = authService.signIn(user.getStudy(), ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
             // Verify we created a list and the anticipated group was not null
-            assertEquals(1, session.getUser().getDataGroups().size()); 
-            assertEquals(dataGroups, session.getUser().getDataGroups());
+            assertEquals(numOfGroups, session.getUser().getDataGroups().size()); 
+            assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getUser().getDataGroups());
         } finally {
             helper.deleteUser(user);
         }
