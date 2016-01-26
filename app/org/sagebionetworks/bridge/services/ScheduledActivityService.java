@@ -155,12 +155,6 @@ public class ScheduledActivityService {
         activityDao.deleteActivitiesForUser(healthCode);
     }
     
-    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid) {
-        checkArgument(isNotBlank(schedulePlanGuid));
-        
-        activityDao.deleteActivitiesForSchedulePlan(schedulePlanGuid);
-    }
-    
     protected List<ScheduledActivity> updateActivitiesAndCollectSaves(List<ScheduledActivity> scheduledActivities, List<ScheduledActivity> dbActivities) {
         Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
         

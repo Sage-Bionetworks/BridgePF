@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -12,7 +11,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
 import org.joda.time.DateTimeZone;
 import org.springframework.stereotype.Component;
@@ -29,16 +27,10 @@ import com.google.common.collect.Lists;
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     private DynamoDBMapper mapper;
-    private DynamoIndexHelper schedulePlanIndex;
     
     @Resource(name = "activityDdbMapper")
     public final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
-    }
-    
-    @Resource(name = "activitySchedulePlanGuidIndex")
-    public final void setActivitySchedulePlanGuidIndex(DynamoIndexHelper index) {
-        this.schedulePlanIndex = index;
     }
 
     /** {@inheritDoc} */
@@ -112,24 +104,6 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         List<ScheduledActivity> activitiesToDelete = Lists.newArrayListWithCapacity(queryResults.size());
         activitiesToDelete.addAll(queryResults);
 
-        if (!activitiesToDelete.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
-            BridgeUtils.ifFailuresThrowException(failures);
-        }
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid) {
-        ScheduledActivity activity = new DynamoScheduledActivity();
-        activity.setSchedulePlanGuid(schedulePlanGuid);
-
-        List<ScheduledActivity> activitiesToDelete = schedulePlanIndex
-                .query(DynamoScheduledActivity.class, "schedulePlanGuid", schedulePlanGuid, null)
-                .stream()
-                .filter(act -> ScheduledActivityStatus.DELETABLE_STATUSES.contains(act.getStatus()))
-                .collect(Collectors.toList());
-        
         if (!activitiesToDelete.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
             BridgeUtils.ifFailuresThrowException(failures);

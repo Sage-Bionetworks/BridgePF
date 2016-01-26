@@ -29,7 +29,6 @@ public class SchedulePlanService {
     
     private SchedulePlanDao schedulePlanDao;
     private SurveyService surveyService;
-    private ScheduledActivityService activityService;
 
     @Autowired
     public final void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
@@ -38,10 +37,6 @@ public class SchedulePlanService {
     @Autowired
     public final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
-    }
-    @Autowired
-    public final void setScheduledActivityService(ScheduledActivityService activityService) {
-        this.activityService = activityService;
     }
 
     public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier) {
@@ -79,9 +74,7 @@ public class SchedulePlanService {
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
-        plan = schedulePlanDao.updateSchedulePlan(studyId, plan);
-        activityService.deleteActivitiesForSchedulePlan(plan.getGuid());
-        return plan;
+        return schedulePlanDao.updateSchedulePlan(studyId, plan);
     }
 
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
@@ -89,8 +82,6 @@ public class SchedulePlanService {
         checkNotNull(isNotBlank(guid));
         
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
-        
-        activityService.deleteActivitiesForSchedulePlan(guid);
     }
     
     /**
