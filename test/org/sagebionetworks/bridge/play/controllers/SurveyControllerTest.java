@@ -9,6 +9,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -140,6 +141,19 @@ public class SurveyControllerTest {
     }
     
     @Test
+    public void verifyViewCacheIsWorking() throws Exception {
+        setContext();
+        when(service.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString())).thenReturn(getSurvey(false));
+        
+        StudyIdentifier studyId = new StudyIdentifierImpl("api");
+        controller.getSurveyMostRecentlyPublishedVersionForUser("bbb");
+        controller.getSurveyMostRecentlyPublishedVersionForUser("bbb");
+        
+        verify(service, times(1)).getSurveyMostRecentlyPublishedVersion(eq(studyId), eq("bbb"));
+        verifyNoMoreInteractions(service);
+    }
+    
+    @Test
     public void getAllSurveysMostRecentVersion2() throws Exception {
         setContext();
         when(service.getAllSurveysMostRecentVersion(any(StudyIdentifier.class))).thenReturn(getSurveys(3, false));
@@ -151,7 +165,7 @@ public class SurveyControllerTest {
     }
     
     @Test
-    public void cannotGetSurveysInOtherStudy() throws Exception {
+    public void cannotGetAllSurveysMostRecentVersionInOtherStudy() throws Exception {
         setContext();
         when(service.getAllSurveysMostRecentVersion(any(StudyIdentifier.class))).thenReturn(getSurveys(3, false));
         setUserSession("secondstudy");
@@ -236,7 +250,7 @@ public class SurveyControllerTest {
         long datetime = DateTime.now().getMillis();
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("bbb", datetime);
         try {
-            controller.getSurvey("bbb", new DateTime(datetime).toString());
+            controller.getSurveyForUser("bbb", new DateTime(datetime).toString());
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
             verify(service).getSurvey(eq(keys));
@@ -662,6 +676,100 @@ public class SurveyControllerTest {
             verifyNoMoreInteractions(service);
         }
     }    
+    
+    // In these tests, the first user successfully caches the survey, then the second request (outside the target study)
+    // tries to retrieve it. This is not allowable, and throws an unauthorized exception (not a 404, though that would 
+    // be another viable way to handle it).
+    
+    @Test
+    public void cannotGetCachedSurveyByUserOfOtherStudy() throws Exception {
+        setContext();
+        when(service.getSurvey(any(GuidCreatedOnVersionHolder.class))).thenReturn(getSurvey(false));
+        long datetime = DateTime.now().getMillis();
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("bbb", datetime);
+        
+        controller.getSurveyForUser("bbb", new DateTime(datetime).toString());
+        
+        setUserSession("secondstudy");
+        try {
+            controller.getSurveyForUser("bbb", new DateTime(datetime).toString());
+            fail("Should have thrown exception");
+        } catch(UnauthorizedException e) {
+            verify(service, times(2)).getSurvey(eq(keys));
+        }
+    }
+
+    @Test
+    public void cannotGetCachedSurveyMostRecentlyPublishedVersionForUserFromOtherStudy() throws Exception {
+        setContext();
+        when(service.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString())).thenReturn(getSurvey(false));
+        controller.getSurveyMostRecentlyPublishedVersionForUser("bbb");
+        
+        setUserSession("secondstudy");
+        StudyIdentifier studyId = new StudyIdentifierImpl("secondstudy");
+        try {
+            controller.getSurveyMostRecentlyPublishedVersionForUser("bbb");
+            fail("Should have thrown exception");
+        } catch(UnauthorizedException e) {
+            verify(service).getSurveyMostRecentlyPublishedVersion(eq(new StudyIdentifierImpl("api")), eq("bbb"));
+            verify(service).getSurveyMostRecentlyPublishedVersion(eq(studyId), eq("bbb"));
+        }
+    }
+    
+    @Test
+    public void cannotGetCachedSurveyFromOtherStudy() throws Exception {
+        String guid = "BBB";
+        String dateString = DateTime.now().toString();
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(guid, DateTime.parse(dateString).getMillis());
+        setContext();
+        when(service.getSurvey(eq(keys))).thenReturn(getSurvey(false));
+        controller.getSurvey(guid, dateString);
+        
+        setUserSession("secondstudy");
+        try {
+            controller.getSurvey(guid, dateString);
+            fail("Should have thrown exception");
+        } catch(UnauthorizedException e) {
+            verify(service, times(2)).getSurvey(eq(keys));
+        }
+    }
+    
+    @Test
+    public void cannotGetCachedSurveyMostRecentVersionFromOtherStudy() throws Exception {
+        StudyIdentifier studyId = new StudyIdentifierImpl("api");
+        String guid = "BBB";
+        setContext();
+        when(service.getSurveyMostRecentVersion(eq(studyId), eq(guid))).thenReturn(getSurvey(false));
+        when(service.getSurveyMostRecentVersion(eq(studyId), eq(guid))).thenReturn(getSurvey(false));
+        controller.getSurveyMostRecentVersion(guid);
+        
+        setUserSession("secondstudy");
+        try {
+            controller.getSurveyMostRecentVersion(guid);
+            fail("Should have thrown exception");
+        } catch(UnauthorizedException e) {
+            verify(service).getSurveyMostRecentVersion(eq(new StudyIdentifierImpl("api")), eq(guid));
+            verify(service).getSurveyMostRecentVersion(eq(studyId), eq(guid));
+        }
+    }
+    
+    @Test
+    public void cannotGetCachedSurveyMostRecentlyPublishedVersionFromOtherStudy() throws Exception {
+        StudyIdentifier studyId = new StudyIdentifierImpl("api");
+        String guid = "BBB";
+        setContext();
+        when(service.getSurveyMostRecentlyPublishedVersion(eq(studyId), eq(guid))).thenReturn(getSurvey(false));
+        controller.getSurveyMostRecentlyPublishedVersion(guid);
+        
+        setUserSession("secondstudy");
+        try {
+            controller.getSurveyMostRecentlyPublishedVersion(guid);
+            fail("Should have thrown exception");
+        } catch (UnauthorizedException e) {
+            verify(service).getSurveyMostRecentlyPublishedVersion(eq(studyId), eq(guid));
+            verify(service).getSurveyMostRecentlyPublishedVersion(eq(new StudyIdentifierImpl("secondstudy")), eq(guid));
+        }
+    }  
     
     private Survey getSurvey(boolean makeNew) {
         Survey survey = new TestSurvey(makeNew);
