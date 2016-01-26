@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
@@ -156,41 +154,6 @@ public class DynamoScheduledActivityDaoTest {
         activityDao.deleteActivitiesForUser(user.getHealthCode());
         savedActivities = activityDao.getActivities(context.getZone(), savedActivities);
         assertEquals("all activities deleted", 0, savedActivities.size());
-    }
-    
-    @Test
-    public void createActivitiesAndDeleteSomeBySchedulePlan() throws Exception {
-        DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
-        
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withUser(user)
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withTimeZone(DateTimeZone.UTC)
-                .withEndsOn(endsOn)
-                .withEvents(eventMap()).build();
-        
-        // Schedule plans are specific to this test because we're going to delete them;
-        List<SchedulePlan> plans = getSchedulePlans();
-        SchedulePlan testPlan = plans.get(0);
-        
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(plans, context);
-        activityDao.saveActivities(activities);
-
-        // Get one schedule plan GUID to delete and the initial count
-        int initialCount = activities.size();
-        assertTrue("there are activities", initialCount > 1);
-        activityDao.deleteActivitiesForSchedulePlan(testPlan.getGuid());
-
-        // Sleep before getting because of eventual consistency issues.
-        Thread.sleep(5000);
-
-        activities = activityDao.getActivities(context.getZone(), activities);
-        // The count is now less than before
-        assertTrue(initialCount > activities.size());
-        // and the supplied schedulePlanGuid cannot be found in any of the activities that still exist
-        for (ScheduledActivity activity : activities) {
-            assertNotEquals(testPlan.getGuid(), activity.getSchedulePlanGuid());
-        }
     }
     
     private Map<String,DateTime> eventMap() {

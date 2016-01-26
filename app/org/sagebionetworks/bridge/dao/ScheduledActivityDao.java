@@ -51,14 +51,4 @@ public interface ScheduledActivityDao {
      */
     public void deleteActivitiesForUser(String healthCode);
     
-    /**
-     * Delete the scheduled activities for a schedule plan (with the exception of started activities, which the user has
-     * seen and started working on, it would be annoying for these to disappear on the user). We do this when a schedule
-     * plan is updated or deleted, to update the tasks that are returned to a user so the reflect the current state of
-     * the schedule plans.
-     * 
-     * @param schedulePlanGuid
-     */
-    public void deleteActivitiesForSchedulePlan(String schedulePlanGuid);
-    
 }
