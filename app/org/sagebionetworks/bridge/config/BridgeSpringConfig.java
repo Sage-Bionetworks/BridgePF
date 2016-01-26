@@ -58,6 +58,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
@@ -65,6 +66,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
+import org.sagebionetworks.bridge.upload.DedupeHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
@@ -345,6 +347,11 @@ public class BridgeSpringConfig {
     public DynamoDBMapper uploadDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
         return DynamoUtils.getMapper(DynamoUpload2.class, bridgeConfig, client);
     }
+
+    @Bean(name = "uploadDedupeDdbMapper")
+    public DynamoDBMapper uploadDedupeDdbMapper() {
+        return DynamoUtils.getMapper(DynamoUploadDedupe.class, bridgeConfig(), dynamoDbClient());
+    }
     
     @Bean(name = "fphsExternalIdDdbMapper")
     @Autowired
@@ -356,10 +363,11 @@ public class BridgeSpringConfig {
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
             DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
-            IosSchemaValidationHandler2 iosSchemaValidationHandler2, StrictValidationHandler strictValidationHandler,
-            TranscribeConsentHandler transcribeConsentHandler, UploadArtifactsHandler uploadArtifactsHandler) {
+            IosSchemaValidationHandler2 iosSchemaValidationHandler2, DedupeHandler dedupeHandler,
+            StrictValidationHandler strictValidationHandler, TranscribeConsentHandler transcribeConsentHandler,
+            UploadArtifactsHandler uploadArtifactsHandler) {
         return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
-                iosSchemaValidationHandler2, strictValidationHandler, transcribeConsentHandler,
+                iosSchemaValidationHandler2, dedupeHandler, strictValidationHandler, transcribeConsentHandler,
                 uploadArtifactsHandler);
     }
 

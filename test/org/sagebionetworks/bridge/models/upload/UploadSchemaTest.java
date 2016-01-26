@@ -108,6 +108,15 @@ public class UploadSchemaTest {
     }
 
     @Test
+    public void schemaKeyObject() {
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setStudyId("test-study");
+        schema.setSchemaId("test-schema");
+        schema.setRevision(7);
+        assertEquals("test-study-test-schema-v7", schema.getSchemaKey().toString());
+    }
+
+    @Test
     public void testSerialization() throws Exception {
         // start with JSON. Some field definitions may already be serialized using upper-case enums
         // so leave this test string as it is. We know from other tests that lower-case 

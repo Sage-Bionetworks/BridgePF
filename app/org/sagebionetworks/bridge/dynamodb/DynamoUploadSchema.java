@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
+import org.sagebionetworks.bridge.schema.UploadSchemaKey;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -131,6 +132,14 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @JsonIgnore
+    @Override
+    public UploadSchemaKey getSchemaKey() {
+        return new UploadSchemaKey.Builder().withStudyId(studyId).withSchemaId(schemaId).withRevision(rev).build();
+    }
+
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
     @Override
     public UploadSchemaType getSchemaType() {
@@ -154,6 +163,7 @@ public class DynamoUploadSchema implements UploadSchema {
      */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-index")
     @JsonIgnore
+    @Override
     public String getStudyId() {
         return studyId;
     }

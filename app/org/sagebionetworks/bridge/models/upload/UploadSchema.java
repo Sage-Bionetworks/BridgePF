@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.schema.UploadSchemaKey;
 
 /**
  * This class represents a schema for the uploads sent by the mobile apps. This can be created and updated by study
@@ -40,6 +41,15 @@ public interface UploadSchema extends BridgeEntity {
      */
     String getSchemaId();
 
+    /** Gets the schema key as represented by the UploadSchemaKey object. */
+    UploadSchemaKey getSchemaKey();
+
     /** Schema type, for example survey vs data. */
     UploadSchemaType getSchemaType();
+
+    /**
+     * Study ID that this schema lives in. This is not exposed to the callers of the upload schema API, but is
+     * available here for internal usage.
+     */
+    String getStudyId();
 }
