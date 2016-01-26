@@ -177,9 +177,8 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private void adjustPasswordPolicies(Study study, Directory directory) {
         PasswordPolicy passwordPolicy = directory.getPasswordPolicy();
         
-        for (ModeledEmailTemplate template : passwordPolicy.getResetEmailTemplates()) {
-            updateTemplate(study, template, study.getResetPasswordTemplate(), "resetPassword");
-        }
+        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().single();
+        updateTemplate(study, template, study.getResetPasswordTemplate(), "resetPassword");
         
         PasswordStrength strength = passwordPolicy.getStrength();
         strength.setMaxLength(org.sagebionetworks.bridge.models.studies.PasswordPolicy.FIXED_MAX_LENGTH);
@@ -199,9 +198,8 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private void adjustVerifyEmailPolicies(Study study, Directory directory) {
         AccountCreationPolicy policy = directory.getAccountCreationPolicy();
         
-        for (ModeledEmailTemplate template : policy.getAccountVerificationEmailTemplates()) {
-            updateTemplate(study, template, study.getVerifyEmailTemplate(), "verifyEmail");
-        }
+        ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
+        updateTemplate(study, template, study.getVerifyEmailTemplate(), "verifyEmail");
         
         policy.setVerificationEmailStatus(EmailStatus.ENABLED);
         policy.setVerificationSuccessEmailStatus(EmailStatus.DISABLED);
