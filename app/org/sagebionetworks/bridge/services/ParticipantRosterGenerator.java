@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
@@ -29,7 +30,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -97,7 +97,7 @@ public class ParticipantRosterGenerator implements Runnable {
                 // If we find no subpopulation names, this user hasn't consented to anything.
                 List<String> names = getSubpopulationNames(account, mapping);
                 if (!names.isEmpty()) {
-                    String subpopNames = Joiner.on(", ").join(names);
+                    String subpopNames = COMMA_SPACE_JOINER.join(names);
                     String healthCode = getHealthCode(account);
                     
                     StudyParticipant participant = new StudyParticipant();

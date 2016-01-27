@@ -1,14 +1,13 @@
 package org.sagebionetworks.bridge.models;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 
 /**
@@ -18,6 +17,7 @@ import com.google.common.collect.Sets;
  * a parameter object of values against which matching occurs.
  */
 public class CriteriaUtils {
+    
     /**
      * A matching method that matches our common set of matching criteria for consents, schedulses, and more. 
      * We use the dataGroups and app version in the scheduling context and compare this to required and/or 
@@ -85,7 +85,7 @@ public class CriteriaUtils {
             Set<String> intersection = Sets.newHashSet(criteria.getAllOfGroups());
             intersection.retainAll(criteria.getNoneOfGroups());
             if (!intersection.isEmpty()) {
-                errors.rejectValue("allOfGroups", "includes these prohibited data groups: " + Joiner.on(", ").join(intersection));
+                errors.rejectValue("allOfGroups", "includes these prohibited data groups: " + COMMA_SPACE_JOINER.join(intersection));
             }
         }
     }
@@ -107,7 +107,7 @@ public class CriteriaUtils {
         if (dataGroups.isEmpty()) {
             message += "<no data groups declared>";
         } else {
-            message += Joiner.on(", ").join(dataGroups);
+            message += COMMA_SPACE_JOINER.join(dataGroups);
         }
         return message;
     }

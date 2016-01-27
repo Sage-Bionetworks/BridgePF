@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.util;
 
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +14,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 
 import org.joda.time.format.ISODateTimeFormat;
@@ -60,7 +61,7 @@ public class BulkDownloadUtil {
         }
 
         System.out.println(String.format("Downloading %s files for S3 keys (%s)", s3KeyArr.length,
-                Joiner.on(", ").join(s3KeyArr)));
+                COMMA_SPACE_JOINER.join(s3KeyArr)));
 
         // spring beans
         AbstractApplicationContext springCtx = new ClassPathXmlApplicationContext("application-context.xml");

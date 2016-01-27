@@ -32,7 +32,6 @@ import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.directory.PasswordStrength;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.mail.EmailStatus;
-import com.stormpath.sdk.mail.ModeledEmailTemplate;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
