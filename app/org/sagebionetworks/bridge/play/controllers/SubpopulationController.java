@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 import java.util.Set;
@@ -35,7 +36,7 @@ public class SubpopulationController extends BaseController {
     }
 
     public Result getAllSubpopulations() {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getStudyIdentifier());
         return okResult(subpopulations);
@@ -61,7 +62,7 @@ public class SubpopulationController extends BaseController {
         return okResult(new GuidVersionHolder(subpop.getGuidString(), subpop.getVersion()));
     }
     public Result getSubpopulation(String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
 
         Subpopulation subpop = subpopService.getSubpopulation(session.getStudyIdentifier(), subpopGuid);
