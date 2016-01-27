@@ -56,12 +56,12 @@ public class SurveyController extends BaseController {
         
         if ("summary".equals(format)) {
             List<Survey> surveys = surveyService.getSurveysSummary(studyId);
-            verifySurveyIsInStudy(session, studyId, surveys);
+            verifySurveyIsInStudy(session, surveys);
             
             return ok(Survey.SUMMARY_LIST_WRITER.writeValueAsString(new ResourceList<Survey>(surveys)));
         }
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId);
-        verifySurveyIsInStudy(session, studyId, surveys);
+        verifySurveyIsInStudy(session, surveys);
         return okResult(surveys);
     }
     
@@ -70,7 +70,7 @@ public class SurveyController extends BaseController {
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId);
-        verifySurveyIsInStudy(session, studyId, surveys);
+        verifySurveyIsInStudy(session, surveys);
         return okResult(surveys);
     }
     
@@ -79,92 +79,81 @@ public class SurveyController extends BaseController {
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyId);
-        verifySurveyIsInStudy(session, studyId, surveys);
+        verifySurveyIsInStudy(session, surveys);
         return okResult(surveys);
     }
     
-    public Result getSurveyForUser(final String surveyGuid, final String createdOnString) throws Exception {
-        final UserSession session = getAuthenticatedAndConsentedSession();
+    public Result getSurveyForUser(String surveyGuid, String createdOnString) throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
+        
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
 
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId.getIdentifier());
-        String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
-            @Override public Survey get() {
-                StudyIdentifier studyId = session.getStudyIdentifier();
-                long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
-                GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
-
-                Survey survey = surveyService.getSurvey(keys);
-                verifySurveyIsInStudy(session, studyId, survey);
-                return survey;
-            }
+        
+        String json = getView(cacheKey, session, () -> {
+            return surveyService.getSurvey(keys);
         });
+
         return ok(json).as(JSON_MIME_TYPE);
     }
 
-    public Result getSurveyMostRecentlyPublishedVersionForUser(final String surveyGuid) throws Exception {
-        final UserSession session = getAuthenticatedAndConsentedSession();
-        final StudyIdentifier studyId = session.getStudyIdentifier();
+    public Result getSurveyMostRecentlyPublishedVersionForUser(String surveyGuid) throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY, studyId.getIdentifier());
-        String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
-            @Override public Survey get() {
-                StudyIdentifier studyId = session.getStudyIdentifier();
-                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid);
-                verifySurveyIsInStudy(session, studyId, survey);
-                return survey;
-            }
+        
+        String json = getView(cacheKey, session, () -> {
+            return surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid);
         });
+
         return ok(json).as(JSON_MIME_TYPE);
     }
     
     // Otherwise you don't need consent but you must be a researcher or an administrator
-    public Result getSurvey(final String surveyGuid, final String createdOnString) throws Exception {
-        final UserSession session = getAuthenticatedSession();
-        final StudyIdentifier studyId = session.getStudyIdentifier();
+    public Result getSurvey(String surveyGuid, String createdOnString) throws Exception {
+        UserSession session = getAuthenticatedSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         canAccessSurvey(session);
         
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId.getIdentifier()); 
-        String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
-            @Override public Survey get() {
-                long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
-                GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
-                Survey survey = surveyService.getSurvey(keys);
-                verifySurveyIsInStudy(session, studyId, survey);
-                return survey;
-            }
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
+
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId.getIdentifier());
+        
+        String json = getView(cacheKey, session, () -> {
+            return surveyService.getSurvey(keys);
         });
+
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getSurveyMostRecentVersion(final String surveyGuid) throws Exception {
-        final UserSession session = getAuthenticatedSession(DEVELOPER);
-        final StudyIdentifier studyId = session.getStudyIdentifier();
+    public Result getSurveyMostRecentVersion(String surveyGuid) throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        StudyIdentifier studyId = session.getStudyIdentifier();
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId.getIdentifier());
-        String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
-            @Override public Survey get() {
-                Survey survey = surveyService.getSurveyMostRecentVersion(studyId, surveyGuid);
-                verifySurveyIsInStudy(session, studyId, survey);
-                return survey;
-            }
+        
+        String json = getView(cacheKey, session, () -> {
+            return surveyService.getSurveyMostRecentVersion(studyId, surveyGuid);
         });
+
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getSurveyMostRecentlyPublishedVersion(final String surveyGuid) throws Exception {
-        final UserSession session = getAuthenticatedSession();
-        final StudyIdentifier studyId = session.getStudyIdentifier();
+    public Result getSurveyMostRecentlyPublishedVersion(String surveyGuid) throws Exception {
+        UserSession session = getAuthenticatedSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         canAccessSurvey(session);
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY, studyId.getIdentifier());
-        String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
-            @Override public Survey get() {
-                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid);
-                verifySurveyIsInStudy(session, studyId, survey);
-                return survey;
-            }
+        
+        String json = getView(cacheKey, session, () -> {
+            return surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid);
         });
+        
         return ok(json).as(JSON_MIME_TYPE);
     }
     
@@ -192,7 +181,7 @@ public class SurveyController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         
         Survey survey = surveyService.getSurvey(keys);
-        verifySurveyIsInStudy(session, studyId, survey);
+        verifySurveyIsInStudy(session, survey);
         
         if ("true".equals(physical) && user.isInRole(ADMIN)) {
             surveyService.deleteSurveyPermanently(survey);
@@ -211,7 +200,7 @@ public class SurveyController extends BaseController {
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         List<Survey> surveys = surveyService.getSurveyAllVersions(studyId, surveyGuid);
-        verifySurveyIsInStudy(session, studyId, surveys);
+        verifySurveyIsInStudy(session, surveys);
         return okResult(surveys);
     }
     
@@ -234,7 +223,7 @@ public class SurveyController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         
         Survey survey = surveyService.getSurvey(keys);
-        verifySurveyIsInStudy(session, studyId, survey);
+        verifySurveyIsInStudy(session, survey);
 
         survey = surveyService.versionSurvey(survey);
         expireCache(surveyGuid, createdOnString, studyId);
@@ -250,7 +239,7 @@ public class SurveyController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         
         Survey survey = surveyService.getSurvey(keys);
-        verifySurveyIsInStudy(session, studyId, survey);
+        verifySurveyIsInStudy(session, survey);
         
         // The parameters in the URL take precedence over anything declared in 
         // the object itself.
@@ -273,12 +262,20 @@ public class SurveyController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         
         Survey survey = surveyService.getSurvey(keys);
-        verifySurveyIsInStudy(session, studyId, survey);
+        verifySurveyIsInStudy(session, survey);
         
         survey = surveyService.publishSurvey(studyId, survey);
         expireCache(surveyGuid, createdOnString, studyId);
         
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
+    }
+    
+    private String getView(ViewCacheKey<Survey> cacheKey, UserSession session, Supplier<Survey> supplier) {
+        return viewCache.getView(cacheKey, () -> {
+            Survey survey = supplier.get();
+            verifySurveyIsInStudy(session, survey);
+            return survey;
+        });
     }
     
     private void canAccessSurvey(UserSession session) {
@@ -299,19 +296,20 @@ public class SurveyController extends BaseController {
         throw new UnauthorizedException();
     }
     
-    private void verifySurveyIsInStudy(UserSession session, StudyIdentifier studyIdentifier, List<Survey> surveys) {
+    private void verifySurveyIsInStudy(UserSession session,List<Survey> surveys) {
         if (!surveys.isEmpty()) {
-            verifySurveyIsInStudy(session, studyIdentifier, surveys.get(0));
+            verifySurveyIsInStudy(session, surveys.get(0));
         }
     }
     
-    private void verifySurveyIsInStudy(UserSession session, StudyIdentifier studyIdentifier, Survey survey) {
+    private void verifySurveyIsInStudy(UserSession session, Survey survey) {
         // This can happen if the user has the right keys to a survey, but it's not in the user's study.
         if (survey == null) {
             throw new UnauthorizedException();
         }
+        StudyIdentifier studyId = session.getStudyIdentifier();
         if (!session.getUser().isInRole(ADMIN) && 
-            !survey.getStudyIdentifier().equals(studyIdentifier.getIdentifier())) {
+            !survey.getStudyIdentifier().equals(studyId.getIdentifier())) {
             throw new UnauthorizedException();
         }
     }
