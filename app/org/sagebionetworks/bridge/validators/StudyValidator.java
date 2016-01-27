@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -123,7 +125,7 @@ public class StudyValidator implements Validator {
                     errors.rejectValue("dataGroups", "contains invalid tag '"+group+"' (only letters, numbers, underscore and dash allowed)");
                 }
             }
-            String ser = BridgeUtils.COMMA_SPACE_JOINER.join(dataGroups);
+            String ser = COMMA_SPACE_JOINER.join(dataGroups);
             if (ser.length() > MAX_SYNAPSE_LENGTH) {
                 errors.rejectValue("dataGroups", "will not export to Synapse (string is over "+MAX_SYNAPSE_LENGTH+" characters: '" + ser + "')");
             }
