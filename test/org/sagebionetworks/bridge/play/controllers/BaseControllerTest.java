@@ -2,7 +2,10 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
@@ -14,12 +17,21 @@ import org.junit.Test;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.play.controllers.BaseController;
+import org.sagebionetworks.bridge.services.StudyConsentService;
+import org.sagebionetworks.bridge.services.SubpopulationService;
+
+import com.google.common.collect.Sets;
 
 /** Test class for basic utility functions in BaseController. */
 @SuppressWarnings("unchecked")
@@ -194,6 +206,28 @@ public class BaseControllerTest {
         
         SchedulePlanController controller = new SchedulePlanController();
         controller.verifySupportedVersionOrThrowException(study);
+    }
+    
+    @Test
+    public void canGetSessionByOneOfSeveralAllowableRoles() throws Exception {
+        User user = new User();
+        // having multiple roles doesn't confuse the selection
+        user.setRoles(Sets.newHashSet(Roles.TEST_USERS, Roles.DEVELOPER));
+        UserSession session = new UserSession();
+        session.setUser(user);
+        session.setAuthenticated(true);
+        
+        StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "asdf");
+        StudyConsentService mockStudyConsentService = mock(StudyConsentService.class);
+        when(mockStudyConsentService.getActiveConsent(any())).thenReturn(view);
+        
+        StudyConsentController controller = spy(StudyConsentController.class);
+        controller.setSubpopulationService(mock(SubpopulationService.class));
+        controller.setStudyConsentService(mockStudyConsentService);
+        doReturn(session).when(controller).getAuthenticatedSession();
+        
+        // you can be a developer or a researcher and access this method
+        controller.getActiveConsentV2("test");
     }
 
 }
