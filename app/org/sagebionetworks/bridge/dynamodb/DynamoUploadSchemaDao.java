@@ -45,6 +45,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     private static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
             .withExpectedEntry("key", new ExpectedAttributeValue(false));
 
+    // Empirically, an array of 37 ints would break the 100 char string length. To give some safety buffer, set the max
+    // array length to 20.
+    private static final int MAX_MULTI_VALUE_INT_LENGTH = 20;
+
     private static final int MAX_STRING_LENGTH = 100;
 
     private DynamoDBMapper mapper;
@@ -156,6 +160,11 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
                 if (constraints.getDataType() == DataType.STRING) {
                     // Multiple choice string answers frequently become longer than the 100-char limit. This will have
                     // to be a JSON attachment.
+                    return UploadFieldType.ATTACHMENT_JSON_BLOB;
+                } else if (multiValueConstraints.getEnumeration() != null
+                        && multiValueConstraints.getEnumeration().size() > MAX_MULTI_VALUE_INT_LENGTH) {
+                    // Even if it's not a string, if there are too many options and someone selects all of them, it
+                    // could exceed the 100-char limit.
                     return UploadFieldType.ATTACHMENT_JSON_BLOB;
                 } else {
                     // Multiple choice non-string answers (frequently ints) tend to be very short, so this can fit in
