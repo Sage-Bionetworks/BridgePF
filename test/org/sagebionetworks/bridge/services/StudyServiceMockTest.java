@@ -4,6 +4,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.function.Consumer;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,6 +26,9 @@ import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StudyServiceMockTest {
+    
+    private static final PasswordPolicy PASSWORD_POLICY = new PasswordPolicy(2, false, false, false, false);
+    private static final EmailTemplate EMAIL_TEMPLATE = new EmailTemplate("new subject", "new body ${url}", MimeType.HTML);
 
     @Mock
     private UploadCertificateService uploadCertService;
@@ -48,19 +53,25 @@ public class StudyServiceMockTest {
         service.setCacheProvider(cacheProvider);
         service.setSubpopulationService(subpopService);
         
-        Study persistedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        persistedStudy.setStormpathHref("http://foo");
-        when(studyDao.getStudy("test-study")).thenReturn(persistedStudy);
+        when(studyDao.getStudy("test-study")).thenReturn(getTestStudy());
     }
     
     private Study getTestStudy() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setIdentifier("test-study");
+        study.setStormpathHref("http://foo");
         return study;
     }
     
+    private void assertDirectoryUpdated(Consumer<Study> consumer) {
+        Study study = getTestStudy();
+        consumer.accept(study);
+        service.updateStudy(study, true);
+        verify(directoryDao).updateDirectoryForStudy(study);
+    }
+    
     @Test
-    public void verifyChangedStudyTriggersDirectoryUpdate() {
+    public void changingIrrelevantFieldsDoesNotUpdateDirectory() {
         Study study = getTestStudy();
         
         // here's a bunch of things we can change that won't cause the directory to be updated
@@ -82,65 +93,37 @@ public class StudyServiceMockTest {
     
     @Test
     public void changingNameUpdatesDirectory() {
-        Study study = getTestStudy();
-        study.setName("a new name");
-        
-        service.updateStudy(study, true);
-        verify(directoryDao).updateDirectoryForStudy(study);
+        assertDirectoryUpdated(study -> study.setName("name"));
     }
     
     @Test
     public void changingSponsorNameUpdatesDirectory() {
-        Study study = getTestStudy();
-        study.setSponsorName("a new name");
-        
-        service.updateStudy(study, true);
-        verify(directoryDao).updateDirectoryForStudy(study);
+        assertDirectoryUpdated(study -> study.setSponsorName("a new name"));
     }
     
     @Test
     public void changingSupportEmailUpdatesDirectory() {
-        Study study = getTestStudy();
-        study.setSupportEmail("new@new.com");
-        
-        service.updateStudy(study, true);
-        verify(directoryDao).updateDirectoryForStudy(study);
+        assertDirectoryUpdated(study -> study.setSupportEmail("new@new.com"));
     }
     
     @Test
     public void changingTechnicalEmailUpdatesDirectory() {
-        Study study = getTestStudy();
-        study.setTechnicalEmail("new@new.com");
-        
-        service.updateStudy(study, true);
-        verify(directoryDao).updateDirectoryForStudy(study);
+        assertDirectoryUpdated(study -> study.setTechnicalEmail("new@new.com"));
     }
     
     @Test
     public void changingPasswordPolicyUpdatesDirectory() {
-        Study study = getTestStudy();
-        study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
-        
-        service.updateStudy(study, true);
-        verify(directoryDao).updateDirectoryForStudy(study);
+        assertDirectoryUpdated(study -> study.setPasswordPolicy(PASSWORD_POLICY));
     }
     
     @Test
     public void changingVerifyEmailTemplateUpdatesDirectory() {
-        Study study = getTestStudy();
-        study.setVerifyEmailTemplate(new EmailTemplate("new subject", "new body ${url}", MimeType.HTML));
-        
-        service.updateStudy(study, true);
-        verify(directoryDao).updateDirectoryForStudy(study);
+        assertDirectoryUpdated(study -> study.setVerifyEmailTemplate(EMAIL_TEMPLATE));
     }
     
     @Test
     public void changingResetPasswordTemplateUpdatesDirectory() {
-        Study study = getTestStudy();
-        study.setResetPasswordTemplate(new EmailTemplate("new subject", "new body ${url}", MimeType.HTML));
-        
-        service.updateStudy(study, true);
-        verify(directoryDao).updateDirectoryForStudy(study);
+        assertDirectoryUpdated(study -> study.setResetPasswordTemplate(EMAIL_TEMPLATE));
     }
     
 }

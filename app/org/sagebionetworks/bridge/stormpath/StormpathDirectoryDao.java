@@ -200,7 +200,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         
         ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
         updateTemplate(study, template, study.getVerifyEmailTemplate(), "verifyEmail");
-        
+
         policy.setVerificationEmailStatus(EmailStatus.ENABLED);
         policy.setVerificationSuccessEmailStatus(EmailStatus.DISABLED);
         policy.setWelcomeEmailStatus(EmailStatus.DISABLED);
