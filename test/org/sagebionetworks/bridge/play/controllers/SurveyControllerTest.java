@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.anyString;
@@ -19,7 +18,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -47,10 +45,7 @@ import org.sagebionetworks.bridge.play.controllers.SurveyController;
 import org.sagebionetworks.bridge.services.SurveyService;
 
 import play.mvc.Http;
-import play.mvc.Result;
-import play.test.Helpers;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -174,28 +169,6 @@ public class SurveyControllerTest {
         
         verify(service).getAllSurveysMostRecentlyPublishedVersion(any(StudyIdentifier.class));
         verifyNoMoreInteractions(service);
-    }
-    
-    @Test
-    public void getSurveysSummary() throws Exception {
-        setContext();
-        when(service.getSurveysSummary(any(StudyIdentifier.class))).thenReturn(getSurveys(3, false));
-     
-        Result result = controller.getAllSurveysMostRecentVersion("summary");
-        verify(service).getSurveysSummary(any(StudyIdentifier.class));
-        verifyNoMoreInteractions(service);
-        
-        String output = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(output);
-        
-        // Should only include key felds.
-        // Survey node
-        Set<String> fields = TestUtils.getFieldNamesSet(node.get("items").get(0));
-        assertEquals(Sets.newHashSet("name","type","guid","identifier","createdOn","elements"), fields);
-        
-        // Element node
-        fields = TestUtils.getFieldNamesSet(node.get("items").get(0).get("elements").get(0));
-        assertEquals(Sets.newHashSet("guid","fireEvent","identifier","type"), fields);
     }
     
     @Test
