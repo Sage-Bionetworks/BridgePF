@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -124,14 +125,14 @@ public class DynamoUploadSchemaDaoTest {
             surveyElementList.add(q);
         }
 
-        // multi value int
+        // multi value int without options
         {
             MultiValueConstraints constraints = new MultiValueConstraints();
             constraints.setDataType(DataType.INTEGER);
             constraints.setAllowMultiple(true);
 
             SurveyQuestion q = new DynamoSurveyQuestion();
-            q.setIdentifier("multi-value-int");
+            q.setIdentifier("multi-value-int-without-options");
             q.setConstraints(constraints);
             surveyElementList.add(q);
         }
@@ -249,6 +250,32 @@ public class DynamoUploadSchemaDaoTest {
             surveyElementList.add(q);
         }
 
+        // multi value int short
+        {
+            MultiValueConstraints constraints = new MultiValueConstraints();
+            constraints.setDataType(DataType.INTEGER);
+            constraints.setAllowMultiple(true);
+            constraints.setEnumeration(generateOptionList(15));
+
+            SurveyQuestion q = new DynamoSurveyQuestion();
+            q.setIdentifier("multi-value-int-short");
+            q.setConstraints(constraints);
+            surveyElementList.add(q);
+        }
+
+        // multi value int long
+        {
+            MultiValueConstraints constraints = new MultiValueConstraints();
+            constraints.setDataType(DataType.INTEGER);
+            constraints.setAllowMultiple(true);
+            constraints.setEnumeration(generateOptionList(25));
+
+            SurveyQuestion q = new DynamoSurveyQuestion();
+            q.setIdentifier("multi-value-int-long");
+            q.setConstraints(constraints);
+            surveyElementList.add(q);
+        }
+
         // make survey
         Survey survey = new DynamoSurvey();
         survey.setIdentifier("test-survey");
@@ -272,7 +299,7 @@ public class DynamoUploadSchemaDaoTest {
         assertEquals("survey-study", createdSchema.getStudyId());
 
         List<UploadFieldDefinition> fieldDefList = createdSchema.getFieldDefinitions();
-        assertEquals(15, fieldDefList.size());
+        assertEquals(17, fieldDefList.size());
 
         assertEquals("no-constraints", fieldDefList.get(0).getName());
         assertEquals(UploadFieldType.INLINE_JSON_BLOB, fieldDefList.get(0).getType());
@@ -280,7 +307,7 @@ public class DynamoUploadSchemaDaoTest {
         assertEquals("multi-value-string", fieldDefList.get(1).getName());
         assertEquals(UploadFieldType.ATTACHMENT_JSON_BLOB, fieldDefList.get(1).getType());
 
-        assertEquals("multi-value-int", fieldDefList.get(2).getName());
+        assertEquals("multi-value-int-without-options", fieldDefList.get(2).getName());
         assertEquals(UploadFieldType.INLINE_JSON_BLOB, fieldDefList.get(2).getType());
 
         assertEquals("multi-value-single-choice-string", fieldDefList.get(3).getName());
@@ -319,10 +346,24 @@ public class DynamoUploadSchemaDaoTest {
         assertEquals("timestamp", fieldDefList.get(14).getName());
         assertEquals(UploadFieldType.TIMESTAMP, fieldDefList.get(14).getType());
 
+        assertEquals("multi-value-int-short", fieldDefList.get(15).getName());
+        assertEquals(UploadFieldType.INLINE_JSON_BLOB, fieldDefList.get(15).getType());
+
+        assertEquals("multi-value-int-long", fieldDefList.get(16).getName());
+        assertEquals(UploadFieldType.ATTACHMENT_JSON_BLOB, fieldDefList.get(16).getType());
+
         // Validate call to DDB - make sure returned schema same as the one sent to DDB.
         ArgumentCaptor<DynamoUploadSchema> arg = ArgumentCaptor.forClass(DynamoUploadSchema.class);
         verify(mockMapper).save(arg.capture(), notNull(DynamoDBSaveExpression.class));
         assertSame(createdSchema, arg.getValue());
+    }
+
+    private List<SurveyQuestionOption> generateOptionList(int count) {
+        List<SurveyQuestionOption> optionList = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            optionList.add(new SurveyQuestionOption(String.valueOf(i)));
+        }
+        return optionList;
     }
 
     @Test

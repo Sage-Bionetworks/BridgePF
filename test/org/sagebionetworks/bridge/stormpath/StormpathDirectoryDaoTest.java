@@ -24,8 +24,8 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.Application;
+import com.stormpath.sdk.application.ApplicationAccountStoreMapping;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.AccountCreationPolicy;
 import com.stormpath.sdk.directory.Directory;
@@ -99,17 +99,14 @@ public class StormpathDirectoryDaoTest {
         assertEquals(EmailStatus.DISABLED, passwordPolicy.getResetSuccessEmailStatus());
         assertEquals(1, passwordPolicy.getResetEmailTemplates().getSize());
 
-        // Reset Password Template
-        // Stormpath updates to templates seems to be not working https://sagebionetworks.jira.com/browse/BRIDGE-1102
-        // This part of the test is being temporarily commented out and will be restored once the issue is resolved.
-//        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().iterator().next();
-//        assertEquals(study.getSponsorName(), template.getFromName());
-//        assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
-//        assertEquals(rpSubject, template.getSubject());
-//        assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getResetPasswordTemplate()), template.getMimeType());
-//        assertEquals(study.getResetPasswordTemplate().getBody(), template.getTextBody());
-//        String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getWebservicesURL(), study.getIdentifier());
-//        assertEquals(url, template.getLinkBaseUrl());
+        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().iterator().next();
+        assertEquals(study.getSponsorName(), template.getFromName());
+        assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
+        assertEquals(rpSubject, template.getSubject());
+        assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getResetPasswordTemplate()), template.getMimeType());
+        assertEquals(study.getResetPasswordTemplate().getBody(), template.getTextBody());
+        String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getWebservicesURL(), study.getIdentifier());
+        assertEquals(url, template.getLinkBaseUrl());
 
         PasswordStrength strength = passwordPolicy.getStrength();
         assertEquals(PasswordPolicy.FIXED_MAX_LENGTH, strength.getMaxLength());
@@ -125,15 +122,14 @@ public class StormpathDirectoryDaoTest {
         assertEquals(EmailStatus.DISABLED, policy.getWelcomeEmailStatus());
         assertEquals(1, policy.getAccountVerificationEmailTemplates().getSize());
 
-        // This is temporarily commented out also because of https://sagebionetworks.jira.com/browse/BRIDGE-1102
-//        template = policy.getAccountVerificationEmailTemplates().iterator().next();
-//        assertEquals(study.getSponsorName(), template.getFromName());
-//        assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
-//        assertEquals(veSubject, template.getSubject());
-//        assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getVerifyEmailTemplate()), template.getMimeType());
-//        assertEquals(study.getVerifyEmailTemplate().getBody(), template.getTextBody());
-//        url = String.format("%s/mobile/verifyEmail.html?study=%s", BridgeConfigFactory.getConfig().getWebservicesURL(), study.getIdentifier());
-//        assertEquals(url, template.getLinkBaseUrl());
+        template = policy.getAccountVerificationEmailTemplates().iterator().next();
+        assertEquals(study.getSponsorName(), template.getFromName());
+        assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
+        assertEquals(veSubject, template.getSubject());
+        assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getVerifyEmailTemplate()), template.getMimeType());
+        assertEquals(study.getVerifyEmailTemplate().getBody(), template.getTextBody());
+        url = String.format("%s/mobile/verifyEmail.html?study=%s", BridgeConfigFactory.getConfig().getWebservicesURL(), study.getIdentifier());
+        assertEquals(url, template.getLinkBaseUrl());
     }
     
     private boolean groupExists(Directory directory, Roles role) {
@@ -155,7 +151,7 @@ public class StormpathDirectoryDaoTest {
     
     private boolean containsMapping(String href) {
         Application app = getApplication();
-        for (AccountStoreMapping mapping : app.getAccountStoreMappings()) {
+        for (ApplicationAccountStoreMapping mapping : app.getAccountStoreMappings()) {
             if (mapping.getAccountStore().getHref().equals(href)) {
                 return true;    
             }

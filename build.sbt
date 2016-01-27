@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "bridge-base" % "0.1.201509230331",
+  "org.sagebionetworks" % "bridge-base" % "1.0",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",
@@ -44,8 +44,8 @@ libraryDependencies ++= Seq(
   // Joda-Time
   "joda-time" % "joda-time" % "2.8.2",
   // Stormpath
-  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC4.5",
-  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC4.5",
+  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC8.1",
+  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC8.1",
   "org.apache.httpcomponents" % "httpclient" % "4.5",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",
