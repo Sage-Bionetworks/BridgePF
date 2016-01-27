@@ -147,7 +147,17 @@ public class CriteriaUtilsTest {
         CriteriaUtils.validate(criteria, Sets.newHashSet("group3"), errors);
         assertEquals("'group1' is not in enumeration: group3", errors.getFieldErrors("allOfGroups").get(0).getCode());
         assertEquals("'group2' is not in enumeration: group3", errors.getFieldErrors("noneOfGroups").get(0).getCode());
-        
+    }
+    
+    @Test
+    public void validateDataGroupNotBothRequiredAndProhibited() {
+        SimpleCriteria criteria = new SimpleCriteria(Sets.newHashSet("group1","group2","group3"), Sets.newHashSet("group2","group3"), null, null);
+        Errors errors = Validate.getErrorsFor(criteria);
+        CriteriaUtils.validate(criteria, Sets.newHashSet("group1","group2","group3","group4"), errors);
+        // It's a set so validate without describing the order of the groups in the error message
+        assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("includes these prohibited data groups: "));
+        assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group2"));
+        assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group3"));
     }
     
     private ScheduleContext getContext() {

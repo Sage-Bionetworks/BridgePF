@@ -9,6 +9,7 @@ import org.springframework.validation.Errors;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 
 /**
  * Utility classes for working with domain entities that should be matched by a growing list of 
@@ -71,6 +72,22 @@ public class CriteriaUtils {
         }
         validateDataGroups(errors, dataGroups, criteria.getAllOfGroups(), "allOfGroups");
         validateDataGroups(errors, dataGroups, criteria.getNoneOfGroups(), "noneOfGroups");
+        validateDataGroupNotRequiredAndProhibited(criteria, errors);
+    }
+
+    /**
+     * Can't logically have a data group that is both required and prohibited, so check for this.
+     * @param criteria
+     * @param errors
+     */
+    private static void validateDataGroupNotRequiredAndProhibited(Criteria criteria, Errors errors) {
+        if (criteria.getAllOfGroups() != null && criteria.getNoneOfGroups() != null) {
+            Set<String> intersection = Sets.newHashSet(criteria.getAllOfGroups());
+            intersection.retainAll(criteria.getNoneOfGroups());
+            if (!intersection.isEmpty()) {
+                errors.rejectValue("allOfGroups", "includes these prohibited data groups: " + Joiner.on(", ").join(intersection));
+            }
+        }
     }
     
     private static void validateDataGroups(Errors errors, Set<String> dataGroups, Set<String> criteriaGroups, String propName) {
