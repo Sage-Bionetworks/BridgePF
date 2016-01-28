@@ -82,8 +82,7 @@ public class CriteriaUtils {
      */
     private static void validateDataGroupNotRequiredAndProhibited(Criteria criteria, Errors errors) {
         if (criteria.getAllOfGroups() != null && criteria.getNoneOfGroups() != null) {
-            Set<String> intersection = Sets.newHashSet(criteria.getAllOfGroups());
-            intersection.retainAll(criteria.getNoneOfGroups());
+            Set<String> intersection = Sets.intersection(criteria.getAllOfGroups(), criteria.getNoneOfGroups());
             if (!intersection.isEmpty()) {
                 errors.rejectValue("allOfGroups", "includes these prohibited data groups: " + COMMA_SPACE_JOINER.join(intersection));
             }
