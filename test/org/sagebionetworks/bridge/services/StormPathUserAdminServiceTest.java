@@ -46,9 +46,6 @@ public class StormPathUserAdminServiceTest {
 
     @Resource
     StudyService studyService;
-    
-    @Resource
-    SubpopulationService subpopService;
 
     @Resource
     UserAdminService userAdminService;
@@ -154,5 +151,4 @@ public class StormPathUserAdminServiceTest {
         userAdminService.deleteUser(study, session.getUser().getEmail());
         assertNull(authService.getSession(session.getSessionToken()));
     }
-    
 }
