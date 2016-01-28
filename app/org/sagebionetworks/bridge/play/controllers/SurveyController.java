@@ -34,8 +34,8 @@ import com.google.common.base.Supplier;
 @Controller
 public class SurveyController extends BaseController {
 
-    private static final String MOSTRECENT_KEY = "mostrecent";
-    private static final String PUBLISHED_KEY = "published";
+    public static final String MOSTRECENT_KEY = "mostrecent";
+    public static final String PUBLISHED_KEY = "published";
 
     private SurveyService surveyService;
     

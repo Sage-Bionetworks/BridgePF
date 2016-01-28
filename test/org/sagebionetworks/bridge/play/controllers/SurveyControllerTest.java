@@ -8,6 +8,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -32,6 +34,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -769,7 +772,67 @@ public class SurveyControllerTest {
             verify(service).getSurveyMostRecentlyPublishedVersion(eq(studyId), eq(guid));
             verify(service).getSurveyMostRecentlyPublishedVersion(eq(new StudyIdentifierImpl("secondstudy")), eq(guid));
         }
-    }  
+    }
+
+    @Test
+    public void deleteSurveyInvalidatesCache() throws Exception {
+        assertCacheIsCleared((guid, dateString) -> controller.deleteSurvey(guid, dateString, "false"));
+    }
+    
+    @Test
+    public void versionSurveyInvalidatesCache() throws Exception {
+        assertCacheIsCleared((guid, dateString) -> controller.versionSurvey(guid, dateString));
+    }
+    
+    @Test
+    public void updateSurveyInvalidatesCache() throws Exception {
+        assertCacheIsCleared((guid, dateString) -> controller.updateSurvey(guid, dateString));
+    }
+    
+    @Test
+    public void publishSurveyInvalidatesCache() throws Exception {
+        assertCacheIsCleared((guid, dateString) -> controller.publishSurvey(guid, dateString));
+    }
+    
+    @FunctionalInterface
+    public interface ExecuteSurvey {
+        public void execute(String guid, String dateString) throws Exception;    
+    }
+   
+    private void assertCacheIsCleared(ExecuteSurvey executeSurvey) throws Exception {
+        // Setup the cache to return content and verify the cache returns content
+        String guid = "BBB";
+        DateTime now = DateTime.now();
+        
+        Survey survey = new DynamoSurvey();
+        survey.setStudyIdentifier("api");
+        survey.setGuid(guid);
+        survey.setCreatedOn(now.getMillis());
+        
+        setUserSession("api");
+        setContext(survey);
+        
+        viewCache.getView(viewCache.getCacheKey(
+                Survey.class, guid, now.toString(), "api"), () -> { return survey; });
+        
+        // Verify this call hits the cache not the service
+        controller.getSurvey(guid, now.toString());
+        verifyNoMoreInteractions(service);
+
+        // Now mock the service because the *next* call (publish/delete/etc) will require it. The 
+        // calls under test do not reference the cache, they clear it.
+        when(service.getSurvey(any())).thenReturn(survey);
+        when(service.publishSurvey(any(), any())).thenReturn(survey);
+        when(service.versionSurvey(any())).thenReturn(survey);
+        when(service.updateSurvey(any())).thenReturn(survey);
+        
+        // execute the text method, this should delete the cache
+        executeSurvey.execute(guid, now.toString());
+        
+        // So this call hits the service, for a total of two calls to the service in total.
+        controller.getSurvey(guid, now.toString());
+        verify(service, times(2)).getSurvey(any());
+    }
     
     private Survey getSurvey(boolean makeNew) {
         Survey survey = new TestSurvey(makeNew);
