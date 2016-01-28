@@ -824,10 +824,11 @@ public class SurveyControllerTest {
         when(service.versionSurvey(any())).thenReturn(survey);
         when(service.updateSurvey(any())).thenReturn(survey);
         
-        // execute the text method, this should delete the cache
+        // execute the test method, this should delete the cache
         executeSurvey.execute(guid, now.toString());
+        verify(service).getSurvey(any());
         
-        // So this call hits the service, for a total of two calls to the service in total.
+        // This call now hits the service, not the cache, for a total of two calls to the service
         controller.getSurvey(guid, now.toString());
         verify(service, times(2)).getSurvey(any());
     }
