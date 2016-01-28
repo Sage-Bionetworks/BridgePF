@@ -111,20 +111,6 @@ public class SurveyController extends BaseController {
         
         return getSurveyInternal(surveyGuid, createdOnString, session, studyId);
     }
-
-    private Result getSurveyInternal(String surveyGuid, String createdOnString, UserSession session,
-            StudyIdentifier studyId) {
-        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
-        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
-
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId.getIdentifier());
-        
-        String json = getView(cacheKey, session, () -> {
-            return surveyService.getSurvey(keys);
-        });
-
-        return ok(json).as(JSON_MIME_TYPE);
-    }
     
     public Result getSurveyMostRecentVersion(String surveyGuid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -264,6 +250,20 @@ public class SurveyController extends BaseController {
         expireCache(surveyGuid, createdOnString, studyId);
         
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
+    }
+    
+    private Result getSurveyInternal(String surveyGuid, String createdOnString, UserSession session,
+            StudyIdentifier studyId) {
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
+
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId.getIdentifier());
+        
+        String json = getView(cacheKey, session, () -> {
+            return surveyService.getSurvey(keys);
+        });
+
+        return ok(json).as(JSON_MIME_TYPE);
     }
     
     private String getView(ViewCacheKey<Survey> cacheKey, UserSession session, Supplier<Survey> supplier) {
