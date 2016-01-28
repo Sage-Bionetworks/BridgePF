@@ -3,12 +3,8 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.annotation.Resource;
 
@@ -20,22 +16,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-
-import scala.collection.immutable.Map;
 
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -162,32 +153,6 @@ public class StormPathUserAdminServiceTest {
         // Delete again shouldn't crash
         userAdminService.deleteUser(study, session.getUser().getEmail());
         assertNull(authService.getSession(session.getSessionToken()));
-    }
-    
-    @Test
-    public void creatingUserConsentsToAllRequiredConsents() {
-        Study study = null;
-        try {
-            study = TestUtils.getValidStudy(StormPathUserAdminServiceTest.class);
-            studyService.createStudy(study);
-            
-            // Create another required subpopulation
-            Subpopulation subpop = Subpopulation.create();
-            subpop.setName("Another subpopulation");
-            subpop.setRequired(true);
-            subpopService.createSubpopulation(study, subpop);
-            
-            UserSession session = userAdminService.createUser(signUp, study, null, true, true);
-            List<ConsentStatus> statuses = new ArrayList<ConsentStatus>(session.getUser().getConsentStatuses().values());
-            
-            // There are two consents, the user is consented to both of them, the session reflects this
-            assertTrue(statuses.get(0).isConsented());
-            assertTrue(statuses.get(1).isConsented());
-        } finally {
-            if (study != null) {
-                studyService.deleteStudy(study.getIdentifier());
-            }
-        }
     }
     
 }

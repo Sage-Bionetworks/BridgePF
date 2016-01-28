@@ -140,7 +140,7 @@ public class UserAdminService {
                 if (subpopGuid != null) {
                     consentService.consentToResearch(study, subpopGuid, user, signature, NO_SHARING, false);
                 } else {
-                    for (ConsentStatus consentStatus : newUserSession.getUser().getConsentStatuses().values()) {
+                    for (ConsentStatus consentStatus : user.getConsentStatuses().values()) {
                         if (consentStatus.isRequired()) {
                             SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
                             consentService.consentToResearch(study, guid, user, signature, NO_SHARING, false);
