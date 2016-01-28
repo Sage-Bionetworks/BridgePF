@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +75,22 @@ public class StormPathUserAdminServiceMockTest {
         
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             verify(consentService).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
+        }
+    }
+    
+    @Test
+    public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
+        Study study = TestUtils.getValidStudy(StormPathUserAdminServiceMockTest.class);
+        SignUp signUp = new SignUp("username", "email@email.com", "password", null, null);
+        
+        SubpopulationGuid consentedGuid = user.getConsentStatuses().keySet().iterator().next();
+        UserSession session = service.createUser(signUp, study, consentedGuid, true, true);
+        
+        verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
+        for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
+            if (guid != consentedGuid) {
+                verify(consentService, never()).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));    
+            }
         }
     }
     
