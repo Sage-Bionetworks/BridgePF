@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
 import java.util.Iterator;
 
@@ -10,11 +11,11 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -132,14 +133,20 @@ public class UserAdminService {
 
             if (consentUser) {
                 String name = String.format("[Signature for %s]", signUp.getEmail());
-                ConsentSignature consent = new ConsentSignature.Builder().withName(name)
+                ConsentSignature signature = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-
-                SubpopulationGuid consentTo = (subpopGuid != null) ? subpopGuid
-                        : SubpopulationGuid.create(study.getIdentifier());
-
-                consentService.consentToResearch(study, consentTo,
-                        newUserSession.getUser(), consent, SharingScope.NO_SHARING, false);
+                
+                User user = newUserSession.getUser();
+                if (subpopGuid != null) {
+                    consentService.consentToResearch(study, subpopGuid, user, signature, NO_SHARING, false);
+                } else {
+                    for (ConsentStatus consentStatus : user.getConsentStatuses().values()) {
+                        if (consentStatus.isRequired()) {
+                            SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
+                            consentService.consentToResearch(study, guid, user, signature, NO_SHARING, false);
+                        }
+                    }
+                }
             }
 
             if (!signUserIn) {
