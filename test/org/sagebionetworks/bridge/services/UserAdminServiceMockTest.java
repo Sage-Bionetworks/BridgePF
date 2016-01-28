@@ -23,10 +23,11 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 @RunWith(MockitoJUnitRunner.class)
-public class StormPathUserAdminServiceMockTest {
+public class UserAdminServiceMockTest {
   
     @Mock
     private AuthenticationService authenticationService;
@@ -68,7 +69,7 @@ public class StormPathUserAdminServiceMockTest {
     
     @Test
     public void creatingUserConsentsToAllRequiredConsents() {
-        Study study = TestUtils.getValidStudy(StormPathUserAdminServiceMockTest.class);
+        Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         SignUp signUp = new SignUp("username", "email@email.com", "password", null, null);
         
         UserSession session = service.createUser(signUp, study, null, true, true);
@@ -80,13 +81,15 @@ public class StormPathUserAdminServiceMockTest {
     
     @Test
     public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
-        Study study = TestUtils.getValidStudy(StormPathUserAdminServiceMockTest.class);
+        Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         SignUp signUp = new SignUp("username", "email@email.com", "password", null, null);
+        SubpopulationGuid consentedGuid = Iterables.getFirst(user.getConsentStatuses().keySet(), null);
         
-        SubpopulationGuid consentedGuid = user.getConsentStatuses().keySet().iterator().next();
         UserSession session = service.createUser(signUp, study, consentedGuid, true, true);
         
+        // consented to the indicated subpopulation
         verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
+        // but not to the other two
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             if (guid != consentedGuid) {
                 verify(consentService, never()).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));    

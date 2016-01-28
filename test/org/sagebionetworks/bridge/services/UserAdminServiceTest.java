@@ -33,7 +33,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class StormPathUserAdminServiceTest {
+public class UserAdminServiceTest {
 
     // Decided not to use the helper class for this test because so many edge conditions are
     // being tested here.
