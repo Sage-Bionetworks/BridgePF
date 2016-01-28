@@ -1,13 +1,13 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.accounts.DataGroups;
-
-import com.google.common.base.Joiner;
 
 public class DataGroupsValidator implements Validator {
 
@@ -39,7 +39,7 @@ public class DataGroupsValidator implements Validator {
         if (studyDataGroups.isEmpty()) {
             message += "<none>";
         } else {
-            message += Joiner.on(", ").join(studyDataGroups) + ".";
+            message += COMMA_SPACE_JOINER.join(studyDataGroups) + ".";
         }
         return message;
     }

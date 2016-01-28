@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 
 import java.util.Map;
 
@@ -16,8 +17,6 @@ import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.google.common.base.Joiner;
 
 @Component
 public class ActivityEventService {
@@ -49,7 +48,7 @@ public class ActivityEventService {
             .withObjectType(ActivityEventObjectType.QUESTION)
             .withObjectId(answer.getQuestionGuid())
             .withEventType(ActivityEventType.ANSWERED)
-            .withAnswerValue(Joiner.on(",").join(answer.getAnswers())).build();
+            .withAnswerValue(COMMA_JOINER.join(answer.getAnswers())).build();
         activityEventDao.publishEvent(event);
     }
     

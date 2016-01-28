@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.util.Collections;
 import java.util.Set;
@@ -11,8 +12,6 @@ import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
 import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
-import com.google.common.base.Joiner;
 
 public class ActivityValidator implements Validator {
     
@@ -85,7 +84,7 @@ public class ActivityValidator implements Validator {
         if (taskIdentifiers.isEmpty()) {
             message += "<no task identifiers declared>";
         } else {
-            message += Joiner.on(", ").join(taskIdentifiers) + ".";
+            message += COMMA_SPACE_JOINER.join(taskIdentifiers) + ".";
         }
         return message;
     }

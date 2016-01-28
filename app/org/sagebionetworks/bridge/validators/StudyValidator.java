@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -13,12 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import com.google.common.base.Joiner;
-
 @Component
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
-    private static final Joiner COMMA_DELIMITED_LIST = Joiner.on(", ");
     private static final int MAX_SYNAPSE_LENGTH = 100;
     private static final String IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     
@@ -126,7 +125,7 @@ public class StudyValidator implements Validator {
                     errors.rejectValue("dataGroups", "contains invalid tag '"+group+"' (only letters, numbers, underscore and dash allowed)");
                 }
             }
-            String ser = COMMA_DELIMITED_LIST.join(dataGroups);
+            String ser = COMMA_SPACE_JOINER.join(dataGroups);
             if (ser.length() > MAX_SYNAPSE_LENGTH) {
                 errors.rejectValue("dataGroups", "will not export to Synapse (string is over "+MAX_SYNAPSE_LENGTH+" characters: '" + ser + "')");
             }
