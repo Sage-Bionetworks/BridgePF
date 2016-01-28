@@ -337,20 +337,6 @@ public class DynamoSurveyDao implements SurveyDao {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted().getOne(true);
     }
     
-    // This is a slower call. There's no getting around it. But not as slow as calling all of these separately
-    // from the Researcher UI.
-    // secondary index query (via getAllSurveysMostRecentlyPublishedVersion)
-    @Override
-    public List<Survey> getSurveysSummary(StudyIdentifier studyIdentifier) {
-        List<Survey> surveys = getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-        // get the questions for each survey from the whole survey, then copy over only the questions
-        for (int i=0; i < surveys.size(); i++) {
-            Survey updated = getSurvey(surveys.get(i));
-            surveys.get(i).setElements(ImmutableList.copyOf(updated.getUnmodifiableQuestionList()));
-        }
-        return surveys;
-    }
-    
     // secondary index query (not survey GUID) 
     @Override
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {

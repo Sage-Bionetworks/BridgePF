@@ -196,13 +196,19 @@ public class StudyService {
     }
     
     /**
-     * Has an aspect of the study changed that must be saved as well in the Stormpath directory?
+     * Has an aspect of the study changed that must be saved as well in the Stormpath directory? This 
+     * includes the email templates but also all the fields that can be substituted into the email templates
+     * such as names and emal addresses.
      * @param originalStudy
      * @param study
      * @return true if the password policy or email templates have changed
      */
     private boolean studyDirectoryHasChanged(Study originalStudy, Study study) {
-        return (!study.getPasswordPolicy().equals(originalStudy.getPasswordPolicy()) || 
+        return (!study.getName().equals(originalStudy.getName()) ||
+                !study.getSponsorName().equals(originalStudy.getSponsorName()) ||
+                !study.getSupportEmail().equals(originalStudy.getSupportEmail()) ||
+                !study.getTechnicalEmail().equals(originalStudy.getTechnicalEmail()) ||
+                !study.getPasswordPolicy().equals(originalStudy.getPasswordPolicy()) || 
                 !study.getVerifyEmailTemplate().equals(originalStudy.getVerifyEmailTemplate()) || 
                 !study.getResetPasswordTemplate().equals(originalStudy.getResetPasswordTemplate()));
     }

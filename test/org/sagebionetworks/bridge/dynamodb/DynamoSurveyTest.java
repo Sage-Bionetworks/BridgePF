@@ -8,7 +8,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
@@ -16,7 +15,6 @@ import nl.jqno.equalsverifier.Warning;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.DataType;
@@ -26,11 +24,6 @@ import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 @SuppressWarnings("unchecked")
 public class DynamoSurveyTest {
@@ -136,23 +129,6 @@ public class DynamoSurveyTest {
         for (int i = 0; i < 9; i++) {
             assertEqualsSurveyElement(survey.getElements().get(i), copy.getElements().get(i));
         }
-    }
-
-    @Test
-    public void canFilterSurveyForSummary() throws Exception {
-        List<Survey> surveys = Lists.newArrayList(makeTestSurvey());
-        
-        String json = Survey.SUMMARY_LIST_WRITER.writeValueAsString(surveys);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
-        
-        ObjectNode survey = (ObjectNode)node.get(0);
-        Set<String> surveyFieldNames = TestUtils.getFieldNamesSet(survey);
-        
-        ObjectNode question = (ObjectNode)survey.get("elements").get(0);
-        Set<String> questionFieldNames = TestUtils.getFieldNamesSet(question);
-        
-        assertEquals(Sets.newHashSet("identifier","elements","name","guid","type","createdOn"), surveyFieldNames);
-        assertEquals(Sets.newHashSet("guid","identifier","fireEvent","type"), questionFieldNames);
     }
     
     @Test

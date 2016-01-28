@@ -1,14 +1,14 @@
 package org.sagebionetworks.bridge.models;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 
-import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 
 /**
  * Utility classes for working with domain entities that should be matched by a growing list of 
@@ -17,6 +17,7 @@ import com.google.common.base.Joiner;
  * a parameter object of values against which matching occurs.
  */
 public class CriteriaUtils {
+    
     /**
      * A matching method that matches our common set of matching criteria for consents, schedulses, and more. 
      * We use the dataGroups and app version in the scheduling context and compare this to required and/or 
@@ -71,6 +72,21 @@ public class CriteriaUtils {
         }
         validateDataGroups(errors, dataGroups, criteria.getAllOfGroups(), "allOfGroups");
         validateDataGroups(errors, dataGroups, criteria.getNoneOfGroups(), "noneOfGroups");
+        validateDataGroupNotRequiredAndProhibited(criteria, errors);
+    }
+
+    /**
+     * Can't logically have a data group that is both required and prohibited, so check for this.
+     * @param criteria
+     * @param errors
+     */
+    private static void validateDataGroupNotRequiredAndProhibited(Criteria criteria, Errors errors) {
+        if (criteria.getAllOfGroups() != null && criteria.getNoneOfGroups() != null) {
+            Set<String> intersection = Sets.intersection(criteria.getAllOfGroups(), criteria.getNoneOfGroups());
+            if (!intersection.isEmpty()) {
+                errors.rejectValue("allOfGroups", "includes these prohibited data groups: " + COMMA_SPACE_JOINER.join(intersection));
+            }
+        }
     }
     
     private static void validateDataGroups(Errors errors, Set<String> dataGroups, Set<String> criteriaGroups, String propName) {
@@ -90,7 +106,7 @@ public class CriteriaUtils {
         if (dataGroups.isEmpty()) {
             message += "<no data groups declared>";
         } else {
-            message += Joiner.on(", ").join(dataGroups);
+            message += COMMA_SPACE_JOINER.join(dataGroups);
         }
         return message;
     }
