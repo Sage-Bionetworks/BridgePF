@@ -218,21 +218,5 @@ public class SurveyService {
 
         return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
     }
-
-    /**
-     * Get a list of all published surveys in this study, using the most
-     * recently published version of each survey. These surveys will include
-     * questions (not other element types, such as info screens). Most
-     * properties beyond identifiers will be removed from these surveys as they
-     * are returned in the API.
-     * 
-     * @param studyIdentifier
-     * @return
-     */
-    public List<Survey> getSurveysSummary(StudyIdentifier studyIdentifier) {
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
-        
-        return surveyDao.getSurveysSummary(studyIdentifier);
-    }
     
 }

@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -50,16 +49,10 @@ public class SurveyController extends BaseController {
         this.viewCache = viewCache;
     }
     
-    public Result getAllSurveysMostRecentVersion(String format) throws Exception {
+    public Result getAllSurveysMostRecentVersion() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        
-        if ("summary".equals(format)) {
-            List<Survey> surveys = surveyService.getSurveysSummary(studyId);
-            verifySurveyIsInStudy(session, studyId, surveys);
-            
-            return ok(Survey.SUMMARY_LIST_WRITER.writeValueAsString(new ResourceList<Survey>(surveys)));
-        }
+
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId);
         verifySurveyIsInStudy(session, studyId, surveys);
         return okResult(surveys);
