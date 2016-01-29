@@ -69,26 +69,23 @@ public class SurveyController extends BaseController {
 
     public Result getSurveyMostRecentlyPublishedVersionForUser(String surveyGuid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        StudyIdentifier studyId = session.getStudyIdentifier();
         
-        return getCachedSurveyMostRecentlyPublishedInternal(surveyGuid, session, studyId);
+        return getCachedSurveyMostRecentlyPublishedInternal(surveyGuid, session);
     }
     
     public Result getSurvey(String surveyGuid, String createdOnString) throws Exception {
         // To get a survey you must either be a developer, or a consented participant in the study.
         // This is an unusual combination so we use canAccessSurvey() to verify it.
         UserSession session = getAuthenticatedSession();
-        StudyIdentifier studyId = session.getStudyIdentifier();
         canAccessSurvey(session);
         
-        return getCachedSurveyInternal(surveyGuid, createdOnString, session, studyId);
+        return getCachedSurveyInternal(surveyGuid, createdOnString, session);
     }
     
     public Result getSurveyForUser(String surveyGuid, String createdOnString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        StudyIdentifier studyId = session.getStudyIdentifier();
         
-        return getCachedSurveyInternal(surveyGuid, createdOnString, session, studyId);
+        return getCachedSurveyInternal(surveyGuid, createdOnString, session);
     }
     
     public Result getSurveyMostRecentVersion(String surveyGuid) throws Exception {
@@ -105,11 +102,12 @@ public class SurveyController extends BaseController {
     }
     
     public Result getSurveyMostRecentlyPublishedVersion(String surveyGuid) throws Exception {
+        // To get a survey you must either be a developer, or a consented participant in the study.
+        // This is an unusual combination so we use canAccessSurvey() to verify it.
         UserSession session = getAuthenticatedSession();
-        StudyIdentifier studyId = session.getStudyIdentifier();
         canAccessSurvey(session);
         
-        return getCachedSurveyMostRecentlyPublishedInternal(surveyGuid, session, studyId);
+        return getCachedSurveyMostRecentlyPublishedInternal(surveyGuid, session);
     }
     
     /**
@@ -219,12 +217,12 @@ public class SurveyController extends BaseController {
         return survey;
     }
     
-    private Result getCachedSurveyInternal(String surveyGuid, String createdOnString, UserSession session,
-            StudyIdentifier studyId) {
+    private Result getCachedSurveyInternal(String surveyGuid, String createdOnString, UserSession session) {
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
 
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId.getIdentifier());
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString,
+                session.getStudyIdentifier().getIdentifier());
         
         String json = getView(cacheKey, session, () -> {
             return surveyService.getSurvey(keys);
@@ -233,12 +231,12 @@ public class SurveyController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    private Result getCachedSurveyMostRecentlyPublishedInternal(String surveyGuid, UserSession session,
-            StudyIdentifier studyId) {
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY, studyId.getIdentifier());
+    private Result getCachedSurveyMostRecentlyPublishedInternal(String surveyGuid, UserSession session) {
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY,
+                session.getStudyIdentifier().getIdentifier());
         
         String json = getView(cacheKey, session, () -> {
-            return surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid);
+            return surveyService.getSurveyMostRecentlyPublishedVersion(session.getStudyIdentifier(), surveyGuid);
         });
         
         return ok(json).as(JSON_MIME_TYPE);
