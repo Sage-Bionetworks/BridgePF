@@ -62,7 +62,7 @@ POST   /v3/users/self/dataGroups        @org.sagebionetworks.bridge.play.control
 # Surveys
 GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion
 POST   /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.createSurvey
-GET    /v3/surveys/recent                                    @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion2
+GET    /v3/surveys/recent                                    @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion
 GET    /v3/surveys/published                                 @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion
 GET    /v3/surveys/:surveyGuid/revisions                     @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyAllVersions(surveyGuid: String)
 GET    /v3/surveys/:surveyGuid/revisions/recent              @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentVersion(surveyGuid: String)
