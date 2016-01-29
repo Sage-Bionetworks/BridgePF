@@ -149,12 +149,11 @@ public class SurveyControllerTest {
         verifyNoMoreInteractions(service);
     }
     
-    @Test
-    public void getAllSurveysMostRecentVersion2() throws Exception {
+    public void getAllSurveysMostRecentVersion() throws Exception {
         setContext();
         when(service.getAllSurveysMostRecentVersion(any(StudyIdentifier.class))).thenReturn(getSurveys(3, false));
         
-        controller.getAllSurveysMostRecentVersion2();
+        controller.getAllSurveysMostRecentVersion();
         
         verify(service).getAllSurveysMostRecentVersion(any(StudyIdentifier.class));
         verifyNoMoreInteractions(service);
@@ -167,7 +166,7 @@ public class SurveyControllerTest {
         setUserSession("secondstudy");
 
         try {
-            controller.getAllSurveysMostRecentVersion2();
+            controller.getAllSurveysMostRecentVersion();
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
             verify(service).getAllSurveysMostRecentVersion(any(StudyIdentifier.class));
