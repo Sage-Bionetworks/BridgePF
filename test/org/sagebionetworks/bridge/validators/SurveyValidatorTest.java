@@ -13,7 +13,10 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
+import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
+import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -372,4 +375,119 @@ public class SurveyValidatorTest {
         Validate.entityThrowingException(validator, survey);
     }
     
+    @Test
+    public void willValidateStringMaxLengthNotLowerThanMinLength() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
+            StringConstraints constraints = (StringConstraints)question.getConstraints();
+            constraints.setMaxLength(2);
+            constraints.setMinLength(3);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("minLength is longer than the maxLength", errorFor(e, "elements[8].constraints.minLength"));
+        }
+    }
+    
+    @Test
+    public void willValidateMaxValueNotLowerThanMinValueForInteger() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+            IntegerConstraints constraints = (IntegerConstraints)question.getConstraints();
+            constraints.setMaxValue(2d);
+            constraints.setMinValue(3d);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("minValue is greater than the maxValue", errorFor(e, "elements[4].constraints.minValue"));
+        }
+    }
+    
+    @Test
+    public void willValidateMaxValueNotLowerThanMinValueForDecimal() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
+            DecimalConstraints constraints = (DecimalConstraints)question.getConstraints();
+            constraints.setMaxValue(2d);
+            constraints.setMinValue(3d);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("minValue is greater than the maxValue", errorFor(e, "elements[3].constraints.minValue"));
+        }
+    }
+    
+    @Test
+    public void willValidateMaxValueNotLowerThanMinValueForDuration() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
+            DurationConstraints constraints = (DurationConstraints)question.getConstraints();
+            constraints.setMaxValue(2d);
+            constraints.setMinValue(3d);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("minValue is greater than the maxValue", errorFor(e, "elements[5].constraints.minValue"));
+        }
+    }
+    
+    @Test
+    public void willValidateStepValueNotHigherThanRangeOfInteger() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+            IntegerConstraints constraints = (IntegerConstraints)question.getConstraints();
+            constraints.setMinValue(2d);
+            constraints.setMaxValue(4d);
+            constraints.setStep(3d);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("step is larger than the range of allowable values", errorFor(e, "elements[4].constraints.step"));
+        }
+    }
+    
+    @Test
+    public void willValidateStepValueNotHigherThanRangeOfDecimal() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
+            DecimalConstraints constraints = (DecimalConstraints)question.getConstraints();
+            constraints.setMinValue(2d);
+            constraints.setMaxValue(4d);
+            constraints.setStep(3d);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("step is larger than the range of allowable values", errorFor(e, "elements[3].constraints.step"));
+        }
+    }
+    
+    @Test
+    public void willValidateStepValueNotHigherThanRangeOfDuration() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
+            DurationConstraints constraints = (DurationConstraints)question.getConstraints();
+            constraints.setMinValue(2d);
+            constraints.setMaxValue(2d);
+            constraints.setStep(3d);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("step is larger than the range of allowable values", errorFor(e, "elements[5].constraints.step"));
+        }
+    }
+
 }
