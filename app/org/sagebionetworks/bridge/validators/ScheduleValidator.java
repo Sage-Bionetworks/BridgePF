@@ -42,13 +42,16 @@ public class ScheduleValidator implements Validator {
             errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, "is required");
         }
         if (oneTimeScheduleHasIntervalOrCronExpression(schedule)) {
-            errors.reject("that executes once should not have an interval and/or cron expression");
+            errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, "set to once, but also has an interval and/or cron expression");
         }
         if (recurringScheduleLacksRepeatingInfo(schedule)) {
-            errors.reject("that repeats should have either a cron expression, or an interval, but not both");
+            errors.rejectValue(Schedule.INTERVAL_PROPERTY, "or cron expression must be set when a schedule repeats");
+        }
+        if (recurringScheduleHasTooMuchRepeatingInfo(schedule)) {
+            errors.rejectValue(Schedule.INTERVAL_PROPERTY, "and cron expression cannot both be set when a schedule repeats (results are ambiguous)");
         }
         if (recurringScheduleLacksExpirationPeriod(schedule)) {
-            errors.reject("that repeats should have an expiration period");
+            errors.rejectValue(Schedule.EXPIRES_PROPERTY, "must be set if schedule repeats");
         }
         if (cronExpressionInvalid(schedule)) {
             errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
@@ -89,10 +92,22 @@ public class ScheduleValidator implements Validator {
      * @return
      */
     private boolean recurringScheduleLacksRepeatingInfo(Schedule schedule) {
-        boolean bothOrNeither = (schedule.getInterval() != null && isNotBlank(schedule.getCronTrigger()) || 
-                                (schedule.getInterval() == null && isBlank(schedule.getCronTrigger())) );
-        return (schedule.getScheduleType() == ScheduleType.RECURRING) && bothOrNeither;
-    }        
+        return schedule.getScheduleType() == ScheduleType.RECURRING && 
+               schedule.getInterval() == null &&
+               isBlank(schedule.getCronTrigger());
+    }
+    
+    /**
+     * A recurring schedule cannot have both an interval and a cron expression. Otherwise we don't
+     * know how to repeat it.
+     * @param schedule
+     * @return
+     */
+    private boolean recurringScheduleHasTooMuchRepeatingInfo(Schedule schedule) {
+        return schedule.getScheduleType() == ScheduleType.RECURRING && 
+                schedule.getInterval() != null &&
+                isNotBlank(schedule.getCronTrigger());
+    }
 
     /**
      * Schedules that repeat without expiring activities can stack those activities all the way back to the first event 
