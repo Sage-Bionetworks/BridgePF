@@ -126,8 +126,8 @@ public class ABTestScheduleStrategyTest {
         
         List<String> errorMessages = map.get("scheduleGroups");
         assertEquals("scheduleGroups groups must add up to 100%", errorMessages.get(0));
-        errorMessages = map.get("SchedulePlan");
-        assertEquals("SchedulePlan that repeats should have an expiration period", errorMessages.get(0));
+        errorMessages = map.get("scheduleGroups[0].schedule.expires");
+        assertEquals("scheduleGroups[0].schedule.expires must be set if schedule repeats", errorMessages.get(0));
     }
     
     private DynamoSchedulePlan createABSchedulePlan() {
