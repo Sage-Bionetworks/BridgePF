@@ -24,7 +24,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -38,7 +37,6 @@ import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
@@ -93,10 +91,9 @@ public class StudyConsentControllerTest {
         
         Result result = controller.getAllConsentsV2(GUID);
         
-        // Do not need to extensively verify, just verify contents are returned in ResourceList 
-        ResourceList<StudyConsent> outputList = BridgeObjectMapper.get().readValue(
-                Helpers.contentAsString(result), new TypeReference<ResourceList<StudyConsent>>() {});
-        assertEquals(2, outputList.getTotal());
+        // Do not need to extensively verify, just verify contents are returned in ResourceList
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(2, node.get("total").asInt());
     }
 
     @Test
