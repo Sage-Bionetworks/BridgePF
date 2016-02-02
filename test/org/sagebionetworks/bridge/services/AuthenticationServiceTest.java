@@ -86,7 +86,7 @@ public class AuthenticationServiceTest {
     }
 
     @Test(expected = BridgeServiceException.class)
-    public void signInNoUsername() throws Exception {
+    public void signInNoEmail() throws Exception {
         authService.signIn(testUser.getStudy(), ClientInfo.UNKNOWN_CLIENT, new SignIn(null, "bar"));
     }
 
@@ -103,7 +103,7 @@ public class AuthenticationServiceTest {
     @Test
     public void signInCorrectCredentials() throws Exception {
         UserSession newSession = authService.getSession(testUser.getSessionToken());
-        assertEquals("Username is for test2 user", newSession.getUser().getUsername(), testUser.getUsername());
+        assertEquals("Email is for test2 user", newSession.getUser().getEmail(), testUser.getEmail());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(testUser.getSessionToken()));
     }
 
@@ -111,7 +111,7 @@ public class AuthenticationServiceTest {
     public void signInWhenSignedIn() throws Exception {
         String sessionToken = testUser.getSessionToken();
         UserSession newSession = authService.signIn(testUser.getStudy(), ClientInfo.UNKNOWN_CLIENT, testUser.getSignIn());
-        assertEquals("Username is for test2 user", testUser.getUsername(), newSession.getUser().getUsername());
+        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
         assertEquals("Should update the existing session instead of creating a new one.",
                 sessionToken, newSession.getSessionToken());
     }
@@ -135,7 +135,7 @@ public class AuthenticationServiceTest {
     public void getSessionWhenAuthenticated() throws Exception {
         UserSession newSession = authService.getSession(testUser.getSessionToken());
 
-        assertEquals("Username is for test2 user", testUser.getUsername(), newSession.getUser().getUsername());
+        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
@@ -223,7 +223,7 @@ public class AuthenticationServiceTest {
         String email = "bridge-testing+"+name+"@sagebase.org";
         
         try {
-            SignUp signUp = new SignUp(name, email, "P@ssword1", null, list);
+            SignUp signUp = new SignUp(email, "P@ssword1", null, list);
 
             authService.signUp(study, signUp, true);
             Account account = accountDao.getAccount(study, email);

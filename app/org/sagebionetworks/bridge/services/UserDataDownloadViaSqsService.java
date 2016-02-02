@@ -52,14 +52,14 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
     public void requestUserData(@Nonnull StudyIdentifier studyIdentifier, @Nonnull User user,
             @Nonnull DateRange dateRange) throws JsonProcessingException {
         String studyId = studyIdentifier.getIdentifier();
-        String username = user.getUsername();
+        String email = user.getEmail();
         String startDateStr = dateRange.getStartDate().toString();
         String endDateStr = dateRange.getEndDate().toString();
 
         // construct message as string-string map
         Map<String, String> requestMap = new HashMap<>();
         requestMap.put(REQUEST_KEY_STUDY_ID, studyId);
-        requestMap.put(REQUEST_KEY_USERNAME, username);
+        requestMap.put(REQUEST_KEY_USERNAME, email);
         requestMap.put(REQUEST_KEY_START_DATE, startDateStr);
         requestMap.put(REQUEST_KEY_END_DATE, endDateStr);
 
@@ -70,7 +70,7 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
         // send to SQS
         String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_UDD_SQS_QUEUE_URL);
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJsonText);
-        logger.info("Sent request to SQS for hash[username]=" + username.hashCode() + ", study=" + studyId +
+        logger.info("Sent request to SQS for hash[username]=" + email.hashCode() + ", study=" + studyId +
                 ", startDate=" + startDateStr + ", endDate=" + endDateStr + "; received message ID=" +
                 sqsResult.getMessageId());
     }

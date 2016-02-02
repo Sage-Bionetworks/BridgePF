@@ -136,7 +136,7 @@ public class AuthenticationService {
         checkNotNull(signIn, "Sign in cannot be null");
         Validate.entityThrowingException(signInValidator, signIn);
 
-        final String signInLock = study.getIdentifier() + RedisKey.SEPARATOR + signIn.getUsername();
+        final String signInLock = study.getIdentifier() + RedisKey.SEPARATOR + signIn.getEmail();
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(SignIn.class, signInLock, LOCK_EXPIRE_IN_SECONDS);

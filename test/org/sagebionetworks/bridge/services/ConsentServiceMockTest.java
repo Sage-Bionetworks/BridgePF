@@ -275,7 +275,6 @@ public class ConsentServiceMockTest {
     }
 
     public static class SimpleAccount implements Account {
-        private String username;
         private String firstName;
         private String lastName;
         private String email;
@@ -284,14 +283,6 @@ public class ConsentServiceMockTest {
         private Map<SubpopulationGuid,List<ConsentSignature>> signatures = Maps.newHashMap();
         private Map<String,String> attributes = Maps.newHashMap();
         private Set<Roles> roles = Sets.newHashSet();
-        @Override
-        public String getUsername() {
-            return username;
-        }
-        @Override
-        public void setUsername(String username) {
-            this.username = username;
-        }
         @Override
         public String getFirstName() {
             return firstName;

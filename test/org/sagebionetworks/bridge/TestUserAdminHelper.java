@@ -40,7 +40,6 @@ public class TestUserAdminHelper {
     StudyService studyService;
 
     public class TestUser {
-        private final String username;
         private final String email;
         private final String password;
         private final Set<Roles> roles;
@@ -49,7 +48,6 @@ public class TestUserAdminHelper {
         private final UserSession session;
 
         public TestUser(SignUp signUp, Study study, UserSession session) {
-            this.username = signUp.getUsername();
             this.email = signUp.getEmail();
             this.password = signUp.getPassword();
             this.roles = Sets.newHashSet(signUp.getRoles());
@@ -59,13 +57,10 @@ public class TestUserAdminHelper {
             this.session = session;
         }
         public SignUp getSignUp() {
-            return new SignUp(username, email, password, roles, dataGroups);
+            return new SignUp(email, password, roles, dataGroups);
         }
         public SignIn getSignIn() {
-            return new SignIn(username, password);
-        }
-        public String getUsername() {
-            return username;
+            return new SignIn(email, password);
         }
         public String getEmail() {
             return email;
@@ -180,7 +175,7 @@ public class TestUserAdminHelper {
                 study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
             }
             String name = makeRandomUserName(cls);
-            SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name, name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
+            SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
             UserSession session = userAdminService.createUser(finalSignUp, study, subpopGuid, signIn, consent);
             
             return new TestUser(finalSignUp, study, session);

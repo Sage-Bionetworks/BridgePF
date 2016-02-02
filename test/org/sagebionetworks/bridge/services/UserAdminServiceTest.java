@@ -70,7 +70,7 @@ public class UserAdminServiceTest {
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
-        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword!", null, null);
+        signUp = new SignUp(name+"@sagebridge.org", "P4ssword!", null, null);
 
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn).getUser();
@@ -111,22 +111,12 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void cannotCreateUserWithSameUsernameOrEmail() {
+    public void cannotCreateUserWithSameEmail() {
         testUser = userAdminService.createUser(signUp, study, null, true, false).getUser();
-        
         try {
-            SignUp sameWithDifferentUsername = new SignUp(RandomStringUtils.randomAlphabetic(8), signUp.getEmail(), signUp.getPassword(), null, null);
-            userAdminService.createUser(sameWithDifferentUsername, study, null, false, false);
-            fail("Sign up with email already in use should throw an exception");
-        } catch(EntityAlreadyExistsException e) {
-            assertEquals("Account already exists.", e.getMessage());
-        }
-        try {
-            String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
-            String email = name+"@sagebridge.org";
-            SignUp sameWithDifferentEmail = new SignUp(signUp.getUsername(), email, signUp.getPassword(), null, null);
+            SignUp sameWithDifferentEmail = new SignUp(signUp.getEmail(), signUp.getPassword(), null, null);
             userAdminService.createUser(sameWithDifferentEmail, study, null, false, false);
-            fail("Sign up with username already in use should throw an exception");
+            fail("Sign up with email already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) { 
             assertEquals("Account already exists.", e.getMessage());
         }

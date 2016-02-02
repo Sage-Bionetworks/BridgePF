@@ -183,7 +183,7 @@ public class StormpathAccountDao implements AccountDao {
     public Account authenticate(Study study, SignIn signIn) {
         checkNotNull(study);
         checkNotNull(signIn);
-        checkArgument(isNotBlank(signIn.getUsername()));
+        checkArgument(isNotBlank(signIn.getEmail()));
         checkArgument(isNotBlank(signIn.getPassword()));
         
         try {
@@ -191,7 +191,7 @@ public class StormpathAccountDao implements AccountDao {
             List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
             
             AuthenticationRequest<?,?> request = UsernamePasswordRequest.builder()
-                    .setUsernameOrEmail(signIn.getUsername())
+                    .setUsernameOrEmail(signIn.getEmail())
                     .setPassword(signIn.getPassword())
                     .inAccountStore(directory).build();
             AuthenticationResult result = application.authenticateAccount(request);
@@ -230,7 +230,6 @@ public class StormpathAccountDao implements AccountDao {
         
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
         Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
-        account.setUsername(signUp.getUsername());
         account.setEmail(signUp.getEmail());
         account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
         account.setLastName(StormpathAccount.PLACEHOLDER_STRING);

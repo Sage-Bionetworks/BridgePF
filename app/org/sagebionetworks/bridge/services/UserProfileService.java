@@ -101,7 +101,6 @@ public class UserProfileService {
         UserProfile profile = new UserProfile();
         profile.setFirstName(account.getFirstName());
         profile.setLastName(account.getLastName());
-        profile.setUsername(account.getUsername());
         profile.setEmail(account.getEmail());
         for (String attribute : study.getUserProfileAttributes()) {
             profile.setAttribute(attribute, account.getAttribute(attribute));

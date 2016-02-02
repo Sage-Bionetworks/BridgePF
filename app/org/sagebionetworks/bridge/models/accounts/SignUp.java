@@ -12,25 +12,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class SignUp implements BridgeEntity {
 
-    private final String username;
     private final String email;
     private final String password;
     private final Set<Roles> roles;
     private final Set<String> dataGroups;
 
     @JsonCreator
-    public SignUp(@JsonProperty("username") String username, @JsonProperty("email") String email, 
-            @JsonProperty("password") String password, @JsonProperty("roles") Set<Roles> roles, 
-            @JsonProperty("dataGroups") Set<String> dataGroups) {
-        this.username = username;
+    public SignUp(@JsonProperty("email") String email, @JsonProperty("password") String password,
+            @JsonProperty("roles") Set<Roles> roles, @JsonProperty("dataGroups") Set<String> dataGroups) {
         this.email = email;
         this.password = password;
         this.roles = BridgeUtils.nullSafeImmutableSet(roles);
         this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
-    }
-
-    public String getUsername() {
-        return username;
     }
 
     public String getEmail() {
@@ -51,7 +44,7 @@ public final class SignUp implements BridgeEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(email, password, roles, username, dataGroups);
+        return Objects.hash(email, password, roles, dataGroups);
     }
 
     @Override
@@ -62,13 +55,12 @@ public final class SignUp implements BridgeEntity {
             return false;
         SignUp other = (SignUp) obj;
         return (Objects.equals(email, other.email) && Objects.equals(password, other.password) && 
-                Objects.equals(roles, other.roles) && Objects.equals(username,  other.username) && 
-                Objects.equals(dataGroups, other.dataGroups));
+                Objects.equals(roles, other.roles) && Objects.equals(dataGroups, other.dataGroups));
     }
 
     @Override
     public String toString() {
-        return "SignUp [username=" + username + ", email=" + email + ", password=" + password + ", roles=" + roles + ", dataGroups="+ dataGroups +"]";
+        return "SignUp [email=" + email + ", password=" + password + ", roles=" + roles + ", dataGroups="+ dataGroups +"]";
     }
 
 }

@@ -28,7 +28,6 @@ public class UserSessionTest {
         
         User user = new User();
         user.setId("id");
-        user.setUsername("username");
         user.setFirstName("firstName");
         user.setLastName("lastName");
         user.setEmail("email");

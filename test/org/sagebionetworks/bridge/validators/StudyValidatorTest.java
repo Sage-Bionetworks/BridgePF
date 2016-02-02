@@ -138,8 +138,8 @@ public class StudyValidatorTest {
     
     @Test
     public void cannotAddConflictingUserProfileAttribute() {
-        study.getUserProfileAttributes().add("username");
-        assertCorrectMessage(study, "userProfileAttributes", "userProfileAttributes 'username' conflicts with existing user profile property");
+        study.getUserProfileAttributes().add("email");
+        assertCorrectMessage(study, "userProfileAttributes", "userProfileAttributes 'email' conflicts with existing user profile property");
     }
     
     @Test

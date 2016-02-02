@@ -18,8 +18,8 @@ public class SignInValidator implements Validator {
     public void validate(Object object, Errors errors) {
         SignIn signIn = (SignIn)object;
         
-        if (StringUtils.isBlank(signIn.getUsername())) {
-            errors.rejectValue("username", "required");
+        if (StringUtils.isBlank(signIn.getEmail())) {
+            errors.rejectValue("email", "required");
         }
         if (StringUtils.isBlank(signIn.getPassword())) {
             errors.rejectValue("password", "required");

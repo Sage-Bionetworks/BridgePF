@@ -34,7 +34,6 @@ public class UserSessionInfoTest {
         user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         user.setStudyKey("study-identifier");
         user.getDataGroups().add("foo");
-        user.setUsername("username");
         
         UserSession session = new UserSession();
         session.setAuthenticated(true);
@@ -54,12 +53,11 @@ public class UserSessionInfoTest {
         assertEquals(user.doesConsent(), node.get("consented").asBoolean());
         assertEquals(user.getSharingScope().name(), node.get("sharingScope").asText().toUpperCase());
         assertEquals(session.getSessionToken(), node.get("sessionToken").asText());
-        assertEquals(user.getUsername(), node.get("username").asText());
+        assertEquals(user.getEmail(), node.get("username").asText());
         assertEquals("researcher", node.get("roles").get(0).asText());
         assertEquals("foo", node.get("dataGroups").get(0).asText());
         assertEquals("staging", node.get("environment").asText());
         assertEquals("UserSessionInfo", node.get("type").asText());
-
         JsonNode consentMap = node.get("consentStatuses");
         
         JsonNode consentStatus = consentMap.get("AAA");

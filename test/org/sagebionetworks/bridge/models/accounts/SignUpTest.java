@@ -28,12 +28,11 @@ public class SignUpTest {
     public void canSerialize() throws Exception {
         Set<Roles> roles = Sets.newHashSet(Roles.ADMIN);
         Set<String> dataGroups = Sets.newHashSet("group1", "group2");
-        SignUp signUp = new SignUp("username", "email@email.com", "password", roles, dataGroups);
+        SignUp signUp = new SignUp("email@email.com", "password", roles, dataGroups);
         
         String json = BridgeObjectMapper.get().writeValueAsString(signUp);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals("username", node.get("username").asText());
         assertEquals("email@email.com", node.get("email").asText());
         assertEquals("password", node.get("password").asText());
         assertEquals("SignUp", node.get("type").asText());
@@ -49,7 +48,7 @@ public class SignUpTest {
         assertTrue(groupNames.contains("group1"));
         assertTrue(groupNames.contains("group2"));
         
-        assertEquals(6, TestUtils.getFieldNamesSet(node).size());
+        assertEquals(5, TestUtils.getFieldNamesSet(node).size());
         
         SignUp newSignUp = BridgeObjectMapper.get().readValue(json, SignUp.class); 
         assertEquals(signUp, newSignUp);
@@ -57,7 +56,7 @@ public class SignUpTest {
     
     @Test
     public void nullParametersBreakNothing() {
-        SignUp signUp = new SignUp("username", "email@email.com", "password", null, null);
+        SignUp signUp = new SignUp("email@email.com", "password", null, null);
         
         assertEquals(0, signUp.getRoles().size());
         assertEquals(0, signUp.getDataGroups().size());

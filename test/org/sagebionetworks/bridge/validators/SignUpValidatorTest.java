@@ -41,19 +41,15 @@ public class SignUpValidatorTest {
     }
     
     private SignUp withPassword(String password) {
-        return new SignUp("username", "email@email.com", password, EMPTY_ROLES, null);
+        return new SignUp("email@email.com", password, EMPTY_ROLES, null);
     }
     
     private SignUp withEmail(String email) {
-        return new SignUp("username", email, "aAz1%_aAz1%", EMPTY_ROLES, null);
-    }
-    
-    private SignUp withUsername(String username) {
-        return new SignUp(username, "email@email.com", "aAz1%_aAz1%", EMPTY_ROLES, null);
+        return new SignUp(email, "aAz1%_aAz1%", EMPTY_ROLES, null);
     }
     
     private SignUp withDataGroup(String dataGroup) {
-        return new SignUp("username", "email@email.com", "aAz1%_aAz1%", EMPTY_ROLES, Sets.newHashSet(dataGroup));
+        return new SignUp("email@email.com", "aAz1%_aAz1%", EMPTY_ROLES, Sets.newHashSet(dataGroup));
     }
     
     @Test
@@ -65,11 +61,6 @@ public class SignUpValidatorTest {
     @Test
     public void emailRequired() {
         assertCorrectMessage(withEmail(null), "email", "email is required");
-    }
-    
-    @Test
-    public void usernameRequired() {
-        assertCorrectMessage(withUsername(""), "username", "username is required");
     }
     
     @Test

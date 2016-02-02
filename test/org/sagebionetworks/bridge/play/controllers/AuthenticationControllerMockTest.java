@@ -55,7 +55,7 @@ public class AuthenticationControllerMockTest {
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
     private static final String TEST_PASSWORD = "password";
     private static final String TEST_USER_STORMPATH_ID = "spId";
-    private static final String TEST_USERNAME = "username";
+    private static final String TEST_EMAIL = "email@email.com";
     private static final String TEST_REQUEST_ID = "request-id";
     private static final String TEST_SESSION_TOKEN = "session-token";
     private static final String TEST_STUDY_ID_STRING = "study-key";
@@ -87,7 +87,7 @@ public class AuthenticationControllerMockTest {
     
     @Test
     public void userCannotAssignRolesToSelfOnSignUp() throws Exception {
-        Context context = TestUtils.mockPlayContextWithJson("{\"study\":\"study-key\",\"username\":\"test\",\"email\":\"bridge-testing+test@sagebase.org\",\"password\":\"P@ssword1\",\"roles\":[\"admin\"]}");
+        Context context = TestUtils.mockPlayContextWithJson("{\"study\":\"study-key\",\"email\":\"bridge-testing+test@sagebase.org\",\"password\":\"P@ssword1\",\"roles\":[\"admin\"]}");
         Http.Context.current.set(context);
         
         Result result = controller.signUp();
@@ -230,7 +230,7 @@ public class AuthenticationControllerMockTest {
 
         // mock request
         String requestJsonString = "{\n" +
-                "   \"username\":\"" + TEST_USERNAME + "\",\n" +
+                "   \"email\":\"" + TEST_EMAIL + "\",\n" +
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
@@ -249,7 +249,7 @@ public class AuthenticationControllerMockTest {
 
         // validate signIn
         SignIn signIn = signInCaptor.getValue();
-        assertEquals(TEST_USERNAME, signIn.getUsername());
+        assertEquals(TEST_EMAIL, signIn.getEmail());
         assertEquals(TEST_PASSWORD, signIn.getPassword());
     }
 
@@ -288,7 +288,7 @@ public class AuthenticationControllerMockTest {
 
         // mock request
         String requestJsonString = "{\n" +
-                "   \"username\":\"" + TEST_USERNAME + "\",\n" +
+                "   \"email\":\"" + TEST_EMAIL + "\",\n" +
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
@@ -315,7 +315,7 @@ public class AuthenticationControllerMockTest {
 
         // validate signIn
         SignIn signIn = signInCaptor.getValue();
-        assertEquals(TEST_USERNAME, signIn.getUsername());
+        assertEquals(TEST_EMAIL, signIn.getEmail());
         assertEquals(TEST_PASSWORD, signIn.getPassword());
     }
 
@@ -351,7 +351,7 @@ public class AuthenticationControllerMockTest {
 
         // mock request
         String requestJsonString = "{\n" +
-                "   \"username\":\"" + TEST_USERNAME + "\",\n" +
+                "   \"email\":\"" + TEST_EMAIL + "\",\n" +
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
@@ -375,7 +375,7 @@ public class AuthenticationControllerMockTest {
 
         // validate signIn
         SignIn signIn = signInCaptor.getValue();
-        assertEquals(TEST_USERNAME, signIn.getUsername());
+        assertEquals(TEST_EMAIL, signIn.getEmail());
         assertEquals(TEST_PASSWORD, signIn.getPassword());
     }
 

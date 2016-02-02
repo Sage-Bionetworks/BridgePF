@@ -25,9 +25,6 @@ public interface Account extends BridgeEntity {
         return null;
     }
     
-    public String getUsername();
-    public void setUsername(String username);
-    
     public String getFirstName();
     public void setFirstName(String firstName);
     

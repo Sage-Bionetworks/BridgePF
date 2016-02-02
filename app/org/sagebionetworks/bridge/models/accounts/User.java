@@ -27,7 +27,6 @@ public final class User implements BridgeEntity {
             BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
 
     private String id;
-    private String username;
     private String firstName;
     private String lastName;
     private String email;
@@ -45,7 +44,6 @@ public final class User implements BridgeEntity {
     public User(Account account) {
         this();
         this.email = account.getEmail();
-        this.username = account.getUsername();
         this.firstName = account.getFirstName();
         this.lastName = account.getLastName();
         this.id = account.getId();
@@ -63,14 +61,6 @@ public final class User implements BridgeEntity {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getFirstName() {
@@ -181,8 +171,8 @@ public final class User implements BridgeEntity {
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(email, firstName, lastName, healthCode, id, roles, sharingScope, studyKey, username,
-                dataGroups, consentStatuses);
+        return Objects.hashCode(email, firstName, lastName, healthCode, id, roles, sharingScope, 
+                studyKey, dataGroups, consentStatuses);
     }
 
     @Override
@@ -196,13 +186,13 @@ public final class User implements BridgeEntity {
                 && Objects.equal(lastName, other.lastName) && Objects.equal(healthCode, other.healthCode)
                 && Objects.equal(id, other.id) && Objects.equal(roles, other.roles)
                 && Objects.equal(sharingScope, other.sharingScope) && Objects.equal(studyKey, other.studyKey)
-                && Objects.equal(username, other.username) && Objects.equal(dataGroups, other.dataGroups)
+                && Objects.equal(dataGroups, other.dataGroups)
                 && Objects.equal(consentStatuses, other.consentStatuses));
     }
 
     @Override
     public String toString() {
-        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, username=%s, dataGroups=%s, consentStatuses=%s]", 
-                email, firstName, lastName, id, roles, sharingScope, studyKey, username, dataGroups, consentStatuses);
+        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, dataGroups=%s, consentStatuses=%s]", 
+                email, firstName, lastName, id, roles, sharingScope, studyKey, dataGroups, consentStatuses);
     }
 }

@@ -37,9 +37,6 @@ public class SignUpValidator extends DataGroupsValidator {
         } else if (!emailValidator.isValid(signUp.getEmail())){
             errors.rejectValue("email", "must be a valid email address");
         }
-        if (StringUtils.isBlank(signUp.getUsername())) {
-            errors.rejectValue("username", "is required");
-        }
         if (StringUtils.isBlank(signUp.getPassword())) {
             errors.rejectValue("password", "is required");
             return;
