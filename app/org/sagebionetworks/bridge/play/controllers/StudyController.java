@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -149,12 +149,11 @@ public class StudyController extends BaseController {
     
     public Result getEmailStatus() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         EmailVerificationStatus status = cacheProvider.getEmailVerificationStatus(study.getSupportEmail());
         if (status == null) {
-            status = emailVerificationService.getEmailStatus(study.getSupportEmail(), true);
+            status = emailVerificationService.getEmailStatus(study.getSupportEmail());
             cacheProvider.setEmailVerificationStatus(study.getSupportEmail(), status);
         }
         return okResult(new EmailVerificationStatusHolder(status));
@@ -162,10 +161,17 @@ public class StudyController extends BaseController {
     
     public Result verifyEmail() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail(), true);
+
+        EmailVerificationStatus status = EmailVerificationStatus.UNVERIFIED;
         
+        String lock = cacheProvider.getString(study.getSupportEmail());
+        if (lock == null) {
+            status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
+            cacheProvider.setString(study.getSupportEmail(), "locked", BridgeConstants.BRIDGE_STUDY_EMAIL_STATUS_IN_SECONDS);
+        } else {
+            status = emailVerificationService.getEmailStatus(study.getSupportEmail());
+        }
         return okResult(new EmailVerificationStatusHolder(status));
     }
 

@@ -15,8 +15,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.cache.CacheProvider;
-
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.simpleemail.model.DeleteIdentityRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesRequest;
@@ -36,8 +34,6 @@ public class EmailVerificationServiceTest {
     private GetIdentityVerificationAttributesResult result;
     @Mock
     private IdentityVerificationAttributes attributes;
-    @Mock
-    private CacheProvider cacheProvider;
 
     private EmailVerificationService service;
     
@@ -47,7 +43,6 @@ public class EmailVerificationServiceTest {
     public void before() {
         service = new EmailVerificationService();
         service.setAmazonSimpleEmailServiceClient(sesClient);
-        service.setCacheProvider(cacheProvider);
     }
 
     private void mockSession(String status) {
@@ -111,24 +106,12 @@ public class EmailVerificationServiceTest {
     }
     
     @Test
-    public void getEmailStatusWithoutCaching() {
+    public void getEmailStatus() {
         mockSession("Success");
         
-        EmailVerificationStatus status = service.getEmailStatus(EMAIL_ADDRESS, false);
+        EmailVerificationStatus status = service.getEmailStatus(EMAIL_ADDRESS);
         
-        verify(cacheProvider, never()).getString(any());
         verify(sesClient).getIdentityVerificationAttributes(any());
-        assertEquals(EmailVerificationStatus.VERIFIED, status);
-    }
-    
-    @Test
-    public void getEmailStatusWithCaching() {
-        when(cacheProvider.getString(any())).thenReturn("Success");
-        
-        EmailVerificationStatus status = service.getEmailStatus(EMAIL_ADDRESS, true);
-        
-        verify(cacheProvider).getString(any());
-        verify(sesClient, never()).getIdentityVerificationAttributes(any());
         assertEquals(EmailVerificationStatus.VERIFIED, status);
     }
     
@@ -138,17 +121,6 @@ public class EmailVerificationServiceTest {
         service.sendVerifyEmailRequest(EMAIL_ADDRESS);
         
         verify(sesClient).verifyEmailIdentity(any());
-        verify(cacheProvider).setString(EMAIL_ADDRESS, "PENDING");
     }
-    
-    @Test
-    public void deleteEmailDeletesTheEmailAddress() {
-        ArgumentCaptor<DeleteIdentityRequest> deleteCaptor = ArgumentCaptor.forClass(DeleteIdentityRequest.class);
-        mockSession(null);
-        
-        service.deleteEmailAddress(EMAIL_ADDRESS);
-        
-        verify(sesClient).deleteIdentity(deleteCaptor.capture());
-        assertEquals(EMAIL_ADDRESS, deleteCaptor.getValue().getIdentity());
-    }
+
 }

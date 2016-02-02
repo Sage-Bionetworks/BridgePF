@@ -16,7 +16,6 @@ public class EmailVerificationStatusHolderTest {
         EmailVerificationStatusHolder holder = new EmailVerificationStatusHolder(EmailVerificationStatus.PENDING);
         
         String json = BridgeObjectMapper.get().writeValueAsString(holder);
-        System.out.println(json);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("EmailVerificationStatus", node.get("type").asText());

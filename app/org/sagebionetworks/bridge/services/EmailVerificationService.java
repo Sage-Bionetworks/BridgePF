@@ -9,10 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.cache.CacheProvider;
-
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
-import com.amazonaws.services.simpleemail.model.DeleteIdentityRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesResult;
 import com.amazonaws.services.simpleemail.model.IdentityVerificationAttributes;
@@ -29,7 +26,6 @@ public class EmailVerificationService {
     private static final Logger LOG = LoggerFactory.getLogger(EmailVerificationService.class);
     
     private AmazonSimpleEmailServiceClient sesClient;
-    private CacheProvider cacheProvider;
 
     @Resource(name="sesClient")
     final void setAmazonSimpleEmailServiceClient(AmazonSimpleEmailServiceClient sesClient) {
@@ -62,7 +58,7 @@ public class EmailVerificationService {
      * @param emailAddress
      * @return emailVerificationStatus
      */
-    public EmailVerificationStatus verifyEmailAddress(String emailAddress, boolean withCaching) {
+    public EmailVerificationStatus verifyEmailAddress(String emailAddress) {
         checkArgument(isNotBlank(emailAddress));
         
         EmailVerificationStatus status = getEmailStatus(emailAddress);
@@ -87,22 +83,6 @@ public class EmailVerificationService {
         LOG.info("sending email verification email for "+emailAddress);
         VerifyEmailIdentityRequest request = new VerifyEmailIdentityRequest().withEmailAddress(emailAddress);
         sesClient.verifyEmailIdentity(request);
-        cacheProvider.setString(emailAddress, EmailVerificationStatus.PENDING.name());
         return EmailVerificationStatus.PENDING;
-    }
-
-    /**
-     * Delete an email address that is on SES (whatever the status). Implemented and tested (and use for tests), but 
-     * it should not be part of the study editing workflow. If two studies shared the same support email address, 
-     * deleting it for one would break the other study. SES does not throw an exception if the email is not registered 
-     * at AWS.
-     * 
-     * @param emailAddress
-     */
-    public void deleteEmailAddress(String emailAddress) {
-        checkArgument(isNotBlank(emailAddress));
-        
-        DeleteIdentityRequest request = new DeleteIdentityRequest().withIdentity(emailAddress);
-        sesClient.deleteIdentity(request);
     }
 }
