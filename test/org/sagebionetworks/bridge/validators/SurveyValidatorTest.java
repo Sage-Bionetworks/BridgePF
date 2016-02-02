@@ -6,6 +6,8 @@ import static org.junit.Assert.fail;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -13,6 +15,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.surveys.DateConstraints;
+import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
@@ -489,5 +493,36 @@ public class SurveyValidatorTest {
             assertEquals("step is larger than the range of allowable values", errorFor(e, "elements[5].constraints.step"));
         }
     }
+    
+    @Test
+    public void willValidateEarliestLocalDateIsNotAfterLatestLocalDate() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getDateTimeQuestion();
+            DateTimeConstraints constraints = (DateTimeConstraints)question.getConstraints();
+            constraints.setEarliestValue(DateTime.parse("2010-10-10T10:10:00.000Z"));
+            constraints.setLatestValue(DateTime.parse("2010-10-10T10:09:00.000Z"));
 
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("earliestValue is after the latest value", errorFor(e, "elements[2].constraints.earliestValue"));
+        }
+    }
+
+    @Test
+    public void willValidateEarliestDateTimeIsNotAfterLatestDateTime() {
+        try {
+            survey = new TestSurvey(false);
+            SurveyQuestion question = ((TestSurvey) survey).getDateQuestion();
+            DateConstraints constraints = (DateConstraints)question.getConstraints();
+            constraints.setEarliestValue(LocalDate.parse("2010-10-11"));
+            constraints.setLatestValue(LocalDate.parse("2010-10-10"));
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("earliestValue is after the latest value", errorFor(e, "elements[1].constraints.earliestValue"));
+        }
+    }
 }

@@ -178,8 +178,6 @@ public class SurveyValidator implements Validator {
             doValidateConstraintsType(errors, hint, (DateTimeConstraints)con);
         } else if (con instanceof NumericalConstraints) {
             doValidateConstraintsType(errors, hint, (NumericalConstraints)con);
-        } else if (con instanceof StringConstraints) {
-            doValidateConstraintsType(errors, hint, (StringConstraints)con);
         }
     }
     
