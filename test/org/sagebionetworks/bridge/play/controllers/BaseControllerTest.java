@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
@@ -14,12 +16,18 @@ import org.junit.Test;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.controllers.BaseController;
+
+import com.google.common.collect.Sets;
 
 /** Test class for basic utility functions in BaseController. */
 @SuppressWarnings("unchecked")
@@ -194,6 +202,24 @@ public class BaseControllerTest {
         
         SchedulePlanController controller = new SchedulePlanController();
         controller.verifySupportedVersionOrThrowException(study);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void roleEnforcedWhenRetrievingSession() throws Exception {
+        Http.Context context = mockPlayContext();
+        Http.Context.current.set(context);
+        
+        SchedulePlanController controller = spy(new SchedulePlanController());
+        User user = new User();
+        user.setRoles(Sets.newHashSet(Roles.RESEARCHER));
+        
+        UserSession session = new UserSession();
+        session.setUser(user);
+        doReturn(session).when(controller).getAuthenticatedSession();
+        
+        // This method, upon confronting the fact that the user does not have this role, 
+        // throws an UnauthorizedException.
+        controller.getAuthenticatedSession(Roles.ADMIN);
     }
 
 }

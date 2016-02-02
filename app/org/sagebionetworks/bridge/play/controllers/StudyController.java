@@ -58,7 +58,7 @@ public class StudyController extends BaseController {
         return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
     }
 
-    public Result getStudyForDeveloper() throws Exception {
+    public Result getCurrentStudy() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
