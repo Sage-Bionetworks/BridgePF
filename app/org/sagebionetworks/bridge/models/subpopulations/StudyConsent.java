@@ -1,9 +1,14 @@
 package org.sagebionetworks.bridge.models.subpopulations;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 @BridgeTypeName("StudyConsent")
+@JsonDeserialize(as = DynamoStudyConsent1.class)
 public interface StudyConsent extends BridgeEntity {
 
     /**
