@@ -19,6 +19,8 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -27,6 +29,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 
 import redis.clients.jedis.JedisPool;
 
@@ -203,7 +206,7 @@ public class CacheProviderTest {
         assertTrue(json != null && json.length() > 0);
 
         final String cacheKey = study.getIdentifier() + ":Study";
-        simpleCacheProvider.setString(cacheKey, json);
+        simpleCacheProvider.setString(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
 
         String cachedString = simpleCacheProvider.getString(cacheKey);
         assertEquals(json, cachedString);
@@ -216,6 +219,18 @@ public class CacheProviderTest {
         simpleCacheProvider.removeString(cacheKey);
         cachedString = simpleCacheProvider.getString(cacheKey);
         assertNull(cachedString);
+    }
+    
+    @Test
+    public void setAndRemoveVerificationStatus() throws Exception {
+        final CacheProvider simpleCacheProvider = new CacheProvider();
+        simpleCacheProvider.setJedisOps(getJedisOps());
+        simpleCacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
+
+        simpleCacheProvider.setEmailVerificationStatus("foo@foo.com", EmailVerificationStatus.PENDING);
+        EmailVerificationStatus status = simpleCacheProvider.getEmailVerificationStatus("foo@foo.com");
+        
+        assertEquals(EmailVerificationStatus.PENDING, status);
     }
 
     private JedisOps getJedisOps() {

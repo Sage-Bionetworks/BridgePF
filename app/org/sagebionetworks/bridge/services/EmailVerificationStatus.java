@@ -6,9 +6,9 @@ public enum EmailVerificationStatus {
     VERIFIED;
     
     public static final EmailVerificationStatus fromSesVerificationStatus(String status) {
-        // From the docs: "Pending", "Success", "Failed", or "TemporaryFailure". We call 
-        // failures "unverified" and that makes it possible for the user to trigger the verification
-        // workflow again.
+        // From the SES docs, this string can be : "Pending", "Success", "Failed", or "TemporaryFailure". 
+        // We also call Pending == Verified and Sending == Pending. Everything else is unverified 
+        // and is eligible to trigger the verification workflow again.
         if (status != null) {
             String lower = status.toLowerCase();
             if ("success".equals(lower) || "verified".equals(lower)) {

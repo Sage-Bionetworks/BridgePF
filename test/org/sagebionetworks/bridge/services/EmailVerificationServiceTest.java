@@ -16,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
-import com.amazonaws.services.simpleemail.model.DeleteIdentityRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesResult;
 import com.amazonaws.services.simpleemail.model.IdentityVerificationAttributes;

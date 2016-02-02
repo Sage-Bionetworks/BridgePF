@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -163,14 +162,13 @@ public class StudyController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        EmailVerificationStatus status = EmailVerificationStatus.UNVERIFIED;
-        
-        String lock = cacheProvider.getString(study.getSupportEmail());
-        if (lock == null) {
+        // We're gating verification on the status caching. If the value cached is VERIFIED or PENDING, we 
+        // return that and do nothing. This prevents users from triggering this over and over. If it's UNVERIFIED
+        // or not ached, we trigger a verification, and then store the status (PENDING) for a short time.
+        EmailVerificationStatus status = cacheProvider.getEmailVerificationStatus(study.getSupportEmail());
+        if (status == null || status == EmailVerificationStatus.UNVERIFIED) {
             status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
-            cacheProvider.setString(study.getSupportEmail(), "locked", BridgeConstants.BRIDGE_STUDY_EMAIL_STATUS_IN_SECONDS);
-        } else {
-            status = emailVerificationService.getEmailStatus(study.getSupportEmail());
+            cacheProvider.setEmailVerificationStatus(study.getSupportEmail(), status);
         }
         return okResult(new EmailVerificationStatusHolder(status));
     }

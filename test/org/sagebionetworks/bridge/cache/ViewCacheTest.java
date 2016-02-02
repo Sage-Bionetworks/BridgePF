@@ -133,7 +133,7 @@ public class ViewCacheTest {
             public String getString(String cacheKey) {
                 return map.get(cacheKey);
             }
-            public void setString(String cacheKey, String value) {
+            public void setString(String cacheKey, String value, int secondsUntilExpire) {
                 map.put(cacheKey, value);
             }
             public void removeString(String cacheKey) {

@@ -177,11 +177,12 @@ public class StudyControllerTest {
 
     @Test
     public void verifyEmailIsCached() throws Exception {
-        when(mockCacheProvider.getString(EMAIL_ADDRESS)).thenReturn("locked");
+        when(mockCacheProvider.getEmailVerificationStatus(EMAIL_ADDRESS))
+            .thenReturn(EmailVerificationStatus.VERIFIED);
         
         Result result = controller.verifyEmail();
         
-        verify(mockCacheProvider).getString(EMAIL_ADDRESS);
+        verify(mockCacheProvider).getEmailVerificationStatus(EMAIL_ADDRESS);
         verify(mockVerificationService, never()).verifyEmailAddress(EMAIL_ADDRESS);
 
         EmailVerificationStatusHolder status = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),

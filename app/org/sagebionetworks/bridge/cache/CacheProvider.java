@@ -189,10 +189,6 @@ public class CacheProvider {
         }
     }
 
-    public void setString(String cacheKey, String value) {
-        setString(cacheKey, value, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
-    }
-    
     public void setString(String cacheKey, String value, int expireInSeconds) {
         try {
             String result = jedisOps.setex(cacheKey, expireInSeconds, value);
