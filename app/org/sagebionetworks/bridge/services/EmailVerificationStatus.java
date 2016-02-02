@@ -20,7 +20,6 @@ public enum EmailVerificationStatus {
             case "success":
             case "verified":
                 return VERIFIED;
-            case "sending":
             case "pending":
                 return PENDING;
             }
