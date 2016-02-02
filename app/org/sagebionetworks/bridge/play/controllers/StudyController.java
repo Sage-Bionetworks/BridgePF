@@ -59,7 +59,7 @@ public class StudyController extends BaseController {
     }
 
     public Result getCurrentStudy() throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         return ok(Study.STUDY_WRITER.writeValueAsString(study));

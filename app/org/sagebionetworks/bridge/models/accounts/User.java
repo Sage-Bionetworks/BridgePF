@@ -147,15 +147,8 @@ public final class User implements BridgeEntity {
         this.sharingScope = sharingScope;
     }
 
-    public boolean isInRole(Roles... roles) {
-        if (roles != null) {
-            for (Roles role : roles) {
-                if (this.roles.contains(role)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    public boolean isInRole(Roles role) {
+        return (role != null && this.roles.contains(role));
     }
     
     public boolean isInRole(Set<Roles> roleSet) {

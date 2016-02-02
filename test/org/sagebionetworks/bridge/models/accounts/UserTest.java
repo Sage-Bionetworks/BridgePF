@@ -62,15 +62,6 @@ public class UserTest {
     }
     
     @Test
-    public void userIsInOneOfSeveralRoles() {
-        User user = new User();
-        user.setRoles(Sets.newHashSet(Roles.ADMIN, Roles.DEVELOPER));
-        
-        assertTrue(user.isInRole(Roles.TEST_USERS, Roles.DEVELOPER, Roles.RESEARCHER));
-        assertFalse(user.isInRole(Roles.TEST_USERS, Roles.RESEARCHER));
-    }
-    
-    @Test
     public void immutableConsentStatuses() {
         User user = new User();
         assertTrue(user.getConsentStatuses() instanceof ImmutableMap);
