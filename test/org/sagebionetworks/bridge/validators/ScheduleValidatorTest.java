@@ -83,7 +83,8 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule that repeats should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
+            System.out.println(e.getErrors());
+            assertEquals("interval and cron expression cannot both be set when a schedule repeats (results are ambiguous)", e.getErrors().get("interval").get(0));
         }
     }
     
@@ -96,7 +97,7 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule that repeats should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
+            assertEquals("interval or cron expression must be set when a schedule repeats", e.getErrors().get("interval").get(0));
         }
         
         schedule.setInterval("P1D");
@@ -134,7 +135,7 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule is invalid: Schedule that repeats should have an expiration period", e.getMessage());
+            assertEquals("expires must be set if schedule repeats", e.getErrors().get("expires").get(0));
         }
         
         schedule.setExpires("P1D");
@@ -183,7 +184,7 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule that executes once should not have an interval and/or cron expression", e.getErrors().get("Schedule").get(0));
+            assertEquals("scheduleType set to once, but also has an interval and/or cron expression", e.getErrors().get("scheduleType").get(0));
         }
     }
     
@@ -197,7 +198,7 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule that executes once should not have an interval and/or cron expression", e.getErrors().get("Schedule").get(0));
+            assertEquals("scheduleType set to once, but also has an interval and/or cron expression", e.getErrors().get("scheduleType").get(0));
         }
     }
     

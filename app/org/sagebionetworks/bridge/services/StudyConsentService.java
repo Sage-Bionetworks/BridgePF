@@ -3,14 +3,21 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.jsoup.Jsoup;
@@ -52,6 +59,7 @@ public class StudyConsentService {
     
     private Validator validator;
     private StudyConsentDao studyConsentDao;
+    private AmazonS3Client s3Client;
     private S3Helper s3Helper;
     private static final String CONSENTS_BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
     private static final String PUBLICATIONS_BUCKET = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
@@ -69,6 +77,16 @@ public class StudyConsentService {
     final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
+
+    /**
+     * S3 client. We need to use the S3 client to call writeBytesToPublicS3(), which wasn't migrated to bridge-base
+     * because it references BridgePF-specific classes.
+     */
+    @Resource(name = "s3ConsentsClient")
+    final void setS3Client(AmazonS3Client s3Client) {
+        this.s3Client = s3Client;
+    }
+
     @Resource(name = "s3ConsentsHelper")
     final void setS3Helper(S3Helper helper) {
         this.s3Helper = helper;
@@ -238,7 +256,7 @@ public class StudyConsentService {
         
         String key = subpopGuid.getGuid()+"/consent.html";
         byte[] bytes = resolvedHTML.getBytes(Charset.forName(("UTF-8")));
-        s3Helper.writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, bytes, MimeType.HTML);
+        writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, bytes, MimeType.HTML);
         
         // Now create and post a PDF version !
         try (ByteArrayBuilder buffer = new ByteArrayBuilder();) {
@@ -249,8 +267,27 @@ public class StudyConsentService {
             buffer.flush();
             
             key = subpopGuid.getGuid()+"/consent.pdf";
-            s3Helper.writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, buffer.toByteArray(), MimeType.PDF);
+            writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, buffer.toByteArray(), MimeType.PDF);
         }
     }
 
+    /**
+     * Write the byte array to a bucket at S3. The bucket will be given world read privileges, and the request
+     * will be returned with the appropriate content type header for the document's MimeType.
+     * @param bucket
+     * @param key
+     * @param data
+     * @param type
+     * @throws IOException
+     */
+    private void writeBytesToPublicS3(@Nonnull String bucket, @Nonnull String key, @Nonnull byte[] data,
+            @Nonnull MimeType type) throws IOException {
+        try (InputStream dataInputStream = new ByteArrayInputStream(data)) {
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(type.toString());
+            PutObjectRequest request = new PutObjectRequest(bucket, key, dataInputStream, metadata)
+                    .withCannedAcl(CannedAccessControlList.PublicRead);
+            s3Client.putObject(request);
+        }
+    }
 }
