@@ -207,27 +207,5 @@ public class BaseControllerTest {
         SchedulePlanController controller = new SchedulePlanController();
         controller.verifySupportedVersionOrThrowException(study);
     }
-    
-    @Test
-    public void canGetSessionByOneOfSeveralAllowableRoles() throws Exception {
-        User user = new User();
-        // having multiple roles doesn't confuse the selection
-        user.setRoles(Sets.newHashSet(Roles.TEST_USERS, Roles.DEVELOPER));
-        UserSession session = new UserSession();
-        session.setUser(user);
-        session.setAuthenticated(true);
-        
-        StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "asdf");
-        StudyConsentService mockStudyConsentService = mock(StudyConsentService.class);
-        when(mockStudyConsentService.getActiveConsent(any())).thenReturn(view);
-        
-        StudyConsentController controller = spy(StudyConsentController.class);
-        controller.setSubpopulationService(mock(SubpopulationService.class));
-        controller.setStudyConsentService(mockStudyConsentService);
-        doReturn(session).when(controller).getAuthenticatedSession();
-        
-        // you can be a developer or a researcher and access this method
-        controller.getActiveConsentV2("test");
-    }
 
 }
