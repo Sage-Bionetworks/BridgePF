@@ -10,13 +10,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.services.EmailVerificationService;
+import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UserProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,15 +44,22 @@ public class StudyController extends BaseController {
     private UserProfileService userProfileService;
 
     private UploadCertificateService uploadCertificateService;
-
+    
+    private EmailVerificationService emailVerificationService;
+    
     @Autowired
-    public final void setUserProfileService(UserProfileService userProfileService) {
+    final void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
 
     @Autowired
-    public final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
+    final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
         this.uploadCertificateService = uploadCertificateService;
+    }
+    
+    @Autowired
+    final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Deprecated
@@ -135,4 +146,27 @@ public class StudyController extends BaseController {
 
         return okResult(new CmsPublicKey(pem));
     }
+    
+    public Result getEmailStatus() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        EmailVerificationStatus status = cacheProvider.getEmailVerificationStatus(study.getSupportEmail());
+        if (status == null) {
+            status = emailVerificationService.getEmailStatus(study.getSupportEmail(), true);
+            cacheProvider.setEmailVerificationStatus(study.getSupportEmail(), status);
+        }
+        return okResult(new EmailVerificationStatusHolder(status));
+    }
+    
+    public Result verifyEmail() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail(), true);
+        
+        return okResult(new EmailVerificationStatusHolder(status));
+    }
+
 }

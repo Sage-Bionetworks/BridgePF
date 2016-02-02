@@ -50,7 +50,7 @@ public abstract class BaseController extends Controller {
     private static ObjectMapper mapper = BridgeObjectMapper.get();
 
     private BridgeConfig bridgeConfig;
-    private CacheProvider cacheProvider;
+    protected CacheProvider cacheProvider;
 
     StudyService studyService;
     AuthenticationService authenticationService;

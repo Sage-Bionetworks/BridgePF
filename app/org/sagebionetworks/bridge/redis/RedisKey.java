@@ -46,6 +46,8 @@ public interface RedisKey {
     /** A cached JSON response. */
     RedisKey VIEW = new SimpleKey("view");
 
+    RedisKey STUDY_EMAIL_STATUS = new SimpleKey("study-email-status");
+    
     String SEPARATOR = ":";
 
     /**

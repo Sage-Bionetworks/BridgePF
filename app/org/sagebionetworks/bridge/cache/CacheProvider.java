@@ -14,6 +14,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.services.EmailVerificationStatus;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -198,11 +200,35 @@ public class CacheProvider {
             throw new BridgeServiceException(e);
         }
     }
-
+    
     public void removeString(String cacheKey) {
         try {
             jedisOps.del(cacheKey);
         } catch(Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+    
+    public EmailVerificationStatus getEmailVerificationStatus(String email) {
+        try {
+            String cacheKey = RedisKey.STUDY_EMAIL_STATUS.getRedisKey(email);
+            String statusString = jedisOps.get(cacheKey);
+            return (statusString == null) ? null : EmailVerificationStatus.fromSesVerificationStatus(statusString);
+        } catch (Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+    
+    public void setEmailVerificationStatus(String email, EmailVerificationStatus status) {
+        try {
+            String cacheKey = RedisKey.STUDY_EMAIL_STATUS.getRedisKey(email);
+            String result = jedisOps.setex(cacheKey, BridgeConstants.BRIDGE_STUDY_EMAIL_STATUS_IN_SECONDS, status.name());
+            if (!"OK".equals(result)) {
+                throw new BridgeServiceException("View storage error");
+            }
+        } catch (Throwable e) {
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
