@@ -68,7 +68,7 @@ public class StudyController extends BaseController {
         return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
     }
 
-    public Result getStudyForDeveloper() throws Exception {
+    public Result getCurrentStudy() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -150,11 +150,7 @@ public class StudyController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        EmailVerificationStatus status = cacheProvider.getEmailVerificationStatus(study.getSupportEmail());
-        if (status == null) {
-            status = emailVerificationService.getEmailStatus(study.getSupportEmail());
-            cacheProvider.setEmailVerificationStatus(study.getSupportEmail(), status);
-        }
+        EmailVerificationStatus status = emailVerificationService.getEmailStatus(study.getSupportEmail());
         return okResult(new EmailVerificationStatusHolder(status));
     }
     
@@ -162,14 +158,7 @@ public class StudyController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        // We're gating verification on the status caching. If the value cached is VERIFIED or PENDING, we 
-        // return that and do nothing. This prevents users from triggering this over and over. If it's UNVERIFIED
-        // or not ached, we trigger a verification, and then store the status (PENDING) for a short time.
-        EmailVerificationStatus status = cacheProvider.getEmailVerificationStatus(study.getSupportEmail());
-        if (status == null || status == EmailVerificationStatus.UNVERIFIED) {
-            status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
-            cacheProvider.setEmailVerificationStatus(study.getSupportEmail(), status);
-        }
+        EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
         return okResult(new EmailVerificationStatusHolder(status));
     }
 

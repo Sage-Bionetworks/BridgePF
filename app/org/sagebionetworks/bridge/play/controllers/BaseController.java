@@ -51,7 +51,7 @@ public abstract class BaseController extends Controller {
 
     private BridgeConfig bridgeConfig;
 
-    protected CacheProvider cacheProvider;
+    private CacheProvider cacheProvider;
 
     StudyService studyService;
     AuthenticationService authenticationService;

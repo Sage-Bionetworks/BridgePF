@@ -81,8 +81,8 @@ public class SimpleScheduleStrategyTest {
         strategy.validate(dataGroups, taskIdentifiers, errors);
         Map<String,List<String>> map = Validate.convertErrorsToSimpleMap(errors);
         
-        List<String> errorMessages = map.get("SchedulePlan");
-        assertEquals("SchedulePlan that repeats should have an expiration period", errorMessages.get(0));
+        List<String> errorMessages = map.get("schedule.expires");
+        assertEquals("schedule.expires must be set if schedule repeats", errorMessages.get(0));
     }
     
     @Test

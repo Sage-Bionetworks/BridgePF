@@ -1,19 +1,27 @@
 package org.sagebionetworks.bridge.services;
 
+/**
+ * <p>From the SES docs, the status of a verified email address can be the strings "Pending", "Success", 
+ * "Failed", or "TemporaryFailure". We map these to three values:</p>
+ * <ul>
+ *  <li>Unverified - Failed, TemporaryFailure</li>
+ *  <li>Pending - Pending</li>
+ *  <li>Verified - Success</li>
+ * </ul>
+ */
 public enum EmailVerificationStatus {
     UNVERIFIED,
     PENDING,
     VERIFIED;
     
     public static final EmailVerificationStatus fromSesVerificationStatus(String status) {
-        // From the SES docs, this string can be : "Pending", "Success", "Failed", or "TemporaryFailure". 
-        // We also call Pending == Verified and Sending == Pending. Everything else is unverified 
-        // and is eligible to trigger the verification workflow again.
         if (status != null) {
-            String lower = status.toLowerCase();
-            if ("success".equals(lower) || "verified".equals(lower)) {
+            switch(status.toLowerCase()) {
+            case "success":
+            case "verified":
                 return VERIFIED;
-            } else if ("sending".equals(lower) || "pending".equals(lower)) {
+            case "sending":
+            case "pending":
                 return PENDING;
             }
         }

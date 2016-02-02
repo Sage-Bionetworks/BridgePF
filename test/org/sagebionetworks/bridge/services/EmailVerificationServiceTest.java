@@ -115,6 +115,37 @@ public class EmailVerificationServiceTest {
     }
     
     @Test
+    public void getEmailStatusAttributesNull() {
+        getCaptor = ArgumentCaptor.forClass(GetIdentityVerificationAttributesRequest.class);
+        
+        Map<String,IdentityVerificationAttributes> map = Maps.newHashMap();
+        map.put(EMAIL_ADDRESS, attributes);
+        when(result.getVerificationAttributes()).thenReturn(null);
+        when(sesClient.getIdentityVerificationAttributes(any())).thenReturn(result);
+        
+        EmailVerificationStatus status = service.getEmailStatus(EMAIL_ADDRESS);
+        
+        verify(sesClient).getIdentityVerificationAttributes(any());
+        assertEquals(EmailVerificationStatus.UNVERIFIED, status);
+    }
+    
+    @Test
+    public void getEmailStatusVerificationStatusNull() {
+        getCaptor = ArgumentCaptor.forClass(GetIdentityVerificationAttributesRequest.class);
+        
+        Map<String,IdentityVerificationAttributes> map = Maps.newHashMap();
+        map.put(EMAIL_ADDRESS, attributes);
+        when(result.getVerificationAttributes()).thenReturn(map);
+        when(attributes.getVerificationStatus()).thenReturn(null);
+        when(sesClient.getIdentityVerificationAttributes(any())).thenReturn(result);
+        
+        EmailVerificationStatus status = service.getEmailStatus(EMAIL_ADDRESS);
+        
+        verify(sesClient).getIdentityVerificationAttributes(any());
+        assertEquals(EmailVerificationStatus.UNVERIFIED, status);
+    }
+    
+    @Test
     public void sendVerifyEmailRequest() {
         mockSession("Success");
         service.sendVerifyEmailRequest(EMAIL_ADDRESS);

@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -143,28 +142,17 @@ public class StudyControllerTest {
     }
     
     @Test
-    public void getEmailStatusNoCache() throws Exception {
-        controller.getEmailStatus();
+    public void getEmailStatus() throws Exception {
+        Result result = controller.getEmailStatus();
         
         verify(mockVerificationService).getEmailStatus(EMAIL_ADDRESS);
-    }
-    
-    @Test
-    public void getEmailStatusIsCached() throws Exception {
-        when(mockCacheProvider.getEmailVerificationStatus(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
-        
-        Result result = controller.getEmailStatus();
-
-        verify(mockCacheProvider).getEmailVerificationStatus(EMAIL_ADDRESS);
-        verify(mockVerificationService, never()).getEmailStatus(EMAIL_ADDRESS);
-        
         EmailVerificationStatusHolder status = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 EmailVerificationStatusHolder.class);
         assertEquals(EmailVerificationStatus.VERIFIED, status.getStatus());
     }
     
     @Test
-    public void verifyEmailNoCache() throws Exception {
+    public void verifyEmail() throws Exception {
         when(mockVerificationService.verifyEmailAddress(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
         
         Result result = controller.verifyEmail();
@@ -175,18 +163,4 @@ public class StudyControllerTest {
         assertEquals(EmailVerificationStatus.VERIFIED, status.getStatus());
     }
 
-    @Test
-    public void verifyEmailIsCached() throws Exception {
-        when(mockCacheProvider.getEmailVerificationStatus(EMAIL_ADDRESS))
-            .thenReturn(EmailVerificationStatus.VERIFIED);
-        
-        Result result = controller.verifyEmail();
-        
-        verify(mockCacheProvider).getEmailVerificationStatus(EMAIL_ADDRESS);
-        verify(mockVerificationService, never()).verifyEmailAddress(EMAIL_ADDRESS);
-
-        EmailVerificationStatusHolder status = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
-                EmailVerificationStatusHolder.class);
-        assertEquals(EmailVerificationStatus.VERIFIED, status.getStatus());
-    }
 }

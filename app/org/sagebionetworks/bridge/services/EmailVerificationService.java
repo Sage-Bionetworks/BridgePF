@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.Map;
+
 import javax.annotation.Resource;
 
 import org.slf4j.Logger;
@@ -40,7 +42,12 @@ public class EmailVerificationService {
 
         GetIdentityVerificationAttributesResult result = sesClient.getIdentityVerificationAttributes(request);
         
-        IdentityVerificationAttributes attributes = result.getVerificationAttributes().get(emailAddress);
+        // didn't happen in testing against SES, but just to be paranoid.
+        Map<String,IdentityVerificationAttributes> attributeMap = result.getVerificationAttributes();
+        if (attributeMap == null) {
+            return EmailVerificationStatus.UNVERIFIED;
+        }
+        IdentityVerificationAttributes attributes = attributeMap.get(emailAddress);
         if (attributes == null || attributes.getVerificationStatus() == null) {
             return EmailVerificationStatus.UNVERIFIED;
         }
