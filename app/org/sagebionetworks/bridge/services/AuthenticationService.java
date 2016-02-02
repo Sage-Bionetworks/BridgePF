@@ -176,17 +176,25 @@ public class AuthenticationService {
                 optionsService.setStringSet(study, healthCode, DATA_GROUPS, signUp.getDataGroups());
             }
             
-        } catch(EntityAlreadyExistsException e) {
-            // Suppress this. Otherwise it the response reveals that the email has already been taken, 
-            // and you can infer who is in the study from the response. Instead send a reset password 
-            // request to the email address in case user has forgotten password and is trying to sign 
-            // up again. Non-anonymous sign ups (sign ups done by admins on behalf of users) still get a 404
-            if (isAnonSignUp) {
+        } catch(EntityAlreadyExistsException exception) {
+            // Not a public sign up, no reason to hide outcome of account creation
+            if (!isAnonSignUp) {
+                throw exception;
+            }
+            // Either username or email has been taken. If both, or the email, we return 200 and email a reset password 
+            // request to the account holder. This prevents account enumeration compromises. However, if the email 
+            // address doesn't exist for this username, then this person is only re-using the username, and we have to 
+            // tell them. Otherwise, we return 200, account creation fails, and nothing else happens, which is deeply 
+            // confusing. 
+            logger.info("Sign up attempt for existing username/email address in study '"+study.getIdentifier()+"', trying to email user");
+            try {
                 Email email = new Email(study.getIdentifier(), signUp.getEmail());
-                requestResetPassword(study, email);
-                logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
-            } else {
-                throw e;
+                accountDao.requestResetPassword(study, email);
+                return;
+            } catch(EntityNotFoundException noEmailException) {
+                logger.info("Email not found, must notify user");
+                // But say the user name exists, not the account
+                throw new EntityAlreadyExistsException(exception.getEntity(), "Username already exists.");
             }
         } finally {
             lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);

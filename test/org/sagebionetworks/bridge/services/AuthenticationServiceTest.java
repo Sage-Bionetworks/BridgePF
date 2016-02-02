@@ -5,8 +5,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
@@ -31,6 +34,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -265,25 +269,48 @@ public class AuthenticationServiceTest {
             assertTrue(e.getMessage().contains("dataGroups 'bugleboy' is not one of these valid values"));
         }
     }
-    
+
     // Account enumeration security. Verify the service is quite (throws no exceptions) when we don't
     // recognize an account.
 
     @Test
     public void secondSignUpTriggersResetPasswordInstead() {
         // Verify that requestResetPassword is called in this case
-        authService = spy(authService);
-        
+        accountDao = spy(accountDao);
+        authService.setAccountDao(accountDao);
+
         TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
         try {
             authService.signUp(user.getStudy(), user.getSignUp(), true);
-            verify(authService).requestResetPassword(any(Study.class), any(Email.class));
+            verify(accountDao).requestResetPassword(any(Study.class), any(Email.class));
         } finally {
             helper.deleteUser(user);
         }
     }
     
+    @Test
+    public void secondSignUpWithUsernameButDifferentEmailThrowsException() {
+        EntityNotFoundException exc = mock(EntityNotFoundException.class);
+        when(exc.getMessage()).thenReturn("Account already exists.");
+        
+        // Verify that requestResetPassword is called in this case
+        accountDao = spy(accountDao);
+        authService.setAccountDao(accountDao);
+        doThrow(exc).when(accountDao).requestResetPassword(any(), any());
+
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(false).withSignIn(false).build();
+        try {
+            authService.signUp(user.getStudy(), user.getSignUp(), true);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+            assertEquals("Username already exists.", e.getMessage());
+        } finally {
+            helper.deleteUser(user);
+        }
+    }
+
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
         // In particular, it must not throw an EntityNotFoundException
