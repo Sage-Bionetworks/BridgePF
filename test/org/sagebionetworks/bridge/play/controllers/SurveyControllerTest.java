@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -93,7 +94,7 @@ public class SurveyControllerTest {
                 cacheMap.put(key, value);
                 return null;
             }
-        }).when(provider).setString(anyString(), anyString(), any());
+        }).when(provider).setString(anyString(), anyString(), anyInt());
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
