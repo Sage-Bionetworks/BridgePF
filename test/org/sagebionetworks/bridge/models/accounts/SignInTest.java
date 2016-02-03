@@ -27,4 +27,14 @@ public class SignInTest {
         assertEquals("aName", signIn.getEmail());
         assertEquals("password", signIn.getPassword());
     }
+    
+    @Test
+    public void preferUsernameOverEmailForBackwardsCompatability() throws Exception {
+        String json = "{\"username\":\"aName\",\"email\":\"email@email.com\",\"password\":\"password\"}";
+
+        SignIn signIn = BridgeObjectMapper.get().readValue(json, SignIn.class);
+
+        assertEquals("aName", signIn.getEmail());
+        assertEquals("password", signIn.getPassword());
+    }
 }
