@@ -82,7 +82,7 @@ public class BridgeSpringConfig {
 
     private static Logger logger = LoggerFactory.getLogger(BridgeSpringConfig.class);
     private static final List<String> REDIS_PROVIDERS = Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
-
+    
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
         return BridgeObjectMapper.get();

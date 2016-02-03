@@ -49,6 +49,7 @@ public class StudyService {
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
+    private EmailVerificationService emailVerificationService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -95,6 +96,10 @@ public class StudyService {
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
+    @Autowired
+    final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
+        this.emailVerificationService = emailVerificationService;
+    }
     
     public Study getStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
@@ -140,6 +145,8 @@ public class StudyService {
 
         study = studyDao.createStudy(study);
         
+        emailVerificationService.verifyEmailAddress(study.getSupportEmail());
+        
         cacheProvider.setStudy(study);
 
         return study;
@@ -171,6 +178,10 @@ public class StudyService {
             directoryDao.updateDirectoryForStudy(study);
         }
         Study updatedStudy = studyDao.updateStudy(study);
+        
+        if (!originalStudy.getSupportEmail().equals(study.getSupportEmail())) {
+            emailVerificationService.verifyEmailAddress(study.getSupportEmail());
+        }
         
         cacheProvider.setStudy(updatedStudy);
         

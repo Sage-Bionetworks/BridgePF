@@ -93,7 +93,7 @@ public class SurveyControllerTest {
                 cacheMap.put(key, value);
                 return null;
             }
-        }).when(provider).setString(anyString(), anyString());
+        }).when(provider).setString(anyString(), anyString(), any());
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {

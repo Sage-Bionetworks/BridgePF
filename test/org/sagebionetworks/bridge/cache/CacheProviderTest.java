@@ -19,6 +19,8 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -203,7 +205,7 @@ public class CacheProviderTest {
         assertTrue(json != null && json.length() > 0);
 
         final String cacheKey = study.getIdentifier() + ":Study";
-        simpleCacheProvider.setString(cacheKey, json);
+        simpleCacheProvider.setString(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
 
         String cachedString = simpleCacheProvider.getString(cacheKey);
         assertEquals(json, cachedString);
