@@ -29,7 +29,7 @@ public class SignInTest {
     }
     
     @Test
-    public void preferUsernameOverEmailForBackwardsCompatability() throws Exception {
+    public void preferUsernameOverEmailForBackwardsCompatibility() throws Exception {
         String json = "{\"username\":\"aName\",\"email\":\"email@email.com\",\"password\":\"password\"}";
 
         SignIn signIn = BridgeObjectMapper.get().readValue(json, SignIn.class);
