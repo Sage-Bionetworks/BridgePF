@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.List;
 
@@ -41,44 +41,44 @@ public class StudyConsentController extends BaseController {
     
     @Deprecated
     public Result getAllConsents() throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         return getAllConsentsV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     public Result getActiveConsent() throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         return getActiveConsentV2(session.getStudyIdentifier().getIdentifier());
     }
     
     @Deprecated
     public Result getMostRecentConsent() throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         return getMostRecentConsentV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     public Result getConsent(String createdOn) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         return getConsentV2(session.getStudyIdentifier().getIdentifier(), createdOn);
     }
     
     @Deprecated
     public Result addConsent() throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         return addConsentV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     public Result publishConsent(String createdOn) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         return publishConsentV2(session.getStudyIdentifier().getIdentifier(), createdOn);
     }
     
     // V2: consents associated to a subpopulation
     
     public Result getAllConsentsV2(String guid) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
@@ -90,7 +90,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result getActiveConsentV2(String guid) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
@@ -102,7 +102,7 @@ public class StudyConsentController extends BaseController {
     }
     
     public Result getMostRecentConsentV2(String guid) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
@@ -114,7 +114,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result getConsentV2(String guid, String createdOn) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
@@ -127,7 +127,7 @@ public class StudyConsentController extends BaseController {
     }
     
     public Result addConsentV2(String guid) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
@@ -140,7 +140,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result publishConsentV2(String guid, String createdOn) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         

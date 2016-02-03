@@ -10,9 +10,15 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
+
 import org.sagebionetworks.bridge.models.surveys.Constraints;
+import org.sagebionetworks.bridge.models.surveys.DateConstraints;
+import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
+import org.sagebionetworks.bridge.models.surveys.NumericalConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -28,6 +34,8 @@ import com.google.common.collect.Sets;
 
 @Component
 public class SurveyValidator implements Validator {
+
+    private static final Object[] EMPTY_OBJ_ARG = new Object[]{};
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -161,37 +169,89 @@ public class SurveyValidator implements Validator {
             rejectField(errors, "dataType", "data type '%s' doesn't match the UI hint of '%s'", con.getDataType().name()
                     .toLowerCase(), hint.name().toLowerCase());
         } else if (con instanceof MultiValueConstraints) {
-            // Multiple values have a few odd UI constraints
-            MultiValueConstraints mcon = (MultiValueConstraints)con;
-            String hintName = hint.name().toLowerCase();
-            
-            if ((mcon.getAllowMultiple() || !mcon.getAllowOther()) && MultiValueConstraints.OTHER_ALWAYS_ALLOWED.contains(hint)) {
-                rejectField(errors, "uiHint", "'%s' is only valid when multiple = false and other = true", hintName);
-            } else if (mcon.getAllowMultiple() && MultiValueConstraints.ONE_ONLY.contains(hint)) {
-                rejectField(errors, "uiHint",
-                        "allows multiples but the '%s' UI hint doesn't gather more than one answer", hintName);
-            } else if (!mcon.getAllowMultiple() && MultiValueConstraints.MANY_ONLY.contains(hint)) {
-                rejectField(errors, "uiHint",
-                        "doesn't allow multiples but the '%s' UI hint gathers more than one answer", hintName);
-            }
+            doValidateConstraintsType(errors, hint, (MultiValueConstraints)con);
         } else if (con instanceof StringConstraints) {
-            // Validate the regular expression, if it exists
-            StringConstraints scon = (StringConstraints)con;
-            if (StringUtils.isNotBlank(scon.getPattern())) {
-                try {
-                    Pattern.compile(scon.getPattern());
-                } catch (PatternSyntaxException exception) {
-                    rejectField(errors, "pattern", "pattern is not a valid regular expression: %s", scon.getPattern());
-                }
+            doValidateConstraintsType(errors, hint, (StringConstraints)con);
+        } else if (con instanceof DateConstraints) {
+            doValidateConstraintsType(errors, hint, (DateConstraints)con);
+        } else if (con instanceof DateTimeConstraints) {
+            doValidateConstraintsType(errors, hint, (DateTimeConstraints)con);
+        } else if (con instanceof NumericalConstraints) {
+            doValidateConstraintsType(errors, hint, (NumericalConstraints)con);
+        }
+    }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, MultiValueConstraints mcon) {
+        String hintName = hint.name().toLowerCase();
+        
+        if ((mcon.getAllowMultiple() || !mcon.getAllowOther()) && MultiValueConstraints.OTHER_ALWAYS_ALLOWED.contains(hint)) {
+            rejectField(errors, "uiHint", "'%s' is only valid when multiple = false and other = true", hintName);
+        } else if (mcon.getAllowMultiple() && MultiValueConstraints.ONE_ONLY.contains(hint)) {
+            rejectField(errors, "uiHint",
+                    "allows multiples but the '%s' UI hint doesn't gather more than one answer", hintName);
+        } else if (!mcon.getAllowMultiple() && MultiValueConstraints.MANY_ONLY.contains(hint)) {
+            rejectField(errors, "uiHint",
+                    "doesn't allow multiples but the '%s' UI hint gathers more than one answer", hintName);
+        }
+    }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, StringConstraints con) {
+        if (StringUtils.isNotBlank(con.getPattern())) {
+            try {
+                Pattern.compile(con.getPattern());
+            } catch (PatternSyntaxException exception) {
+                rejectField(errors, "pattern", "pattern is not a valid regular expression: %s", con.getPattern());
+            }
+        }
+        Integer min = con.getMinLength();
+        Integer max = con.getMaxLength();
+        if (min != null && max != null) {
+            if (min > max) {
+                rejectField(errors, "minLength", "is longer than the maxLength");
             }
         }
     }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, DateConstraints con) {
+        LocalDate earliestDate = con.getEarliestValue();
+        LocalDate latestDate = con.getLatestValue();
+        if (earliestDate != null && latestDate != null) {
+            if (latestDate.isBefore(earliestDate)) {
+                rejectField(errors, "earliestValue", "is after the latest value");
+            }
+        }
+    }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, DateTimeConstraints con) {
+        DateTime earliestDate = con.getEarliestValue();
+        DateTime latestDate = con.getLatestValue();
+        if (earliestDate != null && latestDate != null) {
+            if (latestDate.isBefore(earliestDate)) {
+                rejectField(errors, "earliestValue", "is after the latest value");
+            }
+        }
+    }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, NumericalConstraints con) {
+        Double min = con.getMinValue();
+        Double max = con.getMaxValue();
+        if (min != null && max != null) {
+            if (max < min) {
+                rejectField(errors, "minValue", "is greater than the maxValue");
+            }
+            double diff = max-min;
+            if (con.getStep() != null && con.getStep() > diff) {
+                rejectField(errors, "step", "is larger than the range of allowable values");
+            }
+        }
+    }
+    
     // This is more confusing than helpful.
     private void rejectField(Errors errors, String field, String message, Object... args) {
         if (args != null && args.length > 0) {
             errors.rejectValue(field, message, args, message);    
         } else {
-            errors.rejectValue(field, message);
+            errors.rejectValue(field, field + " " + message, EMPTY_OBJ_ARG, null);
         }
     }
 }

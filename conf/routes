@@ -112,7 +112,7 @@ DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.
 # Studies
 GET    /v3/studies                 @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null)
 POST   /v3/studies                 @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy 
-GET    /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
+GET    /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.getCurrentStudy
 GET    /v3/studies/self/publicKey  @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyPublicKeyAsPem
 POST   /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
 GET    /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)

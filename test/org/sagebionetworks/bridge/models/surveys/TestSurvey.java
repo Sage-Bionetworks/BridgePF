@@ -208,4 +208,46 @@ public class TestSurvey extends DynamoSurvey {
     public SurveyQuestion getStringQuestion() {
         return stringQuestion;
     }
+    
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getBooleanQuestion() {
+        return booleanQuestion;
+    }
+    
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getDateQuestion() {
+        return dateQuestion;
+    }
+    
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getDateTimeQuestion() {
+        return dateTimeQuestion;
+    }
+    
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getDecimalQuestion() {
+        return decimalQuestion;
+    }
+    
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getIntegerQuestion() {
+        return integerQuestion;
+    }
+    
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getDurationQuestion() {
+        return durationQuestion;
+    }
+
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getTimeQuestion() {
+        return timeQuestion;
+    }
 }
