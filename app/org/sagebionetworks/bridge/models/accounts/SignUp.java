@@ -60,7 +60,7 @@ public final class SignUp implements BridgeEntity {
 
     @Override
     public String toString() {
-        return "SignUp [email=" + email + ", password=" + password + ", roles=" + roles + ", dataGroups="+ dataGroups +"]";
+        return "SignUp [email=" + email + ", password=[redacted], roles=" + roles + ", dataGroups="+ dataGroups +"]";
     }
 
 }

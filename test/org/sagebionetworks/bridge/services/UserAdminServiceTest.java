@@ -114,8 +114,7 @@ public class UserAdminServiceTest {
     public void cannotCreateUserWithSameEmail() {
         testUser = userAdminService.createUser(signUp, study, null, true, false).getUser();
         try {
-            SignUp sameWithDifferentEmail = new SignUp(signUp.getEmail(), signUp.getPassword(), null, null);
-            userAdminService.createUser(sameWithDifferentEmail, study, null, false, false);
+            userAdminService.createUser(signUp, study, null, false, false);
             fail("Sign up with email already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) { 
             assertEquals("Account already exists.", e.getMessage());

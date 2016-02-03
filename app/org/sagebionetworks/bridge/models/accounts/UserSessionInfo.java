@@ -66,6 +66,10 @@ public class UserSessionInfo {
     public String getSessionToken() {
         return sessionToken;
     }
+    /**
+     * Provided for API compatibility, this is always the email address of the account. 
+     * @deprecated
+     */
     public String getUsername() {
         return email;
     }

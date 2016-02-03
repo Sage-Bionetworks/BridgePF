@@ -55,7 +55,10 @@ public class UserProfile {
         return profile;
     }
 
-    // For backwards compatibility with API prior to the switch to using email only.
+    /**
+     * Provided for API compatibility, this is always the email address of the account. 
+     * @deprecated
+     */
     public String getUsername() {
         return this.email;
     }
