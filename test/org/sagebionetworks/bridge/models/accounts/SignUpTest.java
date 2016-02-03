@@ -55,11 +55,21 @@ public class SignUpTest {
     }
     
     @Test
-    public void nullParametersBreakNothing() {
+    public void nullParametersBreakNothing() throws Exception {
         SignUp signUp = new SignUp("email@email.com", "password", null, null);
-        
+
         assertEquals(0, signUp.getRoles().size());
         assertEquals(0, signUp.getDataGroups().size());
+    }
+    
+    @Test
+    public void oldJsonParsesCorrectly() throws Exception {
+        // Old clients will continue to submit a username, this will be ignored.
+        String json = "{\"email\":\"email@email.com\",\"username\":\"username@email.com\",\"password\":\"password\",\"roles\":[],\"dataGroups\":[],\"type\":\"SignUp\"}";
+        
+        SignUp signUp = BridgeObjectMapper.get().readValue(json, SignUp.class);
+        assertEquals("email@email.com", signUp.getEmail());
+        assertEquals("password", signUp.getPassword());
     }
 
 }
