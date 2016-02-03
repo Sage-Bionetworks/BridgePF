@@ -10,7 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static org.sagebionetworks.bridge.TestConstants.USERNAME;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -100,7 +100,7 @@ public class ConsentControllerTest {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(STUDY_PROPERTY, testUser.getStudyIdentifier().getIdentifier());
-                node.put(USERNAME, testUser.getUsername());
+                node.put(EMAIL, testUser.getEmail());
                 node.put(PASSWORD, testUser.getPassword());
                 
                 WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);

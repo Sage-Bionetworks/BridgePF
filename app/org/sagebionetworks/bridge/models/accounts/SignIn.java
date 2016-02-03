@@ -1,22 +1,25 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import org.apache.commons.lang3.StringUtils;
+
+import org.sagebionetworks.bridge.json.SignInDeserializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+@JsonDeserialize(using = SignInDeserializer.class)
 public final class SignIn implements BridgeEntity {
 
-    private final String username;
+    private final String email;
     private final String password;
     
-    public SignIn(@JsonProperty("username") String username, @JsonProperty("password") String password) {
-        this.username = username;
+    public SignIn(String email, String password) {
+        this.email = email;
         this.password = password;
     }
-
-    public String getUsername() {
-        return username;
+    
+    public String getEmail() {
+        return email;
     }
 
     public String getPassword() {
@@ -24,6 +27,6 @@ public final class SignIn implements BridgeEntity {
     }
     
     public boolean isBlank() {
-        return StringUtils.isBlank(username) && StringUtils.isBlank(password);
+        return StringUtils.isBlank(email) && StringUtils.isBlank(password);
     }
 }

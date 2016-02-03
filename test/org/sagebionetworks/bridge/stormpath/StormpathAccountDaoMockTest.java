@@ -140,7 +140,7 @@ public class StormpathAccountDaoMockTest {
         
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
-        SignUp signUp = new SignUp(random, email, PASSWORD, null, null);
+        SignUp signUp = new SignUp(email, PASSWORD, null, null);
         Account account = dao.signUp(study, signUp, false);
         assertNotNull(account);
         
@@ -150,7 +150,7 @@ public class StormpathAccountDaoMockTest {
         com.stormpath.sdk.account.Account acct = argument.getValue();
         verify(acct).setSurname("<EMPTY>");
         verify(acct).setGivenName("<EMPTY>");
-        verify(acct).setUsername(random);
+        verify(acct).setUsername(email);
         verify(acct).setEmail(email);
         verify(acct).setPassword(PASSWORD);
     }

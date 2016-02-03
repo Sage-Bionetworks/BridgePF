@@ -55,7 +55,6 @@ public class UserProfileServiceTest {
         profile.setAttribute("firstName", "NotTest");
         profile.setAttribute("lastName", "NotPowers");
         profile.setAttribute("email", "NotEmail");
-        profile.setAttribute("username", "NotUsername");
 
         profileService.updateProfile(testUser.getStudy(), testUser.getUser(), profile);
         profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
@@ -63,7 +62,6 @@ public class UserProfileServiceTest {
         assertEquals("First name is persisted", "Test", profile.getFirstName());
         assertEquals("Last name is persisted", "Powers", profile.getLastName());
         assertEquals("Email is persisted", testUser.getEmail(), profile.getEmail());
-        assertEquals("Username is persisted", testUser.getUsername(), profile.getUsername());
         assertEquals("Phone is persisted", "123-456-7890", profile.getAttribute("phone"));
         assertEquals("Attribute is persisted", "true", profile.getAttribute("can_be_recontacted"));
         assertNull("Unknown attribute is null", profile.getAttribute("some_unknown_attribute"));

@@ -99,14 +99,6 @@ class StormpathAccount implements Account {
     }
     
     @Override
-    public String getUsername() {
-        return acct.getUsername();
-    }
-    @Override
-    public void setUsername(String username) {
-        acct.setUsername(username);
-    }
-    @Override
     public String getFirstName() {
         String firstName = acct.getGivenName();
         return (PLACEHOLDER_STRING.equals(firstName)) ? null : firstName;
@@ -147,6 +139,7 @@ class StormpathAccount implements Account {
     @Override
     public void setEmail(String email) {
         acct.setEmail(email);
+        acct.setUsername(email);
     }
     @Override
     public String getHealthId(){
@@ -282,8 +275,8 @@ class StormpathAccount implements Account {
     
     @Override
     public String toString() {
-        return String.format("StormpathAccount [username=%s, firstName=%s, lastName=%s, email=%s, roles=%s, signatures=%s]",
-                getUsername(), getFirstName(), getLastName(), getEmail(), getRoles(), getAllConsentSignatureHistories());
+        return String.format("StormpathAccount [firstName=%s, lastName=%s, email=%s, roles=%s, signatures=%s]",
+                getFirstName(), getLastName(), getEmail(), getRoles(), getAllConsentSignatureHistories());
     }
 
 }

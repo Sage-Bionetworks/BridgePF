@@ -92,11 +92,11 @@ public class StormpathAccountDaoTest {
         Account account = null;
         
         try {
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
             accountDao.signUp(study, signUp, false);
             
             account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
-            assertEquals(random, account.getUsername());
+            assertEquals(email, account.getEmail());
             assertEquals(1, account.getRoles().size());
         } finally {
             accountDao.deleteAccount(study, email);
@@ -108,7 +108,7 @@ public class StormpathAccountDaoTest {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
         try {
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
             accountDao.signUp(study, signUp, false);
             
             try {
@@ -138,7 +138,7 @@ public class StormpathAccountDaoTest {
             ConsentSignature sig = new ConsentSignature.Builder().withName("Test Test").withBirthdate("1970-01-01")
                     .withSignedOn(signedOn).build();
             
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
             account = accountDao.signUp(study, signUp, false);
             
             assertNull(account.getFirstName()); // defaults are not visible
@@ -146,7 +146,6 @@ public class StormpathAccountDaoTest {
             account.setEmail(email);
             account.setAttribute("phone", "123-456-7890");
             account.setHealthId("abc");
-            account.setUsername(random);
             account.getConsentSignatureHistory(subpop.getGuid()).add(sig);
             account.setAttribute("attribute_one", "value of attribute one");
             
@@ -160,7 +159,6 @@ public class StormpathAccountDaoTest {
             assertEquals(account.getEmail(), newAccount.getEmail());
             assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
             assertEquals(account.getHealthId(), newAccount.getHealthId());
-            assertEquals(account.getUsername(), newAccount.getUsername());
             assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
                     newAccount.getActiveConsentSignature(subpop.getGuid()));
             assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
@@ -198,7 +196,7 @@ public class StormpathAccountDaoTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         String random = RandomStringUtils.randomAlphabetic(5);
-        SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null); 
+        SignUp signUp = new SignUp("bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null); 
         try {
             accountDao.signUp(study, signUp, false); // don't send email
             
@@ -235,7 +233,7 @@ public class StormpathAccountDaoTest {
                 .build();
 
         String random = RandomStringUtils.randomAlphabetic(5);
-        SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null); 
+        SignUp signUp = new SignUp("bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null); 
         try {
             Account account = accountDao.signUp(study, signUp, false); // don't send email
             

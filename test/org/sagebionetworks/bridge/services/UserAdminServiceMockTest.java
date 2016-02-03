@@ -70,7 +70,7 @@ public class UserAdminServiceMockTest {
     @Test
     public void creatingUserConsentsToAllRequiredConsents() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
-        SignUp signUp = new SignUp("username", "email@email.com", "password", null, null);
+        SignUp signUp = new SignUp("email@email.com", "password", null, null);
         
         UserSession session = service.createUser(signUp, study, null, true, true);
         
@@ -82,7 +82,7 @@ public class UserAdminServiceMockTest {
     @Test
     public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
-        SignUp signUp = new SignUp("username", "email@email.com", "password", null, null);
+        SignUp signUp = new SignUp("email@email.com", "password", null, null);
         SubpopulationGuid consentedGuid = Iterables.getFirst(user.getConsentStatuses().keySet(), null);
         
         UserSession session = service.createUser(signUp, study, consentedGuid, true, true);

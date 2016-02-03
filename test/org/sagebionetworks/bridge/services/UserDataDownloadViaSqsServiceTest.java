@@ -46,7 +46,7 @@ public class UserDataDownloadViaSqsServiceTest {
 
         // test inputs
         User user = new User();
-        user.setUsername("test-username");
+        user.setEmail("test-username@email.com");
         DateRange dateRange = new DateRange(LocalDate.parse("2015-08-15"), LocalDate.parse("2015-08-19"));
 
         // execute
@@ -58,7 +58,7 @@ public class UserDataDownloadViaSqsServiceTest {
                 JsonUtils.TYPE_REF_RAW_MAP);
 
         assertEquals("api", sqsMessageMap.get(REQUEST_KEY_STUDY_ID));
-        assertEquals("test-username", sqsMessageMap.get(REQUEST_KEY_USERNAME));
+        assertEquals("test-username@email.com", sqsMessageMap.get(REQUEST_KEY_USERNAME));
         assertEquals("2015-08-15", sqsMessageMap.get(REQUEST_KEY_START_DATE));
         assertEquals("2015-08-19", sqsMessageMap.get(REQUEST_KEY_END_DATE));
     }

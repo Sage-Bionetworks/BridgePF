@@ -18,7 +18,6 @@ public class UserProfile {
     public static final String FIRST_NAME_FIELD = "firstName";
     public static final String LAST_NAME_FIELD = "lastName";
     public static final String EMAIL_FIELD = "email";
-    public static final String USERNAME_FIELD = "username";
     public static final String HEALTH_CODE_FIELD = "healthCode";
     public static final String SUBPOPULATION_NAMES_FIELD = "subpopulations";
     public static final String EXTERNAL_ID_FIELD = "externalId";
@@ -32,11 +31,10 @@ public class UserProfile {
     public static final String NOTIFY_BY_EMAIL_FIELD = "notifyByEmail";
     
     public static final Set<String> FIXED_PROPERTIES = Sets.newHashSet(FIRST_NAME_FIELD, LAST_NAME_FIELD,
-            EMAIL_FIELD, USERNAME_FIELD, SHARING_SCOPE_FIELD);
+            EMAIL_FIELD, SHARING_SCOPE_FIELD);
     
     private String firstName;
     private String lastName;
-    private String username;
     private String email;
     private Map<String,String> attributes;
 
@@ -56,28 +54,26 @@ public class UserProfile {
         }
         return profile;
     }
-    
+
+    /**
+     * Provided for API compatibility, this is always the email address of the account. 
+     * @deprecated
+     */
+    public String getUsername() {
+        return this.email;
+    }
     public String getFirstName() {
         return this.firstName;
     }
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
-
     public String getLastName() {
         return this.lastName;
     }
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
-
-    public String getUsername() {
-        return this.username;
-    }
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getEmail() {
         return this.email;
     }

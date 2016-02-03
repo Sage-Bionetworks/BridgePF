@@ -114,11 +114,7 @@ public class TestUtils {
     }
     
     public static String randomName(Class<?> clazz) {
-        return TestUtils.randomName(clazz.getSimpleName().toLowerCase() + "-");
-    }
-
-    public static String randomName(String midFix) {
-        return "test-" + midFix + RandomStringUtils.randomAlphabetic(5).toLowerCase();
+        return "test-" + clazz.getSimpleName().toLowerCase() + "-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
 
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {

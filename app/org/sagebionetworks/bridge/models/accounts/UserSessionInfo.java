@@ -28,8 +28,8 @@ public class UserSessionInfo {
     private final boolean authenticated;
     private final SharingScope sharingScope;
     private final String sessionToken;
-    private final String username;
     private final String environment;
+    private final String email;
     private final Set<Roles> roles;
     private final Set<String> dataGroups;
     private final Map<SubpopulationGuid,ConsentStatus> consentStatuses;
@@ -38,10 +38,10 @@ public class UserSessionInfo {
         this.authenticated = session.isAuthenticated();
         this.sessionToken = session.getSessionToken();
         this.sharingScope = session.getUser().getSharingScope();
-        this.username = session.getUser().getUsername();
         this.roles = BridgeUtils.nullSafeImmutableSet(session.getUser().getRoles());
         this.dataGroups = BridgeUtils.nullSafeImmutableSet(session.getUser().getDataGroups());
         this.environment = ENVIRONMENTS.get(session.getEnvironment());
+        this.email = session.getUser().getEmail();
         this.consentStatuses = session.getUser().getConsentStatuses();
     }
 
@@ -66,8 +66,12 @@ public class UserSessionInfo {
     public String getSessionToken() {
         return sessionToken;
     }
+    /**
+     * Provided for API compatibility, this is always the email address of the account. 
+     * @deprecated
+     */
     public String getUsername() {
-        return username;
+        return email;
     }
     public String getEnvironment() {
         return environment;

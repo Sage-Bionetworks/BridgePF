@@ -12,7 +12,7 @@ import static org.sagebionetworks.bridge.TestConstants.SIGN_OUT_URL;
 import static org.sagebionetworks.bridge.TestConstants.STUDIES_URL;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static org.sagebionetworks.bridge.TestConstants.USERNAME;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -79,7 +79,7 @@ public class AuthenticationControllerTest {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(STUDY_PROPERTY, testUser.getStudyIdentifier().getIdentifier());
-                node.put(USERNAME, testUser.getUsername());
+                node.put(EMAIL, testUser.getEmail());
                 node.put(PASSWORD, testUser.getPassword());
                 
                 WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
@@ -115,7 +115,7 @@ public class AuthenticationControllerTest {
                     
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
                     node.put(STUDY_PROPERTY, testUser.getStudy().getIdentifier());
-                    node.put(USERNAME, testUser.getUsername());
+                    node.put(EMAIL, testUser.getEmail());
                     node.put(PASSWORD, testUser.getPassword());
                     
                     WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
@@ -147,7 +147,7 @@ public class AuthenticationControllerTest {
                 try {
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
                     node.put(STUDY_PROPERTY, dev.getStudy().getIdentifier());
-                    node.put(USERNAME, dev.getUsername());
+                    node.put(EMAIL, dev.getEmail());
                     node.put(PASSWORD, dev.getPassword());
                     
                     WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
