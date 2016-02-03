@@ -110,14 +110,16 @@ POST   /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.
 DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
 # Studies
-GET    /v3/studies                 @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null)
-POST   /v3/studies                 @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy 
-GET    /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.getCurrentStudy
-GET    /v3/studies/self/publicKey  @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyPublicKeyAsPem
-POST   /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
-GET    /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
-POST   /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
-DELETE /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String)
+GET    /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null)
+POST   /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy 
+GET    /v3/studies/self             @org.sagebionetworks.bridge.play.controllers.StudyController.getCurrentStudy
+GET    /v3/studies/self/publicKey   @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyPublicKeyAsPem
+GET    /v3/studies/self/emailStatus @org.sagebionetworks.bridge.play.controllers.StudyController.getEmailStatus
+POST   /v3/studies/self/verifyEmail @org.sagebionetworks.bridge.play.controllers.StudyController.verifyEmail
+POST   /v3/studies/self             @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
+GET    /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
+POST   /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
+DELETE /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String)
 
 # Backfills
 GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.BackfillController.backfill(name: String)

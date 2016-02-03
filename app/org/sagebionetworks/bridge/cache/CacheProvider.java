@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.redis.RedisKey;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -187,9 +188,9 @@ public class CacheProvider {
         }
     }
 
-    public void setString(String cacheKey, String value) {
+    public void setString(String cacheKey, String value, int expireInSeconds) {
         try {
-            String result = jedisOps.setex(cacheKey, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, value);
+            String result = jedisOps.setex(cacheKey, expireInSeconds, value);
             if (!"OK".equals(result)) {
                 throw new BridgeServiceException("View storage error");
             }
@@ -198,7 +199,7 @@ public class CacheProvider {
             throw new BridgeServiceException(e);
         }
     }
-
+    
     public void removeString(String cacheKey) {
         try {
             jedisOps.del(cacheKey);
@@ -207,7 +208,7 @@ public class CacheProvider {
             throw new BridgeServiceException(e);
         }
     }
-
+    
     private void promptToStartRedisIfLocal(Throwable e) {
         if (BridgeConfigFactory.getConfig().isLocal()) {
             throw new BridgeServiceException(

@@ -34,9 +34,14 @@ public class BridgeConstants {
     // 24 hrs after last activity
     public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 24 * 60 * 60;
 
+    // 5 minutes
     public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5 * 60;
     
+    // 5 hrs
     public static final int BRIDGE_VIEW_EXPIRE_IN_SECONDS = 5 * 60 * 60;
+    
+    // 1 minute
+    public static final int BRIDGE_STUDY_EMAIL_STATUS_IN_SECONDS = 60;
 
     public static final String SCHEDULE_STRATEGY_PACKAGE = "org.sagebionetworks.bridge.models.schedules.";
 
