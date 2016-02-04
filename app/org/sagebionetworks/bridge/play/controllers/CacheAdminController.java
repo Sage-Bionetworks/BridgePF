@@ -31,7 +31,7 @@ public class CacheAdminController extends BaseController {
         getAuthenticatedSession(ADMIN);
         
         cacheAdminService.removeItem(cacheKey);
-        return ok("Item removed from cache.");
+        return okResult("Item removed from cache.");
     }
 
 }
