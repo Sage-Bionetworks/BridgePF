@@ -107,7 +107,7 @@ public class UserAdminService {
      *
      * @param signUp
      *            sign up information for the target user
-     * @param userStudy
+     * @param study
      *            the study of the target user
      * @param subpopGuid
      *            the subpopulation to consent to (if null, it will use the default/study subpopulation).
@@ -163,9 +163,25 @@ public class UserAdminService {
     }
 
     /**
+     * Invalidates user's session.
+     *
+     * @param study
+     *              study of target user
+     * @param email
+     *              target user
+     */
+    public void invalidateUserSession(Study study, String email) {
+        checkNotNull(study);
+        Preconditions.checkArgument(StringUtils.isNotBlank(email));
+        Account account = accountDao.getAccount(study, email);
+
+        cacheProvider.removeSessionByUserId(account.getId());
+    }
+
+    /**
      * Delete the target user.
      *
-     * @param user
+     * @param email
      *            target user
      * @throws BridgeServiceException
      */

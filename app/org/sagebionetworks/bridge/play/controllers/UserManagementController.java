@@ -41,6 +41,15 @@ public class UserManagementController extends BaseController {
         return createdResult("User created.");
     }
 
+    public Result invalidateUserSession(String email) throws Exception {
+        UserSession session = getAuthenticatedSession(ADMIN);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        userAdminService.invalidateUserSession(study, email);
+
+        return okResult("User session invalidated.");
+    }
+
     public Result deleteUser(String email) throws Exception {
         UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
