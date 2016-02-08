@@ -125,6 +125,7 @@ public class StudyService {
 
         study.setActive(true);
         study.setStrictUploadValidationEnabled(true);
+        study.setEmailVerificationEnabled(true);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
         Validate.entityThrowingException(validator, study);
@@ -165,6 +166,7 @@ public class StudyService {
         if (!isAdminUpdate) {
             study.setMaxNumOfParticipants(originalStudy.getMaxNumOfParticipants());
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
+            study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
         }
         Validate.entityThrowingException(validator, study);
 
