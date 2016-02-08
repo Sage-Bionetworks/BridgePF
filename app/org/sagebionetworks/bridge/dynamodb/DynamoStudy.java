@@ -48,6 +48,7 @@ public final class DynamoStudy implements Study {
     private EmailTemplate resetPasswordTemplate;
     private boolean strictUploadValidationEnabled;
     private boolean healthCodeExportEnabled;
+    private boolean emailVerificationEnabled;
     private Map<String, Integer> minSupportedAppVersions;
 
     public DynamoStudy() {
@@ -311,6 +312,18 @@ public final class DynamoStudy implements Study {
     
     /** {@inheritDoc} */
     @Override
+    public boolean isEmailVerificationEnabled() {
+        return emailVerificationEnabled;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setEmailVerificationEnabled(boolean enabled) {
+        this.emailVerificationEnabled = enabled;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
     public Map<String,Integer> getMinSupportedAppVersions() {
         return minSupportedAppVersions;
     }
@@ -326,7 +339,7 @@ public final class DynamoStudy implements Study {
                 supportEmail, technicalEmail, consentNotificationEmail, stormpathHref, version, 
                 profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate, 
                 resetPasswordTemplate, active, strictUploadValidationEnabled, healthCodeExportEnabled, 
-                minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId);
+                emailVerificationEnabled, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId);
     }
 
     @Override
@@ -355,6 +368,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(technicalEmail, other.technicalEmail)
                 && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
                 && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
+                && Objects.equals(emailVerificationEnabled, other.emailVerificationEnabled)
                 && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions);
     }
 
@@ -366,10 +380,10 @@ public final class DynamoStudy implements Study {
                             + "synapseProjectId=%s, technicalEmail=%s, consentNotificationEmail=%s, "
                             + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
                             + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, "
-                            + "healthCodeExportEnabled=%s, minSupportedAppVersions=%s]",
+                            + "healthCodeExportEnabled=%s, emailVerificationEnabled=%s, minSupportedAppVersions=%s]",
             name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
             supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
             profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate,
-            strictUploadValidationEnabled, healthCodeExportEnabled, minSupportedAppVersions);
+            strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled, minSupportedAppVersions);
     }
 }

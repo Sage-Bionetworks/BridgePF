@@ -218,6 +218,7 @@ public class TestUtils {
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users"));
         study.setStrictUploadValidationEnabled(true);
         study.setHealthCodeExportEnabled(true);
+        study.setEmailVerificationEnabled(true);
         return study;
     }
     

@@ -198,6 +198,14 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** @see #isHealthCodeExportEnabled(); */
     public void setHealthCodeExportEnabled(boolean enabled);
     
+    /** True if this study requires users to verify their email addresses in order to sign up. 
+     * True by default.
+     */
+    public boolean isEmailVerificationEnabled();
+    
+    /** @see #isEmailVerificationEnabled(); */
+    public void setEmailVerificationEnabled(boolean enabled);
+    
     /**
      * Minimum supported app version number. If set, user app clients pointing to an older version will 
      * fail with an httpResponse status code of 410.
