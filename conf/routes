@@ -138,7 +138,7 @@ POST   /fphs/externalIds  @org.sagebionetworks.bridge.play.controllers.FPHSContr
 # MPOWER (PARKINSON'S) ---------------------------------------------------------------------------------------
 
 # Visualization
-GET /mPower/visualization @org.sagebionetworks.bridge.play.controllers.MpowerVisualizationController.getVisualization(startDate: String ?= null, endDate: String ?= null)
+GET /parkinson/visualization @org.sagebionetworks.bridge.play.controllers.MpowerVisualizationController.getVisualization(startDate: String ?= null, endDate: String ?= null)
 
 # OLD API ----------------------------------------------------------------------------------------------------
 
