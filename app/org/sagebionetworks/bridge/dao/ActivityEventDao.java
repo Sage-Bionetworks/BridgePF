@@ -10,7 +10,6 @@ public interface ActivityEventDao {
     /**
      * Publish an event into this user's event stream. This event becomes available 
      * for scheduling activities for this user.
-     * @param event
      */
     public void publishEvent(ActivityEvent event);
     
@@ -20,8 +19,6 @@ public interface ActivityEventDao {
      * "two_weeks_before_enrollment".
      * 
      * @see org.sagebionetworks.bridge.models.activities.ActivityEventObjectType
-     * @param healthCode
-     * @return
      */
     public Map<String, DateTime> getActivityEventMap(String healthCode);
     
@@ -29,8 +26,6 @@ public interface ActivityEventDao {
      * Delete all activity events for this user. This should only be called when physically 
      * deleting test users; users in production take too many server resources to completely 
      * delete this way.
-     * 
-     * @param healthCode
      */
     public void deleteActivityEvents(String healthCode);
 }
