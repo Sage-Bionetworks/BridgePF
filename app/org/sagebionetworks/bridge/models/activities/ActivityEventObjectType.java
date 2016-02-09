@@ -33,7 +33,8 @@ public enum ActivityEventObjectType {
      * where the participant joins scheduling "mid-stream". For example, in FPHS, activities are 
      * all scheduled from Saturday to Saturday using a cron expression, and a user, when they join, 
      * get the tasks assigned the previous Saturday. This event can be used for periodic tasks 
-     * that happen weekly or biweekly.
+     * that happen weekly or biweekly. The eventId will be "two_weeks_before_enrollment".
+     * 
      * @see org.sagebionetworks.bridge.dao.ActivityEventDao#getActivityEventMap 
      */
     TWO_WEEKS_BEFORE_ENROLLMENT,
@@ -42,7 +43,8 @@ public enum ActivityEventObjectType {
      * where the participant joins scheduling "mid-stream". For example, in FPHS, activities are 
      * all scheduled from Saturday to Saturday using a cron expression, and a user, when they join, 
      * get the tasks assigned the previous Saturday. This event can be used for periodic tasks 
-     * that happen monthly or bimonthly.
+     * that happen monthly or bimonthly. The eventId will be "two_months_before_enrollment".
+     * 
      * @see org.sagebionetworks.bridge.dao.ActivityEventDao#getActivityEventMap 
      */
     TWO_MONTHS_BEFORE_ENROLLMENT;
