@@ -14,7 +14,7 @@ public enum ActivityEventObjectType {
     QUESTION,
     /**
      * Event for when a survey has been finished. This event is recorded when we have received an 
-     * answer (or a declined to answer) for every question in a survey through the survey response 
+     * answer (or a declined-to-answer) for every question in a survey through the survey response 
      * API. (NOTE: No application as of 2/9/2016 uses this API for historical reasons, so we can't 
      * schedule based on users finishing a survey). Event IDs take the format 
      * "survey:<guid>:finished".
