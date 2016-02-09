@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TWO_WEEKS_BEFORE_ENROLLMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TWO_MONTHS_BEFORE_ENROLLMENT;
 
 import java.util.List;
 import java.util.Map;
@@ -26,6 +29,8 @@ import com.google.common.collect.Lists;
 public class DynamoActivityEventDao implements ActivityEventDao {
 
     private static final String ANSWERED_EVENT_POSTFIX = ":"+ActivityEventType.ANSWERED.name().toLowerCase();
+    private static final String TWO_WEEKS = TWO_WEEKS_BEFORE_ENROLLMENT.name().toLowerCase();
+    private static final String TWO_MONTHS = TWO_MONTHS_BEFORE_ENROLLMENT.name().toLowerCase();
     
     private DynamoDBMapper mapper;
 
@@ -62,6 +67,10 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         Builder<String,DateTime> builder = ImmutableMap.<String,DateTime>builder();
         for (DynamoActivityEvent event : queryResults) {
             builder.put(getEventMapKey(event), new DateTime(event.getTimestamp()));
+            if (isEnrollment(event)) {
+                builder.put(TWO_WEEKS, new DateTime(event.getTimestamp()).minusWeeks(2));
+                builder.put(TWO_MONTHS, new DateTime(event.getTimestamp()).minusMonths(2));
+            }
         }
         return builder.build();
     }
@@ -84,6 +93,10 @@ public class DynamoActivityEventDao implements ActivityEventDao {
             List<FailedBatch> failures = mapper.batchDelete(objectsToDelete);
             BridgeUtils.ifFailuresThrowException(failures);
         }
+    }
+    
+    private boolean isEnrollment(ActivityEvent event) {
+        return ENROLLMENT.name().toLowerCase().equals(event.getEventId());
     }
     
     // Enrollment can only be recorded once, even if user withdraws and re-enrolls. Tasks are 

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
@@ -37,6 +38,7 @@ public class DynamoActivityEventDaoTest {
         DateTime time3 = time1.plusDays(2);
         DateTime time4 = time1.plusDays(3);
         DateTime time5 = time1.plusDays(4);
+        DateTime time6 = time1.plusDays(5);
         
         // This is an answer event. It's key should be "question:CCC:answered" with a value column
         // the activity event map should create a key with the value, such as "question:CCC:answered=value"
@@ -46,12 +48,17 @@ public class DynamoActivityEventDaoTest {
         activityEventDao.publishEvent(event);
         event = getQuestionAnsweredEvent(time3, "someValue");
         activityEventDao.publishEvent(event);
+        event = getScheduledActivityFinishedEvent(time6);
+        activityEventDao.publishEvent(event);
         
         Map<String,DateTime> map = activityEventDao.getActivityEventMap("BBB");
-        assertEquals(3, map.size());
+        assertEquals(6, map.size());
         assertEquals(time1, map.get("enrollment"));
+        assertEquals(time1.minusWeeks(2), map.get("two_weeks_before_enrollment"));
+        assertEquals(time1.minusMonths(2), map.get("two_months_before_enrollment"));
         assertEquals(time2, map.get("survey:AAA-BBB-CCC:finished"));
         assertEquals(time3, map.get("question:DDD-EEE-FFF:answered=someValue"));
+        assertEquals(time6, map.get("activity:AAA-BBB-CCC:finished"));
         
         // Update timestamp of answer event while keeping same answer
         event = getQuestionAnsweredEvent(time4, "someValue");
@@ -76,6 +83,12 @@ public class DynamoActivityEventDaoTest {
         
         map = activityEventDao.getActivityEventMap("BBB");
         assertEquals(0, map.size());
+    }
+    
+    @Test
+    public void ifNoEnrollmentNoCalculatedEvents() {
+        Map<String,DateTime> map = activityEventDao.getActivityEventMap("not-a-health-code");
+        assertTrue(map.isEmpty());
     }
     
     @Test
@@ -107,5 +120,10 @@ public class DynamoActivityEventDaoTest {
         return new DynamoActivityEvent.Builder().withHealthCode("BBB")
             .withObjectType(ActivityEventObjectType.QUESTION).withObjectId("DDD-EEE-FFF")
             .withEventType(ActivityEventType.ANSWERED).withAnswerValue(answer).withTimestamp(timestamp).build();
+    }
+    
+    private DynamoActivityEvent getScheduledActivityFinishedEvent(DateTime timestamp) {
+        return new DynamoActivityEvent.Builder().withHealthCode("BBB").withObjectType(ActivityEventObjectType.ACTIVITY)
+                .withObjectId("AAA-BBB-CCC").withEventType(ActivityEventType.FINISHED).withTimestamp(timestamp).build();
     }
 }
