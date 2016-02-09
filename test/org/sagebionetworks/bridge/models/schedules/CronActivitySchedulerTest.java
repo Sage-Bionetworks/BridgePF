@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -39,6 +41,8 @@ public class CronActivitySchedulerTest {
         events = Maps.newHashMap();
         // Enrolled on March 23, 2015 @ 10am GST
         events.put("enrollment", ENROLLMENT);
+        events.put("two_weeks_before_enrollment", ENROLLMENT.minusWeeks(2));
+        events.put("two_months_before_enrollment", ENROLLMENT.minusMonths(2));
     }
     
     @Test
@@ -113,6 +117,21 @@ public class CronActivitySchedulerTest {
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(2)));
         assertDates(scheduledActivities, "2015-03-23 13:00", "2015-03-23 20:00", "2015-03-24 10:00", "2015-03-24 13:00", "2015-03-24 20:00");
+    }
+    @Test
+    public void recurringCronScheduleAgainstCalculatedEventWorks() {
+        DateTimeUtils.setCurrentMillisFixed(ENROLLMENT.getMillis());
+        
+        Schedule schedule = createScheduleWith(RECURRING);
+        schedule.setCronTrigger("0 0 6 ? * SAT *"); // Saturdays at 6am
+        schedule.setExpires(Period.parse("P7D"));
+        schedule.setEventId("two_weeks_before_enrollment");
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(4)));
+        // Ultimate result: It's the 23rd, and right at enrollment, you see this task from the 21st.
+        assertDates(scheduledActivities, "2015-03-21 06:00");
+        assertEquals(ScheduledActivityStatus.AVAILABLE, scheduledActivities.get(0).getStatus());
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     private ScheduleContext getContext(DateTime endsOn) {
