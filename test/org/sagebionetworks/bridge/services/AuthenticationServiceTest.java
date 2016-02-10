@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -30,6 +31,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -44,6 +46,7 @@ import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Sets;
@@ -73,8 +76,14 @@ public class AuthenticationServiceTest {
     @Resource
     private TestUserAdminHelper helper;
 
-    private TestUser testUser;
+    @Resource
+    private UserConsentDao userConsentDao;
+    
+    @Resource
+    private SubpopulationService subpopService;
 
+    private TestUser testUser;
+    
     @Before
     public void before() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).build();
@@ -328,6 +337,32 @@ public class AuthenticationServiceTest {
             ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
             assertTrue(status.isConsented());
             assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
+        } finally {
+            helper.deleteUser(user);
+        }
+    }
+    
+    @Test
+    public void userWithSignatureAndNoDbRecordIsRepaired() {
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(true).withSignIn(true).build();
+        try {
+            authService.signOut(user.getSession());
+            
+            // now delete any and all consent records
+            List<Subpopulation> subpops = subpopService.getSubpopulations(user.getStudyIdentifier());
+            for (Subpopulation subpop : subpops) {
+                userConsentDao.deleteAllConsents(user.getUser().getHealthCode(), subpop.getGuid());
+            }
+            
+            // Signing in should still work to create a consented user.
+            Study study = studyService.getStudy(user.getStudyIdentifier());
+            UserSession session = authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
+            
+            // and this person should be recorded as consented...
+            for (ConsentStatus status : session.getUser().getConsentStatuses().values()) {
+                assertTrue(!status.isRequired() || status.isConsented());
+            }
         } finally {
             helper.deleteUser(user);
         }

@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
+import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -12,6 +13,8 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
+import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -31,6 +34,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.EmailValidator;
@@ -40,6 +44,7 @@ import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.SignUpValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +65,8 @@ public class AuthenticationService {
     private AccountDao accountDao;
     private HealthCodeService healthCodeService;
     private StudyEnrollmentService studyEnrollmentService;
+    private UserConsentDao userConsentDao;
+    private StudyConsentDao studyConsentDao;
     
     private EmailVerificationValidator verificationValidator;
     private SignInValidator signInValidator;
@@ -114,7 +121,15 @@ public class AuthenticationService {
     final void setEmailValidator(EmailValidator validator) {
         this.emailValidator = validator;
     }
-    
+    @Autowired
+    final void setUserConsentService(UserConsentDao userConsentDao) {
+        this.userConsentDao = userConsentDao;
+    }
+    @Autowired
+    final void setStudyConsentService(StudyConsentDao studyConsentDao) {
+        this.studyConsentDao = studyConsentDao;
+    }
+
     /**
      * This method returns the cached session for the user. A ScheduleContext object is not provided to the method, 
      * and the user's consent status is not re-calculated based on participation in one more more subpopulations. 
@@ -143,7 +158,9 @@ public class AuthenticationService {
             Account account = accountDao.authenticate(study, signIn);
             
             UserSession session = getSessionFromAccount(study, clientInfo, account);
+            repairConsents(study, account, session, clientInfo);
             cacheProvider.setUserSession(session);
+            
             return session;
         } finally {
             if (lockId != null) {
@@ -238,6 +255,40 @@ public class AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
     
+    private void repairConsents(Study study, Account account, UserSession session, ClientInfo clientInfo){
+        boolean repaired = false;
+        
+        Map<SubpopulationGuid,ConsentStatus> statuses = session.getUser().getConsentStatuses();
+        for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : statuses.entrySet()) {
+            ConsentSignature signature = account.getActiveConsentSignature(entry.getKey());
+            ConsentStatus status = entry.getValue();
+            
+            if (signature != null && !status.isConsented()) {
+                repairConsent(session, entry.getKey(), signature);
+                repaired = true;
+            }
+        }
+        
+        // These are incorrect since they are based on looking up DDB records, so re-create them.
+        if (repaired) {
+            updateConsentStatuses(study, session.getUser(), clientInfo);
+        }
+    }
+    
+    /**
+     * If the signature exists but consentStatus says the user is not consented, then the record is missing in
+     * DDB. We need to create it.
+     */
+    private void repairConsent(UserSession session, SubpopulationGuid subpopGuid, ConsentSignature signature) {
+        logger.error("Signature found without a matching user consent record. Adding consent for " + session.getUser().getId());
+        long signedOn = signature.getSignedOn();
+        if (signedOn == 0L) {
+            signedOn = DateTimeUtils.currentTimeMillis(); // this is so old we did not record a signing date...
+        }
+        long consentCreatedOn = studyConsentDao.getActiveConsent(subpopGuid).getCreatedOn(); 
+        userConsentDao.giveConsent(session.getUser().getHealthCode(), subpopGuid, consentCreatedOn, signedOn);
+    }
+    
     private UserSession getSessionFromAccount(Study study, ClientInfo clientInfo, Account account) {
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
@@ -253,10 +304,17 @@ public class AuthenticationService {
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
 
+        updateConsentStatuses(study, user, clientInfo);
+        session.setUser(user);
+        
+        return session;
+    }
+
+    private void updateConsentStatuses(Study study, User user, ClientInfo clientInfo) {
         // now that we know more about this user, we can expand on the request context.
         ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(clientInfo)
-                .withHealthCode(healthCode)
+                .withHealthCode(user.getHealthCode())
                 .withUserDataGroups(user.getDataGroups())
                 .withStudyIdentifier(study.getIdentifier()) // probably already set
                 .build();
@@ -264,9 +322,6 @@ public class AuthenticationService {
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         
         user.setConsentStatuses(statuses);
-        session.setUser(user);
-        
-        return session;
     }
 
     private UserSession getSession(final Account account) {
