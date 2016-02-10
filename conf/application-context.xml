@@ -86,6 +86,10 @@
         <property name="targetName" value="authenticationController"/>
     </bean>
 
+    <bean id="MpowerVisualizationControllerProxied" parent="proxiedController">
+        <property name="targetName" value="mpowerVisualizationController"/>
+    </bean>
+
     <bean id="UserDataDownloadControllerProxied" parent="proxiedController">
         <property name="targetName" value="userDataDownloadController"/>
     </bean>

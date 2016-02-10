@@ -135,6 +135,11 @@ GET    /fphs/externalId   @org.sagebionetworks.bridge.play.controllers.FPHSContr
 POST   /fphs/externalId   @org.sagebionetworks.bridge.play.controllers.FPHSController.registerExternalIdentifier
 POST   /fphs/externalIds  @org.sagebionetworks.bridge.play.controllers.FPHSController.addExternalIdentifiers
 
+# MPOWER (PARKINSON'S) ---------------------------------------------------------------------------------------
+
+# Visualization
+GET /parkinson/visualization @org.sagebionetworks.bridge.play.controllers.MpowerVisualizationController.getVisualization(startDate: String ?= null, endDate: String ?= null)
+
 # OLD API ----------------------------------------------------------------------------------------------------
 
 # API - Authentication
