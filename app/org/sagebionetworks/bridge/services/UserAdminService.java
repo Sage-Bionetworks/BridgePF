@@ -163,7 +163,7 @@ public class UserAdminService {
     }
 
     /**
-     * Invalidates user's session.
+     * Sign out a user's session.
      *
      * @param study
      *              study of target user
