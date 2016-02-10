@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
-import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -260,11 +259,11 @@ public class AuthenticationService {
         
         Map<SubpopulationGuid,ConsentStatus> statuses = session.getUser().getConsentStatuses();
         for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : statuses.entrySet()) {
-            ConsentSignature signature = account.getActiveConsentSignature(entry.getKey());
+            ConsentSignature activeSignature = account.getActiveConsentSignature(entry.getKey());
             ConsentStatus status = entry.getValue();
-            
-            if (signature != null && !status.isConsented()) {
-                repairConsent(session, entry.getKey(), signature);
+
+            if (activeSignature != null && !status.isConsented()) {
+                repairConsent(session, entry.getKey(), activeSignature);
                 repaired = true;
             }
         }
@@ -279,9 +278,9 @@ public class AuthenticationService {
      * If the signature exists but consentStatus says the user is not consented, then the record is missing in
      * DDB. We need to create it.
      */
-    private void repairConsent(UserSession session, SubpopulationGuid subpopGuid, ConsentSignature signature) {
+    private void repairConsent(UserSession session, SubpopulationGuid subpopGuid, ConsentSignature activeSignature) {
         logger.error("Signature found without a matching user consent record. Adding consent for " + session.getUser().getId());
-        long signedOn = signature.getSignedOn();
+        long signedOn = activeSignature.getSignedOn();
         if (signedOn == 0L) {
             signedOn = DateTimeUtils.currentTimeMillis(); // this is so old we did not record a signing date...
         }
