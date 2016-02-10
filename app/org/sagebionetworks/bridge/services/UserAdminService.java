@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
@@ -172,7 +173,7 @@ public class UserAdminService {
      */
     public void invalidateUserSession(Study study, String email) {
         checkNotNull(study);
-        Preconditions.checkArgument(StringUtils.isNotBlank(email));
+        checkArgument(StringUtils.isNotBlank(email));
         Account account = accountDao.getAccount(study, email);
 
         cacheProvider.removeSessionByUserId(account.getId());
@@ -187,7 +188,7 @@ public class UserAdminService {
      */
     public void deleteUser(Study study, String email) {
         checkNotNull(study);
-        Preconditions.checkArgument(StringUtils.isNotBlank(email));
+        checkArgument(StringUtils.isNotBlank(email));
         Account account = accountDao.getAccount(study, email);
         if (account != null) {
             deleteUser(account);
