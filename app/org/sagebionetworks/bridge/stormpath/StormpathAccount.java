@@ -268,7 +268,9 @@ class StormpathAccount implements Account {
             }
         }
         if (version == null) {
-            throw new BridgeServiceException("No version for encryptor found for field " + versionKey);
+            // Get the most recent key. We've only ever used v2 in production so in the rare case where we 
+            // don't have the version of the encryptor saved alongside the attribute, this should be correct.
+            version = encryptors.lastKey();
         }
         return version;
     }
