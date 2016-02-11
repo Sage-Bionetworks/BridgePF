@@ -9,8 +9,6 @@ import java.util.Set;
 import org.junit.Test;
 import org.springframework.validation.Errors;
 
-import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.Sets;
@@ -51,14 +49,14 @@ public class CriteriaUtilsTest {
     
     @Test
     public void matchesAgainstNothing() {
-        ScheduleContext context = getContext();
+        CriteriaContext context = getContext();
         
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, null, null)));
     }
     
     @Test
     public void matchesAppRange() {
-        ScheduleContext context = getContext();
+        CriteriaContext context = getContext();
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, null, 4)));
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, 1, null)));
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, 1, 4)));
@@ -66,7 +64,7 @@ public class CriteriaUtilsTest {
     
     @Test
     public void filtersAppRange() {
-        ScheduleContext context = getContext();
+        CriteriaContext context = getContext();
         assertFalse(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, null, 2)));
         assertFalse(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, 5, null)));
         assertFalse(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, 6, 11)));
@@ -74,7 +72,7 @@ public class CriteriaUtilsTest {
     
     @Test
     public void allOfGroupsMatch() {
-        ScheduleContext context = getContext(); // has group1, and group2
+        CriteriaContext context = getContext(); // has group1, and group2
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(Sets.newHashSet("group1"), EMPTY_SET, null, null)));
         // Two groups are required, that still matches
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(Sets.newHashSet("group1", "group2"), EMPTY_SET, null, null)));
@@ -84,21 +82,20 @@ public class CriteriaUtilsTest {
     
     @Test
     public void noneOfGroupsMatch() {
-        ScheduleContext context = getContext(); // has group1, and group2
+        CriteriaContext context = getContext(); // has group1, and group2
         // Here, any group at all prevents a match.
         assertFalse(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, Sets.newHashSet("group3", "group1"), null, null)));
     }
 
     @Test
     public void noneOfGroupsDefinedButDontPreventMatch() {
-        ScheduleContext context = getContext(); // does not have group3, so it is matched
+        CriteriaContext context = getContext(); // does not have group3, so it is matched
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, Sets.newHashSet("group3"), null, null)));
     }
     
     @Test
     public void matchingWithMinimalContextDoesNotCrash() {
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("api")
+        CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT).build();
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, null, null)));
         assertFalse(CriteriaUtils.matchCriteria(context, new SimpleCriteria(Sets.newHashSet("group1"), EMPTY_SET, null, null)));
@@ -160,10 +157,9 @@ public class CriteriaUtilsTest {
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group3"));
     }
     
-    private ScheduleContext getContext() {
-        return new ScheduleContext.Builder()
+    private CriteriaContext getContext() {
+        return new CriteriaContext.Builder()
             .withClientInfo(ClientInfo.fromUserAgentCache("app/4"))
-            .withStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)
             .withUserDataGroups(Sets.newHashSet("group1", "group2")).build();
     }
 

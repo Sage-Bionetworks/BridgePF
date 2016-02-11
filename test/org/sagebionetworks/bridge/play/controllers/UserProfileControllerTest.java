@@ -93,7 +93,7 @@ public class UserProfileControllerTest {
         Set<String> dataGroups = (Set<String>)captor.getValue();
         assertEquals(dataGroupSet, dataGroups);
         
-        assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
+        assertEquals(dataGroupSet, contextCaptor.getValue().getCriteriaContext().getUserDataGroups());
         
         assertEquals(dataGroupSet, session.getUser().getDataGroups());
         

@@ -120,7 +120,7 @@ public class TestUtils {
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
-            if (context.getClientInfo().isTargetedAppVersion(plan.getMinAppVersion(), plan.getMaxAppVersion())) {
+            if (context.getCriteriaContext().getClientInfo().isTargetedAppVersion(plan.getMinAppVersion(), plan.getMaxAppVersion())) {
                 Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
                 // It's become possible for a user to match no schedule
                 if (schedule != null) {

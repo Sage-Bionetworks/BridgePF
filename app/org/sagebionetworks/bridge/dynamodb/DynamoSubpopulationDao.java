@@ -136,7 +136,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true, false);
         
         return subpops.stream().filter(subpop -> {
-            return CriteriaUtils.matchCriteria(context, subpop);
+            return CriteriaUtils.matchCriteria(context.getCriteriaContext(), subpop);
         }).collect(toImmutableList());
     }
     

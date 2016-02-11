@@ -50,7 +50,7 @@ public class ScheduleContextTest {
     public void defaultsTimeZoneAndClientInfo() {
         ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
         
-        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
+        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getCriteriaContext().getClientInfo());
         assertNotNull(context.getNow());
     }
     
@@ -67,10 +67,10 @@ public class ScheduleContextTest {
         assertEquals(user.getStudyKey(), context.getStudyIdentifier().getIdentifier());
         assertEquals(user.getId(), context.getUserId());
         assertEquals(user.getHealthCode(), context.getHealthCode());
-        assertEquals(user.getDataGroups(), context.getUserDataGroups());
+        assertEquals(user.getDataGroups(), context.getCriteriaContext().getUserDataGroups());
         
         // There are defaults
-        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
+        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getCriteriaContext().getClientInfo());
         assertNotNull(context.getNow());
         
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app/5");
@@ -96,12 +96,12 @@ public class ScheduleContextTest {
                 .withNow(now).build();
         assertEquals(studyId, context.getStudyIdentifier());
         assertEquals("userId", context.getUserId());
-        assertEquals(clientInfo, context.getClientInfo());
+        assertEquals(clientInfo, context.getCriteriaContext().getClientInfo());
         assertEquals(PST, context.getZone());
         assertEquals(endsOn, context.getEndsOn());
         assertEquals(events.get("enrollment"), context.getEvent("enrollment"));
         assertEquals("healthCode", context.getHealthCode());
-        assertEquals(dataGroups, context.getUserDataGroups());
+        assertEquals(dataGroups, context.getCriteriaContext().getUserDataGroups());
         assertEquals(now, context.getNow());
 
         // and the other studyId setter

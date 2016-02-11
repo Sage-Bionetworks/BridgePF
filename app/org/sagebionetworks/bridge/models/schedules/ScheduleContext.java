@@ -9,12 +9,12 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 /**
  * All the information necessary to convert a schedule into a set of activities, on a given request. 
@@ -27,25 +27,23 @@ public final class ScheduleContext {
     
     private final StudyIdentifier studyId;
     private final String userId; // for debugging purposes only.
-    private final ClientInfo clientInfo;
     private final DateTimeZone zone;
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
     private final String healthCode;
     private final DateTime now;
-    private final Set<String> userDataGroups;
+    private final CriteriaContext criteriaContext;
     
-    private ScheduleContext(StudyIdentifier studyId, String userId, ClientInfo clientInfo, DateTimeZone zone, DateTime endsOn, String healthCode,
-                    Map<String, DateTime> events, DateTime now, Set<String> userDataGroups) {
+    private ScheduleContext(StudyIdentifier studyId, String userId, DateTimeZone zone, DateTime endsOn, String healthCode,
+                    Map<String, DateTime> events, DateTime now, CriteriaContext criteriaContext) {
         this.studyId = studyId;
         this.userId = userId;
-        this.clientInfo = clientInfo;
         this.zone = zone;
         this.endsOn = endsOn;
         this.healthCode = healthCode;
         this.events = events;
         this.now = now;
-        this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
+        this.criteriaContext = criteriaContext;
     }
     
     /**
@@ -62,14 +60,6 @@ public final class ScheduleContext {
      */
     public String getUserId() {
         return userId;
-    }
-    
-    /**
-     * Client information based on the supplied User-Agent header.
-     * @return
-     */
-    public ClientInfo getClientInfo() {
-        return clientInfo;
     }
     
     /**
@@ -125,13 +115,13 @@ public final class ScheduleContext {
         return now;
     }
     
-    public Set<String> getUserDataGroups() {
-        return userDataGroups;
+    public CriteriaContext getCriteriaContext() {
+        return criteriaContext;
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, userId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
+        return Objects.hash(studyId, userId, zone, endsOn, healthCode, events, now, criteriaContext);
     }
 
     @Override
@@ -143,35 +133,33 @@ public final class ScheduleContext {
         ScheduleContext other = (ScheduleContext) obj;
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
                 Objects.equals(userId, other.userId) &&
-                Objects.equals(clientInfo, other.clientInfo) && 
                 Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
                 Objects.equals(studyId, other.studyId) && Objects.equals(now, other.now) && 
-                Objects.equals(userDataGroups, other.userDataGroups));
+                Objects.equals(criteriaContext, other.criteriaContext));
     }
 
     @Override
     public String toString() {
-        return "ScheduleContext [studyId=" + studyId + ", userId=" + userId + ", clientInfo=" + clientInfo + ", zone="
-                + zone + ", endsOn=" + endsOn + ", events=" + events + ", userDataGroups=" + userDataGroups + "]";
+        return "ScheduleContext [studyId=" + studyId + ", userId=" + userId + ", zone=" + zone + ", endsOn=" + endsOn
+                + ", events=" + events + ", criteriaContext=" + criteriaContext + "]";
     }
     
     public static class Builder {
         private StudyIdentifier studyId;
         private String userId;
-        private ClientInfo clientInfo;
         private DateTimeZone zone;
         private DateTime endsOn;
         private Map<String,DateTime> events;
         private String healthCode;
         private DateTime now;
-        private Set<String> userDataGroups;
+        private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
         
         public Builder withUser(User user) {
             if (user != null) {
                 this.userId = user.getId();
                 this.healthCode = user.getHealthCode();
                 this.studyId = new StudyIdentifierImpl(user.getStudyKey());
-                this.userDataGroups = user.getDataGroups();                
+                contextBuilder.withUserDataGroups(user.getDataGroups());
             }
             return this;
         }
@@ -188,7 +176,7 @@ public final class ScheduleContext {
             return this;
         }
         public Builder withClientInfo(ClientInfo clientInfo) {
-            this.clientInfo = clientInfo;
+            contextBuilder.withClientInfo(clientInfo);
             return this;
         }
         public Builder withStudyIdentifier(StudyIdentifier studyId) {
@@ -214,7 +202,7 @@ public final class ScheduleContext {
             return this;
         }
         public Builder withUserDataGroups(Set<String> userDataGroups) {
-            this.userDataGroups = userDataGroups;
+            contextBuilder.withUserDataGroups(userDataGroups);
             return this;
         }
         public Builder withNow(DateTime now) {
@@ -224,13 +212,12 @@ public final class ScheduleContext {
         public Builder withContext(ScheduleContext context) {
             this.studyId = context.studyId;
             this.userId = context.userId;
-            this.clientInfo = context.clientInfo;
             this.zone = context.zone;
             this.endsOn = context.endsOn;
             this.events = context.events;
             this.healthCode = context.healthCode;
             this.now = context.now;
-            this.userDataGroups = context.userDataGroups;
+            contextBuilder.withContext(context.criteriaContext);
             return this;
         }
         
@@ -241,10 +228,7 @@ public final class ScheduleContext {
             if (now == null) {
                 now = (zone == null) ? DateTime.now() : DateTime.now(zone);
             }
-            if (clientInfo == null) {
-                clientInfo = ClientInfo.UNKNOWN_CLIENT;
-            }
-            return new ScheduleContext(studyId, userId, clientInfo, zone, endsOn, healthCode, events, now, userDataGroups);
+            return new ScheduleContext(studyId, userId, zone, endsOn, healthCode, events, now, contextBuilder.build());
         }
     }
     

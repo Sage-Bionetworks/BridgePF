@@ -142,7 +142,7 @@ public class ScheduledActivityControllerTest {
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(expectedEndsOn, argument.getValue().getEndsOn().withMillisOfSecond(0));
         assertEquals(expectedEndsOn.getZone(), argument.getValue().getZone());
-        assertEquals(clientInfo, argument.getValue().getClientInfo());
+        assertEquals(clientInfo, argument.getValue().getCriteriaContext().getClientInfo());
     }
     
     @SuppressWarnings("unchecked")
