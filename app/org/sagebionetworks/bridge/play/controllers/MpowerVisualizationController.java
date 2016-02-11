@@ -1,10 +1,14 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.MpowerVisualizationService;
 
@@ -24,10 +28,29 @@ public class MpowerVisualizationController extends BaseController {
 
     /** Gets the mPower visualization for the given start and end dates, inclusive. */
     public Result getVisualization(String startDate, String endDate) {
+        // get health code from session
         UserSession session = getAuthenticatedAndConsentedSession();
         String healthCode = session.getUser().getHealthCode();
 
-        JsonNode vizColNode = mpowerVisualizationService.getVisualization(healthCode, startDate, endDate);
+        // parse string dates into Joda dates
+        LocalDate startDateObj = parseDateHelper(startDate);
+        LocalDate endDateObj = parseDateHelper(endDate);
+
+        // call through to the service
+        JsonNode vizColNode = mpowerVisualizationService.getVisualization(healthCode, startDateObj, endDateObj);
         return ok(vizColNode);
+    }
+
+    // Helper method to parse dates. Returns null on null or blank strings.
+    private static LocalDate parseDateHelper(String dateStr) {
+        if (StringUtils.isBlank(dateStr)) {
+            return null;
+        } else {
+            try {
+                return DateUtils.parseCalendarDate(dateStr);
+            } catch (RuntimeException ex) {
+                throw new BadRequestException("invalid date " + dateStr);
+            }
+        }
     }
 }

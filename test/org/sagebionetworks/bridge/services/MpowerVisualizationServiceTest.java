@@ -29,7 +29,8 @@ public class MpowerVisualizationServiceTest {
         svc.setMpowerVisualizationDao(mockDao);
 
         // execute and validate
-        JsonNode result = svc.getVisualization(DUMMY_HEALTH_CODE, "2016-02-06", "2016-02-08");
+        JsonNode result = svc.getVisualization(DUMMY_HEALTH_CODE, LocalDate.parse("2016-02-06"),
+                LocalDate.parse("2016-02-08"));
         assertSame(mockViz, result);
     }
 
@@ -58,39 +59,15 @@ public class MpowerVisualizationServiceTest {
     }
 
     @Test(expected = BadRequestException.class)
-    public void malformedStartDate() {
-        new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE, "this is not a date",
-                "2016-02-08");
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void timestampAsStartDate() {
-        new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE,
-                "2016-02-06T18:00-0800", "2016-02-08");
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void malformedEndDate() {
-        new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE, "2016-02-06",
-                "also not a date");
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void timestampAsEndDate() {
-        new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE, "2016-02-06",
-                "2016-02-08T23:00-0800");
-    }
-
-    @Test(expected = BadRequestException.class)
     public void startDateAfterEndDate() {
-        new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE, "2016-02-09",
-                "2016-02-08");
+        new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE, LocalDate.parse("2016-02-09"),
+                LocalDate.parse("2016-02-08"));
     }
 
     @Test(expected = BadRequestException.class)
     public void dateRangeTooWide() {
         // Two months is definitely too wide. Don't need exactly 45 days.
-        new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE, "2016-01-01",
-                "2016-03-01");
+        new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE, LocalDate.parse("2016-01-01"),
+                LocalDate.parse("2016-03-01"));
     }
 }

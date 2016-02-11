@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
@@ -36,44 +35,34 @@ public class MpowerVisualizationService {
      *
      * @param healthCode
      *         user's health code
-     * @param startDateStr
-     *         start date for visualization
-     * @param endDateStr
-     *         end date for visualization
+     * @param startDate
+     *         start date for visualization; if null, defaults to yesterday
+     * @param endDate
+     *         end date for visualization; if nul, defaults to yesterday
      * @return raw JSON containing visualization data
      */
-    public JsonNode getVisualization(String healthCode, String startDateStr, String endDateStr) {
-        // start date and end date are user input. Must validate them.
-        // Note that we parse the start and end date strings here and not in the controller. This is to consolidate as
-        // much logic as possible into the service, which is much easier to test than the controller.
-        LocalDate startDate = parseDateHelper(startDateStr);
-        LocalDate endDate = parseDateHelper(endDateStr);
+    public JsonNode getVisualization(String healthCode, LocalDate startDate, LocalDate endDate) {
+        // Start and end date default to yesterday's date if not specified.
+        if (startDate == null) {
+            startDate = DateUtils.getCurrentCalendarDateInLocalTime().minusDays(1);
+        }
+        if (endDate == null) {
+            endDate = DateUtils.getCurrentCalendarDateInLocalTime().minusDays(1);
+        }
 
+        // start date and end date are user input. Must validate them.
         if (startDate.isAfter(endDate)) {
-            throw new BadRequestException("start date " + startDateStr + " can't be after end date " + endDateStr);
+            throw new BadRequestException("start date " + startDate + " can't be after end date " + endDate);
         }
 
         Period dateRange = new Period(startDate, endDate, PeriodType.days());
         if (dateRange.getDays() > MAX_RANGE_DAYS) {
             throw new BadRequestException("Date range cannot exceed " + MAX_RANGE_DAYS + " days, startDate=" +
-                    startDateStr + ", endDate=" + endDateStr);
+                    startDate + ", endDate=" + endDate);
         }
 
         // Don't need to validate study ID or healthCode. Controller takes care of that for us.
 
         return mpowerVisualizationDao.getVisualization(healthCode, startDate, endDate);
-    }
-
-    // Helper method to parse dates. If the date isn't specified, it defaults to yesterday's date in the local timezone
-    private static LocalDate parseDateHelper(String dateStr) {
-        if (StringUtils.isBlank(dateStr)) {
-            return DateUtils.getCurrentCalendarDateInLocalTime().minusDays(1);
-        } else {
-            try {
-                return DateUtils.parseCalendarDate(dateStr);
-            } catch (RuntimeException ex) {
-                throw new BadRequestException("invalid date " + dateStr);
-            }
-        }
     }
 }
