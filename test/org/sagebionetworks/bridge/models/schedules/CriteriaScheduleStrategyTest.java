@@ -196,11 +196,11 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithAppVersions();
         setUpStrategyWithProhibitedDataGroups();
         
-        User user = getUser();
-        user.setDataGroups(Sets.newHashSet("group1"));
         ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/44"))
-                .withUser(user).build();
+                .withUserDataGroups(Sets.newHashSet("group1"))
+                .withHealthCode("BBB").build();
 
         Schedule schedule = strategy.getScheduleForUser(PLAN, context);
         assertNull(schedule);
@@ -215,8 +215,9 @@ public class CriteriaScheduleStrategyTest {
         User user = getUser();
         user.setDataGroups(Sets.newHashSet("group3"));
         ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/44"))
-                .withUser(user).build();
+                .withHealthCode(user.getHealthCode()).build();
         
         // First two ScheduleCriteria don't match; the first because the app version is wrong 
         // and the second because the user does not have a required data group. The last ScheduleCriteria 
@@ -230,11 +231,11 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithAllRequirements();
         setUpStrategyWithAppVersions(); // certainly should not match this one, although criteria are valid
         
-        User user = getUser();
-        user.setDataGroups(Sets.newHashSet("req1", "req2")); // both are required
         ScheduleContext context = new ScheduleContext.Builder()
+                .withUserDataGroups(Sets.newHashSet("req1", "req2"))
+                .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/6")) // in range
-                .withUser(user).build();
+                .withHealthCode("AAA").build();
         
         // Matches the first schedule, not the second schedule (although it also matches)
         Schedule schedule = strategy.getScheduleForUser(PLAN, context);

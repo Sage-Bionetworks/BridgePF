@@ -112,7 +112,9 @@ public class ScheduledActivityService {
         // if a survey activity, it may need a survey response generated (currently we're not using these though).
         for (ScheduledActivity schActivity : saves) {
             Activity activity = createSurveyResponseIfNeeded(
-                    context.getStudyIdentifier(), context.getHealthCode(), schActivity.getActivity());
+                    context.getCriteriaContext().getStudyIdentifier(), 
+                    context.getCriteriaContext().getHealthCode(), 
+                    schActivity.getActivity());
             schActivity.setActivity(activity);
         }
         activityDao.saveActivities(saves);
@@ -185,7 +187,7 @@ public class ScheduledActivityService {
      * @return
      */
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
-        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getHealthCode());
+        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getHealthCode());
         if (!events.containsKey("enrollment")) {
             return createEnrollmentEventFromConsent(context, events);
         }
@@ -203,9 +205,10 @@ public class ScheduledActivityService {
         // This should no longer happen, but in case a record was never migrated, go back to the consents to find the 
         // enrollment date. It's the earliest of all the signature dates.
         long signedOn = Long.MAX_VALUE;
-        List<Subpopulation> subpops = subpopService.getSubpopulations(context.getStudyIdentifier());
+        List<Subpopulation> subpops = subpopService.getSubpopulations(context.getCriteriaContext().getStudyIdentifier());
         for (Subpopulation subpop : subpops) {
-            UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), subpop.getGuid());
+            UserConsent consent = userConsentDao.getActiveUserConsent(
+                    context.getCriteriaContext().getHealthCode(), subpop.getGuid());
             if (consent != null && consent.getSignedOn() < signedOn) {
                 signedOn = consent.getSignedOn();
             }
@@ -221,14 +224,12 @@ public class ScheduledActivityService {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getCriteriaContext().getClientInfo(),
-                context.getStudyIdentifier());
+                context.getCriteriaContext().getStudyIdentifier());
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             if (schedule != null) {
                 List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
                 scheduledActivities.addAll(activities);    
-            } else {
-                LOG.warn("Schedule plan "+plan.getLabel()+" has no schedule for user "+context.getUserId());
             }
         }
         return scheduledActivities;

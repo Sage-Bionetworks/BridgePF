@@ -9,6 +9,7 @@ import java.util.Set;
 import org.junit.Test;
 import org.springframework.validation.Errors;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.Sets;
@@ -96,6 +97,7 @@ public class CriteriaUtilsTest {
     @Test
     public void matchingWithMinimalContextDoesNotCrash() {
         CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT).build();
         assertTrue(CriteriaUtils.matchCriteria(context, new SimpleCriteria(EMPTY_SET, EMPTY_SET, null, null)));
         assertFalse(CriteriaUtils.matchCriteria(context, new SimpleCriteria(Sets.newHashSet("group1"), EMPTY_SET, null, null)));
@@ -159,6 +161,7 @@ public class CriteriaUtilsTest {
     
     private CriteriaContext getContext() {
         return new CriteriaContext.Builder()
+            .withStudyIdentifier(TestConstants.TEST_STUDY)
             .withClientInfo(ClientInfo.fromUserAgentCache("app/4"))
             .withUserDataGroups(Sets.newHashSet("group1", "group2")).build();
     }

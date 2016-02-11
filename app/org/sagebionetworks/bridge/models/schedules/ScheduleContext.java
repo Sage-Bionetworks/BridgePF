@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -10,7 +8,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -25,41 +22,19 @@ import com.google.common.collect.ImmutableMap;
  */
 public final class ScheduleContext {
     
-    private final StudyIdentifier studyId;
-    private final String userId; // for debugging purposes only.
     private final DateTimeZone zone;
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
-    private final String healthCode;
     private final DateTime now;
     private final CriteriaContext criteriaContext;
     
-    private ScheduleContext(StudyIdentifier studyId, String userId, DateTimeZone zone, DateTime endsOn, String healthCode,
-                    Map<String, DateTime> events, DateTime now, CriteriaContext criteriaContext) {
-        this.studyId = studyId;
-        this.userId = userId;
+    private ScheduleContext(DateTimeZone zone, DateTime endsOn, Map<String, DateTime> events, DateTime now,
+            CriteriaContext criteriaContext) {
         this.zone = zone;
         this.endsOn = endsOn;
-        this.healthCode = healthCode;
         this.events = events;
         this.now = now;
         this.criteriaContext = criteriaContext;
-    }
-    
-    /**
-     * The study identifier for this participant.
-     * @return
-     */
-    public StudyIdentifier getStudyIdentifier() {
-        return studyId;
-    }
-    
-    /**
-     * The user id (not the health code). Only used for debugging purposes.
-     * @return
-     */
-    public String getUserId() {
-        return userId;
     }
     
     /**
@@ -77,14 +52,6 @@ public final class ScheduleContext {
      */
     public DateTime getEndsOn() {
         return endsOn;
-    }
-
-    /**
-     * The current user's health code.
-     * @return
-     */
-    public String getHealthCode() {
-        return healthCode;
     }
     
     /**
@@ -121,7 +88,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, userId, zone, endsOn, healthCode, events, now, criteriaContext);
+        return Objects.hash(zone, endsOn, events, now, criteriaContext);
     }
 
     @Override
@@ -132,55 +99,37 @@ public final class ScheduleContext {
             return false;
         ScheduleContext other = (ScheduleContext) obj;
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
-                Objects.equals(userId, other.userId) &&
-                Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
-                Objects.equals(studyId, other.studyId) && Objects.equals(now, other.now) && 
+                Objects.equals(events, other.events) && Objects.equals(now, other.now) && 
                 Objects.equals(criteriaContext, other.criteriaContext));
     }
 
     @Override
     public String toString() {
-        return "ScheduleContext [studyId=" + studyId + ", userId=" + userId + ", zone=" + zone + ", endsOn=" + endsOn
-                + ", events=" + events + ", criteriaContext=" + criteriaContext + "]";
+        return "ScheduleContext [zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + ", criteriaContext="
+                + criteriaContext + "]";
     }
     
     public static class Builder {
-        private StudyIdentifier studyId;
-        private String userId;
         private DateTimeZone zone;
         private DateTime endsOn;
         private Map<String,DateTime> events;
-        private String healthCode;
         private DateTime now;
         private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
         
-        public Builder withUser(User user) {
-            if (user != null) {
-                this.userId = user.getId();
-                this.healthCode = user.getHealthCode();
-                this.studyId = new StudyIdentifierImpl(user.getStudyKey());
-                contextBuilder.withUserDataGroups(user.getDataGroups());
-            }
-            return this;
-        }
         public Builder withStudyIdentifier(String studyId) {
-            if (studyId != null) {
-                this.studyId = new StudyIdentifierImpl(studyId);    
-            }
+            contextBuilder.withStudyIdentifier(new StudyIdentifierImpl(studyId));
             return this;
         }
-        public Builder withUserId(String userId) {
-            if (userId != null) {
-                this.userId = userId;    
-            }
+        public Builder withStudyIdentifier(StudyIdentifier studyId) {
+            contextBuilder.withStudyIdentifier(studyId);
+            return this;
+        }
+        public Builder withHealthCode(String healthCode) {
+            contextBuilder.withHealthCode(healthCode);
             return this;
         }
         public Builder withClientInfo(ClientInfo clientInfo) {
             contextBuilder.withClientInfo(clientInfo);
-            return this;
-        }
-        public Builder withStudyIdentifier(StudyIdentifier studyId) {
-            this.studyId = studyId;
             return this;
         }
         public Builder withTimeZone(DateTimeZone zone) {
@@ -197,10 +146,6 @@ public final class ScheduleContext {
             }
             return this;
         }
-        public Builder withHealthCode(String healthCode) {
-            this.healthCode = healthCode;
-            return this;
-        }
         public Builder withUserDataGroups(Set<String> userDataGroups) {
             contextBuilder.withUserDataGroups(userDataGroups);
             return this;
@@ -210,26 +155,21 @@ public final class ScheduleContext {
             return this;
         }
         public Builder withContext(ScheduleContext context) {
-            this.studyId = context.studyId;
-            this.userId = context.userId;
             this.zone = context.zone;
             this.endsOn = context.endsOn;
             this.events = context.events;
-            this.healthCode = context.healthCode;
             this.now = context.now;
             contextBuilder.withContext(context.criteriaContext);
             return this;
         }
         
         public ScheduleContext build() {
-            checkNotNull(studyId, "studyId cannot be null");
             // pretty much everything else is optional. I would like healthCode to be required, but it's not:
             // we use these selection criteria to select subpopulations on sign up.
             if (now == null) {
                 now = (zone == null) ? DateTime.now() : DateTime.now(zone);
             }
-            return new ScheduleContext(studyId, userId, zone, endsOn, healthCode, events, now, contextBuilder.build());
+            return new ScheduleContext(zone, endsOn, events, now, contextBuilder.build());
         }
     }
-    
 }

@@ -68,7 +68,7 @@ public abstract class ActivityScheduler {
                     ScheduledActivity schActivity = ScheduledActivity.create();
                     schActivity.setSchedulePlanGuid(plan.getGuid());
                     schActivity.setTimeZone(context.getZone());
-                    schActivity.setHealthCode(context.getHealthCode());
+                    schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());
                     schActivity.setActivity(activity);
                     schActivity.setScheduledOn(scheduledTime);
                     schActivity.setGuid(activity.getGuid() + ":" + scheduledTime.toLocalDateTime().toString());
