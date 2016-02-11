@@ -27,7 +27,7 @@ public class ScheduleContextValidator implements Validator {
         if (context.getZone() == null) {
             errors.rejectValue("offset", "must set a time zone offset in format '±HH:MM'");
         }
-        if (context.getHealthCode() == null) {
+        if (context.getCriteriaContext().getHealthCode() == null) {
             errors.rejectValue("healthCode", "is required");
         }
         // Very the ending timestamp is not invalid.

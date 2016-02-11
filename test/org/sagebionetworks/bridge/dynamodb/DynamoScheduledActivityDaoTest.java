@@ -106,7 +106,8 @@ public class DynamoScheduledActivityDaoTest {
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withUser(user)
+            .withHealthCode(user.getHealthCode())
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(MSK)
             .withEndsOn(endsOn)
@@ -124,7 +125,8 @@ public class DynamoScheduledActivityDaoTest {
         assertEquals(MSK, ((DynamoScheduledActivity)savedActivities.get(0)).getTimeZone());
         
         // Verify getActivity() works
-        ScheduledActivity savedActivity = activityDao.getActivity(context.getZone(), context.getHealthCode(), savedActivities.get(0).getGuid());
+        ScheduledActivity savedActivity = activityDao.getActivity(context.getZone(),
+                context.getCriteriaContext().getHealthCode(), savedActivities.get(0).getGuid());
         assertEquals(savedActivities.get(0), savedActivity);
         assertEquals(context.getZone(), savedActivity.getTimeZone());
         assertEquals(MSK, savedActivity.getScheduledOn().getZone());

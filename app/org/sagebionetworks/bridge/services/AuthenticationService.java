@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -28,7 +29,6 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -254,11 +254,11 @@ public class AuthenticationService {
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
 
         // now that we know more about this user, we can expand on the request context.
-        ScheduleContext context = new ScheduleContext.Builder()
+        CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(clientInfo)
                 .withHealthCode(healthCode)
                 .withUserDataGroups(user.getDataGroups())
-                .withStudyIdentifier(study.getIdentifier()) // probably already set
+                .withStudyIdentifier(study.getStudyIdentifier()) // probably already set
                 .build();
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);

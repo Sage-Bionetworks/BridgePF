@@ -33,7 +33,7 @@ public final class ABTestScheduleStrategy implements ScheduleStrategy {
         // Randomly assign to a group, weighted based on the percentage representation of the group.
         ABTestGroup group = null;
         long seed = UUID.fromString(plan.getGuid()).getLeastSignificantBits()
-                + UUID.fromString(context.getHealthCode()).getLeastSignificantBits();        
+                + UUID.fromString(context.getCriteriaContext().getHealthCode()).getLeastSignificantBits();        
         
         int i = 0;
         int perc = (int)(seed % 100.0) + 1;

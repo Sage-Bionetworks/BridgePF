@@ -24,11 +24,11 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
@@ -161,7 +161,7 @@ public class FPHSControllerTest {
         assertEquals("External identifier added to user profile.", node.get("message").asText());
 
         assertEquals(Sets.newHashSet("football_player"), user.getDataGroups());
-        verify(consentService).getConsentStatuses(any(ScheduleContext.class));
+        verify(consentService).getConsentStatuses(any(CriteriaContext.class));
     }
     
     @Test

@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -50,7 +50,7 @@ public interface SubpopulationDao {
      * @param context
      * @return
      */
-    public List<Subpopulation> getSubpopulationsForUser(ScheduleContext context);
+    public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context);
     
     /**
      * Update a subpopulation.

@@ -14,7 +14,7 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
@@ -140,7 +140,7 @@ public class SubpopulationService {
      * @param context
      * @return
      */
-    public List<Subpopulation> getSubpopulationForUser(ScheduleContext context) {
+    public List<Subpopulation> getSubpopulationForUser(CriteriaContext context) {
         checkNotNull(context);
         
         return subpopDao.getSubpopulationsForUser(context);

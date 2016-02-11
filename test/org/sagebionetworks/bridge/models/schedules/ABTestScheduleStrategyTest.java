@@ -95,7 +95,9 @@ public class ABTestScheduleStrategyTest {
 
         List<Schedule> schedules = Lists.newArrayList();
         for (User user : users) {
-            ScheduleContext context = new ScheduleContext.Builder().withUser(user).build();
+            ScheduleContext context = new ScheduleContext.Builder()
+                    .withStudyIdentifier(study.getStudyIdentifier())
+                    .withHealthCode(user.getHealthCode()).build();
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             schedules.add(schedule);
         }

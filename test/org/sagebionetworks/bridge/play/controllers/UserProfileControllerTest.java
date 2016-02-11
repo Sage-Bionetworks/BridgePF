@@ -29,10 +29,10 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -85,7 +85,7 @@ public class UserProfileControllerTest {
         Result result = controller.updateDataGroups();
         
         ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
-        ArgumentCaptor<ScheduleContext> contextCaptor = ArgumentCaptor.forClass(ScheduleContext.class);
+        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
         
         verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());

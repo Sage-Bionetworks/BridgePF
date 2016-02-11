@@ -7,12 +7,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.FPHSService;
@@ -68,7 +68,7 @@ public class FPHSController extends BaseController {
         dataGroups.add("football_player");
         user.setDataGroups(dataGroups);
         
-        ScheduleContext context = new ScheduleContext.Builder()
+        CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(getClientInfoFromUserAgentHeader())
                 .withHealthCode(user.getHealthCode())
                 .withUserDataGroups(user.getDataGroups())

@@ -15,8 +15,8 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -132,7 +132,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public List<Subpopulation> getSubpopulationsForUser(ScheduleContext context) {
+    public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true, false);
         
         return subpops.stream().filter(subpop -> {
