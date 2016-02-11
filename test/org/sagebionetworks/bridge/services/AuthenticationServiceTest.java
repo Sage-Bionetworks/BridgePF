@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -384,6 +385,8 @@ public class AuthenticationServiceTest {
             // and this person should be recorded as consented...
             for (ConsentStatus status : session.getUser().getConsentStatuses().values()) {
                 assertTrue(!status.isRequired() || status.isConsented());
+                UserConsent consent  = userConsentDao.getActiveUserConsent(session.getUser().getHealthCode(), SubpopulationGuid.create(status.getSubpopulationGuid()));
+                assertTrue(consent.getSignedOn() > 0L);
             }
         } finally {
             helper.deleteUser(user);
