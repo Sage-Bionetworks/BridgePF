@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoMpowerVisualization;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
@@ -173,6 +174,11 @@ public class BridgeSpringConfig {
         BridgeConfig bridgeConfig = bridgeConfig();
         return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key"),
                 bridgeConfig.getProperty("aws.secret.key"));
+    }
+
+    @Bean(name = "mpowerVisualizationDdbMapper")
+    public DynamoDBMapper mpowerVisualizationDdbMapper() {
+        return DynamoUtils.getMapper(DynamoMpowerVisualization.class, bridgeConfig(), dynamoDbClient());
     }
 
     @Bean(name = "s3UploadCredentials")
