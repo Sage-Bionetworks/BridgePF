@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -377,6 +378,15 @@ public class StormpathAccountTest {
         verifyOneConsentStream(SUBPOP_GUID_2, sig2);
     }
 
+    @Test
+    public void ifEncryptorVersionMissingDefaultToLastEncryptor() {
+        // no _version for this attribute, throws NPE without setting the version
+        data.put("foo", "111"); 
+
+        // Does not throw NPE, it uses last version in sorted map
+        assertEquals("111", acct.getAttribute("foo"));
+    }
+    
     private void verifyOneConsentStream(SubpopulationGuid guid, ConsentSignature sig1)
             throws IOException, JsonParseException, JsonMappingException {
         Integer version = (Integer)data.get(guid.getGuid()+"_consent_signatures_version");
