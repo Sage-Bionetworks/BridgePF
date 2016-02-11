@@ -254,6 +254,15 @@ public class AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
     
+    /**
+     * Early in the production lifetime of the application, some accounts were created that have a signature 
+     * in Stormpath, but no record in DynamoDB. Some other records had a DynamoDB record in an earlier version 
+     * of the table that were not successfully migrated to a later version of the table. These folks should 
+     * be in the study but are getting 412s (not consented) from the server. We examine their records on sign 
+     * in, and if there is a signature and the consent status does not record the user as consented, we 
+     * create the DynamoDB record. (The signatures are from Stormpath and the consent status records are 
+     * constructed from DynamoDB).
+     */
     private void repairConsents(Study study, Account account, UserSession session, ClientInfo clientInfo){
         boolean repaired = false;
         
@@ -270,7 +279,7 @@ public class AuthenticationService {
         
         // These are incorrect since they are based on looking up DDB records, so re-create them.
         if (repaired) {
-            updateConsentStatuses(study, session.getUser(), clientInfo);
+            updateInMemoryConsentStatuses(study, session.getUser(), clientInfo);
         }
     }
     
@@ -303,13 +312,13 @@ public class AuthenticationService {
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
 
-        updateConsentStatuses(study, user, clientInfo);
+        updateInMemoryConsentStatuses(study, user, clientInfo);
         session.setUser(user);
         
         return session;
     }
 
-    private void updateConsentStatuses(Study study, User user, ClientInfo clientInfo) {
+    private void updateInMemoryConsentStatuses(Study study, User user, ClientInfo clientInfo) {
         // now that we know more about this user, we can expand on the request context.
         ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(clientInfo)

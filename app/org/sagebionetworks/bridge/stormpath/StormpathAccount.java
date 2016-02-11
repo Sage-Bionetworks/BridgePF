@@ -38,7 +38,7 @@ import com.google.common.collect.Maps;
  * updating these values, the version keys will be updated.
  */
 @BridgeTypeName("Account")
-class StormpathAccount implements Account {
+public final class StormpathAccount implements Account {
     
     static final String PLACEHOLDER_STRING = "<EMPTY>";
     
@@ -91,7 +91,7 @@ class StormpathAccount implements Account {
         }
     }
     
-    com.stormpath.sdk.account.Account getAccount() {
+    public com.stormpath.sdk.account.Account getAccount() {
         for (Map.Entry<SubpopulationGuid, List<ConsentSignature>> entry : allSignatures.entrySet()) {
             encryptJSONTo(entry.getKey().getGuid()+CONSENT_SIGNATURES_SUFFIX, entry.getValue());
         }
