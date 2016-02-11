@@ -1,17 +1,16 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import java.util.Set;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableSet;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
-import org.joda.time.Period;
-import org.joda.time.PeriodType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.services.MpowerVisualizationService;
 
 /**
  * Controller for mPower visualization. This is mPower-specific for now to get things out the door. We'll figure out if
@@ -19,49 +18,39 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
  */
 @Controller
 public class MpowerVisualizationController extends BaseController {
-    public static final Set<String> DATA_KEY_SET = ImmutableSet.of("standingPreMedication", "standingPostMedication",
-            "tappingPreMedication", "tappingPostMedication", "voicePreMedication", "voicePostMedication",
-            "walkingPreMedication", "walkingPostMedication");
+    private MpowerVisualizationService mpowerVisualizationService;
+
+    /** mPower Visualization Service */
+    @Autowired
+    final void setMpowerVisualizationService(MpowerVisualizationService mpowerVisualizationService) {
+        this.mpowerVisualizationService = mpowerVisualizationService;
+    }
 
     /** Gets the mPower visualization for the given start and end dates, inclusive. */
     public Result getVisualization(String startDate, String endDate) {
-        getAuthenticatedAndConsentedSession();
+        // get health code from session
+        UserSession session = getAuthenticatedAndConsentedSession();
+        String healthCode = session.getUser().getHealthCode();
 
-        // parse start and end dates
-        LocalDate startDateObj;
-        try {
-            startDateObj = LocalDate.parse(startDate);
-        } catch (RuntimeException ex) {
-            throw new BadRequestException("Invalid start date " + startDate);
-        }
+        // parse string dates into Joda dates
+        LocalDate startDateObj = parseDateHelper(startDate);
+        LocalDate endDateObj = parseDateHelper(endDate);
 
-        LocalDate endDateObj;
-        try {
-            endDateObj = LocalDate.parse(endDate);
-        } catch (RuntimeException ex) {
-            throw new BadRequestException("Invalid end date " + endDate);
-        }
+        // call through to the service
+        JsonNode vizColNode = mpowerVisualizationService.getVisualization(healthCode, startDateObj, endDateObj);
+        return ok(vizColNode);
+    }
 
-        // To prevent browning out the back end, the date range must be <= 45 days.
-        Period dateRange = new Period(startDateObj, endDateObj, PeriodType.days());
-        if (dateRange.getDays() > 45) {
-            throw new BadRequestException("Date range cannot exceed 45 days, startDate=" + startDate + ", endDate=" +
-                    endDate);
-        }
-
-        // TODO: replace test version with real implementation
-        // Initial dummy implementation just returns random values
-        ObjectNode parentNode = BridgeObjectMapper.get().createObjectNode();
-        for (LocalDate curDate = startDateObj; !curDate.isAfter(endDateObj); curDate = curDate.plusDays(1)) {
-            ObjectNode dateNode = BridgeObjectMapper.get().createObjectNode();
-
-            for (String oneDataKey : DATA_KEY_SET) {
-                dateNode.put(oneDataKey, Math.random());
+    // Helper method to parse dates. Returns null on null or blank strings.
+    private static LocalDate parseDateHelper(String dateStr) {
+        if (StringUtils.isBlank(dateStr)) {
+            return null;
+        } else {
+            try {
+                return DateUtils.parseCalendarDate(dateStr);
+            } catch (RuntimeException ex) {
+                throw new BadRequestException("invalid date " + dateStr);
             }
-
-            parentNode.set(curDate.toString(), dateNode);
         }
-
-        return ok(parentNode);
     }
 }
