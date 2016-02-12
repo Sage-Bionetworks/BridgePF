@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
@@ -114,6 +115,39 @@ public class UploadValidationTaskTest {
         verify(mockDao).writeValidationStatus(upload2, expectedStatus, ctx.getMessageList(), expectedRecordId);
 
         return ctx;
+    }
+
+    @Test
+    public void writeValidationStatusException() {
+        // Trivial record ID handler, to make the test not degenerate.
+        List<UploadValidationHandler> handlerList = ImmutableList.of(new RecordIdHandler("will fail"));
+
+        // input
+        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
+
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId("test-upload");
+
+        UploadValidationContext ctx = new UploadValidationContext();
+        ctx.setStudy(study);
+        ctx.setUpload(upload2);
+
+        // mock dao
+        UploadDao mockDao = mock(UploadDao.class);
+        RuntimeException toThrow = new RuntimeException();
+        doThrow(toThrow).when(mockDao).writeValidationStatus(upload2, UploadStatus.SUCCEEDED, ImmutableList.of(),
+                "will fail");
+
+        // set up validation task
+        UploadValidationTask task = spy(new UploadValidationTask(ctx));
+        task.setHandlerList(handlerList);
+        task.setUploadDao(mockDao);
+
+        // execute
+        task.run();
+
+        // verify log helper was called
+        verify(task).logWriteValidationStatusException(UploadStatus.SUCCEEDED, toThrow);
     }
 
     // Test handler that makes its presence known only by writing a message to the validation context.
