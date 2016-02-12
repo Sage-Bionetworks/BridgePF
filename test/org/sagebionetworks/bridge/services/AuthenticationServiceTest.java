@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -30,9 +31,11 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -41,12 +44,17 @@ import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.stormpath.StormpathAccount;
 
 import com.google.common.collect.Sets;
+import com.stormpath.sdk.directory.CustomData;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -73,8 +81,14 @@ public class AuthenticationServiceTest {
     @Resource
     private TestUserAdminHelper helper;
 
-    private TestUser testUser;
+    @Resource
+    private UserConsentDao userConsentDao;
+    
+    @Resource
+    private SubpopulationService subpopService;
 
+    private TestUser testUser;
+    
     @Before
     public void before() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).build();
@@ -328,6 +342,52 @@ public class AuthenticationServiceTest {
             ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
             assertTrue(status.isConsented());
             assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
+        } finally {
+            helper.deleteUser(user);
+        }
+    }
+    
+    @Test
+    public void userWithSignatureAndNoDbRecordIsRepaired() throws Exception {
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(true).withSignIn(true).build();
+        try {
+            authService.signOut(user.getSession());
+            
+            // now delete any and all consent records, and zero out the signed on dates
+            
+            Account account = accountDao.getAccount(testUser.getStudy(), testUser.getEmail());
+            
+            List<Subpopulation> subpops = subpopService.getSubpopulations(user.getStudyIdentifier());
+            for (Subpopulation subpop : subpops) {
+                // Delete all DDB records
+                userConsentDao.deleteAllConsents(user.getUser().getHealthCode(), subpop.getGuid());
+                
+                // zero out the signed on date
+                ConsentSignature sig = account.getConsentSignatureHistory(subpop.getGuid()).get(0);
+                sig = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(0L).build();
+                
+                // alter the customData object so it stores the one signature and no history, as 
+                // was stored in the past when this problem was present
+                com.stormpath.sdk.account.Account stormpathAcct = ((StormpathAccount)account).getAccount();
+                CustomData data = stormpathAcct.getCustomData();
+                data.put(subpop.getGuidString()+"_signature", BridgeObjectMapper.get().writeValueAsString(sig));
+                data.put(subpop.getGuidString()+"_signature_version", 2);
+                data.remove(subpop.getGuidString()+"_signatures");
+                data.remove(subpop.getGuidString()+"_signatures_version");                
+            }
+            accountDao.updateAccount(testUser.getStudy(), account);
+            
+            // Signing in should still work to create a consented user.
+            Study study = studyService.getStudy(user.getStudyIdentifier());
+            UserSession session = authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
+            
+            // and this person should be recorded as consented...
+            for (ConsentStatus status : session.getUser().getConsentStatuses().values()) {
+                assertTrue(!status.isRequired() || status.isConsented());
+                UserConsent consent  = userConsentDao.getActiveUserConsent(session.getUser().getHealthCode(), SubpopulationGuid.create(status.getSubpopulationGuid()));
+                assertTrue(consent.getSignedOn() > 0L);
+            }
         } finally {
             helper.deleteUser(user);
         }
