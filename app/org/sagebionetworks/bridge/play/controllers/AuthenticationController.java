@@ -106,7 +106,6 @@ public class AuthenticationController extends BaseController {
             SignIn signIn = parseJson(request(), SignIn.class);
             Study study = getStudyOrThrowException(json);
 
-            // No session by definition
             CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
             
             try {

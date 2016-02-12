@@ -15,10 +15,9 @@ public final class CriteriaContext {
     private final String healthCode;
     private final ClientInfo clientInfo;
     private final Set<String> userDataGroups;
-    // This set is ordered (but not a SortedSet, as this set implies a sort order based on its contents, 
-    // and we are storing the language string here, without the quality indicator from the LanguageRange
-    // in the Accept-Language header that told us the preferential order of the languages in the first 
-    // place.
+    // This set is ordered from most preferred to least preferred language. It is not a SortedSet because 
+    // that type includes a comparator for sorting the items in the set, and this preference order was 
+    // determined externally from the LanguageRange objects (it's not in the language string).
     private final Set<String> languages;
     
     private CriteriaContext(StudyIdentifier studyId, String healthCode, ClientInfo clientInfo,

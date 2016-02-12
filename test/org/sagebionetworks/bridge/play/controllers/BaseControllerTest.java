@@ -193,11 +193,20 @@ public class BaseControllerTest {
     
     @Test
     public void canRetrieveLanguagesFromAcceptHeader() throws Exception {
-        mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
-        
         BaseController controller = new SchedulePlanController();
         
+        Http.Request mockRequest = mock(Http.Request.class);
+        Http.Context context = mockPlayContext();
+        when(context.request()).thenReturn(mockRequest);
+        Http.Context.current.set(context);
+        
+        // with no accept language header at all, things don't break;
         Set<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableSet.of(), langs);
+        
+        mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
+        
+        langs = controller.getLanguagesFromAcceptLanguageHeader();
             
         Set<String> set = Sets.newLinkedHashSet();
         set.add("en");
