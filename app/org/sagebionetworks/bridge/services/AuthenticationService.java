@@ -288,7 +288,7 @@ public class AuthenticationService {
      * DDB. We need to create it.
      */
     private void repairConsent(UserSession session, SubpopulationGuid subpopGuid, ConsentSignature activeSignature) {
-        logger.error("Signature found without a matching user consent record. Adding consent for " + session.getUser().getId());
+        logger.info("Signature found without a matching user consent record. Adding consent for " + session.getUser().getId());
         long signedOn = activeSignature.getSignedOn();
         if (signedOn == 0L) {
             signedOn = DateTimeUtils.currentTimeMillis(); // this is so old we did not record a signing date...
