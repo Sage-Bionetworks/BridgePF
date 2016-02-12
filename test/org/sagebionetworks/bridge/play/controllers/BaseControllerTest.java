@@ -175,8 +175,7 @@ public class BaseControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void roleEnforcedWhenRetrievingSession() throws Exception {
-        Http.Context context = mockPlayContext();
-        Http.Context.current.set(context);
+        mockPlayContext();
         
         SchedulePlanController controller = spy(new SchedulePlanController());
         User user = new User();
@@ -195,10 +194,7 @@ public class BaseControllerTest {
     public void canRetrieveLanguagesFromAcceptHeader() throws Exception {
         BaseController controller = new SchedulePlanController();
         
-        Http.Request mockRequest = mock(Http.Request.class);
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        mockPlayContext();
         
         // with no accept language header at all, things don't break;
         Set<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
@@ -233,10 +229,7 @@ public class BaseControllerTest {
     private void mockHeader(String header, String value) throws Exception {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.getHeader(header)).thenReturn(value);
-        
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        mockPlayContext(mockRequest);
     }
 
 }

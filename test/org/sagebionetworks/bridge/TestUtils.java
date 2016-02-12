@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -75,14 +77,17 @@ public class TestUtils {
         return builder.build();
     }
     
-    public static Http.Context mockPlayContextWithJson(String json) throws Exception {
+    /**
+     * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
+     */
+    public static void mockPlayContextWithJson(String json) throws Exception {
         JsonNode node = new ObjectMapper().readTree(json);
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(node);
 
         Map<String,String[]> headers = Maps.newHashMap();
-        headers.put("Content-Type", new String[] {"text/json; charset=UTF-8"});
-        headers.put("User-Agent", new String[] {"app/10"});
+        headers.put(CONTENT_TYPE, new String[] {"text/json; charset=UTF-8"});
+        headers.put(USER_AGENT, new String[] {"app/10"});
         Http.Request request = mock(Http.Request.class);
         Http.Response response = mock(Http.Response.class);
 
@@ -98,20 +103,29 @@ public class TestUtils {
         when(context.request()).thenReturn(request);
         when(context.response()).thenReturn(response);
 
-        return context;
+        Http.Context.current.set(context);
     }
     
-    public static Http.Context mockPlayContext() throws Exception {
+    /**
+     * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
+     */
+    public static void mockPlayContext(Http.Request mockRequest) {
+        Http.Context context = mock(Http.Context.class);
+        when(context.request()).thenReturn(mockRequest);
+
+        Http.Context.current.set(context);
+    }
+    
+    /**
+     * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
+     */
+    public static void mockPlayContext() throws Exception {
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(null);
-
+        
         Http.Request request = mock(Http.Request.class);
         when(request.body()).thenReturn(body);
-
-        Http.Context context = mock(Http.Context.class);
-        when(context.request()).thenReturn(request);
-
-        return context;
+        mockPlayContext(request);
     }
     
     public static String randomName(Class<?> clazz) {

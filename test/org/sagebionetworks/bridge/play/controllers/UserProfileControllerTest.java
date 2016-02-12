@@ -46,7 +46,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -62,7 +61,7 @@ public class UserProfileControllerTest {
     
     @Test
     public void canSubmitExternalIdentifier() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}"));
+        TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
         
         UserProfileController controller = controllerForExternalIdTests();
                 
@@ -78,7 +77,7 @@ public class UserProfileControllerTest {
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
         Set<String> dataGroupSet = Sets.newHashSet("group1");
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}"));
+        TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
         
         UserProfileController controller = controllerForExternalIdTests();
         
@@ -104,7 +103,7 @@ public class UserProfileControllerTest {
     @SuppressWarnings({"unchecked"})
     @Test
     public void invalidDataGroupsRejected() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}"));
+        TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
         UserProfileController controller = controllerForExternalIdTests();
         try {
             controller.updateDataGroups();
@@ -137,7 +136,7 @@ public class UserProfileControllerTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{}"));
+        TestUtils.mockPlayContextWithJson("{}");
         
         UserProfileController controller = controllerForExternalIdTests();
         

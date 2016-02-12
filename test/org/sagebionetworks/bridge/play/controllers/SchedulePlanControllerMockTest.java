@@ -25,8 +25,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.sagebionetworks.bridge.services.StudyService;
 
-import play.mvc.Http;
-
 public class SchedulePlanControllerMockTest {
 
     private SchedulePlanController controller;
@@ -71,8 +69,7 @@ public class SchedulePlanControllerMockTest {
         plan.setStrategy(strategy);
 
         String json = BridgeObjectMapper.get().writeValueAsString(plan);
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         try {
             controller.updateSchedulePlan("test-study");
