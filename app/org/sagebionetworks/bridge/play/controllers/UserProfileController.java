@@ -121,6 +121,7 @@ public class UserProfileController extends BaseController {
 
         CriteriaContext context = new CriteriaContext.Builder()
                 .withHealthCode(user.getHealthCode())
+                .withLanguages(getLanguagesFromAcceptLanguageHeader())
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .withClientInfo(getClientInfoFromUserAgentHeader())
                 .withUserDataGroups(dataGroups.getDataGroups())

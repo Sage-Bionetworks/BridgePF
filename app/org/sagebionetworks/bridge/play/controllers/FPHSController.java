@@ -68,12 +68,7 @@ public class FPHSController extends BaseController {
         dataGroups.add("football_player");
         user.setDataGroups(dataGroups);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(getClientInfoFromUserAgentHeader())
-                .withHealthCode(user.getHealthCode())
-                .withUserDataGroups(user.getDataGroups())
-                .withStudyIdentifier(session.getStudyIdentifier())
-                .build();
+        CriteriaContext context = getCriteriaContext(session);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         user.setConsentStatuses(statuses);
         updateSessionUser(session, user);

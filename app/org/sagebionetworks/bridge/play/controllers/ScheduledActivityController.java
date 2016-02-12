@@ -98,6 +98,7 @@ public class ScheduledActivityController extends BaseController {
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
 
         ScheduleContext context = new ScheduleContext.Builder()
+                .withLanguages(getLanguagesFromAcceptLanguageHeader())
                 .withHealthCode(session.getUser().getHealthCode())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(clientInfo)

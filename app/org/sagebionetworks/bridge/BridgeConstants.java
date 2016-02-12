@@ -14,6 +14,8 @@ public class BridgeConstants {
 
     public static final String BRIDGE_HOST_HEADER = "Bridge-Host";
     
+    public static final String ACCEPT_LANGUAGE_HEADER = "Accept-Language";
+    
     public static final String USER_AGENT_HEADER = "User-Agent";
 
     /** Used by Heroku to pass in the request ID */
