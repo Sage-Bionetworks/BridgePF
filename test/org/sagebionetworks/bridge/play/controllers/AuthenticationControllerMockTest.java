@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -225,6 +226,10 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(TEST_STUDY_ID).build();
+        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
 
@@ -234,8 +239,8 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        Context playContext = TestUtils.mockPlayContextWithJson(requestJsonString);
+        Http.Context.current.set(playContext);
 
         // mock AuthenticationService
         UserSession session = createSession();
@@ -283,6 +288,10 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(TEST_STUDY_ID).build();
+        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
 
@@ -292,8 +301,8 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        Context playContext = TestUtils.mockPlayContextWithJson(requestJsonString);
+        Http.Context.current.set(playContext);
 
         // mock AuthenticationService
         User user = new User();
@@ -343,6 +352,10 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void signInNewSessionUnconsentedAdmin() throws Exception {
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(TEST_STUDY_ID).build();
+        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
@@ -355,8 +368,8 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        Context playContext = TestUtils.mockPlayContextWithJson(requestJsonString);
+        Http.Context.current.set(playContext);
 
         // mock AuthenticationService
         User user = new User();
@@ -419,19 +432,23 @@ public class AuthenticationControllerMockTest {
         // mock getMetrics
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
-
+        
         // mock request
         String requestJsonString = "{\n" +
                 "   \"sptoken\":\"" + TEST_VERIFY_EMAIL_TOKEN + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        Context playContext = TestUtils.mockPlayContextWithJson(requestJsonString);
+        Http.Context.current.set(playContext);
 
         // mock AuthenticationService
         UserSession session = createSession();
         ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
         when(authenticationService.verifyEmail(same(study), any(), emailVerifyCaptor.capture())).thenReturn(session);
+
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(TEST_STUDY_ID).build();
+        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
         // execute and validate
         Result result = controller.verifyEmail();
@@ -445,6 +462,10 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void verifyEmailUnconsented() throws Exception {
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(TEST_STUDY_ID).build();
+        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        
         // mock getMetrics
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
@@ -454,8 +475,8 @@ public class AuthenticationControllerMockTest {
                 "   \"sptoken\":\"" + TEST_VERIFY_EMAIL_TOKEN + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        Context playContext = TestUtils.mockPlayContextWithJson(requestJsonString);
+        Http.Context.current.set(playContext);
 
         // mock AuthenticationService
         User user = new User();

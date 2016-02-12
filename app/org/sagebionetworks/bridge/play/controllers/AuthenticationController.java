@@ -57,7 +57,7 @@ public class AuthenticationController extends BaseController {
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
 
-        CriteriaContext context = getCriteriaContext();
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
         UserSession session = authenticationService.verifyEmail(study, context, emailVerification);
         writeSessionInfoToMetrics(session);
@@ -106,7 +106,8 @@ public class AuthenticationController extends BaseController {
             SignIn signIn = parseJson(request(), SignIn.class);
             Study study = getStudyOrThrowException(json);
 
-            CriteriaContext context = getCriteriaContext(session);
+            // No session by definition
+            CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
             
             try {
                 session = authenticationService.signIn(study, context, signIn);

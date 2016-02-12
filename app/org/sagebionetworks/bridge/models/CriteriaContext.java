@@ -23,7 +23,7 @@ public final class CriteriaContext {
         this.healthCode = healthCode;
         this.clientInfo = clientInfo;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
-        // ImmutableSet says its items are kept "in order" and this set is ordered, but not a SortedSet
+        // ImmutableSet says its items are kept "in order" and this set is ordered (but not sorted as in SortedSet)
         this.languages = (languages == null) ? ImmutableSet.of() : ImmutableSet.copyOf(languages);
     }
 
@@ -115,6 +115,7 @@ public final class CriteriaContext {
             this.healthCode = context.healthCode;
             this.clientInfo = context.clientInfo;
             this.userDataGroups = context.userDataGroups;
+            this.languages = context.languages;
             return this;
         }
 

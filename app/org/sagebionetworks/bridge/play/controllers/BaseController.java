@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.ACCEPT_LANGUAGE_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.USER_AGENT_HEADER;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.LinkedHashSet;
@@ -14,7 +16,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -32,6 +33,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -167,7 +169,7 @@ public abstract class BaseController extends Controller {
     }
 
     Set<String> getLanguagesFromAcceptLanguageHeader() {
-        String acceptLanguageHeader = request().getHeader(BridgeConstants.ACCEPT_LANGUAGE_HEADER);
+        String acceptLanguageHeader = request().getHeader(ACCEPT_LANGUAGE_HEADER);
         if (isNotBlank(acceptLanguageHeader)) {
             // This parse method returns LanguageRange objects in descending order of their quality 
             // value (so most-desirable language first). We extract language only and de-duplicate 
@@ -181,15 +183,16 @@ public abstract class BaseController extends Controller {
     }
     
     ClientInfo getClientInfoFromUserAgentHeader() {
-        String userAgentHeader = request().getHeader(BridgeConstants.USER_AGENT_HEADER);
+        String userAgentHeader = request().getHeader(USER_AGENT_HEADER);
         ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
         
         Logger.debug("User agent: '"+userAgentHeader+"' converted to " + info);
     	return info;
     }
     
-    CriteriaContext getCriteriaContext() {
+    CriteriaContext getCriteriaContext(StudyIdentifier studyId) {
         return new CriteriaContext.Builder()
+            .withStudyIdentifier(studyId)
             .withLanguages(getLanguagesFromAcceptLanguageHeader())
             .withClientInfo(getClientInfoFromUserAgentHeader())
             .build();
