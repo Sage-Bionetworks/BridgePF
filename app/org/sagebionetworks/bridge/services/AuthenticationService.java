@@ -278,7 +278,7 @@ public class AuthenticationService {
         
         // These are incorrect since they are based on looking up DDB records, so re-create them.
         if (repaired) {
-            updateInMemoryConsentStatuses(session.getUser(), context);
+            session.getUser().setConsentStatuses(consentService.getConsentStatuses(context));
         }
     }
     
@@ -310,24 +310,18 @@ public class AuthenticationService {
         
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
-
-        updateInMemoryConsentStatuses(user, context);
-        session.setUser(user);
         
-        return session;
-    }
-
-    private void updateInMemoryConsentStatuses(User user, CriteriaContext context) {
-        // Now that we know more about this user, we can expand on the request context.
+        // Now that we have more information about the user, we can update the context
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)
                 .withHealthCode(user.getHealthCode())
                 .withUserDataGroups(user.getDataGroups())
                 .build();
+
+        user.setConsentStatuses(consentService.getConsentStatuses(newContext));
+        session.setUser(user);
         
-        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(newContext);
-        
-        user.setConsentStatuses(statuses);
+        return session;
     }
 
     private UserSession getSession(final Account account) {

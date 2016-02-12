@@ -12,6 +12,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 
 import java.util.EnumSet;
 
@@ -33,7 +34,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -226,9 +226,7 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY_ID).build();
-        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
         
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
@@ -288,9 +286,7 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY_ID).build();
-        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
         
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
@@ -352,9 +348,7 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void signInNewSessionUnconsentedAdmin() throws Exception {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY_ID).build();
-        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
@@ -446,9 +440,7 @@ public class AuthenticationControllerMockTest {
         ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
         when(authenticationService.verifyEmail(same(study), any(), emailVerifyCaptor.capture())).thenReturn(session);
 
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY_ID).build();
-        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
         // execute and validate
         Result result = controller.verifyEmail();
@@ -462,9 +454,7 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void verifyEmailUnconsented() throws Exception {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY_ID).build();
-        doReturn(context).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
         
         // mock getMetrics
         Metrics metrics = new Metrics(TEST_REQUEST_ID);

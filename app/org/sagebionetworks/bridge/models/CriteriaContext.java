@@ -15,6 +15,10 @@ public final class CriteriaContext {
     private final String healthCode;
     private final ClientInfo clientInfo;
     private final Set<String> userDataGroups;
+    // This set is ordered (but not a SortedSet, as this set implies a sort order based on its contents, 
+    // and we are storing the language string here, without the quality indicator from the LanguageRange
+    // in the Accept-Language header that told us the preferential order of the languages in the first 
+    // place.
     private final Set<String> languages;
     
     private CriteriaContext(StudyIdentifier studyId, String healthCode, ClientInfo clientInfo,
@@ -23,7 +27,7 @@ public final class CriteriaContext {
         this.healthCode = healthCode;
         this.clientInfo = clientInfo;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
-        // ImmutableSet says its items are kept "in order" and this set is ordered (but not sorted as in SortedSet)
+        // ImmutableSet says its items are kept "in order"
         this.languages = (languages == null) ? ImmutableSet.of() : ImmutableSet.copyOf(languages);
     }
 
@@ -51,8 +55,8 @@ public final class CriteriaContext {
      * Languages are sorted in order of descending preference of the LanguageRange objects 
      * submitted by the request via the Accept-Language HTTP header. That is to say, the 
      * client prefers the first language more than the second language, the second more than 
-     * the third, etc. However, this isn't a SortedSet, which sorts the items according to 
-     * some ordering that in this case, is external to the string itself.
+     * the third, etc. However, this isn't a SortedSet, because it is sorted by something 
+     * (LanguageRange quality) that is external to the contents of the Set.
      */
     public Set<String> getLanguages() {
         return languages;
