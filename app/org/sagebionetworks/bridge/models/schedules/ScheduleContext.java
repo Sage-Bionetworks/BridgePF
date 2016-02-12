@@ -154,6 +154,10 @@ public final class ScheduleContext {
             this.now = now;
             return this;
         }
+        public Builder withLanguages(Set<String> languages) {
+            contextBuilder.withLanguages(languages);
+            return this;
+        }
         public Builder withContext(ScheduleContext context) {
             this.zone = context.zone;
             this.endsOn = context.endsOn;

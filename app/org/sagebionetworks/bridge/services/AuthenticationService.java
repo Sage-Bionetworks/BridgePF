@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -145,7 +144,7 @@ public class AuthenticationService {
         return cacheProvider.getUserSession(sessionToken);
     }
 
-    public UserSession signIn(Study study, ClientInfo clientInfo, SignIn signIn) throws EntityNotFoundException {
+    public UserSession signIn(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
         Validate.entityThrowingException(signInValidator, signIn);
@@ -156,8 +155,8 @@ public class AuthenticationService {
             lockId = lockDao.acquireLock(SignIn.class, signInLock, LOCK_EXPIRE_IN_SECONDS);
             Account account = accountDao.authenticate(study, signIn);
             
-            UserSession session = getSessionFromAccount(study, clientInfo, account);
-            repairConsents(study, account, session, clientInfo);
+            UserSession session = getSessionFromAccount(study, context, account);
+            repairConsents(account, session, context);
             cacheProvider.setUserSession(session);
             
             return session;
@@ -209,13 +208,13 @@ public class AuthenticationService {
         }
     }
 
-    public UserSession verifyEmail(Study study, ClientInfo clientInfo, EmailVerification verification) throws ConsentRequiredException {
+    public UserSession verifyEmail(Study study, CriteriaContext context, EmailVerification verification) throws ConsentRequiredException {
         checkNotNull(verification, "Verification object cannot be null");
 
         Validate.entityThrowingException(verificationValidator, verification);
         
         Account account = accountDao.verifyEmail(study, verification);
-        UserSession session = getSessionFromAccount(study, clientInfo, account);
+        UserSession session = getSessionFromAccount(study, context, account);
         cacheProvider.setUserSession(session);
         return session;
     }
@@ -263,7 +262,7 @@ public class AuthenticationService {
      * create the DynamoDB record. (The signatures are from Stormpath and the consent status records are 
      * constructed from DynamoDB).
      */
-    private void repairConsents(Study study, Account account, UserSession session, ClientInfo clientInfo){
+    private void repairConsents(Account account, UserSession session, CriteriaContext context){
         boolean repaired = false;
         
         Map<SubpopulationGuid,ConsentStatus> statuses = session.getUser().getConsentStatuses();
@@ -279,7 +278,7 @@ public class AuthenticationService {
         
         // These are incorrect since they are based on looking up DDB records, so re-create them.
         if (repaired) {
-            updateInMemoryConsentStatuses(study, session.getUser(), clientInfo);
+            session.getUser().setConsentStatuses(consentService.getConsentStatuses(context));
         }
     }
     
@@ -297,7 +296,7 @@ public class AuthenticationService {
         userConsentDao.giveConsent(session.getUser().getHealthCode(), subpopGuid, consentCreatedOn, signedOn);
     }
     
-    private UserSession getSessionFromAccount(Study study, ClientInfo clientInfo, Account account) {
+    private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
@@ -311,25 +310,18 @@ public class AuthenticationService {
         
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
+        
+        // Now that we have more information about the user, we can update the context
+        CriteriaContext newContext = new CriteriaContext.Builder()
+                .withContext(context)
+                .withHealthCode(user.getHealthCode())
+                .withUserDataGroups(user.getDataGroups())
+                .build();
 
-        updateInMemoryConsentStatuses(study, user, clientInfo);
+        user.setConsentStatuses(consentService.getConsentStatuses(newContext));
         session.setUser(user);
         
         return session;
-    }
-
-    private void updateInMemoryConsentStatuses(Study study, User user, ClientInfo clientInfo) {
-        // now that we know more about this user, we can expand on the request context.
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(clientInfo)
-                .withHealthCode(user.getHealthCode())
-                .withUserDataGroups(user.getDataGroups())
-                .withStudyIdentifier(study.getStudyIdentifier()) // probably already set
-                .build();
-        
-        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        
-        user.setConsentStatuses(statuses);
     }
 
     private UserSession getSession(final Account account) {

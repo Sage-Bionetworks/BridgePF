@@ -93,7 +93,8 @@ public class TestUtils {
 
         when(request.getHeader(anyString())).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
-            return headers.get(args[0])[0];
+            String[] values = headers.get(args[0]);
+            return (values == null || values.length == 0) ? null : values[0];
         });
         when(request.headers()).thenReturn(headers);
         when(request.body()).thenReturn(body);

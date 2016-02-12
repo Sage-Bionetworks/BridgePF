@@ -8,12 +8,13 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class CriteriaContextTest {
-
+    
     private static final ClientInfo CLIENT_INFO = ClientInfo.parseUserAgentString("app/20");
     private static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("a","b");
     
@@ -27,6 +28,7 @@ public class CriteriaContextTest {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withStudyIdentifier(TestConstants.TEST_STUDY).build();
         assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
+        assertEquals(ImmutableSet.of(), context.getLanguages());
     }
     
     @Test(expected = NullPointerException.class)
@@ -49,5 +51,4 @@ public class CriteriaContextTest {
         assertEquals(CLIENT_INFO, copy.getClientInfo());
         assertEquals(USER_DATA_GROUPS, copy.getUserDataGroups());
     }
-
 }

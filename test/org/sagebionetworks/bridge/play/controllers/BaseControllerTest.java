@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.apache.http.HttpHeaders.ACCEPT_LANGUAGE;
+import static org.apache.http.HttpHeaders.USER_AGENT;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.doReturn;
@@ -10,12 +13,12 @@ import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
 
 import play.mvc.Http;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -27,6 +30,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.controllers.BaseController;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 /** Test class for basic utility functions in BaseController. */
@@ -88,11 +92,7 @@ public class BaseControllerTest {
     
     @Test
     public void canRetrieveClientInfoObject() throws Exception {
-        Http.Request mockRequest = mock(Http.Request.class);
-        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
-        
-        mockPlayContext(mockRequest);
+        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertEquals("Asthma", info.getAppName());
@@ -105,11 +105,8 @@ public class BaseControllerTest {
     
     @Test
     public void doesNotThrowErrorWhenUserAgentStringInvalid() throws Exception {
-        Http.Request mockRequest = mock(Http.Request.class);
-        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-            .thenReturn("Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
-        
-        mockPlayContext(mockRequest);
+        mockHeader(USER_AGENT, 
+                "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
         
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertNull(info.getAppName());
@@ -122,11 +119,7 @@ public class BaseControllerTest {
     
     @Test (expected = UnsupportedVersionException.class)
     public void testInvalidSupportedVersionThrowsException() throws Exception {
-        Http.Request mockRequest = mock(Http.Request.class);
-        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
-        
-        mockPlayContext(mockRequest);
+        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put("iPhone OS", 28);
@@ -141,11 +134,7 @@ public class BaseControllerTest {
     
     @Test
     public void testValidSupportedVersionDoesNotThrowException() throws Exception {
-        Http.Request mockRequest = mock(Http.Request.class);
-        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
-        
-        mockPlayContext(mockRequest);
+        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put("iPhone OS", 25);
@@ -159,11 +148,7 @@ public class BaseControllerTest {
     
     @Test
     public void testNullSupportedVersionDoesNotThrowException() throws Exception {
-        Http.Request mockRequest = mock(Http.Request.class);
-        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-            .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
-        
-        mockPlayContext(mockRequest);
+        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
         HashMap<String, Integer> map =new HashMap<>();
         
@@ -176,11 +161,7 @@ public class BaseControllerTest {
     
     @Test
     public void testUnknownOSDoesNotThrowException() throws Exception {
-        Http.Request mockRequest = mock(Http.Request.class);
-        when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
-            .thenReturn("Asthma/26 BridgeSDK/4");
-        
-        mockPlayContext(mockRequest);
+        mockHeader(USER_AGENT, "Asthma/26 BridgeSDK/4");
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put("iPhone OS", 25);
@@ -207,6 +188,48 @@ public class BaseControllerTest {
         // This method, upon confronting the fact that the user does not have this role, 
         // throws an UnauthorizedException.
         controller.getAuthenticatedSession(Roles.ADMIN);
+    }
+    
+    @Test
+    public void canRetrieveLanguagesFromAcceptHeader() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        
+        mockPlayContext();
+        
+        // with no accept language header at all, things don't break;
+        Set<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableSet.of(), langs);
+        
+        mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
+        
+        langs = controller.getLanguagesFromAcceptLanguageHeader();
+            
+        Set<String> set = Sets.newLinkedHashSet();
+        set.add("en");
+        set.add("de");
+        assertEquals(set, langs);
+
+        mockHeader(ACCEPT_LANGUAGE, null);
+        langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableSet.of(), langs);
+            
+        mockHeader(ACCEPT_LANGUAGE, "");
+        langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableSet.of(), langs);
+            
+        mockHeader(ACCEPT_LANGUAGE, "en-US");
+        langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableSet.of("en"), langs);
+            
+        mockHeader(ACCEPT_LANGUAGE, "FR,en-US");
+        langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableSet.of("fr","en"), langs);
+    }
+    
+    private void mockHeader(String header, String value) throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(header)).thenReturn(value);
+        mockPlayContext(mockRequest);
     }
 
 }
