@@ -39,7 +39,6 @@ import org.sagebionetworks.bridge.services.UserProfileService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -93,8 +92,7 @@ public class StudyControllerTest {
         controller.setUploadCertificateService(mockUploadCertService);
         controller.setUserProfileService(mockUserProfileService);
         
-        Http.Context context = mockPlayContext();
-        Http.Context.current.set(context);
+        mockPlayContext();
     }
     
     @Test(expected = UnauthorizedException.class)

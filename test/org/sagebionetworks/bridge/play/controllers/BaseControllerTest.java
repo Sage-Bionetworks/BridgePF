@@ -92,9 +92,7 @@ public class BaseControllerTest {
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
             .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        mockPlayContext(mockRequest);
         
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertEquals("Asthma", info.getAppName());
@@ -111,9 +109,7 @@ public class BaseControllerTest {
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
             .thenReturn("Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
         
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        mockPlayContext(mockRequest);
         
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertNull(info.getAppName());
@@ -130,9 +126,7 @@ public class BaseControllerTest {
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
             .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        mockPlayContext(mockRequest);
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put("iPhone OS", 28);
@@ -151,9 +145,7 @@ public class BaseControllerTest {
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
             .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        mockPlayContext(mockRequest);
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put("iPhone OS", 25);
@@ -171,9 +163,7 @@ public class BaseControllerTest {
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
             .thenReturn("Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        mockPlayContext(mockRequest);
         
         HashMap<String, Integer> map =new HashMap<>();
         
@@ -190,9 +180,7 @@ public class BaseControllerTest {
         when(mockRequest.getHeader(BridgeConstants.USER_AGENT_HEADER))
             .thenReturn("Asthma/26 BridgeSDK/4");
         
-        Http.Context context = mockPlayContext();
-        when(context.request()).thenReturn(mockRequest);
-        Http.Context.current.set(context);
+        mockPlayContext(mockRequest);
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put("iPhone OS", 25);
@@ -206,8 +194,7 @@ public class BaseControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void roleEnforcedWhenRetrievingSession() throws Exception {
-        Http.Context context = mockPlayContext();
-        Http.Context.current.set(context);
+        mockPlayContext();
         
         SchedulePlanController controller = spy(new SchedulePlanController());
         User user = new User();

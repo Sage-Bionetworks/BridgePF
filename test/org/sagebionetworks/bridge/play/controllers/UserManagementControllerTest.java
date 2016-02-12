@@ -60,10 +60,10 @@ public class UserManagementControllerTest {
         Map<String,String[]> map = Maps.newHashMap();
         map.put(BridgeConstants.SESSION_TOKEN_HEADER, new String[]{"AAA"});
         
-        Http.Context context = TestUtils.mockPlayContextWithJson("{}");
+        TestUtils.mockPlayContextWithJson("{}");
+        Http.Context context = Http.Context.current.get();
         Http.Request request = context.request();
         when(request.headers()).thenReturn(map);
-        Http.Context.current.set(context);
         doReturn(null).when(controller).getMetrics();
     }
     

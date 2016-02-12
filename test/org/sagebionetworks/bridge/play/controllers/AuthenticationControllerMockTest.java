@@ -45,8 +45,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
-import play.mvc.Http;
-import play.mvc.Http.Context;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -87,8 +85,7 @@ public class AuthenticationControllerMockTest {
     
     @Test
     public void userCannotAssignRolesToSelfOnSignUp() throws Exception {
-        Context context = TestUtils.mockPlayContextWithJson("{\"study\":\"study-key\",\"email\":\"bridge-testing+test@sagebase.org\",\"password\":\"P@ssword1\",\"roles\":[\"admin\"]}");
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson("{\"study\":\"study-key\",\"email\":\"bridge-testing+test@sagebase.org\",\"password\":\"P@ssword1\",\"roles\":[\"admin\"]}");
         
         Result result = controller.signUp();
         assertEquals(201, result.status());
@@ -234,8 +231,7 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         UserSession session = createSession();
@@ -292,8 +288,7 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         User user = new User();
@@ -355,8 +350,7 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         User user = new User();
@@ -425,8 +419,7 @@ public class AuthenticationControllerMockTest {
                 "   \"sptoken\":\"" + TEST_VERIFY_EMAIL_TOKEN + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         UserSession session = createSession();
@@ -454,8 +447,7 @@ public class AuthenticationControllerMockTest {
                 "   \"sptoken\":\"" + TEST_VERIFY_EMAIL_TOKEN + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         User user = new User();
