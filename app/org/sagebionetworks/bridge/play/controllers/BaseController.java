@@ -1,10 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.ACCEPT_LANGUAGE_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
-import static org.sagebionetworks.bridge.BridgeConstants.USER_AGENT_HEADER;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.LinkedHashSet;
@@ -169,7 +167,7 @@ public abstract class BaseController extends Controller {
     }
 
     Set<String> getLanguagesFromAcceptLanguageHeader() {
-        String acceptLanguageHeader = request().getHeader(ACCEPT_LANGUAGE_HEADER);
+        String acceptLanguageHeader = request().getHeader(ACCEPT_LANGUAGE);
         if (isNotBlank(acceptLanguageHeader)) {
             // This parse method returns LanguageRange objects in descending order of their quality 
             // value (so most-desirable language first). We extract language only and de-duplicate 
@@ -183,7 +181,7 @@ public abstract class BaseController extends Controller {
     }
     
     ClientInfo getClientInfoFromUserAgentHeader() {
-        String userAgentHeader = request().getHeader(USER_AGENT_HEADER);
+        String userAgentHeader = request().getHeader(USER_AGENT);
         ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
         
         Logger.debug("User agent: '"+userAgentHeader+"' converted to " + info);
