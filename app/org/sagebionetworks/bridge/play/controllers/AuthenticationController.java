@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -56,9 +56,10 @@ public class AuthenticationController extends BaseController {
         JsonNode json = requestToJSON(request());
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
-        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
 
-        UserSession session = authenticationService.verifyEmail(study, clientInfo, emailVerification);
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = authenticationService.verifyEmail(study, context, emailVerification);
         writeSessionInfoToMetrics(session);
         setSessionToken(session.getSessionToken());
 
@@ -104,10 +105,11 @@ public class AuthenticationController extends BaseController {
             JsonNode json = requestToJSON(request());
             SignIn signIn = parseJson(request(), SignIn.class);
             Study study = getStudyOrThrowException(json);
-            ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
 
+            CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+            
             try {
-                session = authenticationService.signIn(study, clientInfo, signIn);
+                session = authenticationService.signIn(study, context, signIn);
             } catch (ConcurrentModificationException e) {
                 if (retryCounter > 0) {
                     final long retryDelayInMillis = 200;
