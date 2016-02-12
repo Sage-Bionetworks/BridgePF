@@ -83,7 +83,6 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            System.out.println(e.getErrors());
             assertEquals("interval and cron expression cannot both be set when a schedule repeats (results are ambiguous)", e.getErrors().get("interval").get(0));
         }
     }
