@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -128,7 +127,7 @@ public class MpowerVisualizationControllerTest {
         String requestJsonText = "{\n" +
                 "   \"visualization\":\"strictly for controller test\"\n" +
                 "}";
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson(requestJsonText));
+        TestUtils.mockPlayContextWithJson(requestJsonText);
 
         // execute
         Result result = controller.writeVisualization();
