@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.MpowerVisualizationDao;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.visualization.MpowerVisualization;
 
 /** DDB implementation of mPower visualization. */
 @Component
@@ -51,5 +52,11 @@ public class DynamoMpowerVisualizationDao implements MpowerVisualizationDao {
             vizColNode.set(oneViz.getDate().toString(), oneViz.getVisualization());
         }
         return vizColNode;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void writeVisualization(MpowerVisualization visualization) {
+        mapper.save(visualization);
     }
 }

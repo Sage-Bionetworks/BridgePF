@@ -9,7 +9,11 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.MpowerVisualizationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.visualization.MpowerVisualization;
+import org.sagebionetworks.bridge.validators.MpowerVisualizationValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 /** mPower visualization service. */
 @Component
@@ -64,5 +68,23 @@ public class MpowerVisualizationService {
         // Don't need to validate study ID or healthCode. Controller takes care of that for us.
 
         return mpowerVisualizationDao.getVisualization(healthCode, startDate, endDate);
+    }
+
+    /**
+     * Writes the visualization to the backing store. See for details:
+     * https://sagebionetworks.jira.com/wiki/display/BRIDGE/mPower+Visualization
+     *
+     * @param visualization
+     *         visualization object, which includes visualization JSON data and metadata, must be non-null
+     */
+    public void writeVisualization(MpowerVisualization visualization) {
+        // validate visualization
+        if (visualization == null) {
+            throw new InvalidEntityException("visualization must be specified");
+        }
+        Validate.entityThrowingException(MpowerVisualizationValidator.INSTANCE, visualization);
+
+        // call through to DAO
+        mpowerVisualizationDao.writeVisualization(visualization);
     }
 }
