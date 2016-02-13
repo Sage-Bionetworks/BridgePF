@@ -38,7 +38,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -70,14 +69,12 @@ public class FPHSControllerTest {
     
     private void setExternalIdentifierPost(ExternalIdentifier externalId) throws Exception {
         String json = BridgeObjectMapper.get().writeValueAsString(externalId);
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
     }
     
     private void setFPHSExternalIdentifiersPost(List<FPHSExternalIdentifier> list) throws Exception {
         String json = BridgeObjectMapper.get().writeValueAsString(list);
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
     }
     
     private void setData() throws Exception {

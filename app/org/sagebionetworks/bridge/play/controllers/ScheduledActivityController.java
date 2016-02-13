@@ -96,8 +96,9 @@ public class ScheduledActivityController extends BaseController {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
         }
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-
+        
         ScheduleContext context = new ScheduleContext.Builder()
+                .withLanguages(getLanguagesFromAcceptLanguageHeader())
                 .withHealthCode(session.getUser().getHealthCode())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(clientInfo)

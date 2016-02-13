@@ -4,7 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_DEPRECATED_STATUS;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
@@ -20,7 +22,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
@@ -68,23 +69,23 @@ public class ConsentControllerTest {
                 // First, verify this header isn't on *every* endpoint
                 WSRequest request = WS.url(TEST_BASE_URL + "/v3/users/self");
                 WSResponse response = request.post(node).get(TIMEOUT);
-                String headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+                String headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
                 assertNull(headerValue);
                 
                 // Now verify it's on the intended endpoints
                 request = WS.url(TEST_BASE_URL + "/api/v1/consent/dataSharing/suspend");
                 response = request.post(node).get(TIMEOUT);
-                headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+                headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
                 assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
                 
                 request = WS.url(TEST_BASE_URL + "/api/v1/consent/dataSharing/resume");
                 response = request.post(node).get(TIMEOUT);
-                headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+                headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
                 assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
                 
                 request = WS.url(TEST_BASE_URL + "/api/v1/consent");
                 response = request.post(node).get(TIMEOUT);
-                headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+                headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
                 assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
             }
         });
@@ -106,7 +107,7 @@ public class ConsentControllerTest {
                 WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
                 WSResponse response = request.post(node).get(TIMEOUT);
 
-                WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+                WSCookie cookie = response.getCookie(SESSION_TOKEN_HEADER);
                 String sessionToken = cookie.getValue();
 
                 node = JsonNodeFactory.instance.objectNode();

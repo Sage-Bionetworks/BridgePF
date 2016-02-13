@@ -34,7 +34,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.play.controllers.ScheduledActivityController;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -62,8 +61,7 @@ public class ScheduledActivityControllerTest {
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
         String json = BridgeObjectMapper.get().writeValueAsString(list);
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         UserSession session = new UserSession();
         User user = new User();

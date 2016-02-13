@@ -40,7 +40,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -88,8 +87,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void getAllSubpopulations() throws Exception {
-        Http.Context context = TestUtils.mockPlayContext();
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContext();
         
         List<Subpopulation> list = createSubpopulationList();
         when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(list);
@@ -109,8 +107,7 @@ public class SubpopulationControllerTest {
     @Test
     public void createSubpopulation() throws Exception {
         String json = "{\"guid\":\"junk\",\"name\":\"Name\",\"defaultGroup\":true,\"description\":\"Description\",\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         Subpopulation createdSubpop = Subpopulation.create();
         createdSubpop.setGuidString("AAA");
@@ -138,8 +135,7 @@ public class SubpopulationControllerTest {
     @Test
     public void updateSubpopulation() throws Exception {
         String json = "{\"name\":\"Name\",\"description\":\"Description\",\"defaultGroup\":true,\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         Subpopulation createdSubpop = Subpopulation.create();
         createdSubpop.setGuidString("AAA");
@@ -167,8 +163,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void getSubpopulation() throws Exception {
-        Http.Context context = TestUtils.mockPlayContext();
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContext();
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString("AAA");
@@ -189,8 +184,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void deleteSubpopulation() throws Exception {
-        Http.Context context = TestUtils.mockPlayContext();
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContext();
 
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), null);
         assertEquals(200, result.status());

@@ -15,12 +15,19 @@ public final class CriteriaContext {
     private final String healthCode;
     private final ClientInfo clientInfo;
     private final Set<String> userDataGroups;
+    // This set is ordered from most preferred to least preferred language. It is not a SortedSet because 
+    // that type includes a comparator for sorting the items in the set, and this preference order was 
+    // determined externally from the LanguageRange objects (it's not in the language string).
+    private final Set<String> languages;
     
-    private CriteriaContext(StudyIdentifier studyId, String healthCode, ClientInfo clientInfo, Set<String> userDataGroups) {
+    private CriteriaContext(StudyIdentifier studyId, String healthCode, ClientInfo clientInfo,
+            Set<String> userDataGroups, Set<String> languages) {
         this.studyId = studyId;
         this.healthCode = healthCode;
         this.clientInfo = clientInfo;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
+        // ImmutableSet says its items are kept "in order"
+        this.languages = (languages == null) ? ImmutableSet.of() : ImmutableSet.copyOf(languages);
     }
 
     /**
@@ -42,10 +49,21 @@ public final class CriteriaContext {
     public String getHealthCode() {
         return healthCode;
     }
+    
+    /**
+     * Languages are sorted in order of descending preference of the LanguageRange objects 
+     * submitted by the request via the Accept-Language HTTP header. That is to say, the 
+     * client prefers the first language more than the second language, the second more than 
+     * the third, etc. However, this isn't a SortedSet, because it is sorted by something 
+     * (LanguageRange quality) that is external to the contents of the Set.
+     */
+    public Set<String> getLanguages() {
+        return languages;
+    }
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, healthCode, clientInfo, userDataGroups);
+        return Objects.hash(studyId, healthCode, clientInfo, userDataGroups, languages);
     }
 
     @Override
@@ -58,13 +76,14 @@ public final class CriteriaContext {
         return (Objects.equals(clientInfo, other.clientInfo) && 
                 Objects.equals(userDataGroups, other.userDataGroups) && 
                 Objects.equals(studyId, other.studyId) && 
-                Objects.equals(healthCode, other.healthCode));
+                Objects.equals(healthCode, other.healthCode) && 
+                Objects.equals(languages, other.languages));
     }
 
     @Override
     public String toString() {
-        return "CriteriaContext [studyId=" + studyId + ", healthCode=" + healthCode + 
-                ", clientInfo=" + clientInfo + ", userDataGroups=" + userDataGroups + "]";
+        return "CriteriaContext [studyId=" + studyId + ", healthCode=" + healthCode + ", clientInfo=" + clientInfo
+                + ", userDataGroups=" + userDataGroups + ", languages=" + languages + "]";
     }
 
     public static class Builder {
@@ -72,6 +91,7 @@ public final class CriteriaContext {
         private String healthCode;
         private ClientInfo clientInfo;
         private Set<String> userDataGroups;
+        private Set<String> languages;
 
         public Builder withStudyIdentifier(StudyIdentifier studyId) {
             this.studyId = studyId;
@@ -89,11 +109,16 @@ public final class CriteriaContext {
             this.userDataGroups = userDataGroups;
             return this;
         }
+        public Builder withLanguages(Set<String> languages) {
+            this.languages = languages;
+            return this;
+        }
         public Builder withContext(CriteriaContext context) {
             this.studyId = context.studyId;
             this.healthCode = context.healthCode;
             this.clientInfo = context.clientInfo;
             this.userDataGroups = context.userDataGroups;
+            this.languages = context.languages;
             return this;
         }
 
@@ -102,7 +127,7 @@ public final class CriteriaContext {
             if (clientInfo == null) {
                 clientInfo = ClientInfo.UNKNOWN_CLIENT;
             }
-            return new CriteriaContext(studyId, healthCode, clientInfo, userDataGroups);
+            return new CriteriaContext(studyId, healthCode, clientInfo, userDataGroups, languages);
         }
     }
 }
