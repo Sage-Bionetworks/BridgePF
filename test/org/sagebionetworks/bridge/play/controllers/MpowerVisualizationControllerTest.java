@@ -4,19 +4,25 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import org.joda.time.LocalDate;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.visualization.MpowerVisualization;
 import org.sagebionetworks.bridge.services.MpowerVisualizationService;
 
 public class MpowerVisualizationControllerTest {
@@ -104,5 +110,38 @@ public class MpowerVisualizationControllerTest {
         String resultStr = Helpers.contentAsString(result);
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultStr);
         assertEquals("mock visualization", resultNode.textValue());
+    }
+
+    @Test
+    public void testWrite() throws Exception {
+        // Spy controller. Mock session.
+        MpowerVisualizationController controller = spy(new MpowerVisualizationController());
+        doReturn(new UserSession()).when(controller).getAuthenticatedSession(Roles.WORKER);
+
+        // Mock service.
+        MpowerVisualizationService mockSvc = mock(MpowerVisualizationService.class);
+        controller.setMpowerVisualizationService(mockSvc);
+
+        // Mock request JSON. For simplicity of test, just use the visualization field and just use a string. JSON
+        // serialization is already tested in DynamoMpowerVisualizationTest, and validation is handled at the service
+        // layer
+        String requestJsonText = "{\n" +
+                "   \"visualization\":\"strictly for controller test\"\n" +
+                "}";
+        Http.Context.current.set(TestUtils.mockPlayContextWithJson(requestJsonText));
+
+        // execute
+        Result result = controller.writeVisualization();
+        assertEquals(201, result.status());
+
+        // Verify call to service, and that the visualization passed in has the dummy string we created.
+        ArgumentCaptor<MpowerVisualization> vizCaptor = ArgumentCaptor.forClass(MpowerVisualization.class);
+        verify(mockSvc).writeVisualization(vizCaptor.capture());
+
+        MpowerVisualization viz = vizCaptor.getValue();
+        assertEquals("strictly for controller test", viz.getVisualization().textValue());
+
+        // Verify we get a Worker session.
+        verify(controller).getAuthenticatedSession(Roles.WORKER);
     }
 }

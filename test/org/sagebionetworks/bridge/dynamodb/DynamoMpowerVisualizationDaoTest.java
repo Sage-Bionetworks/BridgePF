@@ -56,8 +56,6 @@ public class DynamoMpowerVisualizationDaoTest {
 
             vizList.add(viz);
         }
-
-        mapper.batchSave(vizList);
     }
 
     @After
@@ -67,6 +65,12 @@ public class DynamoMpowerVisualizationDaoTest {
 
     @Test
     public void test() {
+        // write statuses
+        for (DynamoMpowerVisualization oneViz : vizList) {
+            dao.writeVisualization(oneViz);
+        }
+
+        // Read statuses back. Read only a subset to make sure query logic works.
         JsonNode vizColNode = dao.getVisualization("AAA", LocalDate.parse("2016-02-02"),
                 LocalDate.parse("2016-02-04"));
         assertEquals(3, vizColNode.size());

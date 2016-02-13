@@ -140,6 +140,7 @@ POST   /fphs/externalIds  @org.sagebionetworks.bridge.play.controllers.FPHSContr
 
 # Visualization
 GET /parkinson/visualization @org.sagebionetworks.bridge.play.controllers.MpowerVisualizationController.getVisualization(startDate: String ?= null, endDate: String ?= null)
+POST /parkinson/visualization @org.sagebionetworks.bridge.play.controllers.MpowerVisualizationController.writeVisualization
 
 # OLD API ----------------------------------------------------------------------------------------------------
 

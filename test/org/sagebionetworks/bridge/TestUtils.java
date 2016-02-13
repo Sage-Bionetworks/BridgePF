@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,7 @@ import org.joda.time.Period;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
@@ -61,6 +63,14 @@ public class TestUtils {
             }
         }
     }
+
+    // Helper metod to extract and assert on validator error messages.
+    public static void assertValidatorMessage(InvalidEntityException e, String propName, String error) {
+        Map<String,List<String>> errors = e.getErrors();
+        List<String> messages = errors.get(propName);
+        assertTrue(messages.get(0).contains(propName + error));
+    }
+
     public static Map<SubpopulationGuid,ConsentStatus> toMap(ConsentStatus... statuses) {
         return TestUtils.toMap(Lists.newArrayList(statuses));
     }

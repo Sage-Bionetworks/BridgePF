@@ -7,9 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.visualization.MpowerVisualization;
 import org.sagebionetworks.bridge.services.MpowerVisualizationService;
 
 /**
@@ -52,5 +54,13 @@ public class MpowerVisualizationController extends BaseController {
                 throw new BadRequestException("invalid date " + dateStr);
             }
         }
+    }
+
+    /** Writes the mPower visualization. The request body includes both the visualization data and metadata. */
+    public Result writeVisualization() {
+        getAuthenticatedSession(Roles.WORKER);
+        MpowerVisualization viz = parseJson(request(), MpowerVisualization.class);
+        mpowerVisualizationService.writeVisualization(viz);
+        return created("Visualization created.");
     }
 }
