@@ -2,16 +2,21 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(as = DynamoCriteria.class)
 public interface Criteria extends BridgeEntity {
     
-    public String getKey();
+    String getKey();
     
-    public Integer getMinAppVersion();
+    Integer getMinAppVersion();
     
-    public Integer getMaxAppVersion();
+    Integer getMaxAppVersion();
     
-    public Set<String> getAllOfGroups();
+    Set<String> getAllOfGroups();
     
-    public Set<String> getNoneOfGroups();
+    Set<String> getNoneOfGroups();
 
 }

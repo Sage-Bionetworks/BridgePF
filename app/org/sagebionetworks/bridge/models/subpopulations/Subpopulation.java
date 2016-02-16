@@ -14,6 +14,9 @@ public interface Subpopulation extends Criteria {
         return new DynamoSubpopulation();
     }
     
+    public void setCriteria(Criteria criteria);
+    public Criteria getCriteria();
+    
     public void setStudyIdentifier(String studyIdentifier);
     public String getStudyIdentifier();
 

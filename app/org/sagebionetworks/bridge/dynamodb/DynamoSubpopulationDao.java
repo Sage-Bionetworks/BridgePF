@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -62,10 +63,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             throw new BadRequestException("Subpopulation does not appear to be new (includes version number).");
         }
         
-        // write duplicate criteria to the criteria table
-        criteriaDao.createOrUpdateCriteria(subpop);
+        persistCriteria(subpop);
         
-        // these are completely ignored, if submitted
+        // these are ignored if submitted. delete remains what it was
         subpop.setDeleted(false); 
         subpop.setDefaultGroup(false);
         mapper.save(subpop);
@@ -87,8 +87,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             throw new EntityNotFoundException(Subpopulation.class);
         }
         
-        // update duplicate criteria to the criteria table
-        criteriaDao.createOrUpdateCriteria(subpop);
+        persistCriteria(subpop);
         
         // these are ignored if submitted. delete remains what it was
         subpop.setDefaultGroup(existing.isDefaultGroup()); 
@@ -113,9 +112,14 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             return ImmutableList.of(subpop);
         }
         // Now filter out deleted subpopulations, if requested
-        return subpops.stream()
+        List<Subpopulation> subpopulations = subpops.stream()
                 .filter(subpop -> includeDeleted || !subpop.isDeleted())
-        .collect(toImmutableList());
+                .collect(toImmutableList());
+        
+        for (Subpopulation subpop : subpopulations) {
+            loadCriteria(subpop);
+        }
+        return subpopulations;
     }
     
     @Override
@@ -129,7 +133,10 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         // The first group is required until the study designers say otherwise
         subpop.setRequired(true);
         
-        criteriaDao.createOrUpdateCriteria(subpop);
+        // We know in this case that criteria do not exist
+        Criteria criteria = criteriaDao.copyCriteria(getKey(subpop), subpop);
+        criteriaDao.createOrUpdateCriteria(criteria);
+        subpop.setCriteria(criteria);
         
         mapper.save(subpop);
         return subpop;
@@ -145,15 +152,17 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (subpop == null) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
+        loadCriteria(subpop);
+        
         return subpop;
     }
 
     @Override
     public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true, false);
-        
+
         return subpops.stream().filter(subpop -> {
-            return CriteriaUtils.matchCriteria(context, subpop);
+            return CriteriaUtils.matchCriteria(context, subpop.getCriteria());
         }).collect(toImmutableList());
     }
     
@@ -187,5 +196,31 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             List<FailedBatch> failures = mapper.batchDelete(subpops);
             BridgeUtils.ifFailuresThrowException(failures);
         }
+    }
+    
+    private String getKey(Subpopulation subpop) {
+        return "subpopulation:" + subpop.getGuidString();
+    }
+    
+    // Save the criteria object if it exists. If it does not, copy the criteria data from the subpopulation
+    // and save that. Set that on subpopulation. Once all models have a criteria object, this will be removed 
+    // along with the fields on subpopulation.
+    private void persistCriteria(Subpopulation subpop) {
+        Criteria criteria = subpop.getCriteria();
+        Criteria makeCopyOf = (criteria == null) ? subpop : criteria;
+
+        Criteria copy = criteriaDao.copyCriteria(getKey(subpop), makeCopyOf);
+        criteriaDao.createOrUpdateCriteria(copy);
+        subpop.setCriteria(copy);
+    }
+
+    // Load the criteria object. If it doesn't exist, assemble it from the criteria data on the subpopulation
+    // object. Once all models have a criteria object, this will be removed along with the fields on subpopulation.
+    private void loadCriteria(Subpopulation subpop) {
+        Criteria criteria = criteriaDao.getCriteria(getKey(subpop));
+        if (criteria == null) {
+            criteria = criteriaDao.copyCriteria(getKey(subpop), subpop);
+        }
+        subpop.setCriteria(criteria);
     }
 }

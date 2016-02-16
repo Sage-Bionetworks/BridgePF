@@ -4,10 +4,12 @@ import org.sagebionetworks.bridge.models.Criteria;
 
 public interface CriteriaDao {
 
-    public void createOrUpdateCriteria(Criteria criteria);
+    Criteria copyCriteria(String key, Criteria criteria);
     
-    public Criteria getCriteria(String key);
+    void createOrUpdateCriteria(Criteria criteria);
     
-    public void deleteCriteria(String key);
+    Criteria getCriteria(String key);
+    
+    void deleteCriteria(String key);
 
 }

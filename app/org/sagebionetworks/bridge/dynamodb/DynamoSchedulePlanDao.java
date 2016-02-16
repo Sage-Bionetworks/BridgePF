@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -15,10 +15,12 @@ import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -73,6 +75,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
             if (clientInfo.isTargetedAppVersion(dynamoPlan.getMinAppVersion(), dynamoPlan.getMaxAppVersion())) {
                 plans.add(dynamoPlan);
             }
+            forEachCriteria(dynamoPlan, scheduleCriteria -> loadCriteria(scheduleCriteria));
         }
         return plans;
     }
@@ -98,7 +101,10 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         if (plans.isEmpty()) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
-        return plans.get(0);
+        
+        plan = plans.get(0);
+        forEachCriteria(plan, scheduleCriteria -> loadCriteria(scheduleCriteria));
+        return plan;
     }
 
     @Override
@@ -110,7 +116,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
-        forEachCriteria(plan, criteria -> criteriaDao.createOrUpdateCriteria(criteria));
+        forEachCriteria(plan, scheduleCriteria -> loadCriteria(scheduleCriteria));
         mapper.save(plan);
         return plan;
     }
@@ -123,7 +129,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
-        forEachCriteria(plan, criteria -> criteriaDao.createOrUpdateCriteria(criteria));
+        forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
         mapper.save(plan);
         return plan;
     }
@@ -135,24 +141,54 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         
         SchedulePlan plan = getSchedulePlan(studyIdentifier, guid);
         
-        forEachCriteria(plan, criteria -> criteriaDao.deleteCriteria(criteria.getKey()));
+        forEachCriteria(plan, scheduleCriteria -> deleteCriteria(scheduleCriteria));
         mapper.delete(plan);
     }
     
-    private void forEachCriteria(SchedulePlan plan, Consumer<DynamoCriteria> consumer) {
+    private void forEachCriteria(SchedulePlan plan, Function<ScheduleCriteria,Criteria> consumer) {
         if (plan.getStrategy() instanceof CriteriaScheduleStrategy) {
             CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
             for (int i=0; i < strategy.getScheduleCriteria().size(); i++) {
                 ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(i);
-                DynamoCriteria criteria = new DynamoCriteria();
-                criteria.setKey(plan.getGuid()+":scheduleCriteria:"+i);
-                criteria.setMinAppVersion(scheduleCriteria.getMinAppVersion());
-                criteria.setMaxAppVersion(scheduleCriteria.getMaxAppVersion());
-                criteria.setNoneOfGroups(scheduleCriteria.getNoneOfGroups());
-                criteria.setAllOfGroups(scheduleCriteria.getAllOfGroups());
-                consumer.accept(criteria);
+                
+                scheduleCriteria = new ScheduleCriteria.Builder()
+                        .withScheduleCriteria(scheduleCriteria)
+                        .withKey(getKey(plan, i)).build();
+
+                Criteria criteria = consumer.apply(scheduleCriteria);
+
+                scheduleCriteria = new ScheduleCriteria.Builder()
+                        .withScheduleCriteria(scheduleCriteria)
+                        .withCriteria(criteria).build();
+                strategy.getScheduleCriteria().set(i, scheduleCriteria);
             }
         }        
+    }
+    
+    private String getKey(SchedulePlan plan, int index) {
+        return plan.getGuid()+":scheduleCriteria:" + index;
+    }
+    
+    private Criteria persistCriteria(ScheduleCriteria scheduleCriteria) {
+        Criteria criteria = scheduleCriteria.getCriteria();
+        Criteria makeCopyOf = (criteria == null) ? scheduleCriteria : criteria;
+
+        Criteria copy = criteriaDao.copyCriteria(scheduleCriteria.getKey(), makeCopyOf);
+        criteriaDao.createOrUpdateCriteria(copy);
+        return copy;
+    }
+
+    private Criteria loadCriteria(ScheduleCriteria scheduleCriteria) {
+        Criteria criteria = criteriaDao.getCriteria(scheduleCriteria.getKey());
+        if (criteria == null) {
+            criteria = criteriaDao.copyCriteria(scheduleCriteria.getKey(), scheduleCriteria);
+        }
+        return criteria;
+    }
+    
+    private Criteria deleteCriteria(ScheduleCriteria scheduleCriteria) {
+        criteriaDao.deleteCriteria(scheduleCriteria.getKey());
+        return null;
     }
 
 }
