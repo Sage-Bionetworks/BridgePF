@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -32,6 +33,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     
     private DynamoDBMapper mapper;
     private StudyConsentDao studyConsentDao;
+    private CriteriaDao criteriaDao;
 
     @Resource(name = "subpopulationDdbMapper")
     final void setMapper(DynamoDBMapper mapper) {
@@ -41,6 +43,11 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Autowired
     final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
+    }
+    
+    @Autowired
+    final void setCriteriaDao(CriteriaDao criteriaDao) {
+        this.criteriaDao = criteriaDao;
     }
     
     @Override
@@ -54,6 +61,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (subpop.getVersion() != null) { 
             throw new BadRequestException("Subpopulation does not appear to be new (includes version number).");
         }
+        
+        // write duplicate criteria to the criteria table
+        criteriaDao.createOrUpdateCriteria(subpop);
         
         // these are completely ignored, if submitted
         subpop.setDeleted(false); 
@@ -76,6 +86,10 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (existing == null || existing.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
+        
+        // update duplicate criteria to the criteria table
+        criteriaDao.createOrUpdateCriteria(subpop);
+        
         // these are ignored if submitted. delete remains what it was
         subpop.setDefaultGroup(existing.isDefaultGroup()); 
         subpop.setDeleted(false);
@@ -113,7 +127,10 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         subpop.setMinAppVersion(0);
         subpop.setDefaultGroup(true);
         // The first group is required until the study designers say otherwise
-        subpop.setRequired(true); 
+        subpop.setRequired(true);
+        
+        criteriaDao.createOrUpdateCriteria(subpop);
+        
         mapper.save(subpop);
         return subpop;
     }
@@ -149,8 +166,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (subpop.isDefaultGroup()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }
-        studyConsentDao.deleteAllConsents(subpopGuid);
         if (physicalDelete) {
+            studyConsentDao.deleteAllConsents(subpopGuid);
+            criteriaDao.deleteCriteria(subpop.getKey());
             mapper.delete(subpop);
         } else {
             subpop.setDeleted(true);
@@ -164,6 +182,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
                 studyConsentDao.deleteAllConsents(subpop.getGuid());
+                criteriaDao.deleteCriteria(subpop.getKey());
             }
             List<FailedBatch> failures = mapper.batchDelete(subpops);
             BridgeUtils.ifFailuresThrowException(failures);

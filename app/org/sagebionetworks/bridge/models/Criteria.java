@@ -4,6 +4,8 @@ import java.util.Set;
 
 public interface Criteria extends BridgeEntity {
     
+    public String getKey();
+    
     public Integer getMinAppVersion();
     
     public Integer getMaxAppVersion();

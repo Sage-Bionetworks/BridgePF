@@ -49,6 +49,12 @@ public final class DynamoSubpopulation implements Subpopulation {
     }
     
     @JsonIgnore
+    @DynamoDBIgnore
+    public String getKey() {
+        return "subpopulation:"+guid;
+    }
+    
+    @JsonIgnore
     @Override
     @DynamoDBHashKey
     public String getStudyIdentifier() {

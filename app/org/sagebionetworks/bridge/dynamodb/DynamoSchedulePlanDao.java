@@ -5,14 +5,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,13 +37,19 @@ import com.google.common.collect.Lists;
 public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     private DynamoDBMapper mapper;
+    private CriteriaDao criteriaDao;
 
     @Autowired
-    public void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
+    final void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
                 .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoSchedulePlan.class, bridgeConfig)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
+    }
+    
+    @Autowired
+    final void setCriteriaDao(CriteriaDao criteriaDao) {
+        this.criteriaDao = criteriaDao;
     }
 
     @Override
@@ -99,6 +109,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        
+        forEachCriteria(plan, criteria -> criteriaDao.createOrUpdateCriteria(criteria));
         mapper.save(plan);
         return plan;
     }
@@ -110,6 +122,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        
+        forEachCriteria(plan, criteria -> criteriaDao.createOrUpdateCriteria(criteria));
         mapper.save(plan);
         return plan;
     }
@@ -120,7 +134,25 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
         
         SchedulePlan plan = getSchedulePlan(studyIdentifier, guid);
+        
+        forEachCriteria(plan, criteria -> criteriaDao.deleteCriteria(criteria.getKey()));
         mapper.delete(plan);
+    }
+    
+    private void forEachCriteria(SchedulePlan plan, Consumer<DynamoCriteria> consumer) {
+        if (plan.getStrategy() instanceof CriteriaScheduleStrategy) {
+            CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
+            for (int i=0; i < strategy.getScheduleCriteria().size(); i++) {
+                ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(i);
+                DynamoCriteria criteria = new DynamoCriteria();
+                criteria.setKey(plan.getGuid()+":scheduleCriteria:"+i);
+                criteria.setMinAppVersion(scheduleCriteria.getMinAppVersion());
+                criteria.setMaxAppVersion(scheduleCriteria.getMaxAppVersion());
+                criteria.setNoneOfGroups(scheduleCriteria.getNoneOfGroups());
+                criteria.setAllOfGroups(scheduleCriteria.getAllOfGroups());
+                consumer.accept(criteria);
+            }
+        }        
     }
 
 }

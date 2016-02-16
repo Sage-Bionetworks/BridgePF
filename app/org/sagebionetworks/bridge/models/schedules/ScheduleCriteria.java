@@ -11,18 +11,21 @@ import com.google.common.collect.Sets;
 
 public final class ScheduleCriteria implements Criteria {
     private final Schedule schedule;
+    private final String key;
     private final Integer minAppVersion;
     private final Integer maxAppVersion;
     private final Set<String> allOfGroups;
     private final Set<String> noneOfGroups;
     
     @JsonCreator
-    private ScheduleCriteria(@JsonProperty("schedule") Schedule schedule, 
+    private ScheduleCriteria(@JsonProperty("schedule") Schedule schedule,
+            @JsonProperty("key") String key, 
             @JsonProperty("minAppVersion") Integer minAppVersion, 
             @JsonProperty("maxAppVersion") Integer maxAppVersion, 
             @JsonProperty("allOfGroups") Set<String> allOfGroups, 
             @JsonProperty("noneOfGroups") Set<String> noneOfGroups) {
         this.schedule = schedule;
+        this.key = key;
         this.minAppVersion = minAppVersion;
         this.maxAppVersion = maxAppVersion;
         this.allOfGroups = (allOfGroups != null) ? allOfGroups : Sets.newHashSet();
@@ -30,6 +33,10 @@ public final class ScheduleCriteria implements Criteria {
     }
     public Schedule getSchedule() {
         return schedule;
+    }
+    @Override
+    public String getKey() {
+        return key;
     }
     @Override
     public Integer getMinAppVersion() {
@@ -50,13 +57,27 @@ public final class ScheduleCriteria implements Criteria {
     
     public static class Builder {
         private Schedule schedule;
+        private String key;
         private Integer minAppVersion;
         private Integer maxAppVersion;
         private Set<String> allOfGroups = Sets.newHashSet();
         private Set<String> noneOfGroups = Sets.newHashSet();
         
+        public Builder withScheduleCriteria(ScheduleCriteria criteria) {
+            this.schedule = criteria.schedule;
+            this.key = criteria.key;
+            this.minAppVersion = criteria.minAppVersion;
+            this.maxAppVersion = criteria.maxAppVersion;
+            this.allOfGroups = criteria.allOfGroups;
+            this.noneOfGroups = criteria.noneOfGroups;
+            return this;
+        }
         public Builder withSchedule(Schedule schedule) {
             this.schedule = schedule;
+            return this;
+        }
+        public Builder withKey(String key) {
+            this.key = key;
             return this;
         }
         public Builder withMinAppVersion(Integer minAppVersion) {
@@ -80,13 +101,13 @@ public final class ScheduleCriteria implements Criteria {
             return this;
         }
         public ScheduleCriteria build() {
-            return new ScheduleCriteria(schedule, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups);
+            return new ScheduleCriteria(schedule, key, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups);
         }
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(minAppVersion, maxAppVersion, allOfGroups, noneOfGroups, schedule);
+        return Objects.hash(key, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups, schedule);
     }
     @Override
     public boolean equals(Object obj) {
@@ -97,12 +118,13 @@ public final class ScheduleCriteria implements Criteria {
         ScheduleCriteria other = (ScheduleCriteria) obj;
         return Objects.equals(minAppVersion, other.minAppVersion) && Objects.equals(maxAppVersion, other.maxAppVersion)
                 && Objects.equals(allOfGroups, other.allOfGroups) && Objects.equals(noneOfGroups, other.noneOfGroups) 
-                && Objects.equals(schedule, other.schedule);
+                && Objects.equals(schedule, other.schedule) && Objects.equals(key, other.key);
     }
     @Override
     public String toString() {
-        return "ScheduleCriteria [schedule=" + schedule + ", minAppVersion=" + minAppVersion + ", maxAppVersion="
-                + maxAppVersion + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" + noneOfGroups + "]";
+        return "ScheduleCriteria [key=" + key + ", schedule=" + schedule + ", minAppVersion=" + minAppVersion
+                + ", maxAppVersion=" + maxAppVersion + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" + noneOfGroups
+                + "]";
     }
 
 }
