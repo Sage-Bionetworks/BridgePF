@@ -5,6 +5,7 @@ import static org.apache.http.HttpHeaders.USER_AGENT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -12,8 +13,8 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Test;
 
@@ -197,14 +198,16 @@ public class BaseControllerTest {
         mockPlayContext();
         
         // with no accept language header at all, things don't break;
-        Set<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet); 
         assertEquals(ImmutableSet.of(), langs);
         
         mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
         langs = controller.getLanguagesFromAcceptLanguageHeader();
             
-        Set<String> set = Sets.newLinkedHashSet();
+        LinkedHashSet<String> set = Sets.newLinkedHashSet();
         set.add("en");
         set.add("de");
         assertEquals(set, langs);

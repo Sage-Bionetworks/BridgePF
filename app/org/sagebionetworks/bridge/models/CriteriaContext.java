@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -15,19 +16,16 @@ public final class CriteriaContext {
     private final String healthCode;
     private final ClientInfo clientInfo;
     private final Set<String> userDataGroups;
-    // This set is ordered from most preferred to least preferred language. It is not a SortedSet because 
-    // that type includes a comparator for sorting the items in the set, and this preference order was 
-    // determined externally from the LanguageRange objects (it's not in the language string).
-    private final Set<String> languages;
+    // This set has ordered keys (most to least preferential)
+    private final LinkedHashSet<String> languages;
     
     private CriteriaContext(StudyIdentifier studyId, String healthCode, ClientInfo clientInfo,
-            Set<String> userDataGroups, Set<String> languages) {
+            Set<String> userDataGroups, LinkedHashSet<String> languages) {
         this.studyId = studyId;
         this.healthCode = healthCode;
         this.clientInfo = clientInfo;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
-        // ImmutableSet says its items are kept "in order"
-        this.languages = (languages == null) ? ImmutableSet.of() : ImmutableSet.copyOf(languages);
+        this.languages = (languages == null) ? new LinkedHashSet<>() : languages;
     }
 
     /**
@@ -57,7 +55,7 @@ public final class CriteriaContext {
      * the third, etc. However, this isn't a SortedSet, because it is sorted by something 
      * (LanguageRange quality) that is external to the contents of the Set.
      */
-    public Set<String> getLanguages() {
+    public LinkedHashSet<String> getLanguages() {
         return languages;
     }
 
@@ -91,7 +89,7 @@ public final class CriteriaContext {
         private String healthCode;
         private ClientInfo clientInfo;
         private Set<String> userDataGroups;
-        private Set<String> languages;
+        private LinkedHashSet<String> languages;
 
         public Builder withStudyIdentifier(StudyIdentifier studyId) {
             this.studyId = studyId;
@@ -109,7 +107,7 @@ public final class CriteriaContext {
             this.userDataGroups = userDataGroups;
             return this;
         }
-        public Builder withLanguages(Set<String> languages) {
+        public Builder withLanguages(LinkedHashSet<String> languages) {
             this.languages = languages;
             return this;
         }
