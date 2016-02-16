@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import javax.annotation.Resource;
@@ -21,7 +23,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -73,7 +74,7 @@ public class UserAdminServiceTest {
         signUp = new SignUp(name+"@sagebridge.org", "P4ssword!", null, null);
 
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-        authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn).getUser();
+        authService.signIn(study, TEST_CONTEXT, signIn).getUser();
     }
 
     @After
@@ -90,7 +91,7 @@ public class UserAdminServiceTest {
         userAdminService.deleteUser(study, testUser.getEmail());
 
         // This should fail with a 404.
-        authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, new SignIn(signUp.getEmail(), signUp.getPassword()));
+        authService.signIn(study, TEST_CONTEXT, new SignIn(signUp.getEmail(), signUp.getPassword()));
     }
 
     @Test
@@ -98,7 +99,7 @@ public class UserAdminServiceTest {
         UserSession session1 = userAdminService.createUser(signUp, study, null, false, false);
         assertNull("No session", session1);
 
-        UserSession session = authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, new SignIn(signUp.getEmail(),
+        UserSession session = authService.signIn(study, TEST_CONTEXT, new SignIn(signUp.getEmail(),
                 signUp.getPassword()));
         testUser = session.getUser();
         assertFalse(testUser.doesConsent());
@@ -138,6 +139,15 @@ public class UserAdminServiceTest {
         assertNull(authService.getSession(session.getSessionToken()));
         // Delete again shouldn't crash
         userAdminService.deleteUser(study, session.getUser().getEmail());
+        assertNull(authService.getSession(session.getSessionToken()));
+    }
+
+    @Test
+    public void testInvalidateUserSession() {
+        UserSession session = userAdminService.createUser(signUp, study, null, true, true);
+        assertNotNull(authService.getSession(session.getSessionToken()));
+
+        userAdminService.invalidateUserSession(study, signUp.getEmail());
         assertNull(authService.getSession(session.getSessionToken()));
     }
 }

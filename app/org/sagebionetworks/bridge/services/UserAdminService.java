@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
@@ -13,7 +14,7 @@ import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -28,8 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.google.common.base.Preconditions;
 
 @Component("userAdminService")
 public class UserAdminService {
@@ -107,7 +106,7 @@ public class UserAdminService {
      *
      * @param signUp
      *            sign up information for the target user
-     * @param userStudy
+     * @param study
      *            the study of the target user
      * @param subpopGuid
      *            the subpopulation to consent to (if null, it will use the default/study subpopulation).
@@ -127,9 +126,13 @@ public class UserAdminService {
 
         authenticationService.signUp(study, signUp, false);
 
+        // We don't filter users by any of these filtering criteria in the admin API.
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(study.getStudyIdentifier()).build();
+        
         try {
             SignIn signIn = new SignIn(signUp.getEmail(), signUp.getPassword());
-            UserSession newUserSession = authenticationService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn);
+            UserSession newUserSession = authenticationService.signIn(study, context, signIn);
 
             if (consentUser) {
                 String name = String.format("[Signature for %s]", signUp.getEmail());
@@ -163,15 +166,31 @@ public class UserAdminService {
     }
 
     /**
+     * Sign out a user's session.
+     *
+     * @param study
+     *              study of target user
+     * @param email
+     *              target user
+     */
+    public void invalidateUserSession(Study study, String email) {
+        checkNotNull(study);
+        checkArgument(StringUtils.isNotBlank(email));
+        Account account = accountDao.getAccount(study, email);
+
+        cacheProvider.removeSessionByUserId(account.getId());
+    }
+
+    /**
      * Delete the target user.
      *
-     * @param user
+     * @param email
      *            target user
      * @throws BridgeServiceException
      */
     public void deleteUser(Study study, String email) {
         checkNotNull(study);
-        Preconditions.checkArgument(StringUtils.isNotBlank(email));
+        checkArgument(StringUtils.isNotBlank(email));
         Account account = accountDao.getAccount(study, email);
         if (account != null) {
             deleteUser(account);

@@ -34,7 +34,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.play.controllers.ScheduledActivityController;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -62,14 +61,14 @@ public class ScheduledActivityControllerTest {
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
         String json = BridgeObjectMapper.get().writeValueAsString(list);
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         UserSession session = new UserSession();
         User user = new User();
         user.setHealthCode("BBB");
         user.setStudyKey(TestConstants.TEST_STUDY_IDENTIFIER);
         session.setUser(user);
+        session.setStudyIdentifier(TestConstants.TEST_STUDY);
         
         scheduledActivityService = mock(ScheduledActivityService.class);
         when(scheduledActivityService.getScheduledActivities(any(User.class), any(ScheduleContext.class))).thenReturn(list);
@@ -142,7 +141,7 @@ public class ScheduledActivityControllerTest {
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(expectedEndsOn, argument.getValue().getEndsOn().withMillisOfSecond(0));
         assertEquals(expectedEndsOn.getZone(), argument.getValue().getZone());
-        assertEquals(clientInfo, argument.getValue().getClientInfo());
+        assertEquals(clientInfo, argument.getValue().getCriteriaContext().getClientInfo());
     }
     
     @SuppressWarnings("unchecked")

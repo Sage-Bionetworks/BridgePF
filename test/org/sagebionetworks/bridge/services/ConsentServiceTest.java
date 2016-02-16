@@ -32,12 +32,12 @@ import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -84,7 +84,7 @@ public class ConsentServiceTest {
     
     private Subpopulation defaultSubpopulation;
     
-    private ScheduleContext context;
+    private CriteriaContext context;
     
     @Value("classpath:study-defaults/consent-body.xhtml")
     public void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
@@ -105,7 +105,10 @@ public class ConsentServiceTest {
         
         testUser = helper.getBuilder(ConsentServiceTest.class).withStudy(study).withConsent(false).build();
         
-        context = new ScheduleContext.Builder().withUser(testUser.getUser()).build();
+        context = new CriteriaContext.Builder()
+                .withHealthCode(testUser.getUser().getHealthCode())
+                .withStudyIdentifier(testUser.getStudyIdentifier())
+                .withUserDataGroups(testUser.getUser().getDataGroups()).build();
     }
 
     @After

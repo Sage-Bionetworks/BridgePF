@@ -12,6 +12,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 
 import java.util.EnumSet;
 
@@ -45,8 +46,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
-import play.mvc.Http;
-import play.mvc.Http.Context;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -87,8 +86,7 @@ public class AuthenticationControllerMockTest {
     
     @Test
     public void userCannotAssignRolesToSelfOnSignUp() throws Exception {
-        Context context = TestUtils.mockPlayContextWithJson("{\"study\":\"study-key\",\"email\":\"bridge-testing+test@sagebase.org\",\"password\":\"P@ssword1\",\"roles\":[\"admin\"]}");
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson("{\"study\":\"study-key\",\"email\":\"bridge-testing+test@sagebase.org\",\"password\":\"P@ssword1\",\"roles\":[\"admin\"]}");
         
         Result result = controller.signUp();
         assertEquals(201, result.status());
@@ -225,6 +223,8 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
 
@@ -234,8 +234,8 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         UserSession session = createSession();
@@ -283,6 +283,8 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
 
@@ -292,8 +294,8 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         User user = new User();
@@ -343,6 +345,8 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void signInNewSessionUnconsentedAdmin() throws Exception {
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
@@ -355,8 +359,8 @@ public class AuthenticationControllerMockTest {
                 "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         User user = new User();
@@ -419,19 +423,21 @@ public class AuthenticationControllerMockTest {
         // mock getMetrics
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
-
+        
         // mock request
         String requestJsonString = "{\n" +
                 "   \"sptoken\":\"" + TEST_VERIFY_EMAIL_TOKEN + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         UserSession session = createSession();
         ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
         when(authenticationService.verifyEmail(same(study), any(), emailVerifyCaptor.capture())).thenReturn(session);
+
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
         // execute and validate
         Result result = controller.verifyEmail();
@@ -445,6 +451,8 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void verifyEmailUnconsented() throws Exception {
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        
         // mock getMetrics
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
@@ -454,8 +462,8 @@ public class AuthenticationControllerMockTest {
                 "   \"sptoken\":\"" + TEST_VERIFY_EMAIL_TOKEN + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
-        Context context = TestUtils.mockPlayContextWithJson(requestJsonString);
-        Http.Context.current.set(context);
+
+        TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         User user = new User();

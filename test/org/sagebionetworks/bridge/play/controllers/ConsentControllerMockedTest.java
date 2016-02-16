@@ -35,8 +35,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import play.mvc.Http.Context;
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -161,8 +159,7 @@ public class ConsentControllerMockedTest {
     public void canWithdrawConsentDeprecated() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{\"reason\":\"Because, reasons.\"}";
-        Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsent();
         String response = Helpers.contentAsString(result);
@@ -182,8 +179,7 @@ public class ConsentControllerMockedTest {
     public void canWithdrawConsentWithNoReasonDeprecated() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{}";
-        Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsent();
         String response = Helpers.contentAsString(result);
@@ -252,8 +248,7 @@ public class ConsentControllerMockedTest {
     public void canWithdrawConsent() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{\"reason\":\"Because, reasons.\"}";
-        Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         String response = Helpers.contentAsString(result);
@@ -271,8 +266,7 @@ public class ConsentControllerMockedTest {
     public void canWithdrawConsentWithNoReason() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{}";
-        Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         String response = Helpers.contentAsString(result);
@@ -314,8 +308,7 @@ public class ConsentControllerMockedTest {
     public void canWithdrawConsentV2() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{\"reason\":\"Because, reasons.\"}";
-        Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsentV2("test-subpop");
         String response = Helpers.contentAsString(result);
@@ -334,8 +327,7 @@ public class ConsentControllerMockedTest {
     public void canWithdrawConsentWithNoReasonV2() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{}";
-        Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsentV2("test-subpop");
         String response = Helpers.contentAsString(result);
@@ -348,8 +340,7 @@ public class ConsentControllerMockedTest {
     }
     
     private ArgumentCaptor<ConsentSignature> setUpContextWithJson(String json) throws Exception{
-        Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
         
         ArgumentCaptor<ConsentSignature> captor = ArgumentCaptor.forClass(ConsentSignature.class);
         when(consentService.consentToResearch(any(Study.class), any(SubpopulationGuid.class), any(User.class), captor.capture(),

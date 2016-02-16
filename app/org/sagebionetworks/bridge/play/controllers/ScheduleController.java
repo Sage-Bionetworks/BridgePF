@@ -71,7 +71,10 @@ public class ScheduleController extends BaseController {
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
 
         ScheduleContext context = new ScheduleContext.Builder()
-                .withUser(session.getUser()).withClientInfo(clientInfo).build();
+                .withLanguages(getLanguagesFromAcceptLanguageHeader())
+                .withStudyIdentifier(studyId)
+                .withHealthCode(session.getUser()
+                .getHealthCode()).withClientInfo(clientInfo).build();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
 

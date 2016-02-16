@@ -47,8 +47,6 @@ import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.play.controllers.SurveyController;
 import org.sagebionetworks.bridge.services.SurveyService;
 
-import play.mvc.Http;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -113,14 +111,12 @@ public class SurveyControllerTest {
     }
     
     private void setContext() throws Exception {
-        Http.Context context = TestUtils.mockPlayContext();
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContext();
     }
     
     private void setContext(Object object) throws Exception {
         String json = BridgeObjectMapper.get().writeValueAsString(object);
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
     }
     
     private void setUserSession(String studyIdentifier) {

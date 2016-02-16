@@ -1,59 +1,146 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import org.joda.time.LocalDate;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import play.mvc.Result;
 import play.test.Helpers;
 
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.visualization.MpowerVisualization;
+import org.sagebionetworks.bridge.services.MpowerVisualizationService;
 
-// These are just temporary tests to support the dummy implementation. Replace these with real tests when we write the
-// real implementation.
 public class MpowerVisualizationControllerTest {
+    private static final String DUMMY_HEALTH_CODE = "dummyHealthCode";
+
     @Test
-    public void test() throws Exception {
+    public void nullStartDate() throws Exception {
+        test(null, "2016-02-08", null, LocalDate.parse("2016-02-08"));
+    }
+
+    @Test
+    public void emptyStartDate() throws Exception {
+        test("", "2016-02-08", null, LocalDate.parse("2016-02-08"));
+    }
+
+    @Test
+    public void blankStartDate() throws Exception {
+        test("   ", "2016-02-08", null, LocalDate.parse("2016-02-08"));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void malformedStartDate() throws Exception {
+        test("this is not a date", "2016-02-08", null, LocalDate.parse("2016-02-08"));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void timestampAsStartDate() throws Exception {
+        test("2016-02-06T12:30-0800", "2016-02-08", null, LocalDate.parse("2016-02-08"));
+    }
+
+    @Test
+    public void nullEndDate() throws Exception {
+        test("2016-02-06", null, LocalDate.parse("2016-02-06"), null);
+    }
+
+    @Test
+    public void emptyEndDate() throws Exception {
+        test("2016-02-06", "", LocalDate.parse("2016-02-06"), null);
+    }
+
+    @Test
+    public void blankEndDate() throws Exception {
+        test("2016-02-06", "   ", LocalDate.parse("2016-02-06"), null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void malformedEndDate() throws Exception {
+        test("2016-02-06", "also not a date", LocalDate.parse("2016-02-06"), null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void timestampAsEndDate() throws Exception {
+        test("2016-02-06", "2016-02-08T23:45-0800", LocalDate.parse("2016-02-06"), null);
+    }
+
+    @Test
+    public void bothDatesSpecified() throws Exception {
+        test("2016-02-06", "2016-02-08", LocalDate.parse("2016-02-06"), LocalDate.parse("2016-02-08"));
+    }
+
+    private static void test(String startDateStr, String endDateStr, LocalDate expectedStartDate,
+            LocalDate expectedEndDate) throws Exception {
         // Spy controller. Mock session.
+        User user = new User();
+        user.setHealthCode(DUMMY_HEALTH_CODE);
+
+        UserSession session = new UserSession();
+        session.setUser(user);
+
         MpowerVisualizationController controller = spy(new MpowerVisualizationController());
-        doReturn(new UserSession()).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+
+        // mock service - For rapid development and to avoid unnecessary coupling, just mock the visualization with a
+        // dummy string. Check if that dummy string is propagated through the controller.
+        MpowerVisualizationService mockSvc = mock(MpowerVisualizationService.class);
+        JsonNode mockViz = new TextNode("mock visualization");
+        when(mockSvc.getVisualization(DUMMY_HEALTH_CODE, expectedStartDate, expectedEndDate)).thenReturn(mockViz);
+
+        controller.setMpowerVisualizationService(mockSvc);
 
         // execute and validate
-        Result result = controller.getVisualization("2016-02-01", "2016-02-03");
+        Result result = controller.getVisualization(startDateStr, endDateStr);
         assertEquals(200, result.status());
 
         String resultStr = Helpers.contentAsString(result);
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultStr);
-        assertEquals(3, resultNode.size());
-
-        for (int i = 1; i <= 3; i++) {
-            JsonNode dateNode = resultNode.get("2016-02-0" + i);
-            assertEquals(8, dateNode.size());
-
-            for (String oneDataKey : MpowerVisualizationController.DATA_KEY_SET) {
-                JsonNode dataValueNode = dateNode.get(oneDataKey);
-                assertTrue(dataValueNode.isDouble());
-
-                double dataValue = dataValueNode.doubleValue();
-                assertTrue(dataValue >= 0.0);
-                assertTrue(dataValue <= 1.0);
-            }
-        }
+        assertEquals("mock visualization", resultNode.textValue());
     }
 
-    @Test(expected = BadRequestException.class)
-    public void dateRangeTooWide() {
+    @Test
+    public void testWrite() throws Exception {
         // Spy controller. Mock session.
         MpowerVisualizationController controller = spy(new MpowerVisualizationController());
-        doReturn(new UserSession()).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(new UserSession()).when(controller).getAuthenticatedSession(Roles.WORKER);
+
+        // Mock service.
+        MpowerVisualizationService mockSvc = mock(MpowerVisualizationService.class);
+        controller.setMpowerVisualizationService(mockSvc);
+
+        // Mock request JSON. For simplicity of test, just use the visualization field and just use a string. JSON
+        // serialization is already tested in DynamoMpowerVisualizationTest, and validation is handled at the service
+        // layer
+        String requestJsonText = "{\n" +
+                "   \"visualization\":\"strictly for controller test\"\n" +
+                "}";
+        TestUtils.mockPlayContextWithJson(requestJsonText);
 
         // execute
-        // Not gonna do the exact math, but this is definitely too long.
-        controller.getVisualization("2016-01-01", "2016-03-01");
+        Result result = controller.writeVisualization();
+        assertEquals(201, result.status());
+
+        // Verify call to service, and that the visualization passed in has the dummy string we created.
+        ArgumentCaptor<MpowerVisualization> vizCaptor = ArgumentCaptor.forClass(MpowerVisualization.class);
+        verify(mockSvc).writeVisualization(vizCaptor.capture());
+
+        MpowerVisualization viz = vizCaptor.getValue();
+        assertEquals("strictly for controller test", viz.getVisualization().textValue());
+
+        // Verify we get a Worker session.
+        verify(controller).getAuthenticatedSession(Roles.WORKER);
     }
 }

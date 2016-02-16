@@ -9,13 +9,13 @@ import java.util.Set;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
@@ -118,12 +118,8 @@ public class UserProfileController extends BaseController {
         
         User user = session.getUser();
         user.setDataGroups(dataGroups.getDataGroups());
-
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withUser(user)
-                .withClientInfo(getClientInfoFromUserAgentHeader())
-                .withUserDataGroups(dataGroups.getDataGroups())
-                .build();
+        
+        CriteriaContext context = getCriteriaContext(session);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         user.setConsentStatuses(statuses);
                 

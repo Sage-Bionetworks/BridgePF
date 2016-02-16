@@ -17,7 +17,6 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -25,6 +24,8 @@ import com.google.common.collect.Sets;
 
 public class ScheduleContextTest {
 
+    private static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("A","B");
+    
     @Test
     public void equalsHashCode() {
         EqualsVerifier.forClass(ScheduleContext.class).allFieldsShouldBeUsed().verify();
@@ -50,63 +51,43 @@ public class ScheduleContextTest {
     public void defaultsTimeZoneAndClientInfo() {
         ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
         
-        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
+        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getCriteriaContext().getClientInfo());
         assertNotNull(context.getNow());
     }
     
     @Test
     public void builderWorks() {
-        // User works
-        User user = new User();
-        user.setStudyKey("test-study");
-        user.setHealthCode("AAA");
-        user.setId("aUserId");
-        user.setDataGroups(Sets.newHashSet("A","B"));
-        
-        ScheduleContext context = new ScheduleContext.Builder().withUser(user).build();
-        assertEquals(user.getStudyKey(), context.getStudyIdentifier().getIdentifier());
-        assertEquals(user.getId(), context.getUserId());
-        assertEquals(user.getHealthCode(), context.getHealthCode());
-        assertEquals(user.getDataGroups(), context.getUserDataGroups());
-        
-        // There are defaults
-        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
-        assertNotNull(context.getNow());
-        
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app/5");
         StudyIdentifier studyId = new StudyIdentifierImpl("study-key");
         DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
         DateTime endsOn = DateTime.now();
-        Set<String> dataGroups = Sets.newHashSet("A","B");
         DateTime now = DateTime.now();
         
         Map<String,DateTime> events = new HashMap<>();
         events.put("enrollment", DateTime.now());
         
         // All the individual fields work
-        context = new ScheduleContext.Builder()
+        ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(clientInfo)
-                .withUserId("userId")
                 .withStudyIdentifier(studyId)
                 .withTimeZone(PST)
                 .withEndsOn(endsOn)
                 .withEvents(events)
                 .withHealthCode("healthCode")
-                .withUserDataGroups(dataGroups)
+                .withUserDataGroups(USER_DATA_GROUPS)
                 .withNow(now).build();
-        assertEquals(studyId, context.getStudyIdentifier());
-        assertEquals("userId", context.getUserId());
-        assertEquals(clientInfo, context.getClientInfo());
+        assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
+        assertEquals(clientInfo, context.getCriteriaContext().getClientInfo());
         assertEquals(PST, context.getZone());
         assertEquals(endsOn, context.getEndsOn());
         assertEquals(events.get("enrollment"), context.getEvent("enrollment"));
-        assertEquals("healthCode", context.getHealthCode());
-        assertEquals(dataGroups, context.getUserDataGroups());
+        assertEquals("healthCode", context.getCriteriaContext().getHealthCode());
+        assertEquals(USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
         assertEquals(now, context.getNow());
 
         // and the other studyId setter
         context = new ScheduleContext.Builder().withStudyIdentifier("study-key").build();
-        assertEquals(studyId, context.getStudyIdentifier());
+        assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
     }
     
 }

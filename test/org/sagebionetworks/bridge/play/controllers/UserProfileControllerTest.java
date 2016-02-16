@@ -29,10 +29,10 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -46,7 +46,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -62,7 +61,7 @@ public class UserProfileControllerTest {
     
     @Test
     public void canSubmitExternalIdentifier() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}"));
+        TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
         
         UserProfileController controller = controllerForExternalIdTests();
                 
@@ -78,14 +77,14 @@ public class UserProfileControllerTest {
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
         Set<String> dataGroupSet = Sets.newHashSet("group1");
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}"));
+        TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
         
         UserProfileController controller = controllerForExternalIdTests();
         
         Result result = controller.updateDataGroups();
         
         ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
-        ArgumentCaptor<ScheduleContext> contextCaptor = ArgumentCaptor.forClass(ScheduleContext.class);
+        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
         
         verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());
@@ -104,7 +103,7 @@ public class UserProfileControllerTest {
     @SuppressWarnings({"unchecked"})
     @Test
     public void invalidDataGroupsRejected() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}"));
+        TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
         UserProfileController controller = controllerForExternalIdTests();
         try {
             controller.updateDataGroups();
@@ -137,7 +136,7 @@ public class UserProfileControllerTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{}"));
+        TestUtils.mockPlayContextWithJson("{}");
         
         UserProfileController controller = controllerForExternalIdTests();
         

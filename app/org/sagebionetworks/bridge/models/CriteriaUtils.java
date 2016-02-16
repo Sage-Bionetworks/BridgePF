@@ -6,8 +6,6 @@ import java.util.Set;
 
 import org.springframework.validation.Errors;
 
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
-
 import com.google.common.collect.Sets;
 
 /**
@@ -29,7 +27,7 @@ public class CriteriaUtils {
      * @param maxAppVersion
      * @return
      */
-    public static boolean matchCriteria(ScheduleContext context, Criteria criteria) {
+    public static boolean matchCriteria(CriteriaContext context, Criteria criteria) {
         checkNotNull(context);
         checkNotNull(context.getClientInfo());
         checkNotNull(context.getUserDataGroups());

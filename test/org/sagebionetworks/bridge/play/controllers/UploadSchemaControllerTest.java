@@ -16,7 +16,6 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -54,7 +53,7 @@ public class UploadSchemaControllerTest {
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock request JSON
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson(TEST_SCHEMA_JSON));
+        TestUtils.mockPlayContextWithJson(TEST_SCHEMA_JSON);
 
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
@@ -256,7 +255,7 @@ public class UploadSchemaControllerTest {
 
         // mock request JSON; this is pretty bad JSON. We want an error message back 
         // that should practically tell the caller how to construct this object.
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"fieldDefinitions\":[{\"name\":\"foo\"}]}"));
+        TestUtils.mockPlayContextWithJson("{\"fieldDefinitions\":[{\"name\":\"foo\"}]}");
 
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());

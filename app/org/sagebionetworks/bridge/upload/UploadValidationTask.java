@@ -98,10 +98,26 @@ public class UploadValidationTask implements Runnable {
 
         // write validation status to the upload DAO
         UploadStatus status = context.getSuccess() ? UploadStatus.SUCCEEDED : UploadStatus.VALIDATION_FAILED;
-        uploadDao.writeValidationStatus(context.getUpload(), status, context.getMessageList(), context.getRecordId());
-        logger.info(String.format("Upload validation for study %s, upload %s, record %s, with status %s",
-                context.getStudy().getIdentifier(), context.getUpload().getUploadId(), context.getRecordId(), status));
+        try {
+            uploadDao.writeValidationStatus(context.getUpload(), status, context.getMessageList(),
+                    context.getRecordId());
+            logger.info(String.format("Upload validation for study %s, upload %s, record %s, with status %s",
+                    context.getStudy().getIdentifier(), context.getUpload().getUploadId(), context.getRecordId(),
+                    status));
+        } catch (RuntimeException ex) {
+            // ExceptionInterceptor doesn't handle asynchronous tasks, so we'll need to catch exceptions and log them
+            // manually. Use the log helper function so we can verify it in unit tests.
+            logWriteValidationStatusException(status, ex);
+        }
 
         // TODO: if validation fails, wipe the files from S3
+    }
+
+    // Log helper. Unit tests will mock (spy) this, so we verify that we're catching and logging the exception.
+    // Package-scoped so unit tests have access to this.
+    void logWriteValidationStatusException(UploadStatus status, Exception ex) {
+        logger.error("Exception writing validation status for study " + context.getStudy().getIdentifier() +
+                ", upload " + context.getUpload().getUploadId() + ", record " + context.getRecordId() + ", status " +
+                status + ": " + ex.getMessage(), ex);
     }
 }

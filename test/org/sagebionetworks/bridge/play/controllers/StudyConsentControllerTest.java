@@ -40,7 +40,6 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -68,8 +67,7 @@ public class StudyConsentControllerTest {
 
     @Before
     public void before() throws Exception {
-        Http.Context context = mockPlayContext();
-        Http.Context.current.set(context);
+        mockPlayContext();
         
         controller = spy(new StudyConsentController());
         controller.setStudyConsentService(studyConsentService);
@@ -132,8 +130,7 @@ public class StudyConsentControllerTest {
     @Test
     public void addConsentV2() throws Exception {
         StudyConsentForm form = new StudyConsentForm("<document/>");
-        Http.Context context = mockPlayContextWithJson(BridgeObjectMapper.get().writeValueAsString(form));
-        Http.Context.current.set(context);
+        mockPlayContextWithJson(BridgeObjectMapper.get().writeValueAsString(form));
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
         when(studyConsentService.addConsent(eq(SUBPOP_GUID), any())).thenReturn(view);

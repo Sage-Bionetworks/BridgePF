@@ -30,8 +30,9 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -216,8 +217,8 @@ public class SubpopulationServiceTest {
         List<Subpopulation> subpops = ImmutableList.of(Subpopulation.create());
         // We test the matching logic in CriteriaUtilsTest as well as in the DAO. Here we just want
         // to verify it is being carried through.
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("test-key")
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(new StudyIdentifierImpl("test-key"))
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/4")).build();
         
         when(dao.getSubpopulationsForUser(context)).thenReturn(subpops);

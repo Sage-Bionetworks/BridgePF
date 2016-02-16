@@ -10,7 +10,6 @@ import static org.mockito.Mockito.verify;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import play.mvc.Http;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.TestUtils;
@@ -39,7 +38,7 @@ public class UserDataDownloadControllerTest {
                 "   \"startDate\":\"2015-08-15\",\n" +
                 "   \"endDate\":\"2015-08-19\"\n" +
                 "}";
-        Http.Context.current.set(TestUtils.mockPlayContextWithJson(dateRangeJsonText));
+        TestUtils.mockPlayContextWithJson(dateRangeJsonText);
 
         // mock service
         UserDataDownloadService mockService = mock(UserDataDownloadService.class);

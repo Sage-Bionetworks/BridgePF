@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -13,6 +14,9 @@ public class TestConstants {
 
     public static final String TEST_STUDY_IDENTIFIER = "api";
     public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
+    public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
+            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
     public static final String API_URL = "/v3";

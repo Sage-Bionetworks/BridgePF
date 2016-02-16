@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -162,19 +162,19 @@ public class DynamoSubpopulationDaoTest {
         Subpopulation subpop4 = createSubpop(SUBPOP_4, null, null, null); // match anything, specificity 0
         
         // version 12, no tags == Subpop 4
-        List<Subpopulation> results = dao.getSubpopulationsForUser(scheduleContext(12, null));
+        List<Subpopulation> results = dao.getSubpopulationsForUser(criteriaContext(12, null));
         assertEquals(Sets.newHashSet(subpop4), Sets.newHashSet(results));
         
         // version 12, tag group1 == Subpops 3, 4
-        results = dao.getSubpopulationsForUser(scheduleContext(12, "group1"));
+        results = dao.getSubpopulationsForUser(criteriaContext(12, "group1"));
         assertEquals(Sets.newHashSet(subpop3, subpop4), Sets.newHashSet(results));
         
         // version 4, no tag == Subpops 2, 4
-        results = dao.getSubpopulationsForUser(scheduleContext(4, null));
+        results = dao.getSubpopulationsForUser(criteriaContext(4, null));
         assertEquals(Sets.newHashSet(subpop2, subpop4), Sets.newHashSet(results));
         
         // version 4, tag group1 == Subpops 1,2,3,4, returns 1 in this case (most specific)
-        results = dao.getSubpopulationsForUser(scheduleContext(4, "group1"));
+        results = dao.getSubpopulationsForUser(criteriaContext(4, "group1"));
         assertEquals(Sets.newHashSet(subpop1, subpop2, subpop3, subpop4), Sets.newHashSet(results));
     }
     
@@ -248,9 +248,9 @@ public class DynamoSubpopulationDaoTest {
      */
     @Test
     public void getSubpopulationsForUserReturnsNoSubpopulations() {
-        ScheduleContext context = new ScheduleContext.Builder()
+        CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(studyId.getIdentifier())
+                .withStudyIdentifier(studyId)
                 .build();
         List<Subpopulation> results = dao.getSubpopulationsForUser(context);
         
@@ -265,9 +265,9 @@ public class DynamoSubpopulationDaoTest {
     @Test
     public void getSubpopulationsForUserDoesNotMatchSubpopulationReturnsNull() {
         createSubpop("Name of unmatcheable subpopulation", null, null, "unmatcheableGroup");
-        ScheduleContext context = new ScheduleContext.Builder()
+        CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(studyId.getIdentifier())
+                .withStudyIdentifier(studyId)
                 .build();
         List<Subpopulation> results = dao.getSubpopulationsForUser(context);
         assertTrue(results.isEmpty());
@@ -344,10 +344,10 @@ public class DynamoSubpopulationDaoTest {
         return dao.createSubpopulation(subpop);
     }
     
-    private ScheduleContext scheduleContext(int version, String tag) {
-        ScheduleContext.Builder builder = new ScheduleContext.Builder()
+    private CriteriaContext criteriaContext(int version, String tag) {
+        CriteriaContext.Builder builder = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version))
-                .withStudyIdentifier(studyId.getIdentifier());
+                .withStudyIdentifier(studyId);
         if (tag != null) {
             builder.withUserDataGroups(Sets.newHashSet(tag));    
         }
