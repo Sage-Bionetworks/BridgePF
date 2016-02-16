@@ -187,11 +187,9 @@ public class StudyServiceTest {
         study.setVerifyEmailTemplate(new EmailTemplate("subject *", "body ${url} *", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("subject **", "body ${url} **", MimeType.TEXT));
         
-        study.setEmailVerificationEnabled(false);
-        
         study = studyService.updateStudy(study, true);
         policy = study.getPasswordPolicy();
-        assertFalse(study.isEmailVerificationEnabled());
+        assertTrue(study.isEmailVerificationEnabled());
         assertEquals(6, policy.getMinLength());
         assertTrue(policy.isNumericRequired());
         assertFalse(policy.isSymbolRequired());
