@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -126,9 +126,13 @@ public class UserAdminService {
 
         authenticationService.signUp(study, signUp, false);
 
+        // We don't filter users by any of these filtering criteria in the admin API.
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(study.getStudyIdentifier()).build();
+        
         try {
             SignIn signIn = new SignIn(signUp.getEmail(), signUp.getPassword());
-            UserSession newUserSession = authenticationService.signIn(study, ClientInfo.UNKNOWN_CLIENT, signIn);
+            UserSession newUserSession = authenticationService.signIn(study, context, signIn);
 
             if (consentUser) {
                 String name = String.format("[Signature for %s]", signUp.getEmail());

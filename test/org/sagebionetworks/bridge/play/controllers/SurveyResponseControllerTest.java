@@ -32,7 +32,6 @@ import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.services.SurveyResponseService;
 
 import play.core.j.JavaResultExtractor;
-import play.mvc.Http;
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -68,8 +67,7 @@ public class SurveyResponseControllerTest {
     
     private void setContext(Object object) throws Exception {
         String json = BridgeObjectMapper.get().writeValueAsString(object);
-        Http.Context context = TestUtils.mockPlayContextWithJson(json);
-        Http.Context.current.set(context);
+        TestUtils.mockPlayContextWithJson(json);
     }
     
     private SurveyResponse mockSurveyResponse() {

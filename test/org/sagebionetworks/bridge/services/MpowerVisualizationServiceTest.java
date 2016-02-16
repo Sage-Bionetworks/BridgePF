@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,7 +12,11 @@ import org.joda.time.LocalDate;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dao.MpowerVisualizationDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoMpowerVisualization;
+import org.sagebionetworks.bridge.dynamodb.DynamoMpowerVisualizationTest;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.visualization.MpowerVisualization;
 
 public class MpowerVisualizationServiceTest {
     private static final String DUMMY_HEALTH_CODE = "dummyHealthCode";
@@ -69,5 +74,30 @@ public class MpowerVisualizationServiceTest {
         // Two months is definitely too wide. Don't need exactly 45 days.
         new MpowerVisualizationService().getVisualization(DUMMY_HEALTH_CODE, LocalDate.parse("2016-01-01"),
                 LocalDate.parse("2016-03-01"));
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void writeNull() {
+        new MpowerVisualizationService().writeVisualization(null);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void writeInvalid() {
+        new MpowerVisualizationService().writeVisualization(new DynamoMpowerVisualization());
+    }
+
+    @Test
+    public void writeSuccess() {
+        // set up input, mock dao, and service
+        MpowerVisualization viz = DynamoMpowerVisualizationTest.makeValidMpowerVisualization();
+        MpowerVisualizationDao mockDao = mock(MpowerVisualizationDao.class);
+        MpowerVisualizationService svc = new MpowerVisualizationService();
+        svc.setMpowerVisualizationDao(mockDao);
+
+        // execute
+        svc.writeVisualization(viz);
+
+        // verify we called through to the DAO
+        verify(mockDao).writeVisualization(viz);
     }
 }

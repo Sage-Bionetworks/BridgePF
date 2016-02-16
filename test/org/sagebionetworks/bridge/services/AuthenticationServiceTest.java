@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
@@ -36,7 +37,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -59,7 +60,7 @@ import com.stormpath.sdk.directory.CustomData;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceTest {
-
+    
     @Resource
     private CacheProvider cacheProvider;
 
@@ -80,7 +81,7 @@ public class AuthenticationServiceTest {
 
     @Resource
     private TestUserAdminHelper helper;
-
+    
     @Resource
     private UserConsentDao userConsentDao;
     
@@ -101,17 +102,17 @@ public class AuthenticationServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoEmail() throws Exception {
-        authService.signIn(testUser.getStudy(), ClientInfo.UNKNOWN_CLIENT, new SignIn(null, "bar"));
+        authService.signIn(testUser.getStudy(), TEST_CONTEXT, new SignIn(null, "bar"));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
-        authService.signIn(testUser.getStudy(), ClientInfo.UNKNOWN_CLIENT, new SignIn("foobar", null));
+        authService.signIn(testUser.getStudy(), TEST_CONTEXT, new SignIn("foobar", null));
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
-        authService.signIn(testUser.getStudy(), ClientInfo.UNKNOWN_CLIENT, new SignIn("foobar", "bar"));
+        authService.signIn(testUser.getStudy(), TEST_CONTEXT, new SignIn("foobar", "bar"));
     }
 
     @Test
@@ -124,7 +125,7 @@ public class AuthenticationServiceTest {
     @Test
     public void signInWhenSignedIn() throws Exception {
         String sessionToken = testUser.getSessionToken();
-        UserSession newSession = authService.signIn(testUser.getStudy(), ClientInfo.UNKNOWN_CLIENT, testUser.getSignIn());
+        UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
         assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
         assertEquals("Should update the existing session instead of creating a new one.",
                 sessionToken, newSession.getSessionToken());
@@ -132,7 +133,7 @@ public class AuthenticationServiceTest {
 
     @Test
     public void signInSetsSharingScope() { 
-        UserSession newSession = authService.signIn(testUser.getStudy(), ClientInfo.UNKNOWN_CLIENT, testUser.getSignIn());
+        UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
         assertEquals(SharingScope.NO_SHARING, newSession.getUser().getSharingScope()); // this is the default.
     }
 
@@ -186,7 +187,7 @@ public class AuthenticationServiceTest {
         TestUser researcher = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.RESEARCHER).build();
         try {
-            authService.signIn(researcher.getStudy(), ClientInfo.UNKNOWN_CLIENT, researcher.getSignIn());
+            authService.signIn(researcher.getStudy(), TEST_CONTEXT, researcher.getSignIn());
             // no exception should have been thrown.
         } finally {
             helper.deleteUser(researcher);
@@ -198,7 +199,7 @@ public class AuthenticationServiceTest {
         TestUser researcher = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.ADMIN).build();
         try {
-            authService.signIn(researcher.getStudy(), ClientInfo.UNKNOWN_CLIENT, researcher.getSignIn());
+            authService.signIn(researcher.getStudy(), TEST_CONTEXT, researcher.getSignIn());
             // no exception should have been thrown.
         } finally {
             helper.deleteUser(researcher);
@@ -259,7 +260,7 @@ public class AuthenticationServiceTest {
         TestUser user = helper.getBuilder(AuthenticationServiceTest.class).withConsent(true)
                 .withDataGroups(DefaultStudyBootstrapper.TEST_DATA_GROUPS).build();
         try {
-            UserSession session = authService.signIn(user.getStudy(), ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
+            UserSession session = authService.signIn(user.getStudy(), TEST_CONTEXT, user.getSignIn());
             // Verify we created a list and the anticipated group was not null
             assertEquals(numOfGroups, session.getUser().getDataGroups().size()); 
             assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getUser().getDataGroups());
@@ -380,7 +381,14 @@ public class AuthenticationServiceTest {
             
             // Signing in should still work to create a consented user.
             Study study = studyService.getStudy(user.getStudyIdentifier());
-            UserSession session = authService.signIn(study, ClientInfo.UNKNOWN_CLIENT, user.getSignIn());
+            
+            CriteriaContext context = new CriteriaContext.Builder()
+                    .withHealthCode(user.getUser().getHealthCode())
+                    .withStudyIdentifier(study.getStudyIdentifier())
+                    .withUserDataGroups(testUser.getUser().getDataGroups())
+                    .build();
+            
+            UserSession session = authService.signIn(study, context, user.getSignIn());
             
             // and this person should be recorded as consented...
             for (ConsentStatus status : session.getUser().getConsentStatuses().values()) {

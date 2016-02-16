@@ -1,14 +1,19 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.Locale.LanguageRange;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -19,12 +24,14 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -44,6 +51,7 @@ import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 
 public abstract class BaseController extends Controller {
 
@@ -158,12 +166,44 @@ public abstract class BaseController extends Controller {
         }
     }
 
+    Set<String> getLanguagesFromAcceptLanguageHeader() {
+        String acceptLanguageHeader = request().getHeader(ACCEPT_LANGUAGE);
+        if (isNotBlank(acceptLanguageHeader)) {
+            // This parse method returns LanguageRange objects in descending order of their quality 
+            // value (so most-desirable language first). We extract language only and de-duplicate 
+            // them using a LinkedHashSet which retains the order the languages are added to the set.
+            List<LanguageRange> ranges = Locale.LanguageRange.parse(acceptLanguageHeader);
+            return ranges.stream().map(range -> {
+                return Locale.forLanguageTag(range.getRange()).getLanguage();
+            }).collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+        return ImmutableSet.of();
+    }
+    
     ClientInfo getClientInfoFromUserAgentHeader() {
-        String userAgentHeader = request().getHeader(BridgeConstants.USER_AGENT_HEADER);
+        String userAgentHeader = request().getHeader(USER_AGENT);
         ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
         
         Logger.debug("User agent: '"+userAgentHeader+"' converted to " + info);
     	return info;
+    }
+    
+    CriteriaContext getCriteriaContext(StudyIdentifier studyId) {
+        return new CriteriaContext.Builder()
+            .withStudyIdentifier(studyId)
+            .withLanguages(getLanguagesFromAcceptLanguageHeader())
+            .withClientInfo(getClientInfoFromUserAgentHeader())
+            .build();
+    }
+    
+    CriteriaContext getCriteriaContext(UserSession session) {
+        return new CriteriaContext.Builder()
+            .withLanguages(getLanguagesFromAcceptLanguageHeader())
+            .withClientInfo(getClientInfoFromUserAgentHeader())
+            .withHealthCode(session.getUser().getHealthCode())
+            .withUserDataGroups(session.getUser().getDataGroups())
+            .withStudyIdentifier(session.getStudyIdentifier())
+            .build();
     }
     
     Result okResult(String message) {

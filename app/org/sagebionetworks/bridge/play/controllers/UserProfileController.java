@@ -118,13 +118,8 @@ public class UserProfileController extends BaseController {
         
         User user = session.getUser();
         user.setDataGroups(dataGroups.getDataGroups());
-
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withHealthCode(user.getHealthCode())
-                .withStudyIdentifier(study.getStudyIdentifier())
-                .withClientInfo(getClientInfoFromUserAgentHeader())
-                .withUserDataGroups(dataGroups.getDataGroups())
-                .build();
+        
+        CriteriaContext context = getCriteriaContext(session);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         user.setConsentStatuses(statuses);
                 

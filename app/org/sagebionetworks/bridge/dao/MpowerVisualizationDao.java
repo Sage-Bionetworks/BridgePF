@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.dao;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.joda.time.LocalDate;
 
+import org.sagebionetworks.bridge.models.visualization.MpowerVisualization;
+
 /** Abstract DAO for mPower visualization. */
 public interface MpowerVisualizationDao {
     /**
@@ -23,4 +25,13 @@ public interface MpowerVisualizationDao {
      * @return raw JSON containing visualization data
      */
     JsonNode getVisualization(String healthCode, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * Writes the visualization to the backing store. See for details:
+     * https://sagebionetworks.jira.com/wiki/display/BRIDGE/mPower+Visualization
+     *
+     * @param visualization
+     *         visualization object, which includes visualization JSON data and metadata
+     */
+    void writeVisualization(MpowerVisualization visualization);
 }
