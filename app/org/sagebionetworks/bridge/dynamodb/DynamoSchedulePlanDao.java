@@ -152,13 +152,14 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
                 ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(i);
                 
                 scheduleCriteria = new ScheduleCriteria.Builder()
-                        .withScheduleCriteria(scheduleCriteria)
+                        .withSchedule(scheduleCriteria.getSchedule())
+                        .withCriteria(scheduleCriteria.getCriteria())
                         .withKey(getKey(plan, i)).build();
 
                 Criteria criteria = consumer.apply(scheduleCriteria);
 
                 scheduleCriteria = new ScheduleCriteria.Builder()
-                        .withScheduleCriteria(scheduleCriteria)
+                        .withSchedule(scheduleCriteria.getSchedule())
                         .withCriteria(criteria).build();
                 strategy.getScheduleCriteria().set(i, scheduleCriteria);
             }

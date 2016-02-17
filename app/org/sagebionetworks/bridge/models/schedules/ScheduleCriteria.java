@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.models.Criteria;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -13,21 +14,10 @@ import com.google.common.collect.Sets;
 public final class ScheduleCriteria implements Criteria {
     private final Schedule schedule;
     private final Criteria criteria;
-    private final String key;
-    private final Integer minAppVersion;
-    private final Integer maxAppVersion;
-    private final Set<String> allOfGroups;
-    private final Set<String> noneOfGroups;
     
-    private ScheduleCriteria(Schedule schedule, Criteria criteria, String key, Integer minAppVersion,
-            Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
+    private ScheduleCriteria(Schedule schedule, Criteria criteria) {
         this.schedule = schedule;
         this.criteria = criteria;
-        this.key = key;
-        this.minAppVersion = minAppVersion;
-        this.maxAppVersion = maxAppVersion;
-        this.allOfGroups = (allOfGroups != null) ? allOfGroups : Sets.newHashSet();
-        this.noneOfGroups = (noneOfGroups != null) ? noneOfGroups : Sets.newHashSet();
     }
     public Schedule getSchedule() {
         return schedule;
@@ -38,23 +28,23 @@ public final class ScheduleCriteria implements Criteria {
     }
     @Override
     public String getKey() {
-        return key;
+        return criteria.getKey();
     }
     @Override
     public Integer getMinAppVersion() {
-        return minAppVersion;
+        return criteria.getMinAppVersion();
     }
     @Override
     public Integer getMaxAppVersion() {
-        return maxAppVersion;
+        return criteria.getMaxAppVersion();
     }
     @Override
     public Set<String> getAllOfGroups() {
-        return allOfGroups;
+        return criteria.getAllOfGroups();
     }
     @Override
     public Set<String> getNoneOfGroups() {
-        return noneOfGroups;
+        return criteria.getNoneOfGroups();
     }
     
     public static class Builder {
@@ -66,16 +56,6 @@ public final class ScheduleCriteria implements Criteria {
         private Set<String> allOfGroups = Sets.newHashSet();
         private Set<String> noneOfGroups = Sets.newHashSet();
         
-        public Builder withScheduleCriteria(ScheduleCriteria criteria) {
-            this.schedule = criteria.schedule;
-            this.criteria = criteria.criteria;
-            this.key = criteria.key;
-            this.minAppVersion = criteria.minAppVersion;
-            this.maxAppVersion = criteria.maxAppVersion;
-            this.allOfGroups = criteria.allOfGroups;
-            this.noneOfGroups = criteria.noneOfGroups;
-            return this;
-        }
         public Builder withCriteria(Criteria criteria) {
             this.criteria = criteria;
             return this;
@@ -104,27 +84,37 @@ public final class ScheduleCriteria implements Criteria {
             this.noneOfGroups = (noneOfGroups == null) ? Sets.newHashSet() : noneOfGroups;
             return this;
         }
-        /*
-        public Builder addRequiredGroup(String... groups) {
-            for (String group : groups) {
-                this.allOfGroups.add(group);
-            }
-            return this;
-        }
-        public Builder addProhibitedGroup(String... groups) {
-            for (String group : groups) {
-                this.noneOfGroups.add(group);    
-            }
-            return this;
-        }*/
         public ScheduleCriteria build() {
-            return new ScheduleCriteria(schedule, criteria, key, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups);
+            DynamoCriteria crit = new DynamoCriteria();
+            if (criteria != null) {
+                crit.setKey(criteria.getKey());
+                crit.setMinAppVersion(criteria.getMinAppVersion());
+                crit.setMaxAppVersion(criteria.getMaxAppVersion());
+                crit.setAllOfGroups(criteria.getAllOfGroups());
+                crit.setNoneOfGroups(criteria.getNoneOfGroups());
+            }
+            if (key != null) {
+                crit.setKey(key);;
+            }
+            if (minAppVersion != null) {
+                crit.setMinAppVersion(minAppVersion);
+            }
+            if (maxAppVersion != null) {
+                crit.setMaxAppVersion(maxAppVersion);
+            }
+            if (allOfGroups != null) {
+                crit.setAllOfGroups(allOfGroups);
+            }
+            if (noneOfGroups != null) {
+                crit.setNoneOfGroups(noneOfGroups);
+            }
+            return new ScheduleCriteria(schedule, crit);
         }
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups, schedule, criteria);
+        return Objects.hash(schedule, criteria);
     }
     @Override
     public boolean equals(Object obj) {
@@ -133,16 +123,11 @@ public final class ScheduleCriteria implements Criteria {
         if (obj == null || getClass() != obj.getClass())
             return false;
         ScheduleCriteria other = (ScheduleCriteria) obj;
-        return Objects.equals(minAppVersion, other.minAppVersion) && Objects.equals(maxAppVersion, other.maxAppVersion)
-                && Objects.equals(allOfGroups, other.allOfGroups) && Objects.equals(noneOfGroups, other.noneOfGroups)
-                && Objects.equals(schedule, other.schedule) && Objects.equals(key, other.key)
-                && Objects.equals(criteria, other.criteria);
+        return Objects.equals(schedule, other.schedule) && Objects.equals(criteria, other.criteria);
     }
     @Override
     public String toString() {
-        return "ScheduleCriteria [key=" + key + ", schedule=" + schedule + ", minAppVersion=" + minAppVersion
-                + ", maxAppVersion=" + maxAppVersion + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" + noneOfGroups
-                + ", criteria=" + criteria + "]";
+        return "ScheduleCriteria [schedule=" + schedule + ", criteria=" + criteria + "]";
     }
 
 }
