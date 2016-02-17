@@ -189,6 +189,7 @@ public class StudyServiceTest {
         
         study = studyService.updateStudy(study, true);
         policy = study.getPasswordPolicy();
+        assertTrue(study.isEmailVerificationEnabled());
         assertEquals(6, policy.getMinLength());
         assertTrue(policy.isNumericRequired());
         assertFalse(policy.isSymbolRequired());

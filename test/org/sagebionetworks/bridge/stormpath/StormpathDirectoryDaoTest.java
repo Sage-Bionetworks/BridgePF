@@ -73,6 +73,8 @@ public class StormpathDirectoryDaoTest {
         
         Directory newDirectory = directoryDao.getDirectoryForStudy(study);
         assertDirectoriesAreEqual(study, "subject", "subject", directory, newDirectory);
+        // This is enabled, by default.
+        assertEquals(EmailStatus.ENABLED, newDirectory.getAccountCreationPolicy().getVerificationEmailStatus());
         
         // Verify that we can update the directory.
         study.setPasswordPolicy(new PasswordPolicy(3, true, true, true, true));
@@ -84,6 +86,14 @@ public class StormpathDirectoryDaoTest {
         newDirectory = directoryDao.getDirectoryForStudy(study);
         assertDirectoriesAreEqual(study, "new rp subject", "new ve subject", directory, newDirectory);
 
+        // disable email verification
+        study.setEmailVerificationEnabled(false);
+        directoryDao.updateDirectoryForStudy(study);
+        
+        newDirectory = directoryDao.getDirectoryForStudy(study);
+        // This has been disabled.
+        assertEquals(EmailStatus.DISABLED, newDirectory.getAccountCreationPolicy().getVerificationEmailStatus());
+        
         directoryDao.deleteDirectoryForStudy(study);
         newDirectory = directoryDao.getDirectoryForStudy(study);
         assertNull("Directory has been deleted", newDirectory);
