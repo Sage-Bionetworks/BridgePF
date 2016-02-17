@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.List;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -7,17 +8,16 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
-import org.joda.time.LocalDate;
+import org.joda.time.DateTime;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
-import org.sagebionetworks.bridge.schema.UploadSchemaKey;
 
 /** DDB implementation of UploadDedupeDao. */
 @Component
 public class DynamoUploadDedupeDao implements UploadDedupeDao {
-    private static final int CREATED_ON_DELTA_MILLIS = 1000;
+    private static final int NUM_DAYS_BEFORE = 7;
 
     private DynamoDBMapper mapper;
 
@@ -29,35 +29,42 @@ public class DynamoUploadDedupeDao implements UploadDedupeDao {
 
     /** {@inheritDoc} */
     @Override
-    public boolean isDuplicate(long createdOn, String healthCode, UploadSchemaKey schemaKey) {
-        // Hash key comes from health code and schema
+    public String getDuplicate(String healthCode, String uploadMd5, DateTime uploadRequestedOn) {
+        // Hash key comes from health code and upload MD5
         DynamoUploadDedupe hashKey = new DynamoUploadDedupe();
         hashKey.setHealthCode(healthCode);
-        hashKey.setSchemaKey(schemaKey.toString());
+        hashKey.setUploadMd5(uploadMd5);
 
-        // range key, anything within 1 second is valid
-        Condition createdOnCondition = new Condition().withComparisonOperator(ComparisonOperator.BETWEEN)
-                .withAttributeValueList(
-                        new AttributeValue().withN(String.valueOf(createdOn - CREATED_ON_DELTA_MILLIS)),
-                        new AttributeValue().withN(String.valueOf(createdOn + CREATED_ON_DELTA_MILLIS)));
+        // MD5s can collide. So as an extra check for duplicate values, we only look at uploads requested within a
+        // certain time. Since apps are known to upload a file, then upload the same file the next day, we'll give it
+        // a 7-day buffer period for finding dupes.
+        DateTime dupeWindowStartTime = uploadRequestedOn.minusDays(NUM_DAYS_BEFORE);
+        Condition requestedOnCondition = new Condition().withComparisonOperator(ComparisonOperator.BETWEEN)
+                .withAttributeValueList(new AttributeValue().withN(String.valueOf(dupeWindowStartTime.getMillis())),
+                        new AttributeValue().withN(String.valueOf(uploadRequestedOn.getMillis())));
 
-        // make and execute query - We only care about the count.
+        // make and execute query
         DynamoDBQueryExpression<DynamoUploadDedupe> query = new DynamoDBQueryExpression<DynamoUploadDedupe>()
-                .withHashKeyValues(hashKey).withRangeKeyCondition("createdOn", createdOnCondition);
-        int numDupes = mapper.count(DynamoUploadDedupe.class, query);
+                .withHashKeyValues(hashKey).withRangeKeyCondition("uploadRequestedOn", requestedOnCondition);
+        List<DynamoUploadDedupe> dedupeList = mapper.query(DynamoUploadDedupe.class, query);
 
-        return numDupes > 0;
+        if (dedupeList.isEmpty()) {
+            return null;
+        } else {
+            return dedupeList.get(0).getOriginalUploadId();
+        }
     }
 
     /** {@inheritDoc} */
     @Override
-    public void registerUpload(long createdOn, String healthCode, UploadSchemaKey schemaKey, String uploadId) {
+    public void registerUpload(String healthCode, String uploadMd5, DateTime uploadRequestedOn,
+            String originalUploadId) {
         DynamoUploadDedupe dedupe = new DynamoUploadDedupe();
-        dedupe.setCreatedDate(new LocalDate(createdOn, BridgeConstants.LOCAL_TIME_ZONE));
-        dedupe.setCreatedOn(createdOn);
         dedupe.setHealthCode(healthCode);
-        dedupe.setSchemaKey(schemaKey.toString());
-        dedupe.setUploadId(uploadId);
+        dedupe.setOriginalUploadId(originalUploadId);
+        dedupe.setUploadMd5(uploadMd5);
+        dedupe.setUploadRequestedDate(uploadRequestedOn.withZone(BridgeConstants.LOCAL_TIME_ZONE).toLocalDate());
+        dedupe.setUploadRequestedOn(uploadRequestedOn.getMillis());
         mapper.save(dedupe);
     }
 }

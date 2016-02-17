@@ -1,100 +1,76 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.assertNull;
 
-import java.util.List;
-import java.util.Map;
+import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
 import org.joda.time.DateTime;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import org.sagebionetworks.bridge.schema.UploadSchemaKey;
-
-// Basic tests that test data flow
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@ContextConfiguration("classpath:test-context.xml")
+@RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoUploadDedupeDaoTest {
-    private static final UploadSchemaKey TEST_SCHEMA_KEY = new UploadSchemaKey.Builder().withStudyId("test-study")
-            .withSchemaId("test-schema").withRevision(7).build();
+    private static final String TEST_HEALTHCODE = "test-healthcode";
+    private static final String TEST_ORIGINAL_UPLOAD_ID = "original-upload";
+    private static final String TEST_UPLOAD_MD5 = "test-md5";
+    private static final DateTime TEST_UPLOAD_REQUESTED_ON = DateTime.parse("2016-02-15T10:26:45-0800");
 
+    @Autowired
+    @SuppressWarnings("unused")
     private DynamoUploadDedupeDao dao;
-    private DynamoDBMapper mockMapper;
-    private ArgumentCaptor<DynamoDBQueryExpression> queryCaptor;
 
-    @Test
-    public void testIsDuplicate() {
-        // set up and execute
-        mockMapperIsDuplicate(3);
-        assertTrue(dao.isDuplicate(42000L, "test-health-code", TEST_SCHEMA_KEY));
+    @Resource(name = "uploadDedupeDdbMapper")
+    @SuppressWarnings("unused")
+    private DynamoDBMapper mapper;
 
-        // validate that we're passing in the right query
-        DynamoDBQueryExpression<DynamoUploadDedupe> query = queryCaptor.getValue();
+    @Before
+    public void setup() {
+        dao.registerUpload(TEST_HEALTHCODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON, TEST_ORIGINAL_UPLOAD_ID);
+    }
 
-        // validate hash key
-        DynamoUploadDedupe queryHashKey = query.getHashKeyValues();
-        assertEquals("test-health-code:test-study-test-schema-v7", queryHashKey.getDdbKey());
-
-        // validate range key
-        Map<String, Condition> rangeKeyConditionMap = query.getRangeKeyConditions();
-        assertEquals(1, rangeKeyConditionMap.size());
-
-        Condition rangeKeyCondition = rangeKeyConditionMap.get("createdOn");
-        assertEquals(ComparisonOperator.BETWEEN.name(), rangeKeyCondition.getComparisonOperator());
-
-        List<AttributeValue> conditionValueList = rangeKeyCondition.getAttributeValueList();
-        assertEquals(2, conditionValueList.size());
-        assertEquals("41000", conditionValueList.get(0).getN());
-        assertEquals("43000", conditionValueList.get(1).getN());
+    @After
+    public void cleanup() {
+        DynamoUploadDedupe keyObj = new DynamoUploadDedupe();
+        keyObj.setHealthCode(TEST_HEALTHCODE);
+        keyObj.setUploadMd5(TEST_UPLOAD_MD5);
+        keyObj.setUploadRequestedOn(TEST_UPLOAD_REQUESTED_ON.getMillis());
+        mapper.delete(keyObj);
     }
 
     @Test
-    public void testIsNotDuplicate() {
-        // set up and execute
-        mockMapperIsDuplicate(0);
-        assertFalse(dao.isDuplicate(42000L, "test-health-code", TEST_SCHEMA_KEY));
-
-        // We already validate the query in the previous test. No need to duplicate it here.
-    }
-
-    private void mockMapperIsDuplicate(int numDupes) {
-        mockMapper = mock(DynamoDBMapper.class);
-        queryCaptor = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
-        when(mockMapper.count(eq(DynamoUploadDedupe.class), queryCaptor.capture())).thenReturn(numDupes);
-
-        dao = new DynamoUploadDedupeDao();
-        dao.setMapper(mockMapper);
+    public void isDupe() {
+        // After 1 day, it's still a dupe.
+        String originalUploadId = dao.getDuplicate(TEST_HEALTHCODE, TEST_UPLOAD_MD5,
+                TEST_UPLOAD_REQUESTED_ON.plusDays(1));
+        assertEquals(TEST_ORIGINAL_UPLOAD_ID, originalUploadId);
     }
 
     @Test
-    public void registerUpload() {
-        // set up dao and mock mapper
-        mockMapper = mock(DynamoDBMapper.class);
-        dao = new DynamoUploadDedupeDao();
-        dao.setMapper(mockMapper);
+    public void differentHealthCode() {
+        String originalUploadId = dao.getDuplicate("different-healthcode", TEST_UPLOAD_MD5,
+                TEST_UPLOAD_REQUESTED_ON.plusDays(1));
+        assertNull(originalUploadId);
+    }
 
-        // execute
-        long createdOnMillis = DateTime.parse("2016-01-12T01:00-0800").getMillis();
-        dao.registerUpload(createdOnMillis, "test-health-code", TEST_SCHEMA_KEY, "test-upload");
+    @Test
+    public void differentMd5() {
+        String originalUploadId = dao.getDuplicate(TEST_HEALTHCODE, "different-md5",
+                TEST_UPLOAD_REQUESTED_ON.plusDays(1));
+        assertNull(originalUploadId);
+    }
 
-        // verify DDB save
-        ArgumentCaptor<DynamoUploadDedupe> ddbObjCaptor = ArgumentCaptor.forClass(DynamoUploadDedupe.class);
-        verify(mockMapper).save(ddbObjCaptor.capture());
-        DynamoUploadDedupe ddbObj = ddbObjCaptor.getValue();
-        assertEquals("2016-01-12", ddbObj.getCreatedDate().toString());
-        assertEquals(createdOnMillis, ddbObj.getCreatedOn());
-        assertEquals("test-health-code", ddbObj.getHealthCode());
-        assertEquals("test-study-test-schema-v7", ddbObj.getSchemaKey());
-        assertEquals("test-upload", ddbObj.getUploadId());
+    @Test
+    public void outsideWindow() {
+        String originalUploadId = dao.getDuplicate(TEST_HEALTHCODE, TEST_UPLOAD_MD5,
+                TEST_UPLOAD_REQUESTED_ON.plusDays(8));
+        assertNull(originalUploadId);
     }
 }
