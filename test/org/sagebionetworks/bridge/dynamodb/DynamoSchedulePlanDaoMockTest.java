@@ -170,7 +170,8 @@ public class DynamoSchedulePlanDaoMockTest {
         SchedulePlan plan = dao.updateSchedulePlan(TEST_STUDY, mockPlan);
         CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
         
-        Criteria criteria = strategy.getScheduleCriteria().get(0).getCriteria();
+        ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(0);
+        Criteria criteria = scheduleCriteria.getCriteria();
         assertCriteria(criteria);
         
         ArgumentCaptor<Criteria> criteriaCaptor = ArgumentCaptor.forClass(Criteria.class);
@@ -179,9 +180,21 @@ public class DynamoSchedulePlanDaoMockTest {
         Criteria crit = criteriaCaptor.getValue();
         assertCriteria(crit);
         
-        // NOW, submit an update that contains the criteria object, and none of the individual
-        // fields, this should call the criteriaDao with the updated criteria object.
+        Criteria newCriteria = Criteria.create();
+        newCriteria.setKey(crit.getKey());
+        newCriteria.setMinAppVersion(100);
+        newCriteria.setMaxAppVersion(200);
+        strategy.getScheduleCriteria().set(0, new ScheduleCriteria.Builder()
+                .withSchedule(scheduleCriteria.getSchedule())
+                .withCriteria(newCriteria).build());
         
+        plan = dao.updateSchedulePlan(TEST_STUDY, plan);
+        scheduleCriteria = strategy.getScheduleCriteria().get(0);
+        criteria = scheduleCriteria.getCriteria();
+        assertEquals(new Integer(100), criteria.getMinAppVersion());
+        assertEquals(new Integer(200), criteria.getMaxAppVersion());
+        
+        verify(criteriaDao).createOrUpdateCriteria(newCriteria);
     }
     
     @Test
