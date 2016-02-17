@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.models;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.util.Set;
 
 import org.springframework.validation.Errors;
@@ -58,6 +60,9 @@ public class CriteriaUtils {
     }
 
     public static void validate(Criteria criteria, Set<String> dataGroups, Errors errors) {
+        if (isBlank(criteria.getKey())) {
+            errors.rejectValue("key", "is required");
+        }
         if ((criteria.getMinAppVersion() != null && criteria.getMaxAppVersion() != null) && 
             (criteria.getMaxAppVersion() < criteria.getMinAppVersion())) {
                 errors.rejectValue("maxAppVersion", "cannot be less than minAppVersion");

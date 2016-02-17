@@ -15,8 +15,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
 /**
  * This object is optionally associated with models that can be filtered by Criteria, such as 
- * SchedulePlan and Subpopulation. Create and update are combined, and not finding an object does 
- * not throw exceptions (in fact an empty object is returned for read operations).
+ * SchedulePlan and Subpopulation (they key field is a foreign key). Create and update are 
+ * combined, and not finding an object does not throw an exception.
  */
 @Component
 public class DynamoCriteriaDao implements CriteriaDao {
@@ -32,7 +32,7 @@ public class DynamoCriteriaDao implements CriteriaDao {
     // we must copy from an interface to an implementation.
     @Override
     public Criteria copyCriteria(String key, Criteria criteria) {
-        DynamoCriteria actualCriteria = new DynamoCriteria();
+        Criteria actualCriteria = Criteria.create();
         actualCriteria.setKey(key);
         if (criteria != null) {
             actualCriteria.setMinAppVersion(criteria.getMinAppVersion());

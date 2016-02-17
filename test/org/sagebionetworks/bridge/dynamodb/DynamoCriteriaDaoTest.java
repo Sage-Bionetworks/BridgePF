@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -21,15 +22,18 @@ public class DynamoCriteriaDaoTest {
 
     @Resource
     DynamoCriteriaDao criteriaDao;
+
+    @Test
+    public void deleteAndGetAreQuiet() {
+        // Before creating an object, create and delete do not throw errors and do something sensible
+        criteriaDao.deleteCriteria("key"); // no exception
+        Criteria retrieved = criteriaDao.getCriteria("key"); // just return null
+        assertNull(retrieved);
+    }
     
     @Test
     public void canCrudCriteria() {
-        // Before creating an object, create and delete do not throw errors and do something sensible
-        criteriaDao.deleteCriteria("key"); // no exception
-        Criteria retrieved = criteriaDao.getCriteria("key");
-        assertNull(retrieved);
-        
-        DynamoCriteria criteria = new DynamoCriteria();
+        Criteria criteria = Criteria.create();
         criteria.setKey("key");
         criteria.setMinAppVersion(2);
         criteria.setMaxAppVersion(8);
@@ -38,7 +42,7 @@ public class DynamoCriteriaDaoTest {
         
         criteriaDao.createOrUpdateCriteria(criteria);
         
-        retrieved = (DynamoCriteria)criteriaDao.getCriteria("key");
+        Criteria retrieved = criteriaDao.getCriteria("key");
         assertEquals("key", retrieved.getKey());
         assertEquals(new Integer(2), retrieved.getMinAppVersion());
         assertEquals(new Integer(8), retrieved.getMaxAppVersion());
@@ -57,8 +61,19 @@ public class DynamoCriteriaDaoTest {
         criteriaDao.deleteCriteria("key");
         
         // Now that this doesn't exist, we should get an empty object back.
-        retrieved = (DynamoCriteria)criteriaDao.getCriteria("key");
+        retrieved = criteriaDao.getCriteria("key");
         assertNull(retrieved);
+    }
+    
+    @Test
+    public void canCopy() {
+        Criteria criteria = Criteria.create();
+        criteria.setKey("key1");
+        criteria.setMinAppVersion(12);
+        
+        Criteria newCriteria = criteriaDao.copyCriteria("key1", criteria);
+        assertNotEquals(criteria.getKey(), newCriteria.getKey());
+        assertEquals(criteria.getMinAppVersion(), newCriteria.getMinAppVersion());
     }
 
 }

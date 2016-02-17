@@ -2,14 +2,15 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import org.apache.commons.lang3.StringUtils;
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -24,11 +25,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -41,12 +38,9 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     private DynamoDBMapper mapper;
     private CriteriaDao criteriaDao;
 
-    @Autowired
-    final void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoSchedulePlan.class, bridgeConfig)).build();
-        mapper = new DynamoDBMapper(client, mapperConfig);
+    @Resource(name = "schedulePlanMapper")
+    public void setSchedulePlanMapper(DynamoDBMapper schedulePlanMapper) {
+        this.mapper = schedulePlanMapper;
     }
     
     @Autowired
@@ -56,8 +50,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     @Override
     public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier) {
-        checkNotNull(clientInfo, "clientInfo is null");
-        checkNotNull(studyIdentifier, "studyIdentifier is null");
+        checkNotNull(clientInfo);
+        checkNotNull(studyIdentifier);
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setStudyKey(studyIdentifier.getIdentifier());
@@ -82,8 +76,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     
     @Override
     public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier, "studyIdentifier is null");
-        checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(guid));
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setStudyKey(studyIdentifier.getIdentifier());
@@ -109,22 +103,22 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     @Override
     public SchedulePlan createSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
-        checkNotNull(plan, "Schedule plan is null");
+        checkNotNull(studyIdentifier);
+        checkNotNull(plan);
         
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
-        forEachCriteria(plan, scheduleCriteria -> loadCriteria(scheduleCriteria));
+        forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
         mapper.save(plan);
         return plan;
     }
 
     @Override
     public SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
-        checkNotNull(plan, "Schedule plan is null");
+        checkNotNull(studyIdentifier);
+        checkNotNull(plan);
         
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -136,8 +130,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     @Override
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier, "Study identifier is null");
-        checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(guid));
         
         SchedulePlan plan = getSchedulePlan(studyIdentifier, guid);
         
@@ -151,6 +145,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
             for (int i=0; i < strategy.getScheduleCriteria().size(); i++) {
                 ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(i);
                 
+                // Add the key... builder makes this verbose
                 scheduleCriteria = new ScheduleCriteria.Builder()
                         .withSchedule(scheduleCriteria.getSchedule())
                         .withCriteria(scheduleCriteria.getCriteria())
@@ -158,6 +153,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
                 Criteria criteria = consumer.apply(scheduleCriteria);
 
+                // Now add the new criteria object and set new object in list
                 scheduleCriteria = new ScheduleCriteria.Builder()
                         .withSchedule(scheduleCriteria.getSchedule())
                         .withCriteria(criteria).build();

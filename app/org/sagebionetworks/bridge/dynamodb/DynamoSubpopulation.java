@@ -56,6 +56,10 @@ public final class DynamoSubpopulation implements Subpopulation {
         return "subpopulation:"+guid;
     }
     
+    @Override
+    public void setKey(String key) {
+    }
+    
     @JsonIgnore
     @Override
     @DynamoDBHashKey

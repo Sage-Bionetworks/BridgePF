@@ -320,6 +320,7 @@ public class CriteriaScheduleStrategyTest {
         schedule.addActivity(activity);
 
         ScheduleCriteria criteria = new ScheduleCriteria.Builder()
+                .withKey("key")
                 .withMinAppVersion(2)
                 .withMaxAppVersion(12)
                 .withSchedule(schedule).build();

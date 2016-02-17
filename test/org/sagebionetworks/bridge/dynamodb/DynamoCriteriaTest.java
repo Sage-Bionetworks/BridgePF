@@ -30,7 +30,7 @@ public class DynamoCriteriaTest {
 
     @Test
     public void canSerialize() throws Exception {
-        DynamoCriteria criteria = new DynamoCriteria();
+        Criteria criteria = Criteria.create();
         criteria.setKey("subpopulation:AAA");
         criteria.setMinAppVersion(2);
         criteria.setMaxAppVersion(8);

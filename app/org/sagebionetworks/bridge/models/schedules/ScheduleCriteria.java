@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.Objects;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.models.Criteria;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -85,7 +84,7 @@ public final class ScheduleCriteria implements Criteria {
             return this;
         }
         public ScheduleCriteria build() {
-            DynamoCriteria crit = new DynamoCriteria();
+            Criteria crit = Criteria.create();
             if (criteria != null) {
                 crit.setKey(criteria.getKey());
                 crit.setMinAppVersion(criteria.getMinAppVersion());
@@ -94,7 +93,7 @@ public final class ScheduleCriteria implements Criteria {
                 crit.setNoneOfGroups(criteria.getNoneOfGroups());
             }
             if (key != null) {
-                crit.setKey(key);;
+                crit.setKey(key);
             }
             if (minAppVersion != null) {
                 crit.setMinAppVersion(minAppVersion);
@@ -102,10 +101,10 @@ public final class ScheduleCriteria implements Criteria {
             if (maxAppVersion != null) {
                 crit.setMaxAppVersion(maxAppVersion);
             }
-            if (allOfGroups != null) {
+            if (!allOfGroups.isEmpty()) {
                 crit.setAllOfGroups(allOfGroups);
             }
-            if (noneOfGroups != null) {
+            if (!noneOfGroups.isEmpty()) {
                 crit.setNoneOfGroups(noneOfGroups);
             }
             return new ScheduleCriteria(schedule, crit);
@@ -129,5 +128,22 @@ public final class ScheduleCriteria implements Criteria {
     public String toString() {
         return "ScheduleCriteria [schedule=" + schedule + ", criteria=" + criteria + "]";
     }
-
+    
+    // These have to exist during migration. Once we've moved to a separate criteria table and the criteria 
+    // inteface can be removed from this object, these can be removed.
+    @Override
+    public void setKey(String key) {
+    }
+    @Override
+    public void setMinAppVersion(Integer minAppVersion) {
+    }
+    @Override
+    public void setMaxAppVersion(Integer maxAppVersion) {
+    }
+    @Override
+    public void setAllOfGroups(Set<String> allOfGroups) {
+    }
+    @Override
+    public void setNoneOfGroups(Set<String> noneOfGroups) {
+    }
 }
