@@ -379,32 +379,32 @@ public class CriteriaScheduleStrategyTest {
 
     private void setUpStrategyWithOneRequiredDataGroup() {
         strategy.addCriteria(new ScheduleCriteria.Builder()
-            .addRequiredGroup("group1")
+            .withAllOfGroups(Sets.newHashSet("group1"))
             .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_ONE_REQUIRED_DATA_GROUP).build());
     }
     
     private void setUpStrategyWithRequiredDataGroups() {
         strategy.addCriteria(new ScheduleCriteria.Builder()
-            .addRequiredGroup("group1", "group2")
+            .withAllOfGroups(Sets.newHashSet("group1", "group2"))
             .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_REQUIRED_DATA_GROUPS).build());
     }
     
     private void setUpStrategyWithOneProhibitedDataGroup() {
         strategy.addCriteria(new ScheduleCriteria.Builder()
-            .addProhibitedGroup("group1")
+            .withNoneOfGroups(Sets.newHashSet("group1"))
             .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_ONE_PROHIBITED_DATA_GROUP).build());
     }
     
     private void setUpStrategyWithProhibitedDataGroups() {
         strategy.addCriteria(new ScheduleCriteria.Builder()
-            .addProhibitedGroup("group1","group2")
+            .withNoneOfGroups(Sets.newHashSet("group1","group2"))
             .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_PROHIBITED_DATA_GROUPS).build());
     }
 
     private void setUpStrategyWithRequiredAndProhibitedDataGroups() {
         strategy.addCriteria(new ScheduleCriteria.Builder()
-            .addRequiredGroup("req1", "req2")
-            .addProhibitedGroup("proh1","proh2")
+            .withAllOfGroups(Sets.newHashSet("req1", "req2"))
+            .withNoneOfGroups(Sets.newHashSet("proh1","proh2"))
             .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS).build());
     }
     
@@ -412,8 +412,8 @@ public class CriteriaScheduleStrategyTest {
         strategy.addCriteria(new ScheduleCriteria.Builder()
             .withMinAppVersion(4)
             .withMaxAppVersion(12)                
-            .addRequiredGroup("req1", "req2")
-            .addProhibitedGroup("proh1","proh2")
+            .withAllOfGroups(Sets.newHashSet("req1", "req2"))
+            .withNoneOfGroups(Sets.newHashSet("proh1","proh2"))
             .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_ALL_REQUIREMENTS).build());
     }
 }

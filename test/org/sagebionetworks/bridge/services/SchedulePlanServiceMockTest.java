@@ -217,7 +217,7 @@ public class SchedulePlanServiceMockTest {
         
         ScheduleCriteria criteria = new ScheduleCriteria.Builder()
                 .withSchedule(schedule)
-                .addRequiredGroup("FFF")
+                .withAllOfGroups(Sets.newHashSet("FFF"))
                 .build();
         
         CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();

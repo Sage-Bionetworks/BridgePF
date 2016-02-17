@@ -11,6 +11,8 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import org.sagebionetworks.bridge.models.Criteria;
+
 import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -24,8 +26,8 @@ public class DynamoCriteriaDaoTest {
     public void canCrudCriteria() {
         // Before creating an object, create and delete do not throw errors and do something sensible
         criteriaDao.deleteCriteria("key"); // no exception
-        DynamoCriteria retrieved = (DynamoCriteria)criteriaDao.getCriteria("key");
-        assertIsEmptyObject(retrieved);
+        Criteria retrieved = criteriaDao.getCriteria("key");
+        assertNull(retrieved);
         
         DynamoCriteria criteria = new DynamoCriteria();
         criteria.setKey("key");
@@ -44,11 +46,11 @@ public class DynamoCriteriaDaoTest {
         assertEquals(Sets.newHashSet("c","d"), retrieved.getNoneOfGroups());
         
         // Try nullifying this, setting a property
-        retrieved.setAllOfGroups(null);
-        retrieved.setMinAppVersion(4);
-        criteriaDao.createOrUpdateCriteria(retrieved);
+        criteria.setAllOfGroups(null);
+        criteria.setMinAppVersion(4);
+        criteriaDao.createOrUpdateCriteria(criteria);
         
-        retrieved = (DynamoCriteria)criteriaDao.getCriteria("key");
+        retrieved = criteriaDao.getCriteria("key");
         assertEquals(new Integer(4), retrieved.getMinAppVersion());
         assertTrue(retrieved.getAllOfGroups().isEmpty());
         
@@ -56,14 +58,7 @@ public class DynamoCriteriaDaoTest {
         
         // Now that this doesn't exist, we should get an empty object back.
         retrieved = (DynamoCriteria)criteriaDao.getCriteria("key");
-        assertIsEmptyObject(retrieved);
+        assertNull(retrieved);
     }
 
-    private void assertIsEmptyObject(DynamoCriteria retrieved) {
-        assertEquals("key", retrieved.getKey());
-        assertNull(retrieved.getMinAppVersion());
-        assertNull(retrieved.getMaxAppVersion());
-        assertTrue(retrieved.getAllOfGroups().isEmpty());
-        assertTrue(retrieved.getNoneOfGroups().isEmpty());
-    }
 }

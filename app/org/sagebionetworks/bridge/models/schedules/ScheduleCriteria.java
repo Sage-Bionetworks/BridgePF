@@ -96,6 +96,15 @@ public final class ScheduleCriteria implements Criteria {
             this.maxAppVersion = maxAppVersion;
             return this;
         }
+        public Builder withAllOfGroups(Set<String> allOfGroups) {
+            this.allOfGroups = (allOfGroups == null) ? Sets.newHashSet() : allOfGroups;
+            return this;
+        }
+        public Builder withNoneOfGroups(Set<String> noneOfGroups) {
+            this.noneOfGroups = (noneOfGroups == null) ? Sets.newHashSet() : noneOfGroups;
+            return this;
+        }
+        /*
         public Builder addRequiredGroup(String... groups) {
             for (String group : groups) {
                 this.allOfGroups.add(group);
@@ -107,7 +116,7 @@ public final class ScheduleCriteria implements Criteria {
                 this.noneOfGroups.add(group);    
             }
             return this;
-        }
+        }*/
         public ScheduleCriteria build() {
             return new ScheduleCriteria(schedule, criteria, key, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups);
         }
