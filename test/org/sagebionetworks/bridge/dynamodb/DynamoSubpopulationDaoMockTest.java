@@ -77,11 +77,6 @@ public class DynamoSubpopulationDaoMockTest {
 
         doReturn(createSubpopulation()).when(mapper).load(any());
         doReturn(page).when(mapper).query(eq(DynamoSubpopulation.class), any());
-        /*
-        doReturn(createSubpopulation()).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
-        doReturn(Lists.newArrayList(createSubpopulation())).when(dao).getSubpopulations(TEST_STUDY, false, false);
-        doReturn(Lists.newArrayList(createSubpopulation())).when(dao).getSubpopulationsForUser(any());
-        */
         
         Criteria criteria = Criteria.create();
         criteria.setMinAppVersion(2);

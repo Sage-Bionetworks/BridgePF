@@ -71,7 +71,7 @@ public class DynamoCriteriaDaoTest {
         criteria.setKey("key1");
         criteria.setMinAppVersion(12);
         
-        Criteria newCriteria = criteriaDao.copyCriteria("key1", criteria);
+        Criteria newCriteria = criteriaDao.copyCriteria("key2", criteria);
         assertNotEquals(criteria.getKey(), newCriteria.getKey());
         assertEquals(criteria.getMinAppVersion(), newCriteria.getMinAppVersion());
     }
