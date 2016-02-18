@@ -15,7 +15,10 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
@@ -32,21 +35,25 @@ import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+@RunWith(MockitoJUnitRunner.class)
 public class DynamoSchedulePlanDaoMockTest {
     
     private static final Set<String> ALL_OF_GROUPS = Sets.newHashSet("a","b");
     private static final Set<String> NONE_OF_GROUPS = Sets.newHashSet("c","d");
     
     private DynamoSchedulePlanDao dao;
+    
+    @Mock
     private DynamoDBMapper mapper;
+    
+    @Mock
     private CriteriaDao criteriaDao;
-    private DynamoSchedulePlan mockPlan;
+
+    private DynamoSchedulePlan schedulePlan;
     
     @SuppressWarnings("unchecked")
     @Before
     public void before() {
-        mapper = mock(DynamoDBMapper.class);
-        criteriaDao = mock(CriteriaDao.class);
         dao = new DynamoSchedulePlanDao();
         dao.setSchedulePlanMapper(mapper);
         dao.setCriteriaDao(criteriaDao);
@@ -79,13 +86,13 @@ public class DynamoSchedulePlanDaoMockTest {
                 .withCriteria(criteria).build();
         strategy.getScheduleCriteria().add(scheduleCriteria);
         
-        mockPlan = new DynamoSchedulePlan();
-        mockPlan.setGuid(BridgeUtils.generateGuid());
-        mockPlan.setLabel("Schedule Plan");
-        mockPlan.setStudyKey(TEST_STUDY_IDENTIFIER);
-        mockPlan.setStrategy(strategy);
+        schedulePlan = new DynamoSchedulePlan();
+        schedulePlan.setGuid(BridgeUtils.generateGuid());
+        schedulePlan.setLabel("Schedule Plan");
+        schedulePlan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        schedulePlan.setStrategy(strategy);
         
-        List<DynamoSchedulePlan> list = Lists.newArrayList(mockPlan);
+        List<DynamoSchedulePlan> list = Lists.newArrayList(schedulePlan);
         
         QueryResultPage<DynamoSchedulePlan> page = mock(QueryResultPage.class);
         when(page.getResults()).thenReturn(list);
@@ -125,7 +132,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void getSchedulePlanRetrievesCriteria() {
-        SchedulePlan plan = dao.getSchedulePlan(TEST_STUDY, mockPlan.getGuid());
+        SchedulePlan plan = dao.getSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
         CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
         
         Criteria criteria = strategy.getScheduleCriteria().get(0).getCriteria();
@@ -152,7 +159,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void createSchedulePlanWritesCriteria() {
-        SchedulePlan plan = dao.createSchedulePlan(TEST_STUDY, mockPlan);
+        SchedulePlan plan = dao.createSchedulePlan(TEST_STUDY, schedulePlan);
         CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
         
         Criteria criteria = strategy.getScheduleCriteria().get(0).getCriteria();
@@ -167,7 +174,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void updateSchedulePlanWritesCriteria() {
-        SchedulePlan plan = dao.updateSchedulePlan(TEST_STUDY, mockPlan);
+        SchedulePlan plan = dao.updateSchedulePlan(TEST_STUDY, schedulePlan);
         CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
         
         ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(0);
@@ -199,9 +206,9 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void deleteSchedulePlanDeletesCriteria() {
-        dao.deleteSchedulePlan(TEST_STUDY, mockPlan.getGuid());
+        dao.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
         
-        verify(criteriaDao).deleteCriteria(mockPlan.getGuid()+":scheduleCriteria:0");
+        verify(criteriaDao).deleteCriteria(schedulePlan.getGuid()+":scheduleCriteria:0");
     }
 
     private void assertCriteria(Criteria criteria) {

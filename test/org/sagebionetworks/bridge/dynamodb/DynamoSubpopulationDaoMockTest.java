@@ -6,7 +6,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -18,6 +17,10 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -32,25 +35,28 @@ import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+@RunWith(MockitoJUnitRunner.class)
 public class DynamoSubpopulationDaoMockTest {
     
     private static final Set<String> ALL_OF_GROUPS = Sets.newHashSet("a","b");
     private static final Set<String> NONE_OF_GROUPS = Sets.newHashSet("c","d");
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("AAA");
-    
+
+    @Spy
     private DynamoSubpopulationDao dao;
+    
+    @Mock
     private DynamoDBMapper mapper;
+    
+    @Mock
     private StudyConsentDao studyConsentDao;
+    
+    @Mock
     private CriteriaDao criteriaDao;
 
     @SuppressWarnings("unchecked")
     @Before
     public void before() {
-        dao = spy(new DynamoSubpopulationDao());
-        mapper = mock(DynamoDBMapper.class);
-        studyConsentDao = mock(StudyConsentDao.class);
-        criteriaDao = mock(CriteriaDao.class);
-        
         dao.setMapper(mapper);
         dao.setStudyConsentDao(studyConsentDao);
         dao.setCriteriaDao(criteriaDao);
