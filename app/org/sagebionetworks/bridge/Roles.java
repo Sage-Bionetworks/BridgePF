@@ -9,6 +9,6 @@ public enum Roles {
     ADMIN,
     TEST_USERS,
     WORKER;
-    
-    public static final Set<Roles> ADMINISTRATIVE_ROLES = EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.ADMIN);
+
+    public static final Set<Roles> ADMINISTRATIVE_ROLES = EnumSet.of(DEVELOPER, RESEARCHER, ADMIN, WORKER);
 }

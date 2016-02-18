@@ -200,8 +200,7 @@ public class AuthenticationControllerMockTest {
         assertSessionInfoInMetrics(metrics);
     }
 
-    @Test
-    public void signInExistingSession() throws Exception {
+    private void signInExistingSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
 
@@ -209,146 +208,72 @@ public class AuthenticationControllerMockTest {
         doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
-        UserSession session = createSession();
+        User user = new User();
+        user.setId(TEST_USER_STORMPATH_ID);
+        if (isConsented) {
+            user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
+        }
+        if (role != null) {
+            user.setRoles(EnumSet.of(role));
+        }
+
+        UserSession session = createSessionWithUser(user);
         when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
         // execute and validate
-        Result result = controller.signIn();
-        assertSessionInPlayResult(result);
+        try {
+            Result result = controller.signIn();
+            if (shouldThrow) {
+                fail("expected exception");
+            }
+            assertSessionInPlayResult(result);
+        } catch (ConsentRequiredException ex) {
+            if (!shouldThrow) {
+                throw ex;
+            }
+        }
         assertSessionInfoInMetrics(metrics);
     }
-
     @Test
-    public void signInNewSession() throws Exception {
-        // mock getSessionToken and getMetrics
-        doReturn(null).when(controller).getSessionToken();
-
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
-        
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
-        // mock request
-        String requestJsonString = "{\n" +
-                "   \"email\":\"" + TEST_EMAIL + "\",\n" +
-                "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
-                "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
-                "}";
-
-        TestUtils.mockPlayContextWithJson(requestJsonString);
-
-        // mock AuthenticationService
-        UserSession session = createSession();
-        ArgumentCaptor<SignIn> signInCaptor = ArgumentCaptor.forClass(SignIn.class);
-        when(authenticationService.signIn(same(study), any(), signInCaptor.capture())).thenReturn(session);
-
-        // execute and validate
-        Result result = controller.signIn();
-        assertSessionInPlayResult(result);
-        assertSessionInfoInMetrics(metrics);
-
-        // validate signIn
-        SignIn signIn = signInCaptor.getValue();
-        assertEquals(TEST_EMAIL, signIn.getEmail());
-        assertEquals(TEST_PASSWORD, signIn.getPassword());
+    public void signInExistingSession() throws Exception {
+        signInExistingSession(true, null, false);
     }
 
     @Test
     public void signInExistingSessionUnconsented() throws Exception {
-        // mock getSessionToken and getMetrics
-        doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
-
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
-        // mock AuthenticationService
-        User user = new User();
-        user.setId(TEST_USER_STORMPATH_ID);
-
-        UserSession session = createSessionWithUser(user);
-        when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
-
-        // execute and validate
-        try {
-            controller.signIn();
-            fail("expected exception");
-        } catch (ConsentRequiredException ex) {
-            // expected exception
-        }
-        assertSessionInfoInMetrics(metrics);
-    }
-
-    @Test
-    public void signInNewSessionUnconsented() throws Exception {
-        // mock getSessionToken and getMetrics
-        doReturn(null).when(controller).getSessionToken();
-
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
-        
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
-        // mock request
-        String requestJsonString = "{\n" +
-                "   \"email\":\"" + TEST_EMAIL + "\",\n" +
-                "   \"password\":\"" + TEST_PASSWORD + "\",\n" +
-                "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
-                "}";
-
-        TestUtils.mockPlayContextWithJson(requestJsonString);
-
-        // mock AuthenticationService
-        User user = new User();
-        user.setId(TEST_USER_STORMPATH_ID);
-
-        UserSession session = createSessionWithUser(user);
-
-        ArgumentCaptor<SignIn> signInCaptor = ArgumentCaptor.forClass(SignIn.class);
-        when(authenticationService.signIn(same(study), any(), signInCaptor.capture())).thenReturn(session);
-
-        // execute and validate
-        try {
-            controller.signIn();
-            fail("expected exception");
-        } catch (ConsentRequiredException ex) {
-            // expected exception
-        }
-        assertSessionInfoInMetrics(metrics);
-
-        // validate signIn
-        SignIn signIn = signInCaptor.getValue();
-        assertEquals(TEST_EMAIL, signIn.getEmail());
-        assertEquals(TEST_PASSWORD, signIn.getPassword());
+        signInExistingSession(false, null, true);
     }
 
     @Test
     public void signInExistingSessionUnconsentedAdmin() throws Exception {
-        // mock getSessionToken and getMetrics
-        doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
-
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
-        // mock AuthenticationService
-        User user = new User();
-        user.setId(TEST_USER_STORMPATH_ID);
-        user.setRoles(EnumSet.of(Roles.DEVELOPER));
-
-        UserSession session = createSessionWithUser(user);
-        when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
-
-        // execute and validate
-        Result result = controller.signIn();
-        assertSessionInPlayResult(result);
-        assertSessionInfoInMetrics(metrics);
+        signInExistingSession(false, Roles.ADMIN, false);
     }
 
     @Test
-    public void signInNewSessionUnconsentedAdmin() throws Exception {
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+    public void signInExistingSessionUnconsentedDeveloper() throws Exception {
+        signInExistingSession(false, Roles.DEVELOPER, false);
+    }
 
+    @Test
+    public void signInExistingSessionUnconsentedResearcher() throws Exception {
+        signInExistingSession(false, Roles.RESEARCHER, false);
+    }
+
+    @Test
+    public void signInExistingSessionUnconsentedTestUser() throws Exception {
+        signInExistingSession(false, Roles.TEST_USERS, true);
+    }
+
+    @Test
+    public void signInExistingSessionUnconsentedWorker() throws Exception {
+        signInExistingSession(false, Roles.WORKER, false);
+    }
+
+    private void signInNewSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
+
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
@@ -365,22 +290,70 @@ public class AuthenticationControllerMockTest {
         // mock AuthenticationService
         User user = new User();
         user.setId(TEST_USER_STORMPATH_ID);
-        user.setRoles(EnumSet.of(Roles.DEVELOPER));
+        if (isConsented) {
+            user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
+        }
+        if (role != null) {
+            user.setRoles(EnumSet.of(role));
+        }
 
         UserSession session = createSessionWithUser(user);
-
         ArgumentCaptor<SignIn> signInCaptor = ArgumentCaptor.forClass(SignIn.class);
         when(authenticationService.signIn(same(study), any(), signInCaptor.capture())).thenReturn(session);
 
         // execute and validate
-        Result result = controller.signIn();
-        assertSessionInPlayResult(result);
+        try {
+            Result result = controller.signIn();
+            if (shouldThrow) {
+                fail("expected exception");
+            }
+            assertSessionInPlayResult(result);
+        } catch (ConsentRequiredException ex) {
+            if (!shouldThrow) {
+                throw ex;
+            }
+        }
         assertSessionInfoInMetrics(metrics);
 
         // validate signIn
         SignIn signIn = signInCaptor.getValue();
         assertEquals(TEST_EMAIL, signIn.getEmail());
         assertEquals(TEST_PASSWORD, signIn.getPassword());
+    }
+
+    @Test
+    public void signInNewSession() throws Exception {
+        signInNewSession(true, null, false);
+    }
+
+    @Test
+    public void signInNewSessionUnconsented() throws Exception {
+        signInNewSession(false, null, true);
+    }
+
+    @Test
+    public void signInNewSessionUnconsentedAdmin() throws Exception {
+        signInNewSession(false, Roles.ADMIN, false);
+    }
+
+    @Test
+    public void signInNewSessionUnconsentedDeveloper() throws Exception {
+        signInNewSession(false, Roles.DEVELOPER, false);
+    }
+
+    @Test
+    public void signInNewSessionUnconsentedResearcher() throws Exception {
+        signInNewSession(false, Roles.RESEARCHER, false);
+    }
+
+    @Test
+    public void signInNewSessionUnconsentedTestUser() throws Exception {
+        signInNewSession(false, Roles.TEST_USERS, true);
+    }
+
+    @Test
+    public void signInNewSessionUnconsentedWorker() throws Exception {
+        signInNewSession(false, Roles.WORKER, false);
     }
 
     @Test
