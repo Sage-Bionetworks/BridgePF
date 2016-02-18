@@ -117,7 +117,7 @@ public class DynamoSubpopulationDaoMockTest {
         Criteria criteria = subpop.getCriteria();
         assertCriteria(criteria);
         
-        verify(criteriaDao).getCriteria("subpopulation:"+subpop.getGuidString());
+        verify(criteriaDao).getCriteria(subpop.getKey());
         verifyNoMoreInteractions(criteriaDao);
     }
     
@@ -129,7 +129,7 @@ public class DynamoSubpopulationDaoMockTest {
         Criteria criteria = subpop.getCriteria();
         assertCriteria(criteria);
         
-        verify(criteriaDao).getCriteria("subpopulation:"+subpop.getGuidString());
+        verify(criteriaDao).getCriteria(subpop.getKey());
         verify(criteriaDao).copyCriteria(subpop.getKey(), subpop);
     }
     
@@ -142,7 +142,7 @@ public class DynamoSubpopulationDaoMockTest {
         Criteria criteria = subpop.getCriteria();
         assertCriteria(criteria);
         
-        verify(criteriaDao).getCriteria("subpopulation:"+subpop.getGuidString());
+        verify(criteriaDao).getCriteria(subpop.getKey());
         verifyNoMoreInteractions(criteriaDao);
     }
 
@@ -156,7 +156,7 @@ public class DynamoSubpopulationDaoMockTest {
         Criteria criteria = subpop.getCriteria();
         assertCriteria(criteria);
         
-        verify(criteriaDao).getCriteria("subpopulation:"+subpop.getGuidString());
+        verify(criteriaDao).getCriteria(subpop.getKey());
         verify(criteriaDao).copyCriteria(subpop.getKey(), subpop);
     }
         
@@ -164,14 +164,14 @@ public class DynamoSubpopulationDaoMockTest {
     public void physicalDeleteSubpopulationDeletesCriteria() {
         dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
         
-        verify(criteriaDao).deleteCriteria("subpopulation:"+SUBPOP_GUID.getGuid());
+        verify(criteriaDao).deleteCriteria(createSubpopulation().getKey());
     }
     
     @Test
     public void logicalDeleteSubpopulationDoesNotDeleteCriteria() {
         dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false);
         
-        verify(criteriaDao, never()).deleteCriteria("subpopulation:"+SUBPOP_GUID.getGuid());
+        verify(criteriaDao, never()).deleteCriteria(createSubpopulation().getKey());
     }
     
     private CriteriaContext createContext() {
