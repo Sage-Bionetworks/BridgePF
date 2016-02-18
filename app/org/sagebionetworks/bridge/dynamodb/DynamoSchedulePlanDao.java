@@ -39,7 +39,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     private CriteriaDao criteriaDao;
 
     @Resource(name = "schedulePlanMapper")
-    public void setSchedulePlanMapper(DynamoDBMapper schedulePlanMapper) {
+    final void setSchedulePlanMapper(DynamoDBMapper schedulePlanMapper) {
         this.mapper = schedulePlanMapper;
     }
     
@@ -163,9 +163,12 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     private String getKey(SchedulePlan plan, int index) {
-        return plan.getGuid()+":scheduleCriteria:" + index;
+        return "scheduleCriteria:" + plan.getGuid() + ":" + index;
     }
     
+    // Save the criteria object if it exists. If it does not, copy the criteria data from the ScheduleCriteria
+    // and save that. We then set that criteria object on the scheduleCriteria. Once all models have a criteria 
+    // object, this will be removed along with the fields on the scheduleCriteria object.
     private Criteria persistCriteria(ScheduleCriteria scheduleCriteria) {
         Criteria criteria = scheduleCriteria.getCriteria();
         Criteria makeCopyOf = (criteria == null) ? scheduleCriteria : criteria;

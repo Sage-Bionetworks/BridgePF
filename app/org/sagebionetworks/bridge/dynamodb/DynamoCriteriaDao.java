@@ -14,17 +14,16 @@ import org.sagebionetworks.bridge.models.Criteria;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
 /**
- * This object is optionally associated with models that can be filtered by Criteria, such as 
- * SchedulePlan and Subpopulation (they key field is a foreign key). Create and update are 
- * combined, and not finding an object does not throw an exception.
+ * The DAO for managing this object, which is optionally associated with models that can be filtered by Criteria. Create
+ * and update are combined, and not finding an object does not throw an exception when retrieving or deleting.
  */
 @Component
 public class DynamoCriteriaDao implements CriteriaDao {
 
-    DynamoDBMapper criteriaMapper;
+    private DynamoDBMapper criteriaMapper;
     
     @Resource(name = "criteriaMapper")
-    public void setSurveyElementMapper(DynamoDBMapper criteriaMapper) {
+    final void setCriteriaMapper(DynamoDBMapper criteriaMapper) {
         this.criteriaMapper = criteriaMapper;
     }
     

@@ -129,8 +129,8 @@ public final class ScheduleCriteria implements Criteria {
         return "ScheduleCriteria [schedule=" + schedule + ", criteria=" + criteria + "]";
     }
     
-    // These have to exist during migration. Once we've moved to a separate criteria table and the criteria 
-    // inteface can be removed from this object, these can be removed.
+    // inteface can be removed from this object, these can be removed. Jackson uses the builder and ignores 
+    // these.
     @Override
     public void setKey(String key) {
     }
