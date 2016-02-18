@@ -12,46 +12,20 @@ import org.joda.time.LocalDate;
 
 /** DDB implementation of UploadDedupe. */
 @DynamoThroughput(readCapacity=5, writeCapacity=10)
-@DynamoDBTable(tableName = "UploadDedupe")
+@DynamoDBTable(tableName = "UploadDedupe2")
 public class DynamoUploadDedupe {
-    private LocalDate createdDate;
-    private long createdOn;
     private String healthCode;
-    private String schemaKey;
-    private String uploadId;
+    private String originalUploadId;
+    private String uploadMd5;
+    private LocalDate uploadRequestedDate;
+    private long uploadRequestedOn;
 
-    /**
-     * Calendar date the upload was created, as recorded using the server's local time zone (Seattle time). This is
-     * used to clean up old upload dedupe entries afterwards.
-     */
-    @DynamoDBIndexHashKey(attributeName = "createdDate", globalSecondaryIndexName = "createdDate-index")
-    @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
-    public LocalDate getCreatedDate() {
-        return createdDate;
-    }
-
-    /** @see #getCreatedDate */
-    public void setCreatedDate(LocalDate createdDate) {
-        this.createdDate = createdDate;
-    }
-
-    /** Timestamp when the upload was created, as reported by the app. This is used as the range key for de-duping. */
-    @DynamoDBRangeKey
-    public long getCreatedOn() {
-        return createdOn;
-    }
-
-    /** @see #getCreatedOn */
-    public void setCreatedOn(long createdOn) {
-        this.createdOn = createdOn;
-    }
-
-    /** DDB hash key, which is the concatenation of the health code and the schema. */
+    /** DDB hash key, which is the concatenation of the health code and the upload MD5. */
     @DynamoDBHashKey
     public String getDdbKey() {
         Preconditions.checkArgument(StringUtils.isNotBlank(healthCode), "healthCode must be specified");
-        Preconditions.checkArgument(schemaKey != null, "schemaKey must be specified");
-        return healthCode + ":" + schemaKey;
+        Preconditions.checkArgument(StringUtils.isNotBlank(uploadMd5), "uploadMd5 must be specified");
+        return healthCode + ":" + uploadMd5;
     }
 
     /** Sets the DDB key. Generally only called by the DDB mapper. */
@@ -61,10 +35,10 @@ public class DynamoUploadDedupe {
         String[] parts = ddbKey.split(":", 2);
         Preconditions.checkArgument(parts.length == 2, "ddbKey has wrong number of parts");
         Preconditions.checkArgument(StringUtils.isNotBlank(parts[0]), "ddbKey must contain healthCode");
-        Preconditions.checkArgument(StringUtils.isNotBlank(parts[1]), "ddbKey must contain schemaKey");
+        Preconditions.checkArgument(StringUtils.isNotBlank(parts[1]), "ddbKey must contain uploadMd5");
 
         this.healthCode = parts[0];
-        this.schemaKey = parts[1];
+        this.uploadMd5 = parts[1];
     }
 
     /** Health code of uploading user, part of the hash key. */
@@ -78,24 +52,56 @@ public class DynamoUploadDedupe {
         this.healthCode = healthCode;
     }
 
-    /** Schema of the upload, part of the hash key. */
+    /** ID of original upload, used to key into the Uploads table during offline analysis. */
+    public String getOriginalUploadId() {
+        return originalUploadId;
+    }
+
+    /** @see #getOriginalUploadId */
+    public void setOriginalUploadId(String originalUploadId) {
+        this.originalUploadId = originalUploadId;
+    }
+
+    /** Upload's MD5, used to determine if upload content is different. */
     @DynamoDBIgnore
-    public String getSchemaKey() {
-        return schemaKey;
+    public String getUploadMd5() {
+        return uploadMd5;
     }
 
-    /** @see #getSchemaKey */
-    public void setSchemaKey(String schemaKey) {
-        this.schemaKey = schemaKey;
+    /** @see #getUploadMd5 */
+    public void setUploadMd5(String uploadMd5) {
+        this.uploadMd5 = uploadMd5;
     }
 
-    /** ID of upload, used to key into the Uploads table during offline analysis. */
-    public String getUploadId() {
-        return uploadId;
+    /**
+     * Calendar date the upload was requested on, as recorded using the server's local time zone (Seattle time). This
+     * is used to clean up old upload dedupe entries afterwards.
+     */
+    @DynamoDBIndexHashKey(attributeName = "uploadRequestedDate",
+            globalSecondaryIndexName = "uploadRequestedDate-index")
+    @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
+    @SuppressWarnings("unused")
+    public LocalDate getUploadRequestedDate() {
+        return uploadRequestedDate;
     }
 
-    /** @see #getUploadId */
-    public void setUploadId(String uploadId) {
-        this.uploadId = uploadId;
+    /** @see #getUploadRequestedDate */
+    public void setUploadRequestedDate(LocalDate uploadRequestedDate) {
+        this.uploadRequestedDate = uploadRequestedDate;
+    }
+
+    /**
+     * Epoch millisecond timestamp when this upload was requested, used as part of the range key. Since MD5s can have
+     * collisions, we need an additional key to make sure the uploads are different.
+     */
+    @DynamoDBRangeKey
+    @SuppressWarnings("unused")
+    public long getUploadRequestedOn() {
+        return uploadRequestedOn;
+    }
+
+    /** @see #getUploadRequestedOn */
+    public void setUploadRequestedOn(long uploadRequestedOn) {
+        this.uploadRequestedOn = uploadRequestedOn;
     }
 }
