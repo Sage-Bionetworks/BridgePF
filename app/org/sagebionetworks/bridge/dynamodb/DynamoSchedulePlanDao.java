@@ -149,11 +149,12 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
                 scheduleCriteria.getCriteria().setKey(getKey(plan, i));
 
                 Criteria criteria = consumer.apply(scheduleCriteria);
-                // Add new criteria object (except for delete).
+                // Update the criteria object (except for delete). This may add a new object which will send
+                // the object back to the caller with the "criteria" field stubbed out in the JSON.
                 if (criteria != null) {
                     scheduleCriteria = new ScheduleCriteria(scheduleCriteria.getSchedule(), criteria);
+                    strategy.getScheduleCriteria().set(i, scheduleCriteria);
                 }
-                strategy.getScheduleCriteria().set(i, scheduleCriteria);
             }
         }        
     }
@@ -185,9 +186,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     private Criteria deleteCriteria(ScheduleCriteria scheduleCriteria) {
-        if (scheduleCriteria.getCriteria() != null) {
-            criteriaDao.deleteCriteria(scheduleCriteria.getCriteria().getKey());    
-        }
+        criteriaDao.deleteCriteria(scheduleCriteria.getCriteria().getKey());
         return null;
     }
 
