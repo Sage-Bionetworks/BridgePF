@@ -58,38 +58,18 @@ public class DynamoSchedulePlanDaoMockTest {
         dao.setSchedulePlanMapper(mapper);
         dao.setCriteriaDao(criteriaDao);
         
-        // We need the copy constructor to work in order to verify CriteriaDao works.
-        when(criteriaDao.copyCriteria(any(), any())).thenAnswer(invocation -> {
-            String key = invocation.getArgumentAt(0, String.class);
-            Criteria criteria = invocation.getArgumentAt(1, DynamoCriteria.class);
-            Criteria actualCriteria = Criteria.create();
-            actualCriteria.setKey(key);
-            if (criteria != null) {
-                actualCriteria.setMinAppVersion(criteria.getMinAppVersion());
-                actualCriteria.setMaxAppVersion(criteria.getMaxAppVersion());
-                actualCriteria.setAllOfGroups(criteria.getAllOfGroups());
-                actualCriteria.setNoneOfGroups(criteria.getNoneOfGroups());
-            }
-            return actualCriteria;        
-        });
-        
-        Schedule schedule = TestUtils.getSchedule("My Schedule");
-        Criteria criteria = Criteria.create();
-        criteria.setMinAppVersion(2);
-        criteria.setMaxAppVersion(10);
-        criteria.setAllOfGroups(ALL_OF_GROUPS);
-        criteria.setNoneOfGroups(NONE_OF_GROUPS);
-        
-        CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
-        ScheduleCriteria scheduleCriteria = new ScheduleCriteria.Builder()
-                .withSchedule(schedule)
-                .withCriteria(criteria).build();
-        strategy.getScheduleCriteria().add(scheduleCriteria);
-        
         schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setGuid(BridgeUtils.generateGuid());
         schedulePlan.setLabel("Schedule Plan");
         schedulePlan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        
+        Schedule schedule = TestUtils.getSchedule("My Schedule");
+        Criteria criteria = Criteria.create(2, 10, ALL_OF_GROUPS, NONE_OF_GROUPS);
+        criteria.setKey("scheduleCriteria:"+schedulePlan.getGuid()+":0");
+        CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
+        strategy.getScheduleCriteria().add(scheduleCriteria);
+        
         schedulePlan.setStrategy(strategy);
         
         List<DynamoSchedulePlan> list = Lists.newArrayList(schedulePlan);
@@ -98,6 +78,8 @@ public class DynamoSchedulePlanDaoMockTest {
         when(page.getResults()).thenReturn(list);
                 
         when(mapper.queryPage(eq(DynamoSchedulePlan.class), any())).thenReturn(page);
+        
+        when(criteriaDao.getCriteria("scheduleCriteria:"+schedulePlan.getGuid()+":0")).thenReturn(criteria);
     }
     
     @Test
@@ -111,7 +93,6 @@ public class DynamoSchedulePlanDaoMockTest {
         assertCriteria(criteria);
         
         String key = criteria.getKey();
-        verify(criteriaDao).copyCriteria(eq(key), any());
         verify(criteriaDao).getCriteria(key);
         
         // now have criteriaDao return a different criteria object, that should update the plan
@@ -139,7 +120,6 @@ public class DynamoSchedulePlanDaoMockTest {
         assertCriteria(criteria);
         
         String key = criteria.getKey();
-        verify(criteriaDao).copyCriteria(eq(key), any());
         verify(criteriaDao).getCriteria(key);
         
         // now have criteriaDao return a different criteria object, that should update the plan
@@ -191,9 +171,7 @@ public class DynamoSchedulePlanDaoMockTest {
         newCriteria.setKey(crit.getKey());
         newCriteria.setMinAppVersion(100);
         newCriteria.setMaxAppVersion(200);
-        strategy.getScheduleCriteria().set(0, new ScheduleCriteria.Builder()
-                .withSchedule(scheduleCriteria.getSchedule())
-                .withCriteria(newCriteria).build());
+        strategy.getScheduleCriteria().set(0, new ScheduleCriteria(scheduleCriteria.getSchedule(), newCriteria));
         
         plan = dao.updateSchedulePlan(TEST_STUDY, plan);
         scheduleCriteria = strategy.getScheduleCriteria().get(0);
@@ -208,7 +186,7 @@ public class DynamoSchedulePlanDaoMockTest {
     public void deleteSchedulePlanDeletesCriteria() {
         dao.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
         
-        verify(criteriaDao).deleteCriteria(schedulePlan.getGuid()+":scheduleCriteria:0");
+        verify(criteriaDao).deleteCriteria("scheduleCriteria:"+schedulePlan.getGuid()+":0");
     }
 
     private void assertCriteria(Criteria criteria) {

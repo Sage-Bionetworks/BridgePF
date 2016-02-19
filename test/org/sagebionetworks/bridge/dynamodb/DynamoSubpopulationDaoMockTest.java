@@ -61,21 +61,6 @@ public class DynamoSubpopulationDaoMockTest {
         dao.setStudyConsentDao(studyConsentDao);
         dao.setCriteriaDao(criteriaDao);
         
-        // We need the copy constructor to work in order to verify CriteriaDao works.
-        when(criteriaDao.copyCriteria(any(), any())).thenAnswer(invocation -> {
-            String key = invocation.getArgumentAt(0, String.class);
-            Criteria criteria = invocation.getArgumentAt(1, DynamoCriteria.class);
-            Criteria actualCriteria = Criteria.create();
-            actualCriteria.setKey(key);
-            if (criteria != null) {
-                actualCriteria.setMinAppVersion(criteria.getMinAppVersion());
-                actualCriteria.setMaxAppVersion(criteria.getMaxAppVersion());
-                actualCriteria.setAllOfGroups(criteria.getAllOfGroups());
-                actualCriteria.setNoneOfGroups(criteria.getNoneOfGroups());
-            }
-            return actualCriteria;        
-        });
-        
         List<DynamoSubpopulation> list = Lists.newArrayList((DynamoSubpopulation)createSubpopulation());
 
         PaginatedQueryList<DynamoSubpopulation> page = mock(PaginatedQueryList.class);
@@ -101,7 +86,6 @@ public class DynamoSubpopulationDaoMockTest {
         Criteria criteria = subpop.getCriteria();
         assertCriteria(criteria);
         
-        verify(criteriaDao).copyCriteria(subpop.getKey(), subpop);
         verify(criteriaDao).createOrUpdateCriteria(criteria);
     }
     
@@ -112,7 +96,6 @@ public class DynamoSubpopulationDaoMockTest {
         Criteria criteria = subpop.getCriteria();
         assertEquals(new Integer(0), criteria.getMinAppVersion());
         
-        verify(criteriaDao).copyCriteria(subpop.getKey(), subpop);
         verify(criteriaDao).createOrUpdateCriteria(criteria);
     }
     
@@ -136,7 +119,6 @@ public class DynamoSubpopulationDaoMockTest {
         assertCriteria(criteria);
         
         verify(criteriaDao).getCriteria(subpop.getKey());
-        verify(criteriaDao).copyCriteria(subpop.getKey(), subpop);
     }
     
     @Test
@@ -163,7 +145,6 @@ public class DynamoSubpopulationDaoMockTest {
         assertCriteria(criteria);
         
         verify(criteriaDao).getCriteria(subpop.getKey());
-        verify(criteriaDao).copyCriteria(subpop.getKey(), subpop);
     }
         
     @Test

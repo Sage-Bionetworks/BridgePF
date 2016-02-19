@@ -9,7 +9,7 @@ public interface CriteriaDao {
      * implementation. It copies the filtering information to a criteria object. This can go away at the end of
      * migration.
      */
-    Criteria copyCriteria(String key, Criteria criteria);
+    //Criteria copyCriteria(String key, Criteria criteria);
     
     void createOrUpdateCriteria(Criteria criteria);
     

@@ -182,42 +182,38 @@ public class DynamoSchedulePlanDaoTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.addActivity(TestConstants.TEST_1_ACTIVITY);
-        ScheduleCriteria scheduleCriteria = new ScheduleCriteria.Builder()
-                .withSchedule(schedule)
-                .withMinAppVersion(2)
-                .withMaxAppVersion(8).build();
+        
+        Criteria criteria = Criteria.create(2, 8, null, null);
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         strategy.addCriteria(scheduleCriteria);
+        
+        criteria = Criteria.create(9, 12, null, null); 
         
         schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.addActivity(TestConstants.TEST_2_ACTIVITY);
-        scheduleCriteria = new ScheduleCriteria.Builder()
-                .withSchedule(schedule)
-                .withMinAppVersion(9)
-                .withMaxAppVersion(12).build();
+        scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         strategy.addCriteria(scheduleCriteria);
         
         plan.setStrategy(strategy);
-        
         plan = schedulePlanDao.createSchedulePlan(studyId, plan);
 
+        criteria = Criteria.create(9, 14, null, null);
+        
         schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
-        scheduleCriteria = new ScheduleCriteria.Builder()
-                .withSchedule(schedule)
-                .withMinAppVersion(9)
-                .withMaxAppVersion(14).build();
+        scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         strategy.getScheduleCriteria().set(1, scheduleCriteria);
         
         plan = schedulePlanDao.updateSchedulePlan(studyId, plan);
         
         // Should be able to read the criteria objects for this.
-        Criteria criteria1 = criteriaDao.getCriteria(plan.getGuid()+":scheduleCriteria:0");
+        Criteria criteria1 = criteriaDao.getCriteria("scheduleCriteria:"+plan.getGuid()+":0");
         assertEquals(new Integer(2), criteria1.getMinAppVersion());
         assertEquals(new Integer(8), criteria1.getMaxAppVersion());
         
-        Criteria criteria2 = criteriaDao.getCriteria(plan.getGuid()+":scheduleCriteria:1");
+        Criteria criteria2 = criteriaDao.getCriteria("scheduleCriteria:"+plan.getGuid()+":1");
         assertEquals(new Integer(9), criteria2.getMinAppVersion());
         assertEquals(new Integer(14), criteria2.getMaxAppVersion());
         

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -71,8 +70,7 @@ public class DynamoCriteriaDaoTest {
         criteria.setKey("key1");
         criteria.setMinAppVersion(12);
         
-        Criteria newCriteria = criteriaDao.copyCriteria("key2", criteria);
-        assertNotEquals(criteria.getKey(), newCriteria.getKey());
+        Criteria newCriteria = Criteria.copy(criteria);
         assertEquals(criteria.getMinAppVersion(), newCriteria.getMinAppVersion());
     }
 

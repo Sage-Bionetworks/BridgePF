@@ -158,15 +158,6 @@ public class CriteriaUtilsTest {
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group3"));
     }
     
-    @Test
-    public void validateKeyRequired() {
-        Criteria criteria = criteria(null, null, null, null, null);
-        Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, Sets.newHashSet("group1"), errors);
-        
-        assertTrue(errors.getFieldErrors("key").get(0).getCode().contains("is required"));
-    }
-    
     private CriteriaContext getContext() {
         return new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY)

@@ -21,11 +21,11 @@ public final class DynamoCriteria implements Criteria {
      * The foreign key to the object filtered with these criteria. It's the model and the model's
      * keys, e.g. "subpopulation:<guid>".
      */
-    public String key;
-    public Integer minAppVersion;
-    public Integer maxAppVersion;
-    public Set<String> allOfGroups = Sets.newHashSet();
-    public Set<String> noneOfGroups = Sets.newHashSet();
+    private String key;
+    private Integer minAppVersion;
+    private Integer maxAppVersion;
+    private Set<String> allOfGroups = Sets.newHashSet();
+    private Set<String> noneOfGroups = Sets.newHashSet();
     
     @Override
     @DynamoDBHashKey

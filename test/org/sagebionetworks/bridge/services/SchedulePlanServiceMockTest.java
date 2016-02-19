@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -194,7 +195,7 @@ public class SchedulePlanServiceMockTest {
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
-            assertEquals("strategy.scheduleCriteria[0].allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].allOfGroups").get(0));
+            assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
         }
     }
 
@@ -207,7 +208,7 @@ public class SchedulePlanServiceMockTest {
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
-            assertEquals("strategy.scheduleCriteria[0].allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].allOfGroups").get(0));
+            assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
         }
     }
     
@@ -215,13 +216,11 @@ public class SchedulePlanServiceMockTest {
         Schedule schedule = new Schedule();
         schedule.addActivity(new Activity.Builder().withTask("DDD").build());
         
-        ScheduleCriteria criteria = new ScheduleCriteria.Builder()
-                .withSchedule(schedule)
-                .withAllOfGroups(Sets.newHashSet("FFF"))
-                .build();
+        Criteria criteria = Criteria.create(null, null, Sets.newHashSet("FFF"), null);
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         
         CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
-        strategy.addCriteria(criteria);
+        strategy.addCriteria(scheduleCriteria);
         
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setStrategy(strategy);

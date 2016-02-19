@@ -29,6 +29,7 @@ public class DynamoCriteriaDao implements CriteriaDao {
     
     // Until criteria as an interface is shifted off of SchedulePlan/Subpopulation, 
     // we must copy from an interface to an implementation.
+    /*
     @Override
     public Criteria copyCriteria(String key, Criteria criteria) {
         Criteria actualCriteria = Criteria.create();
@@ -40,15 +41,16 @@ public class DynamoCriteriaDao implements CriteriaDao {
             actualCriteria.setNoneOfGroups(criteria.getNoneOfGroups());
         }
         return actualCriteria;        
-    }
+    }*/
     
     @Override
     public void createOrUpdateCriteria(Criteria criteria) {
         checkNotNull(criteria);
         checkArgument(isNotBlank(criteria.getKey()));
 
-        Criteria actualCriteria = copyCriteria(criteria.getKey(), criteria);
-        criteriaMapper.save(actualCriteria);
+        // This seems odd, but is necessary during the transition of subpopulation.
+        Criteria copy = Criteria.copy(criteria);
+        criteriaMapper.save(copy);
     }
     
     @Override

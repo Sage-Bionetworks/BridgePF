@@ -145,18 +145,14 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
             for (int i=0; i < strategy.getScheduleCriteria().size(); i++) {
                 ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(i);
                 
-                // Add the key... builder makes this verbose
-                scheduleCriteria = new ScheduleCriteria.Builder()
-                        .withSchedule(scheduleCriteria.getSchedule())
-                        .withCriteria(scheduleCriteria.getCriteria())
-                        .withKey(getKey(plan, i)).build();
+                // Add the key in order to load
+                scheduleCriteria.getCriteria().setKey(getKey(plan, i));
 
                 Criteria criteria = consumer.apply(scheduleCriteria);
-
-                // Now add the new criteria object and set new object in list
-                scheduleCriteria = new ScheduleCriteria.Builder()
-                        .withSchedule(scheduleCriteria.getSchedule())
-                        .withCriteria(criteria).build();
+                // Add new criteria object (except for delete).
+                if (criteria != null) {
+                    scheduleCriteria = new ScheduleCriteria(scheduleCriteria.getSchedule(), criteria);
+                }
                 strategy.getScheduleCriteria().set(i, scheduleCriteria);
             }
         }        
@@ -171,23 +167,27 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     // object, this will be removed along with the fields on the scheduleCriteria object.
     private Criteria persistCriteria(ScheduleCriteria scheduleCriteria) {
         Criteria criteria = scheduleCriteria.getCriteria();
-        Criteria makeCopyOf = (criteria == null) ? scheduleCriteria : criteria;
-
-        Criteria copy = criteriaDao.copyCriteria(scheduleCriteria.getKey(), makeCopyOf);
-        criteriaDao.createOrUpdateCriteria(copy);
-        return copy;
+        if (criteria == null) {
+            criteria = Criteria.create();
+        }
+        criteriaDao.createOrUpdateCriteria(criteria);
+        return criteria;
     }
 
     private Criteria loadCriteria(ScheduleCriteria scheduleCriteria) {
-        Criteria criteria = criteriaDao.getCriteria(scheduleCriteria.getKey());
+        String key = scheduleCriteria.getCriteria().getKey();
+        Criteria criteria = criteriaDao.getCriteria(key);
         if (criteria == null) {
-            criteria = criteriaDao.copyCriteria(scheduleCriteria.getKey(), scheduleCriteria);
+            criteria = Criteria.create();
+            criteria.setKey(key);
         }
         return criteria;
     }
     
     private Criteria deleteCriteria(ScheduleCriteria scheduleCriteria) {
-        criteriaDao.deleteCriteria(scheduleCriteria.getKey());
+        if (scheduleCriteria.getCriteria() != null) {
+            criteriaDao.deleteCriteria(scheduleCriteria.getCriteria().getKey());    
+        }
         return null;
     }
 

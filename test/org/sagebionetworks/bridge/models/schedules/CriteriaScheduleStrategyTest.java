@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -78,19 +79,22 @@ public class CriteriaScheduleStrategyTest {
         assertNotNull(node.get("scheduleCriteria"));
         
         ArrayNode array = (ArrayNode)node.get("scheduleCriteria");
-        JsonNode child1 = array.get(0);
-        assertEquals("ScheduleCriteria", child1.get("type").asText());
-        assertEquals(4, child1.get("minAppVersion").asInt());
-        assertEquals(12, child1.get("maxAppVersion").asInt());
-        assertNotNull(child1.get("allOfGroups"));
-        assertNotNull(child1.get("noneOfGroups"));
-        assertNotNull(child1.get("schedule"));
+        JsonNode schCriteria1 = array.get(0);
+        assertEquals("ScheduleCriteria", schCriteria1.get("type").asText());
         
-        JsonNode child2 = array.get(1);
-        Set<String> allOfGroups = arrayToSet(child2.get("allOfGroups"));
+        JsonNode criteriaNode = schCriteria1.get("criteria");
+        assertEquals(4, criteriaNode.get("minAppVersion").asInt());
+        assertEquals(12, criteriaNode.get("maxAppVersion").asInt());
+        assertNotNull(criteriaNode.get("allOfGroups"));
+        assertNotNull(criteriaNode.get("noneOfGroups"));
+        assertNotNull(schCriteria1.get("schedule"));
+        
+        JsonNode schCriteria2 = array.get(1);
+        JsonNode criteriaNode2 = schCriteria2.get("criteria");
+        Set<String> allOfGroups = arrayToSet(criteriaNode2.get("allOfGroups"));
         assertTrue(allOfGroups.contains("req1"));
         assertTrue(allOfGroups.contains("req2"));
-        Set<String> noneOfGroups = arrayToSet(child2.get("noneOfGroups"));
+        Set<String> noneOfGroups = arrayToSet(criteriaNode2.get("noneOfGroups"));
         assertTrue(noneOfGroups.contains("proh1"));
         assertTrue(noneOfGroups.contains("proh2"));
         
@@ -102,7 +106,7 @@ public class CriteriaScheduleStrategyTest {
     @Test
     public void filtersOnMinAppVersion() {
         setUpStrategyWithAppVersions();
-        setUpStrategyNoCriteria();
+        setUpStrategyEmptyCriteria();
         
         // First returned because context has no version info
         Schedule schedule = getScheduleFromStrategy(ClientInfo.UNKNOWN_CLIENT);
@@ -116,7 +120,7 @@ public class CriteriaScheduleStrategyTest {
     @Test
     public void filtersOnMaxAppVersion() {
         setUpStrategyWithAppVersions();
-        setUpStrategyNoCriteria();
+        setUpStrategyEmptyCriteria();
         
         // First one is returned because client has no version info
         Schedule schedule = getScheduleFromStrategy(ClientInfo.UNKNOWN_CLIENT);
@@ -130,7 +134,7 @@ public class CriteriaScheduleStrategyTest {
     @Test
     public void filtersOnRequiredDataGroup() {
         setUpStrategyWithOneRequiredDataGroup();
-        setUpStrategyNoCriteria();
+        setUpStrategyEmptyCriteria();
         
         // context has a group required by first group, it's returned
         Schedule schedule = getScheduleFromStrategy(Sets.newHashSet("group1"));
@@ -144,7 +148,7 @@ public class CriteriaScheduleStrategyTest {
     @Test
     public void filtersOnRequiredDataGroups() {
         setUpStrategyWithRequiredDataGroups();
-        setUpStrategyNoCriteria();
+        setUpStrategyEmptyCriteria();
         
         // context has all the required groups so the first one is returned
         Schedule schedule = getScheduleFromStrategy(Sets.newHashSet("group1","group2","group3"));
@@ -162,7 +166,7 @@ public class CriteriaScheduleStrategyTest {
     @Test
     public void filtersOnProhibitedDataGroup() {
         setUpStrategyWithOneProhibitedDataGroup();
-        setUpStrategyNoCriteria();
+        setUpStrategyEmptyCriteria();
         
         // Group not prohibited so first schedule returned
         Schedule schedule = getScheduleFromStrategy(Sets.newHashSet("groupNotProhibited"));
@@ -176,7 +180,7 @@ public class CriteriaScheduleStrategyTest {
     @Test
     public void filtersOnProhibitedDataGroups() {
         setUpStrategyWithProhibitedDataGroups();
-        setUpStrategyNoCriteria();
+        setUpStrategyEmptyCriteria();
         
         // context has a prohibited group, so the last schedule is returned
         Schedule schedule = getScheduleFromStrategy(Sets.newHashSet("group1"));
@@ -260,55 +264,32 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithAppVersions();
         setUpStrategyWithOneRequiredDataGroup();
         setUpStrategyWithProhibitedDataGroups();
-        setUpStrategyNoCriteria();
+        setUpStrategyEmptyCriteria();
         
+        Criteria criteria = Criteria.create(-2, -10, null, null);
         // We're looking here specifically for errors generated by the strategy, not the plan
         // it's embedded in or the schedules. I've made those valid so they don't add errors.
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-                .withMinAppVersion(-2)
-                .withMaxAppVersion(-10)
-                .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_ONE_REQUIRED_DATA_GROUP).build());
-        
-        // Has no schedule
-        strategy.addCriteria(new ScheduleCriteria.Builder().build());
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_ONE_REQUIRED_DATA_GROUP, criteria));
         
         // Has an invalid schedule
         Schedule schedule = new Schedule();
-        strategy.addCriteria(new ScheduleCriteria.Builder().withSchedule(schedule).build());
+        strategy.addCriteria(new ScheduleCriteria(schedule, criteria));
         
         try {
             Validate.entityThrowingException(VALIDATOR, PLAN);           
         } catch(InvalidEntityException e) {
-            String fieldName = "strategy.scheduleCriteria[1].allOfGroups";
-            List<String> errors = e.getErrors().get(fieldName);
-            assertEquals(fieldName+" 'group1' is not in enumeration: <no data groups declared>", errors.get(0));
-            
-            fieldName = "strategy.scheduleCriteria[2].noneOfGroups";
-            errors = e.getErrors().get(fieldName);
-            assertEquals(fieldName+" 'group2' is not in enumeration: <no data groups declared>", errors.get(0));
-            assertEquals(fieldName+" 'group1' is not in enumeration: <no data groups declared>", errors.get(1));
-            
-            fieldName = "strategy.scheduleCriteria[4].minAppVersion";
-            errors = e.getErrors().get(fieldName);
-            assertEquals(fieldName+" cannot be negative", errors.get(0));
-            
-            fieldName = "strategy.scheduleCriteria[4].maxAppVersion";
-            errors = e.getErrors().get(fieldName);
-            assertEquals(fieldName+" cannot be less than minAppVersion", errors.get(0));
-            assertEquals(fieldName+" cannot be negative", errors.get(1));
-            
-            fieldName = "strategy.scheduleCriteria[5].schedule";
-            errors = e.getErrors().get(fieldName);
-            assertEquals(fieldName+" is required", errors.get(0));
-            
-            fieldName = "strategy.scheduleCriteria[6].schedule.scheduleType";
-            errors = e.getErrors().get(fieldName);
-            assertEquals(fieldName+" is required", errors.get(0));
-            
-            fieldName = "strategy.scheduleCriteria[6].schedule.activities";
-            errors = e.getErrors().get(fieldName);
-            assertEquals(fieldName+" are required", errors.get(0));
-        }
+            assertError(e, "strategy.scheduleCriteria[1].criteria.allOfGroups", 0, " 'group1' is not in enumeration: <no data groups declared>");
+            assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 0, " 'group2' is not in enumeration: <no data groups declared>");
+            assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 1, " 'group1' is not in enumeration: <no data groups declared>");
+            assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersion", 0, " cannot be less than minAppVersion");
+            assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersion", 1, " cannot be negative");
+            assertError(e, "strategy.scheduleCriteria[4].criteria.minAppVersion", 0, " cannot be negative");
+            assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersion", 0, " cannot be less than minAppVersion");
+            assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersion", 1, " cannot be negative");
+            assertError(e, "strategy.scheduleCriteria[5].criteria.minAppVersion", 0, " cannot be negative");
+            assertError(e, "strategy.scheduleCriteria[5].schedule.activities", 0, " are required");
+            assertError(e, "strategy.scheduleCriteria[5].schedule.scheduleType", 0, " is required");
+         }
     }
     
     @Test
@@ -319,14 +300,16 @@ public class CriteriaScheduleStrategyTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.addActivity(activity);
 
-        ScheduleCriteria criteria = new ScheduleCriteria.Builder()
-                .withKey("key")
-                .withMinAppVersion(2)
-                .withMaxAppVersion(12)
-                .withSchedule(schedule).build();
-        strategy.addCriteria(criteria);
+        Criteria criteria = Criteria.create(2, 12, null, null);
+        
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
+        strategy.addCriteria(scheduleCriteria);
 
         Validate.entityThrowingException(VALIDATOR, PLAN);
+    }
+    
+    private void assertError(InvalidEntityException e, String fieldName, int index, String errorMsg) {
+        assertEquals(fieldName+errorMsg, e.getErrors().get(fieldName).get(index));
     }
     
     private Set<String> arrayToSet(JsonNode array) {
@@ -367,54 +350,41 @@ public class CriteriaScheduleStrategyTest {
     }
     
     private void setUpStrategyWithAppVersions() {
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-            .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS)
-            .withMinAppVersion(4)
-            .withMaxAppVersion(12).build());
+        Criteria criteria = Criteria.create(4, 12, null, null);
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS, criteria));
     }
 
-    private void setUpStrategyNoCriteria() {
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-            .withSchedule(SCHEDULE_FOR_STRATEGY_NO_CRITERIA).build());
+    private void setUpStrategyEmptyCriteria() {
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_NO_CRITERIA, Criteria.create()));
     }
 
     private void setUpStrategyWithOneRequiredDataGroup() {
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-            .withAllOfGroups(Sets.newHashSet("group1"))
-            .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_ONE_REQUIRED_DATA_GROUP).build());
+        Criteria criteria = Criteria.create(null, null, Sets.newHashSet("group1"), null);
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_ONE_REQUIRED_DATA_GROUP, criteria));
     }
     
     private void setUpStrategyWithRequiredDataGroups() {
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-            .withAllOfGroups(Sets.newHashSet("group1", "group2"))
-            .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_REQUIRED_DATA_GROUPS).build());
+        Criteria criteria = Criteria.create(null, null, Sets.newHashSet("group1", "group2"), null);
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_REQUIRED_DATA_GROUPS, criteria));
     }
     
     private void setUpStrategyWithOneProhibitedDataGroup() {
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-            .withNoneOfGroups(Sets.newHashSet("group1"))
-            .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_ONE_PROHIBITED_DATA_GROUP).build());
+        Criteria criteria = Criteria.create(null, null, null, Sets.newHashSet("group1"));
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_ONE_PROHIBITED_DATA_GROUP, criteria));
     }
     
     private void setUpStrategyWithProhibitedDataGroups() {
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-            .withNoneOfGroups(Sets.newHashSet("group1","group2"))
-            .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_PROHIBITED_DATA_GROUPS).build());
+        Criteria criteria = Criteria.create(null, null, null, Sets.newHashSet("group1", "group2"));
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_PROHIBITED_DATA_GROUPS, criteria));
     }
 
     private void setUpStrategyWithRequiredAndProhibitedDataGroups() {
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-            .withAllOfGroups(Sets.newHashSet("req1", "req2"))
-            .withNoneOfGroups(Sets.newHashSet("proh1","proh2"))
-            .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS).build());
+        Criteria criteria = Criteria.create(null, null, Sets.newHashSet("req1", "req2"), Sets.newHashSet("proh1","proh2"));
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS, criteria));
     }
     
     private void setUpStrategyWithAllRequirements() {
-        strategy.addCriteria(new ScheduleCriteria.Builder()
-            .withMinAppVersion(4)
-            .withMaxAppVersion(12)                
-            .withAllOfGroups(Sets.newHashSet("req1", "req2"))
-            .withNoneOfGroups(Sets.newHashSet("proh1","proh2"))
-            .withSchedule(SCHEDULE_FOR_STRATEGY_WITH_ALL_REQUIREMENTS).build());
+        Criteria criteria = Criteria.create(4, 12, Sets.newHashSet("req1", "req2"), Sets.newHashSet("proh1","proh2"));
+        strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_ALL_REQUIREMENTS, criteria));
     }
 }
