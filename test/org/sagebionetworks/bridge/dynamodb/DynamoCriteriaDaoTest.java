@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashSet;
+
 import javax.annotation.Resource;
 
 import org.junit.Test;
@@ -11,7 +13,10 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Sets;
 
@@ -19,14 +24,17 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoCriteriaDaoTest {
 
+    private static final HashSet<String> NONE_OF_GROUPS = Sets.newHashSet("c","d");
+    private static final HashSet<String> ALL_OF_GROUPS = Sets.newHashSet("a","b");
     @Resource
     DynamoCriteriaDao criteriaDao;
 
     @Test
     public void deleteAndGetAreQuiet() {
+        String key = BridgeUtils.generateGuid();
         // Before creating an object, create and delete do not throw errors and do something sensible
-        criteriaDao.deleteCriteria("key"); // no exception
-        Criteria retrieved = criteriaDao.getCriteria("key"); // just return null
+        criteriaDao.deleteCriteria(key); // no exception
+        Criteria retrieved = criteriaDao.getCriteria(key); // just return null
         assertNull(retrieved);
     }
     
@@ -36,8 +44,8 @@ public class DynamoCriteriaDaoTest {
         criteria.setKey("key");
         criteria.setMinAppVersion(2);
         criteria.setMaxAppVersion(8);
-        criteria.setAllOfGroups(Sets.newHashSet("a","b"));
-        criteria.setNoneOfGroups(Sets.newHashSet("c","d"));
+        criteria.setAllOfGroups(ALL_OF_GROUPS);
+        criteria.setNoneOfGroups(NONE_OF_GROUPS);
         
         criteriaDao.createOrUpdateCriteria(criteria);
         
@@ -45,8 +53,8 @@ public class DynamoCriteriaDaoTest {
         assertEquals("key", retrieved.getKey());
         assertEquals(new Integer(2), retrieved.getMinAppVersion());
         assertEquals(new Integer(8), retrieved.getMaxAppVersion());
-        assertEquals(Sets.newHashSet("a","b"), retrieved.getAllOfGroups());
-        assertEquals(Sets.newHashSet("c","d"), retrieved.getNoneOfGroups());
+        assertEquals(ALL_OF_GROUPS, retrieved.getAllOfGroups());
+        assertEquals(NONE_OF_GROUPS, retrieved.getNoneOfGroups());
         
         // Try nullifying this, setting a property
         criteria.setAllOfGroups(null);
@@ -72,6 +80,30 @@ public class DynamoCriteriaDaoTest {
         
         Criteria newCriteria = Criteria.copy(criteria);
         assertEquals(criteria.getMinAppVersion(), newCriteria.getMinAppVersion());
+    }
+    
+    @Test
+    public void savingNonDynamoCriteriaImplementationWorks() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setName("Test subpopulation");
+        subpop.setMinAppVersion(2);
+        subpop.setMaxAppVersion(10);
+        subpop.setAllOfGroups(ALL_OF_GROUPS);
+        subpop.setNoneOfGroups(NONE_OF_GROUPS);
+        subpop.setStudyIdentifier("test-key");
+        subpop.setGuid(SubpopulationGuid.create(BridgeUtils.generateGuid()));
+        try {
+            criteriaDao.createOrUpdateCriteria(subpop);
+            
+            // It should also have been saved
+            Criteria saved = criteriaDao.getCriteria(subpop.getKey());
+            assertEquals(new Integer(2), saved.getMinAppVersion());
+            assertEquals(new Integer(10), saved.getMaxAppVersion());
+            assertEquals(ALL_OF_GROUPS, saved.getAllOfGroups());
+            assertEquals(NONE_OF_GROUPS, saved.getNoneOfGroups());
+        } finally {
+            criteriaDao.deleteCriteria(subpop.getKey());
+        }
     }
 
 }
