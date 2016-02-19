@@ -8,7 +8,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.Locale.LanguageRange;
 import java.util.stream.Collectors;
 
@@ -51,7 +50,6 @@ import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
 
 public abstract class BaseController extends Controller {
 
@@ -166,18 +164,21 @@ public abstract class BaseController extends Controller {
         }
     }
 
-    Set<String> getLanguagesFromAcceptLanguageHeader() {
+    /**
+     * Returns languages in the order of their quality rating in the original LanguageRange objects 
+     * that are created from the Accept-Language header (first item in ordered set is the most-preferred 
+     * language option).
+     * @return
+     */
+    LinkedHashSet<String> getLanguagesFromAcceptLanguageHeader() {
         String acceptLanguageHeader = request().getHeader(ACCEPT_LANGUAGE);
         if (isNotBlank(acceptLanguageHeader)) {
-            // This parse method returns LanguageRange objects in descending order of their quality 
-            // value (so most-desirable language first). We extract language only and de-duplicate 
-            // them using a LinkedHashSet which retains the order the languages are added to the set.
             List<LanguageRange> ranges = Locale.LanguageRange.parse(acceptLanguageHeader);
             return ranges.stream().map(range -> {
                 return Locale.forLanguageTag(range.getRange()).getLanguage();
             }).collect(Collectors.toCollection(LinkedHashSet::new));
         }
-        return ImmutableSet.of();
+        return new LinkedHashSet<>();
     }
     
     ClientInfo getClientInfoFromUserAgentHeader() {

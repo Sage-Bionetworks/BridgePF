@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-ses" % "1.10.20",
   
   // Spring
-  "org.springframework" % "spring-context" % "4.1.6.RELEASE",
+  "org.springframework" % "spring-context" % "4.2.4.RELEASE",
   // Apache Commons
   "org.apache.commons" % "commons-lang3" % "3.4",
   "commons-validator" % "commons-validator" % "1.4.1",
@@ -51,12 +51,12 @@ libraryDependencies ++= Seq(
   "redis.clients" % "jedis" % "2.7.2",
   // PDF, HTML
   "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
-  "org.jsoup" % "jsoup" % "1.8.2",
+  "org.jsoup" % "jsoup" % "1.8.3",
   // Test
   javaWs % Test,
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-core" % "1.10.19" % Test,
-  "org.springframework" % "spring-test" % "4.1.6.RELEASE" % Test,
+  "org.springframework" % "spring-test" % "4.2.4.RELEASE" % Test,
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.2" % Test
 )
 

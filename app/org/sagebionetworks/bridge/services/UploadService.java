@@ -16,9 +16,11 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -51,6 +53,7 @@ public class UploadService {
     private AmazonS3 s3Client;
     private UploadDao uploadDao;
     private UploadSessionCredentialsService uploadCredentailsService;
+    private UploadDedupeDao uploadDedupeDao;
     private Validator validator;
 
     /**
@@ -74,6 +77,13 @@ public class UploadService {
     public void setUploadDao(UploadDao uploadDao) {
         this.uploadDao = uploadDao;
     }
+
+    /** Upload dedupe DAO, for checking to see if an upload is a dupe. (And eventually dedupe if it is.) */
+    @Autowired
+    final void setUploadDedupeDao(UploadDedupeDao uploadDedupeDao) {
+        this.uploadDedupeDao = uploadDedupeDao;
+    }
+
     @Autowired
     public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
         this.uploadCredentailsService = uploadCredentialsService;
@@ -87,8 +97,28 @@ public class UploadService {
         Validate.entityThrowingException(validator, uploadRequest);
 
         // For all new uploads, the upload ID in DynamoDB is the same as the S3 Object ID
-        Upload upload = uploadDao.createUpload(uploadRequest, user.getHealthCode());
+        String healthCode = user.getHealthCode();
+        String uploadMd5 = uploadRequest.getContentMd5();
+        Upload upload = uploadDao.createUpload(uploadRequest, healthCode);
         final String uploadId = upload.getUploadId();
+
+        try {
+            // Check to see if the upload is a dupe. For now, log if it's a dupe, so we can verify the dedupe logic
+            // before rolling it out.
+            DateTime uploadRequestedOn = DateUtils.getCurrentDateTime();
+            String originalUploadId = uploadDedupeDao.getDuplicate(healthCode, uploadMd5, uploadRequestedOn);
+            if (originalUploadId != null) {
+                // Is a dupe. We're in observation mode, so for now, just log.
+                logger.info("Detected dupe: Upload " + uploadId + " is a dupe of " + originalUploadId);
+            } else {
+                // Not a dupe. Register this dupe so we can detect dupes of this.
+                uploadDedupeDao.registerUpload(healthCode, uploadMd5, uploadRequestedOn, uploadId);
+            }
+        } catch (RuntimeException ex) {
+            // Don't want dedupe logic to fail the upload. Log an error and swallow the exception.
+            logger.error("Error deduping upload " + uploadId + ": " + ex.getMessage(), ex);
+        }
+
         GeneratePresignedUrlRequest presignedUrlRequest =
                 new GeneratePresignedUrlRequest(BUCKET, uploadId, HttpMethod.PUT);
 
@@ -104,7 +134,7 @@ public class UploadService {
         presignedUrlRequest.addRequestParameter(SERVER_SIDE_ENCRYPTION, AES_256_SERVER_SIDE_ENCRYPTION);
 
         // Additional headers for signing
-        presignedUrlRequest.setContentMd5(uploadRequest.getContentMd5());
+        presignedUrlRequest.setContentMd5(uploadMd5);
         presignedUrlRequest.setContentType(uploadRequest.getContentType());
 
         URL url = s3UploadClient.generatePresignedUrl(presignedUrlRequest);

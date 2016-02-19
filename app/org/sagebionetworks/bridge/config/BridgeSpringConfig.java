@@ -69,7 +69,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
-import org.sagebionetworks.bridge.upload.DedupeHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
@@ -383,11 +382,11 @@ public class BridgeSpringConfig {
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
             DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
-            IosSchemaValidationHandler2 iosSchemaValidationHandler2, DedupeHandler dedupeHandler,
+            IosSchemaValidationHandler2 iosSchemaValidationHandler2,
             StrictValidationHandler strictValidationHandler, TranscribeConsentHandler transcribeConsentHandler,
             UploadArtifactsHandler uploadArtifactsHandler) {
         return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
-                iosSchemaValidationHandler2, dedupeHandler, strictValidationHandler, transcribeConsentHandler,
+                iosSchemaValidationHandler2, strictValidationHandler, transcribeConsentHandler,
                 uploadArtifactsHandler);
     }
 

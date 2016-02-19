@@ -223,7 +223,8 @@ public class StudyService {
                 !study.getTechnicalEmail().equals(originalStudy.getTechnicalEmail()) ||
                 !study.getPasswordPolicy().equals(originalStudy.getPasswordPolicy()) || 
                 !study.getVerifyEmailTemplate().equals(originalStudy.getVerifyEmailTemplate()) || 
-                !study.getResetPasswordTemplate().equals(originalStudy.getResetPasswordTemplate()));
+                !study.getResetPasswordTemplate().equals(originalStudy.getResetPasswordTemplate()) || 
+                study.isEmailVerificationEnabled() != originalStudy.isEmailVerificationEnabled());
     }
     
     /**
