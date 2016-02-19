@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 import java.io.FileInputStream;
 import java.util.List;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.simpleemail.model.MessageRejectedException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -37,8 +40,8 @@ import com.google.common.base.Charsets;
  * Set-up here for consent-specific tests is extensive, so tests for the participant roster
  * are in a separate class.
  */
+@SuppressWarnings("unchecked")
 public class SendMailViaAmazonServiceConsentTest {
-    
     private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <study-support-email@study.com>";
     private static final String FROM_DEFAULT_UNFORMATTED = "Sage Bionetworks <test-sender@sagebase.org>";
 
@@ -63,8 +66,6 @@ public class SendMailViaAmazonServiceConsentTest {
         when(studyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
-        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
-            new SendRawEmailResult().withMessageId("test message id"));
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);
 
         service = new SendMailViaAmazonService();
@@ -80,6 +81,11 @@ public class SendMailViaAmazonServiceConsentTest {
 
     @Test
     public void sendConsentEmail() {
+        // mock email client with success
+        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
+                new SendRawEmailResult().withMessageId("test message id"));
+
+        // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         User user = new User();
@@ -113,6 +119,11 @@ public class SendMailViaAmazonServiceConsentTest {
 
     @Test
     public void sendConsentEmailWithSignatureImage() {
+        // mock email client with success
+        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
+                new SendRawEmailResult().withMessageId("test message id"));
+
+        // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Eggplant McTester")
                 .withBirthdate("1970-05-01").withImageData(TestConstants.DUMMY_IMAGE_DATA)
                 .withImageMimeType("image/fake").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
@@ -147,5 +158,47 @@ public class SendMailViaAmazonServiceConsentTest {
         assertTrue("Contains signature image MIME type", rawMessage.contains("image/fake"));
         assertTrue("Contains signature image data", rawMessage.contains(TestConstants.DUMMY_IMAGE_DATA.substring(
                 0, 10)));
+    }
+
+    @Test
+    public void messageRejectedNotPropagated() {
+        // mock email client with exception
+        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenThrow(MessageRejectedException.class);
+
+        // set up inputs
+        ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
+                .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
+        User user = new User();
+        user.setEmail("test-user@sagebase.org");
+
+        ConsentEmailProvider provider = new ConsentEmailProvider(study,
+                SubpopulationGuid.create(study.getIdentifier()), user, consent, SharingScope.SPONSORS_AND_PARTNERS,
+                studyConsentService, consentBodyTemplate);
+
+        // execute
+        service.sendEmail(provider);
+
+        // Verify email client was called. No need to test anything else, everything else is already tested in the
+        // normal case above.
+        verify(emailClient).sendRawEmail(any());
+    }
+
+    @Test(expected = BridgeServiceException.class)
+    public void otherExceptionsPropagated() {
+        // mock email client with exception
+        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenThrow(AmazonServiceException.class);
+
+        // set up inputs
+        ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
+                .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
+        User user = new User();
+        user.setEmail("test-user@sagebase.org");
+
+        ConsentEmailProvider provider = new ConsentEmailProvider(study,
+                SubpopulationGuid.create(study.getIdentifier()), user, consent, SharingScope.SPONSORS_AND_PARTNERS,
+                studyConsentService, consentBodyTemplate);
+
+        // execute
+        service.sendEmail(provider);
     }
 }
