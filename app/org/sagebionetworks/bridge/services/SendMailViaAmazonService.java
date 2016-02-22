@@ -18,6 +18,8 @@ import javax.mail.internet.MimeMultipart;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
+
+import com.amazonaws.services.simpleemail.model.MessageRejectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +61,12 @@ public class SendMailViaAmazonService implements SendMailService {
             for (String recipient: email.getRecipientAddresses()) {
                 sendEmail(recipient, email);    
             }
+        } catch (MessageRejectedException ex) {
+            // This happens if the sender email is not verified in SES. In general, it's not useful to app users to
+            // receive a 500 Internal Error when this happens. Plus, if this exception gets thrown, the user session
+            // won't be updated properly, and really weird things happen. The best course of option is to log an error
+            // and swallow the exception.
+            logger.error("SES rejected email: " + ex.getMessage(), ex);
         } catch(MessagingException | AmazonServiceException | IOException e) {
             throw new BridgeServiceException(e);
         }
