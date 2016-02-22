@@ -8,7 +8,7 @@ public interface CriteriaDao {
      * Create the criteria object, or update it if the supplied criteria object (as 
      * defined by its key) exists. Cannot throw an EntityNotFoundException.
      */
-    void createOrUpdateCriteria(Criteria criteria);
+    Criteria createOrUpdateCriteria(Criteria criteria);
     
     /**
      * Get the criteria object, or return null if it does not exist (does not throw 

@@ -28,11 +28,16 @@ public class DynamoCriteriaDao implements CriteriaDao {
     }
     
     @Override
-    public void createOrUpdateCriteria(Criteria criteria) {
+    public Criteria createOrUpdateCriteria(Criteria criteria) {
         checkNotNull(criteria);
         checkArgument(isNotBlank(criteria.getKey()));
 
-        criteriaMapper.save(criteria);
+        // This is just security in the event the Subpopulation objects are submitted (they are not 
+        // anywhere in the code), and will be removed when the Criteria interface is removed from 
+        // Subpopulation (part of migration).
+        Criteria copy = Criteria.copy(criteria);
+        criteriaMapper.save(copy);
+        return copy;
     }
     
     @Override

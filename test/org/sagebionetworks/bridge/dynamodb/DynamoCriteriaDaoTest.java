@@ -47,7 +47,12 @@ public class DynamoCriteriaDaoTest {
         criteria.setAllOfGroups(ALL_OF_GROUPS);
         criteria.setNoneOfGroups(NONE_OF_GROUPS);
         
-        criteriaDao.createOrUpdateCriteria(criteria);
+        Criteria result = criteriaDao.createOrUpdateCriteria(criteria);
+        assertEquals("key", result.getKey());
+        assertEquals(new Integer(2), result.getMinAppVersion());
+        assertEquals(new Integer(8), result.getMaxAppVersion());
+        assertEquals(ALL_OF_GROUPS, result.getAllOfGroups());
+        assertEquals(NONE_OF_GROUPS, result.getNoneOfGroups());
         
         Criteria retrieved = criteriaDao.getCriteria("key");
         assertEquals("key", retrieved.getKey());
@@ -92,11 +97,20 @@ public class DynamoCriteriaDaoTest {
         subpop.setNoneOfGroups(NONE_OF_GROUPS);
         subpop.setStudyIdentifier("test-key");
         subpop.setGuid(SubpopulationGuid.create(BridgeUtils.generateGuid()));
+        
         try {
-            criteriaDao.createOrUpdateCriteria(subpop);
+            Criteria loaded = criteriaDao.createOrUpdateCriteria(subpop);
+            
+            // It should have been set as an object on the subpopulation
+            assertEquals(subpop.getKey(), loaded.getKey());
+            assertEquals(new Integer(2), loaded.getMinAppVersion());
+            assertEquals(new Integer(10), loaded.getMaxAppVersion());
+            assertEquals(ALL_OF_GROUPS, loaded.getAllOfGroups());
+            assertEquals(NONE_OF_GROUPS, loaded.getNoneOfGroups());
             
             // It should also have been saved
             Criteria saved = criteriaDao.getCriteria(subpop.getKey());
+            assertEquals(subpop.getKey(), saved.getKey());
             assertEquals(new Integer(2), saved.getMinAppVersion());
             assertEquals(new Integer(10), saved.getMaxAppVersion());
             assertEquals(ALL_OF_GROUPS, saved.getAllOfGroups());

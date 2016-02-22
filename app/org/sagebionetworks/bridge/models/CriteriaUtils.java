@@ -59,12 +59,6 @@ public class CriteriaUtils {
     }
 
     public static void validate(Criteria criteria, Set<String> dataGroups, Errors errors) {
-        /* The key is not supplied by the client and it depends on the placement of the object, so it's
-         * set on the server. Don't validate.
-        if (isBlank(criteria.getKey())) {
-            errors.rejectValue("key", "is required");
-        }
-        */
         if ((criteria.getMinAppVersion() != null && criteria.getMaxAppVersion() != null) && 
             (criteria.getMaxAppVersion() < criteria.getMinAppVersion())) {
                 errors.rejectValue("maxAppVersion", "cannot be less than minAppVersion");

@@ -63,7 +63,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             throw new BadRequestException("Subpopulation does not appear to be new (includes version number).");
         }
         
-        persistCriteria(subpop);
+        Criteria criteria = persistCriteria(subpop);
+        subpop.setCriteria(criteria);
         
         // these are ignored if submitted. delete remains what it was
         subpop.setDeleted(false); 
@@ -87,7 +88,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             throw new EntityNotFoundException(Subpopulation.class);
         }
         
-        persistCriteria(subpop);
+        Criteria criteria = persistCriteria(subpop);
+        subpop.setCriteria(criteria);
         
         // these are ignored if submitted. delete remains what it was
         subpop.setDefaultGroup(existing.isDefaultGroup()); 
@@ -207,7 +209,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     // Save the criteria object if it exists. If it does not, copy the criteria data from the subpopulation
     // and save that. Set that on subpopulation. Once all models have a criteria object, this will be removed 
     // along with the fields on subpopulation.
-    private void persistCriteria(Subpopulation subpop) {
+    private Criteria persistCriteria(Subpopulation subpop) {
         Criteria criteria = subpop.getCriteria();
         Criteria makeCopyOf = (criteria == null) ? subpop : criteria;
 
@@ -216,6 +218,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         criteriaDao.createOrUpdateCriteria(copy);
         
         subpop.setCriteria(copy);
+        return copy;
     }
 
     // Load the criteria object. If it doesn't exist, assemble it from the criteria data on the subpopulation
