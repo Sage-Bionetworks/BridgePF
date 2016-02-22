@@ -71,6 +71,7 @@ public class DynamoSchedulePlanDaoTest {
         String output = mapping.writeValueAsString(abPlan);
         
         SchedulePlan newPlan = mapping.readValue(output, SchedulePlan.class);
+        newPlan.setStudyKey(abPlan.getStudyKey()); // not serialized
         
         assertEquals("Schedule plans are equal", abPlan.hashCode(), newPlan.hashCode());
     }

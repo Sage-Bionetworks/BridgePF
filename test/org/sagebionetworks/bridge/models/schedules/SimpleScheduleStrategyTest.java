@@ -60,6 +60,7 @@ public class SimpleScheduleStrategyTest {
         JsonNode node = MAPPER.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
 
+        newPlan.setStudyKey(plan.getStudyKey()); // not serialized
         assertEquals("Plan with simple strategy was serialized/deserialized", plan, newPlan);
 
         SimpleScheduleStrategy newStrategy = (SimpleScheduleStrategy) newPlan.getStrategy();
