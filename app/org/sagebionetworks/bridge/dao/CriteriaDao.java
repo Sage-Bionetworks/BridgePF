@@ -5,16 +5,21 @@ import org.sagebionetworks.bridge.models.Criteria;
 public interface CriteriaDao {
 
     /**
-     * This method is used to migrate the Criteria interface from Subpopulation and SchedulePlan to a separate Criteria
-     * implementation. It copies the filtering information to a criteria object. This can go away at the end of
-     * migration.
+     * Create the criteria object, or update it if the supplied criteria object (as 
+     * defined by its key) exists. Cannot throw an EntityNotFoundException.
      */
-    //Criteria copyCriteria(String key, Criteria criteria);
-    
     void createOrUpdateCriteria(Criteria criteria);
     
+    /**
+     * Get the criteria object, or return null if it does not exist (does not throw 
+     * an EntityNotFoundException).
+     */
     Criteria getCriteria(String key);
-    
+
+    /**
+     * Delete the criteria if it exists (if criteria does not exist, does not throw
+     * EntityNotFoundException).
+     */
     void deleteCriteria(String key);
 
 }

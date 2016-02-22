@@ -134,7 +134,6 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         subpop.setRequired(true);
         
         // We know in this case that criteria do not exist
-        
         Criteria criteria = Criteria.copy(subpop);
         criteria.setKey(getKey(subpop));
         
@@ -215,6 +214,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         Criteria copy = Criteria.copy(makeCopyOf);
         copy.setKey(subpop.getKey());
         criteriaDao.createOrUpdateCriteria(copy);
+        
         subpop.setCriteria(copy);
     }
 

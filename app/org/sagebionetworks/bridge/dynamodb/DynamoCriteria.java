@@ -17,10 +17,6 @@ import com.google.common.collect.Sets;
 @BridgeTypeName("Criteria")
 public final class DynamoCriteria implements Criteria {
 
-    /** 
-     * The foreign key to the object filtered with these criteria. It's the model and the model's
-     * keys, e.g. "subpopulation:<guid>".
-     */
     private String key;
     private Integer minAppVersion;
     private Integer maxAppVersion;

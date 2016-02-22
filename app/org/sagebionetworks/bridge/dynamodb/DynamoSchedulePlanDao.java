@@ -149,8 +149,9 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
                 scheduleCriteria.getCriteria().setKey(getKey(plan, i));
 
                 Criteria criteria = consumer.apply(scheduleCriteria);
-                // Update the criteria object (except for delete). This may add a new object which will send
-                // the object back to the caller with the "criteria" field stubbed out in the JSON.
+                
+                // Update the criteria object (except for delete). This may add a new criteria object, 
+                // which will return the plan to the caller with the criteria stubbed out in the JSON.
                 if (criteria != null) {
                     scheduleCriteria = new ScheduleCriteria(scheduleCriteria.getSchedule(), criteria);
                     strategy.getScheduleCriteria().set(i, scheduleCriteria);
@@ -163,18 +164,21 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         return "scheduleCriteria:" + plan.getGuid() + ":" + index;
     }
     
-    // Save the criteria object if it exists. If it does not, copy the criteria data from the ScheduleCriteria
-    // and save that. We then set that criteria object on the scheduleCriteria. Once all models have a criteria 
-    // object, this will be removed along with the fields on the scheduleCriteria object.
+    /**
+     * Save the criteria object if it exists. If not, return an empty criteria object which will return the 
+     * criteria stubbed out in the JSON representation of the schedule plan.
+     */
     private Criteria persistCriteria(ScheduleCriteria scheduleCriteria) {
         Criteria criteria = scheduleCriteria.getCriteria();
-        if (criteria == null) {
-            criteria = Criteria.create();
+        if (criteria != null) {
+            criteriaDao.createOrUpdateCriteria(criteria);
         }
-        criteriaDao.createOrUpdateCriteria(criteria);
-        return criteria;
+        return (criteria != null) ? criteria : Criteria.create();
     }
 
+    /**
+     * Load criteria. If the criteria object doesn't exist, create and return one as part of the schedule plan.
+     */
     private Criteria loadCriteria(ScheduleCriteria scheduleCriteria) {
         String key = scheduleCriteria.getCriteria().getKey();
         Criteria criteria = criteriaDao.getCriteria(key);

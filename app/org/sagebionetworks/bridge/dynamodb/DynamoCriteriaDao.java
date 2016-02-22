@@ -14,8 +14,8 @@ import org.sagebionetworks.bridge.models.Criteria;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
 /**
- * The DAO for managing this object, which is optionally associated with models that can be filtered by Criteria. Create
- * and update are combined, and not finding an object does not throw an exception when retrieving or deleting.
+ * The DAO for managing criteria, which are optionally associated with models that can be filtered by Criteria 
+ * parameters. 
  */
 @Component
 public class DynamoCriteriaDao implements CriteriaDao {
@@ -27,30 +27,12 @@ public class DynamoCriteriaDao implements CriteriaDao {
         this.criteriaMapper = criteriaMapper;
     }
     
-    // Until criteria as an interface is shifted off of SchedulePlan/Subpopulation, 
-    // we must copy from an interface to an implementation.
-    /*
-    @Override
-    public Criteria copyCriteria(String key, Criteria criteria) {
-        Criteria actualCriteria = Criteria.create();
-        actualCriteria.setKey(key);
-        if (criteria != null) {
-            actualCriteria.setMinAppVersion(criteria.getMinAppVersion());
-            actualCriteria.setMaxAppVersion(criteria.getMaxAppVersion());
-            actualCriteria.setAllOfGroups(criteria.getAllOfGroups());
-            actualCriteria.setNoneOfGroups(criteria.getNoneOfGroups());
-        }
-        return actualCriteria;        
-    }*/
-    
     @Override
     public void createOrUpdateCriteria(Criteria criteria) {
         checkNotNull(criteria);
         checkArgument(isNotBlank(criteria.getKey()));
 
-        // This seems odd, but is necessary during the transition of subpopulation.
-        Criteria copy = Criteria.copy(criteria);
-        criteriaMapper.save(copy);
+        criteriaMapper.save(criteria);
     }
     
     @Override

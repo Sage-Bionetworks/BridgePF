@@ -339,7 +339,7 @@ public class BridgeSpringConfig {
 
     @Bean(name = "criteriaMapper")
     @Autowired
-    public DynamoDBMapper criteriaDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+    public DynamoDBMapper criteriaMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
         return DynamoUtils.getMapper(DynamoCriteria.class, bridgeConfig, client);
     }
     
