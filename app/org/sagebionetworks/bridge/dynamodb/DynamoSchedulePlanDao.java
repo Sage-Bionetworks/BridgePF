@@ -2,27 +2,30 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
-import org.apache.commons.lang3.StringUtils;
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -33,19 +36,22 @@ import com.google.common.collect.Lists;
 public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     private DynamoDBMapper mapper;
+    private CriteriaDao criteriaDao;
 
+    @Resource(name = "schedulePlanMapper")
+    final void setSchedulePlanMapper(DynamoDBMapper schedulePlanMapper) {
+        this.mapper = schedulePlanMapper;
+    }
+    
     @Autowired
-    public void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoSchedulePlan.class, bridgeConfig)).build();
-        mapper = new DynamoDBMapper(client, mapperConfig);
+    final void setCriteriaDao(CriteriaDao criteriaDao) {
+        this.criteriaDao = criteriaDao;
     }
 
     @Override
     public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier) {
-        checkNotNull(clientInfo, "clientInfo is null");
-        checkNotNull(studyIdentifier, "studyIdentifier is null");
+        checkNotNull(clientInfo);
+        checkNotNull(studyIdentifier);
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setStudyKey(studyIdentifier.getIdentifier());
@@ -63,14 +69,15 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
             if (clientInfo.isTargetedAppVersion(dynamoPlan.getMinAppVersion(), dynamoPlan.getMaxAppVersion())) {
                 plans.add(dynamoPlan);
             }
+            forEachCriteria(dynamoPlan, scheduleCriteria -> loadCriteria(scheduleCriteria));
         }
         return plans;
     }
     
     @Override
     public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier, "studyIdentifier is null");
-        checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(guid));
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setStudyKey(studyIdentifier.getIdentifier());
@@ -88,39 +95,95 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         if (plans.isEmpty()) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
-        return plans.get(0);
+        
+        plan = plans.get(0);
+        forEachCriteria(plan, scheduleCriteria -> loadCriteria(scheduleCriteria));
+        return plan;
     }
 
     @Override
     public SchedulePlan createSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
-        checkNotNull(plan, "Schedule plan is null");
+        checkNotNull(studyIdentifier);
+        checkNotNull(plan);
         
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        
+        forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
         mapper.save(plan);
         return plan;
     }
 
     @Override
     public SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
-        checkNotNull(plan, "Schedule plan is null");
+        checkNotNull(studyIdentifier);
+        checkNotNull(plan);
         
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        
+        forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
         mapper.save(plan);
         return plan;
     }
 
     @Override
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier, "Study identifier is null");
-        checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(guid));
         
         SchedulePlan plan = getSchedulePlan(studyIdentifier, guid);
+        
+        forEachCriteria(plan, scheduleCriteria -> deleteCriteria(scheduleCriteria));
         mapper.delete(plan);
+    }
+    
+    private void forEachCriteria(SchedulePlan plan, Function<ScheduleCriteria,Criteria> consumer) {
+        if (plan.getStrategy() instanceof CriteriaScheduleStrategy) {
+            CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
+            for (int i=0; i < strategy.getScheduleCriteria().size(); i++) {
+                ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(i);
+                
+                // Add the key in order to load
+                scheduleCriteria.getCriteria().setKey(getKey(plan, i));
+
+                Criteria criteria = consumer.apply(scheduleCriteria);
+                
+                // Update the criteria object (except for delete). This may add a new criteria object, 
+                // which will return the plan to the caller with the criteria stubbed out in the JSON.
+                if (criteria != null) {
+                    scheduleCriteria = new ScheduleCriteria(scheduleCriteria.getSchedule(), criteria);
+                    strategy.getScheduleCriteria().set(i, scheduleCriteria);
+                }
+            }
+        }        
+    }
+    
+    private String getKey(SchedulePlan plan, int index) {
+        return "scheduleCriteria:" + plan.getGuid() + ":" + index;
+    }
+    
+    /**
+     * Save the criteria object if it exists. If not, return an empty criteria object which will return the 
+     * criteria stubbed out in the JSON representation of the schedule plan.
+     */
+    private Criteria persistCriteria(ScheduleCriteria scheduleCriteria) {
+        Criteria criteria = scheduleCriteria.getCriteria();
+        return criteriaDao.createOrUpdateCriteria(criteria);
+    }
+
+    /**
+     * Load criteria. If the criteria object doesn't exist, create and return one as part of the schedule plan.
+     */
+    private Criteria loadCriteria(ScheduleCriteria scheduleCriteria) {
+        String key = scheduleCriteria.getCriteria().getKey();
+        return criteriaDao.getCriteria(key);
+    }
+    
+    private Criteria deleteCriteria(ScheduleCriteria scheduleCriteria) {
+        criteriaDao.deleteCriteria(scheduleCriteria.getCriteria().getKey());
+        return null;
     }
 
 }
