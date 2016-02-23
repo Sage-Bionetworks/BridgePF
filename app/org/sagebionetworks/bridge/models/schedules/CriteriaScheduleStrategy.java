@@ -52,28 +52,24 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
 
     @Override
     public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors) {
-        if (scheduleCriteria == null) {
-            errors.rejectValue("scheduleCriteria", "is required");
-        } else {
-            for (int i=0; i < scheduleCriteria.size(); i++) {
-                ScheduleCriteria schCriteria = scheduleCriteria.get(i);
-                errors.pushNestedPath("scheduleCriteria["+i+"]");
-                if (schCriteria.getSchedule() == null){
-                    errors.rejectValue("schedule", "is required");
-                } else {
-                    errors.pushNestedPath("schedule");
-                    new ScheduleValidator(taskIdentifiers).validate(schCriteria.getSchedule(), errors);
-                    errors.popNestedPath();
-                }
-                if (schCriteria.getCriteria() == null) {
-                    errors.rejectValue("criteria", "is required");
-                } else {
-                    errors.pushNestedPath("criteria");
-                    CriteriaUtils.validate(schCriteria.getCriteria(), dataGroups, errors);
-                    errors.popNestedPath();
-                }
+        for (int i=0; i < scheduleCriteria.size(); i++) {
+            ScheduleCriteria schCriteria = scheduleCriteria.get(i);
+            errors.pushNestedPath("scheduleCriteria["+i+"]");
+            if (schCriteria.getSchedule() == null){
+                errors.rejectValue("schedule", "is required");
+            } else {
+                errors.pushNestedPath("schedule");
+                new ScheduleValidator(taskIdentifiers).validate(schCriteria.getSchedule(), errors);
                 errors.popNestedPath();
             }
+            if (schCriteria.getCriteria() == null) {
+                errors.rejectValue("criteria", "is required");
+            } else {
+                errors.pushNestedPath("criteria");
+                CriteriaUtils.validate(schCriteria.getCriteria(), dataGroups, errors);
+                errors.popNestedPath();
+            }
+            errors.popNestedPath();
         }
     }
 
