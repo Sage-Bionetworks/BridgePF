@@ -318,6 +318,11 @@ public class CriteriaScheduleStrategyTest {
         
         SchedulePlan plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         assertTrue(((CriteriaScheduleStrategy)plan.getStrategy()).getScheduleCriteria().isEmpty());
+        
+        // Null is safe too
+        json = TestUtils.createJson("{'label':'Schedule plan label','studyKey':'api','strategy':{'type':'CriteriaScheduleStrategy','scheduleCriteria':null},'type':'SchedulePlan'}");
+        plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
+        assertTrue(((CriteriaScheduleStrategy)plan.getStrategy()).getScheduleCriteria().isEmpty());
     }
     
     @Test
