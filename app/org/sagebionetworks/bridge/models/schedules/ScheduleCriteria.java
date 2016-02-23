@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.models.Criteria;
@@ -14,11 +12,7 @@ public final class ScheduleCriteria {
     private final Criteria criteria;
     
     @JsonCreator
-    public ScheduleCriteria(@JsonProperty("schedule") Schedule schedule, 
-            @JsonProperty("criteria") Criteria criteria) {
-        checkNotNull(schedule);
-        checkNotNull(criteria);
-        
+    public ScheduleCriteria(@JsonProperty("schedule") Schedule schedule, @JsonProperty("criteria") Criteria criteria) {
         this.schedule = schedule;
         this.criteria = criteria;
     }

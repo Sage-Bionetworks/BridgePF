@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
@@ -260,6 +261,17 @@ public class CriteriaScheduleStrategyTest {
     }
     
     @Test
+    public void validateStrategyWithNoScheduleCriteria() {
+        try {
+            strategy.getScheduleCriteria().clear();
+            Validate.entityThrowingException(VALIDATOR, PLAN);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("strategy.scheduleCriteria requires at least one member", e.getErrors().get("strategy.scheduleCriteria").get(0));
+         }
+    }
+    
+    @Test
     public void validatesInvalidScheduleCriteria() {
         setUpStrategyWithAppVersions();
         setUpStrategyWithOneRequiredDataGroup();
@@ -276,7 +288,8 @@ public class CriteriaScheduleStrategyTest {
         strategy.addCriteria(new ScheduleCriteria(schedule, criteria));
         
         try {
-            Validate.entityThrowingException(VALIDATOR, PLAN);           
+            Validate.entityThrowingException(VALIDATOR, PLAN);     
+            fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertError(e, "strategy.scheduleCriteria[1].criteria.allOfGroups", 0, " 'group1' is not in enumeration: <no data groups declared>");
             assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 0, " 'group2' is not in enumeration: <no data groups declared>");
@@ -306,6 +319,50 @@ public class CriteriaScheduleStrategyTest {
         strategy.addCriteria(scheduleCriteria);
 
         Validate.entityThrowingException(VALIDATOR, PLAN);
+    }
+    
+    @Test
+    public void validateScheduleCriteriaMissing() {
+        try {
+            Validate.entityThrowingException(VALIDATOR, PLAN);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("strategy.scheduleCriteria requires at least one member", e.getErrors().get("strategy.scheduleCriteria").get(0));
+        }
+    }
+    
+    @Test
+    public void validateScheduleCriteriaScheduleMissing() {
+        Criteria criteria = Criteria.create(2, 12, null, null);
+        
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(null, criteria);
+        strategy.addCriteria(scheduleCriteria);
+
+        try {
+            Validate.entityThrowingException(VALIDATOR, PLAN);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("strategy.scheduleCriteria[0].schedule is required", e.getErrors().get("strategy.scheduleCriteria[0].schedule").get(0));
+        }
+    }
+    
+    @Test
+    public void validateScheduleCriteriaCriteriaMissing() {
+        Activity activity = new Activity.Builder().withLabel("Label").withTask(TestConstants.TEST_3_ACTIVITY.getTask())
+                .build();
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.addActivity(activity);
+
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, null);
+        strategy.addCriteria(scheduleCriteria);
+
+        try {
+            Validate.entityThrowingException(VALIDATOR, PLAN);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("strategy.scheduleCriteria[0].criteria is required", e.getErrors().get("strategy.scheduleCriteria[0].criteria").get(0));
+        }
     }
     
     private void assertError(InvalidEntityException e, String fieldName, int index, String errorMsg) {

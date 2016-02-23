@@ -30,6 +30,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 @Component
@@ -170,10 +171,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
      */
     private Criteria persistCriteria(ScheduleCriteria scheduleCriteria) {
         Criteria criteria = scheduleCriteria.getCriteria();
-        if (criteria != null) {
-            criteriaDao.createOrUpdateCriteria(criteria);
-        }
-        return (criteria != null) ? criteria : Criteria.create();
+        return criteriaDao.createOrUpdateCriteria(criteria);
     }
 
     /**
@@ -181,12 +179,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
      */
     private Criteria loadCriteria(ScheduleCriteria scheduleCriteria) {
         String key = scheduleCriteria.getCriteria().getKey();
-        Criteria criteria = criteriaDao.getCriteria(key);
-        if (criteria == null) {
-            criteria = Criteria.create();
-            criteria.setKey(key);
-        }
-        return criteria;
+        return criteriaDao.getCriteria(key);
     }
     
     private Criteria deleteCriteria(ScheduleCriteria scheduleCriteria) {
