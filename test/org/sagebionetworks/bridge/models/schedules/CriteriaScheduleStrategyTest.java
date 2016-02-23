@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -261,17 +262,6 @@ public class CriteriaScheduleStrategyTest {
     }
     
     @Test
-    public void validateStrategyWithNoScheduleCriteria() {
-        try {
-            strategy.getScheduleCriteria().clear();
-            Validate.entityThrowingException(VALIDATOR, PLAN);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("strategy.scheduleCriteria requires at least one member", e.getErrors().get("strategy.scheduleCriteria").get(0));
-         }
-    }
-    
-    @Test
     public void validatesInvalidScheduleCriteria() {
         setUpStrategyWithAppVersions();
         setUpStrategyWithOneRequiredDataGroup();
@@ -322,13 +312,12 @@ public class CriteriaScheduleStrategyTest {
     }
     
     @Test
-    public void validateScheduleCriteriaMissing() {
-        try {
-            Validate.entityThrowingException(VALIDATOR, PLAN);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("strategy.scheduleCriteria requires at least one member", e.getErrors().get("strategy.scheduleCriteria").get(0));
-        }
+    public void validateScheduleCriteriaMissing() throws Exception {
+        // This doesn't contain the property, it's just deserialized to an empty list
+        String json = TestUtils.createJson("{'label':'Schedule plan label','studyKey':'api','strategy':{'type':'CriteriaScheduleStrategy'},'type':'SchedulePlan'}");
+        
+        SchedulePlan plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
+        assertTrue(((CriteriaScheduleStrategy)plan.getStrategy()).getScheduleCriteria().isEmpty());
     }
     
     @Test

@@ -312,4 +312,8 @@ public class TestUtils {
         }
         return set;
     }
+    
+    public static String createJson(String json) {
+        return json.replaceAll("'", "\"");
+    }
  }

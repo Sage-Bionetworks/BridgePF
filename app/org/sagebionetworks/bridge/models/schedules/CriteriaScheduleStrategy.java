@@ -52,8 +52,8 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
 
     @Override
     public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors) {
-        if (scheduleCriteria == null || scheduleCriteria.isEmpty()) {
-            errors.rejectValue("scheduleCriteria", "requires at least one member");
+        if (scheduleCriteria == null) {
+            errors.rejectValue("scheduleCriteria", "is required");
         } else {
             for (int i=0; i < scheduleCriteria.size(); i++) {
                 ScheduleCriteria schCriteria = scheduleCriteria.get(i);
