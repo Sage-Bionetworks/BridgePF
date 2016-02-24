@@ -315,6 +315,10 @@ public class TestUtils {
         return set;
     }
     
+    /**
+     * Converts single quote marks to double quote marks to convert JSON using single quotes to valid JSON. 
+     * Useful to create more readable inline JSON in tests, because double quotes must be escaped in Java.
+     */
     public static String createJson(String json) {
         return json.replaceAll("'", "\"");
     }
