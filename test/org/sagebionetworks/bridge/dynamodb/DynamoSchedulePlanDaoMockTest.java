@@ -64,7 +64,7 @@ public class DynamoSchedulePlanDaoMockTest {
         schedulePlan.setStudyKey(TEST_STUDY_IDENTIFIER);
         
         Schedule schedule = TestUtils.getSchedule("My Schedule");
-        Criteria criteria = Criteria.create(2, 10, ALL_OF_GROUPS, NONE_OF_GROUPS);
+        Criteria criteria = TestUtils.createCriteria(2, 10, ALL_OF_GROUPS, NONE_OF_GROUPS);
         criteria.setKey("scheduleCriteria:"+schedulePlan.getGuid()+":0");
         CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
         ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);

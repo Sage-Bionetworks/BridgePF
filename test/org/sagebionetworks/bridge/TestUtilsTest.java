@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -9,22 +9,18 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
+import org.sagebionetworks.bridge.models.Criteria;
 
 import com.google.common.collect.Sets;
 
-public class CriteriaTest {
+public class TestUtilsTest {
 
     private static final HashSet<String> ALL_OF_GROUPS = Sets.newHashSet("a","b");
     private static final HashSet<String> NONE_OF_GROUPS = Sets.newHashSet("c","d");
     
     @Test
-    public void createCriteria() {
-        assertNotNull(Criteria.create());
-    }
-    
-    @Test
     public void createCriteriaWithArguments() {
-        Criteria criteria = Criteria.create(5, 15, ALL_OF_GROUPS, NONE_OF_GROUPS);
+        Criteria criteria = TestUtils.createCriteria(5, 15, ALL_OF_GROUPS, NONE_OF_GROUPS);
         
         assertEquals(new Integer(5), criteria.getMinAppVersion());
         assertEquals(new Integer(15), criteria.getMaxAppVersion());
@@ -34,7 +30,7 @@ public class CriteriaTest {
     
     @Test
     public void copyWithNullObject() {
-        Criteria newCriteria = Criteria.copy(null);
+        Criteria newCriteria = TestUtils.copyCriteria(null);
         assertNotNull(newCriteria);
     }
 
@@ -42,7 +38,7 @@ public class CriteriaTest {
     public void copyWithCriteriaObject() {
         Criteria criteria = newCriteria();
         
-        Criteria newCriteria = Criteria.copy(criteria);
+        Criteria newCriteria = TestUtils.copyCriteria(criteria);
         assertEquals(new Integer(5), newCriteria.getMinAppVersion());
         assertEquals(new Integer(15), newCriteria.getMaxAppVersion());
         assertEquals(ALL_OF_GROUPS, newCriteria.getAllOfGroups());

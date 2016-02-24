@@ -9,7 +9,9 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.google.common.collect.Sets;
@@ -26,10 +28,6 @@ public class SubpopulationValidatorTest {
     @Test
     public void testEntirelyValid() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setMinAppVersion(2);
-        subpop.setMaxAppVersion(4);
-        subpop.getNoneOfGroups().add("group1");
-        subpop.getAllOfGroups().add("group2");
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setDefaultGroup(true);
@@ -38,15 +36,18 @@ public class SubpopulationValidatorTest {
         subpop.setVersion(3L);
         subpop.setGuidString("AAA");
         
+        Criteria criteria = TestUtils.createCriteria(2, 4, Sets.newHashSet("group1"), Sets.newHashSet("group2"));
+        subpop.setCriteria(criteria);
+        
         Validate.entityThrowingException(validator, subpop);
     }
     
     @Test
     public void testValidation() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setMinAppVersion(-10);
-        subpop.setMaxAppVersion(-2);
-        subpop.getNoneOfGroups().add("wrongGroup");
+        
+        Criteria criteria = TestUtils.createCriteria(-10, -2, null, Sets.newHashSet("wrongGroup"));
+        subpop.setCriteria(criteria);
         try {
             Validate.entityThrowingException(validator, subpop);
             fail("Should have thrown an exception");

@@ -14,9 +14,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Sets;
 
@@ -83,41 +82,8 @@ public class DynamoCriteriaDaoTest {
         criteria.setKey("key1");
         criteria.setMinAppVersion(12);
         
-        Criteria newCriteria = Criteria.copy(criteria);
+        Criteria newCriteria = TestUtils.copyCriteria(criteria);
         assertEquals(criteria.getMinAppVersion(), newCriteria.getMinAppVersion());
-    }
-    
-    @Test
-    public void savingNonDynamoCriteriaImplementationWorks() {
-        Subpopulation subpop = Subpopulation.create();
-        subpop.setName("Test subpopulation");
-        subpop.setMinAppVersion(2);
-        subpop.setMaxAppVersion(10);
-        subpop.setAllOfGroups(ALL_OF_GROUPS);
-        subpop.setNoneOfGroups(NONE_OF_GROUPS);
-        subpop.setStudyIdentifier("test-key");
-        subpop.setGuid(SubpopulationGuid.create(BridgeUtils.generateGuid()));
-        
-        try {
-            Criteria loaded = criteriaDao.createOrUpdateCriteria(subpop);
-            
-            // It should have been set as an object on the subpopulation
-            assertEquals(subpop.getKey(), loaded.getKey());
-            assertEquals(new Integer(2), loaded.getMinAppVersion());
-            assertEquals(new Integer(10), loaded.getMaxAppVersion());
-            assertEquals(ALL_OF_GROUPS, loaded.getAllOfGroups());
-            assertEquals(NONE_OF_GROUPS, loaded.getNoneOfGroups());
-            
-            // It should also have been saved
-            Criteria saved = criteriaDao.getCriteria(subpop.getKey());
-            assertEquals(subpop.getKey(), saved.getKey());
-            assertEquals(new Integer(2), saved.getMinAppVersion());
-            assertEquals(new Integer(10), saved.getMaxAppVersion());
-            assertEquals(ALL_OF_GROUPS, saved.getAllOfGroups());
-            assertEquals(NONE_OF_GROUPS, saved.getNoneOfGroups());
-        } finally {
-            criteriaDao.deleteCriteria(subpop.getKey());
-        }
     }
 
 }

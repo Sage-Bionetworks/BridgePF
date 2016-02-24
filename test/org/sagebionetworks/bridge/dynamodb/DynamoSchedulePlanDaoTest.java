@@ -183,11 +183,11 @@ public class DynamoSchedulePlanDaoTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.addActivity(TestConstants.TEST_1_ACTIVITY);
         
-        Criteria criteria = Criteria.create(2, 8, null, null);
+        Criteria criteria = TestUtils.createCriteria(2, 8, null, null);
         ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         strategy.addCriteria(scheduleCriteria);
         
-        criteria = Criteria.create(9, 12, null, null); 
+        criteria = TestUtils.createCriteria(9, 12, null, null); 
         
         schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
@@ -198,7 +198,7 @@ public class DynamoSchedulePlanDaoTest {
         plan.setStrategy(strategy);
         plan = schedulePlanDao.createSchedulePlan(studyId, plan);
 
-        criteria = Criteria.create(9, 14, null, null);
+        criteria = TestUtils.createCriteria(9, 14, null, null);
         
         schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);

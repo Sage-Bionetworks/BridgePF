@@ -69,9 +69,10 @@ public class DynamoSubpopulationDaoTest {
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setName("Name");
         subpop.setDescription("Description");
-        subpop.setMinAppVersion(2);
-        subpop.setMaxAppVersion(10);
         subpop.setRequired(true);
+        
+        Criteria criteria = TestUtils.createCriteria(2, 10, null, null);
+        subpop.setCriteria(criteria);
         
         // CREATE
         Subpopulation savedSubpop = dao.createSubpopulation(subpop);
@@ -80,9 +81,9 @@ public class DynamoSubpopulationDaoTest {
         assertFalse(savedSubpop.isDefaultGroup()); // was not set to true
         assertTrue(savedSubpop.isRequired());
         
-        Criteria criteria = subpop.getCriteria();
-        assertNotNull(criteria);
-        assertEquals(subpop.getKey(), criteria.getKey());
+        Criteria savedCriteria = subpop.getCriteria();
+        assertNotNull(savedCriteria);
+        assertEquals(subpop.getCriteria().getKey(), savedCriteria.getKey());
         
         // READ
         Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
@@ -340,15 +341,19 @@ public class DynamoSubpopulationDaoTest {
         subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setName(name);
         subpop.setGuidString(BridgeUtils.generateGuid());
+        
+        Criteria criteria = Criteria.create();
         if (min != null) {
-            subpop.setMinAppVersion(min);
+            criteria.setMinAppVersion(min);
         }
         if (max != null) {
-            subpop.setMaxAppVersion(max);
+            criteria.setMaxAppVersion(max);
         }
         if (group != null) {
-            subpop.setAllOfGroups(Sets.newHashSet(group));
+            criteria.setAllOfGroups(Sets.newHashSet(group));
         }
+        subpop.setCriteria(criteria);
+        
         return dao.createSubpopulation(subpop);
     }
     

@@ -32,12 +32,8 @@ public class DynamoCriteriaDao implements CriteriaDao {
         checkNotNull(criteria);
         checkArgument(isNotBlank(criteria.getKey()));
 
-        // This is just security in the event the Subpopulation objects are submitted (they are not 
-        // anywhere in the code), and will be removed when the Criteria interface is removed from 
-        // Subpopulation (part of migration).
-        Criteria copy = Criteria.copy(criteria);
-        criteriaMapper.save(copy);
-        return copy;
+        criteriaMapper.save(criteria);
+        return criteria;
     }
     
     @Override

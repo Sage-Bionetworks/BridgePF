@@ -216,7 +216,7 @@ public class SchedulePlanServiceMockTest {
         Schedule schedule = new Schedule();
         schedule.addActivity(new Activity.Builder().withTask("DDD").build());
         
-        Criteria criteria = Criteria.create(null, null, Sets.newHashSet("FFF"), null);
+        Criteria criteria = TestUtils.createCriteria(null, null, Sets.newHashSet("FFF"), null);
         ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         
         CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
