@@ -147,7 +147,7 @@ public class DynamoSurveyTest {
 
     private static DynamoSurvey makeTestSurvey() {
         // Make survey. Modify a few fields to make testing easier.
-        DynamoSurvey survey = new TestSurvey(false);
+        DynamoSurvey survey = new TestSurvey(DynamoSurveyTest.class, false);
         survey.setGuid("test-survey-guid");
         survey.setCreatedOn(TEST_CREATED_ON_MILLIS);
         survey.setModifiedOn(TEST_MODIFIED_ON_MILLIS);

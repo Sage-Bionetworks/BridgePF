@@ -803,8 +803,8 @@ public class SurveyControllerTest {
     }
     
     private Survey getSurvey(boolean makeNew) {
-        Survey survey = new TestSurvey(makeNew);
-        survey.setName("bloodpressure " + survey.getGuid());
+        Survey survey = new TestSurvey(SurveyControllerTest.class, makeNew);
+        survey.setName(TestUtils.randomName(SurveyControllerTest.class));
         return survey;
     }
     

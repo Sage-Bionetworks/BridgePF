@@ -97,7 +97,7 @@ public class SurveyResponseControllerTest {
     
     @Test
     public void createSurveyResponse() throws Exception {
-        Survey survey = new TestSurvey(false);
+        Survey survey = new TestSurvey(SurveyResponseControllerTest.class, false);
         SurveyResponse response = mockSurveyResponse();
         SurveyResponseView view = new SurveyResponseView(response, survey);
         setContext(response);
@@ -124,7 +124,7 @@ public class SurveyResponseControllerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void createSurveyResponseWithoutAnIdentifier() throws Exception {
-        Survey survey = new TestSurvey(false);
+        Survey survey = new TestSurvey(SurveyResponseControllerTest.class, false);
         SurveyResponse response = mockSurveyResponse();
         response.setIdentifier(null);
         setContext(response);
@@ -140,7 +140,7 @@ public class SurveyResponseControllerTest {
     
     @Test
     public void getSurveyResponse() throws Exception {
-        Survey survey = new TestSurvey(false);
+        Survey survey = new TestSurvey(SurveyResponseControllerTest.class, false);
         SurveyResponse response = mockSurveyResponse();
         SurveyResponseView view = new SurveyResponseView(response, survey);
         
@@ -156,7 +156,7 @@ public class SurveyResponseControllerTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void appendAnswersToSurveyResponse() throws Exception {
-        Survey survey = new TestSurvey(false);
+        Survey survey = new TestSurvey(SurveyResponseControllerTest.class, false);
         SurveyResponse response = mockSurveyResponse();
         SurveyResponseView view = new SurveyResponseView(response, survey);
         setContext(response);

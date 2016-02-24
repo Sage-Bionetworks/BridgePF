@@ -21,6 +21,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -60,7 +62,7 @@ public class DynamoSurveyDaoTest {
 
     @Before
     public void before() {
-        testSurvey = new TestSurvey(true);
+        testSurvey = new TestSurvey(DynamoSurveyDaoTest.class, true);
         // remove all but two questions to reduce DDB usage.
         testSurvey.setElements(testSurvey.getElements().subList(0, 2));
         surveysToDelete = new HashSet<>();
@@ -100,7 +102,7 @@ public class DynamoSurveyDaoTest {
     private class SimpleSurvey extends DynamoSurvey {
         public SimpleSurvey(String name) {
             setName(name);
-            setIdentifier("bloodpressure");
+            setIdentifier(TestUtils.randomName(DynamoSurveyDaoTest.class));
             setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         }
     }
@@ -456,12 +458,12 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canGetAllSurveys() throws Exception {
         Set<GuidCreatedOnVersionHolderImpl> mostRecentVersionSurveys = new HashSet<>();
-        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
-        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
-        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
-        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true))));
 
-        Survey survey = createSurvey(new TestSurvey(true));
+        Survey survey = createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
 
         versionSurvey(survey);
 
@@ -489,7 +491,7 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canRetrieveMostRecentlyPublishedSurveysWithManyVersions() throws Exception {
         // Version 1.
-        Survey survey1 = createSurvey(new TestSurvey(true));
+        Survey survey1 = createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
 
         // Version 2.
         Survey survey2 = versionSurvey(survey1);
@@ -536,13 +538,13 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void canRetrieveMostRecentPublishedSurveysWithManySurveys() throws Exception {
-        Survey survey1 = createSurvey(new TestSurvey(true));
+        Survey survey1 = createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
         publishSurvey(TEST_STUDY, survey1);
 
-        Survey survey2 = createSurvey(new TestSurvey(true));
+        Survey survey2 = createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
         publishSurvey(TEST_STUDY, survey2);
 
-        Survey survey3 = createSurvey(new TestSurvey(true));
+        Survey survey3 = createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
         publishSurvey(TEST_STUDY, survey3);
 
         // We must wait here because the above getter uses a secondary global index, and consistent
