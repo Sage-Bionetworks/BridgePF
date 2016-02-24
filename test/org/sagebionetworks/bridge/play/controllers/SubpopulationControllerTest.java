@@ -107,7 +107,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void createSubpopulation() throws Exception {
-        String json = "{\"guid\":\"junk\",\"name\":\"Name\",\"defaultGroup\":true,\"description\":\"Description\",\"required\":true,\"criteria\":{\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}}";
+        String json = TestUtils.createJson("{'guid':'junk','name':'Name','defaultGroup':true,'description':'Description','required':true,'criteria':{'minAppVersion':2,'maxAppVersion':10,'allOfGroups':['requiredGroup'],'noneOfGroups':['prohibitedGroup']}}");
         TestUtils.mockPlayContextWithJson(json);
         
         Subpopulation createdSubpop = Subpopulation.create();
@@ -136,7 +136,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void updateSubpopulation() throws Exception {
-        String json = "{\"name\":\"Name\",\"description\":\"Description\",\"defaultGroup\":true,\"required\":true,\"criteria\":{\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}}";
+        String json = TestUtils.createJson("{'name':'Name','description':'Description','defaultGroup':true,'required':true,'criteria':{'minAppVersion':2,'maxAppVersion':10,'allOfGroups':['requiredGroup'],'noneOfGroups':['prohibitedGroup']}}");
         TestUtils.mockPlayContextWithJson(json);
         
         Subpopulation createdSubpop = Subpopulation.create();
