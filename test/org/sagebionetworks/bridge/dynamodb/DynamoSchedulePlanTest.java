@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -64,6 +65,18 @@ public class DynamoSchedulePlanTest {
         
         ScheduleStrategy retrievedStrategy = plan.getStrategy();
         assertEquals(retrievedStrategy, strategy);
+    }
+    
+    @Test
+    public void jsonStudyKeyIsIgnored() throws Exception {
+        String json = TestUtils.createJson("{'studyKey':'study-key'}");
+        
+        SchedulePlan plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
+        assertNull(plan.getStudyKey());
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        plan = DynamoSchedulePlan.fromJson(node);
+        assertNull(plan.getStudyKey());
     }
     
 }

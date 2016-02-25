@@ -34,7 +34,6 @@ public final class DynamoSchedulePlan implements SchedulePlan {
 
     private static final String GUID_PROPERTY = "guid";
     private static final String LABEL_PROPERTY = "label";
-    private static final String STUDY_KEY_PROPERTY = "studyKey";
     private static final String MODIFIED_ON_PROPERTY = "modifiedOn";
     private static final String STRATEGY_PROPERTY = "strategy";
     private static final String VERSION_PROPERTY = "version";
