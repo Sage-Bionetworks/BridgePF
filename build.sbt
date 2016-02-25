@@ -10,11 +10,13 @@ resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-ce
 
 resolvers += "Bridge Maven repository" at "https://repo-maven.sagebridge.org/"
 
+resolvers += Resolver.mavenLocal
+
 libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "bridge-base" % "1.0",
+  "org.sagebionetworks" % "bridge-base" % "1.1",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",

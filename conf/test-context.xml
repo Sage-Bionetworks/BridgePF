@@ -1,18 +1,16 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-    xmlns:context="http://www.springframework.org/schema/context"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="
         http://www.springframework.org/schema/beans     
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/context 
-        http://www.springframework.org/schema/context/spring-context.xsd">
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <import resource="file:conf/application-context.xml" />
+    <import resource="file:conf/shared-config.xml" />
+
+    <bean class="org.sagebionetworks.bridge.config.BridgeTestSpringConfig" />
 
     <bean id="testUserAdminHelper" class="org.sagebionetworks.bridge.TestUserAdminHelper" depends-on="defaultStudyBootstrapper">
         <property name="userAdminService" ref="userAdminService" />
         <property name="authService" ref="authenticationService" />
         <property name="studyService" ref="studyService" />
     </bean>
-
 </beans>
