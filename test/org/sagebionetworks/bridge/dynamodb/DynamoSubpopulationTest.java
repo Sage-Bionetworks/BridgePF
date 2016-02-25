@@ -5,20 +5,27 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Set;
+
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
 public class DynamoSubpopulationTest {
+    
+    private static final Set<String> ALL_OF_GROUPS = Sets.newHashSet("requiredGroup");
+    private static final Set<String> NONE_OF_GROUPS = Sets.newHashSet("prohibitedGroup");
 
     @Test
     public void hashCodeEquals() {
@@ -38,12 +45,18 @@ public class DynamoSubpopulationTest {
         subpop.setRequired(true);
         subpop.setDefaultGroup(true);
         subpop.setDeleted(true);
-        subpop.getAllOfGroups().add("requiredGroup");
-        subpop.getNoneOfGroups().add("prohibitedGroup");
+        subpop.setAllOfGroups(ALL_OF_GROUPS);
+        subpop.setNoneOfGroups(NONE_OF_GROUPS);
         subpop.setVersion(3L);
         
-        String json = BridgeObjectMapper.get().writeValueAsString(subpop);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        Criteria criteria = Criteria.create();
+        criteria.setMinAppVersion(2);
+        criteria.setMaxAppVersion(10);
+        criteria.setAllOfGroups(ALL_OF_GROUPS);
+        criteria.setNoneOfGroups(NONE_OF_GROUPS);
+        subpop.setCriteria(criteria);
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(subpop);
         
         // This does not need to be passed to the user; the user is never allowed to set it.
         // This should be standard across the API, BTW, but this is leaked out by some classes.
@@ -56,11 +69,17 @@ public class DynamoSubpopulationTest {
         assertTrue(node.get("required").asBoolean());
         assertTrue(node.get("defaultGroup").asBoolean());
         assertNull(node.get("deleted")); // users do not see this flag, they never get deleted items
-        assertEquals("requiredGroup", node.get("allOfGroups").get(0).asText());
-        assertEquals("prohibitedGroup", node.get("noneOfGroups").get(0).asText());
+        assertEquals(ALL_OF_GROUPS, JsonUtils.asStringSet(node, "allOfGroups"));
+        assertEquals(NONE_OF_GROUPS, JsonUtils.asStringSet(node, "noneOfGroups"));
         assertEquals(3L, node.get("version").asLong());
         
-        Subpopulation newSubpop = BridgeObjectMapper.get().readValue(json, Subpopulation.class);
+        JsonNode critNode = node.get("criteria");
+        assertEquals(ALL_OF_GROUPS, JsonUtils.asStringSet(critNode, "allOfGroups"));
+        assertEquals(NONE_OF_GROUPS, JsonUtils.asStringSet(critNode, "noneOfGroups"));
+        assertEquals(2, critNode.get("minAppVersion").asInt());
+        assertEquals(10, critNode.get("maxAppVersion").asInt());
+        
+        Subpopulation newSubpop = BridgeObjectMapper.get().treeToValue(node, Subpopulation.class);
         // Not serialized, these values have to be added back to have equal objects 
         newSubpop.setStudyIdentifier("study-key");
         newSubpop.setDeleted(true);
@@ -76,6 +95,12 @@ public class DynamoSubpopulationTest {
         
         String pdfURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + newSubpop.getGuidString() + "/consent.pdf";
         assertEquals(pdfURL, newSubpop.getConsentPDF());
+        
+        Criteria critObject = newSubpop.getCriteria();
+        assertEquals(new Integer(2), critObject.getMinAppVersion());
+        assertEquals(new Integer(10), critObject.getMaxAppVersion());
+        assertEquals(ALL_OF_GROUPS, critObject.getAllOfGroups());
+        assertEquals(NONE_OF_GROUPS, critObject.getNoneOfGroups());
     }
     
     @Test

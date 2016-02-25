@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+
 import java.util.Set;
 
 import org.springframework.validation.Errors;

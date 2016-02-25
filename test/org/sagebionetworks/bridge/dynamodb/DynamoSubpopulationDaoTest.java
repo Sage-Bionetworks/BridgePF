@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -79,14 +80,20 @@ public class DynamoSubpopulationDaoTest {
         assertFalse(savedSubpop.isDefaultGroup()); // was not set to true
         assertTrue(savedSubpop.isRequired());
         
+        Criteria criteria = subpop.getCriteria();
+        assertNotNull(criteria);
+        assertEquals(subpop.getKey(), criteria.getKey());
+        
         // READ
         Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
         assertEquals(savedSubpop, retrievedSubpop);
+        assertNotNull(retrievedSubpop.getCriteria());
         
         // UPDATE
         retrievedSubpop.setName("Name 2");
         retrievedSubpop.setDescription("Description 2");
         retrievedSubpop.setRequired(false);
+        retrievedSubpop.getCriteria().setMinAppVersion(3);
         Subpopulation finalSubpop = dao.updateSubpopulation(retrievedSubpop);
         
         // With this change, they should be equivalent using value equality
@@ -95,6 +102,7 @@ public class DynamoSubpopulationDaoTest {
         assertEquals("Description 2", retrievedSubpop.getDescription());
         assertFalse(retrievedSubpop.isRequired());
         assertEquals(retrievedSubpop, finalSubpop);
+        assertEquals(new Integer(3), finalSubpop.getCriteria().getMinAppVersion());
 
         // Some further things that should be true:
         // There's now only one subpopulation in the list

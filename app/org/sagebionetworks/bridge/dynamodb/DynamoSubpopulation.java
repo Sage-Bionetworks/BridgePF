@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -42,10 +43,21 @@ public final class DynamoSubpopulation implements Subpopulation {
     private Long version;
     private Set<String> allOfGroups;
     private Set<String> noneOfGroups;
+    private Criteria criteria;
 
     public DynamoSubpopulation() {
         this.allOfGroups = Sets.newHashSet();
         this.noneOfGroups = Sets.newHashSet();
+    }
+    
+    @JsonIgnore
+    @DynamoDBIgnore
+    public String getKey() {
+        return "subpopulation:"+guid;
+    }
+    
+    @Override
+    public void setKey(String key) {
     }
     
     @JsonIgnore
@@ -184,11 +196,20 @@ public final class DynamoSubpopulation implements Subpopulation {
     public String getConsentPDF() {
         return String.format("http://%s/%s/consent.pdf", DOCS_HOST, guid);
     }
+    @Override
+    public void setCriteria(Criteria criteria) {
+        this.criteria = criteria;
+    }
+    @DynamoDBIgnore
+    @Override
+    public Criteria getCriteria() {
+        return criteria;
+    }
     
     @Override
     public int hashCode() {
         return Objects.hash(allOfGroups, noneOfGroups, name, description, required, deleted, defaultGroup, guid,
-                minAppVersion, maxAppVersion, studyIdentifier, version);
+                minAppVersion, maxAppVersion, studyIdentifier, version, criteria);
     }
     @Override
     public boolean equals(Object obj) {
@@ -203,14 +224,15 @@ public final class DynamoSubpopulation implements Subpopulation {
                 && Objects.equals(minAppVersion, other.minAppVersion) && Objects.equals(required, other.required)
                 && Objects.equals(maxAppVersion, other.maxAppVersion) && Objects.equals(deleted, other.deleted)
                 && Objects.equals(studyIdentifier, other.studyIdentifier) && Objects.equals(version, other.version)
-                && Objects.equals(defaultGroup, other.defaultGroup);
+                && Objects.equals(defaultGroup, other.defaultGroup)
+                && Objects.equals(criteria, other.criteria);
     }
     @Override
     public String toString() {
         return "DynamoSubpopulation [studyIdentifier=" + studyIdentifier + ", guid=" + guid + ", name=" + name
-                + ", description=" + description + ", required=" + required + ", deleted=" + deleted 
-                + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" +  noneOfGroups + ", minAppVersion=" 
-                + minAppVersion + ", maxAppVersion=" + maxAppVersion + ", version=" + version + "]";
+                + ", description=" + description + ", required=" + required + ", deleted=" + deleted + ", allOfGroups="
+                + allOfGroups + ", noneOfGroups=" + noneOfGroups + ", minAppVersion=" + minAppVersion
+                + ", maxAppVersion=" + maxAppVersion + ", criteria=" + criteria + ", version=" + version + "]";
     }
 
 }

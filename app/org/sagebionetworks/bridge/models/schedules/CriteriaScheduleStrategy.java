@@ -42,9 +42,9 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
      */
     @Override
     public Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context) {
-        for (ScheduleCriteria criteria : scheduleCriteria) {
-            if (CriteriaUtils.matchCriteria(context.getCriteriaContext(), criteria)) {
-                return criteria.getSchedule();
+        for (ScheduleCriteria scheduleCriteria : scheduleCriteria) {
+            if (CriteriaUtils.matchCriteria(context.getCriteriaContext(), scheduleCriteria.getCriteria())) {
+                return scheduleCriteria.getSchedule();
             }
         }
         return null;        
@@ -53,16 +53,22 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
     @Override
     public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors) {
         for (int i=0; i < scheduleCriteria.size(); i++) {
-            ScheduleCriteria criteria = scheduleCriteria.get(i);
+            ScheduleCriteria schCriteria = scheduleCriteria.get(i);
             errors.pushNestedPath("scheduleCriteria["+i+"]");
-            if (criteria.getSchedule() == null){
+            if (schCriteria.getSchedule() == null){
                 errors.rejectValue("schedule", "is required");
             } else {
                 errors.pushNestedPath("schedule");
-                new ScheduleValidator(taskIdentifiers).validate(criteria.getSchedule(), errors);
+                new ScheduleValidator(taskIdentifiers).validate(schCriteria.getSchedule(), errors);
                 errors.popNestedPath();
             }
-            CriteriaUtils.validate(criteria, dataGroups, errors);
+            if (schCriteria.getCriteria() == null) {
+                errors.rejectValue("criteria", "is required");
+            } else {
+                errors.pushNestedPath("criteria");
+                CriteriaUtils.validate(schCriteria.getCriteria(), dataGroups, errors);
+                errors.popNestedPath();
+            }
             errors.popNestedPath();
         }
     }
