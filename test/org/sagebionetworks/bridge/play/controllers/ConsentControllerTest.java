@@ -13,8 +13,6 @@ import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
-import static play.test.Helpers.running;
-import static play.test.Helpers.testServer;
 
 import javax.annotation.Resource;
 
@@ -61,33 +59,31 @@ public class ConsentControllerTest {
     @Test
     public void methodsAreDeprecated() {
         // This is expensive so test them all after starting the server, in one test
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-            public void testCode() throws Exception {
-                ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put("scope", SharingScope.NO_SHARING.name().toLowerCase());
-                
-                // First, verify this header isn't on *every* endpoint
-                WSRequest request = WS.url(TEST_BASE_URL + "/v3/users/self");
-                WSResponse response = request.post(node).get(TIMEOUT);
-                String headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
-                assertNull(headerValue);
-                
-                // Now verify it's on the intended endpoints
-                request = WS.url(TEST_BASE_URL + "/api/v1/consent/dataSharing/suspend");
-                response = request.post(node).get(TIMEOUT);
-                headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
-                assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
-                
-                request = WS.url(TEST_BASE_URL + "/api/v1/consent/dataSharing/resume");
-                response = request.post(node).get(TIMEOUT);
-                headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
-                assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
-                
-                request = WS.url(TEST_BASE_URL + "/api/v1/consent");
-                response = request.post(node).get(TIMEOUT);
-                headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
-                assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
-            }
+        TestUtils.runningTestServerWithSpring(() -> {
+            ObjectNode node = JsonNodeFactory.instance.objectNode();
+            node.put("scope", SharingScope.NO_SHARING.name().toLowerCase());
+
+            // First, verify this header isn't on *every* endpoint
+            WSRequest request = WS.url(TEST_BASE_URL + "/v3/users/self");
+            WSResponse response = request.post(node).get(TIMEOUT);
+            String headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
+            assertNull(headerValue);
+
+            // Now verify it's on the intended endpoints
+            request = WS.url(TEST_BASE_URL + "/api/v1/consent/dataSharing/suspend");
+            response = request.post(node).get(TIMEOUT);
+            headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
+            assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
+
+            request = WS.url(TEST_BASE_URL + "/api/v1/consent/dataSharing/resume");
+            response = request.post(node).get(TIMEOUT);
+            headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
+            assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
+
+            request = WS.url(TEST_BASE_URL + "/api/v1/consent");
+            response = request.post(node).get(TIMEOUT);
+            headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
+            assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
         });
     }
   
@@ -97,33 +93,30 @@ public class ConsentControllerTest {
     // to create the correct response JSON payload.
     @Test
     public void invalidConsentCorrectlyReturns400() {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-            public void testCode() throws Exception {
-                ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(STUDY_PROPERTY, testUser.getStudyIdentifier().getIdentifier());
-                node.put(EMAIL, testUser.getEmail());
-                node.put(PASSWORD, testUser.getPassword());
-                
-                WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                WSResponse response = request.post(node).get(TIMEOUT);
+        TestUtils.runningTestServerWithSpring(() -> {
+            ObjectNode node = JsonNodeFactory.instance.objectNode();
+            node.put(STUDY_PROPERTY, testUser.getStudyIdentifier().getIdentifier());
+            node.put(EMAIL, testUser.getEmail());
+            node.put(PASSWORD, testUser.getPassword());
 
-                WSCookie cookie = response.getCookie(SESSION_TOKEN_HEADER);
-                String sessionToken = cookie.getValue();
+            WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
+            WSResponse response = request.post(node).get(TIMEOUT);
 
-                node = JsonNodeFactory.instance.objectNode();
-                node.put("birthdate", "1970-01-01");
+            WSCookie cookie = response.getCookie(SESSION_TOKEN_HEADER);
+            String sessionToken = cookie.getValue();
 
-                request = WS.url(TEST_BASE_URL + "/v3/consents/signature");
-                request.setHeader("Bridge-Session", sessionToken);
-                response = request.post(node).get(TIMEOUT);
-                
-                JsonNode responseNode = BridgeObjectMapper.get().readTree(response.getBody());
-                
-                assertEquals(400, response.getStatus());
-                assertTrue(responseNode.get("message").asText().contains(" name cannot be missing, null, or blank"));
-                assertNotNull(responseNode.get("errors").get("name"));
-            }
-        });        
+            node = JsonNodeFactory.instance.objectNode();
+            node.put("birthdate", "1970-01-01");
+
+            request = WS.url(TEST_BASE_URL + "/v3/consents/signature");
+            request.setHeader("Bridge-Session", sessionToken);
+            response = request.post(node).get(TIMEOUT);
+
+            JsonNode responseNode = BridgeObjectMapper.get().readTree(response.getBody());
+
+            assertEquals(400, response.getStatus());
+            assertTrue(responseNode.get("message").asText().contains(" name cannot be missing, null, or blank"));
+            assertNotNull(responseNode.get("errors").get("name"));
+        });
     }
-    
 }

@@ -16,8 +16,19 @@ import play.mvc.Controller;
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 
-public class BridgeSpringContextModule extends AbstractModule {
-
+/**
+ * <p>
+ * Play module to initialize our environment (notably Dynamo tables and Spring). This is the abstract base Bridge
+ * module. For our production module used for launching actual Bridge servers, see
+ * {@link BridgeProductionSpringContextModule}. For our test module used for unit tests, see
+ * BridgeTestSpringContextModule in unit tests.
+ * </p>
+ * <p>
+ * The subclasses need to be full-fledged classes, because even though they differ only on a single string, there's no
+ * way to pass this string into Play without creating an entirely separate module class.
+ * </p>
+ */
+public abstract class BridgeSpringContextModule extends AbstractModule {
     private static final Logger logger = LoggerFactory.getLogger(BridgeSpringContextModule.class);
 
     @Override
@@ -35,7 +46,7 @@ public class BridgeSpringContextModule extends AbstractModule {
 
     private AbstractApplicationContext loadAppContext() {
         final AbstractApplicationContext bridgeAppContext =
-                new ClassPathXmlApplicationContext("application-context.xml");
+                new ClassPathXmlApplicationContext(getSpringXmlFilename());
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
@@ -66,4 +77,10 @@ public class BridgeSpringContextModule extends AbstractModule {
         }
         logger.info(clazz.getName() + " is bound.");
     }
+
+    /**
+     * XML filename, as found in the conf directory, that's the root of our Spring config. Subclasses should override
+     * this to get specific production vs unit test configs.
+     */
+    protected abstract String getSpringXmlFilename();
 }

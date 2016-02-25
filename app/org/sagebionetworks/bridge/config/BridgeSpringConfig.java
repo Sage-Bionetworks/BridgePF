@@ -1,9 +1,6 @@
 package org.sagebionetworks.bridge.config;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
-import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,7 +19,6 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.stormpath.sdk.api.ApiKey;
 import com.stormpath.sdk.api.ApiKeys;
 import com.stormpath.sdk.application.Application;
@@ -31,16 +27,12 @@ import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import org.springframework.context.annotation.FilterType;
 
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
@@ -64,7 +56,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
@@ -76,13 +67,15 @@ import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
-@ComponentScan({"org.sagebionetworks.bridge"})
+/**
+ * Annotation-based Spring config. This class is shared between both production and (Spring-based) test configs. For
+ * production-only Spring configs, see {@link BridgeProductionSpringConfig}. For test-only Spring configs, see
+ * BridgeTestSpringConfig in tests.
+ */
+@ComponentScan(basePackages = "org.sagebionetworks.bridge", excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ANNOTATION, value = Configuration.class))
 @Configuration
 public class BridgeSpringConfig {
-
-    private static Logger logger = LoggerFactory.getLogger(BridgeSpringConfig.class);
-    private static final List<String> REDIS_PROVIDERS = Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
-    
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
         return BridgeObjectMapper.get();
@@ -91,75 +84,6 @@ public class BridgeSpringConfig {
     @Bean(name = "bridgeConfig")
     public BridgeConfig bridgeConfig() {
         return BridgeConfigFactory.getConfig();
-    }
-
-    @Bean(name = "jedisPool")
-    public JedisPool jedisPool(final BridgeConfig config) throws Exception {
-        // Configure pool
-        final JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
-
-        // Create pool.
-        final String url = getRedisURL(config);
-        final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
-        
-        // Test pool
-        try (Jedis jedis = jedisPool.getResource()) {
-            final String result = jedis.ping();
-            if (result == null || !"PONG".equalsIgnoreCase(result.trim())) {
-                throw new MissingResourceException("No PONG from PINGing Redis" + result + ".",
-                        JedisPool.class.getName(), jedis.getClient().getHost() + ":" + jedis.getClient().getPort());
-            }
-        }
-
-        // Shutdown hook
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                jedisPool.destroy();
-            }
-        }));
-
-        return jedisPool;
-    }
-    
-    /**
-     * Try Redis providers to find one that is provisioned. Using this URL in the environment variables 
-     * is the documented way to interact with these services.
-     * @param config
-     * @return
-     */
-    private String getRedisURL(final BridgeConfig config) {
-        for (String provider : REDIS_PROVIDERS) {
-            if (System.getenv(provider) != null) {
-                logger.info("Using Redis Provider: " + provider);
-                return System.getenv(provider);
-            }
-        }
-        logger.info("Using Redis Provider: redis.url");
-        return config.getProperty("redis.url");
-    }
-    
-    private JedisPool constructJedisPool(final String url, final JedisPoolConfig poolConfig, final BridgeConfig config)
-            throws URISyntaxException {
-        
-        // With changes in Redis provisioning, passwords are now parseable by Java's URI class.
-        URI redisURI = new URI(url);
-        String password = redisURI.getUserInfo().split(":",2)[1];
-        
-        if (config.isLocal()) {
-            return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
-                    config.getPropertyAsInt("redis.timeout"));
-        } else {
-            return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
-                    config.getPropertyAsInt("redis.timeout"), password);
-        }
-    }
-
-    @Bean(name = "jedisOps")
-    @Resource(name = "jedisPool")
-    public JedisOps jedisOps(final JedisPool jedisPool) {
-        return new JedisOps(jedisPool);
     }
 
     @Bean(name = "healthCodeEncryptor")
