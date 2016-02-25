@@ -1,21 +1,17 @@
 package org.sagebionetworks.bridge.models.subpopulations;
 
-import java.util.Set;
-
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Criteria;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as=DynamoSubpopulation.class)
-public interface Subpopulation extends Criteria {
+public interface Subpopulation extends BridgeEntity {
 
     public static Subpopulation create() {
         return new DynamoSubpopulation();
     }
-    
-    public void setCriteria(Criteria criteria);
-    public Criteria getCriteria();
     
     public void setStudyIdentifier(String studyIdentifier);
     public String getStudyIdentifier();
@@ -60,10 +56,8 @@ public interface Subpopulation extends Criteria {
     public Long getVersion();
     public void setVersion(Long version);
     
-    public void setMinAppVersion(Integer minAppVersion);
-    public void setMaxAppVersion(Integer minAppVersion);
-    public void setAllOfGroups(Set<String> allOfGroups);
-    public void setNoneOfGroups(Set<String> noneOfGroups);
+    public void setCriteria(Criteria criteria);
+    public Criteria getCriteria();
     
     /**
      * URL for retrieving the HTML version of the published consent for this study.

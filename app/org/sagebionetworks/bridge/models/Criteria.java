@@ -12,27 +12,6 @@ public interface Criteria extends BridgeEntity {
     public static Criteria create() {
         return new DynamoCriteria();
     }
-    
-    public static Criteria create(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
-        DynamoCriteria crit = new DynamoCriteria();
-        crit.setMinAppVersion(minAppVersion);
-        crit.setMaxAppVersion(maxAppVersion);
-        crit.setAllOfGroups(allOfGroups);
-        crit.setNoneOfGroups(noneOfGroups);
-        return crit;
-    }
-    
-    public static Criteria copy(Criteria criteria) {
-        DynamoCriteria crit = new DynamoCriteria();
-        if (criteria != null) {
-            crit.setKey(criteria.getKey());
-            crit.setMinAppVersion(criteria.getMinAppVersion());
-            crit.setMaxAppVersion(criteria.getMaxAppVersion());
-            crit.setNoneOfGroups(criteria.getNoneOfGroups());
-            crit.setAllOfGroups(criteria.getAllOfGroups());
-        }
-        return crit;
-    }
 
     /** 
      * The foreign key to the object filtered with these criteria. It's the model and the model's

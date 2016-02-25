@@ -126,20 +126,20 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     
     @Override
     public Subpopulation createDefaultSubpopulation(StudyIdentifier studyId) {
+        
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setGuidString(studyId.getIdentifier());
         subpop.setName("Default Consent Group");
-        subpop.setMinAppVersion(0);
         subpop.setDefaultGroup(true);
         // The first group is required until the study designers say otherwise
         subpop.setRequired(true);
         
-        // We know in this case that criteria do not exist
-        Criteria criteria = Criteria.copy(subpop);
+        Criteria criteria = Criteria.create();
         criteria.setKey(getKey(subpop));
+        criteria.setMinAppVersion(0);
         
-        criteriaDao.createOrUpdateCriteria(criteria);
+        criteria = criteriaDao.createOrUpdateCriteria(criteria);
         subpop.setCriteria(criteria);
         
         mapper.save(subpop);
@@ -163,6 +163,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
 
     @Override
     public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
+        // criteria are loaded by this method
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true, false);
 
         return subpops.stream().filter(subpop -> {
@@ -181,7 +182,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         }
         if (physicalDelete) {
             studyConsentDao.deleteAllConsents(subpopGuid);
-            criteriaDao.deleteCriteria(subpop.getKey());
+            criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
             mapper.delete(subpop);
         } else {
             subpop.setDeleted(true);
@@ -195,7 +196,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
                 studyConsentDao.deleteAllConsents(subpop.getGuid());
-                criteriaDao.deleteCriteria(subpop.getKey());
+                criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
             }
             List<FailedBatch> failures = mapper.batchDelete(subpops);
             BridgeUtils.ifFailuresThrowException(failures);
@@ -206,29 +207,20 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         return "subpopulation:" + subpop.getGuidString();
     }
     
-    // Save the criteria object if it exists. If it does not, copy the criteria data from the subpopulation
-    // and save that. Set that on subpopulation. Once all models have a criteria object, this will be removed 
-    // along with the fields on subpopulation.
     private Criteria persistCriteria(Subpopulation subpop) {
         Criteria criteria = subpop.getCriteria();
-        Criteria makeCopyOf = (criteria == null) ? subpop : criteria;
-
-        Criteria copy = Criteria.copy(makeCopyOf);
-        copy.setKey(subpop.getKey());
-        criteriaDao.createOrUpdateCriteria(copy);
-        
-        subpop.setCriteria(copy);
-        return copy;
+        criteria.setKey(getKey(subpop));
+        return criteriaDao.createOrUpdateCriteria(criteria);
     }
 
-    // Load the criteria object. If it doesn't exist, assemble it from the criteria data on the subpopulation
-    // object. Once all models have a criteria object, this will be removed along with the fields on subpopulation.
     private void loadCriteria(Subpopulation subpop) {
         Criteria criteria = criteriaDao.getCriteria(getKey(subpop));
+        // Not sure this is even possible at this point. But if the original save did not completely succeed, 
+        // this will prevent errors and the user will be able to redo criteria (if any).
         if (criteria == null) {
-            criteria = Criteria.copy(subpop);
-            criteria.setKey(getKey(subpop));
+            criteria = Criteria.create();
         }
+        criteria.setKey(getKey(subpop));
         subpop.setCriteria(criteria);
     }
 }

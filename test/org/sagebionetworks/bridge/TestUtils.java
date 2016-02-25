@@ -19,10 +19,12 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -313,7 +315,32 @@ public class TestUtils {
         return set;
     }
     
+    /**
+     * Converts single quote marks to double quote marks to convert JSON using single quotes to valid JSON. 
+     * Useful to create more readable inline JSON in tests, because double quotes must be escaped in Java.
+     */
     public static String createJson(String json) {
         return json.replaceAll("'", "\"");
+    }
+    
+    public static Criteria createCriteria(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
+        DynamoCriteria crit = new DynamoCriteria();
+        crit.setMinAppVersion(minAppVersion);
+        crit.setMaxAppVersion(maxAppVersion);
+        crit.setAllOfGroups(allOfGroups);
+        crit.setNoneOfGroups(noneOfGroups);
+        return crit;
+    }
+    
+    public static Criteria copyCriteria(Criteria criteria) {
+        DynamoCriteria crit = new DynamoCriteria();
+        if (criteria != null) {
+            crit.setKey(criteria.getKey());
+            crit.setMinAppVersion(criteria.getMinAppVersion());
+            crit.setMaxAppVersion(criteria.getMaxAppVersion());
+            crit.setNoneOfGroups(criteria.getNoneOfGroups());
+            crit.setAllOfGroups(criteria.getAllOfGroups());
+        }
+        return crit;
     }
  }

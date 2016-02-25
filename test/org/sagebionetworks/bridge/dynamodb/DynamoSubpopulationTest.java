@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -40,20 +41,12 @@ public class DynamoSubpopulationTest {
         subpop.setDescription("Description");
         subpop.setGuidString("guid");
         subpop.setStudyIdentifier("study-key");
-        subpop.setMinAppVersion(2);
-        subpop.setMaxAppVersion(10);
         subpop.setRequired(true);
         subpop.setDefaultGroup(true);
         subpop.setDeleted(true);
-        subpop.setAllOfGroups(ALL_OF_GROUPS);
-        subpop.setNoneOfGroups(NONE_OF_GROUPS);
         subpop.setVersion(3L);
         
-        Criteria criteria = Criteria.create();
-        criteria.setMinAppVersion(2);
-        criteria.setMaxAppVersion(10);
-        criteria.setAllOfGroups(ALL_OF_GROUPS);
-        criteria.setNoneOfGroups(NONE_OF_GROUPS);
+        Criteria criteria = TestUtils.createCriteria(2, 10, ALL_OF_GROUPS, NONE_OF_GROUPS);
         subpop.setCriteria(criteria);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(subpop);
@@ -64,13 +57,9 @@ public class DynamoSubpopulationTest {
         assertEquals("Name", node.get("name").asText());
         assertEquals("Description", node.get("description").asText());
         assertEquals("guid", node.get("guid").asText());
-        assertEquals(2, node.get("minAppVersion").asInt());
-        assertEquals(10, node.get("maxAppVersion").asInt());
         assertTrue(node.get("required").asBoolean());
         assertTrue(node.get("defaultGroup").asBoolean());
         assertNull(node.get("deleted")); // users do not see this flag, they never get deleted items
-        assertEquals(ALL_OF_GROUPS, JsonUtils.asStringSet(node, "allOfGroups"));
-        assertEquals(NONE_OF_GROUPS, JsonUtils.asStringSet(node, "noneOfGroups"));
         assertEquals(3L, node.get("version").asLong());
         
         JsonNode critNode = node.get("criteria");
