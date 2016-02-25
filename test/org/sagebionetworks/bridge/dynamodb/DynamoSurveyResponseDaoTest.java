@@ -60,7 +60,7 @@ public class DynamoSurveyResponseDaoTest {
 
     @Before
     public void before() throws Exception {
-        survey = new TestSurvey(true);
+        survey = new TestSurvey(DynamoSurveyResponseDaoTest.class, true);
         survey = surveyDao.createSurvey(survey);
     }
 

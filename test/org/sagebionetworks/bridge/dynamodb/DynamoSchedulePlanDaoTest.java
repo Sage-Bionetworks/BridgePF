@@ -13,11 +13,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -38,6 +46,9 @@ public class DynamoSchedulePlanDaoTest {
     
     @Resource
     private DynamoSurveyDao surveyDao;
+    
+    @Resource
+    private CriteriaDao criteriaDao;
     
     private StudyIdentifier studyIdentifier;
     
@@ -71,8 +82,9 @@ public class DynamoSchedulePlanDaoTest {
         String output = mapping.writeValueAsString(abPlan);
         
         SchedulePlan newPlan = mapping.readValue(output, SchedulePlan.class);
+        newPlan.setStudyKey(abPlan.getStudyKey()); // not serialized
         
-        assertEquals("Schedule plans are equal", abPlan.hashCode(), newPlan.hashCode());
+        assertEquals("Schedule plans are equal", abPlan, newPlan);
     }
     
     @Test
@@ -106,7 +118,7 @@ public class DynamoSchedulePlanDaoTest {
         // Get it from DynamoDB
         SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(studyIdentifier, abPlan.getGuid());
         assertEquals("Schedule plan contains correct strategy class type", SimpleScheduleStrategy.class, newPlan.getStrategy().getClass());
-        assertEquals("The strategy has been updated", simplePlan.getStrategy().hashCode(), newPlan.getStrategy().hashCode());
+        assertEquals("The strategy has been updated", simplePlan.getStrategy(), newPlan.getStrategy());
         
         // delete, throws exception
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, newPlan.getGuid());
@@ -159,6 +171,55 @@ public class DynamoSchedulePlanDaoTest {
         assertEquals(oneGuid, getSchedulePlanGuids(plans));
     }
 
+    @Test
+    public void scheduleCriteriaStrategyWork() {
+        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
+        
+        SchedulePlan plan = new DynamoSchedulePlan();
+        plan.setLabel("Criteria strategy plan");
+        plan.setStudyKey(studyId.getIdentifier());
+        
+        CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.addActivity(TestConstants.TEST_1_ACTIVITY);
+        
+        Criteria criteria = TestUtils.createCriteria(2, 8, null, null);
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
+        strategy.addCriteria(scheduleCriteria);
+        
+        criteria = TestUtils.createCriteria(9, 12, null, null); 
+        
+        schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.addActivity(TestConstants.TEST_2_ACTIVITY);
+        scheduleCriteria = new ScheduleCriteria(schedule, criteria);
+        strategy.addCriteria(scheduleCriteria);
+        
+        plan.setStrategy(strategy);
+        plan = schedulePlanDao.createSchedulePlan(studyId, plan);
+
+        criteria = TestUtils.createCriteria(9, 14, null, null);
+        
+        schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        scheduleCriteria = new ScheduleCriteria(schedule, criteria);
+        strategy.getScheduleCriteria().set(1, scheduleCriteria);
+        
+        plan = schedulePlanDao.updateSchedulePlan(studyId, plan);
+        
+        // Should be able to read the criteria objects for this.
+        Criteria criteria1 = criteriaDao.getCriteria("scheduleCriteria:"+plan.getGuid()+":0");
+        assertEquals(new Integer(2), criteria1.getMinAppVersion());
+        assertEquals(new Integer(8), criteria1.getMaxAppVersion());
+        
+        Criteria criteria2 = criteriaDao.getCriteria("scheduleCriteria:"+plan.getGuid()+":1");
+        assertEquals(new Integer(9), criteria2.getMinAppVersion());
+        assertEquals(new Integer(14), criteria2.getMaxAppVersion());
+        
+        plansToDelete.add(new Keys(studyId.getIdentifier(), plan.getGuid()));
+    }
     
     private Set<String> getSchedulePlanGuids(SchedulePlan... plans) {
         Set<String> set = Sets.newHashSet();

@@ -36,6 +36,6 @@ public class SubpopulationValidator implements Validator {
         if (isBlank(subpop.getGuidString())) {
             errors.rejectValue("guid", "is required");
         }
-        CriteriaUtils.validate(subpop, dataGroups, errors);
+        CriteriaUtils.validate(subpop.getCriteria(), dataGroups, errors);
     }
 }

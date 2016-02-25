@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -106,7 +107,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void createSubpopulation() throws Exception {
-        String json = "{\"guid\":\"junk\",\"name\":\"Name\",\"defaultGroup\":true,\"description\":\"Description\",\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
+        String json = TestUtils.createJson("{'guid':'junk','name':'Name','defaultGroup':true,'description':'Description','required':true,'criteria':{'minAppVersion':2,'maxAppVersion':10,'allOfGroups':['requiredGroup'],'noneOfGroups':['prohibitedGroup']}}");
         TestUtils.mockPlayContextWithJson(json);
         
         Subpopulation createdSubpop = Subpopulation.create();
@@ -126,15 +127,16 @@ public class SubpopulationControllerTest {
         assertEquals("Name", created.getName());
         assertEquals("Description", created.getDescription());
         assertTrue(created.isDefaultGroup());
-        assertEquals((Integer)2, created.getMinAppVersion());
-        assertEquals((Integer)10, created.getMaxAppVersion());
-        assertEquals(Sets.newHashSet("requiredGroup"), created.getAllOfGroups());
-        assertEquals(Sets.newHashSet("prohibitedGroup"), created.getNoneOfGroups());
+        Criteria criteria = created.getCriteria();
+        assertEquals((Integer)2, criteria.getMinAppVersion());
+        assertEquals((Integer)10, criteria.getMaxAppVersion());
+        assertEquals(Sets.newHashSet("requiredGroup"), criteria.getAllOfGroups());
+        assertEquals(Sets.newHashSet("prohibitedGroup"), criteria.getNoneOfGroups());
     }
     
     @Test
     public void updateSubpopulation() throws Exception {
-        String json = "{\"name\":\"Name\",\"description\":\"Description\",\"defaultGroup\":true,\"required\":true,\"minAppVersion\":2,\"maxAppVersion\":10,\"allOfGroups\":[\"requiredGroup\"],\"noneOfGroups\":[\"prohibitedGroup\"]}";
+        String json = TestUtils.createJson("{'name':'Name','description':'Description','defaultGroup':true,'required':true,'criteria':{'minAppVersion':2,'maxAppVersion':10,'allOfGroups':['requiredGroup'],'noneOfGroups':['prohibitedGroup']}}");
         TestUtils.mockPlayContextWithJson(json);
         
         Subpopulation createdSubpop = Subpopulation.create();
@@ -155,10 +157,11 @@ public class SubpopulationControllerTest {
         assertEquals("Name", created.getName());
         assertEquals("Description", created.getDescription());
         assertTrue(created.isDefaultGroup());
-        assertEquals((Integer)2, created.getMinAppVersion());
-        assertEquals((Integer)10, created.getMaxAppVersion());
-        assertEquals(Sets.newHashSet("requiredGroup"), created.getAllOfGroups());
-        assertEquals(Sets.newHashSet("prohibitedGroup"), created.getNoneOfGroups());
+        Criteria criteria = created.getCriteria();
+        assertEquals((Integer)2, criteria.getMinAppVersion());
+        assertEquals((Integer)10, criteria.getMaxAppVersion());
+        assertEquals(Sets.newHashSet("requiredGroup"), criteria.getAllOfGroups());
+        assertEquals(Sets.newHashSet("prohibitedGroup"), criteria.getNoneOfGroups());
     }
     
     @Test

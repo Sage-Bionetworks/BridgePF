@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoMpowerVisualization;
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
@@ -49,6 +50,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
+import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
@@ -259,6 +261,18 @@ public class BridgeSpringConfig {
         return DynamoUtils.getMapper(DynamoSurveyElement.class, bridgeConfig, client);
     }
 
+    @Bean(name = "criteriaMapper")
+    @Autowired
+    public DynamoDBMapper criteriaMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoCriteria.class, bridgeConfig, client);
+    }
+    
+    @Bean(name = "schedulePlanMapper")
+    @Autowired
+    public DynamoDBMapper schedulePlanMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoSchedulePlan.class, bridgeConfig, client);
+    }
+    
     @Bean(name = "healthDataHealthCodeIndex")
     @Autowired
     public DynamoIndexHelper healthDataHealthCodeIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {

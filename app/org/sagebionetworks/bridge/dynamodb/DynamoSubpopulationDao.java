@@ -11,10 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -32,6 +34,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     
     private DynamoDBMapper mapper;
     private StudyConsentDao studyConsentDao;
+    private CriteriaDao criteriaDao;
 
     @Resource(name = "subpopulationDdbMapper")
     final void setMapper(DynamoDBMapper mapper) {
@@ -41,6 +44,11 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Autowired
     final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
+    }
+    
+    @Autowired
+    final void setCriteriaDao(CriteriaDao criteriaDao) {
+        this.criteriaDao = criteriaDao;
     }
     
     @Override
@@ -55,7 +63,10 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             throw new BadRequestException("Subpopulation does not appear to be new (includes version number).");
         }
         
-        // these are completely ignored, if submitted
+        Criteria criteria = persistCriteria(subpop);
+        subpop.setCriteria(criteria);
+        
+        // these are ignored if submitted. delete remains what it was
         subpop.setDeleted(false); 
         subpop.setDefaultGroup(false);
         mapper.save(subpop);
@@ -76,6 +87,10 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (existing == null || existing.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
+        
+        Criteria criteria = persistCriteria(subpop);
+        subpop.setCriteria(criteria);
+        
         // these are ignored if submitted. delete remains what it was
         subpop.setDefaultGroup(existing.isDefaultGroup()); 
         subpop.setDeleted(false);
@@ -99,21 +114,34 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
             return ImmutableList.of(subpop);
         }
         // Now filter out deleted subpopulations, if requested
-        return subpops.stream()
+        List<Subpopulation> subpopulations = subpops.stream()
                 .filter(subpop -> includeDeleted || !subpop.isDeleted())
-        .collect(toImmutableList());
+                .collect(toImmutableList());
+        
+        for (Subpopulation subpop : subpopulations) {
+            loadCriteria(subpop);
+        }
+        return subpopulations;
     }
     
     @Override
     public Subpopulation createDefaultSubpopulation(StudyIdentifier studyId) {
+        
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setGuidString(studyId.getIdentifier());
         subpop.setName("Default Consent Group");
-        subpop.setMinAppVersion(0);
         subpop.setDefaultGroup(true);
         // The first group is required until the study designers say otherwise
-        subpop.setRequired(true); 
+        subpop.setRequired(true);
+        
+        Criteria criteria = Criteria.create();
+        criteria.setKey(getKey(subpop));
+        criteria.setMinAppVersion(0);
+        
+        criteria = criteriaDao.createOrUpdateCriteria(criteria);
+        subpop.setCriteria(criteria);
+        
         mapper.save(subpop);
         return subpop;
     }
@@ -128,15 +156,18 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (subpop == null) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
+        loadCriteria(subpop);
+        
         return subpop;
     }
 
     @Override
     public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
+        // criteria are loaded by this method
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true, false);
-        
+
         return subpops.stream().filter(subpop -> {
-            return CriteriaUtils.matchCriteria(context, subpop);
+            return CriteriaUtils.matchCriteria(context, subpop.getCriteria());
         }).collect(toImmutableList());
     }
     
@@ -149,8 +180,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (subpop.isDefaultGroup()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }
-        studyConsentDao.deleteAllConsents(subpopGuid);
         if (physicalDelete) {
+            studyConsentDao.deleteAllConsents(subpopGuid);
+            criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
             mapper.delete(subpop);
         } else {
             subpop.setDeleted(true);
@@ -164,9 +196,31 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
                 studyConsentDao.deleteAllConsents(subpop.getGuid());
+                criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
             }
             List<FailedBatch> failures = mapper.batchDelete(subpops);
             BridgeUtils.ifFailuresThrowException(failures);
         }
+    }
+    
+    private String getKey(Subpopulation subpop) {
+        return "subpopulation:" + subpop.getGuidString();
+    }
+    
+    private Criteria persistCriteria(Subpopulation subpop) {
+        Criteria criteria = subpop.getCriteria();
+        criteria.setKey(getKey(subpop));
+        return criteriaDao.createOrUpdateCriteria(criteria);
+    }
+
+    private void loadCriteria(Subpopulation subpop) {
+        Criteria criteria = criteriaDao.getCriteria(getKey(subpop));
+        // Not sure this is even possible at this point. But if the original save did not completely succeed, 
+        // this will prevent errors and the user will be able to redo criteria (if any).
+        if (criteria == null) {
+            criteria = Criteria.create();
+        }
+        criteria.setKey(getKey(subpop));
+        subpop.setCriteria(criteria);
     }
 }

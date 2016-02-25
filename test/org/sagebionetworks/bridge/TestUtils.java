@@ -22,10 +22,12 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -41,8 +43,6 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.play.modules.BridgeProductionSpringContextModule;
 import org.sagebionetworks.bridge.play.modules.BridgeTestSpringContextModule;
 import org.sagebionetworks.bridge.runnable.FailableRunnable;
@@ -304,15 +304,6 @@ public class TestUtils {
         return plan;
     }
     
-    /**
-     * A convenience for finding a completed survey object for tests.
-     * @param makeNew
-     * @return
-     */
-    public static Survey getSurvey(boolean makeNew) {
-        return new TestSurvey(makeNew);
-    }
-    
     public static Schedule getSchedule(String label) {
         Activity activity = new Activity.Builder().withLabel("Test survey")
                         .withSurvey("identifier", "ABC", TEST_CREATED_ON).build();
@@ -331,5 +322,34 @@ public class TestUtils {
             set.add(i.next());
         }
         return set;
+    }
+    
+    /**
+     * Converts single quote marks to double quote marks to convert JSON using single quotes to valid JSON. 
+     * Useful to create more readable inline JSON in tests, because double quotes must be escaped in Java.
+     */
+    public static String createJson(String json) {
+        return json.replaceAll("'", "\"");
+    }
+    
+    public static Criteria createCriteria(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
+        DynamoCriteria crit = new DynamoCriteria();
+        crit.setMinAppVersion(minAppVersion);
+        crit.setMaxAppVersion(maxAppVersion);
+        crit.setAllOfGroups(allOfGroups);
+        crit.setNoneOfGroups(noneOfGroups);
+        return crit;
+    }
+    
+    public static Criteria copyCriteria(Criteria criteria) {
+        DynamoCriteria crit = new DynamoCriteria();
+        if (criteria != null) {
+            crit.setKey(criteria.getKey());
+            crit.setMinAppVersion(criteria.getMinAppVersion());
+            crit.setMaxAppVersion(criteria.getMaxAppVersion());
+            crit.setNoneOfGroups(criteria.getNoneOfGroups());
+            crit.setAllOfGroups(criteria.getAllOfGroups());
+        }
+        return crit;
     }
  }
