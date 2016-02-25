@@ -80,6 +80,10 @@ public class DynamoSubpopulationDaoMockTest {
         criteria.setAllOfGroups(ALL_OF_GROUPS);
         criteria.setNoneOfGroups(NONE_OF_GROUPS);
         when(criteriaDao.getCriteria(any())).thenReturn(criteria);
+        
+        when(criteriaDao.createOrUpdateCriteria(any())).thenAnswer(invocation -> {
+            return invocation.getArgumentAt(0, Criteria.class);
+        });
     }
     
     @Test
