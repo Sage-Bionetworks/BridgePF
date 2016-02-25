@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,10 +36,10 @@ public final class User implements BridgeEntity {
     private SharingScope sharingScope;
     private Set<Roles> roles = Sets.newHashSet();
     private Set<String> dataGroups = Sets.newHashSet();
-    private Map<SubpopulationGuid,ConsentStatus> consentStatuses;
+    private LinkedHashSet<String> languages = Sets.newLinkedHashSet();
+    private Map<SubpopulationGuid,ConsentStatus> consentStatuses = ImmutableMap.of();
 
     public User() {
-        this.consentStatuses = ImmutableMap.of();
     }
 
     public User(Account account) {
@@ -128,6 +129,14 @@ public final class User implements BridgeEntity {
     public void setDataGroups(Set<String> dataGroups) {
         this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
     }
+    
+    public LinkedHashSet<String> getLanguages() {
+        return languages;
+    }
+    
+    public void setLanguages(LinkedHashSet<String> languages) {
+        this.languages = languages;
+    }
 
     public SharingScope getSharingScope() {
         return sharingScope;
@@ -187,12 +196,13 @@ public final class User implements BridgeEntity {
                 && Objects.equal(id, other.id) && Objects.equal(roles, other.roles)
                 && Objects.equal(sharingScope, other.sharingScope) && Objects.equal(studyKey, other.studyKey)
                 && Objects.equal(dataGroups, other.dataGroups)
-                && Objects.equal(consentStatuses, other.consentStatuses));
+                && Objects.equal(consentStatuses, other.consentStatuses)
+                && Objects.equal(languages, other.languages));
     }
 
     @Override
     public String toString() {
-        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, dataGroups=%s, consentStatuses=%s]", 
-                email, firstName, lastName, id, roles, sharingScope, studyKey, dataGroups, consentStatuses);
+        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, dataGroups=%s, consentStatuses=%s, languages=%s]", 
+                email, firstName, lastName, id, roles, sharingScope, studyKey, dataGroups, consentStatuses, languages);
     }
 }

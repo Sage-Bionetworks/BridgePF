@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
@@ -310,7 +311,8 @@ public class AuthenticationService {
         
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
-        
+        user.setLanguages(optionsService.getOrderedStringSet(healthCode, LANGUAGES));
+
         // Now that we have more information about the user, we can update the context
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)

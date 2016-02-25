@@ -154,4 +154,5 @@ public class DynamoParticipantOptionsDaoTest {
         optionsDao.deleteAllParticipantOptions(healthCode+"2");
         optionsDao.deleteAllParticipantOptions(healthCode+"3");
     }
+
 }

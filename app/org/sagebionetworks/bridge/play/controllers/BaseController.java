@@ -165,6 +165,21 @@ public abstract class BaseController extends Controller {
     }
 
     /**
+     * Once we acquire a language for a user, we save it and use that language going forward. Changing their 
+     * language in the host operating system will not change the language they are using, which might change 
+     * their consent to participate in researcher. If they change their language by updating their UserProfile, 
+     * then they may have to reconsent in the new language they are using for the study. Any warnings to 
+     * that effect will need to be included in the application.
+     */
+    LinkedHashSet<String> getLanguages(UserSession session) {
+        if (!session.getUser().getLanguages().isEmpty()) {
+            return session.getUser().getLanguages();
+        }
+        LinkedHashSet<String> languages = getLanguagesFromAcceptLanguageHeader();
+        return languages;
+    }
+    
+    /**
      * Returns languages in the order of their quality rating in the original LanguageRange objects 
      * that are created from the Accept-Language header (first item in ordered set is the most-preferred 
      * language option).
