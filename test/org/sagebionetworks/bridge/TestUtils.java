@@ -40,8 +40,6 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 import play.mvc.Http;
 
@@ -284,15 +282,6 @@ public class TestUtils {
         plan.setStrategy(strategy);
         
         return plan;
-    }
-    
-    /**
-     * A convenience for finding a completed survey object for tests.
-     * @param makeNew
-     * @return
-     */
-    public static Survey getSurvey(boolean makeNew) {
-        return new TestSurvey(makeNew);
     }
     
     public static Schedule getSchedule(String label) {

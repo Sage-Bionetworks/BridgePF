@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 import com.google.common.collect.Sets;
 
@@ -61,9 +62,9 @@ public class SchedulePlanServiceMockTest {
         service.setSchedulePlanDao(mockSchedulePlanDao);
         service.setSurveyService(mockSurveyService);
         
-        Survey survey1 = TestUtils.getSurvey(false);
+        Survey survey1 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey1.setIdentifier("identifier1");
-        Survey survey2 = TestUtils.getSurvey(false);
+        Survey survey2 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey2.setIdentifier("identifier2");
         when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(), any())).thenReturn(survey1);
         when(mockSurveyService.getSurvey(any())).thenReturn(survey2);

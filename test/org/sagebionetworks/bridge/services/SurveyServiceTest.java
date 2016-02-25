@@ -60,7 +60,7 @@ public class SurveyServiceTest {
 
     @Before
     public void before() {
-        testSurvey = new TestSurvey(true);
+        testSurvey = new TestSurvey(SurveyServiceTest.class, true);
         surveysToDelete = new HashSet<>();
     }
 
@@ -304,12 +304,12 @@ public class SurveyServiceTest {
     @Test
     public void canGetAllSurveys() throws Exception {
         Set<GuidCreatedOnVersionHolderImpl> mostRecentVersionSurveys = new HashSet<>();
-        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
-        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
-        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
-        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true))));
 
-        Survey survey = surveyService.createSurvey(new TestSurvey(true));
+        Survey survey = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         Survey nextVersion = surveyService.versionSurvey(survey);
@@ -339,7 +339,7 @@ public class SurveyServiceTest {
     @Test
     public void canRetrieveMostRecentlyPublishedSurveysWithManyVersions() throws Exception {
         // Version 1.
-        Survey survey1 = surveyService.createSurvey(new TestSurvey(true));
+        Survey survey1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
 
         // Version 2.
@@ -387,15 +387,15 @@ public class SurveyServiceTest {
 
     @Test
     public void canRetrieveMostRecentPublishedSurveysWithManySurveys() throws Exception {
-        Survey survey1 = surveyService.createSurvey(new TestSurvey(true));
+        Survey survey1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
         surveyService.publishSurvey(TEST_STUDY, survey1);
 
-        Survey survey2 = surveyService.createSurvey(new TestSurvey(true));
+        Survey survey2 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
         surveyService.publishSurvey(TEST_STUDY, survey2);
 
-        Survey survey3 = surveyService.createSurvey(new TestSurvey(true));
+        Survey survey3 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
         surveyService.publishSurvey(TEST_STUDY, survey3);
 
@@ -411,7 +411,7 @@ public class SurveyServiceTest {
 
     @Test
     public void validationInfoScreen() {
-        Survey survey = new TestSurvey(true);
+        Survey survey = new TestSurvey(SurveyServiceTest.class, true);
         
         DynamoSurveyInfoScreen screen = new DynamoSurveyInfoScreen();
         screen.setImage(new Image("/path/to/source.gif", 0, 0)); // very wrong

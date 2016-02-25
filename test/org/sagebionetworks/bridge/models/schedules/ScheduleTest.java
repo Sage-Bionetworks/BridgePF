@@ -114,7 +114,7 @@ public class ScheduleTest {
         Schedule schedule = new Schedule();
         assertFalse(schedule.getPersistent()); // safe to do this before anything else.
         
-        Survey survey = new TestSurvey(false);
+        Survey survey = new TestSurvey(ScheduleTest.class, false);
         Activity activity = new Activity.Builder().withLabel("Test").withSurvey(survey.getIdentifier(),
                         survey.getGuid(), new DateTime(survey.getCreatedOn())).build();
         schedule.addActivity(activity);
@@ -140,7 +140,7 @@ public class ScheduleTest {
     @Test
     public void scheduleWithDelayNotPersistent() {
         Schedule schedule = new Schedule();
-        Survey survey = new TestSurvey(false);
+        Survey survey = new TestSurvey(ScheduleTest.class, false);
         Activity activity = new Activity.Builder().withLabel("Test").withSurvey(survey.getIdentifier(),
                         survey.getGuid(), new DateTime(survey.getCreatedOn())).build();
         schedule.addActivity(activity);

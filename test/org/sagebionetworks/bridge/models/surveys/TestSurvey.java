@@ -165,10 +165,10 @@ public class TestSurvey extends DynamoSurvey {
         }
     };
     
-    public TestSurvey(boolean makeNew) {
+    public TestSurvey(Class<?> cls, boolean makeNew) {
         setGuid(UUID.randomUUID().toString());
         setName("General Blood Pressure Survey");
-        setIdentifier(TestUtils.randomName(TestSurvey.class));
+        setIdentifier(TestUtils.randomName(cls));
         setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         setVersion(2L);
