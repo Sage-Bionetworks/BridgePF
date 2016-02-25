@@ -82,8 +82,9 @@ public class DynamoSchedulePlanDaoTest {
         String output = mapping.writeValueAsString(abPlan);
         
         SchedulePlan newPlan = mapping.readValue(output, SchedulePlan.class);
+        newPlan.setStudyKey(abPlan.getStudyKey()); // not serialized
         
-        assertEquals("Schedule plans are equal", abPlan.hashCode(), newPlan.hashCode());
+        assertEquals("Schedule plans are equal", abPlan, newPlan);
     }
     
     @Test
@@ -117,7 +118,7 @@ public class DynamoSchedulePlanDaoTest {
         // Get it from DynamoDB
         SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(studyIdentifier, abPlan.getGuid());
         assertEquals("Schedule plan contains correct strategy class type", SimpleScheduleStrategy.class, newPlan.getStrategy().getClass());
-        assertEquals("The strategy has been updated", simplePlan.getStrategy().hashCode(), newPlan.getStrategy().hashCode());
+        assertEquals("The strategy has been updated", simplePlan.getStrategy(), newPlan.getStrategy());
         
         // delete, throws exception
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, newPlan.getGuid());

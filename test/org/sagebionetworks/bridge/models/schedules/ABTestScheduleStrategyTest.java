@@ -80,6 +80,7 @@ public class ABTestScheduleStrategyTest {
 
         JsonNode node = MAPPER.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
+        newPlan.setStudyKey(plan.getStudyKey()); // not serialized.
 
         assertEquals("Plan with AB testing strategy was serialized/deserialized", plan, newPlan);
 

@@ -34,7 +34,6 @@ public final class DynamoSchedulePlan implements SchedulePlan {
 
     private static final String GUID_PROPERTY = "guid";
     private static final String LABEL_PROPERTY = "label";
-    private static final String STUDY_KEY_PROPERTY = "studyKey";
     private static final String MODIFIED_ON_PROPERTY = "modifiedOn";
     private static final String STRATEGY_PROPERTY = "strategy";
     private static final String VERSION_PROPERTY = "version";
@@ -55,7 +54,6 @@ public final class DynamoSchedulePlan implements SchedulePlan {
         plan.setGuid(JsonUtils.asText(node, GUID_PROPERTY));
         plan.setLabel(JsonUtils.asText(node, LABEL_PROPERTY));
         plan.setModifiedOn(JsonUtils.asMillisSinceEpoch(node, MODIFIED_ON_PROPERTY));
-        plan.setStudyKey(JsonUtils.asText(node, STUDY_KEY_PROPERTY));
         plan.setData(JsonUtils.asObjectNode(node, STRATEGY_PROPERTY));
         plan.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
         plan.setMinAppVersion(JsonUtils.asInt(node, MIN_APP_VERSION_PROPERTY));
@@ -64,6 +62,7 @@ public final class DynamoSchedulePlan implements SchedulePlan {
     }
 
     @Override
+    @JsonIgnore
     @DynamoDBHashKey
     public String getStudyKey() {
         return studyKey;
