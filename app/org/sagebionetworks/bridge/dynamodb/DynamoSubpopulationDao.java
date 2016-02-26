@@ -126,7 +126,6 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     
     @Override
     public Subpopulation createDefaultSubpopulation(StudyIdentifier studyId) {
-        
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setGuidString(studyId.getIdentifier());

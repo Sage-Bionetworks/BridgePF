@@ -13,8 +13,6 @@ import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_REQUEST_METHOD;
 import static play.mvc.Http.HeaderNames.ORIGIN;
 import static play.mvc.Http.HeaderNames.REFERER;
 import static play.mvc.Http.HeaderNames.X_FORWARDED_PROTO;
-import static play.test.Helpers.running;
-import static play.test.Helpers.testServer;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,60 +23,52 @@ import play.libs.ws.WS;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 
+import org.sagebionetworks.bridge.TestUtils;
+
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ApplicationControllerTest {
-
     @Test
     public void testPreflight() {
-        running(testServer(3333), new Runnable() {
-            @Override
-            public void run() {
-                WSRequest request = WS.url(TEST_BASE_URL + "/anything")
-                        .setHeader(ACCESS_CONTROL_REQUEST_HEADERS, "accept, content-type")
-                        .setHeader(ACCESS_CONTROL_REQUEST_METHOD, "POST")
-                        .setHeader(ORIGIN, "https://some.remote.server.org");
-                WSResponse response = request.options().get(TIMEOUT);
-                assertEquals(200, response.getStatus());
-                assertEquals("Should echo back the origin",
-                        "https://some.remote.server.org", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
-                assertEquals("Should echo back the access-control-allow-methods",
-                        "POST", response.getHeader(ACCESS_CONTROL_ALLOW_METHODS));
-                assertTrue("Should echo back the access-control-allow-request-headers",
-                        response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS).toLowerCase().contains("accept"));
-                assertTrue("Should echo back the access-control-allow-request-headers",
-                        response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS).toLowerCase().contains("content-type"));
-            }
+        TestUtils.runningTestServerWithSpring(() -> {
+            WSRequest request = WS.url(TEST_BASE_URL + "/anything")
+                    .setHeader(ACCESS_CONTROL_REQUEST_HEADERS, "accept, content-type")
+                    .setHeader(ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                    .setHeader(ORIGIN, "https://some.remote.server.org");
+            WSResponse response = request.options().get(TIMEOUT);
+            assertEquals(200, response.getStatus());
+            assertEquals("Should echo back the origin",
+                    "https://some.remote.server.org", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
+            assertEquals("Should echo back the access-control-allow-methods",
+                    "POST", response.getHeader(ACCESS_CONTROL_ALLOW_METHODS));
+            assertTrue("Should echo back the access-control-allow-request-headers",
+                    response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS).toLowerCase().contains("accept"));
+            assertTrue("Should echo back the access-control-allow-request-headers",
+                    response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS).toLowerCase().contains("content-type"));
         });
     }
 
     @Test
     public void testCors() {
-        running(testServer(3333), new Runnable() {
-            @Override
-            public void run() {
-                WSRequest request = WS.url(TEST_BASE_URL + "/")
-                        .setHeader(ORIGIN, "https://some.remote.server.org")
-                        .setHeader(REFERER, "https://some.remote.server.org");
-                WSResponse response = request.get().get(TIMEOUT);
-                assertEquals(200, response.getStatus());
-            }
+        TestUtils.runningTestServerWithSpring(() -> {
+            WSRequest request = WS.url(TEST_BASE_URL + "/")
+                    .setHeader(ORIGIN, "https://some.remote.server.org")
+                    .setHeader(REFERER, "https://some.remote.server.org");
+            WSResponse response = request.get().get(TIMEOUT);
+            assertEquals(200, response.getStatus());
         });
     }
 
     @Test
     public void testHttpRedirect() {
-        running(testServer(3333), new Runnable() {
-            @Override
-            public void run() {
-                WSRequest request = WS.url(TEST_BASE_URL + "/")
-                        .setFollowRedirects(Boolean.FALSE)
-                        .setHeader(X_FORWARDED_PROTO, "http");
-                WSResponse response = request.get().get(TIMEOUT);
-                assertEquals(301, response.getStatus());
-                assertNotNull(response.getHeader("location"));
-                assertTrue(response.getHeader("location").startsWith("https://"));
-            }
+        TestUtils.runningTestServerWithSpring(() -> {
+            WSRequest request = WS.url(TEST_BASE_URL + "/")
+                    .setFollowRedirects(Boolean.FALSE)
+                    .setHeader(X_FORWARDED_PROTO, "http");
+            WSResponse response = request.get().get(TIMEOUT);
+            assertEquals(301, response.getStatus());
+            assertNotNull(response.getHeader("location"));
+            assertTrue(response.getHeader("location").startsWith("https://"));
         });
     }
 }
