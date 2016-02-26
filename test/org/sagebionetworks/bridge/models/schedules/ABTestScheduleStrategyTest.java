@@ -47,7 +47,9 @@ public class ABTestScheduleStrategyTest {
         study = TestUtils.getValidStudy(ScheduleStrategyTest.class);
         users = Lists.newArrayList();
         for (int i = 0; i < 1000; i++) {
-            User user = new User(Integer.toString(i), "test" + i + "@sagebridge.org");
+            User user = new User();
+            user.setId(Integer.toString(i));
+            user.setEmail("test" + i + "@sagebridge.org");
             user.setHealthCode(BridgeUtils.generateGuid());
             user.setStudyKey(study.getIdentifier());
             users.add(user);

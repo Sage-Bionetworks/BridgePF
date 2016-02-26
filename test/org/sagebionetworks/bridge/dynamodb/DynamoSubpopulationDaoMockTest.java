@@ -74,12 +74,11 @@ public class DynamoSubpopulationDaoMockTest {
         doReturn(createSubpopulation()).when(mapper).load(any());
         doReturn(page).when(mapper).query(eq(DynamoSubpopulation.class), any());
         
-        Criteria criteria = Criteria.create();
-        criteria.setMinAppVersion(2);
-        criteria.setMaxAppVersion(10);
-        criteria.setAllOfGroups(ALL_OF_GROUPS);
-        criteria.setNoneOfGroups(NONE_OF_GROUPS);
+        Criteria criteria = TestUtils.createCriteria(2,  10,  ALL_OF_GROUPS, NONE_OF_GROUPS);
         when(criteriaDao.getCriteria(any())).thenReturn(criteria);
+        when(criteriaDao.createOrUpdateCriteria(any())).thenAnswer(invocation -> {
+            return invocation.getArgumentAt(0, Criteria.class);
+        });
     }
     
     @Test

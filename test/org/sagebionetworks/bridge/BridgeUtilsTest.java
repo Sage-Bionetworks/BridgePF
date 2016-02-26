@@ -52,24 +52,24 @@ public class BridgeUtilsTest {
     
     @Test
     public void commaListToSet() {
-        Set<String> set = BridgeUtils.commaListToSet("a, b , c");
-        assertEquals(Sets.newHashSet("a","b","c"), set);
+        Set<String> set = BridgeUtils.commaListToOrderedSet("a, b , c");
+        assertEquals(TestUtils.newLinkedHashSet("a","b","c"), set);
         
-        set = BridgeUtils.commaListToSet("a,b,c");
-        assertEquals(Sets.newHashSet("a","b","c"), set);
+        set = BridgeUtils.commaListToOrderedSet("a,b,c");
+        assertEquals(TestUtils.newLinkedHashSet("a","b","c"), set);
         
-        set = BridgeUtils.commaListToSet("");
-        assertEquals(Sets.newHashSet(), set);
+        set = BridgeUtils.commaListToOrderedSet("");
+        assertEquals(TestUtils.newLinkedHashSet(), set);
         
-        set = BridgeUtils.commaListToSet(null);
+        set = BridgeUtils.commaListToOrderedSet(null);
         assertNotNull(set);
         
-        set = BridgeUtils.commaListToSet(" a");
-        assertEquals(Sets.newHashSet("a"), set);
+        set = BridgeUtils.commaListToOrderedSet(" a");
+        assertEquals(TestUtils.newLinkedHashSet("a"), set);
         
         // Does not produce a null value.
-        set = BridgeUtils.commaListToSet("a,,b");
-        assertEquals(Sets.newHashSet("a","b"), set);
+        set = BridgeUtils.commaListToOrderedSet("a,,b");
+        assertEquals(TestUtils.newLinkedHashSet("a","b"), set);
     }
     
     @Test

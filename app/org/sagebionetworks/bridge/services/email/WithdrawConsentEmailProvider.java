@@ -44,7 +44,7 @@ public class WithdrawConsentEmailProvider implements MimeTypeEmailProvider {
         final String sendFromEmail = String.format("%s <%s>", study.getName(), study.getSupportEmail());
         builder.withSender(sendFromEmail);
 
-        Set<String> emailAddresses = BridgeUtils.commaListToSet(study.getConsentNotificationEmail());
+        Set<String> emailAddresses = BridgeUtils.commaListToOrderedSet(study.getConsentNotificationEmail());
         builder.withRecipients(emailAddresses);
 
         String content = String.format("<p>User %s withdrew from the study on %s. </p>", 

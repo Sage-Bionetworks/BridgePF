@@ -130,7 +130,7 @@ public class ParticipantOptionsService {
         checkNotNull(option);
         
         String value = optionsDao.getOption(healthCode, option);
-        return (value == null) ? Sets.newLinkedHashSet() : BridgeUtils.commaListToSet(value);
+        return (value == null) ? Sets.newLinkedHashSet() : BridgeUtils.commaListToOrderedSet(value);
     }
     
     /**

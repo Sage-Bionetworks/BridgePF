@@ -38,12 +38,12 @@ public class OptionLookup {
     
     public Set<String> getDataGroups(String healthCode) {
         String value = map.get(healthCode);
-        return BridgeUtils.commaListToSet(value);
+        return BridgeUtils.commaListToOrderedSet(value);
     }
 
     public LinkedHashSet<String> getLanguages(String healthCode) {
         String value = map.get(healthCode);
         // We know this implementation returns a LinkedHashSet
-        return (LinkedHashSet<String>)BridgeUtils.commaListToSet(value);
+        return (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet(value);
     }
 }

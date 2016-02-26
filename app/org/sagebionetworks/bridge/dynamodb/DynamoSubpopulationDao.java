@@ -138,7 +138,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         Criteria criteria = Criteria.create();
         criteria.setKey(getKey(subpop));
         criteria.setMinAppVersion(0);
-        
+
         criteria = criteriaDao.createOrUpdateCriteria(criteria);
         subpop.setCriteria(criteria);
         
