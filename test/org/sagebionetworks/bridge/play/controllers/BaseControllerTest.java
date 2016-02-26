@@ -13,7 +13,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
+import static org.sagebionetworks.bridge.TestUtils.newLinkedHashSet;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -24,7 +26,6 @@ import org.junit.Test;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -44,8 +45,8 @@ import com.google.common.collect.Sets;
 @SuppressWarnings("unchecked")
 public class BaseControllerTest {
     
-    private static final String DUMMY_JSON = TestUtils.createJson("{'dummy-key':'dummy-value'}");
-    private static final LinkedHashSet<String> LANGUAGE_SET = TestUtils.newLinkedHashSet("en","fr");
+    private static final String DUMMY_JSON = createJson("{'dummy-key':'dummy-value'}");
+    private static final LinkedHashSet<String> LANGUAGE_SET = newLinkedHashSet("en","fr");
 
     @Test
     public void testParseJsonFromText() {
@@ -187,11 +188,10 @@ public class BaseControllerTest {
         mockPlayContext();
         
         SchedulePlanController controller = spy(new SchedulePlanController());
-        User user = new User();
-        user.setRoles(Sets.newHashSet(Roles.RESEARCHER));
         
         UserSession session = new UserSession();
-        session.setUser(user);
+        session.getUser().setRoles(Sets.newHashSet(Roles.RESEARCHER));
+
         doReturn(session).when(controller).getAuthenticatedSession();
         
         // This method, upon confronting the fact that the user does not have this role, 
@@ -215,7 +215,7 @@ public class BaseControllerTest {
         
         langs = controller.getLanguagesFromAcceptLanguageHeader();
             
-        LinkedHashSet<String> set = TestUtils.newLinkedHashSet("en","de");
+        LinkedHashSet<String> set = newLinkedHashSet("en","de");
         assertEquals(set, langs);
 
         mockHeader(ACCEPT_LANGUAGE, null);
@@ -240,9 +240,7 @@ public class BaseControllerTest {
         BaseController controller = new SchedulePlanController();
         
         UserSession session = new UserSession();
-        User user = new User();
-        user.setLanguages(LANGUAGE_SET);
-        session.setUser(user);
+        session.getUser().setLanguages(LANGUAGE_SET);
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertEquals(LANGUAGE_SET, languages);
@@ -263,10 +261,9 @@ public class BaseControllerTest {
         
         UserSession session = new UserSession();
         session.setStudyIdentifier(TEST_STUDY);
-        User user = new User();
+        User user = session.getUser();
         user.setHealthCode("AAA");
         user.setLanguages(Sets.newLinkedHashSet());
-        session.setUser(user);
         
         // Verify as well that the values retrieved from the header have been saved in session and ParticipantOptions table.
         LinkedHashSet<String> languages = controller.getLanguages(session);
@@ -288,8 +285,6 @@ public class BaseControllerTest {
         controller.setCacheProvider(cacheProvider);
         
         UserSession session = new UserSession();
-        User user = new User();
-        user.setLanguages(Sets.newLinkedHashSet());
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());

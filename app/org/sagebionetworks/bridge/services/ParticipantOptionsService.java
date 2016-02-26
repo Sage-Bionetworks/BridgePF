@@ -136,12 +136,14 @@ public class ParticipantOptionsService {
     /**
      * Set a string set preserving the order the keys were inserted into the set.
      */
-    public void setOrderedStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, LinkedHashSet<String> value) {
+    public void setOrderedStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option,
+            LinkedHashSet<String> value) {
         setStringSet(studyIdentifier, healthCode, option, value);
     }
     
     /**
-     * Get a String set with the keys in the original order they were inserted, or in the order they are reprsented in a JSON array.
+     * Get a String set with the keys in the original order they were inserted, 
+     * or in the order they are represented in a JSON array.
      */
     public LinkedHashSet<String> getOrderedStringSet(String healthCode, ParticipantOption option) {
         return (LinkedHashSet<String>)getStringSet(healthCode, option);
