@@ -41,6 +41,7 @@ public class DynamoCriteriaDaoTest {
     public void canCrudCriteria() {
         Criteria criteria = Criteria.create();
         criteria.setKey("key");
+        criteria.setLanguage("de");
         criteria.setMinAppVersion(2);
         criteria.setMaxAppVersion(8);
         criteria.setAllOfGroups(ALL_OF_GROUPS);
@@ -48,6 +49,7 @@ public class DynamoCriteriaDaoTest {
         
         Criteria result = criteriaDao.createOrUpdateCriteria(criteria);
         assertEquals("key", result.getKey());
+        assertEquals("de", result.getLanguage());
         assertEquals(new Integer(2), result.getMinAppVersion());
         assertEquals(new Integer(8), result.getMaxAppVersion());
         assertEquals(ALL_OF_GROUPS, result.getAllOfGroups());
@@ -55,6 +57,7 @@ public class DynamoCriteriaDaoTest {
         
         Criteria retrieved = criteriaDao.getCriteria("key");
         assertEquals("key", retrieved.getKey());
+        assertEquals("de", retrieved.getLanguage());
         assertEquals(new Integer(2), retrieved.getMinAppVersion());
         assertEquals(new Integer(8), retrieved.getMaxAppVersion());
         assertEquals(ALL_OF_GROUPS, retrieved.getAllOfGroups());
@@ -62,11 +65,13 @@ public class DynamoCriteriaDaoTest {
         
         // Try nullifying this, setting a property
         criteria.setAllOfGroups(null);
+        criteria.setLanguage(null);
         criteria.setMinAppVersion(4);
         criteriaDao.createOrUpdateCriteria(criteria);
         
         retrieved = criteriaDao.getCriteria("key");
         assertEquals(new Integer(4), retrieved.getMinAppVersion());
+        assertNull(retrieved.getLanguage());
         assertTrue(retrieved.getAllOfGroups().isEmpty());
         
         criteriaDao.deleteCriteria("key");
@@ -81,9 +86,11 @@ public class DynamoCriteriaDaoTest {
         Criteria criteria = Criteria.create();
         criteria.setKey("key1");
         criteria.setMinAppVersion(12);
+        criteria.setLanguage("fr");
         
         Criteria newCriteria = TestUtils.copyCriteria(criteria);
-        assertEquals(criteria.getMinAppVersion(), newCriteria.getMinAppVersion());
+        assertEquals(new Integer(12), newCriteria.getMinAppVersion());
+        assertEquals("fr", newCriteria.getLanguage());
     }
 
 }

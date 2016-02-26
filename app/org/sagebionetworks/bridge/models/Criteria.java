@@ -20,6 +20,9 @@ public interface Criteria extends BridgeEntity {
     String getKey();
     void setKey(String key);
     
+    String getLanguage();
+    void setLanguage(String language);
+    
     /**
      * The object associated with these criteria should be matched only if the application version 
      * supplied by the client is equal to or greater than the minAppVersion. If null, there is no 

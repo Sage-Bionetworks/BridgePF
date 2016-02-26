@@ -345,6 +345,7 @@ public class TestUtils {
         DynamoCriteria crit = new DynamoCriteria();
         if (criteria != null) {
             crit.setKey(criteria.getKey());
+            crit.setLanguage(criteria.getLanguage());
             crit.setMinAppVersion(criteria.getMinAppVersion());
             crit.setMaxAppVersion(criteria.getMaxAppVersion());
             crit.setNoneOfGroups(criteria.getNoneOfGroups());

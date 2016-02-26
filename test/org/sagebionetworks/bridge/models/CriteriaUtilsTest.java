@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.junit.Test;
@@ -116,12 +117,15 @@ public class CriteriaUtilsTest {
         // Here's an implementation that allows these fields to be null
         Criteria criteria = new Criteria() {
             private String key;
+            private String language;
             private Integer minAppVersion;
             private Integer maxAppVersion;
             private Set<String> allOfGroups;
             private Set<String> noneOfGroups;
             public void setKey(String key) { this.key = key; }
             public String getKey() { return key; }
+            public void setLanguage(String language) { this.language = language; }
+            public String getLanguage() { return language; }
             public void setMinAppVersion(Integer minAppVersion) { this.minAppVersion = minAppVersion; }
             public Integer getMinAppVersion() { return minAppVersion; }
             public void setMaxAppVersion(Integer maxAppVersion) { this.maxAppVersion = maxAppVersion; }
@@ -156,6 +160,39 @@ public class CriteriaUtilsTest {
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("includes these prohibited data groups: "));
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group2"));
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group3"));
+    }
+    
+    @Test
+    public void matchesLanguage() {
+        // If a language is declared, the user has to match it.
+        Criteria criteria = criteria(KEY, EMPTY_SET, EMPTY_SET, -2, null);
+        criteria.setLanguage("en");
+        
+        // Requires English, user declares English, it matches
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withLanguages(set("en")).build();
+        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+        
+        // Requires English, user declares Spanish, it does not match
+        context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withLanguages(set("es")).build();
+        assertFalse(CriteriaUtils.matchCriteria(context, criteria));
+        
+        // Doesn't require a language, so we do not care about the user's language to select this
+        criteria.setLanguage(null);
+        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+        
+        // Requires English, but the user declares no language, this does NOT match.
+        criteria.setLanguage("en");
+        context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withLanguages(new LinkedHashSet<String>()).build();
+        assertFalse(CriteriaUtils.matchCriteria(context, criteria));
+    }
+    
+    private LinkedHashSet<String> set(String lang) {
+        LinkedHashSet<String> langs = new LinkedHashSet<>();
+        langs.add(lang);
+        return langs;
     }
     
     private CriteriaContext getContext() {
