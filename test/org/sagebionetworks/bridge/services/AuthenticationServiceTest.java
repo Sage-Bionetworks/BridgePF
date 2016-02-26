@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -31,6 +32,7 @@ import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -381,12 +383,7 @@ public class AuthenticationServiceTest {
             
             // Signing in should still work to create a consented user.
             Study study = studyService.getStudy(user.getStudyIdentifier());
-            
-            CriteriaContext context = new CriteriaContext.Builder()
-                    .withHealthCode(user.getUser().getHealthCode())
-                    .withStudyIdentifier(study.getStudyIdentifier())
-                    .withUserDataGroups(testUser.getUser().getDataGroups())
-                    .build();
+            CriteriaContext context = testUser.getCriteriaContext();
             
             UserSession session = authService.signIn(study, context, user.getSignIn());
             
@@ -396,6 +393,29 @@ public class AuthenticationServiceTest {
                 UserConsent consent  = userConsentDao.getActiveUserConsent(session.getUser().getHealthCode(), SubpopulationGuid.create(status.getSubpopulationGuid()));
                 assertTrue(consent.getSignedOn() > 0L);
             }
+        } finally {
+            helper.deleteUser(user);
+        }
+    }
+    
+    @Test
+    public void existingLanguagePreferencesAreLoaded() {
+        LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","es");
+        
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(true).withSignIn(true).build();
+        try {
+            String healthCode = user.getUser().getHealthCode();
+            optionsService.setOrderedStringSet(
+                    user.getStudyIdentifier(), healthCode, ParticipantOption.LANGUAGES, LANGS);
+
+            authService.signOut(user.getSession());
+            
+            Study study = studyService.getStudy(user.getStudyIdentifier());
+            CriteriaContext context = testUser.getCriteriaContext();
+            
+            UserSession session = authService.signIn(study, context, user.getSignIn());
+            assertEquals(LANGS, session.getUser().getLanguages());
         } finally {
             helper.deleteUser(user);
         }

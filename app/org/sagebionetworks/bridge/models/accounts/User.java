@@ -135,7 +135,7 @@ public final class User implements BridgeEntity {
     }
     
     public void setLanguages(LinkedHashSet<String> languages) {
-        this.languages = languages;
+        this.languages = (languages == null) ? Sets.newLinkedHashSet() : languages;
     }
 
     public SharingScope getSharingScope() {

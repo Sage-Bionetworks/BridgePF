@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
@@ -196,16 +197,12 @@ public class ParticipantOptionsServiceTest {
     @Test
     public void canSetLinkedHashSet() {
         when(mockDao.getOption("AAA", ParticipantOption.LANGUAGES)).thenReturn("en,fr");
-        // Default should be "en"
         LinkedHashSet<String> langs = service.getOrderedStringSet("AAA", ParticipantOption.LANGUAGES);
         Iterator<String> i = langs.iterator();
         assertEquals("en", i.next());
         assertEquals("fr", i.next());
         
-        langs = Sets.newLinkedHashSet();
-        langs.add("fr");
-        langs.add("en");
-        langs.add("kl");
+        langs = TestUtils.newLinkedHashSet("fr","en","kl");
         
         service.setOrderedStringSet(TEST_STUDY, HEALTH_CODE, LANGUAGES, langs);
         
