@@ -7,6 +7,7 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.Criteria;
@@ -30,26 +31,25 @@ public class DynamoCriteriaTest {
 
     @Test
     public void canSerialize() throws Exception {
-        Criteria criteria = Criteria.create();
+        Criteria criteria = TestUtils.createCriteria(2, 8, SET_A, SET_B);
         criteria.setKey("subpopulation:AAA");
-        criteria.setMinAppVersion(2);
-        criteria.setMaxAppVersion(8);
-        criteria.setAllOfGroups(SET_A);
-        criteria.setNoneOfGroups(SET_B);
+        criteria.setLanguage("fr");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(criteria);
         assertEquals(2, node.get("minAppVersion").asInt());
         assertEquals(8, node.get("maxAppVersion").asInt());
+        assertEquals("fr", node.get("language").asText());
         assertEquals(SET_A, JsonUtils.asStringSet(node, "allOfGroups"));
         assertEquals(SET_B, JsonUtils.asStringSet(node, "noneOfGroups"));
         assertEquals("Criteria", node.get("type").asText());
         assertNull(node.get("key"));
         
-        String json = makeJson("{'minAppVersion':2,'maxAppVersion':8,'allOfGroups':['a','b'],'noneOfGroups':['c','d']}");
+        String json = makeJson("{'minAppVersion':2,'maxAppVersion':8,'language':'de','allOfGroups':['a','b'],'noneOfGroups':['c','d']}");
         
         Criteria crit = BridgeObjectMapper.get().readValue(json, Criteria.class);
         assertEquals(new Integer(2), crit.getMinAppVersion());
         assertEquals(new Integer(8), crit.getMaxAppVersion());
+        assertEquals("de", crit.getLanguage());
         assertEquals(SET_A, crit.getAllOfGroups());
         assertEquals(SET_B, crit.getNoneOfGroups());
         assertNull(crit.getKey());
