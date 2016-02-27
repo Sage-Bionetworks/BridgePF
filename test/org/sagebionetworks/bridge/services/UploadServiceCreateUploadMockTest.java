@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -167,7 +168,7 @@ public class UploadServiceCreateUploadMockTest {
 
     private void testUpload() {
         // execute and validate
-        UploadSession uploadSession = svc.createUpload(TEST_USER, uploadRequest);
+        UploadSession uploadSession = svc.createUpload(TestConstants.TEST_STUDY, TEST_USER, uploadRequest);
         assertEquals(TEST_UPLOAD_ID, uploadSession.getId());
         assertEquals(TEST_PRESIGNED_URL, uploadSession.getUrl());
 
