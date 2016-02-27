@@ -71,8 +71,8 @@ public class WithdrawConsentEmailProviderTest {
         
         List<String> recipients = email.getRecipientAddresses();
         assertEquals(2, recipients.size());
-        assertEquals("a@a.com", recipients.get(1));
-        assertEquals("b@b.com", recipients.get(0));
+        assertEquals("a@a.com", recipients.get(0));
+        assertEquals("b@b.com", recipients.get(1));
         
         String sender = email.getSenderAddress();
         assertEquals("\"Study Name\" <c@c.com>", sender);

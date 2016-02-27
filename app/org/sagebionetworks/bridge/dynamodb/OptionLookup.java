@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,7 +38,12 @@ public class OptionLookup {
     
     public Set<String> getDataGroups(String healthCode) {
         String value = map.get(healthCode);
-        return BridgeUtils.commaListToSet(value);
+        return BridgeUtils.commaListToOrderedSet(value);
     }
 
+    public LinkedHashSet<String> getLanguages(String healthCode) {
+        String value = map.get(healthCode);
+        // We know this implementation returns a LinkedHashSet
+        return (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet(value);
+    }
 }

@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -352,5 +353,17 @@ public class TestUtils {
             crit.setAllOfGroups(criteria.getAllOfGroups());
         }
         return crit;
+    }
+    
+    /**
+     * Guava does not have a version of this method that also lets you add items.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> LinkedHashSet<T> newLinkedHashSet(T... items) {
+        LinkedHashSet<T> set = new LinkedHashSet<T>();
+        for (T item : items) {
+            set.add(item);
+        }
+        return set;
     }
  }

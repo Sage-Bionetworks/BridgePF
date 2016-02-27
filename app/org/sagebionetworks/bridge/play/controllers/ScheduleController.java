@@ -71,7 +71,7 @@ public class ScheduleController extends BaseController {
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
 
         ScheduleContext context = new ScheduleContext.Builder()
-                .withLanguages(getLanguagesFromAcceptLanguageHeader())
+                .withLanguages(getLanguages(session))
                 .withStudyIdentifier(studyId)
                 .withHealthCode(session.getUser()
                 .getHealthCode()).withClientInfo(clientInfo).build();

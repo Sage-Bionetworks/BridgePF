@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
 
 public class UserSessionInfoTest {
 
@@ -30,10 +31,10 @@ public class UserSessionInfoTest {
         user.setLastName("last name");
         user.setHealthCode("healthCode");
         user.setId("user-identifier");
-        user.getRoles().add(RESEARCHER);
+        user.setRoles(Sets.newHashSet(RESEARCHER));
         user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         user.setStudyKey("study-identifier");
-        user.getDataGroups().add("foo");
+        user.setDataGroups(Sets.newHashSet("foo"));
         
         UserSession session = new UserSession();
         session.setAuthenticated(true);

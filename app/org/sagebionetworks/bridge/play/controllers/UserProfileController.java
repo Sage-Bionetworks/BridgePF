@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.UserProfileService;
 import org.sagebionetworks.bridge.validators.DataGroupsValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -36,8 +35,6 @@ public class UserProfileController extends BaseController {
     
     private UserProfileService userProfileService;
     
-    private ParticipantOptionsService optionsService;
-    
     private ConsentService consentService;
     
     private ViewCache viewCache;
@@ -45,10 +42,6 @@ public class UserProfileController extends BaseController {
     @Autowired
     public final void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
-    }
-    @Autowired
-    public final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
     }
     @Autowired
     public final void setViewCache(ViewCache viewCache) {
@@ -101,7 +94,8 @@ public class UserProfileController extends BaseController {
     public Result getDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
         
-        Set<String> dataGroups = optionsService.getStringSet(session.getUser().getHealthCode(), DATA_GROUPS);
+        Set<String> dataGroups = optionsService.getStringSet(
+                session.getUser().getHealthCode(), DATA_GROUPS);
         
         return okResult(new DataGroups(dataGroups));
     }

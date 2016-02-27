@@ -91,7 +91,7 @@ public class StudyValidator implements Validator {
     }
     
     private void validateEmails(Errors errors, String value, String fieldName) {
-        Set<String> emails = BridgeUtils.commaListToSet(value);
+        Set<String> emails = BridgeUtils.commaListToOrderedSet(value);
         for (String email : emails) {
             if (!EmailValidator.getInstance().isValid(email)) {
                 errors.rejectValue(fieldName, fieldName + " '%s' is not a valid email address", new Object[]{email}, null);

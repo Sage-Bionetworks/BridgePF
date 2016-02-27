@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
@@ -310,10 +311,18 @@ public class AuthenticationService {
         
         user.setSharingScope(optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(optionsService.getStringSet(healthCode, DATA_GROUPS));
+        user.setLanguages(optionsService.getOrderedStringSet(healthCode, LANGUAGES));
+
+        // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
+        // from the context, add it to the user/session, and persist it.
+        if (user.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
+            user.setLanguages(context.getLanguages());
+            optionsService.setOrderedStringSet(study, healthCode, LANGUAGES, context.getLanguages());
+        }
         
-        // Now that we have more information about the user, we can update the context
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)
+                .withLanguages(user.getLanguages())
                 .withHealthCode(user.getHealthCode())
                 .withUserDataGroups(user.getDataGroups())
                 .build();

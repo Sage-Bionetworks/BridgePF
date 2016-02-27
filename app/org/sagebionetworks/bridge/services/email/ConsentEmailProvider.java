@@ -71,7 +71,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         builder.withSender(sendFromEmail);
 
         // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
-        Set<String> recipients = BridgeUtils.commaListToSet(study.getConsentNotificationEmail());
+        Set<String> recipients = BridgeUtils.commaListToOrderedSet(study.getConsentNotificationEmail());
         builder.withRecipients(recipients);
         builder.withRecipient(user.getEmail());
 

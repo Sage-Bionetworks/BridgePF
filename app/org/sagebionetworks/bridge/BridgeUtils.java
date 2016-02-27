@@ -6,6 +6,7 @@ import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -141,21 +143,26 @@ public class BridgeUtils {
         return roleSet;
     }
     
-    public static Set<String> commaListToSet(String commaList) {
+    public static Set<String> commaListToOrderedSet(String commaList) {
         if (commaList != null) {
+            // This implementation must return a LinkedHashSet. This is a set
+            // with ordered keys, in the order they were in the string, as some
+            // set serializations depend on the order of the keys (languages).
             return commaDelimitedListToSet(commaList).stream()
                     .map(string -> string.trim())
                     .filter(StringUtils::isNotBlank)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
         }
-        return Collections.emptySet();
+        return Collections.unmodifiableSet(new LinkedHashSet<String>());
     }
     
     public static String setToCommaList(Set<String> set) {
         if (set != null) {
+            // User LinkedHashSet because some supplied sets will have ordered keys 
+            // and we want to preserve that order while processing the set. 
             Set<String> result = set.stream()
                     .filter(StringUtils::isNotBlank)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
             return (result.isEmpty()) ? null : COMMA_JOINER.join(result);
         }
         return null;

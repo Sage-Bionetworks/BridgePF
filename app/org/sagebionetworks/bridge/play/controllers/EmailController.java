@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -26,17 +25,11 @@ public class EmailController extends BaseController {
     private final Logger LOG = LoggerFactory.getLogger(EmailController.class);
 
     private AccountDao accountDao;
-    private ParticipantOptionsService optionsService;
     private HealthCodeService healthCodeService;
 
     @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
-    }
-
-    @Autowired
-    public void setParticipantOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
     }
 
     @Autowired
@@ -56,7 +49,7 @@ public class EmailController extends BaseController {
     public Result unsubscribeFromEmail() throws Exception {
         try {
             String token = getParameter("token");
-            if (token == null || !token.equals(getBridgeConfig().getEmailUnsubscribeToken())) {
+            if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
                 throw new RuntimeException("Not authorized.");
             }
             // Study has to be provided as an URL parameter:

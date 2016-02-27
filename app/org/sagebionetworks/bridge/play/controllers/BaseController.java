@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.LinkedHashSet;
@@ -33,6 +34,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import org.apache.commons.lang3.StringUtils;
@@ -55,33 +57,38 @@ public abstract class BaseController extends Controller {
 
     private static ObjectMapper mapper = BridgeObjectMapper.get();
 
-    private BridgeConfig bridgeConfig;
-
-    private CacheProvider cacheProvider;
+    CacheProvider cacheProvider;
+    
+    BridgeConfig bridgeConfig;
+    
+    ParticipantOptionsService optionsService;
 
     StudyService studyService;
+
     AuthenticationService authenticationService;
 
     @Autowired
-    public void setBridgeConfig(BridgeConfig bridgeConfig) {
+    final void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
-    }
-    BridgeConfig getBridgeConfig() {
-        return bridgeConfig;
     }
 
     @Autowired
-    public void setCacheProvider(CacheProvider cacheProvider) {
+    final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
 
     @Autowired
-    public void setStudyService(StudyService studyService) {
+    final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    @Autowired
+    final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
     }
 
     @Autowired
-    public void setAuthenticationService(AuthenticationService authenticationService) {
+    final void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
 
@@ -164,6 +171,28 @@ public abstract class BaseController extends Controller {
         }
     }
 
+    /**
+     * Once we acquire a language for a user, we save it and use that language going forward. Changing their 
+     * language in the host operating system will not change the language they are using (since changing the 
+     * language might change their consent state). If they change their language by updating their UserProfile, 
+     * then they may have to reconsent in the new language they are using for the study. Any warnings to 
+     * that effect will need to be included in the application.
+     */
+    LinkedHashSet<String> getLanguages(UserSession session) {
+        User user = session.getUser();
+        if (!user.getLanguages().isEmpty()) {
+            return user.getLanguages();
+        }
+        LinkedHashSet<String> languages = getLanguagesFromAcceptLanguageHeader();
+        if (!languages.isEmpty()) {
+            optionsService.setOrderedStringSet(
+                    session.getStudyIdentifier(), user.getHealthCode(), LANGUAGES, languages);
+            user.setLanguages(languages);
+            updateSessionUser(session, user);
+        }
+        return languages;
+    }
+    
     /**
      * Returns languages in the order of their quality rating in the original LanguageRange objects 
      * that are created from the Accept-Language header (first item in ordered set is the most-preferred 

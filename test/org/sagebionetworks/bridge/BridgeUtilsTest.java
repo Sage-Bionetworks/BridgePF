@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -52,24 +53,27 @@ public class BridgeUtilsTest {
     
     @Test
     public void commaListToSet() {
-        Set<String> set = BridgeUtils.commaListToSet("a, b , c");
-        assertEquals(Sets.newHashSet("a","b","c"), set);
+        Set<String> set = BridgeUtils.commaListToOrderedSet("a, b , c");
+        orderedSetsEqual(TestUtils.newLinkedHashSet("a","b","c"), set);
         
-        set = BridgeUtils.commaListToSet("a,b,c");
-        assertEquals(Sets.newHashSet("a","b","c"), set);
+        set = BridgeUtils.commaListToOrderedSet("a,b,c");
+        orderedSetsEqual(TestUtils.newLinkedHashSet("a","b","c"), set);
         
-        set = BridgeUtils.commaListToSet("");
-        assertEquals(Sets.newHashSet(), set);
+        set = BridgeUtils.commaListToOrderedSet("");
+        orderedSetsEqual(TestUtils.newLinkedHashSet(), set);
         
-        set = BridgeUtils.commaListToSet(null);
+        set = BridgeUtils.commaListToOrderedSet(null);
         assertNotNull(set);
         
-        set = BridgeUtils.commaListToSet(" a");
-        assertEquals(Sets.newHashSet("a"), set);
+        set = BridgeUtils.commaListToOrderedSet(" a");
+        orderedSetsEqual(TestUtils.newLinkedHashSet("a"), set);
         
         // Does not produce a null value.
-        set = BridgeUtils.commaListToSet("a,,b");
-        assertEquals(Sets.newHashSet("a","b"), set);
+        set = BridgeUtils.commaListToOrderedSet("a,,b");
+        orderedSetsEqual(TestUtils.newLinkedHashSet("a","b"), set);
+        
+        set = BridgeUtils.commaListToOrderedSet("b,a");
+        orderedSetsEqual(TestUtils.newLinkedHashSet("b","a"), set);
     }
     
     @Test
@@ -95,6 +99,17 @@ public class BridgeUtilsTest {
     public void nullsAreRemoved() {
         // nulls are removed. They have to be to create ImmutableSet
         assertEquals(Sets.newHashSet("A"), BridgeUtils.nullSafeImmutableSet(Sets.newHashSet(null, "A")));
+    }
+    
+    // assertEquals with two sets doesn't verify the order is the same... hence this test method.
+    private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
+        assertEquals(first.size(), second.size());
+        
+        Iterator<T> firstIterator = first.iterator();
+        Iterator<T> secondIterator = second.iterator();
+        while(firstIterator.hasNext()) {
+            assertEquals(firstIterator.next(), secondIterator.next());
+        }
     }
     
 }
