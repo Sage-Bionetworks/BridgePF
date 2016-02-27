@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
@@ -93,7 +94,7 @@ public class UploadService {
         this.validator = validator;
     }
 
-    public UploadSession createUpload(User user, UploadRequest uploadRequest) {
+    public UploadSession createUpload(StudyIdentifier studyId, User user, UploadRequest uploadRequest) {
         Validate.entityThrowingException(validator, uploadRequest);
 
         // For all new uploads, the upload ID in DynamoDB is the same as the S3 Object ID
@@ -109,7 +110,8 @@ public class UploadService {
             String originalUploadId = uploadDedupeDao.getDuplicate(healthCode, uploadMd5, uploadRequestedOn);
             if (originalUploadId != null) {
                 // Is a dupe. We're in observation mode, so for now, just log.
-                logger.info("Detected dupe: Upload " + uploadId + " is a dupe of " + originalUploadId);
+                logger.info("Detected dupe: Study " + studyId.getIdentifier() + ", upload " + uploadId +
+                        " is a dupe of " + originalUploadId);
             } else {
                 // Not a dupe. Register this dupe so we can detect dupes of this.
                 uploadDedupeDao.registerUpload(healthCode, uploadMd5, uploadRequestedOn, uploadId);
