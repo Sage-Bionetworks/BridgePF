@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,23 +54,26 @@ public class BridgeUtilsTest {
     @Test
     public void commaListToSet() {
         Set<String> set = BridgeUtils.commaListToOrderedSet("a, b , c");
-        assertEquals(TestUtils.newLinkedHashSet("a","b","c"), set);
+        orderedSetsEqual(TestUtils.newLinkedHashSet("a","b","c"), set);
         
         set = BridgeUtils.commaListToOrderedSet("a,b,c");
-        assertEquals(TestUtils.newLinkedHashSet("a","b","c"), set);
+        orderedSetsEqual(TestUtils.newLinkedHashSet("a","b","c"), set);
         
         set = BridgeUtils.commaListToOrderedSet("");
-        assertEquals(TestUtils.newLinkedHashSet(), set);
+        orderedSetsEqual(TestUtils.newLinkedHashSet(), set);
         
         set = BridgeUtils.commaListToOrderedSet(null);
         assertNotNull(set);
         
         set = BridgeUtils.commaListToOrderedSet(" a");
-        assertEquals(TestUtils.newLinkedHashSet("a"), set);
+        orderedSetsEqual(TestUtils.newLinkedHashSet("a"), set);
         
         // Does not produce a null value.
         set = BridgeUtils.commaListToOrderedSet("a,,b");
-        assertEquals(TestUtils.newLinkedHashSet("a","b"), set);
+        orderedSetsEqual(TestUtils.newLinkedHashSet("a","b"), set);
+        
+        set = BridgeUtils.commaListToOrderedSet("b,a");
+        orderedSetsEqual(TestUtils.newLinkedHashSet("b","a"), set);
     }
     
     @Test
@@ -95,6 +99,17 @@ public class BridgeUtilsTest {
     public void nullsAreRemoved() {
         // nulls are removed. They have to be to create ImmutableSet
         assertEquals(Sets.newHashSet("A"), BridgeUtils.nullSafeImmutableSet(Sets.newHashSet(null, "A")));
+    }
+    
+    // assertEquals with two sets doesn't verify the order is the same... hence this test method.
+    private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
+        assertEquals(first.size(), second.size());
+        
+        Iterator<T> firstIterator = first.iterator();
+        Iterator<T> secondIterator = second.iterator();
+        while(firstIterator.hasNext()) {
+            assertEquals(firstIterator.next(), secondIterator.next());
+        }
     }
     
 }

@@ -421,4 +421,29 @@ public class AuthenticationServiceTest {
         }
     }
     
+    @Test
+    public void languagePreferencesAreRetrievedFromContext() {
+        LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("fr","es");
+        
+        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(true).withSignIn(true).build();
+        try {
+            
+            testUser.getUser().setLanguages(LANGS);
+            CriteriaContext context = testUser.getCriteriaContext();
+            
+            authService.signOut(testUser.getSession());
+            
+            Study study = studyService.getStudy(testUser.getStudyIdentifier());
+            
+            UserSession session = authService.signIn(study, context, testUser.getSignIn());
+            assertEquals(LANGS, session.getUser().getLanguages());
+            
+            LinkedHashSet<String> persistedLangs = optionsService.getOrderedStringSet(testUser.getUser().getHealthCode(), ParticipantOption.LANGUAGES);
+            assertEquals(LANGS, persistedLangs);
+        } finally {
+            helper.deleteUser(testUser);
+        }        
+    }
+    
 }
