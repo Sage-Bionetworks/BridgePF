@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.apache.http.HttpHeaders.USER_AGENT;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -9,8 +11,11 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
+import static org.sagebionetworks.bridge.TestUtils.newLinkedHashSet;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -21,6 +26,7 @@ import org.junit.Test;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
@@ -30,6 +36,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.controllers.BaseController;
+import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -37,7 +44,9 @@ import com.google.common.collect.Sets;
 /** Test class for basic utility functions in BaseController. */
 @SuppressWarnings("unchecked")
 public class BaseControllerTest {
-    private static final String DUMMY_JSON = "{\"dummy-key\":\"dummy-value\"}";
+    
+    private static final String DUMMY_JSON = createJson("{'dummy-key':'dummy-value'}");
+    private static final LinkedHashSet<String> LANGUAGE_SET = newLinkedHashSet("en","fr");
 
     @Test
     public void testParseJsonFromText() {
@@ -179,11 +188,10 @@ public class BaseControllerTest {
         mockPlayContext();
         
         SchedulePlanController controller = spy(new SchedulePlanController());
-        User user = new User();
-        user.setRoles(Sets.newHashSet(Roles.RESEARCHER));
         
         UserSession session = new UserSession();
-        session.setUser(user);
+        session.getUser().setRoles(Sets.newHashSet(Roles.RESEARCHER));
+
         doReturn(session).when(controller).getAuthenticatedSession();
         
         // This method, upon confronting the fact that the user does not have this role, 
@@ -207,9 +215,7 @@ public class BaseControllerTest {
         
         langs = controller.getLanguagesFromAcceptLanguageHeader();
             
-        LinkedHashSet<String> set = Sets.newLinkedHashSet();
-        set.add("en");
-        set.add("de");
+        LinkedHashSet<String> set = newLinkedHashSet("en","de");
         assertEquals(set, langs);
 
         mockHeader(ACCEPT_LANGUAGE, null);
@@ -227,6 +233,61 @@ public class BaseControllerTest {
         mockHeader(ACCEPT_LANGUAGE, "FR,en-US");
         langs = controller.getLanguagesFromAcceptLanguageHeader();
         assertEquals(ImmutableSet.of("fr","en"), langs);
+    }
+    
+    @Test
+    public void canGetLanguagesWhenInSession() {
+        BaseController controller = new SchedulePlanController();
+        
+        UserSession session = new UserSession();
+        session.getUser().setLanguages(LANGUAGE_SET);
+        
+        LinkedHashSet<String> languages = controller.getLanguages(session);
+        assertEquals(LANGUAGE_SET, languages);
+    }
+    
+    @Test
+    public void canGetLanguagesWhenInHeader() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, "en,fr");
+
+        // This gets called to save the languages retrieved from the header
+        ParticipantOptionsService optionsService = mock(ParticipantOptionsService.class);
+        controller.setParticipantOptionsService(optionsService);
+
+        CacheProvider cacheProvider = mock(CacheProvider.class);
+        controller.setCacheProvider(cacheProvider);
+        
+        UserSession session = new UserSession();
+        session.setStudyIdentifier(TEST_STUDY);
+        User user = session.getUser();
+        user.setHealthCode("AAA");
+        user.setLanguages(Sets.newLinkedHashSet());
+        
+        // Verify as well that the values retrieved from the header have been saved in session and ParticipantOptions table.
+        LinkedHashSet<String> languages = controller.getLanguages(session);
+        assertEquals(LANGUAGE_SET, languages);
+        verify(optionsService).setOrderedStringSet(TEST_STUDY, "AAA", LANGUAGES, LANGUAGE_SET);
+        verify(cacheProvider).setUserSession(session);
+    }
+    
+    @Test
+    public void canGetLanguagesWhenNotInSessionOrHeader() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+
+        // This gets called to save the languages retrieved from the header
+        ParticipantOptionsService optionsService = mock(ParticipantOptionsService.class);
+        controller.setParticipantOptionsService(optionsService);
+
+        CacheProvider cacheProvider = mock(CacheProvider.class);
+        controller.setCacheProvider(cacheProvider);
+        
+        UserSession session = new UserSession();
+        
+        LinkedHashSet<String> languages = controller.getLanguages(session);
+        assertTrue(languages.isEmpty());
     }
     
     private void mockHeader(String header, String value) throws Exception {

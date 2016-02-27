@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -18,12 +18,12 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 @BridgeTypeName("User")
 public final class User implements BridgeEntity {
-
-    private static final Encryptor encryptor = new AesGcmEncryptor(
+    
+    private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(
             BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
 
     private String id;
@@ -33,12 +33,16 @@ public final class User implements BridgeEntity {
     private String healthCode;
     private String studyKey;
     private SharingScope sharingScope;
-    private Set<Roles> roles = Sets.newHashSet();
-    private Set<String> dataGroups = Sets.newHashSet();
+    private Set<Roles> roles;
+    private Set<String> dataGroups;
     private Map<SubpopulationGuid,ConsentStatus> consentStatuses;
+    private LinkedHashSet<String> languages;
 
     public User() {
-        this.consentStatuses = ImmutableMap.of();
+        setRoles(ImmutableSet.of());
+        setDataGroups(ImmutableSet.of());
+        setConsentStatuses(ImmutableMap.of());
+        setLanguages(new LinkedHashSet<String>());
     }
 
     public User(Account account) {
@@ -47,12 +51,7 @@ public final class User implements BridgeEntity {
         this.firstName = account.getFirstName();
         this.lastName = account.getLastName();
         this.id = account.getId();
-        this.roles = new HashSet<>(account.getRoles());
-    }
-
-    public User(String id, String email) {
-        setId(id);
-        setEmail(email);
+        setRoles(account.getRoles());
     }
 
     public String getEmail() {
@@ -90,11 +89,11 @@ public final class User implements BridgeEntity {
     }
 
     public String getEncryptedHealthCode() {
-        return encryptor.encrypt(healthCode);
+        return ENCRYPTOR.encrypt(healthCode);
     }
 
     public void setEncryptedHealthCode(String healthCode) {
-        this.healthCode = encryptor.decrypt(healthCode);
+        this.healthCode = ENCRYPTOR.decrypt(healthCode);
     }
 
     public String getId() {
@@ -127,6 +126,14 @@ public final class User implements BridgeEntity {
     
     public void setDataGroups(Set<String> dataGroups) {
         this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
+    }
+    
+    public LinkedHashSet<String> getLanguages() {
+        return languages;
+    }
+    
+    public void setLanguages(LinkedHashSet<String> languages) {
+        this.languages = (languages != null) ? languages : new LinkedHashSet<>();
     }
 
     public SharingScope getSharingScope() {
@@ -172,7 +179,7 @@ public final class User implements BridgeEntity {
     @Override
     public int hashCode() {
         return Objects.hashCode(email, firstName, lastName, healthCode, id, roles, sharingScope, 
-                studyKey, dataGroups, consentStatuses);
+                studyKey, dataGroups, consentStatuses, languages);
     }
 
     @Override
@@ -187,12 +194,13 @@ public final class User implements BridgeEntity {
                 && Objects.equal(id, other.id) && Objects.equal(roles, other.roles)
                 && Objects.equal(sharingScope, other.sharingScope) && Objects.equal(studyKey, other.studyKey)
                 && Objects.equal(dataGroups, other.dataGroups)
-                && Objects.equal(consentStatuses, other.consentStatuses));
+                && Objects.equal(consentStatuses, other.consentStatuses)
+                && Objects.equal(languages, other.languages));
     }
 
     @Override
     public String toString() {
-        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, dataGroups=%s, consentStatuses=%s]", 
-                email, firstName, lastName, id, roles, sharingScope, studyKey, dataGroups, consentStatuses);
+        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, dataGroups=%s, consentStatuses=%s, languages=%s]", 
+                email, firstName, lastName, id, roles, sharingScope, studyKey, dataGroups, consentStatuses, languages);
     }
 }

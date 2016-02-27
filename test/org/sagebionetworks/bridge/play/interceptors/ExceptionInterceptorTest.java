@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import play.mvc.Http;
 import play.mvc.Result;
@@ -57,7 +58,6 @@ public class ExceptionInterceptorTest {
         Http.Context.current.set(context);
     }
     
-    
     @Test
     public void consentRequiredSessionSerializedCorrectly() throws Throwable {
         User user = new User();
@@ -68,7 +68,7 @@ public class ExceptionInterceptorTest {
         user.setId("userId");
         user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         user.setStudyKey("test");
-        user.getDataGroups().add("group1");
+        user.setDataGroups(Sets.newHashSet("group1"));
         
         UserSession session = new UserSession();
         session.setAuthenticated(true);

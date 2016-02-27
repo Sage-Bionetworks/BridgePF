@@ -38,7 +38,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
         
-        Set<String> recipients = BridgeUtils.commaListToSet(study.getConsentNotificationEmail());
+        Set<String> recipients = BridgeUtils.commaListToOrderedSet(study.getConsentNotificationEmail());
         builder.withRecipients(recipients);
         
         String subject = String.format(PARTICIPANTS_EMAIL_SUBJECT, study.getName());

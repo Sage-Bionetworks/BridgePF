@@ -4,8 +4,11 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
@@ -188,6 +192,21 @@ public class ParticipantOptionsServiceTest {
         
         verify(mockDao).getAllOptionsForAllStudyParticipants(TEST_STUDY);
         verifyNoMoreInteractions(mockDao);
+    }
+    
+    @Test
+    public void canSetLinkedHashSet() {
+        when(mockDao.getOption("AAA", ParticipantOption.LANGUAGES)).thenReturn("en,fr");
+        LinkedHashSet<String> langs = service.getOrderedStringSet("AAA", ParticipantOption.LANGUAGES);
+        Iterator<String> i = langs.iterator();
+        assertEquals("en", i.next());
+        assertEquals("fr", i.next());
+        
+        langs = TestUtils.newLinkedHashSet("fr","en","kl");
+        
+        service.setOrderedStringSet(TEST_STUDY, HEALTH_CODE, LANGUAGES, langs);
+        
+        verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, LANGUAGES, "fr,en,kl");
     }
     
 }

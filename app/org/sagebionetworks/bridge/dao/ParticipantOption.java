@@ -5,7 +5,8 @@ public enum ParticipantOption {
     SHARING_SCOPE(SharingScope.NO_SHARING.name()),
     EMAIL_NOTIFICATIONS(Boolean.TRUE.toString()),
     EXTERNAL_IDENTIFIER(null),
-    DATA_GROUPS(null);
+    DATA_GROUPS(null),
+    LANGUAGES(null);
 
     private final String defaultValue;
     
