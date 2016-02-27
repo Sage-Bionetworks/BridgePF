@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.Sets;
@@ -170,12 +171,12 @@ public class CriteriaUtilsTest {
         
         // Requires English, user declares English, it matches
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withLanguages(set("en")).build();
+                .withLanguages(TestUtils.newLinkedHashSet("en")).build();
         assertTrue(CriteriaUtils.matchCriteria(context, criteria));
         
         // Requires English, user declares Spanish, it does not match
         context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withLanguages(set("es")).build();
+                .withLanguages(TestUtils.newLinkedHashSet("es")).build();
         assertFalse(CriteriaUtils.matchCriteria(context, criteria));
         
         // Doesn't require a language, so we do not care about the user's language to select this
@@ -187,12 +188,6 @@ public class CriteriaUtilsTest {
         context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withLanguages(new LinkedHashSet<String>()).build();
         assertFalse(CriteriaUtils.matchCriteria(context, criteria));
-    }
-    
-    private LinkedHashSet<String> set(String lang) {
-        LinkedHashSet<String> langs = new LinkedHashSet<>();
-        langs.add(lang);
-        return langs;
     }
     
     private CriteriaContext getContext() {
