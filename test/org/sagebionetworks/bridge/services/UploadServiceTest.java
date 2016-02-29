@@ -25,6 +25,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -88,7 +90,8 @@ public class UploadServiceTest {
     @Test
     public void test() throws Exception {
         UploadRequest uploadRequest = createUploadRequest();
-        UploadSession uploadSession = uploadService.createUpload(testUser.getUser(), uploadRequest);
+        UploadSession uploadSession = uploadService.createUpload(TestConstants.TEST_STUDY, testUser.getUser(),
+                uploadRequest);
         final String uploadId = uploadSession.getId();
         objectsToRemove.add(uploadId);
         int reponseCode = upload(uploadSession.getUrl(), uploadRequest);
