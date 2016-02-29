@@ -362,7 +362,7 @@ public class TestUtils {
     public static <T> LinkedHashSet<T> newLinkedHashSet(T... items) {
         LinkedHashSet<T> set = new LinkedHashSet<T>();
         for (T item : items) {
-            set.add(item);
+            set.add(item);    
         }
         return set;
     }
