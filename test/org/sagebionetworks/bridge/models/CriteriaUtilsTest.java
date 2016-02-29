@@ -170,13 +170,11 @@ public class CriteriaUtilsTest {
         criteria.setLanguage("en");
         
         // Requires English, user declares English, it matches
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withLanguages(TestUtils.newLinkedHashSet("en")).build();
+        CriteriaContext context = getContextWithLanguage("en");
         assertTrue(CriteriaUtils.matchCriteria(context, criteria));
         
         // Requires English, user declares Spanish, it does not match
-        context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withLanguages(TestUtils.newLinkedHashSet("es")).build();
+        context = getContextWithLanguage("es");
         assertFalse(CriteriaUtils.matchCriteria(context, criteria));
         
         // Doesn't require a language, so we do not care about the user's language to select this
@@ -185,9 +183,15 @@ public class CriteriaUtilsTest {
         
         // Requires English, but the user declares no language, this does NOT match.
         criteria.setLanguage("en");
-        context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withLanguages(new LinkedHashSet<String>()).build();
+        context = getContextWithLanguage(null);
         assertFalse(CriteriaUtils.matchCriteria(context, criteria));
+    }
+    
+    private CriteriaContext getContextWithLanguage(String lang) {
+        LinkedHashSet<String> list = (lang == null) ?
+                TestUtils.newLinkedHashSet() : TestUtils.newLinkedHashSet(lang);
+        return new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
+            .withLanguages(list).build();
     }
     
     private CriteriaContext getContext() {
