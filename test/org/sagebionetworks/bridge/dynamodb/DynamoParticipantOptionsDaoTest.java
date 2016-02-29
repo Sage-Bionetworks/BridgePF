@@ -65,12 +65,12 @@ public class DynamoParticipantOptionsDaoTest {
         optionsDao.setOption(study,  healthCode, DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups));
 
         // Verify all are set in the options map
-        Map<ParticipantOption,String> values = optionsDao.getAllParticipantOptions(healthCode);
-        assertEquals(sharingName, values.get(SHARING_SCOPE));
-        assertEquals(TEST_EXT_ID, values.get(EXTERNAL_IDENTIFIER));
-        assertEquals(BridgeUtils.setToCommaList(dataGroups),  values.get(DATA_GROUPS));
+        UserOptionsLookup lookup = optionsDao.getAllParticipantOptions(healthCode);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getSharingScope());
+        assertEquals(TEST_EXT_ID, lookup.getString(EXTERNAL_IDENTIFIER));
+        assertEquals(dataGroups,  lookup.getDataGroups());
         
-        // Veriry all are set in the OptionLookup object (same option for all users)
+        // Verify all are set in the OptionLookup object (same option for all users)
         OptionLookup sharingLookup = optionsDao.getOptionForAllStudyParticipants(study, SHARING_SCOPE);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, sharingLookup.getSharingScope(healthCode));
         

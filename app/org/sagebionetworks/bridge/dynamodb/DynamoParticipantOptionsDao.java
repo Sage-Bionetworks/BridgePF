@@ -19,6 +19,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 @Component
@@ -119,23 +120,15 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
     
     @Override
-    public Map<ParticipantOption,String> getAllParticipantOptions(String healthCode) {
+    public UserOptionsLookup getAllParticipantOptions(String healthCode) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
-        Map<ParticipantOption,String> map = Maps.newHashMap();
         DynamoParticipantOptions options = mapper.load(keyObject);
         if (options == null) {
-            return map;
+            return new UserOptionsLookup(ImmutableMap.of());
         }
-        for (ParticipantOption opt : ParticipantOption.values()) {
-            String value = opt.getDefaultValue();
-            if (options.getOptions().get(opt.name()) != null) {
-                value = options.getOptions().get(opt.name());
-            }
-            map.put(opt, value);
-        }        
-        return map;
+        return new UserOptionsLookup(options.getOptions());
     }
     
     @Override

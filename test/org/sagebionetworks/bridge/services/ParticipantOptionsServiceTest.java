@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
+import org.sagebionetworks.bridge.dynamodb.UserOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -159,12 +160,15 @@ public class ParticipantOptionsServiceTest {
 
     @Test
     public void getAllParticipantOptions() {
-        Map<ParticipantOption,String> map = Maps.newHashMap();
-        map.put(ParticipantOption.DATA_GROUPS, "a,b,c");
-        when(mockDao.getAllParticipantOptions(HEALTH_CODE)).thenReturn(map);
+        Map<String,String> map = Maps.newHashMap();
+        map.put(DATA_GROUPS.name(), "a,b,c");
         
-        Map<ParticipantOption,String> result = service.getAllParticipantOptions(HEALTH_CODE);
-        assertEquals(map, result);
+        UserOptionsLookup lookup = new UserOptionsLookup(map);
+        
+        when(mockDao.getAllParticipantOptions(HEALTH_CODE)).thenReturn(lookup);
+        
+        UserOptionsLookup result = service.getAllParticipantOptions(HEALTH_CODE);
+        assertEquals(lookup.getDataGroups(), result.getDataGroups());
         
         verify(mockDao).getAllParticipantOptions(HEALTH_CODE);
         verifyNoMoreInteractions(mockDao);

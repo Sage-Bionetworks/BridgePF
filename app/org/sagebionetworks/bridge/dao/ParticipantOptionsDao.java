@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
+import org.sagebionetworks.bridge.dynamodb.UserOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface ParticipantOptionsDao {
@@ -56,7 +57,7 @@ public interface ParticipantOptionsDao {
      * @param option
      * @return
      */
-    public Map<ParticipantOption,String> getAllParticipantOptions(String healthCode);
+    public UserOptionsLookup getAllParticipantOptions(String healthCode);
     
     /**
      * Get a map of all health codes to all values for an option (null if never set), for a 

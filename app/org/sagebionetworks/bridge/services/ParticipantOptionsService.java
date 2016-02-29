@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
+import org.sagebionetworks.bridge.dynamodb.UserOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.google.common.collect.Sets;
@@ -36,7 +37,7 @@ public class ParticipantOptionsService {
      * @param healthCode
      * @return
      */
-    public Map<ParticipantOption, String> getAllParticipantOptions(String healthCode) {
+    public UserOptionsLookup getAllParticipantOptions(String healthCode) {
         checkArgument(isNotBlank(healthCode));
         
         return optionsDao.getAllParticipantOptions(healthCode);
