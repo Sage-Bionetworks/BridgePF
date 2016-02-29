@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
@@ -44,10 +45,8 @@ public class CriteriaUtils {
             if (!dataGroups.containsAll(criteria.getAllOfGroups())) {
                 return false;
             }
-            for (String group : criteria.getNoneOfGroups()) {
-                if (dataGroups.contains(group)) {
-                    return false;
-                }
+            if (!Collections.disjoint(dataGroups, criteria.getNoneOfGroups())) {
+                return false;
             }
         }
         // This is a simple match: if a criteria declares a language, the user must declare the language
