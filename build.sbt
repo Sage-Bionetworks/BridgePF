@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "bridge-base" % "1.1",
+  "org.sagebionetworks" % "bridge-base" % "1.2",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",
@@ -54,10 +54,12 @@ libraryDependencies ++= Seq(
   // PDF, HTML
   "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
   "org.jsoup" % "jsoup" % "1.8.3",
+
   // Test
   javaWs % Test,
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-core" % "1.10.19" % Test,
+  "org.sagebionetworks" % "BridgeTestUtils" % "1.0" % Test,
   "org.springframework" % "spring-test" % "4.2.4.RELEASE" % Test,
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.2" % Test
 )
