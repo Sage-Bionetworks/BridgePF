@@ -346,6 +346,7 @@ public class TestUtils {
         DynamoCriteria crit = new DynamoCriteria();
         if (criteria != null) {
             crit.setKey(criteria.getKey());
+            crit.setLanguage(criteria.getLanguage());
             crit.setMinAppVersion(criteria.getMinAppVersion());
             crit.setMaxAppVersion(criteria.getMaxAppVersion());
             crit.setNoneOfGroups(criteria.getNoneOfGroups());
@@ -361,7 +362,7 @@ public class TestUtils {
     public static <T> LinkedHashSet<T> newLinkedHashSet(T... items) {
         LinkedHashSet<T> set = new LinkedHashSet<T>();
         for (T item : items) {
-            set.add(item);
+            set.add(item);    
         }
         return set;
     }

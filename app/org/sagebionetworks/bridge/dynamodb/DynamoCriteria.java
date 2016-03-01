@@ -18,6 +18,7 @@ import com.google.common.collect.Sets;
 public final class DynamoCriteria implements Criteria {
 
     private String key;
+    private String language;
     private Integer minAppVersion;
     private Integer maxAppVersion;
     private Set<String> allOfGroups = Sets.newHashSet();
@@ -31,6 +32,14 @@ public final class DynamoCriteria implements Criteria {
     }
     public void setKey(String key) {
         this.key = key;
+    }
+    @Override
+    @DynamoDBAttribute    
+    public String getLanguage() {
+        return language;
+    }
+    public void setLanguage(String language) {
+        this.language = language;
     }
     @Override
     @DynamoDBAttribute    
@@ -69,7 +78,7 @@ public final class DynamoCriteria implements Criteria {
     
     @Override
     public int hashCode() {
-        return Objects.hash(key, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups);
+        return Objects.hash(key, language, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups);
     }
     @Override
     public boolean equals(Object obj) {
@@ -79,6 +88,7 @@ public final class DynamoCriteria implements Criteria {
             return false;
         DynamoCriteria other = (DynamoCriteria) obj;
         return Objects.equals(key,  other.key) && 
+                Objects.equals(language, other.language) && 
                 Objects.equals(noneOfGroups, other.noneOfGroups) && 
                 Objects.equals(allOfGroups, other.allOfGroups) && 
                 Objects.equals(minAppVersion, other.minAppVersion) && 
@@ -86,8 +96,9 @@ public final class DynamoCriteria implements Criteria {
     }
     @Override
     public String toString() {
-        return "DynamoCriteria [key=" + key + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" + noneOfGroups
-                + ", minAppVersion=" + minAppVersion + ", maxAppVersion=" + maxAppVersion + "]";
+        return "DynamoCriteria [key=" + key + ", language=" + language + ", allOfGroups=" + allOfGroups
+                + ", noneOfGroups=" + noneOfGroups + ", minAppVersion=" + minAppVersion + ", maxAppVersion="
+                + maxAppVersion + "]";
     }
     
 }

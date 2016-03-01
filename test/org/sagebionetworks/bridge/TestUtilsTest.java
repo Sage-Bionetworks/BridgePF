@@ -21,7 +21,7 @@ public class TestUtilsTest {
     @Test
     public void createCriteriaWithArguments() {
         Criteria criteria = TestUtils.createCriteria(5, 15, ALL_OF_GROUPS, NONE_OF_GROUPS);
-        
+
         assertEquals(new Integer(5), criteria.getMinAppVersion());
         assertEquals(new Integer(15), criteria.getMaxAppVersion());
         assertEquals(ALL_OF_GROUPS, criteria.getAllOfGroups());

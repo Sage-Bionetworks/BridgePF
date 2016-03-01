@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
@@ -21,15 +22,10 @@ public class CriteriaUtils {
      * A matching method that matches our common set of matching criteria for consents, schedulses, and more. 
      * We use the dataGroups and app version in the scheduling context and compare this to required and/or 
      * prohibitied data groups, and an application version range, to determine if there is a match or not. 
-     * @param context
-     * @param required
-     * @param prohibited
-     * @param minAppVersion
-     * @param maxAppVersion
-     * @return
      */
     public static boolean matchCriteria(CriteriaContext context, Criteria criteria) {
         checkNotNull(context);
+        checkNotNull(context.getLanguages());
         checkNotNull(context.getClientInfo());
         checkNotNull(context.getUserDataGroups());
         checkNotNull(criteria.getAllOfGroups());
@@ -49,11 +45,14 @@ public class CriteriaUtils {
             if (!dataGroups.containsAll(criteria.getAllOfGroups())) {
                 return false;
             }
-            for (String group : criteria.getNoneOfGroups()) {
-                if (dataGroups.contains(group)) {
-                    return false;
-                }
+            if (!Collections.disjoint(dataGroups, criteria.getNoneOfGroups())) {
+                return false;
             }
+        }
+        // This is a simple match: if a criteria declares a language, the user must declare the language
+        // This does NOT necessarily return the user's most desired language.
+        if (criteria.getLanguage() != null && !context.getLanguages().contains(criteria.getLanguage())) {
+            return false;
         }
         return true;
     }

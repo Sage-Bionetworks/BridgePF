@@ -233,6 +233,11 @@ public class BaseControllerTest {
         mockHeader(ACCEPT_LANGUAGE, "FR,en-US");
         langs = controller.getLanguagesFromAcceptLanguageHeader();
         assertEquals(ImmutableSet.of("fr","en"), langs);
+        
+        // Real header from Chrome... works fine
+        mockHeader(ACCEPT_LANGUAGE, "en-US,en;q=0.8");
+        langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableSet.of("en"), langs);
     }
     
     @Test
