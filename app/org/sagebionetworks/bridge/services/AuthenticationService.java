@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.Map;
 
@@ -11,9 +12,9 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.dynamodb.UserOptionsLookup;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -29,6 +30,7 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -308,10 +310,10 @@ public class AuthenticationService {
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
         
-        UserOptionsLookup lookup = optionsService.getAllParticipantOptions(healthCode);
-        user.setSharingScope(lookup.getSharingScope());
-        user.setDataGroups(lookup.getDataGroups());
-        user.setLanguages(lookup.getLanguages());
+        UserOptionsLookup lookup = optionsService.getOptions(healthCode);
+        user.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+        user.setDataGroups(lookup.getStringSet(DATA_GROUPS));
+        user.setLanguages(lookup.getOrderedStringSet(LANGUAGES));
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
         // from the context, add it to the user/session, and persist it.

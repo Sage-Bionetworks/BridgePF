@@ -94,8 +94,8 @@ public class UserProfileController extends BaseController {
     public Result getDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
         
-        Set<String> dataGroups = optionsService.getStringSet(
-                session.getUser().getHealthCode(), DATA_GROUPS);
+        Set<String> dataGroups = optionsService.getOptions(
+                session.getUser().getHealthCode()).getStringSet(DATA_GROUPS);
         
         return okResult(new DataGroups(dataGroups));
     }

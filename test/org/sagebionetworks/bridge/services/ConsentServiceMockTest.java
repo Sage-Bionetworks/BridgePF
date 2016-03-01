@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -39,6 +40,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -50,6 +52,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -198,6 +201,8 @@ public class ConsentServiceMockTest {
     
     @Test
     public void withdrawConsent() throws Exception {
+        doReturn(new UserOptionsLookup(ImmutableMap.of())).when(optionsService).getOptions(user.getHealthCode());
+        
         List<ConsentSignature> history = account.getConsentSignatureHistory(SUBPOP_GUID);
         history.add(consentSignature);
         consentService.withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal("For reasons."), UNIX_TIMESTAMP);

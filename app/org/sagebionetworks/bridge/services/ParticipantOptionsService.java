@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +13,9 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
-import org.sagebionetworks.bridge.dynamodb.OptionLookup;
-import org.sagebionetworks.bridge.dynamodb.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.AllUserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-
-import com.google.common.collect.Sets;
 
 @Component
 public class ParticipantOptionsService {
@@ -37,10 +34,10 @@ public class ParticipantOptionsService {
      * @param healthCode
      * @return
      */
-    public UserOptionsLookup getAllParticipantOptions(String healthCode) {
+    public UserOptionsLookup getOptions(String healthCode) {
         checkArgument(isNotBlank(healthCode));
         
-        return optionsDao.getAllParticipantOptions(healthCode);
+        return optionsDao.getOptions(healthCode);
     }
     
     /**
@@ -51,22 +48,8 @@ public class ParticipantOptionsService {
      * @param studyIdentifier
      *   
      */
-    public Map<ParticipantOption,OptionLookup> getAllOptionsForAllStudyParticipants(StudyIdentifier studyIdentifier) {
-        return optionsDao.getAllOptionsForAllStudyParticipants(studyIdentifier);
-    }
-
-    /**
-     * Get all options and their values set for a participant as a map of key/value pairs.
-     * If a value is not set, the value will be null in the map. Map will be returned whether 
-     * any values have been set for this participant or not.
-     * @param healthCode
-     * @return
-     */
-    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, ParticipantOption option) {
-        checkNotNull(studyIdentifier);
-        checkNotNull(option);
-        
-        return optionsDao.getOptionForAllStudyParticipants(studyIdentifier, option);
+    public AllUserOptionsLookup getOptionsForAllParticipants(StudyIdentifier studyIdentifier) {
+        return optionsDao.getOptionsForAllParticipants(studyIdentifier);
     }
 
     public void setBoolean(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, boolean value) {
@@ -77,27 +60,12 @@ public class ParticipantOptionsService {
         optionsDao.setOption(studyIdentifier, healthCode, option, Boolean.toString(value));
     }
 
-    public boolean getBoolean(String healthCode, ParticipantOption option) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-        
-        String value = optionsDao.getOption(healthCode, option);
-        return (value == null) ? false : Boolean.parseBoolean(value);
-    }
-
     public void setString(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
         checkNotNull(option);
         
         optionsDao.setOption(studyIdentifier, healthCode, option, value);
-    }
-
-    public String getString(String healthCode, ParticipantOption option) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-
-        return optionsDao.getOption(healthCode, option);
     }
 
     public void setEnum(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Enum<?> value) {
@@ -109,15 +77,6 @@ public class ParticipantOptionsService {
         optionsDao.setOption(studyIdentifier, healthCode, option, result);
     }
 
-    public <T extends Enum<T>> T getEnum(String healthCode, ParticipantOption option, Class<T> enumType) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-        checkNotNull(enumType);
-
-        String value = optionsDao.getOption(healthCode, option);
-        return (value == null) ? null : Enum.valueOf(enumType, value);
-    }
-    
     public void setStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Set<String> value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
@@ -125,15 +84,7 @@ public class ParticipantOptionsService {
         
         optionsDao.setOption(studyIdentifier, healthCode, option, BridgeUtils.setToCommaList(value));
     }
-    
-    public Set<String> getStringSet(String healthCode, ParticipantOption option) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-        
-        String value = optionsDao.getOption(healthCode, option);
-        return (value == null) ? Sets.newLinkedHashSet() : BridgeUtils.commaListToOrderedSet(value);
-    }
-    
+
     /**
      * Set a string set preserving the order the keys were inserted into the set.
      */
@@ -143,21 +94,13 @@ public class ParticipantOptionsService {
     }
     
     /**
-     * Get a String set with the keys in the original order they were inserted, 
-     * or in the order they are represented in a JSON array.
-     */
-    public LinkedHashSet<String> getOrderedStringSet(String healthCode, ParticipantOption option) {
-        return (LinkedHashSet<String>)getStringSet(healthCode, option);
-    }
-    
-    /**
      * Delete the entire record associated with a participant in the study and all options.
      * @param healthCode
      */
     public void deleteAllParticipantOptions(String healthCode) {
         checkArgument(isNotBlank(healthCode));
         
-        optionsDao.deleteAllParticipantOptions(healthCode);
+        optionsDao.deleteAllOptions(healthCode);
     }
     
     public void deleteOption(String healthCode, ParticipantOption option) {

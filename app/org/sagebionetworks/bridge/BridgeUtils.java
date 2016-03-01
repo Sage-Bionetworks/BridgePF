@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -153,7 +152,9 @@ public class BridgeUtils {
                     .filter(StringUtils::isNotBlank)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
         }
-        return Collections.unmodifiableSet(new LinkedHashSet<String>());
+        // Cannot make this immutable without losing the concrete type we rely 
+        // upon to ensure they keys are in the order they are inserted.
+        return new LinkedHashSet<String>();
     }
     
     public static String setToCommaList(Set<String> set) {

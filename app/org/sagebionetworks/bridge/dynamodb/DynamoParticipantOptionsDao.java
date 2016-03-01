@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.List;
-import java.util.Map;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
+import org.sagebionetworks.bridge.models.accounts.AllUserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,6 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 
 @Component
 public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
@@ -56,20 +56,19 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
     
     @Override
-    public String getOption(String healthCode, ParticipantOption option) {
+    public UserOptionsLookup getOptions(String healthCode) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
-        String value = option.getDefaultValue();
         DynamoParticipantOptions options = mapper.load(keyObject);
-        if (options != null && options.getOptions().get(option.name()) != null) {
-            value = options.getOptions().get(option.name());
+        if (options == null) {
+            return new UserOptionsLookup(ImmutableMap.of());
         }
-        return value;
+        return new UserOptionsLookup(options.getOptions());
     }
     
     @Override
-    public void deleteAllParticipantOptions(String healthCode) {
+    public void deleteAllOptions(String healthCode) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
@@ -92,16 +91,10 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
 
     @Override
-    public Map<ParticipantOption,OptionLookup> getAllOptionsForAllStudyParticipants(StudyIdentifier studyIdentifier) {
-        // For each option type, create a map for that to an OptionLookup that allows you to retrieve the value 
-        // by healthcode.
-        Map<ParticipantOption,OptionLookup> map = Maps.newHashMap();
-        for (ParticipantOption optionType : ParticipantOption.values()) {
-            map.put(optionType, new OptionLookup(optionType.getDefaultValue()));
-        }
+    public AllUserOptionsLookup getOptionsForAllParticipants(StudyIdentifier studyIdentifier) {
+        AllUserOptionsLookup allLookup = new AllUserOptionsLookup();
         
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
-
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
         condition.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
@@ -110,45 +103,9 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         List<DynamoParticipantOptions> mappings = mapper.scan(DynamoParticipantOptions.class, scan);
         
         for (DynamoParticipantOptions mapping : mappings) {
-            for (ParticipantOption optionType : ParticipantOption.values()) {
-                String defaultValue = optionType.getDefaultValue();
-                String value = mapping.getOptions().get(optionType.name());
-                map.get(optionType).put(mapping.getHealthCode(), (value != null) ? value : defaultValue);
-            } 
-        }
-        return map;
-    }
-    
-    @Override
-    public UserOptionsLookup getAllParticipantOptions(String healthCode) {
-        DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
-        keyObject.setHealthCode(healthCode);
-        
-        DynamoParticipantOptions options = mapper.load(keyObject);
-        if (options == null) {
-            return new UserOptionsLookup(ImmutableMap.of());
-        }
-        return new UserOptionsLookup(options.getOptions());
-    }
-    
-    @Override
-    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, ParticipantOption option) {
-        // The only place we need the study, and that's to find all the options for all the 
-        // participants in a given study.
-        DynamoDBScanExpression scan = new DynamoDBScanExpression();
-
-        Condition condition = new Condition();
-        condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
-        scan.addFilterCondition("studyKey", condition);
-        
-        List<DynamoParticipantOptions> mappings = mapper.scan(DynamoParticipantOptions.class, scan);
-        
-        OptionLookup map = new OptionLookup(option.getDefaultValue());
-        for (DynamoParticipantOptions mapping : mappings) {
-            map.put(mapping.getHealthCode(), mapping.getOptions().get(option.name()));
-        }
-        return map;
+            allLookup.put(mapping.getHealthCode(), new UserOptionsLookup(mapping.getOptions()));
+        }        
+        return allLookup;
     }
 
 }

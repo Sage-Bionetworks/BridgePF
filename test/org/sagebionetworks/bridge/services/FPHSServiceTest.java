@@ -9,6 +9,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -23,8 +24,10 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class FPHSServiceTest {
@@ -70,6 +73,8 @@ public class FPHSServiceTest {
     
     @Test
     public void registerExternalIdentifier() throws Exception {
+        doReturn(new UserOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions("BBB");
+        
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(dao).registerExternalId(externalId);
         verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
@@ -77,6 +82,8 @@ public class FPHSServiceTest {
     
     @Test
     public void failureOfDaoDoeNotSetExternalId() throws Exception {
+        // Mock this, throw exception afterward
+        doReturn(new UserOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions("BBB");
         doThrow(new EntityNotFoundException(ExternalIdentifier.class, "Not found")).when(dao).registerExternalId(externalId);
         try {
             service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
@@ -85,10 +92,11 @@ public class FPHSServiceTest {
             verify(dao).verifyExternalId(externalId);
             verify(dao).registerExternalId(externalId);
             verifyNoMoreInteractions(dao);
+            
             // Options service will be called. The id may not be registered, if so, the call
             // can be called again, the service calls are idempotent. Or else it actually was 
             // recorded, in which case it's also fine, despite the exception.
-            verify(optionsService).getStringSet("BBB", DATA_GROUPS);
+            verify(optionsService).getOptions("BBB");
             verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
             verify(optionsService).setStringSet(TEST_STUDY, "BBB", DATA_GROUPS, Sets.newHashSet("football_player"));
             verifyNoMoreInteractions(optionsService);

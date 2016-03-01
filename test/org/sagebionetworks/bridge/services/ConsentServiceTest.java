@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +27,6 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -148,13 +148,13 @@ public class ConsentServiceTest {
         long signedOn = signature.getSignedOn();
         
         // Before consent if you ask, no sharing
-        SharingScope scope = optionsService.getEnum(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE, SharingScope.class);
+        SharingScope scope = optionsService.getOptions(testUser.getUser().getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
         
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), signature, SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
         
         // Verify we just set the options
-        scope = optionsService.getEnum(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE, SharingScope.class);
+        scope = optionsService.getOptions(testUser.getUser().getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
@@ -176,7 +176,7 @@ public class ConsentServiceTest {
         assertFalse(ConsentStatus.isUserConsented(statuses));
         
         // No more sharing status
-        scope = optionsService.getEnum(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE, SharingScope.class);
+        scope = optionsService.getOptions(testUser.getUser().getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
         
         // Consent signature is no longer found, it's effectively deleted
@@ -375,7 +375,7 @@ public class ConsentServiceTest {
                 DateTime.now().getMillis());
         
         // your sharing has been turned off because not all required consents are signed
-        SharingScope scope = optionsService.getEnum(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE, SharingScope.class);
+        SharingScope scope = optionsService.getOptions(testUser.getUser().getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
         
         statuses = consentService.getConsentStatuses(context);
