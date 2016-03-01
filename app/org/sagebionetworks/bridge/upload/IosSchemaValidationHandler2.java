@@ -506,6 +506,12 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
                 logger.warn(warnMsg);
                 context.addMessage(warnMsg);
             }
+        } else if (fieldDef.getType().equals(UploadFieldType.STRING) && !fieldValue.isTextual()) {
+            // Research Kit "helpfully" converts strings that look like ints into actual ints (example: "80" into 80).
+            // This breaks Strict Validation later down the line, so we need to un-convert them back strings.
+            // Note that we do it here, as this is an iOS-specific behavior, rather than in StrictValidation, which is
+            // intended to be more global.
+            dataMap.put(fieldName, fieldValue.toString());
         } else {
             dataMap.set(fieldName, fieldValue);
         }

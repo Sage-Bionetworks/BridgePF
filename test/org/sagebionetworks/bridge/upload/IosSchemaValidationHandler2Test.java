@@ -92,6 +92,8 @@ public class IosSchemaValidationHandler2Test {
         jsonDataSchema.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
                 new DynamoUploadFieldDefinition.Builder().withName("string.json.string")
                         .withType(UploadFieldType.STRING).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("string.json.intAsString")
+                        .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("blob.json.blob")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("date.json.date")
@@ -380,7 +382,8 @@ public class IosSchemaValidationHandler2Test {
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
 
         String stringJsonText = "{\n" +
-                "   \"string\":\"This is a string\"\n" +
+                "   \"string\":\"This is a string\",\n" +
+                "   \"intAsString\":42\n" +
                 "}";
         JsonNode stringJsonNode = BridgeObjectMapper.get().readTree(stringJsonText);
 
@@ -414,8 +417,10 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(3, dataNode.size());
+        assertEquals(4, dataNode.size());
         assertEquals("This is a string", dataNode.get("string.json.string").textValue());
+        assertTrue(dataNode.get("string.json.intAsString").isTextual());
+        assertEquals("42", dataNode.get("string.json.intAsString").textValue());
         assertEquals("2015-12-25", dataNode.get("date.json.date").textValue());
         assertEquals("2015-12-25", dataNode.get("date.json.timestampAsDate").textValue());
 
