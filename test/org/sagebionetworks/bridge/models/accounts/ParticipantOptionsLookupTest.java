@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 public class ParticipantOptionsLookupTest {
     
@@ -103,6 +104,41 @@ public class ParticipantOptionsLookupTest {
         ParticipantOptionsLookup lookup = setupLookup(SHARING_SCOPE, "ALL_QUALIFIED_RESEARCHERS");
         
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void returnsDefaultValueWhenNullSet() {
+        new ParticipantOptionsLookup(null);
+    }
+    
+    @Test
+    public void returnsDefaultValueWhenEmptySet() {
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(Maps.newHashMap());
+        
+        SharingScope scope = lookup.getEnum(SHARING_SCOPE, SharingScope.class);
+        assertEquals(SharingScope.NO_SHARING, scope);
+    }
+    
+    @Test
+    public void returnsValueWhenSet() {
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map(SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS.name()));
+        
+        SharingScope scope = lookup.getEnum(SHARING_SCOPE, SharingScope.class);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
+    }
+    
+    @Test
+    public void correctlySetsAndGetsStringSet() {
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map(DATA_GROUPS, "group1,group2"));
+        
+        Set<String> groups = lookup.getStringSet(DATA_GROUPS);
+        assertEquals(Sets.newHashSet("group1","group2"), groups);
+    }
+    
+    private Map<String,String> map(ParticipantOption option, String value) {
+        Map<String,String> map = Maps.newHashMap();
+        map.put(option.name(), value);
+        return map;
     }
     
     private ParticipantOptionsLookup setupLookup(ParticipantOption option, String value) {

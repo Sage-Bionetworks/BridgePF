@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.junit.Test;
@@ -48,7 +49,7 @@ public class TranscribeConsentHandlerTest {
     public void testNoParticipantOptions() {
         // mock options service
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
-        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(null));
+        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(Maps.newHashMap()));
 
         HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
         HealthDataRecordBuilder outputRecordBuilder = setupContextAndRunHandler(recordBuilder, mockOptionsService);
