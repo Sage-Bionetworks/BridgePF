@@ -28,9 +28,9 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.models.accounts.AllUserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Maps;
@@ -63,14 +63,14 @@ public class ParticipantOptionsServiceTest {
     
     @Test
     public void getBoolean() {
-        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new UserOptionsLookup(map(EMAIL_NOTIFICATIONS, "true")));
+        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new ParticipantOptionsLookup(map(EMAIL_NOTIFICATIONS, "true")));
         
         assertTrue(service.getOptions(HEALTH_CODE).getBoolean(EMAIL_NOTIFICATIONS));
     }
     
     @Test
     public void getBooleanNull() {
-        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new UserOptionsLookup(map(EMAIL_NOTIFICATIONS, null)));
+        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new ParticipantOptionsLookup(map(EMAIL_NOTIFICATIONS, null)));
         
         assertTrue(service.getOptions(HEALTH_CODE).getBoolean(EMAIL_NOTIFICATIONS));
     }
@@ -87,7 +87,7 @@ public class ParticipantOptionsServiceTest {
     
     @Test
     public void getString() {
-        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new UserOptionsLookup(map(EXTERNAL_IDENTIFIER, "BBB")));
+        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new ParticipantOptionsLookup(map(EXTERNAL_IDENTIFIER, "BBB")));
         
         assertEquals("BBB", service.getOptions(HEALTH_CODE).getString(EXTERNAL_IDENTIFIER));
     }
@@ -103,14 +103,14 @@ public class ParticipantOptionsServiceTest {
     @Test
     public void getEnum() {
         when(mockDao.getOptions(HEALTH_CODE))
-                .thenReturn(new UserOptionsLookup(map(SHARING_SCOPE, "SPONSORS_AND_PARTNERS")));
+                .thenReturn(new ParticipantOptionsLookup(map(SHARING_SCOPE, "SPONSORS_AND_PARTNERS")));
         
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, service.getOptions(HEALTH_CODE).getEnum(SHARING_SCOPE, SharingScope.class));
     }
     
     @Test
     public void getEnumNull() {
-        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new UserOptionsLookup(map(SHARING_SCOPE, null)));
+        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new ParticipantOptionsLookup(map(SHARING_SCOPE, null)));
         
         assertEquals(SharingScope.NO_SHARING, service.getOptions(HEALTH_CODE).getEnum(SHARING_SCOPE, SharingScope.class));
     }
@@ -129,7 +129,7 @@ public class ParticipantOptionsServiceTest {
     @Test
     public void getStringSet() {
         when(mockDao.getOptions(HEALTH_CODE)).thenReturn(
-                new UserOptionsLookup(map(DATA_GROUPS, "group1,group2,group3")));
+                new ParticipantOptionsLookup(map(DATA_GROUPS, "group1,group2,group3")));
         
         Set<String> dataGroups = Sets.newHashSet("group1", "group2", "group3");
         
@@ -139,7 +139,7 @@ public class ParticipantOptionsServiceTest {
     @Test
     public void getStringSetNull() {
         when(mockDao.getOptions(HEALTH_CODE)).thenReturn(
-                new UserOptionsLookup(map(DATA_GROUPS, null)));
+                new ParticipantOptionsLookup(map(DATA_GROUPS, null)));
         
         assertEquals(Sets.newHashSet(), service.getOptions(HEALTH_CODE).getStringSet(DATA_GROUPS));
     }
@@ -165,11 +165,11 @@ public class ParticipantOptionsServiceTest {
         Map<String,String> map = Maps.newHashMap();
         map.put(DATA_GROUPS.name(), "a,b,c");
         
-        UserOptionsLookup lookup = new UserOptionsLookup(map);
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
         
         when(mockDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
-        UserOptionsLookup result = service.getOptions(HEALTH_CODE);
+        ParticipantOptionsLookup result = service.getOptions(HEALTH_CODE);
         assertEquals(lookup.getStringSet(DATA_GROUPS), result.getStringSet(DATA_GROUPS));
         
         verify(mockDao).getOptions(HEALTH_CODE);
@@ -178,10 +178,10 @@ public class ParticipantOptionsServiceTest {
     
     @Test
     public void getOptionForAllStudyParticipants() {
-        AllUserOptionsLookup allLookup = new AllUserOptionsLookup();
+        AllParticipantOptionsLookup allLookup = new AllParticipantOptionsLookup();
         when(mockDao.getOptionsForAllParticipants(TEST_STUDY)).thenReturn(allLookup);
         
-        AllUserOptionsLookup result = service.getOptionsForAllParticipants(TEST_STUDY);
+        AllParticipantOptionsLookup result = service.getOptionsForAllParticipants(TEST_STUDY);
         assertEquals(allLookup, result);
         
         verify(mockDao).getOptionsForAllParticipants(TEST_STUDY);
@@ -190,10 +190,10 @@ public class ParticipantOptionsServiceTest {
     
     @Test
     public void getAllOptionsForAllStudyParticipants() {
-        AllUserOptionsLookup allLookup = new AllUserOptionsLookup();
+        AllParticipantOptionsLookup allLookup = new AllParticipantOptionsLookup();
         when(mockDao.getOptionsForAllParticipants(TEST_STUDY)).thenReturn(allLookup);
         
-        AllUserOptionsLookup result = service.getOptionsForAllParticipants(TEST_STUDY);
+        AllParticipantOptionsLookup result = service.getOptionsForAllParticipants(TEST_STUDY);
         assertEquals(allLookup, result);
         
         verify(mockDao).getOptionsForAllParticipants(TEST_STUDY);
@@ -202,7 +202,7 @@ public class ParticipantOptionsServiceTest {
     
     @Test
     public void canSetLinkedHashSet() {
-        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new UserOptionsLookup(map(LANGUAGES, "en,fr")));
+        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new ParticipantOptionsLookup(map(LANGUAGES, "en,fr")));
         
         LinkedHashSet<String> langs = service.getOptions(HEALTH_CODE).getOrderedStringSet(LANGUAGES);
         Iterator<String> i = langs.iterator();

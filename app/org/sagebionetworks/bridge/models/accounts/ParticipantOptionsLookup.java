@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -10,11 +12,12 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 /**
  * A wrapper around the JSON object that contains a participant's options. 
  */
-public class UserOptionsLookup {
+public class ParticipantOptionsLookup {
 
     private final Map<String,String> options;
     
-    public UserOptionsLookup(Map<String,String> options) {
+    public ParticipantOptionsLookup(Map<String,String> options) {
+        checkNotNull(options);
         this.options = options;
     }
     
@@ -47,7 +50,11 @@ public class UserOptionsLookup {
     
     public <T extends Enum<T>> T getEnum(ParticipantOption option, Class<T> enumType) {
         String value = getString(option);
-        return Enum.valueOf(enumType, value);
+        try {
+            return Enum.valueOf(enumType, value);    
+        } catch(IllegalArgumentException e) {
+            return null;
+        }
     }
 
     @Override

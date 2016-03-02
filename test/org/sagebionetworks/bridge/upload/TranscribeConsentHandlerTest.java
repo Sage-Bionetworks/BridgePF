@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
@@ -27,7 +27,7 @@ public class TranscribeConsentHandlerTest {
     public void test() {
         // mock options service
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
-        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new UserOptionsLookup(
+        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(
             ImmutableMap.of(
                 ParticipantOption.SHARING_SCOPE.name(), ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS.name(),
                 ParticipantOption.EXTERNAL_IDENTIFIER.name(), TEST_EXTERNAL_ID,
@@ -48,7 +48,7 @@ public class TranscribeConsentHandlerTest {
     public void testNoParticipantOptions() {
         // mock options service
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
-        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new UserOptionsLookup(null));
+        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(null));
 
         HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
         HealthDataRecordBuilder outputRecordBuilder = setupContextAndRunHandler(recordBuilder, mockOptionsService);
@@ -62,7 +62,7 @@ public class TranscribeConsentHandlerTest {
     @Test
     public void emptyStringSetConvertedCorrectly() {
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
-        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new UserOptionsLookup(ImmutableMap.of(
+        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(ImmutableMap.of(
                 ParticipantOption.DATA_GROUPS.name(), "")));
         
         HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
@@ -74,7 +74,7 @@ public class TranscribeConsentHandlerTest {
     @Test
     public void setOfOneStringConvertedCorrectly() {
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
-        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new UserOptionsLookup(
+        when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(
                 ImmutableMap.of(ParticipantOption.DATA_GROUPS.name(), "group1")));
         
         HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();

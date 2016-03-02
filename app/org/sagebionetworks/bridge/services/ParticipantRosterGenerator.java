@@ -13,9 +13,9 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AllUserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -73,7 +73,7 @@ public class ParticipantRosterGenerator implements Runnable {
         try {
             ImmutableMap<SubpopulationGuid,Subpopulation> mapping = getSubpopulationNameMapping();
             
-            AllUserOptionsLookup studyLookup = optionsService.getOptionsForAllParticipants(study);
+            AllParticipantOptionsLookup studyLookup = optionsService.getOptionsForAllParticipants(study);
 
             int count = 0;
             List<StudyParticipant> participants = Lists.newArrayList();
@@ -99,7 +99,7 @@ public class ParticipantRosterGenerator implements Runnable {
                     // Accounts exist that have signatures but no health codes. This may only be from testing, 
                     // but still, do not want roster generation to fail because of this. So we check for this.
                     if (healthCode != null) {
-                        UserOptionsLookup lookup = studyLookup.get(healthCode);
+                        ParticipantOptionsLookup lookup = studyLookup.get(healthCode);
                         participant.setSharingScope(studyLookup.get(healthCode).getEnum(SHARING_SCOPE, SharingScope.class));
                         participant.setNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
                         participant.setExternalId(lookup.getString(EXTERNAL_IDENTIFIER));

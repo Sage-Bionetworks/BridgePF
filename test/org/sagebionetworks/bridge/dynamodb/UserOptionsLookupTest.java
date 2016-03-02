@@ -13,7 +13,7 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -22,14 +22,14 @@ public class UserOptionsLookupTest {
 
     @Test
     public void nullDefaultIsOK() {
-        UserOptionsLookup lookup = new UserOptionsLookup(null);
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(null);
         
         assertNull(lookup.getString(EXTERNAL_IDENTIFIER));
     }
     
     @Test
     public void returnsDefaultValueWhenNullSet() {
-        UserOptionsLookup lookup = new UserOptionsLookup(null);
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(null);
         
         SharingScope scope = lookup.getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
@@ -37,7 +37,7 @@ public class UserOptionsLookupTest {
     
     @Test
     public void returnsDefaultValueWhenEmptySet() {
-        UserOptionsLookup lookup = new UserOptionsLookup(Maps.newHashMap());
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(Maps.newHashMap());
         
         SharingScope scope = lookup.getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
@@ -45,7 +45,7 @@ public class UserOptionsLookupTest {
     
     @Test
     public void returnsValueWhenSet() {
-        UserOptionsLookup lookup = new UserOptionsLookup(map(SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS.name()));
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map(SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS.name()));
         
         SharingScope scope = lookup.getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
@@ -53,7 +53,7 @@ public class UserOptionsLookupTest {
     
     @Test
     public void correctlySetsAndGetsStringSet() {
-        UserOptionsLookup lookup = new UserOptionsLookup(map(DATA_GROUPS, "group1,group2"));
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map(DATA_GROUPS, "group1,group2"));
         
         Set<String> groups = lookup.getStringSet(DATA_GROUPS);
         assertEquals(Sets.newHashSet("group1","group2"), groups);

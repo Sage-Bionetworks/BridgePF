@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -310,7 +310,7 @@ public class AuthenticationService {
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
         
-        UserOptionsLookup lookup = optionsService.getOptions(healthCode);
+        ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
         user.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
         user.setDataGroups(lookup.getStringSet(DATA_GROUPS));
         user.setLanguages(lookup.getOrderedStringSet(LANGUAGES));

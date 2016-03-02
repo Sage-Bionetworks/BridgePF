@@ -16,8 +16,8 @@ import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.AllUserOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -65,12 +65,12 @@ public class DynamoParticipantOptionsDaoTest {
         optionsDao.setOption(study,  healthCode, DATA_GROUPS, BridgeUtils.setToCommaList(dataGroups));
 
         // Verify all are set in the options map
-        UserOptionsLookup lookup = optionsDao.getOptions(healthCode);
+        ParticipantOptionsLookup lookup = optionsDao.getOptions(healthCode);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
         assertEquals(TEST_EXT_ID, lookup.getString(EXTERNAL_IDENTIFIER));
         assertEquals(dataGroups,  lookup.getStringSet(DATA_GROUPS));
         
-        AllUserOptionsLookup allLookup = optionsDao.getOptionsForAllParticipants(study);
+        AllParticipantOptionsLookup allLookup = optionsDao.getOptionsForAllParticipants(study);
         
         // Verify all are set in the OptionLookup object (same option for all users)
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, allLookup.get(healthCode).getEnum(SHARING_SCOPE, SharingScope.class));
@@ -98,7 +98,7 @@ public class DynamoParticipantOptionsDaoTest {
         optionsDao.setOption(study, healthCode+"2", EXTERNAL_IDENTIFIER, TEST_EXT_ID_2);
         optionsDao.setOption(study, healthCode+"3", EXTERNAL_IDENTIFIER, TEST_EXT_ID_3);
 
-        AllUserOptionsLookup allLookup = optionsDao.getOptionsForAllParticipants(study);
+        AllParticipantOptionsLookup allLookup = optionsDao.getOptionsForAllParticipants(study);
         
         assertEquals(TEST_EXT_ID, allLookup.get(healthCode).getString(EXTERNAL_IDENTIFIER));
         assertEquals(TEST_EXT_ID_2, allLookup.get(healthCode+"2").getString(EXTERNAL_IDENTIFIER));
@@ -126,7 +126,7 @@ public class DynamoParticipantOptionsDaoTest {
         optionsDao.setOption(study, healthCode+"2", SHARING_SCOPE, SharingScope.NO_SHARING.name());
         optionsDao.setOption(study, healthCode+"3", SHARING_SCOPE, SharingScope.SPONSORS_AND_PARTNERS.name());
         
-        AllUserOptionsLookup allLookup = optionsDao.getOptionsForAllParticipants(study);
+        AllParticipantOptionsLookup allLookup = optionsDao.getOptionsForAllParticipants(study);
         
         assertEquals(TEST_EXT_ID, allLookup.get(healthCode).getString(EXTERNAL_IDENTIFIER));
         assertEquals(TEST_EXT_ID_2, allLookup.get(healthCode+"2").getString(EXTERNAL_IDENTIFIER));

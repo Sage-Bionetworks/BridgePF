@@ -11,7 +11,7 @@ import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
@@ -27,8 +27,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context) {
         // read sharing scope from options service
-        UserOptionsLookup lookup = optionsService.getOptions(
-                context.getUpload().getHealthCode());
+        ParticipantOptionsLookup lookup = optionsService.getOptions(context.getUpload().getHealthCode());
 
         // Options service lookup would return null if no value has been set for this user. 
         // If it does, default to no_sharing

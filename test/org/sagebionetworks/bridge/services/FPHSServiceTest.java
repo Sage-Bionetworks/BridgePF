@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -73,7 +73,7 @@ public class FPHSServiceTest {
     
     @Test
     public void registerExternalIdentifier() throws Exception {
-        doReturn(new UserOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions("BBB");
+        doReturn(new ParticipantOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions("BBB");
         
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(dao).registerExternalId(externalId);
@@ -83,7 +83,7 @@ public class FPHSServiceTest {
     @Test
     public void failureOfDaoDoeNotSetExternalId() throws Exception {
         // Mock this, throw exception afterward
-        doReturn(new UserOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions("BBB");
+        doReturn(new ParticipantOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions("BBB");
         doThrow(new EntityNotFoundException(ExternalIdentifier.class, "Not found")).when(dao).registerExternalId(externalId);
         try {
             service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);

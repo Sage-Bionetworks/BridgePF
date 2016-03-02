@@ -40,7 +40,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -201,7 +201,7 @@ public class ConsentServiceMockTest {
     
     @Test
     public void withdrawConsent() throws Exception {
-        doReturn(new UserOptionsLookup(ImmutableMap.of())).when(optionsService).getOptions(user.getHealthCode());
+        doReturn(new ParticipantOptionsLookup(ImmutableMap.of())).when(optionsService).getOptions(user.getHealthCode());
         
         List<ConsentSignature> history = account.getConsentSignatureHistory(SUBPOP_GUID);
         history.add(consentSignature);

@@ -33,9 +33,9 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AllUserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
-import org.sagebionetworks.bridge.models.accounts.UserOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -100,9 +100,9 @@ public class ParticipantRosterGeneratorTest {
         map.put(SHARING_SCOPE.name(), SharingScope.ALL_QUALIFIED_RESEARCHERS.name());
         map.put(EXTERNAL_IDENTIFIER.name(), "externalId");
 
-        UserOptionsLookup lookup = new UserOptionsLookup(map);
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
         
-        AllUserOptionsLookup allLookup = new AllUserOptionsLookup();
+        AllParticipantOptionsLookup allLookup = new AllParticipantOptionsLookup();
         allLookup.put("healthCode", lookup);
         
         when(optionsService.getOptionsForAllParticipants(study)).thenReturn(allLookup);
