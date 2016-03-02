@@ -29,12 +29,8 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
         // read sharing scope from options service
         ParticipantOptionsLookup lookup = optionsService.getOptions(context.getUpload().getHealthCode());
 
-        // Options service lookup would return null if no value has been set for this user. 
-        // If it does, default to no_sharing
+        // Get sharing scope (defaults to NO_SHARING)
         SharingScope userSharingScope = lookup.getEnum(SHARING_SCOPE, SharingScope.class);
-        if (userSharingScope == null) {
-            userSharingScope = SharingScope.NO_SHARING;
-        }
 
         // Also get external ID
         String userExternalId = lookup.getString(EXTERNAL_IDENTIFIER);

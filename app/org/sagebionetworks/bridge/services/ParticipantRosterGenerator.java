@@ -100,7 +100,7 @@ public class ParticipantRosterGenerator implements Runnable {
                     // but still, do not want roster generation to fail because of this. So we check for this.
                     if (healthCode != null) {
                         ParticipantOptionsLookup lookup = studyLookup.get(healthCode);
-                        participant.setSharingScope(studyLookup.get(healthCode).getEnum(SHARING_SCOPE, SharingScope.class));
+                        participant.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
                         participant.setNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
                         participant.setExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
                         participant.setDataGroups(lookup.getStringSet(DATA_GROUPS));
