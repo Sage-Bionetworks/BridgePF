@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -248,7 +249,7 @@ public class AuthenticationServiceTest {
             
             verify(authService).signUp(study, signUp, true);
             // Verify that data groups were set correctly as an option
-            Set<String> persistedGroups = optionsService.getStringSet(healthId.getCode(), DATA_GROUPS);
+            Set<String> persistedGroups = optionsService.getOptions(healthId.getCode()).getStringSet(DATA_GROUPS);
             assertEquals(list, persistedGroups);
             
         } finally {
@@ -439,7 +440,7 @@ public class AuthenticationServiceTest {
             UserSession session = authService.signIn(study, context, testUser.getSignIn());
             assertEquals(LANGS, session.getUser().getLanguages());
             
-            LinkedHashSet<String> persistedLangs = optionsService.getOrderedStringSet(testUser.getUser().getHealthCode(), ParticipantOption.LANGUAGES);
+            LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getUser().getHealthCode()).getOrderedStringSet(LANGUAGES);
             assertEquals(LANGS, persistedLangs);
         } finally {
             helper.deleteUser(testUser);

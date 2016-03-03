@@ -267,7 +267,8 @@ public class ConsentService {
         }
         studyEnrollmentService.decrementStudyEnrollment(study, user);
         
-        String externalId = optionsService.getString(user.getHealthCode(), EXTERNAL_IDENTIFIER);
+        String externalId = optionsService.getOptions(user.getHealthCode())
+                .getString(EXTERNAL_IDENTIFIER);
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, user, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
     }
@@ -337,8 +338,7 @@ public class ConsentService {
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
-        final SharingScope sharingScope = optionsService.getEnum(user.getHealthCode(), 
-                SHARING_SCOPE, SharingScope.class);
+        final SharingScope sharingScope = optionsService.getOptions(user.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         
         MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(
             study, subpopGuid, user, consentSignature, sharingScope, studyConsentService, consentTemplate);

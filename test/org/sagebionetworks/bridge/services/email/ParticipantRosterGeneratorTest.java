@@ -30,12 +30,12 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -71,18 +71,6 @@ public class ParticipantRosterGeneratorTest {
     private ParticipantOptionsService optionsService;
     
     @Mock
-    private OptionLookup emailLookup;
-    
-    @Mock
-    private OptionLookup sharingLookup;
-    
-    @Mock
-    private OptionLookup dataGroupsLookup;
-    
-    @Mock
-    private OptionLookup externalIdLookup;
-    
-    @Mock
     private SubpopulationService subpopService;
     
     private List<Subpopulation> studySubpopulations;
@@ -106,16 +94,18 @@ public class ParticipantRosterGeneratorTest {
         
         when(healthCodeService.getMapping(anyString())).thenReturn(healthId);
         
-        when(emailLookup.get(anyString())).thenReturn(Boolean.TRUE.toString());
-        when(dataGroupsLookup.getDataGroups(anyString())).thenReturn(Sets.newHashSet("data-group-1"));
-        when(sharingLookup.getSharingScope(anyString())).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        Map<String,String> map = Maps.newHashMap();
+        map.put(DATA_GROUPS.name(), "data-group-1");
+        map.put(EMAIL_NOTIFICATIONS.name(), "true");
+        map.put(SHARING_SCOPE.name(), SharingScope.ALL_QUALIFIED_RESEARCHERS.name());
+        map.put(EXTERNAL_IDENTIFIER.name(), "externalId");
 
-        Map<ParticipantOption,OptionLookup> map = Maps.newHashMap();
-        map.put(DATA_GROUPS, dataGroupsLookup);
-        map.put(EMAIL_NOTIFICATIONS, emailLookup);
-        map.put(SHARING_SCOPE, sharingLookup);
-        map.put(EXTERNAL_IDENTIFIER, externalIdLookup);
-        when(optionsService.getAllOptionsForAllStudyParticipants(study)).thenReturn(map);
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
+        
+        AllParticipantOptionsLookup allLookup = new AllParticipantOptionsLookup();
+        allLookup.put("healthCode", lookup);
+        
+        when(optionsService.getOptionsForAllParticipants(study)).thenReturn(allLookup);
         
         Iterator<Account> iterator = buildAccountIterator();
         generator = new ParticipantRosterGenerator(iterator, study, sendMailService, healthCodeService, optionsService, subpopService);

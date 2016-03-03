@@ -1,22 +1,19 @@
 package org.sagebionetworks.bridge.upload;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
-
-import com.google.common.base.Splitter;
-import com.google.common.collect.Sets;
 
 @Component
 public class TranscribeConsentHandler implements UploadValidationHandler {
@@ -30,26 +27,16 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context) {
         // read sharing scope from options service
-        Map<ParticipantOption,String> options = optionsService.getAllParticipantOptions(
-                context.getUpload().getHealthCode());
+        ParticipantOptionsLookup lookup = optionsService.getOptions(context.getUpload().getHealthCode());
 
-        // Options service never returns null, but it may return an empty map. Check that it has a value for
-        // sharing_scope, and if it doesn't, default to no_sharing
-        String sharingScopeString = options.get(ParticipantOption.SHARING_SCOPE);
-        SharingScope userSharingScope;
-        if (isBlank(sharingScopeString)) {
-            userSharingScope = SharingScope.NO_SHARING;
-        } else {
-            userSharingScope = SharingScope.valueOf(sharingScopeString);
-        }
+        // Get sharing scope (defaults to NO_SHARING)
+        SharingScope userSharingScope = lookup.getEnum(SHARING_SCOPE, SharingScope.class);
 
         // Also get external ID
-        String userExternalId = options.get(ParticipantOption.EXTERNAL_IDENTIFIER);
+        String userExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
         
         // And get user data groups
-        String dataGroupsSer = options.get(ParticipantOption.DATA_GROUPS);
-        Set<String> userDataGroups = (isNotBlank(dataGroupsSer))
-                ? Sets.newHashSet(Splitter.on(",").split(dataGroupsSer)) : null;
+        Set<String> userDataGroups = lookup.getStringSet(DATA_GROUPS);
 
         // write sharing scope to health data record
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();

@@ -2,21 +2,20 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -74,12 +73,8 @@ public class ParticipantRosterGenerator implements Runnable {
         try {
             ImmutableMap<SubpopulationGuid,Subpopulation> mapping = getSubpopulationNameMapping();
             
-            Map<ParticipantOption,OptionLookup> studyLookup = optionsService.getAllOptionsForAllStudyParticipants(study);
-            OptionLookup sharingScopes = studyLookup.get(SHARING_SCOPE);
-            OptionLookup emailNotifications = studyLookup.get(EMAIL_NOTIFICATIONS);
-            OptionLookup externalIds = studyLookup.get(EXTERNAL_IDENTIFIER);
-            OptionLookup dataGroups = studyLookup.get(DATA_GROUPS);
-            
+            AllParticipantOptionsLookup studyLookup = optionsService.getOptionsForAllParticipants(study);
+
             int count = 0;
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
@@ -104,12 +99,11 @@ public class ParticipantRosterGenerator implements Runnable {
                     // Accounts exist that have signatures but no health codes. This may only be from testing, 
                     // but still, do not want roster generation to fail because of this. So we check for this.
                     if (healthCode != null) {
-                        SharingScope sharing = sharingScopes.getSharingScope(healthCode);
-                        Boolean notifyByEmail = Boolean.valueOf(emailNotifications.get(healthCode));
-                        participant.setSharingScope(sharing);
-                        participant.setNotifyByEmail(notifyByEmail);
-                        participant.setExternalId(externalIds.get(healthCode));
-                        participant.setDataGroups(dataGroups.getDataGroups(healthCode));
+                        ParticipantOptionsLookup lookup = studyLookup.get(healthCode);
+                        participant.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+                        participant.setNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
+                        participant.setExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
+                        participant.setDataGroups(lookup.getStringSet(DATA_GROUPS));
                     }
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());

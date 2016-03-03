@@ -146,7 +146,7 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
         
     }
     private void updateSharingScope(StringBuilder sb, StudyIdentifier studyId, String healthCode) {
-        SharingScope scope = optionsService.getEnum(healthCode, SHARING_SCOPE, SharingScope.class);
+        SharingScope scope = optionsService.getOptions(healthCode).getEnum(SHARING_SCOPE, SharingScope.class);
         if (scope == null || scope == SharingScope.NO_SHARING) {
             sb.append(", setting sharing to " + SharingScope.SPONSORS_AND_PARTNERS);
             optionsService.setEnum(studyId, healthCode, SHARING_SCOPE, SharingScope.SPONSORS_AND_PARTNERS);    

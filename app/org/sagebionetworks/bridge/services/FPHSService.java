@@ -52,7 +52,7 @@ public class FPHSService {
         }
         verifyExternalIdentifier(externalId);
         
-        Set<String> dataGroups = optionsService.getStringSet(healthCode, DATA_GROUPS);
+        Set<String> dataGroups = optionsService.getOptions(healthCode).getStringSet(DATA_GROUPS);
         dataGroups.add("football_player");
         optionsService.setString(studyId, healthCode, EXTERNAL_IDENTIFIER, externalId.getIdentifier());
         optionsService.setStringSet(studyId, healthCode, DATA_GROUPS, dataGroups);

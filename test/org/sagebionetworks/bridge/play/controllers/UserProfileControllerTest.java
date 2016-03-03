@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -120,7 +121,11 @@ public class UserProfileControllerTest {
         
         UserProfileController controller = controllerForExternalIdTests();
         
-        when(optionsService.getStringSet("healthCode", DATA_GROUPS)).thenReturn(dataGroupsSet);
+        Map<String,String> map = Maps.newHashMap();
+        map.put(DATA_GROUPS.name(), "group1,group2");
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
+        
+        when(optionsService.getOptions("healthCode")).thenReturn(lookup);
         
         Result result = controller.getDataGroups();
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
