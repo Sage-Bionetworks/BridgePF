@@ -49,7 +49,7 @@ public class CriteriaUtils {
                 return false;
             }
         }
-        if (langDoesNotMatch(context.getLanguages(), criteria.getLanguage())) {
+        if (languageDoesNotMatch(context.getLanguages(), criteria.getLanguage())) {
             return false;
         }
         return true;
@@ -73,7 +73,7 @@ public class CriteriaUtils {
 
     // This is a simple match: if a criteria declares a language, the user must declare the language
     // This does NOT necessarily return the user's most desired language.
-    private static boolean langDoesNotMatch(Set<String> preferredLanguages, String targetLanguage) {
+    private static boolean languageDoesNotMatch(Set<String> preferredLanguages, String targetLanguage) {
         if (targetLanguage == null) {
             return false;
         }
