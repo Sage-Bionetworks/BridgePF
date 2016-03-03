@@ -187,6 +187,21 @@ public class CriteriaUtilsTest {
         assertFalse(CriteriaUtils.matchCriteria(context, criteria));
     }
     
+    @Test
+    public void matchesLanguageRegardlessOfCase() {
+        Criteria criteria = criteria(KEY, EMPTY_SET, EMPTY_SET, -2, null);
+        criteria.setLanguage("EN");
+        
+        CriteriaContext context = getContextWithLanguage("en");
+        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+        
+        criteria = criteria(KEY, EMPTY_SET, EMPTY_SET, -2, null);
+        criteria.setLanguage("en");
+        
+        context = getContextWithLanguage("EN");
+        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+    }
+    
     private CriteriaContext getContextWithLanguage(String lang) {
         LinkedHashSet<String> list = (lang == null) ?
                 TestUtils.newLinkedHashSet() : TestUtils.newLinkedHashSet(lang);
