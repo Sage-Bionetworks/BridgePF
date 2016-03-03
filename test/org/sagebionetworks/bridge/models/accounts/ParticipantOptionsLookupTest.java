@@ -93,10 +93,17 @@ public class ParticipantOptionsLookupTest {
     }
 
     @Test
-    public void getBooleanWithValue() {
+    public void getBooleanWithFalseValue() {
         ParticipantOptionsLookup lookup = setupLookup(EMAIL_NOTIFICATIONS, "false");
         
         assertEquals(Boolean.FALSE, lookup.getBoolean(EMAIL_NOTIFICATIONS));
+    }
+    
+    @Test
+    public void getBooleanWithTrueValue() {
+        ParticipantOptionsLookup lookup = setupLookup(EMAIL_NOTIFICATIONS, "true");
+        
+        assertEquals(Boolean.TRUE, lookup.getBoolean(EMAIL_NOTIFICATIONS));
     }
     
     @Test

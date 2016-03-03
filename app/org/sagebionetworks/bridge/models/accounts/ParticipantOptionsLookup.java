@@ -22,9 +22,6 @@ public class ParticipantOptionsLookup {
     }
     
     public String getString(ParticipantOption option) {
-        if (options == null) {
-            return option.getDefaultValue();
-        }
         String value = options.get(option.name());
         if (value == null) {
             return option.getDefaultValue();

@@ -189,18 +189,6 @@ public class ParticipantOptionsServiceTest {
     }
     
     @Test
-    public void getAllOptionsForAllStudyParticipants() {
-        AllParticipantOptionsLookup allLookup = new AllParticipantOptionsLookup();
-        when(mockDao.getOptionsForAllParticipants(TEST_STUDY)).thenReturn(allLookup);
-        
-        AllParticipantOptionsLookup result = service.getOptionsForAllParticipants(TEST_STUDY);
-        assertEquals(allLookup, result);
-        
-        verify(mockDao).getOptionsForAllParticipants(TEST_STUDY);
-        verifyNoMoreInteractions(mockDao);
-    }
-    
-    @Test
     public void canSetLinkedHashSet() {
         when(mockDao.getOptions(HEALTH_CODE)).thenReturn(new ParticipantOptionsLookup(map(LANGUAGES, "en,fr")));
         
