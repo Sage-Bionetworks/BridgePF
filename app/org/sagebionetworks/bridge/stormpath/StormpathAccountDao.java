@@ -193,7 +193,7 @@ public class StormpathAccountDao implements AccountDao {
             AuthenticationRequest<?,?> request = UsernamePasswordRequest.builder()
                     .setUsernameOrEmail(signIn.getEmail())
                     .setPassword(signIn.getPassword())
-                    //.withResponseOptions(UsernamePasswordRequest.options().withAccount())
+                    .withResponseOptions(UsernamePasswordRequest.options().withAccount())
                     .inAccountStore(directory).build();
             
             AuthenticationResult result = application.authenticateAccount(request);
