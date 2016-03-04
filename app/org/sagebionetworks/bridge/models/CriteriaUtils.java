@@ -49,9 +49,7 @@ public class CriteriaUtils {
                 return false;
             }
         }
-        // This is a simple match: if a criteria declares a language, the user must declare the language
-        // This does NOT necessarily return the user's most desired language.
-        if (criteria.getLanguage() != null && !context.getLanguages().contains(criteria.getLanguage())) {
+        if (languageDoesNotMatch(context.getLanguages(), criteria.getLanguage())) {
             return false;
         }
         return true;
@@ -73,6 +71,22 @@ public class CriteriaUtils {
         validateDataGroupNotRequiredAndProhibited(criteria, errors);
     }
 
+    // This is a simple match: if a criteria declares a language, the user must declare the language
+    // This does NOT necessarily return the user's most desired language.
+    private static boolean languageDoesNotMatch(Set<String> preferredLanguages, String targetLanguage) {
+        // It doesn't match if 1) target language has been specified or 
+        // 2) user has declared the required language. 
+        if (targetLanguage == null) {
+            return false;
+        }
+        for (String prefLang : preferredLanguages) {
+            if (targetLanguage.equalsIgnoreCase(prefLang)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
     /**
      * Can't logically have a data group that is both required and prohibited, so check for this.
      * @param criteria
