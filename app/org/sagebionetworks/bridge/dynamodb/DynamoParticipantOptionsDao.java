@@ -38,7 +38,6 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
         checkNotNull(option);
-        checkArgument(isNotBlank(value));
         
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
