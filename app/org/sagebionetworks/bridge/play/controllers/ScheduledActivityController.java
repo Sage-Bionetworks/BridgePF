@@ -99,6 +99,7 @@ public class ScheduledActivityController extends BaseController {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withLanguages(getLanguages(session))
+                .withUserDataGroups(session.getUser().getDataGroups())
                 .withHealthCode(session.getUser().getHealthCode())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(clientInfo)
