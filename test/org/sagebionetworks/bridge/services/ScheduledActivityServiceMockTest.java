@@ -408,13 +408,113 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void complexCriteriaBasedScheduleWorksThroughService() throws Exception {
+        String json = TestUtils.createJson("{"+  
+            "'guid':'5fe9029e-beb6-4163-ac35-23d048deeefe',"+
+            "'label':'Voice Activity',"+
+            "'version':4,"+
+            "'modifiedOn':'2016-03-04T20:21:10.487Z',"+
+            "'strategy':{  "+
+                "'type':'CriteriaScheduleStrategy',"+
+                "'scheduleCriteria':[  "+
+                    "{  "+
+                        "'schedule':{"+  
+                            "'scheduleType':'recurring',"+
+                            "'eventId':'enrollment',"+
+                            "'activities':[  "+
+                                "{  "+
+                                    "'label':'Voice Activity',"+
+                                    "'labelDetail':'20 Seconds',"+
+                                    "'guid':'33669208-1d07-4b89-8ec5-1eb5aad6dd75',"+
+                                    "'task':{  "+
+                                        "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
+                                        "'type':'TaskReference'"+
+                                    "},"+
+                                    "'activityType':'task',"+
+                                    "'type':'Activity'"+
+                                "},"+
+                                "{  "+
+                                    "'label':'Voice Activity',"+
+                                    "'labelDetail':'20 Seconds',"+
+                                    "'guid':'822f7666-ce7b-4854-98ec-8a6fffa708d9',"+
+                                    "'task':{  "+
+                                        "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
+                                        "'type':'TaskReference'"+
+                                    "},"+
+                                    "'activityType':'task',"+
+                                    "'type':'Activity'"+
+                                "},"+
+                                "{  "+
+                                    "'label':'Voice Activity',"+
+                                    "'labelDetail':'20 Seconds',"+
+                                    "'guid':'644dfee6-eb88-49b4-9472-a8ef79d9865f',"+
+                                    "'task':{  "+
+                                        "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
+                                        "'type':'TaskReference'"+
+                                    "},"+
+                                    "'activityType':'task',"+
+                                    "'type':'Activity'"+
+                                "}"+
+                            "],"+
+                            "'persistent':false,"+
+                            "'interval':'P1D',"+
+                            "'expires':'PT24H',"+
+                            "'times':[  "+
+                                "'00:00:00.000'"+
+                            "],"+
+                            "'type':'Schedule'"+
+                        "},"+
+                        "'criteria':{  "+
+                            "'allOfGroups':['parkinson'],"+
+                            "'noneOfGroups':[],"+
+                            "'type':'Criteria'"+
+                        "},"+
+                        "'type':'ScheduleCriteria'"+
+                    "},"+
+                    "{  "+
+                        "'schedule':{"+  
+                            "'scheduleType':'recurring',"+
+                            "'eventId':'enrollment',"+
+                            "'activities':[  "+
+                                "{  "+
+                                    "'label':'Voice Activity',"+
+                                    "'labelDetail':'20 Seconds',"+
+                                    "'guid':'7e9514ba-b32d-4124-8977-38cb227ad285',"+
+                                    "'task':{  "+
+                                        "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
+                                        "'type':'TaskReference'"+
+                                    "},"+
+                                    "'activityType':'task',"+
+                                    "'type':'Activity'"+
+                                "}"+
+                            "],"+
+                            "'persistent':false,"+
+                            "'interval':'P1D',"+
+                            "'expires':'PT24H',"+
+                            "'times':[  "+
+                                "'00:00:00.000'"+
+                            "],"+
+                            "'type':'Schedule'"+
+                        "},"+
+                        "'criteria':{"+  
+                            "'allOfGroups':[],"+
+                            "'noneOfGroups':[],"+
+                            "'type':'Criteria'"+
+                        "},"+
+                        "'type':'ScheduleCriteria'"+
+                    "}"+
+                "]"+
+            "},"+
+            "'minAppVersion':36,"+
+            "'type':'SchedulePlan'"+
+        "}");
+        
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", DateTime.now().minusDays(1));
         when(activityEventService.getActivityEventMap("AAA")).thenReturn(events);
         
         ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
-
-        SchedulePlan voiceActivityPlan = BridgeObjectMapper.get().readValue("{\"guid\":\"5fe9029e-beb6-4163-ac35-23d048deeefe\",\"label\":\"Voice Activity\",\"version\":4,\"modifiedOn\":\"2016-03-04T20:21:10.487Z\",\"strategy\":{\"type\":\"CriteriaScheduleStrategy\",\"scheduleCriteria\":[{\"schedule\":{\"scheduleType\":\"recurring\",\"eventId\":\"enrollment\",\"activities\":[{\"label\":\"Voice Activity\",\"labelDetail\":\"20 Seconds\",\"guid\":\"33669208-1d07-4b89-8ec5-1eb5aad6dd75\",\"task\":{\"identifier\":\"3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"},{\"label\":\"Voice Activity\",\"labelDetail\":\"20 Seconds\",\"guid\":\"822f7666-ce7b-4854-98ec-8a6fffa708d9\",\"task\":{\"identifier\":\"3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"},{\"label\":\"Voice Activity\",\"labelDetail\":\"20 Seconds\",\"guid\":\"644dfee6-eb88-49b4-9472-a8ef79d9865f\",\"task\":{\"identifier\":\"3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}],\"persistent\":false,\"interval\":\"P1D\",\"expires\":\"PT24H\",\"times\":[\"00:00:00.000\"],\"type\":\"Schedule\"},\"criteria\":{\"allOfGroups\":[\"parkinson\"],\"noneOfGroups\":[],\"type\":\"Criteria\"},\"type\":\"ScheduleCriteria\"},{\"schedule\":{\"scheduleType\":\"recurring\",\"eventId\":\"enrollment\",\"activities\":[{\"label\":\"Voice Activity\",\"labelDetail\":\"20 Seconds\",\"guid\":\"7e9514ba-b32d-4124-8977-38cb227ad285\",\"task\":{\"identifier\":\"3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}],\"persistent\":false,\"interval\":\"P1D\",\"expires\":\"PT24H\",\"times\":[\"00:00:00.000\"],\"type\":\"Schedule\"},\"criteria\":{\"allOfGroups\":[],\"noneOfGroups\":[],\"type\":\"Criteria\"},\"type\":\"ScheduleCriteria\"}]},\"minAppVersion\":36,\"type\":\"SchedulePlan\"}", SchedulePlan.class);
+        
+        SchedulePlan voiceActivityPlan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         List<SchedulePlan> schedulePlans = Lists.newArrayList(voiceActivityPlan);
         when(schedulePlanService.getSchedulePlans(info, new StudyIdentifierImpl("test-study"))).thenReturn(schedulePlans);
         
