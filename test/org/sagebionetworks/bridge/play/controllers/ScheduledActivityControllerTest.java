@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -40,6 +41,7 @@ import play.test.Helpers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class ScheduledActivityControllerTest {
 
@@ -67,6 +69,8 @@ public class ScheduledActivityControllerTest {
         User user = new User();
         user.setHealthCode("BBB");
         user.setStudyKey(TestConstants.TEST_STUDY_IDENTIFIER);
+        user.setDataGroups(Sets.newHashSet("group1"));
+        user.setLanguages(TestUtils.newLinkedHashSet("en","fr"));
         session.setUser(user);
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
         
@@ -79,6 +83,30 @@ public class ScheduledActivityControllerTest {
         
         clientInfo = ClientInfo.fromUserAgentCache("App Name/4 SDK/2");
         doReturn(clientInfo).when(controller).getClientInfoFromUserAgentHeader();
+    }
+    
+    @Test
+    public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
+        ArgumentCaptor<ScheduleContext> captor = ArgumentCaptor.forClass(ScheduleContext.class);
+        
+        List<ScheduledActivity> list = Lists.newArrayList();
+        scheduledActivityService = mock(ScheduledActivityService.class);
+        when(scheduledActivityService.getScheduledActivities(any(User.class), any(ScheduleContext.class))).thenReturn(list);
+        controller.setScheduledActivityService(scheduledActivityService);
+        
+        controller.getScheduledActivities(null, "+03:00", "3");
+        
+        verify(scheduledActivityService).getScheduledActivities(any(User.class), captor.capture());
+        
+        ScheduleContext context = captor.getValue();
+        assertEquals(DateTimeZone.forOffsetHours(3), context.getZone());
+        assertEquals(Sets.newHashSet("group1"), context.getCriteriaContext().getUserDataGroups());
+        
+        CriteriaContext critContext = context.getCriteriaContext();
+        assertEquals("BBB", critContext.getHealthCode());
+        assertEquals(TestUtils.newLinkedHashSet("en","fr"), critContext.getLanguages());
+        assertEquals("api", critContext.getStudyIdentifier().getIdentifier());
+        assertEquals(clientInfo, critContext.getClientInfo());
     }
     
     @Test
