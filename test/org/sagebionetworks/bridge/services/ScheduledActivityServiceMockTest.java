@@ -509,7 +509,7 @@ public class ScheduledActivityServiceMockTest {
         "}");
         
         Map<String,DateTime> events = Maps.newHashMap();
-        events.put("enrollment", DateTime.now().minusDays(1));
+        events.put("enrollment", DateTime.now().minusDays(3));
         when(activityEventService.getActivityEventMap("AAA")).thenReturn(events);
         
         ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
@@ -525,7 +525,7 @@ public class ScheduledActivityServiceMockTest {
             .withClientInfo(info)
             .withStudyIdentifier("test-study")
             .withUserDataGroups(user.getDataGroups())
-            .withEndsOn(DateTime.now().plusDays(0))
+            .withEndsOn(DateTime.now().plusDays(1).withTimeAtStartOfDay())
             .withTimeZone(DateTimeZone.UTC)
             .withHealthCode("AAA")
             .build();
