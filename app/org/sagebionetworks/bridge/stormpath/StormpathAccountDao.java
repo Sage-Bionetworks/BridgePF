@@ -14,7 +14,6 @@ import java.util.SortedMap;
 
 import javax.annotation.Resource;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
