@@ -20,6 +20,8 @@ import java.util.TreeMap;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -33,8 +35,11 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
+import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.group.GroupList;
 
 public class StormpathAccountTest {
     
@@ -384,6 +389,43 @@ public class StormpathAccountTest {
 
         // Does not throw NPE, it uses last version in sorted map
         assertEquals("111", acct.getAttribute("foo"));
+    }
+
+    @Test
+    public void convertsStormpathToBridgeAccount() {
+        SortedMap<Integer,BridgeEncryptor> map = new TreeMap<>();
+        
+        StudyIdentifier studyId = new StudyIdentifierImpl("test-key");
+        List<SubpopulationGuid> guids = Lists.newArrayList();
+        
+        Group group1 = mock(Group.class);
+        when(group1.getName()).thenReturn("developer");
+        
+        Group group2 = mock(Group.class);
+        when(group2.getName()).thenReturn("admin");
+        
+        GroupList groupList = mock(GroupList.class);
+        when(groupList.iterator()).thenReturn(Lists.newArrayList(group1,group2).iterator());
+        
+        com.stormpath.sdk.account.Account acct = mock(com.stormpath.sdk.account.Account.class);
+        when(acct.getStatus()).thenReturn(com.stormpath.sdk.account.AccountStatus.ENABLED);
+        when(acct.getEmail()).thenReturn("email@email.com");
+        when(acct.getGivenName()).thenReturn("firstName");
+        when(acct.getSurname()).thenReturn("lastName");
+        when(acct.getGroups()).thenReturn(groupList);
+        when(acct.getHref()).thenReturn("http://something/accounts/123");
+
+        // Signatures and encrypted values (including attributes) are tested in more depth in other tests
+        // These are basic values from the Stormpath account
+        StormpathAccount account = new StormpathAccount(studyId, guids, acct, map);
+        assertEquals(acct, account.getAccount());
+        assertEquals(studyId, account.getStudyIdentifier());
+        assertEquals(acct, account.getAccount());
+        assertEquals("email@email.com", account.getEmail());
+        assertEquals("firstName", account.getFirstName());
+        assertEquals("lastName", account.getLastName());
+        assertEquals(Sets.newHashSet(Roles.DEVELOPER,Roles.ADMIN), account.getRoles());
+        assertEquals("123", account.getId());
     }
     
     private void verifyOneConsentStream(SubpopulationGuid guid, ConsentSignature sig1)
