@@ -18,7 +18,7 @@ public class AccountSummaryTest {
     }
     
     @Test
-    public void canSerializer() throws Exception {
+    public void canSerialize() throws Exception {
         AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", AccountStatus.UNVERIFIED);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
