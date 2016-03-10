@@ -9,6 +9,9 @@ import javax.mail.internet.MimeBodyPart;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -53,7 +56,7 @@ public class WithdrawConsentEmailProvider implements MimeTypeEmailProvider {
         if (StringUtils.isBlank(withdrawal.getReason())) {
             content += "<p><i>No reason given.</i></p>";
         } else {
-            content += "<p>"+withdrawal.getReason()+"</p>";
+            content += "<p>" + nullSafeCleanHtml(withdrawal.getReason()) + "</p>";
         }
         
         // Consent agreement as message body in HTML
@@ -65,14 +68,21 @@ public class WithdrawConsentEmailProvider implements MimeTypeEmailProvider {
     }
     
     private String getUserLabel() {
-        String label = String.format("%s %s &lt;%s&gt;", nullSafe(user.getFirstName()), nullSafe(user.getLastName()), user.getEmail());
+        String label = String.format("%s %s &lt;%s&gt;", nullSafeCleanHtml(user.getFirstName()),
+                nullSafeCleanHtml(user.getLastName()), user.getEmail());
         if (externalId != null) {
-            label += " (external ID: " + externalId + ") ";
+            label += " (external ID: " + nullSafeCleanHtml(externalId) + ") ";
         }
         return label;
     }
 
-    private String nullSafe(String value) {
-        return (value == null) ? "" : value;
+    // Helper method to strip HTML from a string so it can be safely printed in the Withdraw Consent email. Converts
+    // null or blank strings into an empty string, so the word "null" doesn't randomly appear in our emails.
+    private static String nullSafeCleanHtml(String in) {
+        if (StringUtils.isBlank(in)) {
+            return "";
+        } else {
+            return Jsoup.clean(in, Whitelist.none());
+        }
     }
 }
