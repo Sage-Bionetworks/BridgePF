@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -22,7 +23,7 @@ public class ParticipantController extends BaseController {
     private ParticipantService participantService;
     
     @Autowired
-    public void setParticipantService(ParticipantService participantService) {
+    final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
     }
     
@@ -44,7 +45,7 @@ public class ParticipantController extends BaseController {
         try {
             return parseInt(value);
         } catch(NumberFormatException e) {
-            return defaultValue;
+            throw new BadRequestException(value + " is not an integer");
         }
     }
 

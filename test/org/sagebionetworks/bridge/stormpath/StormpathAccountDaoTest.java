@@ -86,7 +86,7 @@ public class StormpathAccountDaoTest {
     public void getStudyPagedAccounts() {
         List<String> newAccounts = Lists.newArrayList();
         try {
-            PagedResourceList<AccountSummary> accounts = accountDao.getPagedAccountSummaries(study, 0, 5);
+            PagedResourceList<AccountSummary> accounts = accountDao.getPagedAccountSummaries(study, 0, 10);
             // This test requires 6 accounts be present (one more than a page so we can verify the results are capped)
             // API directories already have 3-6 accounts. They don't need to be verified, consented, etc.
             if (accounts.getTotal() < 6) {
@@ -97,8 +97,10 @@ public class StormpathAccountDaoTest {
                     accountDao.signUp(study, signUp, false);
                     newAccounts.add(email);
                 }
-                accounts = accountDao.getPagedAccountSummaries(study, 0, 5);
             }
+            // Fetch only 5 accounts
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 5);
+            
             // pageSize is respected
             assertEquals(5, accounts.getItems().size());
             

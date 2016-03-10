@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -94,7 +95,7 @@ public class ParticipantControllerTest {
         verify(participantService).getPagedAccountSummaries(STUDY, 10, 20);
     }
     
-    @Test
+    @Test(expected = BadRequestException.class)
     public void oddParametersUseDefaults() throws Exception {
         controller.getParticipants("asdf", "qwer");
         

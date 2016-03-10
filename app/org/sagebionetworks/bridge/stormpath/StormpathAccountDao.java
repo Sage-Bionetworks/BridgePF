@@ -139,7 +139,7 @@ public class StormpathAccountDao implements AccountDao {
         // getSize() in the iterator is the total number of records that match the criteria... not the smaller of 
         // either the number of records returned or limitTo (as you might expect in a paging API when you get the 
         // last page of records). Behavior as described by Stormpath in email.
-        AccountCriteria criteria = Accounts.criteria().limitTo(pageSize).offsetBy(offsetBy);
+        AccountCriteria criteria = Accounts.criteria().limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         AccountList accts = directory.getAccounts(criteria);
         
