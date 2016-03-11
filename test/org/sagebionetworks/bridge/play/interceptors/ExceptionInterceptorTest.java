@@ -93,6 +93,7 @@ public class ExceptionInterceptorTest {
         assertEquals("sessionToken", node.get("sessionToken").asText());
         assertEquals("develop", node.get("environment").asText());
         assertEquals("email@email.com", node.get("username").asText());
+        assertEquals("email@email.com", node.get("email").asText());
         assertTrue(node.get("dataSharing").asBoolean());
         assertEquals("UserSessionInfo", node.get("type").asText());
         ArrayNode array = (ArrayNode)node.get("roles");
@@ -102,6 +103,6 @@ public class ExceptionInterceptorTest {
         assertEquals("group1", array.get(0).asText());
         assertEquals(0, node.get("consentStatuses").size());
         // And no further properties
-        assertEquals(12, node.size());
+        assertEquals(13, node.size());
     }
 }    
