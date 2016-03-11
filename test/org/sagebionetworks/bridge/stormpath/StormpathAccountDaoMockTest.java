@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -185,7 +186,25 @@ public class StormpathAccountDaoMockTest {
             assertEquals(HttpStatus.SC_LOCKED, ex.getStatusCode());
         }
     }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void getStudyPagedAccountsRejectsPageSizeTooSmall() {
+        StormpathAccountDao dao = new StormpathAccountDao();
+        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE-1);
+    }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void getStudyPagedAccountsRejectsPageSizeTooLarge() {
+        StormpathAccountDao dao = new StormpathAccountDao();
+        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1);
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void getStudyPagedAccountsRejectsNonsenseOffsetBy() {
+        StormpathAccountDao dao = new StormpathAccountDao();
+        dao.getPagedAccountSummaries(study, -10, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+    }
+    
     private SubpopulationService mockSubpopService() {
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString(study.getIdentifier());

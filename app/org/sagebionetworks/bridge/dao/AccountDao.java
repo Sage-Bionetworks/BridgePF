@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.Iterator;
 
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -103,4 +105,19 @@ public interface AccountDao {
      * @return
      */
     public Iterator<Account> getStudyAccounts(Study study);
+    
+    /**
+     * Get a page of lightweight account summaries (most importantly, the email addresses of 
+     * participants which are required for the rest of the participant APIs). 
+     * @param study
+     *      retrieve participants in this study
+     * @param offsetBy
+     *      index to start the next page of records
+     * @param pageSize
+     *      number of records to return (or the number of remaining records if less than the pageSize).
+     * @return
+     *      a paged resource list that includes the page of account summaries, as well as other information 
+     *      about the request and the total number of records.
+     */
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize);
 }

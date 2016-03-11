@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -22,7 +23,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
@@ -80,7 +83,49 @@ public class StormpathAccountDaoTest {
     }
     
     @Test
-    public void returnsNulWhenThereIsNoAccount() {
+    public void getStudyPagedAccounts() {
+        List<String> newAccounts = Lists.newArrayList();
+        try {
+            PagedResourceList<AccountSummary> accounts = accountDao.getPagedAccountSummaries(study, 0, 10);
+            // This test requires 6 accounts be present (one more than a page so we can verify the results are capped)
+            // API directories already have 3-6 accounts. They don't need to be verified, consented, etc.
+            if (accounts.getTotal() < 6) {
+                for (int i=0; i < (6-accounts.getTotal()); i++) {
+                    String random = RandomStringUtils.randomAlphabetic(5);
+                    String email = "bridge-testing+"+random+"@sagebridge.org";
+                    SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+                    accountDao.signUp(study, signUp, false);
+                    newAccounts.add(email);
+                }
+            }
+            // Fetch only 5 accounts
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 5);
+            
+            // pageSize is respected
+            assertEquals(5, accounts.getItems().size());
+            
+            // offsetBy is advanced
+            AccountSummary account1 = accountDao.getPagedAccountSummaries(study, 1, 5).getItems().get(0);
+            AccountSummary account2 = accountDao.getPagedAccountSummaries(study, 2, 5).getItems().get(0);
+            assertEquals(accounts.getItems().get(1), account1);
+            assertEquals(accounts.getItems().get(2), account2);
+            
+            // Next page = offset + pageSize
+            AccountSummary nextPageAccount = accountDao.getPagedAccountSummaries(study, 5, 5).getItems().get(0);
+            assertFalse(accounts.getItems().contains(nextPageAccount));
+            
+            // This should be beyond the number of users in any API study. Should be empty
+            accounts = accountDao.getPagedAccountSummaries(study, 100000, 100);
+            assertEquals(0, accounts.getItems().size());
+        } finally {
+            for (String email : newAccounts) {
+                accountDao.deleteAccount(study, email);
+            }
+        }
+    }
+    
+    @Test
+    public void returnsNullWhenThereIsNoAccount() {
         Account account = accountDao.getAccount(study, "thisemaildoesntexist@stormpath.com");
         assertNull(account);
     }
