@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -25,6 +26,15 @@ public class ParticipantController extends BaseController {
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
+    }
+    
+    public Result getParticipant(String email) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        StudyParticipant2 participant = participantService.getParticipant(study, email);
+        return okResult(participant);
     }
     
     public Result getParticipants(String offsetByString, String pageSizeString) {

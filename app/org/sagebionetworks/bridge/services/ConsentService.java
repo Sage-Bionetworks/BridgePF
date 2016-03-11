@@ -280,15 +280,16 @@ public class ConsentService {
      * signed to join the study.
      * @param study
      * @param subpopGuid
-     * @param user
+     * @param healthCode
+     * @param email
      */
-    public List<UserConsentHistory> getUserConsentHistory(Study study, SubpopulationGuid subpopGuid, User user) {
-        Account account = accountDao.getAccount(study, user.getEmail());
+    public List<UserConsentHistory> getUserConsentHistory(Study study, SubpopulationGuid subpopGuid, String healthCode, String email) {
+        Account account = accountDao.getAccount(study, email);
         
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
             UserConsent consent = userConsentDao.getUserConsent(
-                    user.getHealthCode(), subpopGuid, signature.getSignedOn());
-            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(user.getHealthCode(), subpopGuid);
+                    healthCode, subpopGuid, signature.getSignedOn());
+            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(healthCode, subpopGuid);
             
             UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
             builder.withName(signature.getName())
@@ -297,7 +298,7 @@ public class ConsentService {
                 .withImageData(signature.getImageData())
                 .withImageMimeType(signature.getImageMimeType())
                 .withSignedOn(signature.getSignedOn())
-                .withHealthCode(user.getHealthCode())
+                .withHealthCode(healthCode)
                 .withWithdrewOn(consent.getWithdrewOn())
                 .withConsentCreatedOn(consent.getConsentCreatedOn())
                 .withHasSignedActiveConsent(hasSignedActiveConsent);
