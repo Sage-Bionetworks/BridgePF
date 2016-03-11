@@ -55,6 +55,7 @@ public class UserSessionInfoTest {
         assertEquals(user.getSharingScope().name(), node.get("sharingScope").asText().toUpperCase());
         assertEquals(session.getSessionToken(), node.get("sessionToken").asText());
         assertEquals(user.getEmail(), node.get("username").asText());
+        assertEquals(user.getEmail(), node.get("email").asText());
         assertEquals("researcher", node.get("roles").get(0).asText());
         assertEquals("foo", node.get("dataGroups").get(0).asText());
         assertEquals("staging", node.get("environment").asText());
@@ -71,7 +72,7 @@ public class UserSessionInfoTest {
         assertEquals(6, consentStatus.size());
         
         // ... and no things that shouldn't be there
-        assertEquals(12, node.size());
+        assertEquals(13, node.size());
     }
     
 }

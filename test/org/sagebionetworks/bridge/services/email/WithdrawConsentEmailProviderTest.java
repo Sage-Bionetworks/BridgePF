@@ -16,9 +16,9 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 public class WithdrawConsentEmailProviderTest {
 
-    private static long UNIX_TIMESTAMP = 1446073435148L;
-    private static Withdrawal WITHDRAWAL = new Withdrawal("Because, reasons.");
-    private static String EXTERNAL_ID = "AAA";
+    private static final long UNIX_TIMESTAMP = 1446073435148L;
+    private static final Withdrawal WITHDRAWAL = new Withdrawal("<p>Because, reasons.</p>");
+    private static final String EXTERNAL_ID = "<u>AAA</u>";
     
     private WithdrawConsentEmailProvider provider;
     private Study study;
@@ -63,8 +63,8 @@ public class WithdrawConsentEmailProviderTest {
         when(study.getName()).thenReturn("Study Name");
         when(study.getSupportEmail()).thenReturn("c@c.com");
         
-        user.setFirstName("Jack");
-        user.setLastName("Aubrey");
+        user.setFirstName("<b>Jack<b>");
+        user.setLastName("<i>Aubrey</i>");
         user.setEmail("d@d.com");
         
         MimeTypeEmail email = provider.getMimeTypeEmail();

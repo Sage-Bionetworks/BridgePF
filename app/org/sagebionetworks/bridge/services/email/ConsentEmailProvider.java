@@ -11,6 +11,9 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.PreencodedMimeBodyPart;
 import javax.mail.util.ByteArrayDataSource;
 
+import com.google.common.net.MediaType;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -24,6 +27,8 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
@@ -82,10 +87,20 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         bodyPart.setText(consentDoc, StandardCharsets.UTF_8.name(), SUB_TYPE_HTML);
         builder.withMessageParts(bodyPart);
 
+        // Users can inject arbitrary HTML in the consent signature. Scrub the consent sig and MIME type to make sure
+        // it's valid.
+        String imageMimeType = consentSignature.getImageMimeType();
+        String imageData = consentSignature.getImageData();
+        boolean validConsentSigImage = isImageMimeType(imageMimeType) && isBase64(imageData);
+
         // Consent agreement as a PDF attachment
         // Embed the signature image
-        String consentDocWithSig = consentDoc.replace("cid:consentSignature",
-                        "data:" + consentSignature.getImageMimeType() + ";base64," + consentSignature.getImageData());
+        String consentDocWithSig = consentDoc;
+        if (validConsentSigImage) {
+            consentDocWithSig = consentDoc.replace("cid:consentSignature", "data:" + imageMimeType + ";base64," +
+                    imageData);
+        }
+
         final byte[] pdfBytes = createPdf(consentDocWithSig);
         final MimeBodyPart pdfPart = new MimeBodyPart();
         DataSource source = new ByteArrayDataSource(pdfBytes, MIME_TYPE_PDF);
@@ -97,15 +112,14 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         // imageData is present, so will imageMimeType.
         // We need to send the signature image as an embedded image in an attachment because some email providers
         // (notably Gmail) block inline Base64 images.
-        MimeBodyPart sigPart = null;
-        if (consentSignature.getImageData() != null) {
+        if (validConsentSigImage) {
             // Use pre-encoded MIME part since our image data is already base64 encoded.
-            sigPart = new PreencodedMimeBodyPart(HEADER_CONTENT_TRANSFER_ENCODING_VALUE);
+            MimeBodyPart sigPart = new PreencodedMimeBodyPart(HEADER_CONTENT_TRANSFER_ENCODING_VALUE);
             sigPart.setContentID(HEADER_CONTENT_ID_CONSENT_VALUE);
             sigPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_CONSENT_VALUE);
-            sigPart.setContent(consentSignature.getImageData(), consentSignature.getImageMimeType());
+            sigPart.setContent(imageData, imageMimeType);
+            builder.withMessageParts(sigPart);
         }
-        builder.withMessageParts(sigPart);
 
         return builder.build();
     }
@@ -116,18 +130,19 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
      * documents, we are moving to a system where only the content portion of the consent document, excluding the
      * signature block at the end, is available to researchers to edit. We then assemble the complete HTML document at
      * runtime. Here we branch based on the detection of a complete HTML document and do either one or the other.
-     * 
-     * @return
      */
     private String createSignedDocument() {
         StudyConsentView consent = studyConsentService.getActiveConsent(subpopGuid);
         String consentAgreementHTML = consent.getDocumentContent();
         String signingDate = FORMATTER.print(DateUtils.getCurrentMillisFromEpoch());
         String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();
+
+        // User's name may contain HTML. Clean it up
+        String username = Jsoup.clean(consentSignature.getName(), Whitelist.none());
         
         if (consentAgreementHTML.contains("<html")) {
             // proceed as we used to
-            String html = consentAgreementHTML.replace("@@name@@", consentSignature.getName());
+            String html = consentAgreementHTML.replace("@@name@@", username);
             html = html.replace("@@signing.date@@", signingDate);
             html = html.replace("@@email@@", user.getEmail());
             html = html.replace("@@sharing@@", sharingLabel);
@@ -144,7 +159,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
             map = Maps.newHashMap();
             map.put("studyName", study.getName());
             map.put("consent.body", resolvedConsentAgreementHTML);
-            map.put("participant.name", consentSignature.getName());
+            map.put("participant.name", username);
             map.put("participant.signing.date", signingDate);
             map.put("participant.email", user.getEmail());
             map.put("participant.sharing", sharingLabel);
@@ -154,7 +169,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     }
 
     private byte[] createPdf(final String consentDoc) {
-        try (ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder();) {
+        try (ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder()) {
             ITextRenderer renderer = new ITextRenderer();
             renderer.setDocumentFromString(consentDoc);
             renderer.layout();
@@ -164,5 +179,32 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         } catch (DocumentException e) {
             throw new BridgeServiceException(e);
         }
+    }
+
+    // Helper method to check if the given string is a valid Base64 string. Returns false for null or blank strings.
+    private static boolean isBase64(String base64Str) {
+        //noinspection SimplifiableIfStatement
+        if (StringUtils.isBlank(base64Str)) {
+            return false;
+        } else {
+            return Base64.isBase64(base64Str);
+        }
+    }
+
+    // Helper method to check if a given MIME type is an image MIME type. Returns false for null or blank strings, or
+    // for strings that are not valid MIME types.
+    private static boolean isImageMimeType(String mimeTypeStr) {
+        if (StringUtils.isBlank(mimeTypeStr)) {
+            return false;
+        }
+
+        MediaType mimeType;
+        try {
+            mimeType = MediaType.parse(mimeTypeStr);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+
+        return mimeType.is(MediaType.ANY_IMAGE_TYPE);
     }
 }
