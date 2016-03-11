@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -384,7 +385,14 @@ public class AuthenticationServiceTest {
             
             // Signing in should still work to create a consented user.
             Study study = studyService.getStudy(user.getStudyIdentifier());
-            CriteriaContext context = testUser.getCriteriaContext();
+            
+            // Create the context you would get for an unauthenticated user, don't use the now 
+            // fully-initialized testUser.getCriteriaContext()
+            CriteriaContext context =  new CriteriaContext.Builder()
+                    .withStudyIdentifier(study.getStudyIdentifier())
+                    .withLanguages(TestUtils.newLinkedHashSet("en"))
+                    .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                    .build();
             
             UserSession session = authService.signIn(study, context, user.getSignIn());
             
