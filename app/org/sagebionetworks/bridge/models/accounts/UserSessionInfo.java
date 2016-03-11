@@ -73,6 +73,9 @@ public class UserSessionInfo {
     public String getUsername() {
         return email;
     }
+    public String getEmail() {
+        return email;
+    }
     public String getEnvironment() {
         return environment;
     }
