@@ -1,12 +1,16 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
@@ -21,6 +25,7 @@ import javax.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -45,6 +50,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -57,9 +63,15 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.stormpath.StormpathAccount;
+import org.sagebionetworks.bridge.stormpath.StormpathAccountDao;
 
 import com.google.common.collect.Sets;
+import com.stormpath.sdk.account.AccountCriteria;
+import com.stormpath.sdk.account.AccountList;
+import com.stormpath.sdk.account.Accounts;
+import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
+import com.stormpath.sdk.directory.Directory;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -91,12 +103,16 @@ public class AuthenticationServiceTest {
     
     @Resource
     private SubpopulationService subpopService;
-
+    
     private TestUser testUser;
     
     @Before
     public void before() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).build();
+        
+        Study study = testUser.getStudy();
+        study.setEmailVerificationEnabled(false);
+        studyService.updateStudy(study, true);
     }
 
     @After
@@ -451,6 +467,38 @@ public class AuthenticationServiceTest {
             LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getUser().getHealthCode()).getOrderedStringSet(LANGUAGES);
             assertEquals(LANGS, persistedLangs);
         } finally {
+            helper.deleteUser(testUser);
+        }        
+    }
+    
+    @Test
+    public void verifyEmailWorksWithRepairConsents() throws Exception {
+        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(false).withSignIn(false).build();
+        try {
+            // Calling verifyEmail fails if you don't have a valid sptoken, which we don't have. So we have to mock the 
+            // DAO to verify that the call succeeds
+            EmailVerification verification = new EmailVerification("asdf");
+            Study study = testUser.getStudy();
+            String email = testUser.getEmail();
+            
+            // We need to mock the client because it will throw an exception when it gets the garbage token "asdf", 
+            // and we're only concerned with what happens when this is successful. Tedious to mock the Stormpath client.
+            AccountDao accountDaoSpy = mock(AccountDao.class);
+            when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, email));
+            authService.setAccountDao(accountDaoSpy);
+            
+            CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier()).build();
+            
+            UserSession session = authService.verifyEmail(study, context, verification);
+            // Consents are okay. User hasn't consented.
+            ConsentStatus status = session.getUser().getConsentStatuses().values().iterator().next();
+            assertFalse(status.isConsented());
+            
+            // This should not have been altered in any way by the lack of consents.
+            verify(accountDaoSpy).verifyEmail(study, verification);
+        } finally {
+            authService.setAccountDao(accountDao);
             helper.deleteUser(testUser);
         }        
     }
