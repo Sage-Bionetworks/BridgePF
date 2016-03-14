@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -47,6 +48,7 @@ public final class UserConsentHistory {
         this.hasSignedActiveConsent = hasSignedActiveConsent;
     }
 
+    @JsonIgnore
     public String getHealthCode() {
         return healthCode;
     }

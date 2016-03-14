@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -101,6 +102,21 @@ public class ParticipantControllerTest {
         
         // paging with defaults
         verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+    }
+    
+    @Test
+    public void getParticipant() throws Exception {
+        StudyParticipant2 studyParticipant = new StudyParticipant2.Builder().withFirstName("Test").build();
+        
+        when(participantService.getParticipant(STUDY, "email@email.com")).thenReturn(studyParticipant);
+        
+        Result result = controller.getParticipant("email@email.com");
+        String string = Helpers.contentAsString(result);
+        StudyParticipant2 retrievedParticipant = BridgeObjectMapper.get().readValue(string, StudyParticipant2.class);
+        // Verify that there's a field, full serialization tested in StudyParticipant2Test
+        assertEquals("Test", retrievedParticipant.getFirstName());
+        
+        verify(participantService).getParticipant(STUDY, "email@email.com");
     }
     
     public void nullParametersUseDefaults() throws Exception {
