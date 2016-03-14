@@ -230,11 +230,17 @@ public class StormpathAccountDao implements AccountDao {
             AuthenticationRequest<?,?> request = UsernamePasswordRequest.builder()
                     .setUsernameOrEmail(signIn.getEmail())
                     .setPassword(signIn.getPassword())
+                    .withResponseOptions(UsernamePasswordRequest.options().withAccount())
                     .inAccountStore(directory).build();
             
             AuthenticationResult result = application.authenticateAccount(request);
-            if (result.getAccount() != null) {
-                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, result.getAccount(), encryptors);
+            com.stormpath.sdk.account.Account acct = result.getAccount();
+            if (acct != null) {
+                // eagerly fetch remaining data with further calls to Stormpath (these are not retrieved in authentication 
+                // call, this has been verified with Stormpath). If we fail to fully initialize the user, we want it to 
+                // happen here, not later in the call where we don't expect it.
+                acct.getCustomData();
+                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
             }
         } catch (ResourceException e) {
             rethrowResourceException(e, null);

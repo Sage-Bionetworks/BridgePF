@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -31,6 +32,10 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.application.Application;
+import com.stormpath.sdk.authc.AuthenticationOptions;
+import com.stormpath.sdk.authc.AuthenticationRequest;
+import com.stormpath.sdk.authc.AuthenticationResult;
+import com.stormpath.sdk.authc.BasicAuthenticationOptions;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
@@ -154,6 +159,54 @@ public class StormpathAccountDaoMockTest {
         verify(acct).setUsername(email);
         verify(acct).setEmail(email);
         verify(acct).setPassword(PASSWORD);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void authenticate() {
+        // mock stormpath director
+        Directory mockDirectory = mock(Directory.class);
+        
+        // mock stormpath client
+        Client mockClient = mock(Client.class);
+        when(mockClient.getResource(study.getStormpathHref(), Directory.class)).thenReturn(mockDirectory);
+
+        // mock subpopulation service
+        SubpopulationService mockSubpopService = mock(SubpopulationService.class);
+        
+        // mock stormpath account
+        com.stormpath.sdk.account.Account mockAcct = mock(com.stormpath.sdk.account.Account.class);
+        when(mockAcct.getGivenName()).thenReturn("Test");
+        when(mockAcct.getSurname()).thenReturn("User");
+        when(mockAcct.getEmail()).thenReturn("email@email.com");
+        
+        // mock authentication result
+        AuthenticationResult mockResult = mock(AuthenticationResult.class);
+        when(mockResult.getAccount()).thenReturn(mockAcct);
+        
+        // mock stormpath application
+        Application mockApplication = mock(Application.class);
+        when(mockApplication.authenticateAccount(any())).thenReturn(mockResult);
+        
+        // wire up DAO
+        StormpathAccountDao dao = new StormpathAccountDao();
+        dao.setStormpathClient(mockClient);
+        dao.setStormpathApplication(mockApplication);
+        dao.setSubpopulationService(mockSubpopService);
+        
+        // authenticate
+        Account account = dao.authenticate(study, new SignIn("dummy-user", PASSWORD));
+        
+        // Just verify a few fields, the full object initialization is tested elsewhere.
+        assertEquals("Test", account.getFirstName());
+        assertEquals("User", account.getLastName());
+        assertEquals("email@email.com", account.getEmail());
+        
+        // verify eager fetch occurring. Can't verify AuthenticationRequest configuration because 
+        // you can set it but settings themselves are hidden in implementation. 
+        verify(mockResult).getAccount();
+        verify(mockAcct).getCustomData();
+        verify(mockAcct).getGroups();
     }
 
     @Test
