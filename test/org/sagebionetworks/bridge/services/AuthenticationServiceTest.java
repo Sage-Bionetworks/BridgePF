@@ -199,13 +199,13 @@ public class AuthenticationServiceTest {
 
     @Test
     public void canResendEmailVerification() throws Exception {
-        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
+        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
         try {
-            Email email = new Email(user.getStudyIdentifier(), user.getEmail());
-            authService.resendEmailVerification(user.getStudyIdentifier(), email);
+            Email email = new Email(testUser.getStudyIdentifier(), testUser.getEmail());
+            authService.resendEmailVerification(testUser.getStudyIdentifier(), email);
         } finally {
-            helper.deleteUser(user);
+            helper.deleteUser(testUser);
         }
     }
 
