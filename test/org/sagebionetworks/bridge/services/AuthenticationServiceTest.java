@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -23,7 +22,6 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +38,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -97,38 +96,30 @@ public class AuthenticationServiceTest {
     @Resource
     private SubpopulationService subpopService;
     
+    private Study study;
+    
+    @Before
+    public void before() {
+        study = studyService.getStudy("api");
+    }
+    
     private TestUser makeTestUser() {
         return helper.getBuilder(AuthenticationServiceTest.class).build();
     }
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoEmail() throws Exception {
-        TestUser testUser = makeTestUser();
-        try {
-            authService.signIn(testUser.getStudy(), TEST_CONTEXT, new SignIn(null, "bar"));    
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        authService.signIn(study, TEST_CONTEXT, new SignIn(null, "bar"));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
-        TestUser testUser = makeTestUser();
-        try {
-            authService.signIn(testUser.getStudy(), TEST_CONTEXT, new SignIn("foobar", null));
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        authService.signIn(study, TEST_CONTEXT, new SignIn("foobar", null));
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
-        TestUser testUser = makeTestUser();
-        try {
-            authService.signIn(testUser.getStudy(), TEST_CONTEXT, new SignIn("foobar", "bar"));
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        authService.signIn(study, TEST_CONTEXT, new SignIn("foobar", "bar"));
     }
 
     @Test
@@ -192,23 +183,13 @@ public class AuthenticationServiceTest {
 
     @Test(expected = NullPointerException.class)
     public void requestPasswordResetFailsOnNull() throws Exception {
-        TestUser testUser = makeTestUser();
-        try {
-            authService.requestResetPassword(testUser.getStudy(), null);
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        authService.requestResetPassword(study, null);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
-        TestUser testUser = makeTestUser();
-        try {
-            Email email = new Email(testUser.getStudyIdentifier(), "");
-            authService.requestResetPassword(testUser.getStudy(), email);
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        Email email = new Email(TEST_STUDY_IDENTIFIER, "");
+        authService.requestResetPassword(study, email);
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -218,18 +199,13 @@ public class AuthenticationServiceTest {
 
     @Test
     public void canResendEmailVerification() throws Exception {
-        TestUser testUser = makeTestUser();
+        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(false).withSignIn(false).build();
         try {
-            TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
-                    .withConsent(false).withSignIn(false).build();
-            try {
-                Email email = new Email(testUser.getStudyIdentifier(), user.getEmail());
-                authService.resendEmailVerification(user.getStudyIdentifier(), email);
-            } finally {
-                helper.deleteUser(user);
-            }
+            Email email = new Email(user.getStudyIdentifier(), user.getEmail());
+            authService.resendEmailVerification(user.getStudyIdentifier(), email);
         } finally {
-            helper.deleteUser(testUser);
+            helper.deleteUser(user);
         }
     }
 
@@ -291,8 +267,6 @@ public class AuthenticationServiceTest {
         authService = spy(authService);
         optionsService = spy(optionsService);
         authService.setOptionsService(optionsService);
-        
-        Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
         Set<String> list = Sets.newHashSet("group1");
         String name = TestUtils.randomName(AuthenticationServiceTest.class);
@@ -363,29 +337,24 @@ public class AuthenticationServiceTest {
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
         // In particular, it must not throw an EntityNotFoundException
-        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
+        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
         try {
-            Email email = new Email(user.getStudyIdentifier(), "notarealaccount@sagebase.org");
-            authService.resendEmailVerification(user.getStudyIdentifier(), email);
+            Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
+            authService.resendEmailVerification(testUser.getStudyIdentifier(), email);
         } finally {
-            helper.deleteUser(user);
+            helper.deleteUser(testUser);
         }
     }
     
     @Test
     public void requestResetPasswordLooksSuccessfulWhenNoAccount() throws Exception {
-        TestUser testUser = makeTestUser();
+        // In particular, it must not throw an EntityNotFoundException
+        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(false).withSignIn(false).build();
         try {
-            // In particular, it must not throw an EntityNotFoundException
-            TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
-                    .withConsent(false).withSignIn(false).build();
-            try {
-                Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
-                authService.requestResetPassword(testUser.getStudy(), email);
-            } finally {
-                helper.deleteUser(user);
-            }
+            Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
+            authService.requestResetPassword(testUser.getStudy(), email);
         } finally {
             helper.deleteUser(testUser);
         }
@@ -395,25 +364,20 @@ public class AuthenticationServiceTest {
     
     @Test
     public void consentStatusesPresentInSession() {
-        TestUser testUser = makeTestUser();
+        // User is consenting
+        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(true).withSignIn(true).build();
         try {
-            // User is consenting
-            TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
-                    .withConsent(true).withSignIn(true).build();
-            try {
-                SubpopulationGuid guid = SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier());
-                
-                // This is the object we pass back to the user, we want to see the statuses copied or present
-                // all the way from the user to the sessionInfo. We test elsewhere that these are properly 
-                // serialized/deserialized (SubpopulationGuidDeserializer)
-                UserSessionInfo sessionInfo = new UserSessionInfo(user.getSession());
-                
-                ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
-                assertTrue(status.isConsented());
-                assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
-            } finally {
-                helper.deleteUser(user);
-            }
+            SubpopulationGuid guid = SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier());
+            
+            // This is the object we pass back to the user, we want to see the statuses copied or present
+            // all the way from the user to the sessionInfo. We test elsewhere that these are properly 
+            // serialized/deserialized (SubpopulationGuidDeserializer)
+            UserSessionInfo sessionInfo = new UserSessionInfo(testUser.getSession());
+            
+            ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
+            assertTrue(status.isConsented());
+            assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
         } finally {
             helper.deleteUser(testUser);
         }
