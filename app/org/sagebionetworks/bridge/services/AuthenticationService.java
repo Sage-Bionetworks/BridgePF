@@ -158,7 +158,6 @@ public class AuthenticationService {
             Account account = accountDao.authenticate(study, signIn);
             
             UserSession session = getSessionFromAccount(study, context, account);
-            repairConsents(account, session, context);
             cacheProvider.setUserSession(session);
             
             return session;
@@ -331,6 +330,8 @@ public class AuthenticationService {
 
         user.setConsentStatuses(consentService.getConsentStatuses(newContext));
         session.setUser(user);
+        
+        repairConsents(account, session, newContext);
         
         return session;
     }
