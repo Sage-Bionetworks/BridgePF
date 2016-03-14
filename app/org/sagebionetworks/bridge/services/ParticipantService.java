@@ -86,12 +86,14 @@ public class ParticipantService {
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpopulations) {
-            // Create an empty history if there's no health Code.
-            List<UserConsentHistory> history = NO_HISTORY;
             if (healthCode != null) {
-                history = consentService.getUserConsentHistory(study, subpop.getGuid(), healthCode, email);
+                // always returns a list, even if empty
+                List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(), healthCode, email);
+                participant.addConsentHistory(subpop.getGuid(), history);
+            } else {
+                // Create an empty history if there's no health Code.
+                participant.addConsentHistory(subpop.getGuid(), NO_HISTORY);
             }
-            participant.addConsentHistory(subpop.getGuid(), history);
         }
         // Accounts exist that have signatures but no health codes. This may only be from testing, 
         // but still, do not want roster generation to fail because of this. So we check for this.
