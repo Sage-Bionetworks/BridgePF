@@ -164,37 +164,46 @@ public class StormpathAccountDaoMockTest {
     @SuppressWarnings("rawtypes")
     @Test
     public void authenticate() {
-        // mock stormpath client
+        // mock stormpath director
         Directory mockDirectory = mock(Directory.class);
+        
+        // mock stormpath client
         Client mockClient = mock(Client.class);
         when(mockClient.getResource(study.getStormpathHref(), Directory.class)).thenReturn(mockDirectory);
 
+        // mock subpopulation service
         SubpopulationService mockSubpopService = mock(SubpopulationService.class);
         
+        // mock stormpath account
         com.stormpath.sdk.account.Account mockAcct = mock(com.stormpath.sdk.account.Account.class);
         when(mockAcct.getGivenName()).thenReturn("Test");
         when(mockAcct.getSurname()).thenReturn("User");
         when(mockAcct.getEmail()).thenReturn("email@email.com");
         
+        // mock authentication result
         AuthenticationResult mockResult = mock(AuthenticationResult.class);
         when(mockResult.getAccount()).thenReturn(mockAcct);
         
+        // mock stormpath application
         Application mockApplication = mock(Application.class);
         when(mockApplication.authenticateAccount(any())).thenReturn(mockResult);
         
+        // wire up DAO
         StormpathAccountDao dao = new StormpathAccountDao();
         dao.setStormpathClient(mockClient);
         dao.setStormpathApplication(mockApplication);
         dao.setSubpopulationService(mockSubpopService);
         
-        // Just verify a few fields, the full object initialization is tested elsewhere.
+        // authenticate
         Account account = dao.authenticate(study, new SignIn("dummy-user", PASSWORD));
+        
+        // Just verify a few fields, the full object initialization is tested elsewhere.
         assertEquals("Test", account.getFirstName());
         assertEquals("User", account.getLastName());
         assertEquals("email@email.com", account.getEmail());
         
-        // eager fetch occurring. Can verify AuthenticationRequest configuration because you can set it but
-        // settings themselves are hidden in implementation. 
+        // verify eager fetch occurring. Can't verify AuthenticationRequest configuration because 
+        // you can set it but settings themselves are hidden in implementation. 
         verify(mockResult).getAccount();
         verify(mockAcct).getCustomData();
         verify(mockAcct).getGroups();
