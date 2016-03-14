@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -22,11 +24,9 @@ import com.google.common.collect.Sets;
 public class StudyParticipant2Test {
 
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");
-    private static final Map<String,String> ATTRIBUTES = Maps.newHashMap();
-    static {
-        ATTRIBUTES.put("A", "B");
-        ATTRIBUTES.put("C", "D");
-    }
+    private static final Map<String,String> ATTRIBUTES = ImmutableMap.<String,String>builder()
+            .put("A", "B")
+            .put("C", "D").build();
     
     @Test
     public void canSerialize() throws Exception {
