@@ -38,7 +38,6 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -336,28 +335,14 @@ public class AuthenticationServiceTest {
     
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
-        // In particular, it must not throw an EntityNotFoundException
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
-                .withConsent(false).withSignIn(false).build();
-        try {
-            Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
-            authService.resendEmailVerification(testUser.getStudyIdentifier(), email);
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        Email email = new Email(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
+        authService.resendEmailVerification(study, email);
     }
     
     @Test
     public void requestResetPasswordLooksSuccessfulWhenNoAccount() throws Exception {
-        // In particular, it must not throw an EntityNotFoundException
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
-                .withConsent(false).withSignIn(false).build();
-        try {
-            Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
-            authService.requestResetPassword(testUser.getStudy(), email);
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        Email email = new Email(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
+        authService.requestResetPassword(study, email);
     }
     
     // Consent statuses passed on to sessionInfo
