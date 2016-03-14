@@ -136,7 +136,9 @@ public class StudyParticipant2 {
             return this;
         }
         public Builder withConsentHistories(Map<String,List<UserConsentHistory>> consentHistories) {
-            this.consentHistories = consentHistories;
+            if (consentHistories != null) {
+                this.consentHistories = consentHistories;    
+            }
             return this;
         }
         
