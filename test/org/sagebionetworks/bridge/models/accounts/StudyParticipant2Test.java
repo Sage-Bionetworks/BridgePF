@@ -74,5 +74,25 @@ public class StudyParticipant2Test {
         assertEquals("D", node.get("attributes").get("C").asText());
         
         assertEquals(11, node.size());
+        
+        StudyParticipant2 deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant2.class);
+        assertEquals("firstName", deserParticipant.getFirstName());
+        assertEquals("lastName", deserParticipant.getLastName());
+        assertEquals("email@email.com", deserParticipant.getEmail());
+        assertEquals("externalId", deserParticipant.getExternalId());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, deserParticipant.getSharingScope());
+        assertTrue(deserParticipant.isNotifyByEmail());
+        assertEquals(DATA_GROUPS, deserParticipant.getDataGroups());
+        assertEquals("healthCode", deserParticipant.getHealthCode());
+        assertEquals(ATTRIBUTES, deserParticipant.getAttributes());
+        
+        UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
+        assertEquals("2002-02-02", deserHistory.getBirthdate());
+        assertEquals(1000000L, deserHistory.getConsentCreatedOn());
+        assertEquals(2000000L, deserHistory.getSignedOn());
+        assertEquals("Test User", deserHistory.getName());
+        assertEquals("AAA", deserHistory.getSubpopulationGuid());
+        assertEquals(new Long(3000000L), deserHistory.getWithdrewOn());
+
     }
 }

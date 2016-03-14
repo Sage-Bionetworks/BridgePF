@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
@@ -16,6 +17,7 @@ import com.google.common.collect.Maps;
  * participant roster (which is also going away).
  */
 @BridgeTypeName("StudyParticipant")
+@JsonDeserialize(builder=StudyParticipant2.Builder.class)
 public class StudyParticipant2 {
 
     private final String firstName;
@@ -131,6 +133,10 @@ public class StudyParticipant2 {
             if (guid != null && history != null) {
                 this.consentHistories.put(guid.getGuid(), history);
             }
+            return this;
+        }
+        public Builder withConsentHistories(Map<String,List<UserConsentHistory>> consentHistories) {
+            this.consentHistories = consentHistories;
             return this;
         }
         
