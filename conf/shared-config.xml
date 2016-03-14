@@ -130,6 +130,10 @@
     <bean id="SurveyResponseControllerProxied" parent="proxiedController">
         <property name="targetName" value="surveyResponseController"/>
     </bean>
+    
+    <bean id="ParticipantControllerProxied" parent="proxiedController">
+        <property name="targetName" value="participantController"/>
+    </bean>
 
     <bean id="UserManagementControllerProxied" parent="proxiedController">
         <property name="targetName" value="userManagementController"/>

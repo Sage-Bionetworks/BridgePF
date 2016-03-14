@@ -50,4 +50,10 @@ public class BridgeConstants {
     /** Per-request metrics expires in the cache after 120 seconds. */
     public static final int METRICS_EXPIRE_SECONDS = 2 * 60;
     
+    public static final int API_MINIMUM_PAGE_SIZE = 5;
+    
+    public static final int API_DEFAULT_PAGE_SIZE = 100;
+    
+    public static final int API_MAXIMUM_PAGE_SIZE = 250;
+    
 }

@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.stormpath;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -19,7 +22,10 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -40,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.AccountCriteria;
@@ -120,6 +127,36 @@ public class StormpathAccountDao implements AccountDao {
         return new StormpathAccountIterator(study, subpopGuids, encryptors, directory.getAccounts(criteria).iterator());
     }
 
+    @Override
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize) {
+        checkNotNull(study);
+        checkArgument(offsetBy >= 0);
+        checkArgument(pageSize >= API_MINIMUM_PAGE_SIZE && pageSize <= API_MAXIMUM_PAGE_SIZE);
+
+        // limitTo sets the number of records that will be requested from the server, but the iterator behavior
+        // of AccountList is such that it will keep fetching records when you get to the limitTo page size. 
+        // To make one request of records, you must stop iterating when you get to limitTo records. Furthermore, 
+        // getSize() in the iterator is the total number of records that match the criteria... not the smaller of 
+        // either the number of records returned or limitTo (as you might expect in a paging API when you get the 
+        // last page of records). Behavior as described by Stormpath in email.
+        AccountCriteria criteria = Accounts.criteria().limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
+        Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
+        AccountList accts = directory.getAccounts(criteria);
+        
+        Iterator<com.stormpath.sdk.account.Account> it = accts.iterator();
+        List<AccountSummary> results = Lists.newArrayListWithCapacity(pageSize);
+        for (int i=0; i < pageSize; i++) {
+            if (it.hasNext()) {
+                com.stormpath.sdk.account.Account acct = it.next();
+                // This should not trigger further requests to the server (customData, groups, etc.).
+                AccountSummary summary = new AccountSummary(acct.getGivenName(), acct.getSurname(), 
+                        acct.getEmail(), AccountStatus.valueOf(acct.getStatus().name()));
+                results.add(summary);
+            }
+        }
+        return new PagedResourceList<AccountSummary>(results, offsetBy, pageSize, accts.getSize());
+    }
+    
     @Override
     public Account verifyEmail(StudyIdentifier study, EmailVerification verification) {
         checkNotNull(study);
