@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
@@ -193,6 +194,7 @@ public class SurveyControllerTest {
     @Test
     public void getAllSurveysMostRecentlyPublishedVersionForStudy() throws Exception {
         setContext();
+        setUserSession("secondstudy");
 
         // make surveys
         List<Survey> surveyList = getSurveys(2, false);
@@ -323,6 +325,8 @@ public class SurveyControllerTest {
     @Test
     public void getSurveyForWorker() throws Exception {
         setContext();
+        setUserSession("secondstudy");
+        session.getUser().setRoles(ImmutableSet.of(Roles.WORKER));
 
         // set up inputs
         String guid = "BBB";

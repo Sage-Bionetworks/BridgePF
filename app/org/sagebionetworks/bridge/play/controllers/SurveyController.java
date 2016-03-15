@@ -92,12 +92,16 @@ public class SurveyController extends BaseController {
     }
     
     public Result getSurvey(String surveyGuid, String createdOnString) throws Exception {
-        // To get a survey you must either be a developer, or a consented participant in the study.
-        // This is an unusual combination so we use canAccessSurvey() to verify it.
         UserSession session = getAuthenticatedSession();
-        canAccessSurvey(session);
-        
-        return getCachedSurveyInternal(surveyGuid, createdOnString, session);
+        if (session.getUser().isInRole(Roles.WORKER)) {
+            // Worker accounts can access surveys across studies. We branch off and call getSurveyForWorker().
+            return getSurveyForWorker(surveyGuid, createdOnString);
+        } else {
+            // Otherwise, to get a survey you must either be a developer, or a consented participant in the study.
+            // This is an unusual combination so we use canAccessSurvey() to verify it.
+            canAccessSurvey(session);
+            return getCachedSurveyInternal(surveyGuid, createdOnString, session);
+        }
     }
 
     /**
@@ -116,8 +120,7 @@ public class SurveyController extends BaseController {
      *         the created on (versioned on) timestamp
      * @return survey result
      */
-    public Result getSurveyForWorker(String surveyGuid, String createdOnString) {
-        getAuthenticatedSession(Roles.WORKER);
+    private Result getSurveyForWorker(String surveyGuid, String createdOnString) {
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         Survey survey = surveyService.getSurvey(keys);
