@@ -10,10 +10,6 @@ import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 
@@ -48,22 +44,6 @@ public class DynamoUploadDao implements UploadDao {
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
         mapper.save(upload);
         return upload;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public List<? extends Upload> getFailedUploadsForDates(@Nonnull String startDate, @Nonnull String endDate) {
-        // We want upload dates between startDate and endDate (inclusive by default) and with statuses
-        // VALIDATION_IN_PROGRESS or VALIDATION_FAILED
-        DynamoDBScanExpression scan = new DynamoDBScanExpression()
-                .withFilterConditionEntry("uploadDate", new Condition()
-                        .withComparisonOperator(ComparisonOperator.BETWEEN)
-                        .withAttributeValueList(new AttributeValue(startDate), new AttributeValue(endDate)))
-                .withFilterConditionEntry("status", new Condition()
-                        .withComparisonOperator(ComparisonOperator.IN)
-                        .withAttributeValueList(new AttributeValue(UploadStatus.VALIDATION_IN_PROGRESS.name()),
-                                new AttributeValue(UploadStatus.VALIDATION_FAILED.name())));
-        return mapper.scan(DynamoUpload2.class, scan);
     }
 
     // TODO: Cache this, or make it so that calling getUpload() and uploadComplete() in sequence don't cause duplicate
