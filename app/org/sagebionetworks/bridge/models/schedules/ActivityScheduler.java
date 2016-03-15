@@ -29,9 +29,8 @@ public abstract class ActivityScheduler {
         }
         DateTime eventTime = getFirstEventDateTime(context, eventIdString);
 
-        // An event was specified, but it hasn't happened yet. So no activities are generated.
-        // OR, an event fires, but outside of the window for the schedule, so again, no activities.
-        if (eventTime == null || !isInWindow(eventTime)) {
+        // An event was specified, but it hasn't happened yet.. So no activities are generated.
+        if (eventTime == null) {
             return null;
         }
         if (schedule.getDelay() != null) {
@@ -92,6 +91,7 @@ public abstract class ActivityScheduler {
     private boolean isInWindow(DateTime scheduledTime) {
         DateTime startsOn = schedule.getStartsOn();
         DateTime endsOn = schedule.getEndsOn();
+        
         return (startsOn == null || scheduledTime.isEqual(startsOn) || scheduledTime.isAfter(startsOn)) && 
                (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
     }
