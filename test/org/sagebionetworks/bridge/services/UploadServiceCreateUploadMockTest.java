@@ -30,12 +30,14 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 
 @SuppressWarnings("unchecked")
 public class UploadServiceCreateUploadMockTest {
     private static final String TEST_CONTENT_TYPE = "text/plain";
     private static final String TEST_HEALTH_CODE = "test-healthcode";
+    private static final String TEST_ORIGINAL_UPLOAD_ID = "original-upload";
     private static final String TEST_PRESIGNED_URL = "http://www.example.com/";
     private static final String TEST_UPLOAD_ID = "test-upload-id";
     private static final String TEST_UPLOAD_MD5 = Base64.encodeBase64String("test-md5".getBytes());
@@ -65,6 +67,7 @@ public class UploadServiceCreateUploadMockTest {
     }
 
     private UploadDedupeDao mockUploadDedupeDao;
+    private UploadDao mockUploadDao;
     private ArgumentCaptor<GeneratePresignedUrlRequest> presignedUrlRequestArgumentCaptor;
     private UploadRequest uploadRequest;
     private UploadService svc;
@@ -78,11 +81,8 @@ public class UploadServiceCreateUploadMockTest {
         JsonNode uploadRequestJsonNode = BridgeObjectMapper.get().readTree(TEST_UPLOAD_REQUEST_JSON);
         uploadRequest = UploadRequest.fromJson(uploadRequestJsonNode);
 
-        // mock upload DAO
-        UploadDao mockUploadDao = mock(UploadDao.class);
-        when(mockUploadDao.createUpload(uploadRequest, TEST_HEALTH_CODE)).thenReturn(TEST_UPLOAD);
-
-        // mock upload dedupe DAO (but don't actually mock any calls, since the tests will do something different)
+        // mock upload DAOs. (The tests will mock the calls, since they vary with each test.)
+        mockUploadDao = mock(UploadDao.class);
         mockUploadDedupeDao = mock(UploadDedupeDao.class);
 
         // mock upload credentials service
@@ -112,26 +112,58 @@ public class UploadServiceCreateUploadMockTest {
 
     @Test
     public void isNotDupe() {
+        // mock upload DAO
+        when(mockUploadDao.createUpload(uploadRequest, TEST_HEALTH_CODE)).thenReturn(TEST_UPLOAD);
+
         // mock upload dedupe DAO
         when(mockUploadDedupeDao.getDuplicate(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON)).thenReturn(
                 null);
 
-        testUpload();
+        testUpload(TEST_UPLOAD_ID);
 
-        // verify we registered the dupe
+        // verify we created and registered the dupe
+        verify(mockUploadDao).createUpload(uploadRequest, TEST_HEALTH_CODE);
         verify(mockUploadDedupeDao).registerUpload(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON,
                 TEST_UPLOAD_ID);
     }
 
     @Test
-    public void isDupe() {
+    public void isDupeOfIncompleteUpload() {
+        // mock upload DAO
+        DynamoUpload2 originalUpload = new DynamoUpload2();
+        originalUpload.setUploadId(TEST_ORIGINAL_UPLOAD_ID);
+        originalUpload.setStatus(UploadStatus.REQUESTED);
+        when(mockUploadDao.getUpload(TEST_ORIGINAL_UPLOAD_ID)).thenReturn(originalUpload);
+
         // mock upload dedupe DAO
         when(mockUploadDedupeDao.getDuplicate(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON)).thenReturn(
-                "original-upload");
+                TEST_ORIGINAL_UPLOAD_ID);
 
-        testUpload();
+        testUpload(TEST_ORIGINAL_UPLOAD_ID);
 
-        // verify we never register a dupe
+        // verify we never create or register a dupe
+        verify(mockUploadDao, never()).createUpload(any(), any());
+        verify(mockUploadDedupeDao, never()).registerUpload(any(), any(), any(), any());
+    }
+
+    @Test
+    public void isDupeOfCompleteUpload() {
+        // mock upload DAO
+        when(mockUploadDao.createUpload(uploadRequest, TEST_HEALTH_CODE)).thenReturn(TEST_UPLOAD);
+
+        DynamoUpload2 originalUpload = new DynamoUpload2();
+        originalUpload.setUploadId(TEST_ORIGINAL_UPLOAD_ID);
+        originalUpload.setStatus(UploadStatus.SUCCEEDED);
+        when(mockUploadDao.getUpload(TEST_ORIGINAL_UPLOAD_ID)).thenReturn(originalUpload);
+
+        // mock upload dedupe DAO
+        when(mockUploadDedupeDao.getDuplicate(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON)).thenReturn(
+                TEST_ORIGINAL_UPLOAD_ID);
+
+        testUpload(TEST_UPLOAD_ID);
+
+        // verify we create the upload, but we don't register a dupe
+        verify(mockUploadDao).createUpload(uploadRequest, TEST_HEALTH_CODE);
         verify(mockUploadDedupeDao, never()).registerUpload(any(), any(), any(), any());
     }
 
@@ -139,19 +171,27 @@ public class UploadServiceCreateUploadMockTest {
     public void exceptionGettingDupe() {
         // Throwing on dedupe logic shouldn't fail the upload.
 
+        // mock upload DAO
+        when(mockUploadDao.createUpload(uploadRequest, TEST_HEALTH_CODE)).thenReturn(TEST_UPLOAD);
+
         // mock upload dedupe DAO
         when(mockUploadDedupeDao.getDuplicate(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON)).thenThrow(
                 RuntimeException.class);
 
-        testUpload();
+        testUpload(TEST_UPLOAD_ID);
 
-        // verify we never register a dupe
-        verify(mockUploadDedupeDao, never()).registerUpload(any(), any(), any(), any());
+        // verify we created and registered the dupe
+        verify(mockUploadDao).createUpload(uploadRequest, TEST_HEALTH_CODE);
+        verify(mockUploadDedupeDao).registerUpload(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON,
+                TEST_UPLOAD_ID);
     }
 
     @Test
     public void exceptionRegistering() {
         // Throwing on dedupe logic shouldn't fail the upload.
+
+        // mock upload DAO
+        when(mockUploadDao.createUpload(uploadRequest, TEST_HEALTH_CODE)).thenReturn(TEST_UPLOAD);
 
         // mock upload dedupe DAO
         when(mockUploadDedupeDao.getDuplicate(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON)).thenReturn(
@@ -159,17 +199,18 @@ public class UploadServiceCreateUploadMockTest {
         doThrow(RuntimeException.class).when(mockUploadDedupeDao).registerUpload(TEST_HEALTH_CODE, TEST_UPLOAD_MD5,
                 TEST_UPLOAD_REQUESTED_ON, TEST_UPLOAD_ID);
 
-        testUpload();
+        testUpload(TEST_UPLOAD_ID);
 
-        // verify we registered the dupe (even if we threw immediately afterwards)
+        // verify we created and registered the dupe (even if we threw immediately after registration)
+        verify(mockUploadDao).createUpload(uploadRequest, TEST_HEALTH_CODE);
         verify(mockUploadDedupeDao).registerUpload(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON,
                 TEST_UPLOAD_ID);
     }
 
-    private void testUpload() {
+    private void testUpload(String expectedUploadId) {
         // execute and validate
         UploadSession uploadSession = svc.createUpload(TestConstants.TEST_STUDY, TEST_USER, uploadRequest);
-        assertEquals(TEST_UPLOAD_ID, uploadSession.getId());
+        assertEquals(expectedUploadId, uploadSession.getId());
         assertEquals(TEST_PRESIGNED_URL, uploadSession.getUrl());
 
         // Verify pre-signed URL args
@@ -178,7 +219,7 @@ public class UploadServiceCreateUploadMockTest {
         GeneratePresignedUrlRequest presignedUrlRequest = presignedUrlRequestArgumentCaptor.getValue();
         assertEquals(TEST_UPLOAD_MD5, presignedUrlRequest.getContentMd5());
         assertEquals(TEST_CONTENT_TYPE, presignedUrlRequest.getContentType());
-        assertEquals(TEST_UPLOAD_ID, presignedUrlRequest.getKey());
+        assertEquals(expectedUploadId, presignedUrlRequest.getKey());
 
         // Expiration is computed using Java Date instead of Joda Date, which is messy, so we're not going to test that
     }

@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -97,30 +98,49 @@ public class UploadService {
     public UploadSession createUpload(StudyIdentifier studyId, User user, UploadRequest uploadRequest) {
         Validate.entityThrowingException(validator, uploadRequest);
 
-        // For all new uploads, the upload ID in DynamoDB is the same as the S3 Object ID
+        // Check to see if upload is a dupe, and if it is, get the upload status.
         String healthCode = user.getHealthCode();
         String uploadMd5 = uploadRequest.getContentMd5();
-        Upload upload = uploadDao.createUpload(uploadRequest, healthCode);
-        final String uploadId = upload.getUploadId();
-
+        DateTime uploadRequestedOn = DateUtils.getCurrentDateTime();
+        String originalUploadId = null;
+        UploadStatus originalUploadStatus = null;
         try {
-            // Check to see if the upload is a dupe. For now, log if it's a dupe, so we can verify the dedupe logic
-            // before rolling it out.
-            DateTime uploadRequestedOn = DateUtils.getCurrentDateTime();
-            String originalUploadId = uploadDedupeDao.getDuplicate(healthCode, uploadMd5, uploadRequestedOn);
+            originalUploadId = uploadDedupeDao.getDuplicate(healthCode, uploadMd5, uploadRequestedOn);
             if (originalUploadId != null) {
-                // Is a dupe. We're in observation mode, so for now, just log.
-                logger.info("Detected dupe: Study " + studyId.getIdentifier() + ", upload " + uploadId +
-                        " is a dupe of " + originalUploadId);
-            } else {
-                // Not a dupe. Register this dupe so we can detect dupes of this.
-                uploadDedupeDao.registerUpload(healthCode, uploadMd5, uploadRequestedOn, uploadId);
+                Upload originalUpload = uploadDao.getUpload(originalUploadId);
+                originalUploadStatus = originalUpload.getStatus();
             }
         } catch (RuntimeException ex) {
             // Don't want dedupe logic to fail the upload. Log an error and swallow the exception.
-            logger.error("Error deduping upload " + uploadId + ": " + ex.getMessage(), ex);
+            logger.error("Error deduping upload: " + ex.getMessage(), ex);
         }
 
+        String uploadId;
+        if (originalUploadId != null && originalUploadStatus == UploadStatus.REQUESTED) {
+            // This is a dupe of a previous upload, and that previous upload is incomplete (REQUESTED). Instead of
+            // creating a new upload in the upload table, reactivate the old one.
+            uploadId = originalUploadId;
+        } else {
+            // This is a new upload.
+            Upload upload = uploadDao.createUpload(uploadRequest, healthCode);
+            uploadId = upload.getUploadId();
+
+            if (originalUploadId != null) {
+                // We had a dupe of a previous completed upload. Log this for future analysis.
+                logger.info("Detected dupe: Study " + studyId.getIdentifier() + ", upload " + uploadId +
+                        " is a dupe of " + originalUploadId);
+            } else {
+                try {
+                    // Not a dupe. Register this dupe so we can detect dupes of this.
+                    uploadDedupeDao.registerUpload(healthCode, uploadMd5, uploadRequestedOn, uploadId);
+                } catch (RuntimeException ex) {
+                    // Don't want dedupe logic to fail the upload. Log an error and swallow the exception.
+                    logger.error("Error registering upload " + uploadId + " in dedupe table: " + ex.getMessage(), ex);
+                }
+            }
+        }
+
+        // Upload ID in DynamoDB is the same as the S3 Object ID
         GeneratePresignedUrlRequest presignedUrlRequest =
                 new GeneratePresignedUrlRequest(BUCKET, uploadId, HttpMethod.PUT);
 
