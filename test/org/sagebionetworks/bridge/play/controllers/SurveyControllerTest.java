@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -21,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +31,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -38,18 +42,20 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
-import org.sagebionetworks.bridge.play.controllers.SurveyController;
 import org.sagebionetworks.bridge.services.SurveyService;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import play.mvc.Result;
+import play.test.Helpers;
 
 /**
  * We know this controller works given the integration tests. Here I'm interested in finding a way 
@@ -57,6 +63,8 @@ import com.google.common.collect.Sets;
  * etc. through integration tests is very slow.
  */
 public class SurveyControllerTest {
+    private static final TypeReference<ResourceList<Survey>> TYPE_REF_SURVEY_LIST =
+            new TypeReference<ResourceList<Survey>>(){};
 
     private SurveyController controller;
     
@@ -145,7 +153,8 @@ public class SurveyControllerTest {
         verify(service, times(1)).getSurveyMostRecentlyPublishedVersion(eq(studyId), eq("bbb"));
         verifyNoMoreInteractions(service);
     }
-    
+
+    @Test
     public void getAllSurveysMostRecentVersion() throws Exception {
         setContext();
         when(service.getAllSurveysMostRecentVersion(any(StudyIdentifier.class))).thenReturn(getSurveys(3, false));
@@ -181,7 +190,30 @@ public class SurveyControllerTest {
         verify(service).getAllSurveysMostRecentlyPublishedVersion(any(StudyIdentifier.class));
         verifyNoMoreInteractions(service);
     }
-    
+
+    @Test
+    public void getAllSurveysMostRecentlyPublishedVersionForStudy() throws Exception {
+        setContext();
+        setUserSession("secondstudy");
+
+        // make surveys
+        List<Survey> surveyList = getSurveys(2, false);
+        surveyList.get(0).setGuid("survey-0");
+        surveyList.get(1).setGuid("survey-1");
+        when(service.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY)).thenReturn(surveyList);
+
+        // execute and validate
+        Result result = controller.getAllSurveysMostRecentlyPublishedVersionForStudy(
+                TestConstants.TEST_STUDY_IDENTIFIER);
+        String resultStr = Helpers.contentAsString(result);
+        ResourceList<Survey> resultSurveyResourceList = BridgeObjectMapper.get().readValue(resultStr,
+                TYPE_REF_SURVEY_LIST);
+        List<Survey> resultSurveyList = resultSurveyResourceList.getItems();
+        assertEquals(2, resultSurveyList.size());
+        assertEquals("survey-0", resultSurveyList.get(0).getGuid());
+        assertEquals("survey-1", resultSurveyList.get(1).getGuid());
+    }
+
     @Test
     public void cannotGetAllSurveysMostRecentlyPublishedVersionInOtherStudy() throws Exception {
         setContext();
@@ -289,7 +321,31 @@ public class SurveyControllerTest {
             verifyNoMoreInteractions(service);
         }
     }
-    
+
+    @Test
+    public void getSurveyForWorker() throws Exception {
+        setContext();
+        setUserSession("secondstudy");
+        session.getUser().setRoles(ImmutableSet.of(Roles.WORKER));
+
+        // set up inputs
+        String guid = "BBB";
+        String dateString = DateTime.now().toString();
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(guid, DateTime.parse(dateString)
+                .getMillis());
+
+        // make survey
+        Survey survey = getSurvey(false);
+        survey.setGuid("test-survey");
+        when(service.getSurvey(keys)).thenReturn(survey);
+
+        // execute and validate
+        Result result = controller.getSurvey(guid, dateString);
+        String resultStr = Helpers.contentAsString(result);
+        Survey resultSurvey = BridgeObjectMapper.get().readValue(resultStr, Survey.class);
+        assertEquals("test-survey", resultSurvey.getGuid());
+    }
+
     @Test
     public void getSurveyMostRecentVersion() throws Exception {
         StudyIdentifier studyId = new StudyIdentifierImpl("api");

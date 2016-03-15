@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.services.SurveyService;
 
@@ -67,6 +68,23 @@ public class SurveyController extends BaseController {
         return okResult(surveys);
     }
 
+    /**
+     * API for worker accounts that need access to a list of published studies. This is generally used by the Bridge
+     * Exporter. We don't want to configure worker accounts for each study and add an ever-growing list of worker
+     * accounts to back-end scripts, so we'll have one master worker account in the API study that can access all
+     * studies.
+     *
+     * @param studyId
+     *         study to get surveys for
+     * @return list of the most recently published version of every survey in the study
+     */
+    public Result getAllSurveysMostRecentlyPublishedVersionForStudy(String studyId) {
+        getAuthenticatedSession(Roles.WORKER);
+        List<Survey> surveyList = surveyService.getAllSurveysMostRecentlyPublishedVersion(new StudyIdentifierImpl(
+                studyId));
+        return okResult(surveyList);
+    }
+
     public Result getSurveyMostRecentlyPublishedVersionForUser(String surveyGuid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
@@ -74,14 +92,41 @@ public class SurveyController extends BaseController {
     }
     
     public Result getSurvey(String surveyGuid, String createdOnString) throws Exception {
-        // To get a survey you must either be a developer, or a consented participant in the study.
-        // This is an unusual combination so we use canAccessSurvey() to verify it.
         UserSession session = getAuthenticatedSession();
-        canAccessSurvey(session);
-        
-        return getCachedSurveyInternal(surveyGuid, createdOnString, session);
+        if (session.getUser().isInRole(Roles.WORKER)) {
+            // Worker accounts can access surveys across studies. We branch off and call getSurveyForWorker().
+            return getSurveyForWorker(surveyGuid, createdOnString);
+        } else {
+            // Otherwise, to get a survey you must either be a developer, or a consented participant in the study.
+            // This is an unusual combination so we use canAccessSurvey() to verify it.
+            canAccessSurvey(session);
+            return getCachedSurveyInternal(surveyGuid, createdOnString, session);
+        }
     }
-    
+
+    /**
+     * <p>
+     * Worker API to get a survey by guid and createdOn timestamp. This is used by the Bridge Exporter to get survey
+     * questions for a particular survey. This is separate from getSurvey() and getSurveyForUser() as it needs to get
+     * surveys for any study.
+     * </p>
+     * <p>
+     * Bridge Exporter only calls this API for surveys it hasn't seen before, so we should be okay to not cache this.
+     * </p>
+     *
+     * @param surveyGuid
+     *         GUID of survey to fetch
+     * @param createdOnString
+     *         the created on (versioned on) timestamp
+     * @return survey result
+     */
+    private Result getSurveyForWorker(String surveyGuid, String createdOnString) {
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
+        Survey survey = surveyService.getSurvey(keys);
+        return okResult(survey);
+    }
+
     public Result getSurveyForUser(String surveyGuid, String createdOnString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
