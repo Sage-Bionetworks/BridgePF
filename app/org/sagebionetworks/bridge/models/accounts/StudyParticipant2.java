@@ -31,7 +31,7 @@ public class StudyParticipant2 {
     private final String externalId;
     private final SharingScope sharingScope;
     private final boolean notifyByEmail;
-    private final Set<String> dataGoups;
+    private final Set<String> dataGroups;
     private final String healthCode;
     private final Map<String,String> attributes;
     private final Map<String,List<UserConsentHistory>> consentHistories;
@@ -47,7 +47,7 @@ public class StudyParticipant2 {
         this.externalId = externalId;
         this.sharingScope = sharingScope;
         this.notifyByEmail = notifyByEmail;
-        this.dataGoups = dataGroups;
+        this.dataGroups = dataGroups;
         this.healthCode = healthCode;
         this.attributes = attributes;
         this.consentHistories = consentHistories;
@@ -74,7 +74,7 @@ public class StudyParticipant2 {
         return notifyByEmail;
     }
     public Set<String> getDataGroups() {
-        return dataGoups;
+        return dataGroups;
     }
     public String getHealthCode() {
         return healthCode;
