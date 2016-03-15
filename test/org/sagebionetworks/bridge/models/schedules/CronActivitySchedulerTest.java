@@ -154,8 +154,7 @@ public class CronActivitySchedulerTest {
         
         // We'd expect, based on that schedule, to have a task:
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(now.plusDays(4)));
-        // 1 or 2 activities depending on the time of the week (4 day window creates some overlap)
-        assertTrue(scheduledActivities.size() == 1 || scheduledActivities.size() == 2);
+        assertEquals(1, scheduledActivities.size());
         
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -178,8 +177,7 @@ public class CronActivitySchedulerTest {
         
         // We'd expect, based on that schedule, to have a task:
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(now.plusDays(4)));
-        // 1 or 2 activities depending on the time of the week (4 day window creates some overlap)
-        assertTrue(scheduledActivities.size() == 1 || scheduledActivities.size() == 2);
+        assertEquals(1, scheduledActivities.size());
         
         DateTimeUtils.setCurrentMillisSystem();
     }
