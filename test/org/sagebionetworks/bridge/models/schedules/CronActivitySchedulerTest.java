@@ -154,30 +154,33 @@ public class CronActivitySchedulerTest {
         
         // We'd expect, based on that schedule, to have a task:
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(now.plusDays(4)));
-        assertEquals(1, scheduledActivities.size());
+        assertDates(scheduledActivities, "2016-03-14 00:00");
         
         DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test
     // All the dates in this test are derived from BRIDGE-1211.
-    public void recurringCronScheduleWithStartTimeWindowWorks() {
-        DateTime now = DateTime.parse("2016-03-15T17:13:13.044Z");
+    public void recurringCronScheduleWithEndsOnTimeWindowWorks() {
+        // This query will be a couple of months in the future, against a future absolute time window.
+        // We should get the task for that specific week, and nothing else. Query is on 5/12.
+        // We'll extend the context well into the future in order to get back that task.
+        DateTime now = DateTime.parse("2016-05-12T17:13:13.044Z");
         DateTimeUtils.setCurrentMillisFixed(now.getMillis());
         
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setCronTrigger("0 0 0 ? * MON *");
         schedule.setEventId("two_weeks_before_enrollment");
-        schedule.setEndsOn(DateTime.parse("2016-03-15T00:00:00.000Z"));
+        schedule.setEndsOn(DateTime.parse("2016-05-09T00:00:00.000Z"));
         schedule.setExpires("P7D");
         
         events.clear();
         events.put("enrollment", DateTime.parse("2016-03-15T00:04:37.000Z"));
         events.put("two_weeks_before_enrollment", events.get("enrollment").minusWeeks(2));
         
-        // We'd expect, based on that schedule, to have a task:
-        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(now.plusDays(4)));
-        assertEquals(1, scheduledActivities.size());
+        // If we search far enough ahead, we'll get back the one task in the schedule window
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(now.plusDays(180)));
+        assertDates(scheduledActivities, "2016-05-09 00:00");
         
         DateTimeUtils.setCurrentMillisSystem();
     }
