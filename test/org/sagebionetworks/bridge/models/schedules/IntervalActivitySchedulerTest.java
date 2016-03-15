@@ -33,7 +33,7 @@ public class IntervalActivitySchedulerTest {
     @Before
     public void before() {
         plan.setGuid("BBB");
-        
+
         // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
         DateTimeUtils.setCurrentMillisFixed(1428340210000L);
         events = Maps.newHashMap();
@@ -447,13 +447,12 @@ public class IntervalActivitySchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P4D");
-        schedule.setStartsOn(asDT("2015-04-02 00:00"));
+        schedule.setStartsOn(asDT("2015-04-10 00:00"));
 
         // The delay doesn't mean the schedule fires on this event
         events.put("survey:AAA:completedOn", asDT("2015-04-01 09:22"));
-        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusWeeks(2)));
-
-        assertEquals(0, scheduledActivities.size());
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusWeeks(3)));
+        assertDates(scheduledActivities, "2015-04-11 09:40", "2015-04-11 13:40", "2015-04-13 09:40", "2015-04-13 13:40");
     }
     @Test
     public void recurringEventDelayEndsOnScheduleWorks() {
@@ -477,7 +476,9 @@ public class IntervalActivitySchedulerTest {
         // This is outside the window, so when this happens, even if it recurs, it shouldn't fire
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusWeeks(3)));
-        assertEquals(0, scheduledActivities.size());
+        
+        assertDates(scheduledActivities, 
+                "2015-04-07 09:40", "2015-04-07 13:40", "2015-04-09 09:40", "2015-04-09 13:40");
     }
 
     private ScheduleContext getContext(DateTime endsOn) {
