@@ -107,6 +107,20 @@ public class StudyParticipant2Test {
         assertEquals("Test User", deserHistory.getName());
         assertEquals("AAA", deserHistory.getSubpopulationGuid());
         assertEquals(new Long(3000000L), deserHistory.getWithdrewOn());
-
+    }
+    
+    @Test
+    public void testNullResiliency() {
+        // We don't remove nulls from the collections, at least not when reading them.
+        StudyParticipant2 participant = new StudyParticipant2.Builder()
+                .withDataGroups(null)
+                .withAttributes(null)
+                .withRoles(null)
+                .withLanguages(null).build();
+        
+        assertTrue(participant.getDataGroups().isEmpty());
+        assertTrue(participant.getAttributes().isEmpty());
+        assertTrue(participant.getRoles().isEmpty());
+        assertTrue(participant.getLanguages().isEmpty());
     }
 }
