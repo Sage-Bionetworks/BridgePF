@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static org.sagebionetworks.bridge.BridgeUtils.ifFailuresThrowException;
+
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -11,6 +15,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  * This object will replace the existing StudyParticipant object that is used to generate the 
@@ -30,10 +35,12 @@ public class StudyParticipant2 {
     private final String healthCode;
     private final Map<String,String> attributes;
     private final Map<String,List<UserConsentHistory>> consentHistories;
+    private Set<Roles> roles;
+    private LinkedHashSet<String> languages;
     
     private StudyParticipant2(String firstName, String lastName, String email, String externalId, SharingScope sharingScope,
             boolean notifyByEmail, Set<String> dataGroups, String healthCode, Map<String,String> attributes, 
-            Map<String,List<UserConsentHistory>> consentHistories) {
+            Map<String,List<UserConsentHistory>> consentHistories, Set<Roles> roles, LinkedHashSet<String> languages) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -44,6 +51,8 @@ public class StudyParticipant2 {
         this.healthCode = healthCode;
         this.attributes = attributes;
         this.consentHistories = consentHistories;
+        this.roles = roles;
+        this.languages = languages;
     }
     
     public String getFirstName() {
@@ -76,6 +85,12 @@ public class StudyParticipant2 {
     public Map<String, List<UserConsentHistory>> getConsentHistories() {
         return consentHistories;
     }
+    public Set<Roles> getRoles() {
+        return roles;
+    }
+    public LinkedHashSet<String> getLanguages() {
+        return languages;
+    }
     
     public static class Builder {
         private String firstName;
@@ -88,6 +103,8 @@ public class StudyParticipant2 {
         private String healthCode;
         private Map<String,String> attributes = Maps.newHashMap();
         private Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
+        private Set<Roles> roles = Sets.newHashSet();
+        private LinkedHashSet<String> languages = new LinkedHashSet<>();
         
         public Builder withFirstName(String firstName) {
             this.firstName = firstName;
@@ -141,10 +158,22 @@ public class StudyParticipant2 {
             }
             return this;
         }
+        public Builder withRoles(Set<Roles> roles) {
+            if (roles != null) {
+                this.roles = roles;
+            }
+            return this;
+        }
+        public Builder withLanguages(LinkedHashSet<String> languages) {
+            if (languages != null) {
+                this.languages = languages;
+            }
+            return this;
+        }
         
         public StudyParticipant2 build() {
             return new StudyParticipant2(firstName, lastName, email, externalId, sharingScope, notifyByEmail, 
-                    dataGroups, healthCode, attributes, consentHistories);
+                    dataGroups, healthCode, attributes, consentHistories, roles, languages);
         }
     }
 

@@ -3,12 +3,15 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -21,6 +24,8 @@ import com.google.common.collect.Sets;
 
 public class StudyParticipant2Test {
 
+    private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
+    private static final LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","fr");
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");
     private static final Map<String,String> ATTRIBUTES = ImmutableMap.<String,String>builder()
             .put("A", "B")
@@ -37,7 +42,9 @@ public class StudyParticipant2Test {
                 .withNotifyByEmail(true)
                 .withDataGroups(DATA_GROUPS)
                 .withHealthCode("healthCode")
-                .withAttributes(ATTRIBUTES);
+                .withAttributes(ATTRIBUTES)
+                .withRoles(ROLES)
+                .withLanguages(LANGS);
         
         List<UserConsentHistory> histories = Lists.newArrayList();
         UserConsentHistory history = new UserConsentHistory.Builder()
@@ -60,18 +67,27 @@ public class StudyParticipant2Test {
         assertEquals("sponsors_and_partners", node.get("sharingScope").asText());
         assertTrue(node.get("notifyByEmail").asBoolean());
         assertEquals("healthCode", node.get("healthCode").asText());
-
         assertEquals("StudyParticipant", node.get("type").asText());
+
+        Set<String> roleNames = Sets.newHashSet(
+                Roles.ADMIN.name().toLowerCase(), Roles.WORKER.name().toLowerCase());
+        ArrayNode rolesArray = (ArrayNode)node.get("roles");
+        assertTrue(roleNames.contains(rolesArray.get(0).asText()));
+        assertTrue(roleNames.contains(rolesArray.get(1).asText()));
+        
+        // This array the order is significant, it serializes LinkedHashSet
+        ArrayNode langsArray = (ArrayNode)node.get("languages"); 
+        assertEquals("en", langsArray.get(0).asText());
+        assertEquals("fr", langsArray.get(1).asText());
         
         ArrayNode dataGroupsArray = (ArrayNode)node.get("dataGroups");
-        
         assertTrue(DATA_GROUPS.contains(dataGroupsArray.get(0).asText()));
         assertTrue(DATA_GROUPS.contains(dataGroupsArray.get(1).asText()));
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
         
-        assertEquals(11, node.size());
+        assertEquals(13, node.size());
         
         StudyParticipant2 deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant2.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -91,6 +107,20 @@ public class StudyParticipant2Test {
         assertEquals("Test User", deserHistory.getName());
         assertEquals("AAA", deserHistory.getSubpopulationGuid());
         assertEquals(new Long(3000000L), deserHistory.getWithdrewOn());
-
+    }
+    
+    @Test
+    public void testNullResiliency() {
+        // We don't remove nulls from the collections, at least not when reading them.
+        StudyParticipant2 participant = new StudyParticipant2.Builder()
+                .withDataGroups(null)
+                .withAttributes(null)
+                .withRoles(null)
+                .withLanguages(null).build();
+        
+        assertTrue(participant.getDataGroups().isEmpty());
+        assertTrue(participant.getAttributes().isEmpty());
+        assertTrue(participant.getRoles().isEmpty());
+        assertTrue(participant.getLanguages().isEmpty());
     }
 }
