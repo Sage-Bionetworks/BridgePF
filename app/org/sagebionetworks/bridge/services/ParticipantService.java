@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.List;
@@ -95,18 +96,21 @@ public class ParticipantService {
                 participant.addConsentHistory(subpop.getGuid(), NO_HISTORY);
             }
         }
-        // Accounts exist that have signatures but no health codes. This may only be from testing, 
-        // but still, do not want roster generation to fail because of this. So we check for this.
+        // Accounts exist that have signatures but no health codes (when created but email is 
+        // never verified, for example). Do not want roster generation to fail because of this,
+        // so we just skip things that require the healthCode.
         if (healthCode != null) {
             ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
             participant.withSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
             participant.withNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
             participant.withExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
             participant.withDataGroups(lookup.getStringSet(DATA_GROUPS));
+            participant.withLanguages(lookup.getOrderedStringSet(LANGUAGES));
         }
         participant.withFirstName(account.getFirstName());
         participant.withLastName(account.getLastName());
         participant.withEmail(account.getEmail());
+        participant.withRoles(account.getRoles());
         
         Map<String,String> attributes = Maps.newHashMap();
         for (String attribute : study.getUserProfileAttributes()) {
