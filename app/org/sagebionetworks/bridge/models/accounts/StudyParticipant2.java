@@ -35,8 +35,8 @@ public class StudyParticipant2 {
     private final String healthCode;
     private final Map<String,String> attributes;
     private final Map<String,List<UserConsentHistory>> consentHistories;
-    private Set<Roles> roles;
-    private LinkedHashSet<String> languages;
+    private final Set<Roles> roles;
+    private final LinkedHashSet<String> languages;
     
     private StudyParticipant2(String firstName, String lastName, String email, String externalId, SharingScope sharingScope,
             boolean notifyByEmail, Set<String> dataGroups, String healthCode, Map<String,String> attributes, 
