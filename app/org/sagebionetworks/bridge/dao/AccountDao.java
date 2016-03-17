@@ -115,9 +115,11 @@ public interface AccountDao {
      *      index to start the next page of records
      * @param pageSize
      *      number of records to return (or the number of remaining records if less than the pageSize).
+     * @param emailFilter
+     *      a substring that will be matched (ignoring case) against the email addresses of the accounts.
      * @return
      *      a paged resource list that includes the page of account summaries, as well as other information 
      *      about the request and the total number of records.
      */
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize);
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter);
 }

@@ -86,7 +86,7 @@ public class StormpathAccountDaoTest {
     public void getStudyPagedAccounts() {
         List<String> newAccounts = Lists.newArrayList();
         try {
-            PagedResourceList<AccountSummary> accounts = accountDao.getPagedAccountSummaries(study, 0, 10);
+            PagedResourceList<AccountSummary> accounts = accountDao.getPagedAccountSummaries(study, 0, 10, null);
             // This test requires 6 accounts be present (one more than a page so we can verify the results are capped)
             // API directories already have 3-6 accounts. They don't need to be verified, consented, etc.
             if (accounts.getTotal() < 6) {
@@ -98,25 +98,31 @@ public class StormpathAccountDaoTest {
                     newAccounts.add(email);
                 }
             }
-            // Fetch only 5 accounts
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 5);
+            
+            // Fetch only 5 accounts. Empty search string ignored
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 5, "");
             
             // pageSize is respected
             assertEquals(5, accounts.getItems().size());
             
             // offsetBy is advanced
-            AccountSummary account1 = accountDao.getPagedAccountSummaries(study, 1, 5).getItems().get(0);
-            AccountSummary account2 = accountDao.getPagedAccountSummaries(study, 2, 5).getItems().get(0);
+            AccountSummary account1 = accountDao.getPagedAccountSummaries(study, 1, 5, null).getItems().get(0);
+            AccountSummary account2 = accountDao.getPagedAccountSummaries(study, 2, 5, null).getItems().get(0);
             assertEquals(accounts.getItems().get(1), account1);
             assertEquals(accounts.getItems().get(2), account2);
             
             // Next page = offset + pageSize
-            AccountSummary nextPageAccount = accountDao.getPagedAccountSummaries(study, 5, 5).getItems().get(0);
+            AccountSummary nextPageAccount = accountDao.getPagedAccountSummaries(study, 5, 5, null).getItems().get(0);
             assertFalse(accounts.getItems().contains(nextPageAccount));
             
             // This should be beyond the number of users in any API study. Should be empty
-            accounts = accountDao.getPagedAccountSummaries(study, 100000, 100);
+            accounts = accountDao.getPagedAccountSummaries(study, 100000, 100, null);
             assertEquals(0, accounts.getItems().size());
+            
+            // This should filter on one of the strings in the email addresses
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridgeit");
+            assertEquals(1, accounts.getItems().size());
+            assertEquals("bridgeit@sagebase.org", accounts.getItems().get(0).getEmail());
         } finally {
             for (String email : newAccounts) {
                 accountDao.deleteAccount(study, email);
@@ -303,5 +309,4 @@ public class StormpathAccountDaoTest {
         }
         
     }
-    
 }

@@ -125,7 +125,7 @@ public class ParticipantService {
         return participant.build();
     }
     
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter) {
         checkNotNull(study);
         if (offsetBy < 0) {
             throw new BadRequestException("offsetBy cannot be less than 0");
@@ -134,7 +134,7 @@ public class ParticipantService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize);
+        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
     }
     
     private String getHealthCode(Account account) {
