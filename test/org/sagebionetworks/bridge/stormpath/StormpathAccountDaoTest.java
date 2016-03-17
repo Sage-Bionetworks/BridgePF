@@ -119,8 +119,8 @@ public class StormpathAccountDaoTest {
             accounts = accountDao.getPagedAccountSummaries(study, 100000, 100, null);
             assertEquals(0, accounts.getItems().size());
             
-            // This should filter on one of the strings in the email addresses
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridgeit");
+            // This should filter down to one of the accounts
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridgeit@");
             assertEquals(1, accounts.getItems().size());
             assertEquals("bridgeit@sagebase.org", accounts.getItems().get(0).getEmail());
         } finally {
