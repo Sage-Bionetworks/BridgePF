@@ -39,8 +39,10 @@ public class MetricsInterceptor implements MethodInterceptor {
     Metrics initMetrics() {
         final Request request = Http.Context.current().request();
         final Metrics metrics = new Metrics(RequestUtils.getRequestId(request));
+        // The only key we have for users is their email addresses, but it's sensitive. Don't log it.
+        String uri = request.path().replaceFirst("(?<=(/participants/))([^/]*)", ":email");
         metrics.setMethod(request.method());
-        metrics.setUri(request.path());
+        metrics.setUri(uri);
         metrics.setProtocol(request.version());
         metrics.setRemoteAddress(RequestUtils.header(request, X_FORWARDED_FOR_HEADER, request.remoteAddress()));
         metrics.setUserAgent(RequestUtils.header(request, USER_AGENT, null));
