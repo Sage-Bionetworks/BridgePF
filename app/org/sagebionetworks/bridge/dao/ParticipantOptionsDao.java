@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -11,6 +12,13 @@ public interface ParticipantOptionsDao {
      */
     public void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value);
      
+    /**
+     * Set one or more participant options at once. If a field in ParticipantOptions is null, it will not be changed. 
+     * If the value exists, then it will be update. 
+     * @param options
+     */
+    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, ParticipantOptions options);
+    
     /**
      * Get all the options for a single participant. 
      */

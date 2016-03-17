@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -102,6 +103,14 @@ public class ParticipantOptionsService {
         checkNotNull(option);
         
         setStringSet(studyIdentifier, healthCode, option, value);
+    }
+    
+    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, ParticipantOptions options) {
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(options);
+        
+        optionsDao.setAllOptions(studyIdentifier, healthCode, options);
     }
     
     /**

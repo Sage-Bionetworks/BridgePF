@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -97,6 +98,15 @@ public class ParticipantOptionsServiceTest {
         service.setEnum(TEST_STUDY, HEALTH_CODE, SHARING_SCOPE, SharingScope.SPONSORS_AND_PARTNERS);
         
         verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, SHARING_SCOPE, "SPONSORS_AND_PARTNERS");
+        verifyNoMoreInteractions(mockDao);
+    }
+    
+    @Test
+    public void setAllOptions() {
+        ParticipantOptions options = new ParticipantOptions(null, null, null, null, null);
+        service.setAllOptions(TEST_STUDY, HEALTH_CODE, options);
+        
+        verify(mockDao).setAllOptions(TEST_STUDY, HEALTH_CODE, options);
         verifyNoMoreInteractions(mockDao);
     }
     

@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
@@ -135,6 +136,17 @@ public class ParticipantService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize);
+    }
+    
+    public void updateParticipantOptions(Study study, String email, ParticipantOptions options) {
+        checkNotNull(options);
+        
+        Account account = accountDao.getAccount(study, email);
+        String healthCode = getHealthCode(account);
+        if (healthCode == null) {
+            throw new BadRequestException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
+        }
+        optionsService.setAllOptions(study, healthCode, options);
     }
     
     private String getHealthCode(Account account) {

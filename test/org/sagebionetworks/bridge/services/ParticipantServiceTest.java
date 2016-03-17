@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.List;
@@ -25,6 +26,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
@@ -155,6 +157,7 @@ public class ParticipantServiceTest {
         when(lookup.getBoolean(EMAIL_NOTIFICATIONS)).thenReturn(true);
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn("externalId");
         when(lookup.getStringSet(DATA_GROUPS)).thenReturn(TestUtils.newLinkedHashSet("group1","group2"));
+        when(lookup.getOrderedStringSet(LANGUAGES)).thenReturn(TestUtils.newLinkedHashSet("fr","de"));
         when(optionsService.getOptions("healthCode")).thenReturn(lookup);
         
         // Get the participant
@@ -168,6 +171,7 @@ public class ParticipantServiceTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, participant.getSharingScope());
         assertEquals("healthCode", participant.getHealthCode());
         assertEquals("email@email.com", participant.getEmail());
+        assertEquals(TestUtils.newLinkedHashSet("fr","de"), participant.getLanguages());
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
@@ -180,4 +184,33 @@ public class ParticipantServiceTest {
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
     }
+
+    @Test
+    public void updateParticipantOptions() {
+        String email = "email@email.com";
+        when(account.getHealthId()).thenReturn("healthId");
+        when(healthId.getCode()).thenReturn("healthCode");
+        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
+        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        
+        ParticipantOptions options = new ParticipantOptions(null, null, null, null, null);
+        
+        participantService.updateParticipantOptions(STUDY, email, options);
+        
+        verify(optionsService).setAllOptions(STUDY, "healthCode", options);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void cannotUpdateParticipantOptionsYet() {
+        String email = "email@email.com";
+        when(account.getHealthId()).thenReturn(null);
+        when(healthId.getCode()).thenReturn(null);
+        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
+        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        
+        ParticipantOptions options = new ParticipantOptions(null, null, null, null, null);
+        
+        participantService.updateParticipantOptions(STUDY, email, options);
+    }
+    
 }

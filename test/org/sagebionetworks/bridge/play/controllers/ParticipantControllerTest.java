@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -12,6 +13,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -20,12 +22,14 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -33,6 +37,7 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
 import play.mvc.Result;
@@ -117,6 +122,30 @@ public class ParticipantControllerTest {
         assertEquals("Test", retrievedParticipant.getFirstName());
         
         verify(participantService).getParticipant(STUDY, "email@email.com");
+    }
+    
+    @Test
+    public void updateParticipantOptions() throws Exception {
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'sharingScope':'sponsors_and_partners',"+
+                "'notifyByEmail':true,'externalId':'abcd','dataGroups':['group1','group2'],"+
+                "'languages':['en','fr']}"));        
+        ArgumentCaptor<ParticipantOptions> captor = ArgumentCaptor.forClass(ParticipantOptions.class);
+        
+        Result result = controller.updateParticipantOptions("email@email.com");
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals("Participant options updated.", node.get("message").asText());
+        assertEquals(200, result.status());
+        
+        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), captor.capture());
+        ParticipantOptions options = captor.getValue();
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, options.getSharingScope());
+        assertEquals(Boolean.TRUE, options.getNotifyByEmail());
+        assertEquals("abcd", options.getExternalId());
+        assertTrue(options.getDataGroups().contains("group1"));
+        assertTrue(options.getDataGroups().contains("group2"));
+        assertTrue(options.getLanguages().contains("en"));
+        assertTrue(options.getLanguages().contains("fr"));
     }
     
     public void nullParametersUseDefaults() throws Exception {
