@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import static org.sagebionetworks.bridge.BridgeUtils.ifFailuresThrowException;
-
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;

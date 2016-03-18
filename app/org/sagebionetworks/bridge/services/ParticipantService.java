@@ -75,7 +75,6 @@ public class ParticipantService {
         this.consentService = consentService;
     }
     
-    // This code is functionally very similar to the ParticipantRosterGenerator, which it will replace.
     public StudyParticipant2 getParticipant(Study study, String email) {
         checkNotNull(study);
         checkArgument(isNotBlank(email));

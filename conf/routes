@@ -54,7 +54,6 @@ POST   /v3/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.contro
 POST   /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
 DELETE /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
 POST   /v3/users/signOut                @org.sagebionetworks.bridge.play.controllers.UserManagementController.invalidateUserSession(email: java.lang.String ?= null)
-POST   /v3/users/emailParticipantRoster @org.sagebionetworks.bridge.play.controllers.StudyController.sendStudyParticipantsRoster
 GET    /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
 POST   /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
 POST   /v3/users/self/externalId        @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier

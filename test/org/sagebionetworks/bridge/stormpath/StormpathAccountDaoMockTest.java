@@ -6,7 +6,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -32,10 +31,7 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.authc.AuthenticationOptions;
-import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.AuthenticationResult;
-import com.stormpath.sdk.authc.BasicAuthenticationOptions;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;

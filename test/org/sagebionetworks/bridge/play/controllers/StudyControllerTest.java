@@ -10,7 +10,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import org.junit.Before;
@@ -90,7 +89,6 @@ public class StudyControllerTest {
         controller.setCacheProvider(mockCacheProvider);
         controller.setEmailVerificationService(mockVerificationService);
         controller.setUploadCertificateService(mockUploadCertService);
-        controller.setUserProfileService(mockUserProfileService);
         
         mockPlayContext();
     }
@@ -124,19 +122,6 @@ public class StudyControllerTest {
         JsonNode node = BridgeObjectMapper.get().readTree(pemFile);
         assertTrue(node.get("publicKey").asText().contains("-----BEGIN CERTIFICATE-----"));
         assertEquals("CmsPublicKey", node.get("type").asText());
-    }
-    
-    @Test
-    public void canSendEmailRoster() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(RESEARCHER);
-        
-        Result result = controller.sendStudyParticipantsRoster();
-        assertEquals(202, result.status());
-        
-        String content = Helpers.contentAsString(result);
-        assertTrue(content.contains("A roster of study participants will be emailed"));
-
-        verify(mockUserProfileService).sendStudyParticipantRoster(mockStudy);
     }
     
     @Test

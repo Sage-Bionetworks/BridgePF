@@ -2,11 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Resource;
 
@@ -16,7 +11,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -67,12 +61,6 @@ public class UserProfileServiceTest {
         assertNull("Unknown attribute is null", profile.getAttribute("some_unknown_attribute"));
     }
 
-    @Test(expected = BridgeServiceException.class)
-    public void getErrorIfNoConsentEmailSet() {
-        testUser.getStudy().setConsentNotificationEmail(null);
-        profileService.sendStudyParticipantRoster(testUser.getStudy());
-    }
-
     @Test
     public void cannotBreakProfileWithBadNameValues() {
         UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
@@ -83,17 +71,5 @@ public class UserProfileServiceTest {
         profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
         assertNull(profile.getFirstName());
         assertNull(profile.getLastName());
-    }
-
-    @Test
-    public void canRetrieveStudyParticipants() {
-        // Do not send email when this service is called.
-        ExecutorService service = mock(ExecutorService.class);
-        profileService.setExecutorService(service);
-
-        // All we an really do here is verify no error is thrown.
-        profileService.sendStudyParticipantRoster(testUser.getStudy());
-
-        verify(service).submit(any(Runnable.class));
     }
 }
