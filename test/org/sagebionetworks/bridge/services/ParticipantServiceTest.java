@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
@@ -185,6 +186,13 @@ public class ParticipantServiceTest {
         assertTrue(retrievedHistory2.isEmpty());
     }
 
+    @Test(expected = EntityNotFoundException.class)
+    public void getParticipantEmailDoesNotExist() {
+        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(null);
+        
+        participantService.getParticipant(STUDY, "email@email.com");
+    }
+    
     @Test
     public void updateParticipantOptions() {
         String email = "email@email.com";
