@@ -147,7 +147,7 @@ public class ParticipantControllerTest {
         assertEquals("Participant options updated.", node.get("message").asText());
         assertEquals(200, result.status());
         
-        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), (Map<ParticipantOption,String>)captor.capture());
+        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), captor.capture());
         Map<ParticipantOption,String> options = captor.getValue();
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), options.get(SHARING_SCOPE));
         assertEquals(Boolean.TRUE.toString(), options.get(ParticipantOption.EMAIL_NOTIFICATIONS));

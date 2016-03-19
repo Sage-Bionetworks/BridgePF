@@ -19,7 +19,7 @@ public class ParticipantOptionTest {
         String result = ParticipantOption.DATA_GROUPS.deserialize(node);
         assertEquals("group1,group2", result);
         
-        node = BridgeObjectMapper.get().readTree(TestUtils.createJson("'true'"));
+        node = BridgeObjectMapper.get().readTree(TestUtils.createJson("true"));
         result = ParticipantOption.EMAIL_NOTIFICATIONS.deserialize(node);
         assertEquals("true", result);
         
@@ -37,7 +37,7 @@ public class ParticipantOptionTest {
     }
     
     @Test
-    public void canNotBeNull() {
+    public void cannotBeNull() {
         for (ParticipantOption option : ParticipantOption.values()) {
             try {
                 option.deserialize(null);
