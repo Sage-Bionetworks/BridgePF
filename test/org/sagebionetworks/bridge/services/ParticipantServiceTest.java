@@ -226,7 +226,6 @@ public class ParticipantServiceTest {
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
         
         Map<ParticipantOption,String> options = Maps.newHashMap();
-        
         participantService.updateParticipantOptions(STUDY, email, options);
     }
     
