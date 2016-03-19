@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.*;
 
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -22,14 +23,16 @@ import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.springframework.test.context.ContextConfiguration;
@@ -44,8 +47,16 @@ public class DynamoParticipantOptionsDaoTest {
     private static final String TEST_EXT_ID_3 = "CCC";
     private static final Set<String> DATA_GROUPS_SET = Sets.newHashSet("group1", "group2");
     private static final LinkedHashSet<String> LANGUAGES_ORDERED_SET = TestUtils.newLinkedHashSet("en", "ja");
-    private static final ParticipantOptions PARTICIPANT_OPTIONS = new ParticipantOptions(
-            SharingScope.ALL_QUALIFIED_RESEARCHERS, true, "externalId", DATA_GROUPS_SET, LANGUAGES_ORDERED_SET);
+    
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static final Map<ParticipantOption, String> PARTICIPANT_OPTIONS = new ImmutableMap.Builder()
+            .put(SHARING_SCOPE, "all_qualified_researchers").put(EMAIL_NOTIFICATIONS, "true")
+            .put(EXTERNAL_IDENTIFIER, "externalId").put(DATA_GROUPS, "group1,group2").put(LANGUAGES, "en,ja").build();
+    
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static final Map<ParticipantOption, String> SPARSE_PARTICIPANT_OPTIONS = new ImmutableMap.Builder()
+            .put(EXTERNAL_IDENTIFIER, "newIdentifier").build();
+    
     
     private Study study;
     private String healthCode;
@@ -180,7 +191,7 @@ public class DynamoParticipantOptionsDaoTest {
         mapper = spy(mapper);
         optionsDao.setDdbMapper(mapper);
         
-        ParticipantOptions options = new ParticipantOptions(null, null, null, null, null);
+        Map<ParticipantOption,String> options = Maps.newHashMap();
         optionsDao.setAllOptions(study, healthCode, options);
         
         // And the values should be exactly the same, not corrupted by lack of options
@@ -199,8 +210,7 @@ public class DynamoParticipantOptionsDaoTest {
     public void updateSomeOptions() {
         optionsDao.setAllOptions(study, healthCode, PARTICIPANT_OPTIONS);
         
-        ParticipantOptions options = new ParticipantOptions(null, null, "newExternalId", null, null);
-        optionsDao.setAllOptions(study, healthCode, options);
+        optionsDao.setAllOptions(study, healthCode, SPARSE_PARTICIPANT_OPTIONS);
         
         ParticipantOptionsLookup lookup = optionsDao.getOptions(healthCode);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));

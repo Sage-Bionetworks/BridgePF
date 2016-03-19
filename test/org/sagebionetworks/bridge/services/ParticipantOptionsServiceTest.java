@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -103,7 +102,7 @@ public class ParticipantOptionsServiceTest {
     
     @Test
     public void setAllOptions() {
-        ParticipantOptions options = new ParticipantOptions(null, null, null, null, null);
+        Map<ParticipantOption,String> options = Maps.newHashMap();
         service.setAllOptions(TEST_STUDY, HEALTH_CODE, options);
         
         verify(mockDao).setAllOptions(TEST_STUDY, HEALTH_CODE, options);

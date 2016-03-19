@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -105,7 +105,7 @@ public class ParticipantOptionsService {
         setStringSet(studyIdentifier, healthCode, option, value);
     }
     
-    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, ParticipantOptions options) {
+    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, Map<ParticipantOption,String> options) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
         checkNotNull(options);

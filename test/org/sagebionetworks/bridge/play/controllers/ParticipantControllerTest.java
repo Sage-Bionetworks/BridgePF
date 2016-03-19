@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.anyInt;
@@ -9,11 +13,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -22,6 +28,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -29,7 +36,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -60,6 +66,9 @@ public class ParticipantControllerTest {
     
     @Mock
     private StudyService studyService;
+    
+    @Captor
+    private ArgumentCaptor<Map<ParticipantOption,String>> captor;
     
     @Before
     public void before() throws Exception {
@@ -129,7 +138,6 @@ public class ParticipantControllerTest {
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'sharingScope':'sponsors_and_partners',"+
                 "'notifyByEmail':true,'externalId':'abcd','dataGroups':['group1','group2'],"+
                 "'languages':['en','fr']}"));        
-        ArgumentCaptor<ParticipantOptions> captor = ArgumentCaptor.forClass(ParticipantOptions.class);
         
         Result result = controller.updateParticipantOptions("email@email.com");
         
@@ -137,15 +145,15 @@ public class ParticipantControllerTest {
         assertEquals("Participant options updated.", node.get("message").asText());
         assertEquals(200, result.status());
         
-        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), captor.capture());
-        ParticipantOptions options = captor.getValue();
-        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, options.getSharingScope());
-        assertEquals(Boolean.TRUE, options.getNotifyByEmail());
-        assertEquals("abcd", options.getExternalId());
-        assertTrue(options.getDataGroups().contains("group1"));
-        assertTrue(options.getDataGroups().contains("group2"));
-        assertTrue(options.getLanguages().contains("en"));
-        assertTrue(options.getLanguages().contains("fr"));
+        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), (Map<ParticipantOption,String>)captor.capture());
+        Map<ParticipantOption,String> options = captor.getValue();
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, options.get(SHARING_SCOPE));
+        assertEquals(Boolean.TRUE, options.get(ParticipantOption.EMAIL_NOTIFICATIONS));
+        assertEquals("abcd", options.get(EXTERNAL_IDENTIFIER));
+        assertTrue(options.get(DATA_GROUPS).contains("group1"));
+        assertTrue(options.get(DATA_GROUPS).contains("group2"));
+        assertTrue(options.get(DATA_GROUPS).contains("en"));
+        assertTrue(options.get(DATA_GROUPS).contains("fr"));
     }
     
     public void nullParametersUseDefaults() throws Exception {

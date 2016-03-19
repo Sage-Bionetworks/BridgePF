@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -25,7 +26,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
@@ -142,7 +142,7 @@ public class ParticipantService {
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize);
     }
     
-    public void updateParticipantOptions(Study study, String email, ParticipantOptions options) {
+    public void updateParticipantOptions(Study study, String email, Map<ParticipantOption,String> options) {
         checkNotNull(options);
         
         Account account = accountDao.getAccount(study, email);

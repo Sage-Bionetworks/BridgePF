@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -21,13 +22,13 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -201,7 +203,7 @@ public class ParticipantServiceTest {
         when(accountDao.getAccount(STUDY, email)).thenReturn(account);
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
         
-        ParticipantOptions options = new ParticipantOptions(null, null, null, null, null);
+        Map<ParticipantOption,String> options = Maps.newHashMap();
         
         participantService.updateParticipantOptions(STUDY, email, options);
         
@@ -216,7 +218,7 @@ public class ParticipantServiceTest {
         when(accountDao.getAccount(STUDY, email)).thenReturn(account);
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
         
-        ParticipantOptions options = new ParticipantOptions(null, null, null, null, null);
+        Map<ParticipantOption,String> options = Maps.newHashMap();
         
         participantService.updateParticipantOptions(STUDY, email, options);
     }

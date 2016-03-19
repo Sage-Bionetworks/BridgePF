@@ -1,7 +1,8 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.Map;
+
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptions;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -17,7 +18,7 @@ public interface ParticipantOptionsDao {
      * If the value exists, then it will be update. 
      * @param options
      */
-    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, ParticipantOptions options);
+    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, Map<ParticipantOption,String> options);
     
     /**
      * Get all the options for a single participant. 

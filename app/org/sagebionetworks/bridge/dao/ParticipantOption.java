@@ -1,22 +1,74 @@
 package org.sagebionetworks.bridge.dao;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import org.sagebionetworks.bridge.BridgeUtils;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 public enum ParticipantOption {
 
-    SHARING_SCOPE(SharingScope.NO_SHARING.name()),
-    EMAIL_NOTIFICATIONS(Boolean.TRUE.toString()),
-    EXTERNAL_IDENTIFIER(null),
-    DATA_GROUPS(null),
-    LANGUAGES(null);
+    SHARING_SCOPE(SharingScope.NO_SHARING.name(), "sharingScope") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            return SharingScope.valueOf(node.asText().toUpperCase()).name();
+        }
+    },
+    EMAIL_NOTIFICATIONS(Boolean.TRUE.toString(), "notifyByEmail") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            return Boolean.toString(node.asBoolean());
+        }
+    },
+    EXTERNAL_IDENTIFIER(null, "externalId") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            return node.asText();
+        }
+    },
+    DATA_GROUPS(null, "dataGroups") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            return setToOrderedString(node);
+        }
+    },
+    LANGUAGES(null, "languages") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            return setToOrderedString(node);
+        }
+    };
 
     private final String defaultValue;
+    private final String fieldName;
     
-    private ParticipantOption(String defaultValue) {
+    private static String setToOrderedString(JsonNode node) {
+        Set<String> results = new LinkedHashSet<>();
+        ArrayNode array = (ArrayNode)node;
+        for (int i = 0; i < array.size(); i++) {
+            results.add(array.get(i).asText());
+        }
+        return BridgeUtils.setToCommaList(results);
+    }
+    
+    private ParticipantOption(String defaultValue, String fieldName) {
         this.defaultValue = defaultValue;
+        this.fieldName = fieldName;
+    }
+    
+    public String getFieldName() {
+        return fieldName;
     }
     
     public String getDefaultValue() {
         return defaultValue;
     }
+    
+    public abstract String deserialize(JsonNode node);
 
     public enum SharingScope {
         /**
