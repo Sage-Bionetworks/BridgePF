@@ -14,9 +14,9 @@ POST   /v3/auth/verifyEmail             @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resendEmailVerification
 
 # Participants Researcher APIs
-GET  /v3/participants                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null)
-GET  /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(email: String)
-POST /v3/participants/member/options  @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipantOptions(email: String)
+GET  /v3/participants                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null)
+GET  /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(email: String ?= null)
+POST /v3/participants/member/options  @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipantOptions(email: String ?= null)
 POST /v3/participants/dataGroups      @org.sagebionetworks.bridge.play.controllers.UserManagementController.updateDataGroupForUser(email: String ?= null)
 
 # Study Subpopulations

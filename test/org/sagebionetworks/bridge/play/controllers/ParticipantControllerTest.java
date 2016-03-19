@@ -2,10 +2,12 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -86,7 +88,7 @@ public class ParticipantControllerTest {
         
         PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30);
         
-        when(participantService.getPagedAccountSummaries(eq(STUDY), anyInt(), anyInt())).thenReturn(page);
+        when(participantService.getPagedAccountSummaries(eq(STUDY), anyInt(), anyInt(), any())).thenReturn(page);
         
         controller.setParticipantService(participantService);
         controller.setStudyService(studyService);
@@ -96,7 +98,7 @@ public class ParticipantControllerTest {
     
     @Test
     public void getParticipants() throws Exception {
-        Result result = controller.getParticipants("10", "20");
+        Result result = controller.getParticipants("10", "20", "foo");
         PagedResourceList<AccountSummary> page = resultToPage(result);
         
         // verify the result contains items
@@ -107,15 +109,15 @@ public class ParticipantControllerTest {
         //verify paging
         assertEquals(10, page.getOffsetBy());
         assertEquals(20, page.getPageSize());
-        verify(participantService).getPagedAccountSummaries(STUDY, 10, 20);
+        verify(participantService).getPagedAccountSummaries(STUDY, 10, 20, "foo");
     }
     
     @Test(expected = BadRequestException.class)
     public void oddParametersUseDefaults() throws Exception {
-        controller.getParticipants("asdf", "qwer");
+        controller.getParticipants("asdf", "qwer", null);
         
         // paging with defaults
-        verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
     }
     
     @Test
@@ -147,20 +149,20 @@ public class ParticipantControllerTest {
         
         verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), (Map<ParticipantOption,String>)captor.capture());
         Map<ParticipantOption,String> options = captor.getValue();
-        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, options.get(SHARING_SCOPE));
-        assertEquals(Boolean.TRUE, options.get(ParticipantOption.EMAIL_NOTIFICATIONS));
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), options.get(SHARING_SCOPE));
+        assertEquals(Boolean.TRUE.toString(), options.get(ParticipantOption.EMAIL_NOTIFICATIONS));
         assertEquals("abcd", options.get(EXTERNAL_IDENTIFIER));
         assertTrue(options.get(DATA_GROUPS).contains("group1"));
         assertTrue(options.get(DATA_GROUPS).contains("group2"));
-        assertTrue(options.get(DATA_GROUPS).contains("en"));
-        assertTrue(options.get(DATA_GROUPS).contains("fr"));
+        assertTrue(options.get(LANGUAGES).contains("en"));
+        assertTrue(options.get(LANGUAGES).contains("fr"));
     }
     
     public void nullParametersUseDefaults() throws Exception {
-        controller.getParticipants(null, null);
+        controller.getParticipants(null, null, null);
 
         // paging with defaults
-        verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {

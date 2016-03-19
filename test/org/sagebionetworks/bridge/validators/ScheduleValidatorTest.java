@@ -146,12 +146,27 @@ public class ScheduleValidatorTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("2 3 a");
-
+        
         try {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("cronTrigger is an invalid cron expression", e.getErrors().get("cronTrigger").get(0));
+        }
+    }
+    
+    @Test
+    public void rejectCronExpressionWithTimes() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 0 0 ? * MON *");
+        schedule.addTimes("10:00");
+
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("cronTrigger cannot have times (they are included in the expression)", e.getErrors().get("cronTrigger").get(0));
         }
     }
     

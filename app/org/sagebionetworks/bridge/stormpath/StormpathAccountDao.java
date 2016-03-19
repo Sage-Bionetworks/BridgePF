@@ -128,7 +128,7 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter) {
         checkNotNull(study);
         checkArgument(offsetBy >= 0);
         checkArgument(pageSize >= API_MINIMUM_PAGE_SIZE && pageSize <= API_MAXIMUM_PAGE_SIZE);
@@ -139,7 +139,12 @@ public class StormpathAccountDao implements AccountDao {
         // getSize() in the iterator is the total number of records that match the criteria... not the smaller of 
         // either the number of records returned or limitTo (as you might expect in a paging API when you get the 
         // last page of records). Behavior as described by Stormpath in email.
+        
         AccountCriteria criteria = Accounts.criteria().limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
+        if (isNotBlank(emailFilter)) {
+            criteria = criteria.add(Accounts.email().containsIgnoreCase(emailFilter));
+        }
+        
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         AccountList accts = directory.getAccounts(criteria);
         

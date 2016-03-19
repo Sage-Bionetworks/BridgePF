@@ -56,6 +56,9 @@ public class ScheduleValidator implements Validator {
         if (cronExpressionInvalid(schedule)) {
             errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
         }
+        if (cronExpressionHasTimes(schedule)) {
+            errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "cannot have times (they are included in the expression)");
+        }
         if (intervalMissingTimes(schedule)) {
             errors.rejectValue(Schedule.TIMES_PROPERTY, "are required for interval-based schedules");
         }
@@ -75,8 +78,7 @@ public class ScheduleValidator implements Validator {
     }
     
     /**
-     * A one time schedule should not have an interval. (Although currently it is legal to have a cron 
-     * expression, I don't know why I decided to do this). 
+     * A one time schedule should not have an interval or cron expression.
      * @param schedule
      * @return
      */
@@ -123,6 +125,10 @@ public class ScheduleValidator implements Validator {
     
     private boolean cronExpressionInvalid(Schedule schedule) {
         return schedule.getCronTrigger() != null && !CronExpression.isValidExpression(schedule.getCronTrigger());
+    }
+    
+    private boolean cronExpressionHasTimes(Schedule schedule) {
+        return schedule.getCronTrigger() != null && schedule.getTimes() != null && !schedule.getTimes().isEmpty();
     }
     
     /**

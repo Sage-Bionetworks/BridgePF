@@ -50,7 +50,7 @@ public class DynamoParticipantOptionsDaoTest {
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static final Map<ParticipantOption, String> PARTICIPANT_OPTIONS = new ImmutableMap.Builder()
-            .put(SHARING_SCOPE, "all_qualified_researchers").put(EMAIL_NOTIFICATIONS, "true")
+            .put(SHARING_SCOPE, "ALL_QUALIFIED_RESEARCHERS").put(EMAIL_NOTIFICATIONS, "true")
             .put(EXTERNAL_IDENTIFIER, "externalId").put(DATA_GROUPS, "group1,group2").put(LANGUAGES, "en,ja").build();
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -215,7 +215,7 @@ public class DynamoParticipantOptionsDaoTest {
         ParticipantOptionsLookup lookup = optionsDao.getOptions(healthCode);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
         assertTrue(lookup.getBoolean(EMAIL_NOTIFICATIONS));
-        assertEquals("newExternalId", lookup.getString(EXTERNAL_IDENTIFIER));
+        assertEquals("newIdentifier", lookup.getString(EXTERNAL_IDENTIFIER));
         assertEquals(DATA_GROUPS_SET, lookup.getStringSet(DATA_GROUPS));
         assertEquals(LANGUAGES_ORDERED_SET, lookup.getOrderedStringSet(LANGUAGES));
     }

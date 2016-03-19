@@ -64,10 +64,6 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         if (options.keySet().isEmpty()) {
             return;
         }
-        Map<String,String> stringMap = Maps.newHashMap();
-        for (Map.Entry<ParticipantOption,String> entry : options.entrySet()) {
-            stringMap.put(entry.getKey().name(), entry.getValue());
-        }
         
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
@@ -78,7 +74,9 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         }
         dynamoOptions.setStudyKey(studyIdentifier.getIdentifier());
         dynamoOptions.setHealthCode(healthCode);
-        dynamoOptions.setOptions(stringMap);
+        for (ParticipantOption opt : options.keySet()) {
+            dynamoOptions.getOptions().put(opt.name(), options.get(opt));    
+        }
         mapper.save(dynamoOptions);    
     }
     

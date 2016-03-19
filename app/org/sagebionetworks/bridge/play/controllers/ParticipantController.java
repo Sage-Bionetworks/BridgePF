@@ -44,14 +44,14 @@ public class ParticipantController extends BaseController {
         return okResult(participant);
     }
     
-    public Result getParticipants(String offsetByString, String pageSizeString) {
+    public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         
         Study study = studyService.getStudy(session.getStudyIdentifier());
         int offsetBy = getIntOrDefault(offsetByString, 0);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
         
-        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize);
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
         return okResult(page);
     }
     

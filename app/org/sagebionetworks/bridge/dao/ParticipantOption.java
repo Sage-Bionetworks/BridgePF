@@ -33,20 +33,20 @@ public enum ParticipantOption {
     DATA_GROUPS(null, "dataGroups") {
         public String deserialize(JsonNode node) {
             checkNotNull(node);
-            return setToOrderedString(node);
+            return arrayNodeToOrderedString(node);
         }
     },
     LANGUAGES(null, "languages") {
         public String deserialize(JsonNode node) {
             checkNotNull(node);
-            return setToOrderedString(node);
+            return arrayNodeToOrderedString(node);
         }
     };
 
     private final String defaultValue;
     private final String fieldName;
     
-    private static String setToOrderedString(JsonNode node) {
+    private static String arrayNodeToOrderedString(JsonNode node) {
         Set<String> results = new LinkedHashSet<>();
         ArrayNode array = (ArrayNode)node;
         for (int i = 0; i < array.size(); i++) {

@@ -130,7 +130,7 @@ public class ParticipantService {
         return participant.build();
     }
     
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter) {
         checkNotNull(study);
         if (offsetBy < 0) {
             throw new BadRequestException("offsetBy cannot be less than 0");
@@ -139,13 +139,16 @@ public class ParticipantService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize);
+        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
     }
     
     public void updateParticipantOptions(Study study, String email, Map<ParticipantOption,String> options) {
         checkNotNull(options);
         
         Account account = accountDao.getAccount(study, email);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         String healthCode = getHealthCode(account);
         if (healthCode == null) {
             throw new BadRequestException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");

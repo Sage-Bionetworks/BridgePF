@@ -238,19 +238,19 @@ public class StormpathAccountDaoMockTest {
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsPageSizeTooSmall() {
         StormpathAccountDao dao = new StormpathAccountDao();
-        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE-1);
+        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE-1, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsPageSizeTooLarge() {
         StormpathAccountDao dao = new StormpathAccountDao();
-        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1);
+        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1, null);
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsNonsenseOffsetBy() {
         StormpathAccountDao dao = new StormpathAccountDao();
-        dao.getPagedAccountSummaries(study, -10, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        dao.getPagedAccountSummaries(study, -10, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
     }
     
     private SubpopulationService mockSubpopService() {
