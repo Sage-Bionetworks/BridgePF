@@ -23,7 +23,6 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 
 @Component
 public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
