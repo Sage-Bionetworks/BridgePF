@@ -6,7 +6,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -32,10 +31,7 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.authc.AuthenticationOptions;
-import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.AuthenticationResult;
-import com.stormpath.sdk.authc.BasicAuthenticationOptions;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
@@ -161,7 +157,6 @@ public class StormpathAccountDaoMockTest {
         verify(acct).setPassword(PASSWORD);
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     public void authenticate() {
         // mock stormpath director
@@ -243,19 +238,19 @@ public class StormpathAccountDaoMockTest {
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsPageSizeTooSmall() {
         StormpathAccountDao dao = new StormpathAccountDao();
-        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE-1);
+        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE-1, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsPageSizeTooLarge() {
         StormpathAccountDao dao = new StormpathAccountDao();
-        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1);
+        dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1, null);
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsNonsenseOffsetBy() {
         StormpathAccountDao dao = new StormpathAccountDao();
-        dao.getPagedAccountSummaries(study, -10, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        dao.getPagedAccountSummaries(study, -10, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
     }
     
     private SubpopulationService mockSubpopService() {

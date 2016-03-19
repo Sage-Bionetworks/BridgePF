@@ -82,29 +82,36 @@ public class ParticipantServiceTest {
     
     @Test
     public void getPagedAccountSummaries() {
-        participantService.getPagedAccountSummaries(STUDY, 1100, 50);
+        participantService.getPagedAccountSummaries(STUDY, 1100, 50, "foo");
         
-        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50); 
+        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, "foo"); 
+    }
+    
+    @Test
+    public void getPagedAccountSummariesWithoutEmailFilterOK() {
+        participantService.getPagedAccountSummaries(STUDY, 1100, 50, null);
+        
+        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, null); 
     }
     
     @Test(expected = NullPointerException.class)
     public void badStudyRejected() {
-        participantService.getPagedAccountSummaries(null, 0, 100);
+        participantService.getPagedAccountSummaries(null, 0, 100, null);
     }
     
     @Test(expected = BadRequestException.class)
     public void offsetByCannotBeNegative() {
-        participantService.getPagedAccountSummaries(STUDY, -1, 100);
+        participantService.getPagedAccountSummaries(STUDY, -1, 100, null);
     }
     
     @Test(expected = BadRequestException.class)
     public void limitToCannotBeNegative() {
-        participantService.getPagedAccountSummaries(STUDY, 0, -100);
+        participantService.getPagedAccountSummaries(STUDY, 0, -100, null);
     }
     
     @Test(expected = BadRequestException.class)
     public void limitToCannotBeGreaterThan250() {
-        participantService.getPagedAccountSummaries(STUDY, 0, 251);
+        participantService.getPagedAccountSummaries(STUDY, 0, 251, null);
     }
     
     @Test
