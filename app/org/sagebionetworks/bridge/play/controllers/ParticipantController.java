@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -46,6 +47,16 @@ public class ParticipantController extends BaseController {
         
         PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
         return okResult(page);
+    }
+    
+    public Result updateProfile(String email) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        UserProfile profile = UserProfile.fromJson(study.getUserProfileAttributes(), requestToJSON(request()));
+        
+        participantService.updateProfile(study, email, profile);
+        return okResult("User profile updated.");
     }
     
     private int getIntOrDefault(String value, int defaultValue) {

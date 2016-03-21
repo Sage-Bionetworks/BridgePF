@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
@@ -15,6 +16,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -28,6 +30,7 @@ import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
@@ -186,5 +189,29 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
+    }
+    
+    @Test
+    public void updateUserProfile() {
+        UserProfile profile = new UserProfile();
+        profile.setFirstName("first name");
+        profile.setLastName("last name");
+        profile.setAttribute("attr1", "new attr1");
+        profile.setAttribute("attr2", "new attr2");
+
+        // Need an account object on which we can actually set the values...
+        Account acct = new SimpleAccount();
+        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(acct);
+        
+        participantService.updateProfile(STUDY, "email@email.com", profile);
+        
+        ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
+        verify(accountDao).updateAccount(eq(STUDY), captor.capture());
+        
+        Account capturedAccount = captor.getValue();
+        assertEquals("first name", capturedAccount.getFirstName());
+        assertEquals("last name", capturedAccount.getLastName());
+        assertEquals("new attr1", capturedAccount.getAttribute("attr1"));
+        assertEquals("new attr2", capturedAccount.getAttribute("attr2"));
     }
 }

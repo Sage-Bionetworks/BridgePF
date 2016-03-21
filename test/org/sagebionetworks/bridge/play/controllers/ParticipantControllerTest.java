@@ -13,6 +13,8 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -28,12 +30,14 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
 import play.mvc.Result;
@@ -56,6 +60,9 @@ public class ParticipantControllerTest {
     
     @Mock
     private StudyService studyService;
+    
+    @Captor
+    private ArgumentCaptor<UserProfile> profileCaptor;
     
     @Before
     public void before() throws Exception {
@@ -118,6 +125,28 @@ public class ParticipantControllerTest {
         assertEquals("Test", retrievedParticipant.getFirstName());
         
         verify(participantService).getParticipant(STUDY, "email@email.com");
+    }
+    
+    @Test
+    public void updateParticipantProfile() throws Exception {
+        STUDY.getUserProfileAttributes().add("phone");
+        
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson(
+            "{'firstName':'new first name','lastName':'new last name','phone':'new attribute'}"));
+        
+        Result result = controller.updateProfile("email@email.com");
+        String json = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        String message = node.get("message").asText();
+        
+        assertEquals("User profile updated.", message);
+        
+        verify(participantService).updateProfile(eq(STUDY), eq("email@email.com"), profileCaptor.capture());
+        UserProfile capturedProfile = profileCaptor.getValue();
+        
+        assertEquals("new first name", capturedProfile.getFirstName());
+        assertEquals("new last name", capturedProfile.getLastName());
+        assertEquals("new attribute", capturedProfile.getAttribute(("phone")));
     }
     
     public void nullParametersUseDefaults() throws Exception {
