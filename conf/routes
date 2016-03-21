@@ -191,3 +191,6 @@ POST   /api/v2/consent/dataSharing           @org.sagebionetworks.bridge.play.co
 POST   /api/v1/upload                  @org.sagebionetworks.bridge.play.controllers.UploadController.upload
 POST   /api/v1/upload/:id/complete     @org.sagebionetworks.bridge.play.controllers.UploadController.uploadComplete(id: String)
 GET    /api/v1/upload/:id/status       @org.sagebionetworks.bridge.play.controllers.UploadController.getValidationStatus(id: String)
+
+# Assets, there are only two, a robots file and a favicon.ico
+GET    /*file controllers.Assets.at(path="/public", file)
