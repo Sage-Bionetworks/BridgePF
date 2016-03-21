@@ -39,6 +39,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -70,7 +71,10 @@ public class ParticipantControllerTest {
     private StudyService studyService;
     
     @Captor
-    private ArgumentCaptor<Map<ParticipantOption,String>> captor;
+    private ArgumentCaptor<Map<ParticipantOption,String>> optionMapCaptor;
+
+    @Captor
+    private ArgumentCaptor<UserProfile> profileCaptor;
     
     @Before
     public void before() throws Exception {
@@ -147,8 +151,8 @@ public class ParticipantControllerTest {
         assertEquals("Participant options updated.", node.get("message").asText());
         assertEquals(200, result.status());
         
-        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), captor.capture());
-        Map<ParticipantOption,String> options = captor.getValue();
+        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), optionMapCaptor.capture());
+        Map<ParticipantOption,String> options = optionMapCaptor.getValue();
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), options.get(SHARING_SCOPE));
         assertEquals(Boolean.TRUE.toString(), options.get(ParticipantOption.EMAIL_NOTIFICATIONS));
         assertEquals("abcd", options.get(EXTERNAL_IDENTIFIER));
@@ -156,6 +160,27 @@ public class ParticipantControllerTest {
         assertTrue(options.get(DATA_GROUPS).contains("group2"));
         assertTrue(options.get(LANGUAGES).contains("en"));
         assertTrue(options.get(LANGUAGES).contains("fr"));
+    }
+    
+    public void updateParticipantProfile() throws Exception {
+        STUDY.getUserProfileAttributes().add("phone");
+        
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson(
+            "{'firstName':'new first name','lastName':'new last name','phone':'new attribute'}"));
+        
+        Result result = controller.updateProfile("email@email.com");
+        String json = Helpers.contentAsString(result);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        String message = node.get("message").asText();
+        
+        assertEquals("User profile updated.", message);
+        
+        verify(participantService).updateProfile(eq(STUDY), eq("email@email.com"), profileCaptor.capture());
+        UserProfile capturedProfile = profileCaptor.getValue();
+        
+        assertEquals("new first name", capturedProfile.getFirstName());
+        assertEquals("new last name", capturedProfile.getLastName());
+        assertEquals("new attribute", capturedProfile.getAttribute(("phone")));
     }
     
     public void nullParametersUseDefaults() throws Exception {

@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
@@ -154,6 +155,21 @@ public class ParticipantService {
             throw new BadRequestException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
         }
         optionsService.setAllOptions(study, healthCode, options);
+    }
+
+    /**
+     * Update the fields of a user profile that can be updated, on behalf of a user (using an 
+     * email address only).
+     */
+    public void updateProfile(Study study, String email, UserProfile profile) {
+        Account account = accountDao.getAccount(study, email);
+        account.setFirstName(profile.getFirstName());
+        account.setLastName(profile.getLastName());
+        for(String attribute : study.getUserProfileAttributes()) {
+            String value = profile.getAttribute(attribute);
+            account.setAttribute(attribute, value);
+        }
+        accountDao.updateAccount(study, account);
     }
     
     private String getHealthCode(Account account) {
