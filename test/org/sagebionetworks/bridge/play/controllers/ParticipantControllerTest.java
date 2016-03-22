@@ -78,7 +78,7 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         
-        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30);
+        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30, "foo");
         
         when(participantService.getPagedAccountSummaries(eq(STUDY), anyInt(), anyInt(), any())).thenReturn(page);
         
@@ -98,9 +98,10 @@ public class ParticipantControllerTest {
         assertEquals(30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
-        //verify paging
+        //verify paging/filtering
         assertEquals(10, page.getOffsetBy());
         assertEquals(20, page.getPageSize());
+        assertEquals("foo", page.getFilter());
         verify(participantService).getPagedAccountSummaries(STUDY, 10, 20, "foo");
     }
     
