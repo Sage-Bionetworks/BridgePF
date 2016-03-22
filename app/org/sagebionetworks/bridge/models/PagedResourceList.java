@@ -16,7 +16,7 @@ public class PagedResourceList<T> {
     @JsonCreator
     public PagedResourceList(@JsonProperty("items") List<T> items, @JsonProperty("offsetBy") int offsetBy,
             @JsonProperty("limitTo") int pageSize, @JsonProperty("total") int total, 
-            @JsonProperty("filterString") String filter) {
+            @JsonProperty("filter") String filter) {
         this.items = items;
         this.offsetBy = offsetBy;
         this.pageSize = pageSize;
