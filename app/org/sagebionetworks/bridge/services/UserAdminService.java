@@ -12,15 +12,11 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -29,8 +25,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.RedisKey;
-import org.sagebionetworks.bridge.validators.DataGroupsValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,22 +167,6 @@ public class UserAdminService {
     }
 
     /**
-     * Sign out a user's session.
-     *
-     * @param study
-     *              study of target user
-     * @param email
-     *              target user
-     */
-    public void invalidateUserSession(Study study, String email) {
-        checkNotNull(study);
-        checkArgument(StringUtils.isNotBlank(email));
-        Account account = accountDao.getAccount(study, email);
-
-        cacheProvider.removeSessionByUserId(account.getId());
-    }
-
-    /**
      * Delete the target user.
      *
      * @param email
@@ -287,37 +265,4 @@ public class UserAdminService {
         }
     }
 
-    /**
-     * Researcher API to update data groups to a given account. Note that this *overwrites* all data groups, not adds.
-     * This is used for bootstrapping test accounts and to correct errors in data groups.
-     *
-     * @param study
-     *         study the account lives in
-     * @param email
-     *         email address of the account to update
-     * @param dataGroups
-     *         new set of data groups
-     */
-    public void updateDataGroupForUser(Study study, String email, DataGroups dataGroups) {
-        // validate user inputs (except study, which isn't user input)
-        if (StringUtils.isBlank(email)) {
-            throw new BadRequestException("Email address must be specified");
-        }
-        Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);
-
-        // Get the user's health code.
-        Account account = accountDao.getAccount(study, email);
-        if (account == null) {
-            throw new NotFoundException("Account not found");
-        }
-
-        String healthCode = healthIdDao.getCode(account.getHealthId());
-        if (healthCode == null) {
-            throw new NotFoundException("Health code not found");
-        }
-
-        // Set data groups.
-        optionsService.setStringSet(study, healthCode, ParticipantOption.DATA_GROUPS,
-                dataGroups.getDataGroups());
-    }
 }

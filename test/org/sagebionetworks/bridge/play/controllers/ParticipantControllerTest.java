@@ -38,7 +38,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -127,13 +127,13 @@ public class ParticipantControllerTest {
     
     @Test
     public void getParticipant() throws Exception {
-        StudyParticipant2 studyParticipant = new StudyParticipant2.Builder().withFirstName("Test").build();
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
         
         when(participantService.getParticipant(STUDY, "email@email.com")).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant("email@email.com");
         String string = Helpers.contentAsString(result);
-        StudyParticipant2 retrievedParticipant = BridgeObjectMapper.get().readValue(string, StudyParticipant2.class);
+        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(string, StudyParticipant.class);
         // Verify that there's a field, full serialization tested in StudyParticipant2Test
         assertEquals("Test", retrievedParticipant.getFirstName());
         
@@ -163,6 +163,7 @@ public class ParticipantControllerTest {
         assertTrue(options.get(LANGUAGES).contains("fr"));
     }
     
+    @Test
     public void updateParticipantProfile() throws Exception {
         STUDY.getUserProfileAttributes().add("phone");
         
@@ -184,6 +185,7 @@ public class ParticipantControllerTest {
         assertEquals("new attribute", capturedProfile.getAttribute(("phone")));
     }
     
+    @Test
     public void nullParametersUseDefaults() throws Exception {
         controller.getParticipants(null, null, null);
 
@@ -191,6 +193,53 @@ public class ParticipantControllerTest {
         verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
     }
     
+    @Test
+    public void signUserOut() throws Exception {
+        controller.signOut("email@email.com");
+        
+        verify(participantService).signUserOut(STUDY, "email@email.com");
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getParticipantNoEmail() {
+        controller.getParticipant(null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateParticipantOptionsNoEmail() {
+        controller.updateParticipantOptions(null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateProfileNoEmail() {
+        controller.updateProfile(null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void signOutNoEmail() throws Exception {
+        controller.signOut(null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getParticipantBlank() {
+        controller.getParticipant("");
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateParticipantOptionsBlank() {
+        controller.updateParticipantOptions("  ");
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateProfileBlank() {
+        controller.updateProfile("\t");
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void signOutBlank() throws Exception {
+        controller.signOut("");
+    }
+
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);
         return BridgeObjectMapper.get().readValue(string, ACCOUNT_SUMMARY_PAGE);

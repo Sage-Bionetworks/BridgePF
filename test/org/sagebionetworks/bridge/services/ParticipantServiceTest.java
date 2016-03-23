@@ -23,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -32,7 +33,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -78,6 +79,9 @@ public class ParticipantServiceTest {
     @Mock
     private ParticipantOptionsLookup lookup;
     
+    @Mock
+    private CacheProvider cacheProvider;
+    
     @Before
     public void before() {
         participantService = new ParticipantService();
@@ -86,6 +90,7 @@ public class ParticipantServiceTest {
         participantService.setSubpopulationService(subpopService);
         participantService.setHealthCodeService(healthCodeService);
         participantService.setUserConsent(consentService);
+        participantService.setCacheProvider(cacheProvider);
     }
     
     @Test
@@ -174,7 +179,7 @@ public class ParticipantServiceTest {
         when(optionsService.getOptions("healthCode")).thenReturn(lookup);
         
         // Get the participant
-        StudyParticipant2 participant = participantService.getParticipant(STUDY, email);
+        StudyParticipant participant = participantService.getParticipant(STUDY, email);
         
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());
@@ -264,4 +269,31 @@ public class ParticipantServiceTest {
         assertEquals("new attr1", capturedAccount.getAttribute("attr1"));
         assertEquals("new attr2", capturedAccount.getAttribute("attr2"));
     }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void updateUserProfileUserDoesNotExist() {
+        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(null);
+        
+        UserProfile profile = new UserProfile();
+        participantService.updateProfile(STUDY, "email@email.com", profile);
+    }
+    
+    @Test
+    public void signUserOut() {
+        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(account);
+        when(account.getId()).thenReturn("userId");
+        
+        participantService.signUserOut(STUDY, "email@email.com");
+        
+        verify(accountDao).getAccount(STUDY, "email@email.com");
+        verify(cacheProvider).removeSessionByUserId("userId");
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void signOutUserWhoDoesNotExist() {
+        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(null);
+        
+        participantService.signUserOut(STUDY, "email@email.com");
+    }
+    
 }

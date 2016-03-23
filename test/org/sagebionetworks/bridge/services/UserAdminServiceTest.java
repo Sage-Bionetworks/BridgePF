@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -139,15 +138,6 @@ public class UserAdminServiceTest {
         assertNull(authService.getSession(session.getSessionToken()));
         // Delete again shouldn't crash
         userAdminService.deleteUser(study, session.getUser().getEmail());
-        assertNull(authService.getSession(session.getSessionToken()));
-    }
-
-    @Test
-    public void testInvalidateUserSession() {
-        UserSession session = userAdminService.createUser(signUp, study, null, true, true);
-        assertNotNull(authService.getSession(session.getSessionToken()));
-
-        userAdminService.invalidateUserSession(study, signUp.getEmail());
         assertNull(authService.getSession(session.getSessionToken()));
     }
 }

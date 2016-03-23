@@ -18,7 +18,9 @@ GET  /v3/participants                 @org.sagebionetworks.bridge.play.controlle
 GET  /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(email: String ?= null)
 POST /v3/participants/member/options  @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipantOptions(email: String ?= null)
 POST /v3/participants/member/profile  @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateProfile(email: String ?= null)
-POST /v3/participants/dataGroups      @org.sagebionetworks.bridge.play.controllers.UserManagementController.updateDataGroupForUser(email: String ?= null)
+POST /v3/participants/member/signOut  @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(email: String ?= null)
+
+POST   /v3/users/signOut                @org.sagebionetworks.bridge.play.controllers.UserManagementController.invalidateUserSession(email: java.lang.String ?= null)
 
 # Study Subpopulations
 GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations
@@ -54,7 +56,6 @@ POST   /v3/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.contro
 # Users
 POST   /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
 DELETE /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
-POST   /v3/users/signOut                @org.sagebionetworks.bridge.play.controllers.UserManagementController.invalidateUserSession(email: java.lang.String ?= null)
 GET    /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
 POST   /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
 POST   /v3/users/self/externalId        @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier

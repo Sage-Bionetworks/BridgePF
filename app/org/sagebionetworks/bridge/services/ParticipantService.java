@@ -17,6 +17,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -27,7 +28,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant2;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -52,6 +53,8 @@ public class ParticipantService {
     private HealthCodeService healthCodeService;
     
     private ConsentService consentService;
+    
+    private CacheProvider cacheProvider;
     
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
@@ -78,11 +81,16 @@ public class ParticipantService {
         this.consentService = consentService;
     }
     
-    public StudyParticipant2 getParticipant(Study study, String email) {
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
+    
+    public StudyParticipant getParticipant(Study study, String email) {
         checkNotNull(study);
         checkArgument(isNotBlank(email));
         
-        StudyParticipant2.Builder participant = new StudyParticipant2.Builder();
+        StudyParticipant.Builder participant = new StudyParticipant.Builder();
         
         Account account = accountDao.getAccount(study, email);
         if (account == null) {
@@ -143,6 +151,8 @@ public class ParticipantService {
     }
     
     public void updateParticipantOptions(Study study, String email, Map<ParticipantOption,String> options) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(email));
         checkNotNull(options);
         
         Account account = accountDao.getAccount(study, email);
@@ -161,7 +171,14 @@ public class ParticipantService {
      * email address only).
      */
     public void updateProfile(Study study, String email, UserProfile profile) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(email));
+        checkNotNull(profile);
+        
         Account account = accountDao.getAccount(study, email);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         account.setFirstName(profile.getFirstName());
         account.setLastName(profile.getLastName());
         for(String attribute : study.getUserProfileAttributes()) {
@@ -169,6 +186,17 @@ public class ParticipantService {
             account.setAttribute(attribute, value);
         }
         accountDao.updateAccount(study, account);
+    }
+    
+    public void signUserOut(Study study, String email) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(email));
+        
+        Account account = accountDao.getAccount(study, email);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        cacheProvider.removeSessionByUserId(account.getId());
     }
     
     private String getHealthCode(Account account) {
