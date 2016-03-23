@@ -62,6 +62,12 @@ public class ParticipantOptionTest {
     }
     
     @Test(expected = BadRequestException.class)
+    public void invalidDataGroupNullThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("['group1',null]"));
+        ParticipantOption.DATA_GROUPS.deserialize(node);
+    }
+    
+    @Test(expected = BadRequestException.class)
     public void invalidEmailNotificationThrowsBadRequest() throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("3"));
         ParticipantOption.EMAIL_NOTIFICATIONS.deserialize(node);
