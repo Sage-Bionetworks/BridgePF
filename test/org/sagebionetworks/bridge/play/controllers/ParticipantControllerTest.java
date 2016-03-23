@@ -101,7 +101,7 @@ public class ParticipantControllerTest {
         //verify paging/filtering
         assertEquals(10, page.getOffsetBy());
         assertEquals(20, page.getPageSize());
-        assertEquals("foo", page.getFilter());
+        assertEquals("foo", page.getEmailFilter());
         verify(participantService).getPagedAccountSummaries(STUDY, 10, 20, "foo");
     }
     

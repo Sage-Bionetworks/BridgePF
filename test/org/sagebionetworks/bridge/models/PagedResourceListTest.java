@@ -29,7 +29,7 @@ public class PagedResourceListTest {
         assertEquals(2, node.get("offsetBy").asInt());
         assertEquals(123, node.get("total").asInt());
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("filter").asText());
+        assertEquals("filterString", node.get("emailFilter").asText());
         assertEquals("PagedResourceList", node.get("type").asText());
         
         ArrayNode items = (ArrayNode)node.get("items");
@@ -47,7 +47,7 @@ public class PagedResourceListTest {
         assertEquals(page.getTotal(), serPage.getTotal());
         assertEquals(page.getOffsetBy(), serPage.getOffsetBy());
         assertEquals(page.getPageSize(), serPage.getPageSize());
-        assertEquals(page.getFilter(), serPage.getFilter());
+        assertEquals(page.getEmailFilter(), serPage.getEmailFilter());
         assertEquals(page.getItems(), serPage.getItems());
     }
 }

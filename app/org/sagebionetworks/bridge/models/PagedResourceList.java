@@ -11,17 +11,17 @@ public class PagedResourceList<T> {
     private final int offsetBy;
     private final int pageSize;
     private final int total;
-    private final String filter;
+    private final String emailFilter;
 
     @JsonCreator
     public PagedResourceList(@JsonProperty("items") List<T> items, @JsonProperty("offsetBy") int offsetBy,
             @JsonProperty("limitTo") int pageSize, @JsonProperty("total") int total, 
-            @JsonProperty("filter") String filter) {
+            @JsonProperty("emailFilter") String emailFilter) {
         this.items = items;
         this.offsetBy = offsetBy;
         this.pageSize = pageSize;
         this.total = total;
-        this.filter = filter;
+        this.emailFilter = emailFilter;
     }
     public List<T> getItems() {
         return items;
@@ -35,13 +35,13 @@ public class PagedResourceList<T> {
     public int getPageSize() {
         return pageSize;
     }
-    public String getFilter() {
-        return filter;
+    public String getEmailFilter() {
+        return emailFilter;
     }
     @Override
     public String toString() {
         return "PagedResourceList [items=" + items + ", offsetBy=" + offsetBy + ", pageSize=" + pageSize + ", total="
-                + total + ", filter=" + filter + "]";
+                + total + ", emailFilter=" + emailFilter + "]";
     }
 
 }
