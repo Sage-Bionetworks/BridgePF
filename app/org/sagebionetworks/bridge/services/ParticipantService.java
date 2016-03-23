@@ -13,10 +13,12 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -26,6 +28,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -33,6 +36,8 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.validators.DataGroupsValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -155,6 +160,11 @@ public class ParticipantService {
         String healthCode = getHealthCode(account);
         if (healthCode == null) {
             throw new BadRequestException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
+        }
+        if (options.get(ParticipantOption.DATA_GROUPS) != null) {
+            Set<String> dataGroupsSet = BridgeUtils.commaListToOrderedSet(options.get(ParticipantOption.DATA_GROUPS));
+            DataGroups dataGroups = new DataGroups(dataGroupsSet);
+            Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);    
         }
         optionsService.setAllOptions(study, healthCode, options);
     }

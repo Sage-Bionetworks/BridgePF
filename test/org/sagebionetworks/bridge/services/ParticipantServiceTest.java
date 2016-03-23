@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -50,7 +51,8 @@ public class ParticipantServiceTest {
     static {
         STUDY.setIdentifier("test-study");
         STUDY.setHealthCodeExportEnabled(true);
-        STUDY.setUserProfileAttributes(Sets.newHashSet("attr1","attr2"));        
+        STUDY.setUserProfileAttributes(Sets.newHashSet("attr1","attr2"));
+        STUDY.setDataGroups(Sets.newHashSet("group1","group2"));
     }
     
     private ParticipantService participantService;
@@ -223,6 +225,20 @@ public class ParticipantServiceTest {
         participantService.updateParticipantOptions(STUDY, email, options);
         
         verify(optionsService).setAllOptions(STUDY, "healthCode", options);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void updateParticipantOptionsInvalidDataGroup() {
+        String email = "email@email.com";
+        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
+        when(account.getHealthId()).thenReturn("healthId");
+        when(healthId.getCode()).thenReturn("healthCode");
+        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        options.put(ParticipantOption.DATA_GROUPS, "group1,group3");
+        
+        participantService.updateParticipantOptions(STUDY, email, options);
     }
     
     @Test(expected = BadRequestException.class)
