@@ -1,22 +1,93 @@
 package org.sagebionetworks.bridge.dao;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+
 public enum ParticipantOption {
 
-    SHARING_SCOPE(SharingScope.NO_SHARING.name()),
-    EMAIL_NOTIFICATIONS(Boolean.TRUE.toString()),
-    EXTERNAL_IDENTIFIER(null),
-    DATA_GROUPS(null),
-    LANGUAGES(null);
+    SHARING_SCOPE(SharingScope.NO_SHARING.name(), "sharingScope") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            // Both incorrect enum names and JsonNode type problems end up throwing IllegalArgumentException
+            try {
+                return SharingScope.valueOf(node.asText().toUpperCase()).name();    
+            } catch(IllegalArgumentException e) {
+                throw new BadRequestException("sharingScope is an invalid type");
+            }
+        }
+    },
+    EMAIL_NOTIFICATIONS(Boolean.TRUE.toString(), "notifyByEmail") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            checkTypeAndThrow(node, "notifyByEmail", BooleanNode.class);
+            return Boolean.toString(node.asBoolean());
+        }
+    },
+    EXTERNAL_IDENTIFIER(null, "externalId") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            checkTypeAndThrow(node, "externalId", TextNode.class);
+            return node.asText();
+        }
+    },
+    DATA_GROUPS(null, "dataGroups") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            checkTypeAndThrow(node, "dataGroups", ArrayNode.class);
+            return arrayNodeToOrderedString(super.getFieldName(), node);
+        }
+    },
+    LANGUAGES(null, "languages") {
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            checkTypeAndThrow(node, "language", ArrayNode.class);
+            return arrayNodeToOrderedString(super.getFieldName(), node);
+        }
+    };
+    
+    private static void checkTypeAndThrow(JsonNode node, String fieldName, Class<? extends JsonNode> type) {
+        if (!node.getClass().isAssignableFrom(type)) {
+            throw new BadRequestException(fieldName + " is an invalid type");
+        }
+    }
+    
+    private static String arrayNodeToOrderedString(String fieldName, JsonNode node) {
+        Set<String> results = new LinkedHashSet<>();
+        ArrayNode array = (ArrayNode)node;
+        for (int i = 0; i < array.size(); i++) {
+            checkTypeAndThrow(array.get(i), fieldName+" element", TextNode.class);
+            results.add(array.get(i).asText());
+        }
+        return BridgeUtils.setToCommaList(results);
+    }
 
     private final String defaultValue;
+    private final String fieldName;
     
-    private ParticipantOption(String defaultValue) {
+    private ParticipantOption(String defaultValue, String fieldName) {
         this.defaultValue = defaultValue;
+        this.fieldName = fieldName;
+    }
+    
+    public String getFieldName() {
+        return fieldName;
     }
     
     public String getDefaultValue() {
         return defaultValue;
     }
+    
+    public abstract String deserialize(JsonNode node);
 
     public enum SharingScope {
         /**

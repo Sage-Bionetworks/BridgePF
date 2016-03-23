@@ -2,9 +2,16 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.*;
 
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -15,12 +22,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.springframework.test.context.ContextConfiguration;
@@ -33,6 +45,18 @@ public class DynamoParticipantOptionsDaoTest {
     private static final String TEST_EXT_ID = "AAA";
     private static final String TEST_EXT_ID_2 = "BBB";
     private static final String TEST_EXT_ID_3 = "CCC";
+    private static final Set<String> DATA_GROUPS_SET = Sets.newHashSet("group1", "group2");
+    private static final LinkedHashSet<String> LANGUAGES_ORDERED_SET = TestUtils.newLinkedHashSet("en", "ja");
+    
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static final Map<ParticipantOption, String> PARTICIPANT_OPTIONS = new ImmutableMap.Builder()
+            .put(SHARING_SCOPE, "ALL_QUALIFIED_RESEARCHERS").put(EMAIL_NOTIFICATIONS, "true")
+            .put(EXTERNAL_IDENTIFIER, "externalId").put(DATA_GROUPS, "group1,group2").put(LANGUAGES, "en,ja").build();
+    
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static final Map<ParticipantOption, String> SPARSE_PARTICIPANT_OPTIONS = new ImmutableMap.Builder()
+            .put(EXTERNAL_IDENTIFIER, "newIdentifier").build();
+    
     
     private Study study;
     private String healthCode;
@@ -42,6 +66,9 @@ public class DynamoParticipantOptionsDaoTest {
     
     @Resource
     StudyService studyService;
+    
+    @Resource(name = "participantOptionsDbMapper")
+    DynamoDBMapper mapper;
 
     @Before
     public void before() {
@@ -145,4 +172,51 @@ public class DynamoParticipantOptionsDaoTest {
         optionsDao.deleteAllOptions(healthCode+"3");
     }
 
+    @Test
+    public void updateAllOptions() {
+        optionsDao.setAllOptions(study, healthCode, PARTICIPANT_OPTIONS);
+        
+        ParticipantOptionsLookup lookup = optionsDao.getOptions(healthCode);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+        assertTrue(lookup.getBoolean(EMAIL_NOTIFICATIONS));
+        assertEquals("externalId", lookup.getString(EXTERNAL_IDENTIFIER));
+        assertEquals(DATA_GROUPS_SET, lookup.getStringSet(DATA_GROUPS));
+        assertEquals(LANGUAGES_ORDERED_SET, lookup.getOrderedStringSet(LANGUAGES));
+    }
+    
+    @Test
+    public void updateNoOptions() {
+        optionsDao.setAllOptions(study, healthCode, PARTICIPANT_OPTIONS);
+        
+        mapper = spy(mapper);
+        optionsDao.setDdbMapper(mapper);
+        
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        optionsDao.setAllOptions(study, healthCode, options);
+        
+        // And the values should be exactly the same, not corrupted by lack of options
+        ParticipantOptionsLookup lookup = optionsDao.getOptions(healthCode);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+        assertTrue(lookup.getBoolean(EMAIL_NOTIFICATIONS));
+        assertEquals("externalId", lookup.getString(EXTERNAL_IDENTIFIER));
+        assertEquals(DATA_GROUPS_SET, lookup.getStringSet(DATA_GROUPS));
+        assertEquals(LANGUAGES_ORDERED_SET, lookup.getOrderedStringSet(LANGUAGES));
+        
+        // No update done, it didn't change.
+        verify(mapper, never()).save(any());
+    }
+
+    @Test
+    public void updateSomeOptions() {
+        optionsDao.setAllOptions(study, healthCode, PARTICIPANT_OPTIONS);
+        
+        optionsDao.setAllOptions(study, healthCode, SPARSE_PARTICIPANT_OPTIONS);
+        
+        ParticipantOptionsLookup lookup = optionsDao.getOptions(healthCode);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+        assertTrue(lookup.getBoolean(EMAIL_NOTIFICATIONS));
+        assertEquals("newIdentifier", lookup.getString(EXTERNAL_IDENTIFIER));
+        assertEquals(DATA_GROUPS_SET, lookup.getStringSet(DATA_GROUPS));
+        assertEquals(LANGUAGES_ORDERED_SET, lookup.getOrderedStringSet(LANGUAGES));
+    }
 }

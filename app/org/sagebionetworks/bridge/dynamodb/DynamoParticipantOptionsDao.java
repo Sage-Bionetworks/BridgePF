@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -50,6 +51,32 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         options.setHealthCode(healthCode);
         options.getOptions().put(option.name(), value);
         mapper.save(options);
+    }
+    
+    @Override
+    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, Map<ParticipantOption,String> options) {
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(options);
+        
+        // A special case: if there's nothing to update, don't.
+        if (options.keySet().isEmpty()) {
+            return;
+        }
+        
+        DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
+        keyObject.setHealthCode(healthCode);
+        
+        DynamoParticipantOptions dynamoOptions = mapper.load(keyObject);
+        if (dynamoOptions == null) {
+            dynamoOptions = new DynamoParticipantOptions();
+        }
+        dynamoOptions.setStudyKey(studyIdentifier.getIdentifier());
+        dynamoOptions.setHealthCode(healthCode);
+        for (ParticipantOption opt : options.keySet()) {
+            dynamoOptions.getOptions().put(opt.name(), options.get(opt));    
+        }
+        mapper.save(dynamoOptions);    
     }
     
     @Override

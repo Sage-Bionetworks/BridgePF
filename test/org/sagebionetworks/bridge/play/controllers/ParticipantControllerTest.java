@@ -1,6 +1,12 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
@@ -9,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +30,8 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -61,6 +70,9 @@ public class ParticipantControllerTest {
     @Mock
     private StudyService studyService;
     
+    @Captor
+    private ArgumentCaptor<Map<ParticipantOption,String>> optionMapCaptor;
+
     @Captor
     private ArgumentCaptor<UserProfile> profileCaptor;
     
@@ -128,6 +140,28 @@ public class ParticipantControllerTest {
     }
     
     @Test
+    public void updateParticipantOptions() throws Exception {
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'sharingScope':'sponsors_and_partners',"+
+                "'notifyByEmail':true,'externalId':'abcd','dataGroups':['group1','group2'],"+
+                "'languages':['en','fr']}"));        
+        
+        Result result = controller.updateParticipantOptions("email@email.com");
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals("Participant options updated.", node.get("message").asText());
+        assertEquals(200, result.status());
+        
+        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), optionMapCaptor.capture());
+        Map<ParticipantOption,String> options = optionMapCaptor.getValue();
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), options.get(SHARING_SCOPE));
+        assertEquals(Boolean.TRUE.toString(), options.get(ParticipantOption.EMAIL_NOTIFICATIONS));
+        assertEquals("abcd", options.get(EXTERNAL_IDENTIFIER));
+        assertTrue(options.get(DATA_GROUPS).contains("group1"));
+        assertTrue(options.get(DATA_GROUPS).contains("group2"));
+        assertTrue(options.get(LANGUAGES).contains("en"));
+        assertTrue(options.get(LANGUAGES).contains("fr"));
+    }
+    
     public void updateParticipantProfile() throws Exception {
         STUDY.getUserProfileAttributes().add("phone");
         

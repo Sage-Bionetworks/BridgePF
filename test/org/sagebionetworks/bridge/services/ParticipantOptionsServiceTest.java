@@ -101,6 +101,15 @@ public class ParticipantOptionsServiceTest {
     }
     
     @Test
+    public void setAllOptions() {
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        service.setAllOptions(TEST_STUDY, HEALTH_CODE, options);
+        
+        verify(mockDao).setAllOptions(TEST_STUDY, HEALTH_CODE, options);
+        verifyNoMoreInteractions(mockDao);
+    }
+    
+    @Test
     public void getEnum() {
         when(mockDao.getOptions(HEALTH_CODE))
                 .thenReturn(new ParticipantOptionsLookup(map(SHARING_SCOPE, "SPONSORS_AND_PARTNERS")));

@@ -18,8 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -83,6 +85,9 @@ public class ParticipantService {
         StudyParticipant2.Builder participant = new StudyParticipant2.Builder();
         
         Account account = accountDao.getAccount(study, email);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         String healthCode = getHealthCode(account);
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
@@ -137,6 +142,20 @@ public class ParticipantService {
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
     }
     
+    public void updateParticipantOptions(Study study, String email, Map<ParticipantOption,String> options) {
+        checkNotNull(options);
+        
+        Account account = accountDao.getAccount(study, email);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        String healthCode = getHealthCode(account);
+        if (healthCode == null) {
+            throw new BadRequestException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
+        }
+        optionsService.setAllOptions(study, healthCode, options);
+    }
+
     /**
      * Update the fields of a user profile that can be updated, on behalf of a user (using an 
      * email address only).

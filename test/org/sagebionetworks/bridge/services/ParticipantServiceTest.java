@@ -9,9 +9,11 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -22,9 +24,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -35,6 +39,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -165,6 +170,7 @@ public class ParticipantServiceTest {
         when(lookup.getBoolean(EMAIL_NOTIFICATIONS)).thenReturn(true);
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn("externalId");
         when(lookup.getStringSet(DATA_GROUPS)).thenReturn(TestUtils.newLinkedHashSet("group1","group2"));
+        when(lookup.getOrderedStringSet(LANGUAGES)).thenReturn(TestUtils.newLinkedHashSet("fr","de"));
         when(optionsService.getOptions("healthCode")).thenReturn(lookup);
         
         // Get the participant
@@ -178,6 +184,7 @@ public class ParticipantServiceTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, participant.getSharingScope());
         assertEquals("healthCode", participant.getHealthCode());
         assertEquals("email@email.com", participant.getEmail());
+        assertEquals(TestUtils.newLinkedHashSet("fr","de"), participant.getLanguages());
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
@@ -189,6 +196,49 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void getParticipantEmailDoesNotExist() {
+        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(null);
+        
+        participantService.getParticipant(STUDY, "email@email.com");
+    }
+    
+    @Test
+    public void updateParticipantOptions() {
+        String email = "email@email.com";
+        when(account.getHealthId()).thenReturn("healthId");
+        when(healthId.getCode()).thenReturn("healthCode");
+        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
+        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        
+        participantService.updateParticipantOptions(STUDY, email, options);
+        
+        verify(optionsService).setAllOptions(STUDY, "healthCode", options);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void cannotUpdateParticipantOptionsYet() {
+        String email = "email@email.com";
+        when(account.getHealthId()).thenReturn(null);
+        when(healthId.getCode()).thenReturn(null);
+        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
+        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        participantService.updateParticipantOptions(STUDY, email, options);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void accountDoesNotExist() {
+        String email = "email@email.com";
+        when(accountDao.getAccount(STUDY, email)).thenReturn(null);
+        
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        participantService.updateParticipantOptions(STUDY, email, options);
     }
     
     @Test

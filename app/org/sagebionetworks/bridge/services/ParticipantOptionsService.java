@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,6 +103,14 @@ public class ParticipantOptionsService {
         checkNotNull(option);
         
         setStringSet(studyIdentifier, healthCode, option, value);
+    }
+    
+    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, Map<ParticipantOption,String> options) {
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(options);
+        
+        optionsDao.setAllOptions(studyIdentifier, healthCode, options);
     }
     
     /**
