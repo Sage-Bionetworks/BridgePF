@@ -20,8 +20,6 @@ POST /v3/participants/member/options  @org.sagebionetworks.bridge.play.controlle
 POST /v3/participants/member/profile  @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateProfile(email: String ?= null)
 POST /v3/participants/member/signOut  @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(email: String ?= null)
 
-POST   /v3/users/signOut                @org.sagebionetworks.bridge.play.controllers.UserManagementController.invalidateUserSession(email: java.lang.String ?= null)
-
 # Study Subpopulations
 GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations
 POST   /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.createSubpopulation
