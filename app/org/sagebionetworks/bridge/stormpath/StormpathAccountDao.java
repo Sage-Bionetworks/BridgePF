@@ -159,7 +159,7 @@ public class StormpathAccountDao implements AccountDao {
                 results.add(summary);
             }
         }
-        return new PagedResourceList<AccountSummary>(results, offsetBy, pageSize, accts.getSize());
+        return new PagedResourceList<AccountSummary>(results, offsetBy, pageSize, accts.getSize(), emailFilter);
     }
     
     @Override

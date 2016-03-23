@@ -23,12 +23,13 @@ public class PagedResourceListTest {
         accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", AccountStatus.DISABLED));
         accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", AccountStatus.ENABLED));
         
-        PagedResourceList<AccountSummary> page = new PagedResourceList<>(accounts, 2, 100, 123);
+        PagedResourceList<AccountSummary> page = new PagedResourceList<>(accounts, 2, 100, 123, "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertEquals(2, node.get("offsetBy").asInt());
         assertEquals(123, node.get("total").asInt());
         assertEquals(100, node.get("pageSize").asInt());
+        assertEquals("filterString", node.get("emailFilter").asText());
         assertEquals("PagedResourceList", node.get("type").asText());
         
         ArrayNode items = (ArrayNode)node.get("items");
@@ -46,6 +47,7 @@ public class PagedResourceListTest {
         assertEquals(page.getTotal(), serPage.getTotal());
         assertEquals(page.getOffsetBy(), serPage.getOffsetBy());
         assertEquals(page.getPageSize(), serPage.getPageSize());
+        assertEquals(page.getEmailFilter(), serPage.getEmailFilter());
         assertEquals(page.getItems(), serPage.getItems());
     }
 }
