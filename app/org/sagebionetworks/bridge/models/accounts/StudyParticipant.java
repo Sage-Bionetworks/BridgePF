@@ -19,7 +19,6 @@ import com.google.common.collect.Sets;
  * This object will replace the existing StudyParticipant object that is used to generate the 
  * participant roster (which is also going away).
  */
-@BridgeTypeName("StudyParticipant")
 @JsonDeserialize(builder=StudyParticipant.Builder.class)
 public class StudyParticipant {
 

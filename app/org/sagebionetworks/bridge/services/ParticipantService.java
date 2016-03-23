@@ -91,11 +91,7 @@ public class ParticipantService {
         checkArgument(isNotBlank(email));
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
-        
-        Account account = accountDao.getAccount(study, email);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = getAccountThrowingException(study, email);
         String healthCode = getHealthCode(account);
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
@@ -155,10 +151,7 @@ public class ParticipantService {
         checkArgument(isNotBlank(email));
         checkNotNull(options);
         
-        Account account = accountDao.getAccount(study, email);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = getAccountThrowingException(study, email);
         String healthCode = getHealthCode(account);
         if (healthCode == null) {
             throw new BadRequestException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
@@ -175,10 +168,7 @@ public class ParticipantService {
         checkArgument(isNotBlank(email));
         checkNotNull(profile);
         
-        Account account = accountDao.getAccount(study, email);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = getAccountThrowingException(study, email);
         account.setFirstName(profile.getFirstName());
         account.setLastName(profile.getLastName());
         for(String attribute : study.getUserProfileAttributes()) {
@@ -192,11 +182,16 @@ public class ParticipantService {
         checkNotNull(study);
         checkArgument(isNotBlank(email));
         
+        Account account = getAccountThrowingException(study, email);
+        cacheProvider.removeSessionByUserId(account.getId());
+    }
+
+    private Account getAccountThrowingException(Study study, String email) {
         Account account = accountDao.getAccount(study, email);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        cacheProvider.removeSessionByUserId(account.getId());
+        return account;
     }
     
     private String getHealthCode(Account account) {

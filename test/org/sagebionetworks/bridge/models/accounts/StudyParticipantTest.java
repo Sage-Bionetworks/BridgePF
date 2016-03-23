@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class StudyParticipant2Test {
+public class StudyParticipantTest {
 
     private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
     private static final LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","fr");
