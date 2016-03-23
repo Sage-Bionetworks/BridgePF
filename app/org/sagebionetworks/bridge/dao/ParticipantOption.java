@@ -18,8 +18,8 @@ public enum ParticipantOption {
     SHARING_SCOPE(SharingScope.NO_SHARING.name(), "sharingScope") {
         public String deserialize(JsonNode node) {
             checkNotNull(node);
+            // Both incorrect enum names and JsonNode type problems end up throwing IllegalArgumentException
             try {
-                // Both incorrect enum names and JsonNode type problems end up throwing IllegalArgumentException
                 return SharingScope.valueOf(node.asText().toUpperCase()).name();    
             } catch(IllegalArgumentException e) {
                 throw new BadRequestException("sharingScope is an invalid type");
@@ -43,18 +43,25 @@ public enum ParticipantOption {
     DATA_GROUPS(null, "dataGroups") {
         public String deserialize(JsonNode node) {
             checkNotNull(node);
+            checkTypeAndThrow(node, "dataGroups", ArrayNode.class);
             return arrayNodeToOrderedString(super.getFieldName(), node);
         }
     },
     LANGUAGES(null, "languages") {
         public String deserialize(JsonNode node) {
             checkNotNull(node);
+            checkTypeAndThrow(node, "language", ArrayNode.class);
             return arrayNodeToOrderedString(super.getFieldName(), node);
         }
     };
     
+    private static void checkTypeAndThrow(JsonNode node, String fieldName, Class<? extends JsonNode> type) {
+        if (!node.getClass().isAssignableFrom(type)) {
+            throw new BadRequestException(fieldName + " is an invalid type");
+        }
+    }
+    
     private static String arrayNodeToOrderedString(String fieldName, JsonNode node) {
-        checkTypeAndThrow(node, fieldName, ArrayNode.class);
         Set<String> results = new LinkedHashSet<>();
         ArrayNode array = (ArrayNode)node;
         for (int i = 0; i < array.size(); i++) {
@@ -62,12 +69,6 @@ public enum ParticipantOption {
             results.add(array.get(i).asText());
         }
         return BridgeUtils.setToCommaList(results);
-    }
-    
-    private static void checkTypeAndThrow(JsonNode node, String fieldName, Class<? extends JsonNode> type) {
-        if (!node.getClass().isAssignableFrom(type)) {
-            throw new BadRequestException(fieldName + " is an invalid type");
-        }
     }
 
     private final String defaultValue;
