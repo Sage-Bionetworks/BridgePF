@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -21,7 +20,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
-import org.sagebionetworks.bridge.services.UserProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -40,16 +38,9 @@ public class StudyController extends BaseController {
     private final Set<String> studyWhitelist = Collections
             .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
-    private UserProfileService userProfileService;
-
     private UploadCertificateService uploadCertificateService;
     
     private EmailVerificationService emailVerificationService;
-    
-    @Autowired
-    final void setUserProfileService(UserProfileService userProfileService) {
-        this.userProfileService = userProfileService;
-    }
 
     @Autowired
     final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
@@ -73,15 +64,6 @@ public class StudyController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         return ok(Study.STUDY_WRITER.writeValueAsString(study));
-    }
-
-    public Result sendStudyParticipantsRoster() throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-
-        userProfileService.sendStudyParticipantRoster(study);
-        
-        return acceptedResult("A roster of study participants will be emailed to the study's consent notification contact.");
     }
 
     public Result updateStudyForDeveloper() throws Exception {

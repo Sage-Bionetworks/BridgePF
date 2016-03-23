@@ -24,7 +24,7 @@ public class MetricsInterceptorTest {
         // Mock request
         final Request mockRequest = mock(Request.class);
         when(mockRequest.method()).thenReturn("POST");
-        when(mockRequest.path()).thenReturn("/v3/participants/test.user%2Btest20160301b%40sagebase.org/dataGroups", "/v3/participants/test.user%2Btest20160301b%40sagebase.org");
+        when(mockRequest.path()).thenReturn("/v3/participants");
         when(mockRequest.version()).thenReturn("HTTP/1.1");
         final Map<String, String[]> headerMap = new HashMap<>();
         headerMap.put("X-Request-Id", new String[]{"12345"});
@@ -51,13 +51,9 @@ public class MetricsInterceptorTest {
         assertTrue(json.contains("\"start\":"));
         assertTrue(json.contains("\"request_id\":\"12345\""));
         assertTrue(json.contains("\"method\":\"POST\""));
-        assertTrue(json.contains("\"uri\":\"/v3/participants/:email/dataGroups\""));
+        assertTrue(json.contains("\"uri\":\"/v3/participants\""));
         assertTrue(json.contains("\"protocol\":\"HTTP/1.1\""));
         assertTrue(json.contains("\"remote_address\":\"1.2.3.4\""));
         assertTrue(json.contains("\"user_agent\":\"ifeng 6\""));
-        
-        // Second variant of the URL is also correctly processed
-        json = interceptor.initMetrics().toJsonString();
-        assertTrue(json.contains("\"uri\":\"/v3/participants/:email\""));
     }
 }

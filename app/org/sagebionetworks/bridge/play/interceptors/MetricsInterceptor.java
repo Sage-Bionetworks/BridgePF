@@ -4,8 +4,6 @@ import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.METRICS_EXPIRE_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 
-import java.util.regex.Pattern;
-
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.sagebionetworks.bridge.models.Metrics;
@@ -22,9 +20,6 @@ import play.mvc.Result;
 public class MetricsInterceptor implements MethodInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsInterceptor.class);
-    
-    private static final Pattern PARTICIPANTS_URL = Pattern.compile("(?<=(/participants/))([^/]*)");
-    private static final String EMAIL_TOKEN = ":email";
 
     @Override
     public Object invoke(MethodInvocation method) throws Throwable {
@@ -44,10 +39,8 @@ public class MetricsInterceptor implements MethodInterceptor {
     Metrics initMetrics() {
         final Request request = Http.Context.current().request();
         final Metrics metrics = new Metrics(RequestUtils.getRequestId(request));
-        // The only key we have for users is their email addresses, but it's sensitive. Don't log it.
-        String uri = PARTICIPANTS_URL.matcher(request.path()).replaceAll(EMAIL_TOKEN);
         metrics.setMethod(request.method());
-        metrics.setUri(uri);
+        metrics.setUri(request.path());
         metrics.setProtocol(request.version());
         metrics.setRemoteAddress(RequestUtils.header(request, X_FORWARDED_FOR_HEADER, request.remoteAddress()));
         metrics.setUserAgent(RequestUtils.header(request, USER_AGENT, null));
