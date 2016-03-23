@@ -17,6 +17,7 @@ import javax.annotation.Nonnull;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeProductionSpringConfig;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -38,9 +39,11 @@ import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jetty.util.log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import play.Logger;
 import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
@@ -55,6 +58,8 @@ import com.google.common.base.Strings;
 
 public abstract class BaseController extends Controller {
 
+    private static Logger LOG = LoggerFactory.getLogger(BaseController.class);
+    
     private static ObjectMapper mapper = BridgeObjectMapper.get();
 
     CacheProvider cacheProvider;
@@ -202,10 +207,16 @@ public abstract class BaseController extends Controller {
     LinkedHashSet<String> getLanguagesFromAcceptLanguageHeader() {
         String acceptLanguageHeader = request().getHeader(ACCEPT_LANGUAGE);
         if (isNotBlank(acceptLanguageHeader)) {
-            List<LanguageRange> ranges = Locale.LanguageRange.parse(acceptLanguageHeader);
-            return ranges.stream().map(range -> {
-                return Locale.forLanguageTag(range.getRange()).getLanguage();
-            }).collect(Collectors.toCollection(LinkedHashSet::new));
+            try {
+                List<LanguageRange> ranges = Locale.LanguageRange.parse(acceptLanguageHeader);
+                return ranges.stream().map(range -> {
+                    return Locale.forLanguageTag(range.getRange()).getLanguage();
+                }).collect(Collectors.toCollection(LinkedHashSet::new));
+            } catch(IllegalArgumentException e) {
+                // Accept-Language header was not properly formatted, do not throw an exception over 
+                // a malformed header, just return that no languages were found.
+                LOG.debug("Malformed Accept-Language header sent: " + acceptLanguageHeader);
+            }
         }
         return new LinkedHashSet<>();
     }
@@ -214,7 +225,7 @@ public abstract class BaseController extends Controller {
         String userAgentHeader = request().getHeader(USER_AGENT);
         ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
         
-        Logger.debug("User agent: '"+userAgentHeader+"' converted to " + info);
+        LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);
     	return info;
     }
     

@@ -240,6 +240,19 @@ public class BaseControllerTest {
         assertEquals(ImmutableSet.of("en"), langs);
     }
     
+    // We don't want to throw a BadRequestException due to a malformed header. Just return no languages.
+    @Test
+    public void badAcceptLanguageHeaderSilentlyIgnored() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        
+        mockPlayContext();
+        // This is apparently a bad User-Agent header some browser is sending to us; any failure will do though.
+        mockHeader(ACCEPT_LANGUAGE, "chrome://global/locale/intl.properties");
+        
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertTrue(langs.isEmpty());
+    }
+    
     @Test
     public void canGetLanguagesWhenInSession() {
         BaseController controller = new SchedulePlanController();
