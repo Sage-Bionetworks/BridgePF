@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -48,4 +49,45 @@ public class ParticipantOptionTest {
         }
     }
     
+    @Test(expected = BadRequestException.class)
+    public void invalidDataGroupThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("true"));
+        ParticipantOption.DATA_GROUPS.deserialize(node);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void invalidDataGroupMemberThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("['group1',true]"));
+        ParticipantOption.DATA_GROUPS.deserialize(node);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void invalidEmailNotificationThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("3"));
+        ParticipantOption.EMAIL_NOTIFICATIONS.deserialize(node);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void invalidExternalIdentifierThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("3"));
+        ParticipantOption.EXTERNAL_IDENTIFIER.deserialize(node);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void invalidLanguagesThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("3"));
+        ParticipantOption.LANGUAGES.deserialize(node);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void invalidSharingScopeEnumThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("'fuzzy_bunny'"));
+        ParticipantOption.SHARING_SCOPE.deserialize(node);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void invalidSharingScopeTypeThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("3"));
+        ParticipantOption.SHARING_SCOPE.deserialize(node);
+    }
 }
