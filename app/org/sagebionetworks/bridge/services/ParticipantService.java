@@ -161,8 +161,9 @@ public class ParticipantService {
         if (healthCode == null) {
             throw new BadRequestException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
         }
-        if (options.get(ParticipantOption.DATA_GROUPS) != null) {
-            Set<String> dataGroupsSet = BridgeUtils.commaListToOrderedSet(options.get(ParticipantOption.DATA_GROUPS));
+        String dataGroupsString = options.get(ParticipantOption.DATA_GROUPS);
+        if (dataGroupsString != null) {
+            Set<String> dataGroupsSet = BridgeUtils.commaListToOrderedSet(dataGroupsString);
             DataGroups dataGroups = new DataGroups(dataGroupsSet);
             Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);    
         }
