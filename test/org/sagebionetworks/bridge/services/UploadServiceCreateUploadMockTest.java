@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.validators.UploadValidator;
 
 @SuppressWarnings("unchecked")
 public class UploadServiceCreateUploadMockTest {
+    private static final String TEST_BUCKET = "test-bucket";
     private static final String TEST_CONTENT_TYPE = "text/plain";
     private static final String TEST_HEALTH_CODE = "test-healthcode";
     private static final String TEST_ORIGINAL_UPLOAD_ID = "original-upload";
@@ -81,6 +83,10 @@ public class UploadServiceCreateUploadMockTest {
         JsonNode uploadRequestJsonNode = BridgeObjectMapper.get().readTree(TEST_UPLOAD_REQUEST_JSON);
         uploadRequest = UploadRequest.fromJson(uploadRequestJsonNode);
 
+        // mock config
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
+
         // mock upload DAOs. (The tests will mock the calls, since they vary with each test.)
         mockUploadDao = mock(UploadDao.class);
         mockUploadDedupeDao = mock(UploadDedupeDao.class);
@@ -98,6 +104,7 @@ public class UploadServiceCreateUploadMockTest {
 
         // set up service
         svc = new UploadService();
+        svc.setConfig(mockConfig);
         svc.setValidator(new UploadValidator());
         svc.setUploadDao(mockUploadDao);
         svc.setUploadDedupeDao(mockUploadDedupeDao);
@@ -217,6 +224,7 @@ public class UploadServiceCreateUploadMockTest {
         // This is already tested thoroughly in UploadServiceTest, so just test basic data flow that aren't constants
         // or config, namely Upload ID, MD5, and Content Type.
         GeneratePresignedUrlRequest presignedUrlRequest = presignedUrlRequestArgumentCaptor.getValue();
+        assertEquals(TEST_BUCKET, presignedUrlRequest.getBucketName());
         assertEquals(TEST_UPLOAD_MD5, presignedUrlRequest.getContentMd5());
         assertEquals(TEST_CONTENT_TYPE, presignedUrlRequest.getContentType());
         assertEquals(expectedUploadId, presignedUrlRequest.getKey());

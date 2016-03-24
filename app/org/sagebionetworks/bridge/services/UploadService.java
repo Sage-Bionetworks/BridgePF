@@ -14,7 +14,8 @@ import com.google.common.base.Strings;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -48,15 +49,25 @@ public class UploadService {
     private static final Logger logger = LoggerFactory.getLogger(UploadService.class);
 
     private static final long EXPIRATION = 60 * 1000; // 1 minute
-    private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
+
+    // package-scoped to be available in unit tests
+    static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
 
     private HealthDataService healthDataService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
+    private String uploadBucket;
     private UploadDao uploadDao;
     private UploadSessionCredentialsService uploadCredentailsService;
     private UploadDedupeDao uploadDedupeDao;
+    private UploadValidationService uploadValidationService;
     private Validator validator;
+
+    /** Sets parameters from the specified Bridge config. */
+    @Autowired
+    final void setConfig(BridgeConfig config) {
+        uploadBucket = config.getProperty(CONFIG_KEY_UPLOAD_BUCKET);
+    }
 
     /**
      * Health data record service. This is needed to fetch the health data record when constructing the upload
@@ -90,6 +101,13 @@ public class UploadService {
     public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
         this.uploadCredentailsService = uploadCredentialsService;
     }
+
+    /** Service handler for upload validation. This is configured by Spring. */
+    @Autowired
+    final void setUploadValidationService(UploadValidationService uploadValidationService) {
+        this.uploadValidationService = uploadValidationService;
+    }
+
     @Autowired
     public void setValidator(UploadValidator validator) {
         this.validator = validator;
@@ -142,7 +160,7 @@ public class UploadService {
 
         // Upload ID in DynamoDB is the same as the S3 Object ID
         GeneratePresignedUrlRequest presignedUrlRequest =
-                new GeneratePresignedUrlRequest(BUCKET, uploadId, HttpMethod.PUT);
+                new GeneratePresignedUrlRequest(uploadBucket, uploadId, HttpMethod.PUT);
 
         // Expiration
         final Date expiration = DateTime.now(DateTimeZone.UTC).toDate();
@@ -233,7 +251,7 @@ public class UploadService {
         return validationStatus;
     }
 
-    public void uploadComplete(Upload upload) {
+    public void uploadComplete(StudyIdentifier studyId, Upload upload) {
         String uploadId = upload.getUploadId();
 
         // We don't want to kick off upload validation on an upload that already has upload validation.
@@ -245,7 +263,7 @@ public class UploadService {
         final String objectId = upload.getObjectId();
         ObjectMetadata obj;
         try {
-            obj = s3Client.getObjectMetadata(BUCKET, objectId);
+            obj = s3Client.getObjectMetadata(uploadBucket, objectId);
         } catch (AmazonClientException ex) {
             throw new NotFoundException(ex);
         }
@@ -254,5 +272,8 @@ public class UploadService {
             logger.error("Missing S3 server-side encryption (SSE) for presigned upload " + uploadId + ".");
         }
         uploadDao.uploadComplete(upload);
+
+        // kick off upload validation
+        uploadValidationService.validateUpload(studyId, upload);
     }
 }
