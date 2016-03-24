@@ -137,9 +137,45 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void cannotAddConflictingUserProfileAttribute() {
+    public void cannotAddConflictingEmailAttribute() {
         study.getUserProfileAttributes().add("email");
         assertCorrectMessage(study, "userProfileAttributes", "userProfileAttributes 'email' conflicts with existing user profile property");
+    }
+    
+    @Test
+    public void cannotAddConflictingExternalIdAttribute() {
+        study.getUserProfileAttributes().add("externalId");
+        assertCorrectMessage(study, "userProfileAttributes", "userProfileAttributes 'externalId' conflicts with existing user profile property");
+    }
+    
+    @Test
+    public void userProfileAttributesCannotStartWithDash() {
+        study.getUserProfileAttributes().add("-illegal");
+        assertCorrectMessage(study, "userProfileAttributes", "userProfileAttributes '-illegal' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
+    }
+    
+    @Test
+    public void userProfileAttributesCannotContainSpaces() {
+        study.getUserProfileAttributes().add("Game Points");
+        assertCorrectMessage(study, "userProfileAttributes", "userProfileAttributes 'Game Points' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
+    }
+    
+    @Test
+    public void userProfileAttributesCanBeJustADash() {
+        study.getUserProfileAttributes().add("_");
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test
+    public void userProfileAttributesCanBeJustADashAndLetter() {
+        study.getUserProfileAttributes().add("_A");
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test
+    public void userProfileAttributesCannotBeEmpty() {
+        study.getUserProfileAttributes().add("");
+        assertCorrectMessage(study, "userProfileAttributes", "userProfileAttributes '' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
     }
     
     @Test
