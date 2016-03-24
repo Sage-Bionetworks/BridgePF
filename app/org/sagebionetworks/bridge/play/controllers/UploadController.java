@@ -8,7 +8,6 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
-import org.sagebionetworks.bridge.services.UploadValidationService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,17 +19,10 @@ import play.mvc.Result;
 public class UploadController extends BaseController {
 
     private UploadService uploadService;
-    private UploadValidationService uploadValidationService;
 
     @Autowired
     public void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
-    }
-
-    /** Service handler for upload validation. This is configured by Spring. */
-    @Autowired
-    public void setUploadValidationService(UploadValidationService uploadValidationService) {
-        this.uploadValidationService = uploadValidationService;
     }
 
     /** Gets validation status and messages for the given upload ID. */
@@ -70,10 +62,7 @@ public class UploadController extends BaseController {
 
         // mark upload as complete
         Upload upload = uploadService.getUpload(session.getUser(), uploadId);
-        uploadService.uploadComplete(upload);
-
-        // kick off upload validation
-        uploadValidationService.validateUpload(session.getStudyIdentifier(), upload);
+        uploadService.uploadComplete(session.getStudyIdentifier(), upload);
 
         return okResult("Upload " + uploadId + " complete!");
     }

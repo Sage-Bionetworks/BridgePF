@@ -98,7 +98,7 @@ public class UploadServiceTest {
         assertEquals(200, reponseCode);
 
         Upload upload = uploadService.getUpload(testUser.getUser(), uploadId);
-        uploadService.uploadComplete(upload);
+        uploadService.uploadComplete(TestConstants.TEST_STUDY, upload);
         long expiration = DateTime.now(DateTimeZone.UTC).plusMinutes(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());
         ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, uploadId);
