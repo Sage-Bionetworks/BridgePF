@@ -103,7 +103,7 @@ public class ParticipantController extends BaseController {
         }
         participantService.signUserOut(study, email);
 
-        return okResult("User session invalidated.");
+        return okResult("User signed out.");
     }
 
     private int getIntOrDefault(String value, int defaultValue) {

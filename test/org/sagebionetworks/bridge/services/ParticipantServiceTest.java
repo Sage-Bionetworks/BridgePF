@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -241,8 +242,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipantOptions(STUDY, email, options);
     }
     
-    @Test(expected = BadRequestException.class)
-    public void cannotUpdateParticipantOptionsYet() {
+    @Test(expected = BridgeServiceException.class)
+    public void cannotUpdateParticipantNoHealthCode() {
         String email = "email@email.com";
         when(account.getHealthId()).thenReturn(null);
         when(healthId.getCode()).thenReturn(null);

@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -159,7 +160,9 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, email);
         String healthCode = getHealthCode(account);
         if (healthCode == null) {
-            throw new BadRequestException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
+            // This is possibly also an IllegalStateException, it's not exactly a bad request. User in bad state.
+            // Could arguably be a 404 since user is not fully initialized.
+            throw new BridgeServiceException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
         }
         String dataGroupsString = options.get(ParticipantOption.DATA_GROUPS);
         if (dataGroupsString != null) {
