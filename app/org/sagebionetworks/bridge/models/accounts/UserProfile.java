@@ -20,12 +20,15 @@ public class UserProfile {
     private static final String FIRST_NAME_FIELD = "firstName";
     private static final String LAST_NAME_FIELD = "lastName";
     private static final String EMAIL_FIELD = "email";
+    private static final String ROLES_FIELD = "roles";
+    private static final String STATUS_FIELD = "status";
+    private static final String HEALTH_CODE_FIELD = "healthCode";
     
     // These fields are potentially present in some exports of user profile data, 
     // coming from the StudyParticipant or AccountSummary classes. Custom attributes 
     // cannot be any of these field names so they won't conflict or be confusing.
     public static final Set<String> RESERVED_ATTR_NAMES = Sets.newHashSet(
-            FIRST_NAME_FIELD,LAST_NAME_FIELD,EMAIL_FIELD,"roles","status");
+            FIRST_NAME_FIELD,LAST_NAME_FIELD,EMAIL_FIELD,ROLES_FIELD,STATUS_FIELD,HEALTH_CODE_FIELD);
     static {
         for (ParticipantOption option : ParticipantOption.values()) {
             RESERVED_ATTR_NAMES.add(option.getFieldName());
