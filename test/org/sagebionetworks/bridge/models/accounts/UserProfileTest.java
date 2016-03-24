@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -22,6 +23,16 @@ public class UserProfileTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         profile = UserProfile.fromJson(Sets.newHashSet("foo"), node);
         assertEquals("bar", profile.getAttribute("foo"));
+    }
+
+    @Test
+    public void cannotSetReservedWordAttribute() {
+        String reservedField = UserProfile.RESERVED_ATTR_NAMES.iterator().next();
+        
+        UserProfile profile = new UserProfile();
+        profile.setAttribute(reservedField, "bar");
+        
+        assertNull(profile.getAttribute(reservedField));
     }
     
 }

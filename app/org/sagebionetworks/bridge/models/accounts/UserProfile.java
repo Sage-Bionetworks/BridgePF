@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -15,23 +17,23 @@ import com.google.common.collect.Sets;
 
 public class UserProfile {
     
-    public static final String FIRST_NAME_FIELD = "firstName";
-    public static final String LAST_NAME_FIELD = "lastName";
-    public static final String EMAIL_FIELD = "email";
-    public static final String HEALTH_CODE_FIELD = "healthCode";
-    public static final String SUBPOPULATION_NAMES_FIELD = "subpopulations";
-    public static final String EXTERNAL_ID_FIELD = "externalId";
-    public static final String DATA_GROUPS_FIELD = "dataGroups";
+    private static final String FIRST_NAME_FIELD = "firstName";
+    private static final String LAST_NAME_FIELD = "lastName";
+    private static final String EMAIL_FIELD = "email";
+    private static final String ROLES_FIELD = "roles";
+    private static final String STATUS_FIELD = "status";
+    private static final String HEALTH_CODE_FIELD = "healthCode";
     
-    /**
-     * These fields are not part of the profile, but they are used on export to expose the participant option values, so
-     * studies cannot override these values as extended user profile attributes.
-     */
-    public static final String SHARING_SCOPE_FIELD = "sharing";
-    public static final String NOTIFY_BY_EMAIL_FIELD = "notifyByEmail";
-    
-    public static final Set<String> FIXED_PROPERTIES = Sets.newHashSet(FIRST_NAME_FIELD, LAST_NAME_FIELD,
-            EMAIL_FIELD, SHARING_SCOPE_FIELD);
+    // These fields are potentially present in some exports of user profile data, 
+    // coming from the StudyParticipant or AccountSummary classes. Custom attributes 
+    // cannot be any of these field names so they won't conflict or be confusing.
+    public static final Set<String> RESERVED_ATTR_NAMES = Sets.newHashSet(
+            FIRST_NAME_FIELD,LAST_NAME_FIELD,EMAIL_FIELD,ROLES_FIELD,STATUS_FIELD,HEALTH_CODE_FIELD);
+    static {
+        for (ParticipantOption option : ParticipantOption.values()) {
+            RESERVED_ATTR_NAMES.add(option.getFieldName());
+        }
+    }
     
     private String firstName;
     private String lastName;
@@ -86,7 +88,7 @@ public class UserProfile {
         }
     }
     public void setAttribute(String name, String value) {
-        if (isNotBlank(name) && isNotBlank(value) && !UserProfile.FIXED_PROPERTIES.contains(name)) {
+        if (isNotBlank(name) && isNotBlank(value) && !UserProfile.RESERVED_ATTR_NAMES.contains(name)) {
             attributes.put(name, value);
         }
     }

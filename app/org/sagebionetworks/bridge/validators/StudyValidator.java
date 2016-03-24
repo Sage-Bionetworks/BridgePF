@@ -19,7 +19,9 @@ import org.springframework.validation.Validator;
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
     private static final int MAX_SYNAPSE_LENGTH = 100;
-    private static final String IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
+    private static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
+    private static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
+    private static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -32,7 +34,7 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getIdentifier())) {
             errors.rejectValue("identifier", "is required");
         } else {
-            if (!study.getIdentifier().matches("^[a-z0-9-]+$")) {
+            if (!study.getIdentifier().matches(BRIDGE_IDENTIFIER_PATTERN)) {
                 errors.rejectValue("identifier", "must contain only lower-case letters and/or numbers with optional dashes");
             }
             if (study.getIdentifier().length() < 2) {
@@ -75,8 +77,15 @@ public class StudyValidator implements Validator {
         validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate");
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
-            if (UserProfile.FIXED_PROPERTIES.contains(userProfileAttribute)) {
+            if (UserProfile.RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
                 String msg = String.format("'%s' conflicts with existing user profile property", userProfileAttribute);
+                errors.rejectValue("userProfileAttributes", msg);
+            }
+            // Stormpath requires this to be a valid JavaScript identifier, despite the fact that it
+            // is using JSON to store the data (where properties are string escaped). So don't allow invalid 
+            // identifiers to be saved in study metadata.
+            if (!userProfileAttribute.matches(JS_IDENTIFIER_PATTERN)) {
+                String msg = String.format("'%s' must contain only digits, letters, underscores and dashes, and cannot start with a dash", userProfileAttribute);
                 errors.rejectValue("userProfileAttributes", msg);
             }
         }
@@ -121,7 +130,7 @@ public class StudyValidator implements Validator {
     private void validateDataGroupNamesAndFitForSynapseExport(Errors errors, Set<String> dataGroups) {
         if (dataGroups != null) {
             for (String group : dataGroups) {
-                if (!group.matches(IDENTIFIER_PATTERN)) {
+                if (!group.matches(SYNAPSE_IDENTIFIER_PATTERN)) {
                     errors.rejectValue("dataGroups", "contains invalid tag '"+group+"' (only letters, numbers, underscore and dash allowed)");
                 }
             }
