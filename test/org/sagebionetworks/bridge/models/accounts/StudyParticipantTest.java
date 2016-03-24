@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class StudyParticipant2Test {
+public class StudyParticipantTest {
 
     private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
     private static final LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","fr");
@@ -33,7 +33,7 @@ public class StudyParticipant2Test {
     
     @Test
     public void canSerialize() throws Exception {
-        StudyParticipant2.Builder builder = new StudyParticipant2.Builder()
+        StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .withFirstName("firstName")
                 .withLastName("lastName")
                 .withEmail("email@email.com")
@@ -57,7 +57,7 @@ public class StudyParticipant2Test {
         histories.add(history);
         builder.addConsentHistory(SubpopulationGuid.create("AAA"), histories);
 
-        StudyParticipant2 participant = builder.build();
+        StudyParticipant participant = builder.build();
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(participant);
         assertEquals("firstName", node.get("firstName").asText());
@@ -89,7 +89,7 @@ public class StudyParticipant2Test {
         
         assertEquals(13, node.size());
         
-        StudyParticipant2 deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant2.class);
+        StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
         assertEquals("lastName", deserParticipant.getLastName());
         assertEquals("email@email.com", deserParticipant.getEmail());
@@ -112,7 +112,7 @@ public class StudyParticipant2Test {
     @Test
     public void testNullResiliency() {
         // We don't remove nulls from the collections, at least not when reading them.
-        StudyParticipant2 participant = new StudyParticipant2.Builder()
+        StudyParticipant participant = new StudyParticipant.Builder()
                 .withDataGroups(null)
                 .withAttributes(null)
                 .withRoles(null)

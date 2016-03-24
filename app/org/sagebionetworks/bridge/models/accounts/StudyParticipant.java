@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -19,9 +18,8 @@ import com.google.common.collect.Sets;
  * This object will replace the existing StudyParticipant object that is used to generate the 
  * participant roster (which is also going away).
  */
-@BridgeTypeName("StudyParticipant")
-@JsonDeserialize(builder=StudyParticipant2.Builder.class)
-public class StudyParticipant2 {
+@JsonDeserialize(builder=StudyParticipant.Builder.class)
+public class StudyParticipant {
 
     private final String firstName;
     private final String lastName;
@@ -36,7 +34,7 @@ public class StudyParticipant2 {
     private final Set<Roles> roles;
     private final LinkedHashSet<String> languages;
     
-    private StudyParticipant2(String firstName, String lastName, String email, String externalId, SharingScope sharingScope,
+    private StudyParticipant(String firstName, String lastName, String email, String externalId, SharingScope sharingScope,
             boolean notifyByEmail, Set<String> dataGroups, String healthCode, Map<String,String> attributes, 
             Map<String,List<UserConsentHistory>> consentHistories, Set<Roles> roles, LinkedHashSet<String> languages) {
         this.firstName = firstName;
@@ -169,8 +167,8 @@ public class StudyParticipant2 {
             return this;
         }
         
-        public StudyParticipant2 build() {
-            return new StudyParticipant2(firstName, lastName, email, externalId, sharingScope, notifyByEmail, 
+        public StudyParticipant build() {
+            return new StudyParticipant(firstName, lastName, email, externalId, sharingScope, notifyByEmail, 
                     dataGroups, healthCode, attributes, consentHistories, roles, languages);
         }
     }
