@@ -207,6 +207,18 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public void setEmailVerificationEnabled(boolean enabled);
     
     /**
+     * True if this study will enforce constraints on the external identifier. The ID will have 
+     * to be an ID entered into Bridge, it will be assigned to one and only one user, and a user's 
+     * ID cannot be changed after it is set. Otherwise, the external ID is just a string field 
+     * that can be freely updated.
+     * @return
+     */
+    public boolean isExternalIdValidationEnabled();
+    
+    /** @see #isExternalIdValidationEnabled(); */
+    public void setExternalIdValidationEnabled(boolean externalIdValidationEnabled);
+    
+    /**
      * Minimum supported app version number. If set, user app clients pointing to an older version will 
      * fail with an httpResponse status code of 410.
      */
