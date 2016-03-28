@@ -56,6 +56,4 @@ public class BridgeConstants {
     
     public static final int API_MAXIMUM_PAGE_SIZE = 100;
     
-    public static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
-    
 }

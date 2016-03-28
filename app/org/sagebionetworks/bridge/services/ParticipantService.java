@@ -18,7 +18,6 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -47,6 +46,8 @@ import com.google.common.collect.Maps;
 @Component
 public class ParticipantService {
 
+    private static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
+    
     private static final List<UserConsentHistory> NO_HISTORY = ImmutableList.of();
     
     private AccountDao accountDao;
@@ -146,7 +147,7 @@ public class ParticipantService {
         }
         // Just set a sane upper limit on this.
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
+            throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
     }

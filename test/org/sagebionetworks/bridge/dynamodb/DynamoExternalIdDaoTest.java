@@ -262,6 +262,17 @@ public class DynamoExternalIdDaoTest {
         }
     }
     
+    @Test
+    public void getNextAvailableID() {
+        dao.assignExternalId(studyId, "AAA", "healthCode");
+        dao.assignExternalId(studyId, "BBB", "healthCode2");
+        
+        DynamoPagedResourceList<? extends ExternalIdentifier> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
+        
+        assertEquals(1, ids.getItems().size());
+        assertEquals("CCC", ids.getItems().get(0).getExternalId());
+    }
+    
     private Set<String> identifiersToStringSet(List<? extends ExternalIdentifier> identifiers) {
         return identifiers.stream().map(identifier -> {
             return identifier.getExternalId();

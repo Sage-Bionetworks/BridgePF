@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.CONTAINS;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.LT;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NOT_NULL;
@@ -21,7 +20,6 @@ import javax.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
@@ -49,6 +47,7 @@ import com.google.common.collect.Maps;
 @Component
 public class DynamoExternalIdDao implements ExternalIdDao {
     
+    static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     static final String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
     static final String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
@@ -74,16 +73,11 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkNotNull(studyId);
         
         // Just set a sane upper limit on this.
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
+        if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        // Paging in DDB: The limit attribute limits the records before query filters are applied, so it cannot be 
-        // used to retrieve a page. Must reduce to a page after query. In comments on this, iterating will cause 
-        // DDB to load query lazily, but if you call size(), it will do a scan to determine size of results. So, 
-        // iterate through returned records, don't subList() or use other code that would requires calling size().
-        
         PaginatedQueryList<DynamoExternalIdentifier> list = mapper.query(DynamoExternalIdentifier.class,
-                createGetQuery(studyId, offsetKey, idFilter, assignmentFilter));
+                createGetQuery(studyId, offsetKey, pageSize, idFilter, assignmentFilter));
         
         int total = mapper.count(DynamoExternalIdentifier.class, createCountQuery(studyId, idFilter, assignmentFilter));
         
@@ -212,7 +206,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
 
     private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(StudyIdentifier studyId,
-            String offsetKey, String idFilter, Boolean assignmentFilter) {
+            String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
 
         DynamoDBQueryExpression<DynamoExternalIdentifier> query = createCountQuery(studyId, idFilter, assignmentFilter);
         if (offsetKey != null) {
@@ -221,6 +215,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             map.put("externalId", new AttributeValue().withS(offsetKey));
             query.withExclusiveStartKey(map);
         }
+        query.withLimit(pageSize+1);
         return query;
     }
 
