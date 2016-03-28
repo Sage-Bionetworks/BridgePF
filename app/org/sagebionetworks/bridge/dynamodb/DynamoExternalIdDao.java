@@ -213,6 +213,10 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         }
     }
 
+    /**
+     * Get the count query (applies filters) and then sets an offset key and the limit to a page of records, 
+     * plus one, to determine if there are records beyond the current page. 
+     */
     private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(StudyIdentifier studyId,
             String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
 
@@ -227,6 +231,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         return query;
     }
 
+    /**
+     * Create a query for records applying the filter values if they exist.
+     */
     private DynamoDBQueryExpression<DynamoExternalIdentifier> createCountQuery(StudyIdentifier studyId,
             String idFilter, Boolean assignmentFilter) {
 
@@ -247,10 +254,8 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     /**
-     * The save of the identifier with a new timeout only occurs if healthCode isn't set and 
-     * the existing value is less than the current timeout lock minus the lock duration.
-     * @param reservation
-     * @return
+     * Save the record with a new timestamp IF the healthCode is empty and the reservation timestamp in the 
+     * existing record was not set in the recent past (during the lockDuration).
      */
     private DynamoDBSaveExpression getReservationExpression(long newReservation) {
         AttributeValue value = new AttributeValue().withN(Long.toString(newReservation-lockDuration));
@@ -267,10 +272,8 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     /**
-     * The assignment of an externalId only works if the healthCode has not already been set. We've 
-     * already verified it's not the same healthCode as the caller (an attemp to reset the same ID, 
-     * which is ignored).
-     * @return
+     * Save the record with the user's healthCode IF the healthCode is not yet set. If calling code calls 
+     * the reservation method first, this should not happen, but we do prevent it.  
      */
     private DynamoDBSaveExpression getAssignmentExpression() {
         Map<String, ExpectedAttributeValue> map = Maps.newHashMap();

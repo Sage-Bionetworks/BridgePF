@@ -15,7 +15,8 @@ import com.google.common.collect.Maps;
 
 /**
  * Paging for a DynamoDB table, which uses a key to retrieve the next page of results (this is the only way 
- * you can move through pages of records, really just a cursor).
+ * you can move through pages of records, really just a cursor). TODO: This has a more general way of reporting 
+ * back any filter values that were provided, compared to PagedResourceList<T>, update that other class.
  */
 @BridgeTypeName("PagedResourceList")
 public final class DynamoPagedResourceList<T> {

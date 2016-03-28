@@ -8,8 +8,6 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.AccountStatus;
-import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,7 +41,7 @@ public class DynamoPagedResourceListTest {
         assertEquals("value2", items.get(1).asText());
         
         // We don't deserialize this, but let's just verify
-        DynamoPagedResourceList<AccountSummary> serPage = BridgeObjectMapper.get().readValue(node.toString(), 
+        DynamoPagedResourceList<String> serPage = BridgeObjectMapper.get().readValue(node.toString(), 
                 new TypeReference<DynamoPagedResourceList<String>>() {});
         
         assertEquals(page.getTotal(), serPage.getTotal());
