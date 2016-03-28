@@ -21,15 +21,15 @@ public class DynamoPagedResourceListTest {
 
     @Test
     public void canSerialize() throws Exception {
-        List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", AccountStatus.DISABLED));
-        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", AccountStatus.ENABLED));
+        List<String> accounts = Lists.newArrayListWithCapacity(2);
+        accounts.add("value1");
+        accounts.add("value2");
         
         Map<String,String> filters = Maps.newHashMap();
         filters.put("idFilter", "foo");
         filters.put("assignmentFilter", "bar");
         
-        DynamoPagedResourceList<AccountSummary> page = new DynamoPagedResourceList<>(accounts, null, 100, 123, filters);
+        DynamoPagedResourceList<String> page = new DynamoPagedResourceList<>(accounts, null, 100, 123, filters);
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertEquals(123, node.get("total").asInt());
         assertEquals(100, node.get("pageSize").asInt());
@@ -39,16 +39,12 @@ public class DynamoPagedResourceListTest {
         
         ArrayNode items = (ArrayNode)node.get("items");
         assertEquals(2, items.size());
-        
-        JsonNode child1 = items.get(0);
-        assertEquals("firstName1", child1.get("firstName").asText());
-        assertEquals("lastName1", child1.get("lastName").asText());
-        assertEquals("email1@email.com", child1.get("email").asText());
-        assertEquals("disabled", child1.get("status").asText());
+        assertEquals("value1", items.get(0).asText());
+        assertEquals("value2", items.get(1).asText());
         
         // We don't deserialize this, but let's just verify
         DynamoPagedResourceList<AccountSummary> serPage = BridgeObjectMapper.get().readValue(node.toString(), 
-                new TypeReference<DynamoPagedResourceList<AccountSummary>>() {});
+                new TypeReference<DynamoPagedResourceList<String>>() {});
         
         assertEquals(page.getTotal(), serPage.getTotal());
         assertEquals(page.getLastKey(), serPage.getLastKey());

@@ -275,4 +275,5 @@ public class DynamoExternalIdDaoTest {
         assertEquals(1, ids.getItems().size());
         assertEquals("CCC", ids.getItems().get(0));
     }
+    
 }

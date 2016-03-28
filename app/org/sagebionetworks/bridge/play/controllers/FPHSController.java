@@ -29,7 +29,7 @@ import play.mvc.Result;
 @Controller("fphsController")
 public class FPHSController extends BaseController {
     
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("placeholde");
+    private static final StudyIdentifier FPHS_ID = new StudyIdentifierImpl("fphs");
     
     private static final TypeReference<List<FPHSExternalIdentifier>> EXTERNAL_ID_TYPE_REF = 
             new TypeReference<List<FPHSExternalIdentifier>>() {};
@@ -52,7 +52,7 @@ public class FPHSController extends BaseController {
     
     public Result verifyExternalIdentifier(String identifier) throws Exception {
         // public API, no restrictions. externalId can be null so we can create a 400 error in the service.
-        ExternalIdentifier externalId = ExternalIdentifier.create(STUDY_ID, identifier);
+        ExternalIdentifier externalId = ExternalIdentifier.create(FPHS_ID, identifier);
         fphsService.verifyExternalIdentifier(externalId);
         
         return okResult(externalId);
