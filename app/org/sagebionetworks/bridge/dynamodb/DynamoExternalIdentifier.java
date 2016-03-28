@@ -9,13 +9,17 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 /**
- * Implementation of external identifier. This is used to deserialize JSON but is never 
- * returned as such through the API.
+ * Implementation of external identifier.
  */
 @DynamoDBTable(tableName = "ExternalIdentifier")
 public class DynamoExternalIdentifier implements ExternalIdentifier {
 
     private String identifier;
+    /**
+     * DynamoDB will not filter a query on the value of the hash key, so we copy this 
+     * value to another column where we can filter on it. This is not exposed outside
+     * of the DAO.
+     */
     private String filterableIdentifier;
     private String studyId;
     private String healthCode;
@@ -28,7 +32,6 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
         this.identifier = identifier;
         this.filterableIdentifier = identifier;
     }
-    
     @DynamoDBHashKey
     @Override
     public String getStudyId() {
@@ -48,11 +51,6 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
         this.identifier = identifier;
         this.filterableIdentifier = identifier;
     }
-    /**
-     * DynamoDB will not filter a query on the value of the hash key, so we copy this 
-     * value to another column where we can filter on it. This is not exposed outside
-     * of the DAO.
-     */
     @DynamoDBAttribute
     public String getFilterableIdentifier() {
         return filterableIdentifier;

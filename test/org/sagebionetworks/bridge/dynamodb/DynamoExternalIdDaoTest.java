@@ -26,12 +26,12 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.DynamoPagedResourceList;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -89,7 +89,10 @@ public class DynamoExternalIdDaoTest {
         query.withScanIndexForward(false);
         query.withHashKeyValues(new DynamoExternalIdentifier(studyId, null));
         
-        Set<String> ids = identifiersToStringSet(mapper.query(DynamoExternalIdentifier.class, query));
+        PaginatedQueryList<? extends DynamoExternalIdentifier> page = mapper.query(DynamoExternalIdentifier.class, query);
+        Set<String> ids = page.stream().map(item -> {
+            return item.getIdentifier();
+        }).collect(Collectors.toSet());
         assertEquals(Sets.newHashSet("AAA","BBB","CCC"), ids);
         
         // Just as importantly, AAA is still assigned to "healthCode"
@@ -194,7 +197,7 @@ public class DynamoExternalIdDaoTest {
     
     @Test
     public void canGetIds() {
-        DynamoPagedResourceList<? extends ExternalIdentifier> page = dao.getExternalIds(studyId, null, 10, null, null);
+        DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, null, null);
         
         assertEquals(3, page.getItems().size());
         assertEquals(10, page.getPageSize());
@@ -208,7 +211,7 @@ public class DynamoExternalIdDaoTest {
             dao.addExternalIds(studyId, moreIds);
             
             // AAA, EAE, FFA
-            DynamoPagedResourceList<? extends ExternalIdentifier> page = dao.getExternalIds(studyId, null, 10, "A", null);
+            DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, "A", null);
             assertEquals(3, page.getItems().size());
             assertEquals(10, page.getPageSize());
             assertEquals("A", page.getFilters().get("idFilter"));
@@ -226,7 +229,7 @@ public class DynamoExternalIdDaoTest {
             
             page = dao.getExternalIds(studyId, null, 10, null, Boolean.TRUE);
             assertEquals(2, page.getItems().size());
-            assertEquals(Sets.newHashSet("AAA", "BBB"), identifiersToStringSet(page.getItems()));
+            assertEquals(Sets.newHashSet("AAA", "BBB"), Sets.newHashSet(page.getItems()));
         } finally {
             dao.deleteExternalIds(studyId, moreIds);
         }
@@ -240,20 +243,20 @@ public class DynamoExternalIdDaoTest {
         try {
             dao.addExternalIds(studyId, moreIds);
 
-            DynamoPagedResourceList<? extends ExternalIdentifier> page = dao.getExternalIds(studyId, null, 5, null, null);
+            DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, null);
             assertEquals(5, page.getItems().size());
             assertEquals(26, page.getTotal());
             assertEquals("EEE", page.getLastKey());
-            assertEquals(Sets.newHashSet("AAA","BBB","CCC","DDD","EEE"), identifiersToStringSet(page.getItems()));
+            assertEquals(Sets.newHashSet("AAA","BBB","CCC","DDD","EEE"), Sets.newHashSet(page.getItems()));
             
             page = dao.getExternalIds(studyId, page.getLastKey(), 5, null, null);
-            assertEquals(Sets.newHashSet("FFF","GGG","HHH","III","JJJ"), identifiersToStringSet(page.getItems()));
+            assertEquals(Sets.newHashSet("FFF","GGG","HHH","III","JJJ"), Sets.newHashSet(page.getItems()));
             
             page = dao.getExternalIds(studyId, page.getLastKey(), 5, null, null);
-            assertEquals(Sets.newHashSet("KKK","LLL","MMM","NNN","OOO"), identifiersToStringSet(page.getItems()));
+            assertEquals(Sets.newHashSet("KKK","LLL","MMM","NNN","OOO"), Sets.newHashSet(page.getItems()));
             
             page = dao.getExternalIds(studyId, page.getLastKey(), 15, null, null);
-            assertEquals(Sets.newHashSet("PPP","QQQ","RRR","SSS","TTT","UUU","VVV","WWW","XXX","YYY","ZZZ"), identifiersToStringSet(page.getItems()));
+            assertEquals(Sets.newHashSet("PPP","QQQ","RRR","SSS","TTT","UUU","VVV","WWW","XXX","YYY","ZZZ"), Sets.newHashSet(page.getItems()));
             assertEquals(26, page.getTotal());
             assertNull(page.getLastKey());
             
@@ -267,15 +270,9 @@ public class DynamoExternalIdDaoTest {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         dao.assignExternalId(studyId, "BBB", "healthCode2");
         
-        DynamoPagedResourceList<? extends ExternalIdentifier> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
+        DynamoPagedResourceList<String> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         
         assertEquals(1, ids.getItems().size());
-        assertEquals("CCC", ids.getItems().get(0).getIdentifier());
-    }
-    
-    private Set<String> identifiersToStringSet(List<? extends ExternalIdentifier> identifiers) {
-        return identifiers.stream().map(identifier -> {
-            return identifier.getIdentifier();
-        }).collect(Collectors.toSet());
+        assertEquals("CCC", ids.getItems().get(0));
     }
 }

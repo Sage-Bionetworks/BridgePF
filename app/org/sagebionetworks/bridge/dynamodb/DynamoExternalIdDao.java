@@ -76,7 +76,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
 
     @Override
-    public DynamoPagedResourceList<? extends ExternalIdentifier> getExternalIds(StudyIdentifier studyId, String offsetKey, 
+    public DynamoPagedResourceList<String> getExternalIds(StudyIdentifier studyId, String offsetKey, 
             int pageSize, String idFilter, Boolean assignmentFilter) {
         checkNotNull(studyId);
         
@@ -89,17 +89,17 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         
         int total = mapper.count(DynamoExternalIdentifier.class, createCountQuery(studyId, idFilter, assignmentFilter));
         
-        List<ExternalIdentifier> identifiers = Lists.newArrayListWithCapacity(pageSize);
+        List<String> identifiers = Lists.newArrayListWithCapacity(pageSize);
         
         Iterator<? extends ExternalIdentifier> iterator = list.iterator();
         while(iterator.hasNext() && identifiers.size() < pageSize) {
-            identifiers.add(iterator.next());
+            identifiers.add(iterator.next().getIdentifier());
         }
         // This is the last key, not the next key of the next page of records. It only exists if there's a record
         // beyond the records we've converted to a page. Then get the last key in the list.
-        String nextPageKey = (iterator.hasNext()) ? last(identifiers).getIdentifier() : null;
+        String nextPageKey = (iterator.hasNext()) ? last(identifiers) : null;
         
-        DynamoPagedResourceList<? extends ExternalIdentifier> resourceList = new DynamoPagedResourceList<>(
+        DynamoPagedResourceList<String> resourceList = new DynamoPagedResourceList<>(
                 identifiers, nextPageKey, pageSize, total, null);
         resourceList.put(ID_FILTER, idFilter);
         resourceList.put(ASSIGNMENT_FILTER, assignmentFilter);
