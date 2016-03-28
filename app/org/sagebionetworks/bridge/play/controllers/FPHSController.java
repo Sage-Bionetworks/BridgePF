@@ -54,8 +54,7 @@ public class FPHSController extends BaseController {
         // public API, no restrictions. externalId can be null so we can create a 400 error in the service.
         ExternalIdentifier externalId = ExternalIdentifier.create(FPHS_ID, identifier);
         fphsService.verifyExternalIdentifier(externalId);
-        
-        return okResult(externalId);
+        return okResult(FPHSExternalIdentifier.create(externalId.getIdentifier()));
     }
     public Result registerExternalIdentifier() throws Exception {
         UserSession session = getAuthenticatedSession();

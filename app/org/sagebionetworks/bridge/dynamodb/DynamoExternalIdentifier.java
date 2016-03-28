@@ -51,6 +51,11 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
         this.identifier = identifier;
         this.filterableIdentifier = identifier;
     }
+    // The set externalId API took "identifier", while the FPHS controller takes
+    // "externalId", so either way, this will deserialize the value.
+    void setExternalId(String externalId) {
+        setIdentifier(externalId);
+    }
     @DynamoDBAttribute
     public String getFilterableIdentifier() {
         return filterableIdentifier;
