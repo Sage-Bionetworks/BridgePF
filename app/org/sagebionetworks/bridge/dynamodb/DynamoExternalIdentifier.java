@@ -7,24 +7,26 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSetter;
 
+/**
+ * Implementation of external identifier. This is used to deserialize JSON but is never 
+ * returned as such through the API.
+ */
 @DynamoDBTable(tableName = "ExternalIdentifier")
 public class DynamoExternalIdentifier implements ExternalIdentifier {
 
-    private String externalId;
-    private String filterableExternalId;
+    private String identifier;
+    private String filterableIdentifier;
     private String studyId;
     private String healthCode;
     private long reservation;
     
     public DynamoExternalIdentifier() {}
     
-    public DynamoExternalIdentifier(StudyIdentifier studyId, String externalId) {
+    public DynamoExternalIdentifier(StudyIdentifier studyId, String identifier) {
         this.studyId = studyId.getIdentifier();
-        this.externalId = externalId;
-        this.filterableExternalId = externalId;
+        this.identifier = identifier;
+        this.filterableIdentifier = identifier;
     }
     
     @DynamoDBHashKey
@@ -38,20 +40,13 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
     }
     @DynamoDBRangeKey
     @Override
-    public String getExternalId() {
-        return externalId;
+    public String getIdentifier() {
+        return identifier;
     }
     @Override
-    @JsonSetter("externalId")
-    public void setExternalId(String externalId) {
-        this.externalId = externalId;
-        this.filterableExternalId = externalId;
-    }
-    // For backwards compatibility with the "set external ID" API
-    @JsonSetter("identifier")
-    private void setIdentifier(String identifier) {
-        this.externalId = identifier;
-        this.filterableExternalId = identifier;
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
+        this.filterableIdentifier = identifier;
     }
     /**
      * DynamoDB will not filter a query on the value of the hash key, so we copy this 
@@ -59,15 +54,13 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
      * of the DAO.
      */
     @DynamoDBAttribute
-    @JsonIgnore
-    public String getFilterableExternalId() {
-        return filterableExternalId;
+    public String getFilterableIdentifier() {
+        return filterableIdentifier;
     }
-    public void setFilterableExternalId(String filterableExternalId) {
-        this.filterableExternalId = filterableExternalId;
+    public void setFilterableIdentifier(String filterableIdentifier) {
+        this.filterableIdentifier = filterableIdentifier;
     }
     @DynamoDBAttribute
-    @JsonIgnore
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -77,7 +70,6 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
         this.healthCode = healthCode;
     }
     @DynamoDBAttribute
-    @JsonIgnore
     @Override
     public long getReservation() {
         return reservation;
@@ -85,12 +77,6 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
     @Override
     public void setReservation(long reservation) {
         this.reservation = reservation;
-    }
-
-    @Override
-    public String toString() {
-        return "DynamoExternalIdentifier [studyId=" + studyId + ", externalId=" + externalId + ", healthCode="
-                + (healthCode == null ? "null" : "[REDACTED]") + ", reservation=" + reservation + "]";
     }
     
 }

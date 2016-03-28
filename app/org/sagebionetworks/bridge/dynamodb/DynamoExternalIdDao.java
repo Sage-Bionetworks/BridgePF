@@ -50,6 +50,14 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     static final String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
     static final String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
+    
+    private static final String RESERVATION = "reservation";
+    private static final String HEALTH_CODE = "healthCode";
+    private static final String FILTERABLE_EXTERNAL_ID = "filterableIdentifier";
+    private static final String IDENTIFIER = "identifier";
+    private static final String STUDY_ID = "studyId";
+    private static final String ASSIGNMENT_FILTER = "assignmentFilter";
+    private static final String ID_FILTER = "idFilter";
 
     private int addLimit;
     private int lockDuration;
@@ -89,12 +97,12 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         }
         // This is the last key, not the next key of the next page of records. It only exists if there's a record
         // beyond the records we've converted to a page. Then get the last key in the list.
-        String nextPageKey = (iterator.hasNext()) ? last(identifiers).getExternalId() : null;
+        String nextPageKey = (iterator.hasNext()) ? last(identifiers).getIdentifier() : null;
         
         DynamoPagedResourceList<? extends ExternalIdentifier> resourceList = new DynamoPagedResourceList<>(
                 identifiers, nextPageKey, pageSize, total, null);
-        resourceList.put("idFilter", idFilter);
-        resourceList.put("assignmentFilter", assignmentFilter);
+        resourceList.put(ID_FILTER, idFilter);
+        resourceList.put(ASSIGNMENT_FILTER, assignmentFilter);
 
         return resourceList;
     }
@@ -211,8 +219,8 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         DynamoDBQueryExpression<DynamoExternalIdentifier> query = createCountQuery(studyId, idFilter, assignmentFilter);
         if (offsetKey != null) {
             Map<String,AttributeValue> map = new HashMap<>();
-            map.put("studyId", new AttributeValue().withS(studyId.getIdentifier()));
-            map.put("externalId", new AttributeValue().withS(offsetKey));
+            map.put(STUDY_ID, new AttributeValue().withS(studyId.getIdentifier()));
+            map.put(IDENTIFIER, new AttributeValue().withS(offsetKey));
             query.withExclusiveStartKey(map);
         }
         query.withLimit(pageSize+1);
@@ -225,14 +233,14 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         DynamoDBQueryExpression<DynamoExternalIdentifier> query = new DynamoDBQueryExpression<DynamoExternalIdentifier>();
         if (idFilter != null) {
             // You cannot filter a query on a hash key, so we copy this value to another column where we can filter
-            query.withQueryFilterEntry("filterableExternalId", new Condition()
+            query.withQueryFilterEntry(FILTERABLE_EXTERNAL_ID, new Condition()
                     .withAttributeValueList(new AttributeValue().withS(idFilter))
                     .withComparisonOperator(CONTAINS));
         }
         if (assignmentFilter == Boolean.TRUE) {
-            query.withQueryFilterEntry("healthCode", new Condition().withComparisonOperator(NOT_NULL));
+            query.withQueryFilterEntry(HEALTH_CODE, new Condition().withComparisonOperator(NOT_NULL));
         } else if (assignmentFilter == Boolean.FALSE) {
-            query.withQueryFilterEntry("healthCode", new Condition().withComparisonOperator(NULL));
+            query.withQueryFilterEntry(HEALTH_CODE, new Condition().withComparisonOperator(NULL));
         }
         query.withHashKeyValues(new DynamoExternalIdentifier(studyId, null)); // no healthCode.
         return query;
@@ -248,9 +256,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         AttributeValue value = new AttributeValue().withN(Long.toString(newReservation-lockDuration));
         
         Map<String, ExpectedAttributeValue> map = Maps.newHashMap();
-        map.put("reservation",
+        map.put(RESERVATION,
                 new ExpectedAttributeValue().withValue(value).withComparisonOperator(LT));
-        map.put("healthCode", new ExpectedAttributeValue().withExists(false));
+        map.put(HEALTH_CODE, new ExpectedAttributeValue().withExists(false));
 
         DynamoDBSaveExpression saveExpression = new DynamoDBSaveExpression();
         saveExpression.withConditionalOperator(ConditionalOperator.AND);
@@ -266,7 +274,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
      */
     private DynamoDBSaveExpression getAssignmentExpression() {
         Map<String, ExpectedAttributeValue> map = Maps.newHashMap();
-        map.put("healthCode", new ExpectedAttributeValue().withExists(false));
+        map.put(HEALTH_CODE, new ExpectedAttributeValue().withExists(false));
 
         DynamoDBSaveExpression saveExpression = new DynamoDBSaveExpression();
         saveExpression.setExpected(map);

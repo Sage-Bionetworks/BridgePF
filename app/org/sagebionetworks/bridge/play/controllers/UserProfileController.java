@@ -86,7 +86,7 @@ public class UserProfileController extends BaseController {
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
 
         optionsService.setString(session.getStudyIdentifier(), session.getUser().getHealthCode(), EXTERNAL_IDENTIFIER,
-                externalId.getExternalId());
+                externalId.getIdentifier());
         
         return okResult("External identifier added to user profile.");
     }

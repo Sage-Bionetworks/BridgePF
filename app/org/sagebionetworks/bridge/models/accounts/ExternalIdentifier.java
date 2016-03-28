@@ -15,8 +15,8 @@ public interface ExternalIdentifier extends BridgeEntity {
         return new DynamoExternalIdentifier(studyId, externalId);
     }
     
-    public String getExternalId();
-    public void setExternalId(String externalId);
+    public String getIdentifier();
+    public void setIdentifier(String identifier);
     
     public String getStudyId();
     public void setStudyId(String studyId);

@@ -77,7 +77,7 @@ public class FPHSServiceTest {
         
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(dao).registerExternalId(externalId);
-        verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getExternalId());
+        verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
     }
     
     @Test
@@ -97,7 +97,7 @@ public class FPHSServiceTest {
             // can be called again, the service calls are idempotent. Or else it actually was 
             // recorded, in which case it's also fine, despite the exception.
             verify(optionsService).getOptions("BBB");
-            verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getExternalId());
+            verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
             verify(optionsService).setStringSet(TEST_STUDY, "BBB", DATA_GROUPS, Sets.newHashSet("football_player"));
             verifyNoMoreInteractions(optionsService);
         }

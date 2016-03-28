@@ -14,7 +14,7 @@ public class ExternalIdentifierTest {
         String json = TestUtils.createJson("{'externalId':'AAA'}");
         
         ExternalIdentifier identifier = BridgeObjectMapper.get().readValue(json, ExternalIdentifier.class);
-        assertEquals("AAA", identifier.getExternalId());
+        assertEquals("AAA", identifier.getIdentifier());
     }
     
 }

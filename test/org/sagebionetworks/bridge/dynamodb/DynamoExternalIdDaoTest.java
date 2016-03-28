@@ -270,12 +270,12 @@ public class DynamoExternalIdDaoTest {
         DynamoPagedResourceList<? extends ExternalIdentifier> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         
         assertEquals(1, ids.getItems().size());
-        assertEquals("CCC", ids.getItems().get(0).getExternalId());
+        assertEquals("CCC", ids.getItems().get(0).getIdentifier());
     }
     
     private Set<String> identifiersToStringSet(List<? extends ExternalIdentifier> identifiers) {
         return identifiers.stream().map(identifier -> {
-            return identifier.getExternalId();
+            return identifier.getIdentifier();
         }).collect(Collectors.toSet());
     }
 }

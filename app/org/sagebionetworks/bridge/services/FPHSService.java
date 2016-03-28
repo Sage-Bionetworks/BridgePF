@@ -36,7 +36,7 @@ public class FPHSService {
     public void verifyExternalIdentifier(ExternalIdentifier externalId) throws Exception {
         checkNotNull(externalId);
         
-        if (isBlank(externalId.getExternalId())) {
+        if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
         // Throws exception if not verified
@@ -47,14 +47,14 @@ public class FPHSService {
         checkNotNull(healthCode);
         checkNotNull(externalId);
         
-        if (isBlank(externalId.getExternalId())) {
+        if (isBlank(externalId.getIdentifier())) {
             throw new InvalidEntityException(externalId);
         }
         verifyExternalIdentifier(externalId);
         
         Set<String> dataGroups = optionsService.getOptions(healthCode).getStringSet(DATA_GROUPS);
         dataGroups.add("football_player");
-        optionsService.setString(studyId, healthCode, EXTERNAL_IDENTIFIER, externalId.getExternalId());
+        optionsService.setString(studyId, healthCode, EXTERNAL_IDENTIFIER, externalId.getIdentifier());
         optionsService.setStringSet(studyId, healthCode, DATA_GROUPS, dataGroups);
         fphsDao.registerExternalId(externalId);
     }

@@ -79,7 +79,7 @@ public class ParticipantOptionsServiceTest {
     public void setString() {
         ExternalIdentifier externalId = ExternalIdentifier.create(TEST_STUDY, "BBB");
         
-        service.setString(TEST_STUDY, HEALTH_CODE, EXTERNAL_IDENTIFIER, externalId.getExternalId());
+        service.setString(TEST_STUDY, HEALTH_CODE, EXTERNAL_IDENTIFIER, externalId.getIdentifier());
         
         verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, EXTERNAL_IDENTIFIER, "BBB");
         verifyNoMoreInteractions(mockDao);
