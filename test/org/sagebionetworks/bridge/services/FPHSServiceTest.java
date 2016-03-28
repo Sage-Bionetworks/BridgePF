@@ -39,7 +39,7 @@ public class FPHSServiceTest {
     
     @Before
     public void before() {
-        externalId =  new ExternalIdentifier("gar");
+        externalId = ExternalIdentifier.create(TEST_STUDY, "gar");
         service = new FPHSService();
         dao = mock(FPHSExternalIdentifierDao.class);
         optionsService = mock(ParticipantOptionsService.class);
@@ -50,7 +50,7 @@ public class FPHSServiceTest {
     
     @Test(expected = InvalidEntityException.class)
     public void validateIdThrowsException() throws Exception {
-        service.verifyExternalIdentifier(new ExternalIdentifier(""));
+        service.verifyExternalIdentifier(ExternalIdentifier.create(TEST_STUDY, ""));
     }
     
     @Test
@@ -68,7 +68,7 @@ public class FPHSServiceTest {
     
     @Test(expected = InvalidEntityException.class)
     public void registerIdThrowsException() throws Exception {
-        service.registerExternalIdentifier(TEST_STUDY, "BBB", new ExternalIdentifier(null));
+        service.registerExternalIdentifier(TEST_STUDY, "BBB", ExternalIdentifier.create(TEST_STUDY, null));
     }
     
     @Test
@@ -77,7 +77,7 @@ public class FPHSServiceTest {
         
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(dao).registerExternalId(externalId);
-        verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+        verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getExternalId());
     }
     
     @Test
@@ -97,7 +97,7 @@ public class FPHSServiceTest {
             // can be called again, the service calls are idempotent. Or else it actually was 
             // recorded, in which case it's also fine, despite the exception.
             verify(optionsService).getOptions("BBB");
-            verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+            verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getExternalId());
             verify(optionsService).setStringSet(TEST_STUDY, "BBB", DATA_GROUPS, Sets.newHashSet("football_player"));
             verifyNoMoreInteractions(optionsService);
         }

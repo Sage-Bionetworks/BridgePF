@@ -110,7 +110,7 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
     
     private DynamoFPHSExternalIdentifier getExternalId(ExternalIdentifier externalId, boolean throwExceptions) {
         DynamoFPHSExternalIdentifier hashKey = new DynamoFPHSExternalIdentifier();
-        hashKey.setExternalId(externalId.getIdentifier());
+        hashKey.setExternalId(externalId.getExternalId());
         
         DynamoFPHSExternalIdentifier record = mapper.load(hashKey);
         if (throwExceptions) {

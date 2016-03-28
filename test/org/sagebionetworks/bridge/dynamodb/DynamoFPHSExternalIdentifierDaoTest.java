@@ -15,6 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -51,7 +52,7 @@ public class DynamoFPHSExternalIdentifierDaoTest {
     
     @Test(expected=EntityNotFoundException.class)
     public void verifyExternalIdDoesNotExist() throws Exception {
-        ExternalIdentifier externalId = new ExternalIdentifier(getId());
+        ExternalIdentifier externalId = ExternalIdentifier.create(TestConstants.TEST_STUDY, getId());
         
         dao.verifyExternalId(externalId);
     }
@@ -64,11 +65,11 @@ public class DynamoFPHSExternalIdentifierDaoTest {
         idsToDelete.add(id1.getExternalId());
         idsToDelete.add(id2.getExternalId());
         
-        dao.registerExternalId(new ExternalIdentifier(id2.getExternalId()));
+        dao.registerExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, id2.getExternalId()));
         
-        dao.verifyExternalId(new ExternalIdentifier(id1.getExternalId()));
+        dao.verifyExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, id1.getExternalId()));
         try {
-            dao.verifyExternalId(new ExternalIdentifier(id2.getExternalId()));
+            dao.verifyExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, id2.getExternalId()));
             fail("Exception should have been throw");
         } catch(EntityAlreadyExistsException e) {
         }
@@ -76,7 +77,7 @@ public class DynamoFPHSExternalIdentifierDaoTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void registerUnknownCodeThrowsException() throws Exception {
-        dao.registerExternalId(new ExternalIdentifier(getId()));
+        dao.registerExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, getId()));
     }
     
     @Test(expected = EntityAlreadyExistsException.class)
@@ -85,8 +86,8 @@ public class DynamoFPHSExternalIdentifierDaoTest {
         dao.addExternalIds(Lists.newArrayList(id1));
         idsToDelete.add(id1.getExternalId());
         
-        dao.registerExternalId(new ExternalIdentifier(id1.getExternalId()));
-        dao.registerExternalId(new ExternalIdentifier(id1.getExternalId()));
+        dao.registerExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, id1.getExternalId()));
+        dao.registerExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, id1.getExternalId()));
     }
     
     @Test
@@ -95,7 +96,7 @@ public class DynamoFPHSExternalIdentifierDaoTest {
         dao.addExternalIds(Lists.newArrayList(id1));
         idsToDelete.add(id1.getExternalId());
         
-        dao.registerExternalId(new ExternalIdentifier(id1.getExternalId()));
+        dao.registerExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, id1.getExternalId()));
         FPHSExternalIdentifier found = getById(dao.getExternalIds(), id1);
         assertTrue(found.isRegistered());
     }
@@ -108,7 +109,7 @@ public class DynamoFPHSExternalIdentifierDaoTest {
         idsToDelete.add(id1.getExternalId());
         idsToDelete.add(id2.getExternalId());
         
-        dao.registerExternalId(new ExternalIdentifier(id1.getExternalId()));
+        dao.registerExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, id1.getExternalId()));
         
         List<FPHSExternalIdentifier> results = dao.getExternalIds();
         assertTrue(results.size() >= 2);
@@ -140,8 +141,8 @@ public class DynamoFPHSExternalIdentifierDaoTest {
         dao.addExternalIds(Lists.newArrayList(id1));
         idsToDelete.add(id1.getExternalId());
         
-        dao.registerExternalId(new ExternalIdentifier(identifier));
-        dao.unregisterExternalId(new ExternalIdentifier(identifier));
+        dao.registerExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, identifier));
+        dao.unregisterExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, identifier));
         
         List<FPHSExternalIdentifier> results = dao.getExternalIds();
         FPHSExternalIdentifier found = getById(results, FPHSExternalIdentifier.create(identifier));
@@ -155,14 +156,14 @@ public class DynamoFPHSExternalIdentifierDaoTest {
         // where we want it and we're not changing anything.
         
         // Not found, not a problem (no exception)
-        dao.unregisterExternalId(new ExternalIdentifier("foo"));
+        dao.unregisterExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo"));
         
         // Found but not registered is not a problem (no exception & comes back unregistered)
         DynamoFPHSExternalIdentifier id1 = new DynamoFPHSExternalIdentifier(getId());
         dao.addExternalIds(Lists.newArrayList(id1));
         idsToDelete.add(id1.getExternalId());
         
-        dao.unregisterExternalId(new ExternalIdentifier(id1.getExternalId()));
+        dao.unregisterExternalId(ExternalIdentifier.create(TestConstants.TEST_STUDY, id1.getExternalId()));
         
         List<FPHSExternalIdentifier> results = dao.getExternalIds();
         FPHSExternalIdentifier found = getById(results, id1);
