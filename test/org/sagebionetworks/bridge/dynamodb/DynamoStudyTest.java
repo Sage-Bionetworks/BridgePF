@@ -66,6 +66,7 @@ public class DynamoStudyTest {
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
+        assertTrue(node.get("externalIdValidationEnabled").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());
         
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
