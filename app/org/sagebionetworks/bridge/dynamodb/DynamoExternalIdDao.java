@@ -4,10 +4,13 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.CONTAINS;
+import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.BEGINS_WITH;
+import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.GE;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.LT;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NOT_NULL;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NULL;
+import static com.amazonaws.services.dynamodbv2.model.ConditionalOperator.AND;
+import static com.amazonaws.services.dynamodbv2.model.ConditionalOperator.OR;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -17,6 +20,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +41,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ConditionalOperator;
@@ -53,7 +58,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     
     private static final String RESERVATION = "reservation";
     private static final String HEALTH_CODE = "healthCode";
-    private static final String FILTERABLE_EXTERNAL_ID = "filterableIdentifier";
     private static final String IDENTIFIER = "identifier";
     private static final String STUDY_ID = "studyId";
     private static final String ASSIGNMENT_FILTER = "assignmentFilter";
@@ -239,18 +243,30 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
         DynamoDBQueryExpression<DynamoExternalIdentifier> query = new DynamoDBQueryExpression<DynamoExternalIdentifier>();
         if (idFilter != null) {
-            // You cannot filter a query on a hash key, so we copy this value to another column where we can filter
-            query.withQueryFilterEntry(FILTERABLE_EXTERNAL_ID, new Condition()
+            query.withRangeKeyCondition(IDENTIFIER, new Condition()
                     .withAttributeValueList(new AttributeValue().withS(idFilter))
-                    .withComparisonOperator(CONTAINS));
+                    .withComparisonOperator(BEGINS_WITH));
         }
-        if (assignmentFilter == Boolean.TRUE) {
-            query.withQueryFilterEntry(HEALTH_CODE, new Condition().withComparisonOperator(NOT_NULL));
-        } else if (assignmentFilter == Boolean.FALSE) {
-            query.withQueryFilterEntry(HEALTH_CODE, new Condition().withComparisonOperator(NULL));
+        if (assignmentFilter != null) {
+            addAssignmentFilter(query, assignmentFilter.booleanValue());
         }
         query.withHashKeyValues(new DynamoExternalIdentifier(studyId, null)); // no healthCode.
         return query;
+    }
+
+    private void addAssignmentFilter(DynamoDBQueryExpression<DynamoExternalIdentifier> query, boolean isAssigned) {
+        String value = Long.toString(DateTimeUtils.currentTimeMillis()-lockDuration);
+        
+        ComparisonOperator healthCodeOp = (isAssigned) ? NOT_NULL : NULL;
+        ComparisonOperator reservationOp = (isAssigned) ? GE : LT;
+        ConditionalOperator op = (isAssigned) ? OR : AND;
+        AttributeValue attrValue = new AttributeValue().withN(value);
+        
+        Condition healthCodeCondition = new Condition().withComparisonOperator(healthCodeOp);
+        Condition reservationCondition = new Condition().withAttributeValueList(attrValue).withComparisonOperator(reservationOp);
+        query.withQueryFilterEntry(HEALTH_CODE, healthCodeCondition);
+        query.withQueryFilterEntry(RESERVATION, reservationCondition);
+        query.withConditionalOperator(op);
     }
     
     /**
@@ -266,14 +282,14 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         map.put(HEALTH_CODE, new ExpectedAttributeValue().withExists(false));
 
         DynamoDBSaveExpression saveExpression = new DynamoDBSaveExpression();
-        saveExpression.withConditionalOperator(ConditionalOperator.AND);
+        saveExpression.withConditionalOperator(AND);
         saveExpression.setExpected(map);
         return saveExpression;
     }
     
     /**
      * Save the record with the user's healthCode IF the healthCode is not yet set. If calling code calls 
-     * the reservation method first, this should not happen, but we do prevent it.  
+     * the reservation method first, this should not happen, but we do not prevent it.  
      */
     private DynamoDBSaveExpression getAssignmentExpression() {
         Map<String, ExpectedAttributeValue> map = Maps.newHashMap();

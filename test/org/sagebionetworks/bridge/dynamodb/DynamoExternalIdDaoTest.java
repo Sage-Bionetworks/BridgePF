@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -153,6 +154,11 @@ public class DynamoExternalIdDaoTest {
         assertEquals(0, identifier.getReservation());
     }
     
+    @Test(expected = EntityNotFoundException.class)
+    public void assignMissingExternalIdThrowException() {
+        dao.assignExternalId(studyId, "DDD", "healthCode");
+    }
+    
     @Test
     public void canReassignHealthCodeSafely() {
         // Well-behaved client code shouldn't do this, but if it happens it does not throw an exception
@@ -206,11 +212,11 @@ public class DynamoExternalIdDaoTest {
     
     @Test
     public void canFilterIds() {
-        List<String> moreIds = Lists.newArrayList("aaa", "bbb", "ccc", "DDD", "EAE", "FFA");
+        List<String> moreIds = Lists.newArrayList("aaa", "bbb", "ccc", "DDD", "AEE", "AFF");
         try {
             dao.addExternalIds(studyId, moreIds);
             
-            // AAA, EAE, FFA
+            // AAA, AEE, AFF
             DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, "A", null);
             assertEquals(3, page.getItems().size());
             assertEquals(10, page.getPageSize());
@@ -226,7 +232,7 @@ public class DynamoExternalIdDaoTest {
             
             dao.assignExternalId(studyId, "AAA", "healthCode1");
             dao.assignExternalId(studyId, "BBB", "healthCode1");
-            
+
             page = dao.getExternalIds(studyId, null, 10, null, Boolean.TRUE);
             assertEquals(2, page.getItems().size());
             assertEquals(Sets.newHashSet("AAA", "BBB"), Sets.newHashSet(page.getItems()));
@@ -263,6 +269,65 @@ public class DynamoExternalIdDaoTest {
         } finally {
             dao.deleteExternalIds(studyId, moreIds);
         }
+    }
+    
+    // Sometimes paging fails when the total records divided by the page has no remainder. 
+    // So last item on last page is the last record. Verify this works.
+    @Test
+    public void pagingWithNoRemainderWorks() {
+        List<String> moreIds = Lists.newArrayList("DDD", "EEE", "FFF");
+        try {
+            dao.addExternalIds(studyId, moreIds);
+            
+            DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 3, null, null);
+            assertEquals(6, page.getTotal());
+            assertEquals(3, page.getItems().size());
+            assertNotNull(page.getLastKey());
+            
+            page = dao.getExternalIds(studyId, page.getLastKey(), 3, null, null);
+            assertEquals(6, page.getTotal());
+            assertEquals(3, page.getItems().size());
+            assertNull(page.getLastKey());
+        } finally {
+            dao.deleteExternalIds(studyId, moreIds);
+        }
+    }
+    
+    @Test
+    public void retrieveUnassignedExcludesReserved() throws Exception {
+        dao.setConfig(makeConfig(10, 1000));
+        
+        dao.assignExternalId(studyId, "AAA", "healthCode1");
+        dao.reserveExternalId(studyId, "BBB"); // only reserved
+        
+        DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
+        assertEquals(1, page.getItems().size());
+        assertEquals("CCC", page.getItems().get(0));
+        
+        Thread.sleep(1000);
+        page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
+        assertEquals(2, page.getItems().size());
+        assertTrue(page.getItems().contains("BBB"));
+        assertTrue(page.getItems().contains("CCC"));
+    }
+    
+    @Test
+    public void retrieveAssignedIncludesReserved() throws Exception {
+        dao.setConfig(makeConfig(10, 1000));
+        
+        dao.assignExternalId(studyId, "AAA", "healthCode");
+        dao.reserveExternalId(studyId, "BBB");
+        
+        DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
+        assertEquals(2, page.getItems().size());
+        assertTrue(page.getItems().contains("AAA"));
+        assertTrue(page.getItems().contains("BBB"));
+        
+        // Wait until lock is released, item is no longer in results that are considered assigned.
+        Thread.sleep(10000);
+        page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
+        assertEquals(1, page.getItems().size());
+        assertTrue(page.getItems().contains("AAA"));
     }
     
     @Test

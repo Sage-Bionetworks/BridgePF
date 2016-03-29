@@ -15,12 +15,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 public class DynamoExternalIdentifier implements ExternalIdentifier {
 
     private String identifier;
-    /**
-     * DynamoDB will not filter a query on the value of the hash key, so we copy this 
-     * value to another column where we can filter on it. This is not exposed outside
-     * of the DAO.
-     */
-    private String filterableIdentifier;
     private String studyId;
     private String healthCode;
     private long reservation;
@@ -30,7 +24,6 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
     public DynamoExternalIdentifier(StudyIdentifier studyId, String identifier) {
         this.studyId = studyId.getIdentifier();
         this.identifier = identifier;
-        this.filterableIdentifier = identifier;
     }
     @DynamoDBHashKey
     @Override
@@ -49,19 +42,11 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
     @Override
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
-        this.filterableIdentifier = identifier;
     }
     // The set externalId API took "identifier", while the FPHS controller takes
     // "externalId", so either way, this will deserialize the value.
     void setExternalId(String externalId) {
         setIdentifier(externalId);
-    }
-    @DynamoDBAttribute
-    public String getFilterableIdentifier() {
-        return filterableIdentifier;
-    }
-    public void setFilterableIdentifier(String filterableIdentifier) {
-        this.filterableIdentifier = filterableIdentifier;
     }
     @DynamoDBAttribute
     @Override
