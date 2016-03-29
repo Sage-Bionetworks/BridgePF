@@ -60,6 +60,8 @@ public class ParticipantService {
     
     private ConsentService consentService;
     
+    private ExternalIdService externalIdService;
+    
     private CacheProvider cacheProvider;
     
     @Autowired
@@ -85,6 +87,11 @@ public class ParticipantService {
     @Autowired
     final void setUserConsent(ConsentService consentService) {
         this.consentService = consentService;
+    }
+    
+    @Autowired
+    final void setExternalIdService(ExternalIdService externalIdService) {
+        this.externalIdService = externalIdService;
     }
     
     @Autowired
@@ -169,6 +176,11 @@ public class ParticipantService {
             Set<String> dataGroupsSet = BridgeUtils.commaListToOrderedSet(dataGroupsString);
             DataGroups dataGroups = new DataGroups(dataGroupsSet);
             Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);    
+        }
+        // The DAO enforces that the identifier has not already been assigned, it exists, etc.
+        String externalIdentifier = options.get(EXTERNAL_IDENTIFIER);
+        if (study.isExternalIdValidationEnabled() && externalIdentifier != null) {
+            externalIdService.assignExternalId(study, externalIdentifier, healthCode);
         }
         optionsService.setAllOptions(study, healthCode, options);
     }

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
 import java.util.Iterator;
@@ -17,6 +18,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -48,6 +50,7 @@ public class UserAdminService {
     private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
     private ParticipantOptionsService optionsService;
+    private ExternalIdService externalIdService;
 
     @Autowired
     public final void setAuthenticationService(AuthenticationService authenticationService) {
@@ -96,6 +99,10 @@ public class UserAdminService {
     @Autowired
     public final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
+    }
+    @Autowired
+    public final void setExternalIdService(ExternalIdService externalIdService) {
+        this.externalIdService = externalIdService;
     }
     
     /**
@@ -255,6 +262,10 @@ public class UserAdminService {
                     scheduledActivityService.deleteActivitiesForUser(healthCode);
                     activityEventService.deleteActivityEvents(healthCode);
                     surveyResponseService.deleteSurveyResponses(healthCode);
+                    
+                    ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+                    String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
+                    externalIdService.unassignExternalId(study, externalId, healthCode);
                     optionsService.deleteAllParticipantOptions(healthCode);
                 }
             }
