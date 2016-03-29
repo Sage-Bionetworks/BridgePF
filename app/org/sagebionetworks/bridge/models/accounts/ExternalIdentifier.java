@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoExternalIdentifier.class)
 public interface ExternalIdentifier extends BridgeEntity {
 
-    public static ExternalIdentifier create(StudyIdentifier studyId, String externalId) {
-        return new DynamoExternalIdentifier(studyId, externalId);
+    public static ExternalIdentifier create(StudyIdentifier studyId, String identifier) {
+        return new DynamoExternalIdentifier(studyId, identifier);
     }
     
     public String getIdentifier();

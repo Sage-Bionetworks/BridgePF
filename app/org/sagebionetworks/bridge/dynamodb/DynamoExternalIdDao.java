@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -118,6 +119,11 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
         if (externalIds.size() > addLimit) {
             throw new BadRequestException("List of externalIds is too large; size=" + externalIds.size() + ", limit=" + addLimit);
+        }
+        for (String id : externalIds) {
+            if (StringUtils.isBlank(id)) {
+                throw new BadRequestException("List of externalIds contains an empty value");
+            }
         }
         if (!externalIds.isEmpty()) {
             List<DynamoExternalIdentifier> idsToSave = externalIds.stream().map(id -> {

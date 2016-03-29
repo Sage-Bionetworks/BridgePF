@@ -4,7 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -74,7 +79,7 @@ public class DynamoExternalIdDaoTest {
     }
     
     @Test(expected = BadRequestException.class)
-    public void addCannotExceedingLimit() {
+    public void addCannotExceedLimit() {
         dao.setConfig(makeConfig(2, 1000));
         
         dao.addExternalIds(studyId, EXT_IDS);
@@ -100,6 +105,32 @@ public class DynamoExternalIdDaoTest {
         DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
         DynamoExternalIdentifier identifier = mapper.load(keyObject);
         assertEquals("healthCode", identifier.getHealthCode());
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void cannotAddNullValues() {
+        mapper = spy(mapper);
+        dao.setMapper(mapper);
+        try {
+            dao.addExternalIds(studyId, Lists.newArrayList("DDD", null));
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {}
+        verify(mapper, never()).load(any());
+        verify(mapper, never()).batchSave((List<DynamoExternalIdentifier>)any());
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void cannotAddEmptyValues() {
+        mapper = spy(mapper);
+        dao.setMapper(mapper);
+        try {
+            dao.addExternalIds(studyId, Lists.newArrayList("DDD", "  \t"));
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {}
+        verify(mapper, never()).load(any());
+        verify(mapper, never()).batchSave((List<DynamoExternalIdentifier>)any());
     }
     
     @Test
