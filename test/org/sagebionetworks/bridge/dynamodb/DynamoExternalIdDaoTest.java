@@ -332,8 +332,9 @@ public class DynamoExternalIdDaoTest {
     
     @Test
     public void getNextAvailableID() {
+        // We should skip over reserved and assigned IDs to find a free one
         dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.assignExternalId(studyId, "BBB", "healthCode2");
+        dao.reserveExternalId(studyId, "BBB");
         
         DynamoPagedResourceList<String> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         

@@ -255,12 +255,12 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
 
     private void addAssignmentFilter(DynamoDBQueryExpression<DynamoExternalIdentifier> query, boolean isAssigned) {
-        String value = Long.toString(DateTimeUtils.currentTimeMillis()-lockDuration);
+        String reservationStartTime = Long.toString(DateTimeUtils.currentTimeMillis()-lockDuration);
         
         ComparisonOperator healthCodeOp = (isAssigned) ? NOT_NULL : NULL;
         ComparisonOperator reservationOp = (isAssigned) ? GE : LT;
         ConditionalOperator op = (isAssigned) ? OR : AND;
-        AttributeValue attrValue = new AttributeValue().withN(value);
+        AttributeValue attrValue = new AttributeValue().withN(reservationStartTime);
         
         Condition healthCodeCondition = new Condition().withComparisonOperator(healthCodeOp);
         Condition reservationCondition = new Condition().withAttributeValueList(attrValue).withComparisonOperator(reservationOp);
@@ -274,12 +274,16 @@ public class DynamoExternalIdDao implements ExternalIdDao {
      * existing record was not set in the recent past (during the lockDuration).
      */
     private DynamoDBSaveExpression getReservationExpression(long newReservation) {
-        AttributeValue value = new AttributeValue().withN(Long.toString(newReservation-lockDuration));
+        AttributeValue reservationStartTime = new AttributeValue().withN(Long.toString(newReservation-lockDuration));
+        
+        ExpectedAttributeValue beforeReservation = new ExpectedAttributeValue()
+                .withValue(reservationStartTime).withComparisonOperator(LT);
+        
+        ExpectedAttributeValue healthCodeNull = new ExpectedAttributeValue().withExists(false);
         
         Map<String, ExpectedAttributeValue> map = Maps.newHashMap();
-        map.put(RESERVATION,
-                new ExpectedAttributeValue().withValue(value).withComparisonOperator(LT));
-        map.put(HEALTH_CODE, new ExpectedAttributeValue().withExists(false));
+        map.put(RESERVATION, beforeReservation);
+        map.put(HEALTH_CODE, healthCodeNull);
 
         DynamoDBSaveExpression saveExpression = new DynamoDBSaveExpression();
         saveExpression.withConditionalOperator(AND);
@@ -306,7 +310,4 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         }
         return null;
     }
-
-    
-
 }

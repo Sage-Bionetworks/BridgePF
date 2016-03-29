@@ -14,8 +14,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 @DynamoDBTable(tableName = "ExternalIdentifier")
 public class DynamoExternalIdentifier implements ExternalIdentifier {
 
-    private String identifier;
     private String studyId;
+    private String identifier;
     private String healthCode;
     private long reservation;
     
