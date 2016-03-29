@@ -77,7 +77,7 @@ public class ParticipantOptionsServiceTest {
     
     @Test
     public void setString() {
-        ExternalIdentifier externalId = new ExternalIdentifier("BBB");
+        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_STUDY, "BBB");
         
         service.setString(TEST_STUDY, HEALTH_CODE, EXTERNAL_IDENTIFIER, externalId.getIdentifier());
         

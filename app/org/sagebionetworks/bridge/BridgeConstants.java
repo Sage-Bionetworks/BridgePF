@@ -52,8 +52,8 @@ public class BridgeConstants {
     
     public static final int API_MINIMUM_PAGE_SIZE = 5;
     
-    public static final int API_DEFAULT_PAGE_SIZE = 100;
+    public static final int API_DEFAULT_PAGE_SIZE = 50;
     
-    public static final int API_MAXIMUM_PAGE_SIZE = 250;
+    public static final int API_MAXIMUM_PAGE_SIZE = 100;
     
 }

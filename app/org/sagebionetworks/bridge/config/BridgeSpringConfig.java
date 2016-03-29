@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
+import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
@@ -301,6 +302,12 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper fphsExternalIdDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
         return DynamoUtils.getMapper(DynamoFPHSExternalIdentifier.class, bridgeConfig, client);
+    }
+    
+    @Bean(name = "externalIdDdbMapper")
+    @Autowired
+    public DynamoDBMapper externalIdDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoExternalIdentifier.class, bridgeConfig, client);
     }
     
     @Bean(name = "participantOptionsDbMapper")

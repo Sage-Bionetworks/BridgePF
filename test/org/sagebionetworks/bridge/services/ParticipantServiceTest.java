@@ -121,12 +121,12 @@ public class ParticipantServiceTest {
     }
     
     @Test(expected = BadRequestException.class)
-    public void limitToCannotBeNegative() {
+    public void pageSizeCannotBeNegative() {
         participantService.getPagedAccountSummaries(STUDY, 0, -100, null);
     }
     
     @Test(expected = BadRequestException.class)
-    public void limitToCannotBeGreaterThan250() {
+    public void pageSizeCannotBeGreaterThan100() {
         participantService.getPagedAccountSummaries(STUDY, 0, 251, null);
     }
     

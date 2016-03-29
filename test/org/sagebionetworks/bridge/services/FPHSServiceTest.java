@@ -39,7 +39,7 @@ public class FPHSServiceTest {
     
     @Before
     public void before() {
-        externalId =  new ExternalIdentifier("gar");
+        externalId = ExternalIdentifier.create(TEST_STUDY, "gar");
         service = new FPHSService();
         dao = mock(FPHSExternalIdentifierDao.class);
         optionsService = mock(ParticipantOptionsService.class);
@@ -50,7 +50,7 @@ public class FPHSServiceTest {
     
     @Test(expected = InvalidEntityException.class)
     public void validateIdThrowsException() throws Exception {
-        service.verifyExternalIdentifier(new ExternalIdentifier(""));
+        service.verifyExternalIdentifier(ExternalIdentifier.create(TEST_STUDY, ""));
     }
     
     @Test
@@ -68,7 +68,7 @@ public class FPHSServiceTest {
     
     @Test(expected = InvalidEntityException.class)
     public void registerIdThrowsException() throws Exception {
-        service.registerExternalIdentifier(TEST_STUDY, "BBB", new ExternalIdentifier(null));
+        service.registerExternalIdentifier(TEST_STUDY, "BBB", ExternalIdentifier.create(TEST_STUDY, null));
     }
     
     @Test
