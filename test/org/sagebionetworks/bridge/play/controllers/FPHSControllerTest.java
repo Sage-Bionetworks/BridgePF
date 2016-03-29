@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -138,7 +139,7 @@ public class FPHSControllerTest {
     
     @Test
     public void registrationRequiresAuthenticatedConsentedUser() throws Exception {
-        setExternalIdentifierPost(new ExternalIdentifier("foo"));
+        setExternalIdentifierPost(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo"));
         
         try {
             controller.registerExternalIdentifier();
@@ -151,7 +152,7 @@ public class FPHSControllerTest {
     @Test
     public void registrationOK() throws Exception {
         User user = setUserSession();
-        setExternalIdentifierPost(new ExternalIdentifier("foo"));
+        setExternalIdentifierPost(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo"));
 
         Result result = controller.registerExternalIdentifier();
         JsonNode node = resultToJson(result);

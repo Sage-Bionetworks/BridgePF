@@ -13,6 +13,8 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.FPHSService;
@@ -26,6 +28,8 @@ import play.mvc.Result;
 
 @Controller("fphsController")
 public class FPHSController extends BaseController {
+    
+    private static final StudyIdentifier FPHS_ID = new StudyIdentifierImpl("fphs");
     
     private static final TypeReference<List<FPHSExternalIdentifier>> EXTERNAL_ID_TYPE_REF = 
             new TypeReference<List<FPHSExternalIdentifier>>() {};
@@ -48,10 +52,9 @@ public class FPHSController extends BaseController {
     
     public Result verifyExternalIdentifier(String identifier) throws Exception {
         // public API, no restrictions. externalId can be null so we can create a 400 error in the service.
-        ExternalIdentifier externalId = new ExternalIdentifier(identifier);
+        ExternalIdentifier externalId = ExternalIdentifier.create(FPHS_ID, identifier);
         fphsService.verifyExternalIdentifier(externalId);
-        
-        return okResult(externalId);
+        return okResult(FPHSExternalIdentifier.create(externalId.getIdentifier()));
     }
     public Result registerExternalIdentifier() throws Exception {
         UserSession session = getAuthenticatedSession();

@@ -5,6 +5,7 @@ import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @DynamoDBTable(tableName = "FPHSExternalIdentifier")
 public class DynamoFPHSExternalIdentifier implements FPHSExternalIdentifier {
@@ -31,6 +32,7 @@ public class DynamoFPHSExternalIdentifier implements FPHSExternalIdentifier {
         this.externalId = externalId;
     }
 
+    @JsonIgnore
     @Override
     @DynamoDBAttribute
     public boolean isRegistered() {
