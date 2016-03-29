@@ -171,13 +171,14 @@ public class ParticipantService {
             // Could arguably be a 404 since user is not fully initialized.
             throw new BridgeServiceException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
         }
+        // Validate data groups.
         String dataGroupsString = options.get(ParticipantOption.DATA_GROUPS);
         if (dataGroupsString != null) {
             Set<String> dataGroupsSet = BridgeUtils.commaListToOrderedSet(dataGroupsString);
             DataGroups dataGroups = new DataGroups(dataGroupsSet);
             Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);    
         }
-        // The DAO enforces that the identifier has not already been assigned, it exists, etc.
+        // Set external ID through service. It validates and throws exception if we should not update options
         String externalIdentifier = options.get(EXTERNAL_IDENTIFIER);
         if (study.isExternalIdValidationEnabled() && externalIdentifier != null) {
             externalIdService.assignExternalId(study, externalIdentifier, healthCode);
