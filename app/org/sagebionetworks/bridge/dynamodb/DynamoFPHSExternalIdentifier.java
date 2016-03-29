@@ -32,7 +32,6 @@ public class DynamoFPHSExternalIdentifier implements FPHSExternalIdentifier {
         this.externalId = externalId;
     }
 
-    @JsonIgnore
     @Override
     @DynamoDBAttribute
     public boolean isRegistered() {
