@@ -3,8 +3,12 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
@@ -30,9 +34,11 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -47,6 +53,8 @@ import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantServiceTest {
+
+    private static final String EMAIL = "email@email.com";
 
     private static final Study STUDY = new DynamoStudy();
     static {
@@ -85,8 +93,12 @@ public class ParticipantServiceTest {
     @Mock
     private CacheProvider cacheProvider;
     
+    @Mock
+    private ExternalIdService externalIdService;
+    
     @Before
     public void before() {
+        STUDY.setExternalIdValidationEnabled(false);
         participantService = new ParticipantService();
         participantService.setAccountDao(accountDao);
         participantService.setParticipantOptionsService(optionsService);
@@ -94,6 +106,14 @@ public class ParticipantServiceTest {
         participantService.setHealthCodeService(healthCodeService);
         participantService.setUserConsent(consentService);
         participantService.setCacheProvider(cacheProvider);
+        participantService.setExternalIdService(externalIdService);
+    }
+    
+    private void mockGetAccount() {
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(account);
+        when(account.getHealthId()).thenReturn("healthId");
+        when(healthId.getCode()).thenReturn("healthCode");
+        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
     }
     
     @Test
@@ -133,17 +153,13 @@ public class ParticipantServiceTest {
     @Test
     public void getStudyParticipant() {
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
-        String email = "email@email.com";
-        
         when(account.getHealthId()).thenReturn("healthId");
         when(account.getFirstName()).thenReturn("firstName");
         when(account.getLastName()).thenReturn("lastName");
-        when(account.getEmail()).thenReturn("email@email.com");
+        when(account.getEmail()).thenReturn(EMAIL);
         when(account.getAttribute("attr2")).thenReturn("anAttribute2");
         
-        when(healthId.getCode()).thenReturn("healthCode");
-        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
-        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        mockGetAccount();
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -171,8 +187,8 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> histories2 = Lists.newArrayList();
         
-        when(consentService.getUserConsentHistory(STUDY, subpop1.getGuid(), "healthCode", "email@email.com")).thenReturn(histories1);
-        when(consentService.getUserConsentHistory(STUDY, subpop2.getGuid(), "healthCode", "email@email.com")).thenReturn(histories2);
+        when(consentService.getUserConsentHistory(STUDY, subpop1.getGuid(), "healthCode", EMAIL)).thenReturn(histories1);
+        when(consentService.getUserConsentHistory(STUDY, subpop2.getGuid(), "healthCode", EMAIL)).thenReturn(histories2);
         
         when(lookup.getEnum(SHARING_SCOPE, SharingScope.class)).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         when(lookup.getBoolean(EMAIL_NOTIFICATIONS)).thenReturn(true);
@@ -182,7 +198,7 @@ public class ParticipantServiceTest {
         when(optionsService.getOptions("healthCode")).thenReturn(lookup);
         
         // Get the participant
-        StudyParticipant participant = participantService.getParticipant(STUDY, email);
+        StudyParticipant participant = participantService.getParticipant(STUDY, EMAIL);
         
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());
@@ -191,7 +207,7 @@ public class ParticipantServiceTest {
         assertEquals("externalId", participant.getExternalId());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, participant.getSharingScope());
         assertEquals("healthCode", participant.getHealthCode());
-        assertEquals("email@email.com", participant.getEmail());
+        assertEquals(EMAIL, participant.getEmail());
         assertEquals(TestUtils.newLinkedHashSet("fr","de"), participant.getLanguages());
         
         assertNull(participant.getAttributes().get("attr1"));
@@ -208,59 +224,49 @@ public class ParticipantServiceTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void getParticipantEmailDoesNotExist() {
-        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(null);
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(null);
         
-        participantService.getParticipant(STUDY, "email@email.com");
+        participantService.getParticipant(STUDY, EMAIL);
     }
     
     @Test
     public void updateParticipantOptions() {
-        String email = "email@email.com";
-        when(account.getHealthId()).thenReturn("healthId");
-        when(healthId.getCode()).thenReturn("healthCode");
-        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
-        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        mockGetAccount();
         
         Map<ParticipantOption,String> options = Maps.newHashMap();
         
-        participantService.updateParticipantOptions(STUDY, email, options);
+        participantService.updateParticipantOptions(STUDY, EMAIL, options);
         
         verify(optionsService).setAllOptions(STUDY, "healthCode", options);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void updateParticipantOptionsInvalidDataGroup() {
-        String email = "email@email.com";
-        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
-        when(account.getHealthId()).thenReturn("healthId");
-        when(healthId.getCode()).thenReturn("healthCode");
-        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        mockGetAccount();
 
         Map<ParticipantOption,String> options = Maps.newHashMap();
         options.put(ParticipantOption.DATA_GROUPS, "group1,group3");
         
-        participantService.updateParticipantOptions(STUDY, email, options);
+        participantService.updateParticipantOptions(STUDY, EMAIL, options);
     }
     
     @Test(expected = BridgeServiceException.class)
     public void cannotUpdateParticipantNoHealthCode() {
-        String email = "email@email.com";
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(account);
         when(account.getHealthId()).thenReturn(null);
         when(healthId.getCode()).thenReturn(null);
-        when(accountDao.getAccount(STUDY, email)).thenReturn(account);
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
         
         Map<ParticipantOption,String> options = Maps.newHashMap();
-        participantService.updateParticipantOptions(STUDY, email, options);
+        participantService.updateParticipantOptions(STUDY, EMAIL, options);
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void accountDoesNotExist() {
-        String email = "email@email.com";
-        when(accountDao.getAccount(STUDY, email)).thenReturn(null);
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(null);
         
         Map<ParticipantOption,String> options = Maps.newHashMap();
-        participantService.updateParticipantOptions(STUDY, email, options);
+        participantService.updateParticipantOptions(STUDY, EMAIL, options);
     }
     
     @Test
@@ -273,9 +279,9 @@ public class ParticipantServiceTest {
 
         // Need an account object on which we can actually set the values...
         Account acct = new SimpleAccount();
-        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(acct);
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(acct);
         
-        participantService.updateProfile(STUDY, "email@email.com", profile);
+        participantService.updateProfile(STUDY, EMAIL, profile);
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         verify(accountDao).updateAccount(eq(STUDY), captor.capture());
@@ -289,28 +295,72 @@ public class ParticipantServiceTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void updateUserProfileUserDoesNotExist() {
-        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(null);
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(null);
         
         UserProfile profile = new UserProfile();
-        participantService.updateProfile(STUDY, "email@email.com", profile);
+        participantService.updateProfile(STUDY, EMAIL, profile);
     }
     
     @Test
     public void signUserOut() {
-        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(account);
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(account);
         when(account.getId()).thenReturn("userId");
         
-        participantService.signUserOut(STUDY, "email@email.com");
+        participantService.signUserOut(STUDY, EMAIL);
         
-        verify(accountDao).getAccount(STUDY, "email@email.com");
+        verify(accountDao).getAccount(STUDY, EMAIL);
         verify(cacheProvider).removeSessionByUserId("userId");
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void signOutUserWhoDoesNotExist() {
-        when(accountDao.getAccount(STUDY, "email@email.com")).thenReturn(null);
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(null);
         
-        participantService.signUserOut(STUDY, "email@email.com");
+        participantService.signUserOut(STUDY, EMAIL);
+    }
+
+    @Test
+    public void externalIdValidationDisabled() {
+        mockGetAccount();
+
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        options.put(EXTERNAL_IDENTIFIER, "POWERS"); // <!-- this is okay
+        
+        participantService.updateParticipantOptions(STUDY, EMAIL, options);
+        
+        verifyNoMoreInteractions(externalIdService);
     }
     
+    @Test
+    public void externalIdValidation() {
+        mockGetAccount();
+        
+        STUDY.setExternalIdValidationEnabled(true);
+        
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        options.put(EXTERNAL_IDENTIFIER, "POWERS");
+        
+        participantService.updateParticipantOptions(STUDY, EMAIL, options);
+        
+        verify(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
+    }
+    
+    @Test
+    public void externalIdValidationPreventsUpdate() {
+        mockGetAccount();
+        doThrow(new EntityAlreadyExistsException(ExternalIdentifier.create(STUDY, "AAA")))
+                .when(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
+        
+        STUDY.setExternalIdValidationEnabled(true);
+        
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        options.put(EXTERNAL_IDENTIFIER, "POWERS");
+        
+        try {
+            participantService.updateParticipantOptions(STUDY, EMAIL, options);
+            fail("Should have thrown exception");
+        } catch(EntityAlreadyExistsException e) {
+        }
+        verify(optionsService, never()).setAllOptions(STUDY, "healthCode", options);
+    }
 }

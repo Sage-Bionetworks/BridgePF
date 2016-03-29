@@ -40,14 +40,14 @@ public class ExternalIdController extends BaseController {
         return okResult(page);
     }
     
-    public Result addExternalIds() {
+    public Result addExternalIds() throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+
         List<String> externalIdentifiers = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
         externalIdService.addExternalIds(study, externalIdentifiers);
         
-        return okResult("External identifiers added.");
+        return createdResult("External identifiers added.");
     }
 
 }

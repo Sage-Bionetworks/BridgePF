@@ -9,6 +9,7 @@ import java.util.List;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
@@ -20,6 +21,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
  * If it's enabled, reservation and assignment will work as expected, otherwise these silently do nothing. The identifier 
  * will be saved in the ParticipantOptions table.
  */
+@Component
 public class ExternalIdService {
     
     private ExternalIdDao externalIdDao;

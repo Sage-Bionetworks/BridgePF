@@ -265,7 +265,9 @@ public class UserAdminService {
                     
                     ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
                     String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
-                    externalIdService.unassignExternalId(study, externalId, healthCode);
+                    if (externalId != null) {
+                        externalIdService.unassignExternalId(study, externalId, healthCode);    
+                    }
                     optionsService.deleteAllParticipantOptions(healthCode);
                 }
             }
