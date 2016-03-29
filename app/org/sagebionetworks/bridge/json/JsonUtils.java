@@ -40,6 +40,18 @@ public class JsonUtils {
      */
     public static final ObjectMapper INTERNAL_OBJECT_MAPPER = new ObjectMapper();
 
+    public static <T extends Enum<T>> T asEnum(JsonNode parent, String property, Class<T> enumType) {
+        String value = asText(parent, property);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Enum.valueOf(enumType, value.toUpperCase());    
+        } catch(IllegalArgumentException e) {
+            return null;
+        }
+    }
+    
     public static String asText(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return parent.get(property).asText();

@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -140,6 +141,7 @@ public class ParticipantServiceTest {
         when(account.getLastName()).thenReturn("lastName");
         when(account.getEmail()).thenReturn("email@email.com");
         when(account.getAttribute("attr2")).thenReturn("anAttribute2");
+        when(account.getStatus()).thenReturn(AccountStatus.ENABLED);
         
         when(healthId.getCode()).thenReturn("healthCode");
         when(accountDao.getAccount(STUDY, email)).thenReturn(account);
@@ -193,6 +195,7 @@ public class ParticipantServiceTest {
         assertEquals("healthCode", participant.getHealthCode());
         assertEquals("email@email.com", participant.getEmail());
         assertEquals(TestUtils.newLinkedHashSet("fr","de"), participant.getLanguages());
+        assertEquals(AccountStatus.ENABLED, participant.getStatus());
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
@@ -270,6 +273,7 @@ public class ParticipantServiceTest {
         profile.setLastName("last name");
         profile.setAttribute("attr1", "new attr1");
         profile.setAttribute("attr2", "new attr2");
+        profile.setStatus(AccountStatus.DISABLED);
 
         // Need an account object on which we can actually set the values...
         Account acct = new SimpleAccount();
@@ -285,6 +289,7 @@ public class ParticipantServiceTest {
         assertEquals("last name", capturedAccount.getLastName());
         assertEquals("new attr1", capturedAccount.getAttribute("attr1"));
         assertEquals("new attr2", capturedAccount.getAttribute("attr2"));
+        assertEquals(AccountStatus.DISABLED, capturedAccount.getStatus());
     }
 
     @Test(expected = EntityNotFoundException.class)

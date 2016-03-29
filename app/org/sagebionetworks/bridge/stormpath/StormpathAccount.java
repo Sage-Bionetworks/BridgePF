@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -148,6 +149,14 @@ public final class StormpathAccount implements Account {
     @Override
     public void setHealthId(String healthId) {
         encryptTo(healthIdKey, healthId);
+    };
+    @Override
+    public AccountStatus getStatus() {
+        return AccountStatus.valueOf(acct.getStatus().name());
+    };
+    @Override
+    public void setStatus(AccountStatus status) {
+        acct.setStatus(com.stormpath.sdk.account.AccountStatus.valueOf(status.name()));
     };
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {

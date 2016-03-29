@@ -126,6 +126,7 @@ public class ParticipantService {
         participant.withLastName(account.getLastName());
         participant.withEmail(account.getEmail());
         participant.withRoles(account.getRoles());
+        participant.withStatus(account.getStatus());
         
         Map<String,String> attributes = Maps.newHashMap();
         for (String attribute : study.getUserProfileAttributes()) {
@@ -185,6 +186,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, email);
         account.setFirstName(profile.getFirstName());
         account.setLastName(profile.getLastName());
+        account.setStatus(profile.getStatus());
         for(String attribute : study.getUserProfileAttributes()) {
             String value = profile.getAttribute(attribute);
             account.setAttribute(attribute, value);

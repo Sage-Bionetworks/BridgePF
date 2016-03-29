@@ -44,6 +44,7 @@ public class StudyParticipantTest {
                 .withHealthCode("healthCode")
                 .withAttributes(ATTRIBUTES)
                 .withRoles(ROLES)
+                .withStatus(AccountStatus.UNVERIFIED)
                 .withLanguages(LANGS);
         
         List<UserConsentHistory> histories = Lists.newArrayList();
@@ -67,6 +68,7 @@ public class StudyParticipantTest {
         assertEquals("sponsors_and_partners", node.get("sharingScope").asText());
         assertTrue(node.get("notifyByEmail").asBoolean());
         assertEquals("healthCode", node.get("healthCode").asText());
+        assertEquals("unverified", node.get("status").asText());
         assertEquals("StudyParticipant", node.get("type").asText());
 
         Set<String> roleNames = Sets.newHashSet(
@@ -87,7 +89,7 @@ public class StudyParticipantTest {
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
         
-        assertEquals(13, node.size());
+        assertEquals(14, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -99,6 +101,7 @@ public class StudyParticipantTest {
         assertEquals(DATA_GROUPS, deserParticipant.getDataGroups());
         assertEquals("healthCode", deserParticipant.getHealthCode());
         assertEquals(ATTRIBUTES, deserParticipant.getAttributes());
+        assertEquals(AccountStatus.UNVERIFIED, deserParticipant.getStatus());
         
         UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
         assertEquals("2002-02-02", deserHistory.getBirthdate());

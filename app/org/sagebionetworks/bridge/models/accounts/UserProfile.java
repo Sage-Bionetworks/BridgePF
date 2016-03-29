@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
 
@@ -39,6 +40,7 @@ public class UserProfile {
     private String lastName;
     private String email;
     private Map<String,String> attributes;
+    private AccountStatus status;
 
     public UserProfile() {
         attributes = new HashMap<>();
@@ -48,6 +50,7 @@ public class UserProfile {
         UserProfile profile = new UserProfile();
         profile.setFirstName(JsonUtils.asText(node, FIRST_NAME_FIELD));
         profile.setLastName(JsonUtils.asText(node, LAST_NAME_FIELD));
+        profile.setStatus(JsonUtils.asEnum(node, STATUS_FIELD, AccountStatus.class));
         for (String attribute : attributes) {
             String value = JsonUtils.asText(node, attribute);
             if (value != null) {
@@ -81,6 +84,15 @@ public class UserProfile {
     }
     public void setEmail(String email) {
         this.email = email;
+    }
+    // We use this object to capture status from a researcher update, but we never 
+    // show it to users, it is only exposed through the API through StudyParticipant.
+    @JsonIgnore
+    public AccountStatus getStatus() {
+        return status;
+    }
+    public void setStatus(AccountStatus status) {
+        this.status = status;
     }
     public void removeAttribute(String name) {
         if (isNotBlank(name)) {

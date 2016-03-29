@@ -11,6 +11,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -24,6 +27,9 @@ public class UserProfileServiceTest {
     
     @Resource
     private UserProfileService profileService;
+    
+    @Resource
+    private AccountDao accountDao;
     
     private TestUser testUser;
     
@@ -45,6 +51,8 @@ public class UserProfileServiceTest {
         profile.setAttribute("phone", "123-456-7890");
         profile.setAttribute("can_be_recontacted", "true");
         
+        // this cannot be updated through UserProfileService
+        profile.setStatus(AccountStatus.DISABLED); 
         // You cannot reset a field through the attributes. These should do NOTHING.
         profile.setAttribute("firstName", "NotTest");
         profile.setAttribute("lastName", "NotPowers");
@@ -59,6 +67,11 @@ public class UserProfileServiceTest {
         assertEquals("Phone is persisted", "123-456-7890", profile.getAttribute("phone"));
         assertEquals("Attribute is persisted", "true", profile.getAttribute("can_be_recontacted"));
         assertNull("Unknown attribute is null", profile.getAttribute("some_unknown_attribute"));
+        assertNull(profile.getStatus()); // no status is returned
+        
+        // Verify the status was not changed
+        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getEmail());
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
     }
 
     @Test

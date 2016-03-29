@@ -7,12 +7,14 @@ import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.TEST_USERS;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
 
 import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Image;
@@ -31,13 +33,30 @@ public class JsonUtilsTest {
     
     public ObjectMapper mapper = BridgeObjectMapper.get();
     
-    private String esc(String string) {
-        return string.replaceAll("'", "\"");
+    @Test
+    public void asEnum() throws Exception {
+        JsonNode node = mapper.readTree(createJson("{'field':'all_qualified_researchers'}"));
+        SharingScope scope = JsonUtils.asEnum(node, "field", SharingScope.class);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
+        
+        // Upper-case also works
+        node = mapper.readTree(createJson("{'field':'ALL_QUALIFIED_RESEARCHERS'}"));
+        scope = JsonUtils.asEnum(node, "field", SharingScope.class);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
+        
+        // And a bad value just returns null, either no field or not an enum name
+        node = mapper.readTree(createJson("{'wrongKey':'ALL_QUALIFIED_RESEARCHERS'}"));
+        scope = JsonUtils.asEnum(node, "field", SharingScope.class);
+        assertNull(scope);
+        
+        node = mapper.readTree(createJson("{'field':'not_a_sharing_scope'}"));
+        scope = JsonUtils.asEnum(node, "field", SharingScope.class);
+        assertNull(scope);
     }
     
     @Test
     public void asText() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':'value'}"));
+        JsonNode node = mapper.readTree(createJson("{'key':'value'}"));
         
         assertNull(JsonUtils.asText(node, null));
         assertNull(JsonUtils.asText(node, "badProp"));
@@ -46,7 +65,7 @@ public class JsonUtilsTest {
 
     @Test
     public void asLong() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':3}"));
+        JsonNode node = mapper.readTree(createJson("{'key':3}"));
         
         assertNull(JsonUtils.asLong(node, null));
         assertNull(JsonUtils.asLong(node, "badProp"));
@@ -55,7 +74,7 @@ public class JsonUtilsTest {
 
     @Test
     public void asLongPrimitive() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':3}"));
+        JsonNode node = mapper.readTree(createJson("{'key':3}"));
         
         assertEquals(0L, JsonUtils.asLongPrimitive(node, null));
         assertEquals(0L, JsonUtils.asLongPrimitive(node, "badProp"));
@@ -64,7 +83,7 @@ public class JsonUtilsTest {
 
     @Test
     public void asInt() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':3}"));
+        JsonNode node = mapper.readTree(createJson("{'key':3}"));
         
         assertNull(JsonUtils.asInt(node, null));
         assertNull(JsonUtils.asInt(node, "badProp"));
@@ -73,7 +92,7 @@ public class JsonUtilsTest {
 
     @Test
     public void asIntPrimitive() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':3}"));
+        JsonNode node = mapper.readTree(createJson("{'key':3}"));
         
         assertEquals(0, JsonUtils.asIntPrimitive(node, null));
         assertEquals(0, JsonUtils.asIntPrimitive(node, "badProp"));
@@ -82,7 +101,7 @@ public class JsonUtilsTest {
 
     @Test
     public void asMillisDuration() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':'PT1H'}"));
+        JsonNode node = mapper.readTree(createJson("{'key':'PT1H'}"));
         
         assertEquals(0L, JsonUtils.asMillisDuration(node, null));
         assertEquals(0L, JsonUtils.asMillisDuration(node, "badProp"));
@@ -93,7 +112,7 @@ public class JsonUtilsTest {
     public void asMillisSinceEpoch() throws Exception {
         DateTime time = DateTime.parse("2015-03-23T10:00:00.000-07:00");
         
-        JsonNode node = mapper.readTree(esc("{'key':'2015-03-23T10:00:00.000-07:00'}"));
+        JsonNode node = mapper.readTree(createJson("{'key':'2015-03-23T10:00:00.000-07:00'}"));
         
         assertEquals(0L, JsonUtils.asMillisSinceEpoch(node, null));
         assertEquals(0L, JsonUtils.asMillisSinceEpoch(node, "badProp"));
@@ -102,9 +121,9 @@ public class JsonUtilsTest {
 
     @Test
     public void asJsonNode() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':{'subKey':'value'}}"));
+        JsonNode node = mapper.readTree(createJson("{'key':{'subKey':'value'}}"));
         
-        JsonNode node2 = mapper.readTree(esc("{'subKey':'value'}"));
+        JsonNode node2 = mapper.readTree(createJson("{'subKey':'value'}"));
         
         assertNull(JsonUtils.asJsonNode(node, null));
         assertNull(JsonUtils.asJsonNode(node, "badProp"));
@@ -117,7 +136,7 @@ public class JsonUtilsTest {
         c.setMinValue(1d);
         c.setMaxValue(5d);
         
-        JsonNode node = mapper.readTree(esc("{'key':"+mapper.writeValueAsString(c)+"}"));
+        JsonNode node = mapper.readTree(createJson("{'key':"+mapper.writeValueAsString(c)+"}"));
         assertNull(JsonUtils.asConstraints(node, null));
         assertNull(JsonUtils.asConstraints(node, "badProp"));
         assertEquals(c, JsonUtils.asConstraints(node, "key"));
@@ -125,8 +144,8 @@ public class JsonUtilsTest {
 
     @Test
     public void asObjectNode() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':{'subKey':'value'}}"));
-        JsonNode subNode = mapper.readTree(esc("{'subKey':'value'}"));
+        JsonNode node = mapper.readTree(createJson("{'key':{'subKey':'value'}}"));
+        JsonNode subNode = mapper.readTree(createJson("{'subKey':'value'}"));
         
         assertNull(JsonUtils.asObjectNode(node, null));
         assertNull(JsonUtils.asObjectNode(node, "badProp"));
@@ -135,7 +154,7 @@ public class JsonUtilsTest {
 
     @Test
     public void asBoolean() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':true}"));
+        JsonNode node = mapper.readTree(createJson("{'key':true}"));
         
         assertFalse(JsonUtils.asBoolean(node, null));
         assertFalse(JsonUtils.asBoolean(node, "badProp"));
@@ -144,7 +163,7 @@ public class JsonUtilsTest {
 
     @Test
     public void asUIHint() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':'list'}"));
+        JsonNode node = mapper.readTree(createJson("{'key':'list'}"));
         
         assertNull(JsonUtils.asEntity(node, null, UIHint.class));
         assertNull(JsonUtils.asEntity(node, "badProp", UIHint.class));
@@ -153,7 +172,7 @@ public class JsonUtilsTest {
     
     @Test
     public void asActivityType() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':'survey'}"));
+        JsonNode node = mapper.readTree(createJson("{'key':'survey'}"));
         
         assertNull(JsonUtils.asEntity(node, null, ActivityType.class));
         assertNull(JsonUtils.asEntity(node, "badProp", ActivityType.class));
@@ -162,7 +181,7 @@ public class JsonUtilsTest {
 
     @Test
     public void asScheduleType() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':'once'}"));
+        JsonNode node = mapper.readTree(createJson("{'key':'once'}"));
         
         assertNull(JsonUtils.asEntity(node, null, ScheduleType.class));
         assertNull(JsonUtils.asEntity(node, "badProp", ScheduleType.class));
@@ -171,7 +190,7 @@ public class JsonUtilsTest {
     
     @Test
     public void asImage() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':{'source':'sourceValue','width':50,'height':50}}"));
+        JsonNode node = mapper.readTree(createJson("{'key':{'source':'sourceValue','width':50,'height':50}}"));
         Image image = new Image("sourceValue", 50, 50);
         
         assertNull(JsonUtils.asEntity(node, null, Image.class));
@@ -181,8 +200,8 @@ public class JsonUtilsTest {
     
     @Test
     public void asArrayNode() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':[1,2,3,4]}"));
-        JsonNode subNode = mapper.readTree(esc("[1,2,3,4]"));
+        JsonNode node = mapper.readTree(createJson("{'key':[1,2,3,4]}"));
+        JsonNode subNode = mapper.readTree(createJson("[1,2,3,4]"));
         
         assertNull(JsonUtils.asArrayNode(node, null));
         assertNull(JsonUtils.asArrayNode(node, "badProp"));
@@ -193,7 +212,7 @@ public class JsonUtilsTest {
     public void asStringSet() throws Exception {
         Set<String> set = Sets.newHashSet("A", "B", "C");
         
-        JsonNode node = mapper.readTree(esc("{'key':['A','B','C']}"));
+        JsonNode node = mapper.readTree(createJson("{'key':['A','B','C']}"));
         
         assertEquals(Sets.newHashSet(), JsonUtils.asStringSet(node, null));
         assertEquals(Sets.newHashSet(), JsonUtils.asStringSet(node, "badProp"));
@@ -204,7 +223,7 @@ public class JsonUtilsTest {
     public void asRolesSet() throws Exception {
         Set<Roles> set = Sets.newHashSet(ADMIN, RESEARCHER, TEST_USERS);
         
-        JsonNode node = mapper.readTree(esc("{'key':['admin','researcher','test_users']}"));
+        JsonNode node = mapper.readTree(createJson("{'key':['admin','researcher','test_users']}"));
 
         assertEquals(Sets.newHashSet(), JsonUtils.asRolesSet(node, null));
         assertEquals(Sets.newHashSet(), JsonUtils.asRolesSet(node, "badProp"));

@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -23,6 +24,7 @@ public class SimpleAccount implements Account {
     private Map<SubpopulationGuid,List<ConsentSignature>> signatures = Maps.newHashMap();
     private Map<String,String> attributes = Maps.newHashMap();
     private Set<Roles> roles = Sets.newHashSet();
+    private AccountStatus status;
     @Override
     public String getFirstName() {
         return firstName;
@@ -79,6 +81,14 @@ public class SimpleAccount implements Account {
     @Override
     public Set<Roles> getRoles() {
         return roles;
+    }
+    @Override
+    public void setStatus(AccountStatus status) {
+        this.status = status;
+    }
+    @Override
+    public AccountStatus getStatus() {
+        return status;
     }
     @Override
     public String getId() {

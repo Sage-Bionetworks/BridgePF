@@ -43,6 +43,9 @@ public interface Account extends BridgeEntity {
     
     public String getHealthId();
     public void setHealthId(String healthId);
+    
+    public AccountStatus getStatus();
+    public void setStatus(AccountStatus status);
 
     public StudyIdentifier getStudyIdentifier();
     

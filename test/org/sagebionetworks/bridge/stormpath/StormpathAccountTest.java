@@ -426,6 +426,16 @@ public class StormpathAccountTest {
         assertEquals("lastName", account.getLastName());
         assertEquals(Sets.newHashSet(Roles.DEVELOPER,Roles.ADMIN), account.getRoles());
         assertEquals("123", account.getId());
+        assertEquals(org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED, account.getStatus());
+        
+        account.setFirstName("New First Name");
+        account.setLastName("New Last Name");
+        account.setStatus(org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED);
+        
+        com.stormpath.sdk.account.Account updatedAcct = account.getAccount();
+        verify(updatedAcct).setGivenName("New First Name");
+        verify(updatedAcct).setSurname("New Last Name");
+        verify(updatedAcct).setStatus(com.stormpath.sdk.account.AccountStatus.DISABLED);
     }
     
     private void verifyOneConsentStream(SubpopulationGuid guid, ConsentSignature sig1)

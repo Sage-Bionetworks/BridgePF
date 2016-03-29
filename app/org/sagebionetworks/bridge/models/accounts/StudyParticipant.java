@@ -33,10 +33,12 @@ public class StudyParticipant {
     private final Map<String,List<UserConsentHistory>> consentHistories;
     private final Set<Roles> roles;
     private final LinkedHashSet<String> languages;
+    private final AccountStatus status;
     
-    private StudyParticipant(String firstName, String lastName, String email, String externalId, SharingScope sharingScope,
-            boolean notifyByEmail, Set<String> dataGroups, String healthCode, Map<String,String> attributes, 
-            Map<String,List<UserConsentHistory>> consentHistories, Set<Roles> roles, LinkedHashSet<String> languages) {
+    private StudyParticipant(String firstName, String lastName, String email, String externalId,
+            SharingScope sharingScope, boolean notifyByEmail, Set<String> dataGroups, String healthCode,
+            Map<String, String> attributes, Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles,
+            LinkedHashSet<String> languages, AccountStatus status) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -49,6 +51,7 @@ public class StudyParticipant {
         this.consentHistories = consentHistories;
         this.roles = roles;
         this.languages = languages;
+        this.status = status;
     }
     
     public String getFirstName() {
@@ -87,6 +90,9 @@ public class StudyParticipant {
     public LinkedHashSet<String> getLanguages() {
         return languages;
     }
+    public AccountStatus getStatus() {
+        return status;
+    }
     
     public static class Builder {
         private String firstName;
@@ -101,6 +107,7 @@ public class StudyParticipant {
         private Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         private Set<Roles> roles = Sets.newHashSet();
         private LinkedHashSet<String> languages = new LinkedHashSet<>();
+        private AccountStatus status;
         
         public Builder withFirstName(String firstName) {
             this.firstName = firstName;
@@ -166,10 +173,14 @@ public class StudyParticipant {
             }
             return this;
         }
+        public Builder withStatus(AccountStatus status) {
+            this.status = status;
+            return this;
+        }
         
         public StudyParticipant build() {
             return new StudyParticipant(firstName, lastName, email, externalId, sharingScope, notifyByEmail, 
-                    dataGroups, healthCode, attributes, consentHistories, roles, languages);
+                    dataGroups, healthCode, attributes, consentHistories, roles, languages, status);
         }
     }
 
