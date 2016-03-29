@@ -58,6 +58,8 @@ public class UserProfileControllerTest {
     
     private static final Map<SubpopulationGuid,ConsentStatus> CONSENT_STATUSES_MAP = Maps.newHashMap();
     
+    private static final Set<String> TEST_STUDY_DATA_GROUPS = Sets.newHashSet("group1", "group2");
+    
     @Mock
     private ParticipantOptionsService optionsService;
     
@@ -84,7 +86,7 @@ public class UserProfileControllerTest {
     public void before() {
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
-        study.setDataGroups(Sets.newHashSet("group1", "group2"));
+        study.setDataGroups(TEST_STUDY_DATA_GROUPS);
 
         when(consentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUSES_MAP);
         
@@ -159,8 +161,6 @@ public class UserProfileControllerTest {
 
     @Test
     public void canGetDataGroups() throws Exception {
-        Set<String> dataGroupsSet = Sets.newHashSet("group1","group2");
-        
         Map<String,String> map = Maps.newHashMap();
         map.put(DATA_GROUPS.name(), "group1,group2");
         ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
@@ -174,7 +174,7 @@ public class UserProfileControllerTest {
         ArrayNode array = (ArrayNode)node.get("dataGroups");
         assertEquals(2, array.size());
         for (int i=0; i < array.size(); i++) {
-            dataGroupsSet.contains(array.get(i).asText());
+            TEST_STUDY_DATA_GROUPS.contains(array.get(i).asText());
         }
     }
     

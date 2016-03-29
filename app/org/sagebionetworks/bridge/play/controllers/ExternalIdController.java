@@ -7,7 +7,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DynamoPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -21,8 +20,6 @@ import play.mvc.Result;
 public class ExternalIdController extends BaseController {
     
     private static final TypeReference<List<String>> EXTERNAL_ID_TYPE_REF = new TypeReference<List<String>>() {};
-
-    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
 
     private ExternalIdService externalIdService;
     

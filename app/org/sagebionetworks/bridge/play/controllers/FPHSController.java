@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -33,8 +32,6 @@ public class FPHSController extends BaseController {
     
     private static final TypeReference<List<FPHSExternalIdentifier>> EXTERNAL_ID_TYPE_REF = 
             new TypeReference<List<FPHSExternalIdentifier>>() {};
-
-    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
 
     private FPHSService fphsService;
     

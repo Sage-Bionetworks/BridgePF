@@ -7,7 +7,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -29,8 +28,6 @@ import play.mvc.Result;
 public class ScheduledActivityController extends BaseController {
 
     private static final TypeReference<ArrayList<ScheduledActivity>> scheduledActivityTypeRef = new TypeReference<ArrayList<ScheduledActivity>>() {};
-
-    private static final BridgeObjectMapper mapper = BridgeObjectMapper.get();
 
     private ScheduledActivityService scheduledActivityService;
 
@@ -57,7 +54,7 @@ public class ScheduledActivityController extends BaseController {
     public Result updateScheduledActivities() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
 
-        List<ScheduledActivity> scheduledActivities = mapper.convertValue(requestToJSON(request()),
+        List<ScheduledActivity> scheduledActivities = MAPPER.convertValue(requestToJSON(request()),
                 scheduledActivityTypeRef);
         scheduledActivityService.updateScheduledActivities(session.getUser().getHealthCode(), scheduledActivities);
 
@@ -65,7 +62,7 @@ public class ScheduledActivityController extends BaseController {
     }
 
     <T> Result okResultAsTasks(List<T> list) {
-        JsonNode node = mapper.valueToTree(new ResourceList<T>(list));
+        JsonNode node = MAPPER.valueToTree(new ResourceList<T>(list));
         ArrayNode items = (ArrayNode)node.get("items");
         for (int i=0; i < items.size(); i++) {
             ObjectNode object = (ObjectNode)items.get(i);

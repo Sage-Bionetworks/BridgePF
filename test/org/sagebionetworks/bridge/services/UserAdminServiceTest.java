@@ -183,6 +183,4 @@ public class UserAdminServiceTest {
         DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(study.getStudyIdentifier(), "AAA");
         return mapper.load(keyObject);
     }
-    
-    
 }
