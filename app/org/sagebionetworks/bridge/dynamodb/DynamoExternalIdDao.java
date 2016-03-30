@@ -32,7 +32,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.DynamoPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -81,7 +81,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
 
     @Override
-    public DynamoPagedResourceList<String> getExternalIds(StudyIdentifier studyId, String offsetKey, 
+    public PagedResourceList<String> getExternalIds(StudyIdentifier studyId, String offsetKey, 
             int pageSize, String idFilter, Boolean assignmentFilter) {
         checkNotNull(studyId);
         
@@ -102,13 +102,14 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         }
         // This is the last key, not the next key of the next page of records. It only exists if there's a record
         // beyond the records we've converted to a page. Then get the last key in the list.
-        String nextPageKey = (iterator.hasNext()) ? last(identifiers) : null;
+        String lastKey = (iterator.hasNext()) ? last(identifiers) : null;
         
-        DynamoPagedResourceList<String> resourceList = new DynamoPagedResourceList<>(
-                identifiers, nextPageKey, pageSize, total, null);
-        resourceList.put(ID_FILTER, idFilter);
-        resourceList.put(ASSIGNMENT_FILTER, assignmentFilter);
-
+        PagedResourceList<String> resourceList = new PagedResourceList<String>(identifiers, null, pageSize, total)
+                .withLastKey(lastKey)
+                .withFilter(ID_FILTER, idFilter);
+        if (assignmentFilter != null) {
+            resourceList = resourceList.withFilter(ASSIGNMENT_FILTER, assignmentFilter.toString());
+        }
         return resourceList;
     }
 

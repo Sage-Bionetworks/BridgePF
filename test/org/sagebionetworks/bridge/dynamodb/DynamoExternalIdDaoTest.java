@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.DynamoPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -234,7 +234,7 @@ public class DynamoExternalIdDaoTest {
     
     @Test
     public void canGetIds() {
-        DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, null, null);
+        PagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, null, null);
         
         assertEquals(3, page.getItems().size());
         assertEquals(10, page.getPageSize());
@@ -248,7 +248,7 @@ public class DynamoExternalIdDaoTest {
             dao.addExternalIds(studyId, moreIds);
             
             // AAA, AEE, AFF
-            DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, "A", null);
+            PagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, "A", null);
             assertEquals(3, page.getItems().size());
             assertEquals(10, page.getPageSize());
             assertEquals("A", page.getFilters().get("idFilter"));
@@ -280,7 +280,7 @@ public class DynamoExternalIdDaoTest {
         try {
             dao.addExternalIds(studyId, moreIds);
 
-            DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, null);
+            PagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, null);
             assertEquals(5, page.getItems().size());
             assertEquals(26, page.getTotal());
             assertEquals("EEE", page.getLastKey());
@@ -310,7 +310,7 @@ public class DynamoExternalIdDaoTest {
         try {
             dao.addExternalIds(studyId, moreIds);
             
-            DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 3, null, null);
+            PagedResourceList<String> page = dao.getExternalIds(studyId, null, 3, null, null);
             assertEquals(6, page.getTotal());
             assertEquals(3, page.getItems().size());
             assertNotNull(page.getLastKey());
@@ -331,7 +331,7 @@ public class DynamoExternalIdDaoTest {
         dao.assignExternalId(studyId, "AAA", "healthCode1");
         dao.reserveExternalId(studyId, "BBB"); // only reserved
         
-        DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
+        PagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
         assertEquals(1, page.getItems().size());
         assertEquals("CCC", page.getItems().get(0));
         
@@ -349,7 +349,7 @@ public class DynamoExternalIdDaoTest {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         dao.reserveExternalId(studyId, "BBB");
         
-        DynamoPagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
+        PagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
         assertEquals(2, page.getItems().size());
         assertTrue(page.getItems().contains("AAA"));
         assertTrue(page.getItems().contains("BBB"));
@@ -367,7 +367,7 @@ public class DynamoExternalIdDaoTest {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         dao.reserveExternalId(studyId, "BBB");
         
-        DynamoPagedResourceList<String> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
+        PagedResourceList<String> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         
         assertEquals(1, ids.getItems().size());
         assertEquals("CCC", ids.getItems().get(0));
