@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import java.util.Collections;
 import java.util.List;
 
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -48,7 +47,7 @@ public class ScheduleController extends BaseController {
     public Result getSchedulesV3() throws Exception {
         List<Schedule> schedules = getSchedulesInternal();
         
-        JsonNode node = BridgeObjectMapper.get().valueToTree(new ResourceList<Schedule>(schedules));
+        JsonNode node = MAPPER.valueToTree(new ResourceList<Schedule>(schedules));
         ArrayNode items = (ArrayNode)node.get("items");
         for (int i=0; i < items.size(); i++) {
             // If the schedule has this cron string, make it a recurring, "persistent" schedule

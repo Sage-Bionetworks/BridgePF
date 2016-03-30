@@ -56,9 +56,9 @@ import com.google.common.base.Strings;
 
 public abstract class BaseController extends Controller {
 
-    private static Logger LOG = LoggerFactory.getLogger(BaseController.class);
+    private final static Logger LOG = LoggerFactory.getLogger(BaseController.class);
     
-    private static ObjectMapper mapper = BridgeObjectMapper.get();
+    protected final static ObjectMapper MAPPER = BridgeObjectMapper.get();
 
     CacheProvider cacheProvider;
     
@@ -250,11 +250,11 @@ public abstract class BaseController extends Controller {
     }
 
     Result okResult(Object obj) {
-        return ok((JsonNode)mapper.valueToTree(obj));
+        return ok((JsonNode)MAPPER.valueToTree(obj));
     }
     
     <T> Result okResult(List<T> list) {
-        return ok((JsonNode)mapper.valueToTree(new ResourceList<T>(list)));
+        return ok((JsonNode)MAPPER.valueToTree(new ResourceList<T>(list)));
     }
     
     Result createdResult(String message) throws Exception {
@@ -262,7 +262,7 @@ public abstract class BaseController extends Controller {
     }
     
     Result createdResult(Object obj) throws Exception {
-        return created((JsonNode)mapper.valueToTree(obj));
+        return created((JsonNode)MAPPER.valueToTree(obj));
     }
     
     Result acceptedResult(String message) {
@@ -276,7 +276,7 @@ public abstract class BaseController extends Controller {
         try {
             JsonNode node = request.body().asJson();
             if (node == null) {
-                node = mapper.readTree(request().body().asText());
+                node = MAPPER.readTree(request().body().asText());
             }
             return node;
         } catch(Throwable e) {
@@ -306,12 +306,12 @@ public abstract class BaseController extends Controller {
             // text/json or application/json.
             String jsonText = request.body().asText();
             if (!Strings.isNullOrEmpty(jsonText)) {
-                return mapper.readValue(jsonText, clazz);
+                return MAPPER.readValue(jsonText, clazz);
             }
 
             JsonNode jsonNode = request.body().asJson();
             if (jsonNode != null) {
-                return mapper.convertValue(jsonNode, clazz);
+                return MAPPER.convertValue(jsonNode, clazz);
             }
         } catch (Throwable ex) {
             if (Throwables.getRootCause(ex) instanceof InvalidEntityException) {

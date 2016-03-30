@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +18,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.UserProfileService;
 import org.sagebionetworks.bridge.validators.DataGroupsValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -37,6 +37,8 @@ public class UserProfileController extends BaseController {
     
     private ConsentService consentService;
     
+    private ExternalIdService externalIdService;
+    
     private ViewCache viewCache;
 
     @Autowired
@@ -46,6 +48,10 @@ public class UserProfileController extends BaseController {
     @Autowired
     public final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
+    }
+    @Autowired
+    public final void setExternalIdService(ExternalIdService externalIdService) {
+        this.externalIdService = externalIdService;
     }
     @Autowired
     public final void setConsentService(ConsentService consentService) {
@@ -82,11 +88,11 @@ public class UserProfileController extends BaseController {
     
     public Result createExternalIdentifier() throws Exception {
         UserSession session = getAuthenticatedSession();
-
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
 
-        optionsService.setString(session.getStudyIdentifier(), session.getUser().getHealthCode(), EXTERNAL_IDENTIFIER,
-                externalId.getIdentifier());
+        externalIdService.assignExternalId(study, externalId.getIdentifier(), session.getUser().getHealthCode());
         
         return okResult("External identifier added to user profile.");
     }

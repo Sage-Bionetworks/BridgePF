@@ -60,6 +60,8 @@ public class ParticipantService {
     
     private ConsentService consentService;
     
+    private ExternalIdService externalIdService;
+    
     private CacheProvider cacheProvider;
     
     @Autowired
@@ -85,6 +87,11 @@ public class ParticipantService {
     @Autowired
     final void setUserConsent(ConsentService consentService) {
         this.consentService = consentService;
+    }
+    
+    @Autowired
+    final void setExternalIdService(ExternalIdService externalIdService) {
+        this.externalIdService = externalIdService;
     }
     
     @Autowired
@@ -164,11 +171,17 @@ public class ParticipantService {
             // Could arguably be a 404 since user is not fully initialized.
             throw new BridgeServiceException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
         }
+        // Validate data groups.
         String dataGroupsString = options.get(ParticipantOption.DATA_GROUPS);
         if (dataGroupsString != null) {
             Set<String> dataGroupsSet = BridgeUtils.commaListToOrderedSet(dataGroupsString);
             DataGroups dataGroups = new DataGroups(dataGroupsSet);
             Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);    
+        }
+        // Set external ID through service. It validates and throws exception if we should not update options
+        String externalIdentifier = options.get(EXTERNAL_IDENTIFIER);
+        if (study.isExternalIdValidationEnabled() && externalIdentifier != null) {
+            externalIdService.assignExternalId(study, externalIdentifier, healthCode);
         }
         optionsService.setAllOptions(study, healthCode, options);
     }

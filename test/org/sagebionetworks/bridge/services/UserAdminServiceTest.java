@@ -7,6 +7,8 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import java.util.List;
+
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -18,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -27,6 +30,9 @@ import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.google.common.collect.Lists;
 
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -50,6 +56,12 @@ public class UserAdminServiceTest {
     @Resource
     UserAdminService userAdminService;
     
+    @Resource
+    ExternalIdService externalIdService;
+    
+    @Resource(name = "externalIdDdbMapper")
+    private DynamoDBMapper mapper;
+    
     private Study study;
 
     private SignUp signUp;
@@ -69,6 +81,7 @@ public class UserAdminServiceTest {
     @Before
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
+        study.setExternalIdValidationEnabled(true);
         String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
         signUp = new SignUp(name+"@sagebridge.org", "P4ssword!", null, null);
 
@@ -139,5 +152,35 @@ public class UserAdminServiceTest {
         // Delete again shouldn't crash
         userAdminService.deleteUser(study, session.getUser().getEmail());
         assertNull(authService.getSession(session.getSessionToken()));
+    }
+    
+    @Test
+    public void creatingUserThenDeletingRemovesExternalIdAssignment() {
+        List<String> idForTest = Lists.newArrayList("AAA");
+        externalIdService.addExternalIds(study, idForTest);
+        try {
+            UserSession session = userAdminService.createUser(signUp, study, null, true, true);
+            
+            externalIdService.assignExternalId(study, "AAA", session.getUser().getHealthCode());
+
+            DynamoExternalIdentifier identifier = getDynamoExternalIdentifier(session);
+            assertEquals(session.getUser().getHealthCode(), identifier.getHealthCode());
+            
+            // Now delete the user, and the assignment should then be free;
+            userAdminService.deleteUser(study, session.getUser().getEmail());
+            
+            identifier = getDynamoExternalIdentifier(session);
+            assertNull(identifier.getHealthCode());
+            
+            // Now this works
+            externalIdService.assignExternalId(study, "AAA", session.getUser().getHealthCode());
+        } finally {
+            externalIdService.deleteExternalIds(study, idForTest);
+        }
+    }
+
+    private DynamoExternalIdentifier getDynamoExternalIdentifier(UserSession session) {
+        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(study.getStudyIdentifier(), "AAA");
+        return mapper.load(keyObject);
     }
 }
