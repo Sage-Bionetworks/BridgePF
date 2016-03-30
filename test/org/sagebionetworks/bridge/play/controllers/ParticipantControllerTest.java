@@ -48,7 +48,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import play.mvc.Result;
 import play.test.Helpers;

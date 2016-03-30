@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.DynamoPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -42,8 +42,8 @@ public class ExternalIdControllerTest {
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     
-    private static final TypeReference<DynamoPagedResourceList<String>> PAGE_REF = 
-            new TypeReference<DynamoPagedResourceList<String>>() {};
+    private static final TypeReference<PagedResourceList<String>> PAGE_REF = 
+            new TypeReference<PagedResourceList<String>>() {};
     
     @Mock
     ExternalIdService externalIdService;
@@ -81,15 +81,17 @@ public class ExternalIdControllerTest {
         // Mock out a response from service
         Map<String,String> map = Maps.newHashMap();
         map.put("idFilter", "A");
-        DynamoPagedResourceList<String> page = new DynamoPagedResourceList<>(
-                Lists.newArrayList("AAA", "BBB", "CCC"),"CCC", 5, 10, map);
+        PagedResourceList<String> page = new PagedResourceList<>(
+                Lists.newArrayList("AAA", "BBB", "CCC"), null, 5, 10)
+                .withLastKey("CCC")
+                .withFilter("idFilter","A");
         when(externalIdService.getExternalIds(any(), any(), any(), any(), any())).thenReturn(page);
         
         // execute the controller
         Result result = controller.getExternalIds(null, null, null, null);
         String content = Helpers.contentAsString(result);
         
-        DynamoPagedResourceList<String> deserPage =  MAPPER.readValue(content, PAGE_REF);
+        PagedResourceList<String> deserPage =  MAPPER.readValue(content, PAGE_REF);
         assertEquals(Lists.newArrayList("AAA","BBB","CCC"), deserPage.getItems());
         assertEquals("CCC", deserPage.getLastKey());
         assertEquals(5, deserPage.getPageSize());

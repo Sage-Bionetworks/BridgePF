@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import org.sagebionetworks.bridge.models.DynamoPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
@@ -32,8 +32,7 @@ public class ExternalIdController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        DynamoPagedResourceList<String> page = externalIdService.getExternalIds(study, offsetKey, pageSize, 
-                idFilter, assignmentFilter);
+        PagedResourceList<String> page = externalIdService.getExternalIds(study, offsetKey, pageSize, idFilter, assignmentFilter);
         return okResult(page);
     }
     

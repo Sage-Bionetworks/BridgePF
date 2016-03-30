@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
-import org.sagebionetworks.bridge.models.DynamoPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 /**
@@ -38,7 +38,7 @@ public class ExternalIdService {
         this.optionsService = optionsService;
     }
     
-    public DynamoPagedResourceList<String> getExternalIds(Study study, String offsetKey, Integer pageSize, 
+    public PagedResourceList<String> getExternalIds(Study study, String offsetKey, Integer pageSize, 
             String idFilter, Boolean assignmentFilter) {
         checkNotNull(study);
         if (pageSize == null) {
