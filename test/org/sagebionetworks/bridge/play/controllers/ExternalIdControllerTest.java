@@ -68,7 +68,7 @@ public class ExternalIdControllerTest {
         when(session.getUser()).thenReturn(user);
         when(session.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         
-        doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
 
         study = new DynamoStudy();
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);

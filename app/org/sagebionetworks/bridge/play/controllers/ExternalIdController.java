@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.List;
 
@@ -29,7 +29,7 @@ public class ExternalIdController extends BaseController {
     }
     
     public Result getExternalIds(String offsetKey, Integer pageSize, String idFilter, Boolean assignmentFilter) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         PagedResourceList<String> page = externalIdService.getExternalIds(study, offsetKey, pageSize, idFilter, assignmentFilter);
@@ -37,7 +37,7 @@ public class ExternalIdController extends BaseController {
     }
     
     public Result addExternalIds() throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         List<String> externalIdentifiers = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
