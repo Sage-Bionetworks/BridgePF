@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.DynamoPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
@@ -32,7 +32,7 @@ public interface ExternalIdDao {
      *      an optional boolean (can be null). If TRUE, all records returned will be assigned. More usefully, if FALSE,
      *      will return unassigned external identifiers. 
      */
-    DynamoPagedResourceList<String> getExternalIds(StudyIdentifier studyId, String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter);
+    PagedResourceList<String> getExternalIds(StudyIdentifier studyId, String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter);
     
     /**
      * Add one or more external IDs. Existing IDs are left alone without changing the assignment status of the ID.

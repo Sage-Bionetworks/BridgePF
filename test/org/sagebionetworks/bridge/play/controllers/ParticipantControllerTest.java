@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import play.mvc.Result;
 import play.test.Helpers;
@@ -90,7 +91,7 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         
-        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30, "foo");
+        PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
         
         when(participantService.getPagedAccountSummaries(eq(STUDY), anyInt(), anyInt(), any())).thenReturn(page);
         
@@ -111,9 +112,9 @@ public class ParticipantControllerTest {
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
-        assertEquals(10, page.getOffsetBy());
+        assertEquals(new Integer(10), page.getOffsetBy());
         assertEquals(20, page.getPageSize());
-        assertEquals("foo", page.getEmailFilter());
+        assertEquals("foo", page.getFilters().get("emailFilter"));
         verify(participantService).getPagedAccountSummaries(STUDY, 10, 20, "foo");
     }
     
