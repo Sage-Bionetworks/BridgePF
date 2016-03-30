@@ -42,6 +42,8 @@ public class ExternalIdControllerTest {
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     
+    private static final List<String> EXT_IDS = Lists.newArrayList("AAA", "BBB", "CCC");
+    
     private static final TypeReference<PagedResourceList<String>> PAGE_REF = 
             new TypeReference<PagedResourceList<String>>() {};
     
@@ -81,10 +83,9 @@ public class ExternalIdControllerTest {
         // Mock out a response from service
         Map<String,String> map = Maps.newHashMap();
         map.put("idFilter", "A");
-        PagedResourceList<String> page = new PagedResourceList<>(
-                Lists.newArrayList("AAA", "BBB", "CCC"), null, 5, 10)
+        PagedResourceList<String> page = new PagedResourceList<>(EXT_IDS, null, 5, 10)
                 .withLastKey("CCC")
-                .withFilter("idFilter","A");
+                .withFilter("idFilter", "A");
         when(externalIdService.getExternalIds(any(), any(), any(), any(), any())).thenReturn(page);
         
         // execute the controller
@@ -92,7 +93,7 @@ public class ExternalIdControllerTest {
         String content = Helpers.contentAsString(result);
         
         PagedResourceList<String> deserPage =  MAPPER.readValue(content, PAGE_REF);
-        assertEquals(Lists.newArrayList("AAA","BBB","CCC"), deserPage.getItems());
+        assertEquals(EXT_IDS, deserPage.getItems());
         assertEquals("CCC", deserPage.getLastKey());
         assertEquals(5, deserPage.getPageSize());
         assertEquals(10, deserPage.getTotal());
