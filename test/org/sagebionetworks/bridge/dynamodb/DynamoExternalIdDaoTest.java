@@ -251,7 +251,7 @@ public class DynamoExternalIdDaoTest {
             PagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, "A", null);
             assertEquals(3, page.getItems().size());
             assertEquals(10, page.getPageSize());
-            assertEquals("A", page.getLastKey());
+            assertEquals("A", page.getFilters().get("idFilter"));
             assertEquals(3, page.getTotal());
 
             // Nothing matches this filter

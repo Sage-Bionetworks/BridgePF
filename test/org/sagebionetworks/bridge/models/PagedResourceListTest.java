@@ -93,13 +93,14 @@ public class PagedResourceListTest {
         assertEquals("value1", items.get(0).asText());
         assertEquals("value2", items.get(1).asText());
         
-        // We don't deserialize this, but let's just verify
+        // We don't deserialize this, but let's verify for the SDK
         PagedResourceList<String> serPage = BridgeObjectMapper.get().readValue(node.toString(), 
                 new TypeReference<PagedResourceList<String>>() {});
         
         assertEquals(page.getTotal(), serPage.getTotal());
         assertEquals(page.getPageSize(), serPage.getPageSize());
         assertEquals(page.getFilters().get("lastKey"), serPage.getFilters().get("lastKey"));
+        assertEquals(page.getLastKey(), serPage.getLastKey());
         assertEquals(page.getFilters().get("idFilter"), serPage.getFilters().get("idFilter"));
         assertEquals(page.getFilters().get("assignmentFilter"), serPage.getFilters().get("assignmentFilter"));
         assertEquals(page.getItems(), serPage.getItems());

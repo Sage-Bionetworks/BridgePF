@@ -91,8 +91,6 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         
-        Map<String,String> filters = Maps.newHashMap();
-        filters.put("emailFilter", "foo");
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
         
         when(participantService.getPagedAccountSummaries(eq(STUDY), anyInt(), anyInt(), any())).thenReturn(page);
