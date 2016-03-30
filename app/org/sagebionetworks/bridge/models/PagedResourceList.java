@@ -70,6 +70,9 @@ public class PagedResourceList<T> {
     public Integer getOffsetBy() {
         return offsetBy;
     }
+    public String getLastKey() {
+        return filters.get(LAST_KEY_FILTER);
+    }
     public int getPageSize() {
         return pageSize;
     }
