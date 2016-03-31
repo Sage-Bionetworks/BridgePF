@@ -4,11 +4,12 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.11.6"
 
+resolvers += "Bridge Maven repository" at "https://repo-maven.sagebridge.org/"
+
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-central/"
 
-resolvers += "Bridge Maven repository" at "https://repo-maven.sagebridge.org/"
 
 resolvers += Resolver.mavenLocal
 
@@ -16,14 +17,14 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "bridge-base" % "1.2",
+  "org.sagebionetworks" % "bridge-base" % "1.4",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-sts" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-ses" % "1.10.20",
-  
+
   // Spring
   "org.springframework" % "spring-context" % "4.2.4.RELEASE",
   // Apache Commons
@@ -74,5 +75,5 @@ testOptions += Tests.Argument(TestFrameworks.JUnit, "-a")
 EclipseKeys.preTasks := Seq(compile in Compile)
 // Java project files only
 EclipseKeys.projectFlavor := EclipseProjectFlavor.Java
-EclipseKeys.createSrc := EclipseCreateSrc.ValueSet(EclipseCreateSrc.ManagedClasses, EclipseCreateSrc.ManagedResources)  // Use .class files instead 
+EclipseKeys.createSrc := EclipseCreateSrc.ValueSet(EclipseCreateSrc.ManagedClasses, EclipseCreateSrc.ManagedResources) // Use .class files instead
 
