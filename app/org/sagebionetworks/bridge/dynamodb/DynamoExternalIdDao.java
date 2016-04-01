@@ -123,7 +123,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkNotNull(studyId);
         checkNotNull(externalIds);
 
-        // We validate a range of issues in the service not, but check size again because this is 
+        // We validate a wider range of issues in the service, but check size again because this is 
         // specifically a database capacity issue.
         if (externalIds.size() > addLimit) {
             throw new BadRequestException("List of externalIds is too large; size=" + externalIds.size() + ", limit=" + addLimit);
@@ -312,7 +312,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     private ExternalIdentifierInfo createInfo(ExternalIdentifier id, long lockDuration) {
-        // This calculation is done a couple of times, it's not accurate to the millisecond, but it's good enough
+        // This calculation is done a couple of times, it does not need to be accurate to the millisecond
         long reservationStartTime = DateTimeUtils.currentTimeMillis() - lockDuration;
         boolean isAssigned = (id.getHealthCode() != null || id.getReservation() >= reservationStartTime);
         return new ExternalIdentifierInfo(id.getIdentifier(), isAssigned);

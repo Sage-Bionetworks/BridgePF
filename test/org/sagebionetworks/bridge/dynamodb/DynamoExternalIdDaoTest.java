@@ -269,7 +269,8 @@ public class DynamoExternalIdDaoTest {
         }
     }
     
-    // This currently doesn't, you get this error: ValidationException...The provided starting key does not match the range key predicate
+    // This did give a ValidationException...The provided starting key does not match the range key 
+    // predicate. Now the offset key is reset to null (the first page)
     @Test
     public void pagingWithAFilterWorks() {
         PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "B", 5, "C", null);

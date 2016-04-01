@@ -14,6 +14,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
  *
  */
 public class ExternalIdsValidator implements Validator {
+
+    private static final String IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     
     /**
      * Really the only purpose of this class is to provide a comprehensible name for the 
@@ -26,8 +28,6 @@ public class ExternalIdsValidator implements Validator {
             super(members);
         }
     }
-
-    private static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     
     private final int addLimit;
     
@@ -47,8 +47,7 @@ public class ExternalIdsValidator implements Validator {
 
         if (identifiers.isEmpty()) {
             errors.reject("contains no elements");
-        }
-        if (identifiers.size() > addLimit) {
+        } else if (identifiers.size() > addLimit) {
             errors.reject("contains too many elements; size=" + identifiers.size() + ", limit=" + addLimit);
         } else {
             for (int i=0; i < identifiers.size(); i++) {
@@ -56,7 +55,7 @@ public class ExternalIdsValidator implements Validator {
                 String path = "ids["+i+"]";
                 if (StringUtils.isBlank(id)) {
                     errors.rejectValue(path, "cannot be null or blank");
-                } else if (!id.matches(SYNAPSE_IDENTIFIER_PATTERN)) {
+                } else if (!id.matches(IDENTIFIER_PATTERN)) {
                     String msg = String.format("'%s' must contain only digits, letters, underscores and dashes", id);
                     errors.rejectValue(path, msg);
                 }

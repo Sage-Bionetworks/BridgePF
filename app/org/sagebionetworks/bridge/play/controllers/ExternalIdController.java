@@ -37,7 +37,8 @@ public class ExternalIdController extends BaseController {
         Integer pageSize = (pageSizeString != null) ? Integer.parseInt(pageSizeString,10) : null;
         Boolean assignmentFilter = (assignmentFilterString != null) ? Boolean.valueOf(assignmentFilterString) : null;
         
-        PagedResourceList<ExternalIdentifierInfo> page = externalIdService.getExternalIds(study, offsetKey, pageSize, idFilter, assignmentFilter);
+        PagedResourceList<ExternalIdentifierInfo> page = externalIdService.getExternalIds(
+                study, offsetKey, pageSize, idFilter, assignmentFilter);
         return okResult(page);
     }
     

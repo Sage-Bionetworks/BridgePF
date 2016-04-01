@@ -32,6 +32,8 @@ public class ExternalIdService {
     
     private ParticipantOptionsService optionsService;
     
+    private ExternalIdsValidator validator;
+    
     @Autowired
     final void setExternalIdDao(ExternalIdDao externalIdDao) {
         this.externalIdDao = externalIdDao;
@@ -41,12 +43,9 @@ public class ExternalIdService {
     final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
-    
-    private ExternalIdsValidator validator;
 
-    /** Gets the add limit and lock duration from Config. */
     @Autowired
-    public final void setConfig(Config config) {
+    final void setConfig(Config config) {
         validator = new ExternalIdsValidator(config.getInt(ExternalIdDao.CONFIG_KEY_ADD_LIMIT));
     }
     
