@@ -85,4 +85,17 @@ public class ExternalIdValidatorTest {
         }        
     }
     
+    @Test
+    public void rejectsDuplicateElement() {
+        ExternalIdList list = new ExternalIdList(Lists.newArrayList("AAA","BBB","AAA"));
+
+        try {
+            Validate.entityThrowingException(validator, list);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("ids[2] is a duplicate value", e.getErrors().get("ids[2]").get(0));
+        }        
+    }
+    
+    
 }

@@ -2,12 +2,15 @@ package org.sagebionetworks.bridge.validators;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
+
+import com.google.common.collect.Sets;
 
 /**
  * A list of identifiers must consist entirely of valid identifiers.
@@ -50,9 +53,15 @@ public class ExternalIdsValidator implements Validator {
         } else if (identifiers.size() > addLimit) {
             errors.reject("contains too many elements; size=" + identifiers.size() + ", limit=" + addLimit);
         } else {
+            Set<String> contents = Sets.newHashSet();
             for (int i=0; i < identifiers.size(); i++) {
                 String id = identifiers.get(i);
                 String path = "ids["+i+"]";
+                
+                if (contents.contains(id)) {
+                    errors.rejectValue(path, "is a duplicate value");
+                }
+                contents.add(id);
                 if (StringUtils.isBlank(id)) {
                     errors.rejectValue(path, "cannot be null or blank");
                 } else if (!id.matches(IDENTIFIER_PATTERN)) {
