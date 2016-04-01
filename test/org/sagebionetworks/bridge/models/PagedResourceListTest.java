@@ -73,7 +73,7 @@ public class PagedResourceListTest {
     // DynamoDB, that was easily incorporated into this implementation. This test verifies
     // that the results are the same as before.
     @Test
-    public void canSerializeWithDynamoLastKey() throws Exception {
+    public void canSerializeWithDynamoOffsetKey() throws Exception {
         List<String> accounts = Lists.newArrayListWithCapacity(2);
         accounts.add("value1");
         accounts.add("value2");
@@ -101,8 +101,8 @@ public class PagedResourceListTest {
         
         assertEquals(page.getTotal(), serPage.getTotal());
         assertEquals(page.getPageSize(), serPage.getPageSize());
-        assertEquals(page.getFilters().get("lastKey"), serPage.getFilters().get("lastKey"));
-        assertEquals(page.getLastKey(), serPage.getLastKey());
+        assertEquals(page.getFilters().get("offsetKey"), serPage.getFilters().get("offsetKey"));
+        assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
         assertEquals(page.getFilters().get("idFilter"), serPage.getFilters().get("idFilter"));
         assertEquals(page.getFilters().get("assignmentFilter"), serPage.getFilters().get("assignmentFilter"));
         assertEquals(page.getItems(), serPage.getItems());

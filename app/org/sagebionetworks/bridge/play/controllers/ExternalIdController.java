@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
@@ -31,12 +32,12 @@ public class ExternalIdController extends BaseController {
     public Result getExternalIds(String offsetKey, String pageSizeString, String idFilter, String assignmentFilterString) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+
         // Play will not convert these to null if they are not included in the query string, so we must do the conversion.
         Integer pageSize = (pageSizeString != null) ? Integer.parseInt(pageSizeString,10) : null;
         Boolean assignmentFilter = (assignmentFilterString != null) ? Boolean.valueOf(assignmentFilterString) : null;
         
-        PagedResourceList<String> page = externalIdService.getExternalIds(study, offsetKey, pageSize, idFilter, assignmentFilter);
+        PagedResourceList<ExternalIdentifierInfo> page = externalIdService.getExternalIds(study, offsetKey, pageSize, idFilter, assignmentFilter);
         return okResult(page);
     }
     
