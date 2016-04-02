@@ -96,6 +96,4 @@ public class ExternalIdValidatorTest {
             assertEquals("ids[2] is a duplicate value", e.getErrors().get("ids[2]").get(0));
         }        
     }
-    
-    
 }
