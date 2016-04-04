@@ -275,6 +275,7 @@ public class DynamoExternalIdDaoTest {
     public void pagingWithAFilterWorks() {
         PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "B", 5, "C", null);
         assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
+        assertNull(page.getOffsetKey());
     }
     
     // Sometimes paging fails when the total records divided by the page has no remainder. 

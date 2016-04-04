@@ -91,8 +91,6 @@ public class ExternalIdControllerTest {
         Result result = controller.getExternalIds(null, null, null, null);
         String content = Helpers.contentAsString(result);
         
-        System.out.println(content);
-        
         PagedResourceList<ExternalIdentifierInfo> deserPage =  MAPPER.readValue(content, PAGE_REF);
         assertEquals(EXT_IDS, deserPage.getItems());
         assertEquals("CCC", deserPage.getOffsetKey());

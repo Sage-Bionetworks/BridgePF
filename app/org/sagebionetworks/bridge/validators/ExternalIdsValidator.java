@@ -22,8 +22,8 @@ public class ExternalIdsValidator implements Validator {
     
     /**
      * Really the only purpose of this class is to provide a comprehensible name for the 
-     * array that was submitted by the user, as "ArrayList" or somesuch is in Java-land, 
-     * it's not JSON.
+     * array that was submitted by the user, as "ArrayList" doesn't mean much to client 
+     * submitting JSON.
      */
     @SuppressWarnings("serial")
     public static class ExternalIdList extends ArrayList<String> implements BridgeEntity {
