@@ -38,6 +38,7 @@ public class StudyParticipantTest {
                 .withLastName("lastName")
                 .withEmail("email@email.com")
                 .withExternalId("externalId")
+                .withPassword("newUserPassword")
                 .withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withNotifyByEmail(true)
                 .withDataGroups(DATA_GROUPS)
@@ -64,6 +65,7 @@ public class StudyParticipantTest {
         assertEquals("lastName", node.get("lastName").asText());
         assertEquals("email@email.com", node.get("email").asText());
         assertEquals("externalId", node.get("externalId").asText());
+        assertEquals("newUserPassword", node.get("password").asText());
         assertEquals("sponsors_and_partners", node.get("sharingScope").asText());
         assertTrue(node.get("notifyByEmail").asBoolean());
         assertEquals("healthCode", node.get("healthCode").asText());
@@ -86,14 +88,14 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        
-        assertEquals(13, node.size());
+        assertEquals(14, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
         assertEquals("lastName", deserParticipant.getLastName());
         assertEquals("email@email.com", deserParticipant.getEmail());
         assertEquals("externalId", deserParticipant.getExternalId());
+        assertEquals("newUserPassword", deserParticipant.getPassword());
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, deserParticipant.getSharingScope());
         assertTrue(deserParticipant.isNotifyByEmail());
         assertEquals(DATA_GROUPS, deserParticipant.getDataGroups());

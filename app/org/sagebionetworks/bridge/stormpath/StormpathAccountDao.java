@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
@@ -75,6 +77,7 @@ public class StormpathAccountDao implements AccountDao {
     private Client client;
     private StudyService studyService;
     private SubpopulationService subpopService;
+    private HealthCodeService healthCodeService;
     private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Resource(name = "stormpathApplication")
@@ -92,6 +95,10 @@ public class StormpathAccountDao implements AccountDao {
     @Autowired
     public final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
+    }
+    @Autowired
+    final void setHealthCodeService(HealthCodeService healthCodeService) {
+        this.healthCodeService = healthCodeService;
     }
     @Resource(name="encryptorList")
     public final void setEncryptors(List<BridgeEncryptor> list) {
@@ -287,6 +294,10 @@ public class StormpathAccountDao implements AccountDao {
         if (signUp.getRoles() != null) {
             account.getRoles().addAll(signUp.getRoles());
         }
+        // Create the healthCode mapping when we create the account. Stop waiting to create it
+        HealthId healthId = healthCodeService.createMapping(study);
+        account.setHealthId(healthId.getId());
+        
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             directory.createAccount(acct, sendEmail);

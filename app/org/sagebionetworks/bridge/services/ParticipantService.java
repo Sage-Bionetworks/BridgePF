@@ -32,12 +32,14 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.validators.DataGroupsValidator;
+import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableList;
@@ -105,7 +107,7 @@ public class ParticipantService {
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
         Account account = getAccountThrowingException(study, email);
-        String healthCode = getHealthCode(account);
+        String healthCode = getHealthCodeThrowingException(account);
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpopulations) {
@@ -158,6 +160,67 @@ public class ParticipantService {
         }
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
     }
+
+    /**
+     * Create a study participant. A password must be provided, even if it is added on behalf of a 
+     * user before triggering a reset password request.  
+     */
+    public void createParticipant(Study study, StudyParticipant participant) {
+        saveParticipant(study, null, participant, true);
+    }
+    
+    public void updateParticipant(Study study, String email, StudyParticipant participant) {
+        saveParticipant(study, email, participant, false);
+    }
+
+    public void saveParticipant(Study study, String email, StudyParticipant participant, boolean isNew) {
+        checkNotNull(study);
+        checkArgument(isNew || isNotBlank(email));
+        checkNotNull(participant);
+        
+        Validate.entityThrowingException(new StudyParticipantValidator(study, isNew), participant);
+        Account account = null;
+        String healthCode = null;
+        if (isNew) {
+            // Don't set it yet. Create the user first, and only assign it if that's successful.
+            // Allows us to assure that credentials and ID will be related or not created at all.
+            externalIdService.reserveExternalId(study, participant.getExternalId());
+            
+            SignUp signUp = new SignUp(participant.getEmail(), participant.getPassword(), null, null);
+            account = accountDao.signUp(study, signUp, study.isEmailVerificationEnabled());
+            
+            healthCode = getHealthCodeThrowingException(account);
+        } else {
+            account = getAccountThrowingException(study, email);
+            
+            healthCode = getHealthCodeThrowingException(account);
+            
+            // Verify now that the assignment is valid, or throw an exception before any other updates
+            addValidatedExternalId(study, participant, healthCode);
+        }
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        for (ParticipantOption option : ParticipantOption.values()) {
+            options.put(option, option.fromParticipant(participant));
+        }
+        // If we're validing the ID, we do this through the externalIdService, which writes to the participant options table
+        // when its appropriate to do so
+        if (study.isExternalIdValidationEnabled()) {
+            options.remove(EXTERNAL_IDENTIFIER);
+        }
+        optionsService.setAllOptions(study.getStudyIdentifier(), healthCode, options);
+        
+        account.setFirstName(participant.getFirstName());
+        account.setLastName(participant.getLastName());
+        for(String attribute : study.getUserProfileAttributes()) {
+            String value = participant.getAttributes().get(attribute);
+            account.setAttribute(attribute, value);
+        }
+        accountDao.updateAccount(study, account);
+        
+        if (isNew) {
+            externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
+        }
+    }
     
     public void updateParticipantOptions(Study study, String email, Map<ParticipantOption,String> options) {
         checkNotNull(study);
@@ -165,7 +228,7 @@ public class ParticipantService {
         checkNotNull(options);
         
         Account account = getAccountThrowingException(study, email);
-        String healthCode = getHealthCode(account);
+        String healthCode = getHealthCodeThrowingException(account);
         if (healthCode == null) {
             // This is possibly also an IllegalStateException, it's not exactly a bad request. User in bad state.
             // Could arguably be a 404 since user is not fully initialized.
@@ -213,6 +276,26 @@ public class ParticipantService {
         cacheProvider.removeSessionByUserId(account.getId());
     }
 
+    private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
+        // If not enabled, we'll update the value like any other ParticipantOption
+        if (study.isExternalIdValidationEnabled()) {
+            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
+            
+            if (idsDontExistOrAreNotEqual(existingExternalId, participant.getExternalId())) {
+                if (existingExternalId == null && isNotBlank(participant.getExternalId())) {
+                    externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
+                } else {
+                    throw new BadRequestException("External ID cannot be changed or removed after assignment, or left unassigned.");
+                }
+            }
+        }
+    }
+    
+    private boolean idsDontExistOrAreNotEqual(String id1, String id2) {
+        return (id1 == null || id2 == null || !id1.equals(id2));
+    }
+
     private Account getAccountThrowingException(Study study, String email) {
         Account account = accountDao.getAccount(study, email);
         if (account == null) {
@@ -221,14 +304,14 @@ public class ParticipantService {
         return account;
     }
     
-    private String getHealthCode(Account account) {
+    private String getHealthCodeThrowingException(Account account) {
         if (account.getHealthId() != null) {
             HealthId healthId = healthCodeService.getMapping(account.getHealthId());
             if (healthId != null && healthId.getCode() != null) {
                 return healthId.getCode();
             }
         }
-        return null;
+        throw new BridgeServiceException("Participant cannot be updated (no health code exists for user).");
     }
     
 }

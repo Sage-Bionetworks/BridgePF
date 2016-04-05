@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import play.mvc.Result;
 import play.test.Helpers;
@@ -75,6 +76,9 @@ public class ParticipantControllerTest {
 
     @Captor
     private ArgumentCaptor<UserProfile> profileCaptor;
+    
+    @Captor
+    private ArgumentCaptor<StudyParticipant> participantCaptor;
     
     @Before
     public void before() throws Exception {
@@ -140,6 +144,7 @@ public class ParticipantControllerTest {
         verify(participantService).getParticipant(STUDY, "email@email.com");
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void updateParticipantOptions() throws Exception {
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'sharingScope':'sponsors_and_partners',"+
@@ -163,6 +168,7 @@ public class ParticipantControllerTest {
         assertTrue(options.get(LANGUAGES).contains("fr"));
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void updateParticipantProfile() throws Exception {
         STUDY.getUserProfileAttributes().add("phone");
@@ -205,11 +211,13 @@ public class ParticipantControllerTest {
         controller.getParticipant(null);
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = BadRequestException.class)
     public void updateParticipantOptionsNoEmail() {
         controller.updateParticipantOptions(null);
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = BadRequestException.class)
     public void updateProfileNoEmail() {
         controller.updateProfile(null);
@@ -225,11 +233,13 @@ public class ParticipantControllerTest {
         controller.getParticipant("");
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = BadRequestException.class)
     public void updateParticipantOptionsBlank() {
         controller.updateParticipantOptions("  ");
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = BadRequestException.class)
     public void updateProfileBlank() {
         controller.updateProfile("\t");
@@ -239,7 +249,90 @@ public class ParticipantControllerTest {
     public void signOutBlank() throws Exception {
         controller.signOut("");
     }
+    
+    @Test
+    public void createParticipant() throws Exception {
+        STUDY.getUserProfileAttributes().add("phone");
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
+                "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
+                "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
+                "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
+        
+        Result result = controller.createParticipant();
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        
+        assertEquals(201, result.status());
+        assertEquals("Participant created.", node.get("message").asText());
+        
+        verify(participantService).createParticipant(eq(STUDY), participantCaptor.capture());
+        
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals("firstName", participant.getFirstName());
+        assertEquals("lastName", participant.getLastName());
+        assertEquals("email@email.com", participant.getEmail());
+        assertEquals("newUserPassword", participant.getPassword());
+        assertEquals("externalId", participant.getExternalId());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, participant.getSharingScope());
+        assertTrue(participant.isNotifyByEmail());
+        assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
+        assertEquals("123456789", participant.getAttributes().get("phone"));
+        assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
+    }
 
+    @Test
+    public void updateParticipant() throws Exception {
+        STUDY.getUserProfileAttributes().add("phone");
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
+                "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
+                "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
+                "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
+        
+        Result result = controller.updateParticipant("email@email.com");
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        
+        assertEquals(200, result.status());
+        assertEquals("Participant updated.", node.get("message").asText());
+        
+        verify(participantService).updateParticipant(eq(STUDY), eq("email@email.com"), participantCaptor.capture());
+        
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals("firstName", participant.getFirstName());
+        assertEquals("lastName", participant.getLastName());
+        assertEquals("email@email.com", participant.getEmail());
+        assertEquals("newUserPassword", participant.getPassword());
+        assertEquals("externalId", participant.getExternalId());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, participant.getSharingScope());
+        assertTrue(participant.isNotifyByEmail());
+        assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
+        assertEquals("123456789", participant.getAttributes().get("phone"));
+        assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateParticipantMissing() {
+        controller.updateParticipant(null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateParticipantBlank() {
+        controller.updateParticipant("");
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateParticipantRequiresEmailMatch() throws Exception {
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com'}"));
+        
+        controller.updateParticipant("email-different@email.com");
+    }
+
+    @Test
+    public void updateParticipantNoJsonEmailOK() throws Exception {
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{}"));
+        
+        controller.updateParticipant("email-different@email.com");
+        verify(participantService).updateParticipant(eq(STUDY), eq("email-different@email.com"), any());
+    }
+    
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);
         return BridgeObjectMapper.get().readValue(string, ACCOUNT_SUMMARY_PAGE);

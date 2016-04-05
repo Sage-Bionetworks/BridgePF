@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -19,12 +20,13 @@ import com.google.common.collect.Sets;
  * participant roster (which is also going away).
  */
 @JsonDeserialize(builder=StudyParticipant.Builder.class)
-public class StudyParticipant {
+public class StudyParticipant implements BridgeEntity {
 
     private final String firstName;
     private final String lastName;
     private final String email;
     private final String externalId;
+    private final String password;
     private final SharingScope sharingScope;
     private final boolean notifyByEmail;
     private final Set<String> dataGroups;
@@ -34,13 +36,15 @@ public class StudyParticipant {
     private final Set<Roles> roles;
     private final LinkedHashSet<String> languages;
     
-    private StudyParticipant(String firstName, String lastName, String email, String externalId, SharingScope sharingScope,
-            boolean notifyByEmail, Set<String> dataGroups, String healthCode, Map<String,String> attributes, 
-            Map<String,List<UserConsentHistory>> consentHistories, Set<Roles> roles, LinkedHashSet<String> languages) {
+    private StudyParticipant(String firstName, String lastName, String email, String externalId, String password,
+            SharingScope sharingScope, boolean notifyByEmail, Set<String> dataGroups, String healthCode,
+            Map<String, String> attributes, Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles,
+            LinkedHashSet<String> languages) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.externalId = externalId;
+        this.password = password;
         this.sharingScope = sharingScope;
         this.notifyByEmail = notifyByEmail;
         this.dataGroups = dataGroups;
@@ -62,6 +66,9 @@ public class StudyParticipant {
     }
     public String getExternalId() {
         return externalId;
+    }
+    public String getPassword() {
+        return password;
     }
     public SharingScope getSharingScope() {
         return sharingScope;
@@ -93,6 +100,7 @@ public class StudyParticipant {
         private String lastName;
         private String email;
         private String externalId;
+        private String password;
         private SharingScope sharingScope;
         private boolean notifyByEmail;
         private Set<String> dataGroups = ImmutableSet.of();
@@ -116,6 +124,10 @@ public class StudyParticipant {
         }
         public Builder withExternalId(String externalId) {
             this.externalId = externalId;
+            return this;
+        }
+        public Builder withPassword(String password) {
+            this.password = password;
             return this;
         }
         public Builder withSharingScope(SharingScope sharingScope) {
@@ -168,7 +180,7 @@ public class StudyParticipant {
         }
         
         public StudyParticipant build() {
-            return new StudyParticipant(firstName, lastName, email, externalId, sharingScope, notifyByEmail, 
+            return new StudyParticipant(firstName, lastName, email, externalId, password, sharingScope, notifyByEmail,
                     dataGroups, healthCode, attributes, consentHistories, roles, languages);
         }
     }
