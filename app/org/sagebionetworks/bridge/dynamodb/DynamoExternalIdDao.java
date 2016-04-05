@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -34,6 +33,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -54,8 +54,6 @@ import com.google.common.collect.Maps;
 public class DynamoExternalIdDao implements ExternalIdDao {
     
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
-    static final String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
-    static final String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
     
     private static final String RESERVATION = "reservation";
     private static final String HEALTH_CODE = "healthCode";
@@ -81,7 +79,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
 
     @Override
-    public PagedResourceList<String> getExternalIds(StudyIdentifier studyId, String offsetKey, 
+    public PagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId, String offsetKey, 
             int pageSize, String idFilter, Boolean assignmentFilter) {
         checkNotNull(studyId);
         
@@ -89,23 +87,30 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
+        // The offset key is applied after the range key filter. If the offsetKey doesn't match the beginning
+        // of the range key filter, DDB throws a validation exception. So when providing a filter and an offset, 
+        // if the offset is not the valid prefix of the range key filter, set it to null (go back to first page).
+        if (offsetKey != null && idFilter != null && idFilter.indexOf(offsetKey) != 0) {
+            offsetKey = null;
+        }
         PaginatedQueryList<DynamoExternalIdentifier> list = mapper.query(DynamoExternalIdentifier.class,
                 createGetQuery(studyId, offsetKey, pageSize, idFilter, assignmentFilter));
         
         int total = mapper.count(DynamoExternalIdentifier.class, createCountQuery(studyId, idFilter, assignmentFilter));
         
-        List<String> identifiers = Lists.newArrayListWithCapacity(pageSize);
+        List<ExternalIdentifierInfo> identifiers = Lists.newArrayListWithCapacity(pageSize);
         
         Iterator<? extends ExternalIdentifier> iterator = list.iterator();
         while(iterator.hasNext() && identifiers.size() < pageSize) {
-            identifiers.add(iterator.next().getIdentifier());
+            ExternalIdentifier id = iterator.next();
+            identifiers.add( createInfo(id, lockDuration) );
         }
         // This is the last key, not the next key of the next page of records. It only exists if there's a record
         // beyond the records we've converted to a page. Then get the last key in the list.
-        String lastKey = (iterator.hasNext()) ? last(identifiers) : null;
+        String nextPageOffsetKey = (iterator.hasNext()) ? last(identifiers).getIdentifier() : null;
         
-        PagedResourceList<String> resourceList = new PagedResourceList<String>(identifiers, null, pageSize, total)
-                .withLastKey(lastKey)
+        PagedResourceList<ExternalIdentifierInfo> resourceList = new PagedResourceList<ExternalIdentifierInfo>(identifiers, null, pageSize, total)
+                .withOffsetKey(nextPageOffsetKey)
                 .withFilter(ID_FILTER, idFilter);
         if (assignmentFilter != null) {
             resourceList = resourceList.withFilter(ASSIGNMENT_FILTER, assignmentFilter.toString());
@@ -118,25 +123,20 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkNotNull(studyId);
         checkNotNull(externalIds);
 
+        // We validate a wider range of issues in the service, but check size again because this is 
+        // specifically a database capacity issue.
         if (externalIds.size() > addLimit) {
             throw new BadRequestException("List of externalIds is too large; size=" + externalIds.size() + ", limit=" + addLimit);
         }
-        for (String id : externalIds) {
-            if (StringUtils.isBlank(id)) {
-                throw new BadRequestException("List of externalIds contains an empty value");
-            }
-        }
-        if (!externalIds.isEmpty()) {
-            List<DynamoExternalIdentifier> idsToSave = externalIds.stream().map(id -> {
-                return new DynamoExternalIdentifier(studyId, id);
-            }).filter(externalId -> {
-                return mapper.load(externalId) == null;
-            }).collect(Collectors.toList());
-            
-            if (!idsToSave.isEmpty()) {
-                List<FailedBatch> failures = mapper.batchSave(idsToSave);
-                BridgeUtils.ifFailuresThrowException(failures);
-            }
+        List<DynamoExternalIdentifier> idsToSave = externalIds.stream().map(id -> {
+            return new DynamoExternalIdentifier(studyId, id);
+        }).filter(externalId -> {
+            return mapper.load(externalId) == null;
+        }).collect(Collectors.toList());
+        
+        if (!idsToSave.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchSave(idsToSave);
+            BridgeUtils.ifFailuresThrowException(failures);
         }
     }
     
@@ -309,6 +309,13 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         DynamoDBSaveExpression saveExpression = new DynamoDBSaveExpression();
         saveExpression.setExpected(map);
         return saveExpression;
+    }
+    
+    private ExternalIdentifierInfo createInfo(ExternalIdentifier id, long lockDuration) {
+        // This calculation is done a couple of times, it does not need to be accurate to the millisecond
+        long reservationStartTime = DateTimeUtils.currentTimeMillis() - lockDuration;
+        boolean isAssigned = (id.getHealthCode() != null || id.getReservation() >= reservationStartTime);
+        return new ExternalIdentifierInfo(id.getIdentifier(), isAssigned);
     }
     
     private <T> T last(List<T> items) {

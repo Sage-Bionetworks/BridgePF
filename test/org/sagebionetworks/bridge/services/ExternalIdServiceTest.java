@@ -2,9 +2,11 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.List;
@@ -16,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -45,9 +48,13 @@ public class ExternalIdServiceTest {
     
     @Before
     public void before() {
+        Config config = mock(Config.class);
+        when(config.getInt(ExternalIdDao.CONFIG_KEY_ADD_LIMIT)).thenReturn(10);
+        
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
         externalIdService.setParticipantOptionsService(optionsService);
+        externalIdService.setConfig(config);
     }
     
     @Test
