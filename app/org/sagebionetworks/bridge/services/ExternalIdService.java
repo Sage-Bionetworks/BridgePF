@@ -12,9 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.validators.ExternalIdsValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 /**
  * Service for managing external IDs. These methods can be called whether or not strict validation of IDs is enabled. 
@@ -28,6 +32,8 @@ public class ExternalIdService {
     
     private ParticipantOptionsService optionsService;
     
+    private ExternalIdsValidator validator;
+    
     @Autowired
     final void setExternalIdDao(ExternalIdDao externalIdDao) {
         this.externalIdDao = externalIdDao;
@@ -37,8 +43,13 @@ public class ExternalIdService {
     final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
+
+    @Autowired
+    final void setConfig(Config config) {
+        validator = new ExternalIdsValidator(config.getInt(ExternalIdDao.CONFIG_KEY_ADD_LIMIT));
+    }
     
-    public PagedResourceList<String> getExternalIds(Study study, String offsetKey, Integer pageSize, 
+    public PagedResourceList<ExternalIdentifierInfo> getExternalIds(Study study, String offsetKey, Integer pageSize, 
             String idFilter, Boolean assignmentFilter) {
         checkNotNull(study);
         if (pageSize == null) {
@@ -51,6 +62,8 @@ public class ExternalIdService {
     public void addExternalIds(Study study, List<String> externalIdentifiers) {
         checkNotNull(study);
         checkNotNull(externalIdentifiers);
+        
+        Validate.entityThrowingException(validator, new ExternalIdsValidator.ExternalIdList(externalIdentifiers));
         
         externalIdDao.addExternalIds(study.getStudyIdentifier(), externalIdentifiers);
     }
