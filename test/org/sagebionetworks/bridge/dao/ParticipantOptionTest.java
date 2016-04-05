@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
@@ -9,8 +10,10 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
 
 public class ParticipantOptionTest {
 
@@ -35,6 +38,42 @@ public class ParticipantOptionTest {
         node = BridgeObjectMapper.get().readTree(TestUtils.createJson("'sponsors_and_partners'"));
         result = ParticipantOption.SHARING_SCOPE.deserialize(node);
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), result);
+    }
+    
+    @Test
+    public void canRetrieveFromStudyParticipant() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withDataGroups(Sets.newHashSet("group1","group2"))
+                .withNotifyByEmail(true)
+                .withExternalId("testExternalID")
+                .withLanguages(TestUtils.newLinkedHashSet("en","de"))
+                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .build();
+        
+        String result = ParticipantOption.DATA_GROUPS.fromParticipant(participant);
+        assertEquals("group1,group2", result);
+        
+        result = ParticipantOption.EMAIL_NOTIFICATIONS.fromParticipant(participant);
+        assertEquals("true", result);
+        
+        result = ParticipantOption.EXTERNAL_IDENTIFIER.fromParticipant(participant);
+        assertEquals("testExternalID", result);
+        
+        result = ParticipantOption.LANGUAGES.fromParticipant(participant);
+        assertEquals("ja,en", result);
+        
+        result = ParticipantOption.SHARING_SCOPE.fromParticipant(participant);
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), result);
+    }
+    
+    @Test
+    public void canRetrieveEmptyValuesFromStudyParticipant() {
+        StudyParticipant emptyParticipant = new StudyParticipant.Builder().build();
+        assertNull(ParticipantOption.DATA_GROUPS.fromParticipant(emptyParticipant));
+        assertNull(ParticipantOption.EMAIL_NOTIFICATIONS.fromParticipant(emptyParticipant));
+        assertNull(ParticipantOption.EXTERNAL_IDENTIFIER.fromParticipant(emptyParticipant));
+        assertNull(ParticipantOption.LANGUAGES.fromParticipant(emptyParticipant));
+        assertNull(ParticipantOption.SHARING_SCOPE.fromParticipant(emptyParticipant));
     }
     
     @Test

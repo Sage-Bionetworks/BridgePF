@@ -32,12 +32,14 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.validators.DataGroupsValidator;
+import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableList;
@@ -157,6 +159,87 @@ public class ParticipantService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
+    }
+
+    /**
+     * Create a study participant. A password must be provided, even if it is added on behalf of a 
+     * user before triggering a reset password request.  
+     */
+    public void createParticipant(Study study, StudyParticipant participant) {
+        checkNotNull(study);
+        checkNotNull(participant);
+        
+        Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
+
+        externalIdService.reserveExternalId(study, participant.getExternalId());
+        
+        SignUp signUp = new SignUp(participant.getEmail(), participant.getPassword(), null, null);
+        Account account = accountDao.signUp(study, signUp, study.isEmailVerificationEnabled());
+        
+        // This should not fail as we're now creating the mapping in sign-up itself. User's email
+        // doesn't even need to be verified before we can add this information to the account.
+        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+        String healthCode = healthId.getCode();
+        
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        for (ParticipantOption option : ParticipantOption.values()) {
+            options.put(option, option.fromParticipant(participant));
+        }
+        if (study.isExternalIdValidationEnabled()) {
+            options.remove(EXTERNAL_IDENTIFIER);
+        }
+        optionsService.setAllOptions(study.getStudyIdentifier(), healthCode, options);
+        
+        account.setFirstName(participant.getFirstName());
+        account.setLastName(participant.getLastName());
+        for(String attribute : study.getUserProfileAttributes()) {
+            String value = participant.getAttributes().get(attribute);
+            account.setAttribute(attribute, value);
+        }
+        accountDao.updateAccount(study, account);
+        
+        externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
+    }
+    
+    public void updateParticipant(Study study, String email, StudyParticipant participant) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(email));
+        checkNotNull(participant);
+        
+        Validate.entityThrowingException(new StudyParticipantValidator(study, false), participant);
+        
+        Account account = getAccountThrowingException(study, email);
+        String healthCode = getHealthCode(account);
+        if (healthCode == null) {
+            // This is possibly also an IllegalStateException, it's not exactly a bad request. User in bad state.
+            // Could arguably be a 404 since user is not fully initialized.
+            throw new BridgeServiceException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
+        }
+        
+        // Not reserving it because the account already exists. Couldn't undo the account at this point if the 
+        // code is taken. But no update will occur if that's the case, the caller will have to resolve.
+        // Note that submitting your existing code back to the server does not throw an exception.
+        if (study.isExternalIdValidationEnabled() && participant.getExternalId() != null) {
+            externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);    
+        }
+
+        Map<ParticipantOption,String> options = Maps.newHashMap();
+        for (ParticipantOption option : ParticipantOption.values()) {
+            options.put(option, option.fromParticipant(participant));
+        }
+        // Do not update this directly if strict validation is enabled
+        if (study.isExternalIdValidationEnabled()) {
+            options.remove(EXTERNAL_IDENTIFIER);
+        }
+        optionsService.setAllOptions(study.getStudyIdentifier(), healthCode, options);
+        
+        account.setFirstName(participant.getFirstName());
+        account.setLastName(participant.getLastName());
+        for(String attribute : study.getUserProfileAttributes()) {
+            String value = participant.getAttributes().get(attribute);
+            account.setAttribute(attribute, value);
+        }
+        accountDao.updateAccount(study, account);
     }
     
     public void updateParticipantOptions(Study study, String email, Map<ParticipantOption,String> options) {

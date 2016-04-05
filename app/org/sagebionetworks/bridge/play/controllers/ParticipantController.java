@@ -60,6 +60,35 @@ public class ParticipantController extends BaseController {
         return okResult(page);
     }
     
+    public Result createParticipant() throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
+        
+        participantService.createParticipant(study, participant);
+        
+        return createdResult("Participant created.");
+    }
+    
+    public Result updateParticipant(String email) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        if (isBlank(email)) {
+            throw new BadRequestException(EMAIL_REQUIRED);
+        }
+        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
+        // Just stop right here because something is wrong
+        if (participant.getEmail() != null && !participant.getEmail().equals(email)) {
+            throw new BadRequestException("Email in JSON does not match URI of request");
+        }
+        participantService.updateParticipant(study, email, participant);
+        
+        return okResult("Participant updated.");
+    }
+    
+    // Already. will remove as soon as replacement is rolled out as I've already implemented this in SDK/Researcher UI
+    @Deprecated
     public Result updateParticipantOptions(String email) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -82,6 +111,8 @@ public class ParticipantController extends BaseController {
         return okResult("Participant options updated.");
     }
     
+    // Already. will remove as soon as replacement is rolled out as I've already implemented this in SDK/Researcher UI
+    @Deprecated 
     public Result updateProfile(String email) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
