@@ -80,7 +80,7 @@ public class ParticipantController extends BaseController {
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         // Just stop right here because something is wrong
         if (participant.getEmail() != null && !participant.getEmail().equals(email)) {
-            throw new BadRequestException("Email in JSON does not match URI of request");
+            throw new BadRequestException("Email in JSON does not match email query parameter.");
         }
         participantService.updateParticipant(study, email, participant);
         
