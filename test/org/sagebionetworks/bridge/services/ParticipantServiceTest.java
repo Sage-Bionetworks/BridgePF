@@ -473,12 +473,15 @@ public class ParticipantServiceTest {
     }
 
     @Test
-    public void updateParticipantWithExternalIdValidation() {
+    public void updateParticipantWithExternalIdValidationAddingId() {
         STUDY.setExternalIdValidationEnabled(true);
         doReturn("healthId").when(account).getHealthId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
         doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        
+        doReturn(lookup).when(optionsService).getOptions("healthCode");
+        doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
         
         participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
         
@@ -496,7 +499,82 @@ public class ParticipantServiceTest {
         verify(account).setLastName("lastName");
         verify(account).setAttribute("phone", "123456789");
     }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateParticipantWithExternalIdValidationChangingId() {
+        STUDY.setExternalIdValidationEnabled(true);
+        doReturn("healthId").when(account).getHealthId();
+        doReturn(healthId).when(healthCodeService).getMapping("healthId");
+        doReturn("healthCode").when(healthId).getCode();
+        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        
+        doReturn(lookup).when(optionsService).getOptions("healthCode");
+        doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
+        
+        participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
+    }
 
+    @Test(expected = BadRequestException.class)
+    public void updateParticipantWithExternalIdValidationRemovingId() {
+        STUDY.setExternalIdValidationEnabled(true);
+        doReturn("healthId").when(account).getHealthId();
+        doReturn(healthId).when(healthCodeService).getMapping("healthId");
+        doReturn("healthCode").when(healthId).getCode();
+        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        
+        doReturn(lookup).when(optionsService).getOptions("healthCode");
+        doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName(PARTICIPANT.getFirstName())
+                .withLastName(PARTICIPANT.getLastName())
+                .withSharingScope(PARTICIPANT.getSharingScope())
+                .withNotifyByEmail(PARTICIPANT.isNotifyByEmail())
+                .withDataGroups(PARTICIPANT.getDataGroups())
+                .withAttributes(PARTICIPANT.getAttributes())
+                .withLanguages(PARTICIPANT.getLanguages()).build();
+        participantService.updateParticipant(STUDY, EMAIL, participant);
+    }
+    
+    @Test
+    public void updateParticipantWithExternalIdValidationNoIdChange() {
+        STUDY.setExternalIdValidationEnabled(true);
+        doReturn("healthId").when(account).getHealthId();
+        doReturn(healthId).when(healthCodeService).getMapping("healthId");
+        doReturn("healthCode").when(healthId).getCode();
+        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        
+        doReturn(lookup).when(optionsService).getOptions("healthCode");
+        doReturn("POWERS").when(lookup).getString(EXTERNAL_IDENTIFIER);
+        
+        // This just succeeds because the IDs are the same, and we'll verify no attempt was made to update it.
+        participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
+        
+        verifyNoMoreInteractions(externalIdService);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateParticipantWithExternalIdValidationIdMissing() {
+        STUDY.setExternalIdValidationEnabled(true);
+        doReturn("healthId").when(account).getHealthId();
+        doReturn(healthId).when(healthCodeService).getMapping("healthId");
+        doReturn("healthCode").when(healthId).getCode();
+        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        
+        doReturn(lookup).when(optionsService).getOptions("healthCode");
+        doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName(PARTICIPANT.getFirstName())
+                .withLastName(PARTICIPANT.getLastName())
+                .withSharingScope(PARTICIPANT.getSharingScope())
+                .withNotifyByEmail(PARTICIPANT.isNotifyByEmail())
+                .withDataGroups(PARTICIPANT.getDataGroups())
+                .withAttributes(PARTICIPANT.getAttributes())
+                .withLanguages(PARTICIPANT.getLanguages()).build();
+        participantService.updateParticipant(STUDY, EMAIL, participant);
+    }
+    
     @Test(expected = InvalidEntityException.class)
     public void updateParticipantWithInvalidParticipant() {
         doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);

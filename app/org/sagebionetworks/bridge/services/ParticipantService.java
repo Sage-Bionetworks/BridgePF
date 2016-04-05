@@ -107,7 +107,7 @@ public class ParticipantService {
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
         Account account = getAccountThrowingException(study, email);
-        String healthCode = getHealthCode(account);
+        String healthCode = getHealthCodeThrowingException(account);
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpopulations) {
@@ -166,68 +166,44 @@ public class ParticipantService {
      * user before triggering a reset password request.  
      */
     public void createParticipant(Study study, StudyParticipant participant) {
-        checkNotNull(study);
-        checkNotNull(participant);
-        
-        Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
-
-        externalIdService.reserveExternalId(study, participant.getExternalId());
-        
-        SignUp signUp = new SignUp(participant.getEmail(), participant.getPassword(), null, null);
-        Account account = accountDao.signUp(study, signUp, study.isEmailVerificationEnabled());
-        
-        // This should not fail as we're now creating the mapping in sign-up itself. User's email
-        // doesn't even need to be verified before we can add this information to the account.
-        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-        String healthCode = healthId.getCode();
-        
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        for (ParticipantOption option : ParticipantOption.values()) {
-            options.put(option, option.fromParticipant(participant));
-        }
-        if (study.isExternalIdValidationEnabled()) {
-            options.remove(EXTERNAL_IDENTIFIER);
-        }
-        optionsService.setAllOptions(study.getStudyIdentifier(), healthCode, options);
-        
-        account.setFirstName(participant.getFirstName());
-        account.setLastName(participant.getLastName());
-        for(String attribute : study.getUserProfileAttributes()) {
-            String value = participant.getAttributes().get(attribute);
-            account.setAttribute(attribute, value);
-        }
-        accountDao.updateAccount(study, account);
-        
-        externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
+        saveParticipant(study, null, participant, true);
     }
     
     public void updateParticipant(Study study, String email, StudyParticipant participant) {
+        saveParticipant(study, email, participant, false);
+    }
+
+    public void saveParticipant(Study study, String email, StudyParticipant participant, boolean isNew) {
         checkNotNull(study);
-        checkArgument(isNotBlank(email));
+        checkArgument(isNew || isNotBlank(email));
         checkNotNull(participant);
         
-        Validate.entityThrowingException(new StudyParticipantValidator(study, false), participant);
-        
-        Account account = getAccountThrowingException(study, email);
-        String healthCode = getHealthCode(account);
-        if (healthCode == null) {
-            // This is possibly also an IllegalStateException, it's not exactly a bad request. User in bad state.
-            // Could arguably be a 404 since user is not fully initialized.
-            throw new BridgeServiceException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
+        Validate.entityThrowingException(new StudyParticipantValidator(study, isNew), participant);
+        Account account = null;
+        String healthCode = null;
+        if (isNew) {
+            // Don't set it yet. Create the user first, and only assign it if that's successful.
+            // Allows us to assure that credentials and ID will be related or not created at all.
+            externalIdService.reserveExternalId(study, participant.getExternalId());
+            
+            SignUp signUp = new SignUp(participant.getEmail(), participant.getPassword(), null, null);
+            account = accountDao.signUp(study, signUp, study.isEmailVerificationEnabled());
+            
+            healthCode = getHealthCodeThrowingException(account);
+        } else {
+            account = getAccountThrowingException(study, email);
+            
+            healthCode = getHealthCodeThrowingException(account);
+            
+            // Verify now that the assignment is valid, or throw an exception before any other updates
+            addValidatedExternalId(study, participant, healthCode);
         }
-        
-        // Not reserving it because the account already exists. Couldn't undo the account at this point if the 
-        // code is taken. But no update will occur if that's the case, the caller will have to resolve.
-        // Note that submitting your existing code back to the server does not throw an exception.
-        if (study.isExternalIdValidationEnabled() && participant.getExternalId() != null) {
-            externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);    
-        }
-
         Map<ParticipantOption,String> options = Maps.newHashMap();
         for (ParticipantOption option : ParticipantOption.values()) {
             options.put(option, option.fromParticipant(participant));
         }
-        // Do not update this directly if strict validation is enabled
+        // If we're validing the ID, we do this through the externalIdService, which writes to the participant options table
+        // when its appropriate to do so
         if (study.isExternalIdValidationEnabled()) {
             options.remove(EXTERNAL_IDENTIFIER);
         }
@@ -240,6 +216,10 @@ public class ParticipantService {
             account.setAttribute(attribute, value);
         }
         accountDao.updateAccount(study, account);
+        
+        if (isNew) {
+            externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
+        }
     }
     
     public void updateParticipantOptions(Study study, String email, Map<ParticipantOption,String> options) {
@@ -248,7 +228,7 @@ public class ParticipantService {
         checkNotNull(options);
         
         Account account = getAccountThrowingException(study, email);
-        String healthCode = getHealthCode(account);
+        String healthCode = getHealthCodeThrowingException(account);
         if (healthCode == null) {
             // This is possibly also an IllegalStateException, it's not exactly a bad request. User in bad state.
             // Could arguably be a 404 since user is not fully initialized.
@@ -296,6 +276,26 @@ public class ParticipantService {
         cacheProvider.removeSessionByUserId(account.getId());
     }
 
+    private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
+        // If not enabled, we'll update the value like any other ParticipantOption
+        if (study.isExternalIdValidationEnabled()) {
+            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
+            
+            if (idsDontExistOrAreNotEqual(existingExternalId, participant.getExternalId())) {
+                if (existingExternalId == null && isNotBlank(participant.getExternalId())) {
+                    externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
+                } else {
+                    throw new BadRequestException("External ID cannot be changed or removed after assignment, or left unassigned.");
+                }
+            }
+        }
+    }
+    
+    private boolean idsDontExistOrAreNotEqual(String id1, String id2) {
+        return (id1 == null || id2 == null || !id1.equals(id2));
+    }
+
     private Account getAccountThrowingException(Study study, String email) {
         Account account = accountDao.getAccount(study, email);
         if (account == null) {
@@ -304,14 +304,14 @@ public class ParticipantService {
         return account;
     }
     
-    private String getHealthCode(Account account) {
+    private String getHealthCodeThrowingException(Account account) {
         if (account.getHealthId() != null) {
             HealthId healthId = healthCodeService.getMapping(account.getHealthId());
             if (healthId != null && healthId.getCode() != null) {
                 return healthId.getCode();
             }
         }
-        return null;
+        throw new BridgeServiceException("Participant cannot be updated (no health code exists for user).");
     }
     
 }
