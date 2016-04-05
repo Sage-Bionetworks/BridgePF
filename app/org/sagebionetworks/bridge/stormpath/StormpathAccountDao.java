@@ -297,7 +297,6 @@ public class StormpathAccountDao implements AccountDao {
         // Create the healthCode mapping when we create the account. Stop waiting to create it
         HealthId healthId = healthCodeService.createMapping(study);
         account.setHealthId(healthId.getId());
-        logger.debug("Health ID/code pair created for " + account.getId() + " in study " + study.getName());
         
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
