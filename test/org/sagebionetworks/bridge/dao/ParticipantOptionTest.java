@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
@@ -51,7 +52,8 @@ public class ParticipantOptionTest {
                 .build();
         
         String result = ParticipantOption.DATA_GROUPS.fromParticipant(participant);
-        assertEquals("group1,group2", result);
+        assertTrue(result.contains("group1"));
+        assertTrue(result.contains("group2"));
         
         result = ParticipantOption.EMAIL_NOTIFICATIONS.fromParticipant(participant);
         assertEquals("true", result);
@@ -60,17 +62,17 @@ public class ParticipantOptionTest {
         assertEquals("testExternalID", result);
         
         result = ParticipantOption.LANGUAGES.fromParticipant(participant);
-        assertEquals("ja,en", result);
+        assertEquals("en,de", result);
         
         result = ParticipantOption.SHARING_SCOPE.fromParticipant(participant);
-        assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), result);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), result);
     }
     
     @Test
     public void canRetrieveEmptyValuesFromStudyParticipant() {
         StudyParticipant emptyParticipant = new StudyParticipant.Builder().build();
         assertNull(ParticipantOption.DATA_GROUPS.fromParticipant(emptyParticipant));
-        assertNull(ParticipantOption.EMAIL_NOTIFICATIONS.fromParticipant(emptyParticipant));
+        assertEquals("false",ParticipantOption.EMAIL_NOTIFICATIONS.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.EXTERNAL_IDENTIFIER.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.LANGUAGES.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.SHARING_SCOPE.fromParticipant(emptyParticipant));

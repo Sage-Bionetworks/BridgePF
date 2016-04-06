@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -22,11 +23,13 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Lists;
@@ -130,6 +133,9 @@ public class StormpathAccountDaoMockTest {
     public void stormpathAccountCorrectlyInitialized() {
         StormpathAccountDao dao = new StormpathAccountDao();
         
+        HealthCodeService healthCodeService = mock(HealthCodeService.class);
+        dao.setHealthCodeService(healthCodeService);
+        
         Directory directory = mock(Directory.class);
         com.stormpath.sdk.account.Account stormpathAccount = mock(com.stormpath.sdk.account.Account.class);
         when(stormpathAccount.getCustomData()).thenReturn(mock(CustomData.class));
@@ -139,6 +145,9 @@ public class StormpathAccountDaoMockTest {
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
         dao.setStormpathClient(client);
         dao.setSubpopulationService(mockSubpopService());
+        
+        HealthId healthId = mock(HealthId.class);
+        doReturn(healthId).when(healthCodeService).createMapping(study);
         
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";

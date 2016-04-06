@@ -175,6 +175,8 @@ public class UserAdminServiceTest {
             // Now this works
             externalIdService.assignExternalId(study, "AAA", session.getUser().getHealthCode());
         } finally {
+            // this is a cheat, for sure, but allow deletion
+            study.setExternalIdValidationEnabled(false);
             externalIdService.deleteExternalIds(study, idForTest);
         }
     }
