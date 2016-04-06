@@ -3,16 +3,20 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -20,6 +24,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
@@ -32,7 +37,9 @@ import org.sagebionetworks.bridge.services.StudyService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
+import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -53,6 +60,9 @@ public class ExternalIdControllerTest {
     
     @Mock
     StudyService studyService;
+    
+    @Captor
+    ArgumentCaptor<List<String>> externalIdCaptor;
     
     Study study;
     
@@ -126,6 +136,55 @@ public class ExternalIdControllerTest {
         assertEquals(201, result.status());
         
         verify(externalIdService).addExternalIds(study, Lists.newArrayList());
+    }
+    
+    @Test
+    public void deleteIdentifiers() throws Exception {
+        Map<String,String[]> map = Maps.newHashMap();
+        String[] identifiers = new String[] {"AAA","BBB","CCC"};
+        map.put("externalId", identifiers);
+        mockRequestWithQueryString(map);
+        
+        Result result = controller.deleteExternalIds();
+        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
+        String message = node.get("message").asText();
+        
+        assertEquals("External identifiers deleted.", message);
+        assertEquals(200, result.status());
+        
+        verify(externalIdService).deleteExternalIds(eq(study), externalIdCaptor.capture());
+        
+        List<String> values = externalIdCaptor.getValue();
+        assertEquals(Lists.newArrayList("AAA","BBB","CCC"), values);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteIdentifiersNoIdentifiers() throws Exception {
+        Map<String,String[]> map = Maps.newHashMap();
+        String[] identifiers = new String[] {};
+        map.put("externalId", identifiers);
+        mockRequestWithQueryString(map);
+        
+        controller.deleteExternalIds();
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteIdentifiersNoneInQueryAtAll() throws Exception {
+        Map<String,String[]> map = Maps.newHashMap();
+        mockRequestWithQueryString(map);
+        
+        controller.deleteExternalIds();
+    }
+    
+    private void mockRequestWithQueryString(Map<String,String[]> query) {
+        Http.Request request = mock(Http.Request.class);
+        
+        Http.Context context = mock(Http.Context.class);
+        when(context.request()).thenReturn(request);
+        
+        when(request.queryString()).thenReturn(query);
+
+        Http.Context.current.set(context);
     }
     
 }

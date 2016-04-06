@@ -269,11 +269,22 @@ public class DynamoExternalIdDaoTest {
         }
     }
     
-    // This did give a ValidationException...The provided starting key does not match the range key 
-    // predicate. Now the offset key is reset to null (the first page)
     @Test
-    public void pagingWithAFilterWorks() {
+    public void pagingWithFilterResetsInapplicableOffsetKey() {
         PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "B", 5, "C", null);
+        assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
+        assertNull(page.getOffsetKey());
+    }
+    
+    @Test
+    public void pagingWithFilterLongerThanKeyWorks() {
+        PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "CCCCC", 5, "CC", null);
+        assertTrue(page.getItems().isEmpty());
+    }
+    
+    @Test
+    public void pagingWithFilterShorterThanKeyWorks() {
+        PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "C", 5, "CC", null);
         assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
         assertNull(page.getOffsetKey());
     }

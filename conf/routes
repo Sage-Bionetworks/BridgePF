@@ -131,6 +131,7 @@ DELETE /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers
 
 GET    /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.getExternalIds(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
 POST   /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.addExternalIds
+DELETE /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.deleteExternalIds
 
 # APIs for getting entities across studies
 GET /v3/studies/:studyId/surveys/published @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)
