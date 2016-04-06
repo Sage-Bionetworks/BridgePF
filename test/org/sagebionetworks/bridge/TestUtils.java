@@ -23,6 +23,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -366,5 +367,11 @@ public class TestUtils {
             set.add(item);    
         }
         return set;
+    }
+    
+    public static String makeRandomTestEmail(Class<?> cls) {
+        String devPart = BridgeConfigFactory.getConfig().getUser();
+        String rndPart = TestUtils.randomName(cls);
+        return String.format("bridge-testing+%s-%s", devPart, rndPart);
     }
  }

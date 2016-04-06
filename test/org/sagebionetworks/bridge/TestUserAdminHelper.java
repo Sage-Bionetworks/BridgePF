@@ -174,16 +174,11 @@ public class TestUserAdminHelper {
             this.signUp = signUp;
             return this;
         }
-        private String makeRandomUserName(Class<?> cls) {
-            String devPart = BridgeConfigFactory.getConfig().getUser();
-            String rndPart = TestUtils.randomName(cls);
-            return String.format("bridge-testing+%s-%s", devPart, rndPart);
-        }
         public TestUser build() {
             if (study == null) {
                 study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
             }
-            String name = makeRandomUserName(cls);
+            String name = TestUtils.makeRandomTestEmail(cls);
             SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
             UserSession session = userAdminService.createUser(finalSignUp, study, subpopGuid, signIn, consent);
             

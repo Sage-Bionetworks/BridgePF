@@ -19,6 +19,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
@@ -82,8 +83,8 @@ public class UserAdminServiceTest {
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         study.setExternalIdValidationEnabled(true);
-        String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
-        signUp = new SignUp(name+"@sagebridge.org", "P4ssword!", null, null);
+        String email = TestUtils.makeRandomTestEmail(UserAdminServiceTest.class);
+        signUp = new SignUp(email, "P4ssword!", null, null);
 
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, TEST_CONTEXT, signIn).getUser();
