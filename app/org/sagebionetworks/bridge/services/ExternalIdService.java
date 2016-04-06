@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -101,6 +102,9 @@ public class ExternalIdService {
         checkNotNull(study);
         checkNotNull(externalIdentifiers);
         
+        if (study.isExternalIdValidationEnabled()) {
+            throw new BadRequestException("Cannot delete IDs while externalId validation is enabled for this study.");
+        }
         externalIdDao.deleteExternalIds(study.getStudyIdentifier(), externalIdentifiers);    
     }
 }

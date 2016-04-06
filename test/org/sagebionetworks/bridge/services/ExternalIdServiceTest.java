@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -138,9 +139,16 @@ public class ExternalIdServiceTest {
     }
 
     @Test
-    public void deleteExternalIds() {
+    public void deleteExternalIdsWithValidationDisabled() {
+        STUDY.setExternalIdValidationEnabled(false);
         externalIdService.deleteExternalIds(STUDY, EXT_IDS);
         
         verify(externalIdDao).deleteExternalIds(STUDY.getStudyIdentifier(), EXT_IDS);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteExternalIdsWithValidationEnabled() {
+        STUDY.setExternalIdValidationEnabled(true);
+        externalIdService.deleteExternalIds(STUDY, EXT_IDS);
     }
 }
