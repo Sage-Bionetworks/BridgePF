@@ -8,8 +8,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.annotation.Resource;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.After;
@@ -19,16 +18,15 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
 import org.sagebionetworks.bridge.models.backfill.BackfillStatus;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoBackfillDaoTest {
 
-    @Resource
+    @Autowired
     private DynamoBackfillDao backfillDao;
 
     @Before

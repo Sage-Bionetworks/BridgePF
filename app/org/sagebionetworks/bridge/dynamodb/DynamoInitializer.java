@@ -1,11 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.datapipeline.DataPipelineClient;
@@ -22,101 +21,89 @@ import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
 import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.TableStatus;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalTime;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class DynamoInitializer {
 
     private static Logger LOG = LoggerFactory.getLogger(DynamoInitializer.class);
 
-    private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
-
-    private static final AmazonDynamoDB DYNAMO;
-    private static final DataPipelineClient DATA_PIPELINE_CLIENT;
-
-    private static final LocalTime BACKUP_SCHEDULED_TIME = LocalTime.of(1, 0);
-    private static final Region DYNAMO_REGION = Region.getRegion(Regions.US_EAST_1);
-
+    static final Region DYNAMO_REGION = Region.getRegion(Regions.US_EAST_1);
     // Backups go in bucket named org-sagebridge-dynamo-backup-ENV-USER
     private static final String DYNAMO_BACKUP_BUCKET_PREFIX = "org-sagebridge-dynamo-backup-";
+    private static final LocalTime BACKUP_SCHEDULED_TIME = new LocalTime(1, 0);
+    private static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
 
-    static {
-        String awsKey = CONFIG.getProperty("aws.key");
-        String secretKey = CONFIG.getProperty("aws.secret.key");
-        BasicAWSCredentials credentials = new BasicAWSCredentials(awsKey, secretKey);
-        DYNAMO = new AmazonDynamoDBClient(credentials);
-        DATA_PIPELINE_CLIENT = new DataPipelineClient(credentials);
+    private final BridgeConfig bridgeConfig;
+    private final AmazonDynamoDB dynamoDBClient;
+    private final DataPipelineClient dataPipelineClient;
+
+    @Autowired
+    public DynamoInitializer(BridgeConfig bridgeConfig,
+                             AmazonDynamoDBClient dynamoDBClient,
+                             DataPipelineClient dataPipelineClient) {
+        this.bridgeConfig = bridgeConfig;
+        this.dynamoDBClient = dynamoDBClient;
+        this.dataPipelineClient = dataPipelineClient;
     }
 
     /**
-     * Creates DynamoDB tables, if they do not exist yet, from the annotated types. in the package
-     * "org.sagebionetworks.bridge.dynamodb". Throws an error if the table exists but the schema (hash key, range key,
+     * Creates DynamoDB tables, if they do not exist yet. Throws an error if the table exists but the schema (hash key, range key,
      * and secondary indices) does not match.
      */
-    public static void init(String dynamoPackage) {
-        AnnotationBasedTableCreator tableCreator = new AnnotationBasedTableCreator(CONFIG);
-        List<TableDescription> tables = tableCreator.getTables(dynamoPackage);
-        init(tables);
-    }
-
-    @SafeVarargs
-    public static void init(Class<?>... dynamoTables) {
-        AnnotationBasedTableCreator tableCreator = new AnnotationBasedTableCreator(CONFIG);
-        List<TableDescription> tables = tableCreator.getTables(dynamoTables);
-        init(tables);
-    }
-
-    private static void init(Collection<TableDescription> tables) {
-        beforeInit();
+    public void init(Collection<TableDescription> tables) {
         initTables(tables);
-        backupPipelineForTables(tables);
+        backupPipelineForTables(tables.stream().map(t -> t.getTableName()).collect(Collectors.toList()));
     }
 
-    /**
-     * Actions performed before init(), e.g. for phasing out obsolete schemas.
-     */
-    static void beforeInit() {
-    }
-
-    static void deleteTable(Class<?> table) {
-        final String tableName = DynamoUtils.getFullyQualifiedTableName(table, CONFIG);
+    void deleteTable(Class<?> table) {
+        final String tableName = DynamoUtils.getFullyQualifiedTableName(table, bridgeConfig);
         try {
-            DescribeTableResult tableResult = DYNAMO.describeTable(tableName);
+            DescribeTableResult tableResult = dynamoDBClient.describeTable(tableName);
             TableDescription tableDscr = tableResult.getTable();
             String status = tableDscr.getTableStatus();
             if (TableStatus.DELETING.toString().equalsIgnoreCase(status)) {
                 return;
             } else if (!TableStatus.ACTIVE.toString().equalsIgnoreCase(status)) {
                 // Must be active to be deleted
-                DynamoUtils.waitForActive(DYNAMO, tableDscr.getTableName());
+                DynamoUtils.waitForActive(dynamoDBClient, tableDscr.getTableName());
             }
             LOG.info("Deleting table " + tableName);
-            DYNAMO.deleteTable(tableName);
-            DynamoUtils.waitForDelete(DYNAMO, tableDscr.getTableName());
+            dynamoDBClient.deleteTable(tableName);
+            DynamoUtils.waitForDelete(dynamoDBClient, tableDscr.getTableName());
             LOG.info("Table " + tableName + " deleted.");
         } catch (ResourceNotFoundException e) {
             LOG.warn("Table " + tableName + " does not exist.");
         }
     }
 
-    static void backupPipelineForTables(final Collection<TableDescription> tables) {
-        Environment env = CONFIG.getEnvironment();
+    void backupPipelineForTables(final Collection<String> tables) {
+        Environment env = bridgeConfig.getEnvironment();
 
-        String envAndUser = env.name().toLowerCase() + "-" + CONFIG.getUser();
+        String envAndUser = env.name().toLowerCase() + "-" + bridgeConfig.getUser();
 
         String pipelineName = "Dynamo backup for bridge: " + envAndUser;
         String pipelineUniqueId = "dynamo-backup-bridge." + envAndUser;
         String s3Bucket = DYNAMO_BACKUP_BUCKET_PREFIX + envAndUser;
 
-        List<PipelineObject> pipelineObjects =
-                DynamoDataPipelineHelper.createPipelineObjects(DYNAMO_REGION, tables, s3Bucket, BACKUP_SCHEDULED_TIME);
+        List<PipelineObject> pipelineObjects = DynamoDataPipelineHelper.createPipelineObjects(DYNAMO_REGION,
+                tables,
+                s3Bucket,
+                BACKUP_SCHEDULED_TIME,
+                LOCAL_TIME_ZONE
+        );
 
         LOG.debug("Pipeline objects: " + pipelineObjects.toString());
 
-        CreatePipelineResult createPipelineResult = DATA_PIPELINE_CLIENT.createPipeline(new CreatePipelineRequest()
+        //If pipeline with this uniqueId already exists, existing pipeline will be returned
+        CreatePipelineResult createPipelineResult = dataPipelineClient.createPipeline(new CreatePipelineRequest()
                 .withName(pipelineName)
                 .withUniqueId(pipelineUniqueId));
 
@@ -128,7 +115,7 @@ public class DynamoInitializer {
                 new PutPipelineDefinitionRequest().withPipelineId(pipelineId).withPipelineObjects(pipelineObjects);
 
         PutPipelineDefinitionResult putPipelineDefinitionResult =
-                DATA_PIPELINE_CLIENT.putPipelineDefinition(putPipelineDefinitionRequest);
+                dataPipelineClient.putPipelineDefinition(putPipelineDefinitionRequest);
         LOG.debug(putPipelineDefinitionResult.toString());
 
         if (putPipelineDefinitionResult.isErrored()) {
@@ -141,13 +128,13 @@ public class DynamoInitializer {
         if (Environment.UAT.equals(env)) {
             LOG.info("Activating backup pipeline, pipelineId=" + pipelineId);
 
-            DATA_PIPELINE_CLIENT.activatePipeline(new ActivatePipelineRequest().withPipelineId(pipelineId)).toString();
+            dataPipelineClient.activatePipeline(new ActivatePipelineRequest().withPipelineId(pipelineId)).toString();
         }
     }
 
-    private static void initTables(final Collection<TableDescription> tables) {
-        Map<String, TableDescription> existingTables = DynamoUtils.getExistingTables(DYNAMO);
-        Environment env = CONFIG.getEnvironment();
+    private void initTables(final Collection<TableDescription> tables) {
+        Map<String, TableDescription> existingTables = DynamoUtils.getExistingTables(dynamoDBClient);
+        Environment env = bridgeConfig.getEnvironment();
         if (Environment.UAT.equals(env) || Environment.PROD.equals(env)) {
             StringBuilder builder = new StringBuilder("[");
             for (Map.Entry<String, TableDescription> entry : existingTables.entrySet()) {
@@ -166,12 +153,12 @@ public class DynamoInitializer {
             if (!existingTables.containsKey(table.getTableName())) {
                 CreateTableRequest createTableRequest = DynamoUtils.getCreateTableRequest(table);
                 LOG.info("Creating table " + table.getTableName());
-                DYNAMO.createTable(createTableRequest);
+                dynamoDBClient.createTable(createTableRequest);
             } else {
                 final TableDescription existingTable = existingTables.get(table.getTableName());
                 DynamoUtils.compareSchema(table, existingTable);
             }
-            DynamoUtils.waitForActive(DYNAMO, table.getTableName());
+            DynamoUtils.waitForActive(dynamoDBClient, table.getTableName());
         }
         LOG.info("DynamoDB tables are ready.");
     }

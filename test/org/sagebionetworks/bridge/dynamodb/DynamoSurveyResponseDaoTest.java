@@ -8,9 +8,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
-
 import javax.annotation.Resource;
+import javax.inject.Inject;
 
+import com.amazonaws.services.dynamodbv2.model.TableDescription;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.junit.After;
@@ -31,11 +36,6 @@ import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Lists;
-
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSurveyResponseDaoTest {
@@ -49,6 +49,12 @@ public class DynamoSurveyResponseDaoTest {
 
     @Resource
     DynamoSurveyDao surveyDao;
+
+    @Inject
+    DynamoInitializer dynamoInitializer;
+
+    @Inject
+    AnnotationBasedTableCreator annotationBasedTableCreator;
 
     private Survey survey;
 
@@ -68,7 +74,9 @@ public class DynamoSurveyResponseDaoTest {
     public void after() {
         // These have to be deleted or the survey won't delete. In practice you can't
         // delete these without deleting a user, and that isn't going to happen in production.
-        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyResponse.class);
+        List<TableDescription> tables =
+                annotationBasedTableCreator.getTables(DynamoSurvey.class, DynamoSurveyResponse.class);
+        dynamoInitializer.init(tables);
         DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
     }
@@ -81,14 +89,14 @@ public class DynamoSurveyResponseDaoTest {
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setIdentifier("foo");
         response.setHealthCode("AAA");
-        response.setSurveyKey("BBB:"+time);
+        response.setSurveyKey("BBB:" + time);
         response.setStartedOn(DateTime.parse("2014-10-10T10:02:21.123Z").getMillis());
         response.setVersion(1L);
         response.setData(data);
-        
+
         String string = BridgeObjectMapper.get().writeValueAsString(response);
         JsonNode node = BridgeObjectMapper.get().readTree(string);
-        
+
         assertEquals("foo", node.get("identifier").asText());
         assertEquals("2014-10-10T10:02:21.123Z", node.get("startedOn").asText());
         assertEquals("in_progress", node.get("status").asText());
@@ -99,7 +107,7 @@ public class DynamoSurveyResponseDaoTest {
         assertFalse("No data in JSON", node.has("data"));
         assertFalse("No healthCode in JSON", node.has("healthCode"));
     }
-    
+
     @Test
     public void createSurveyResponseWithIdentifier() {
         String identifier = RandomStringUtils.randomAlphanumeric(10);
@@ -112,21 +120,22 @@ public class DynamoSurveyResponseDaoTest {
         try {
             surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, identifier);
             fail("Should have thrown an exception");
-        } catch(EntityAlreadyExistsException e) {
-            
+        } catch (EntityAlreadyExistsException e) {
+
         }
     }
-    
+
     @Test
     public void createSurveyResponse() throws Exception {
         assertTrue("Survey is not in use", noResponses(survey));
-        
+
         List<SurveyAnswer> answers = Lists.newArrayList();
 
-        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, BridgeUtils.generateGuid());
+        SurveyResponse response =
+                surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, BridgeUtils.generateGuid());
         assertNotNull("Has been assigned a GUID", response.getIdentifier());
         assertFalse("Survey is now in use", noResponses(survey));
-        
+
         SurveyResponse newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
 
         assertEquals("Has right identifier", response.getIdentifier(), newResponse.getIdentifier());
@@ -171,46 +180,71 @@ public class DynamoSurveyResponseDaoTest {
         newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
         assertEquals("Answer was updated due to more recent timestamp", "true", answers.get(0).getAnswers().get(0));
     }
-    
+
     @Test
     public void canTellWhenSurveyHasResponses() throws Exception {
         assertFalse(surveyResponseDao.surveyHasResponses(survey));
-        
-        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
-        
+
+        surveyResponseDao.createSurveyResponse(
+                survey,
+                HEALTH_DATA_CODE,
+                Lists.<SurveyAnswer>newArrayList(),
+                SURVEY_RESPONSE_IDENTIFIER
+        );
+
         assertFalse(noResponses(survey));
     }
-    
+
     @Test
     public void canDeleteSurveyResponseByHealthCode() {
-        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
-        
+        surveyResponseDao.createSurveyResponse(
+                survey,
+                HEALTH_DATA_CODE,
+                Lists.<SurveyAnswer>newArrayList(),
+                SURVEY_RESPONSE_IDENTIFIER
+        );
+
         SurveyResponse response = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, SURVEY_RESPONSE_IDENTIFIER);
         assertNotNull(response);
-        
+
         surveyResponseDao.deleteSurveyResponses(HEALTH_DATA_CODE);
         try {
             surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, SURVEY_RESPONSE_IDENTIFIER);
             fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-            
+        } catch (EntityNotFoundException e) {
+
         }
     }
-    
+
     // This test is due to a bug where the range key was not being set correctly for a query, and 
     // a list of results were being returned and the wrong response then being selected.
     // NOTE: Cannot get tests to pass right now because of a Stormpath issue.
     @Test
     public void createTwoResponsesAndRetrieveTheCorrectOneByIdentifier() {
         String targetIdentifier = BridgeUtils.generateGuid();
-        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), BridgeUtils.generateGuid());
-        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), targetIdentifier);
-        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), BridgeUtils.generateGuid());
-        
+        surveyResponseDao.createSurveyResponse(
+                survey,
+                HEALTH_DATA_CODE,
+                Lists.<SurveyAnswer>newArrayList(),
+                BridgeUtils.generateGuid()
+        );
+        surveyResponseDao.createSurveyResponse(
+                survey,
+                HEALTH_DATA_CODE,
+                Lists.<SurveyAnswer>newArrayList(),
+                targetIdentifier
+        );
+        surveyResponseDao.createSurveyResponse(
+                survey,
+                HEALTH_DATA_CODE,
+                Lists.<SurveyAnswer>newArrayList(),
+                BridgeUtils.generateGuid()
+        );
+
         SurveyResponse response = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, targetIdentifier);
         assertEquals(targetIdentifier, response.getIdentifier());
     }
-    
+
     private boolean noResponses(Survey survey) throws Exception {
         Thread.sleep(TestConstants.GSI_WAIT_DURATION);
         return !surveyResponseDao.surveyHasResponses(survey);
