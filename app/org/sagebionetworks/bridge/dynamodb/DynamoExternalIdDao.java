@@ -87,10 +87,10 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        // The offset key is applied after the range key filter. If the offsetKey doesn't match the beginning
-        // of the range key filter, DDB throws a validation exception. So when providing a filter and an offset, 
-        // if the offset is not the valid prefix of the range key filter, set it to null (go back to first page).
-        if (offsetKey != null && idFilter != null && idFilter.indexOf(offsetKey) != 0) {
+        // The offset key is applied after the idFilter. If the offsetKey doesn't match the beginning
+        // of the idFilter, the AWS SDK throws a validation exception. So when providing an idFilter and 
+        // a paging offset, clear the offset (go back to the first page) if they don't match.
+        if (offsetKey != null && idFilter != null && !offsetKey.startsWith(idFilter)) {
             offsetKey = null;
         }
         PaginatedQueryList<DynamoExternalIdentifier> list = mapper.query(DynamoExternalIdentifier.class,
