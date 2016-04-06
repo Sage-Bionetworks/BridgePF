@@ -284,7 +284,7 @@ public class ParticipantService {
             String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
             
             if (idsDontExistOrAreNotEqual(existingExternalId, participant.getExternalId())) {
-                if (existingExternalId == null && isNotBlank(participant.getExternalId())) {
+                if (isBlank(existingExternalId) && isNotBlank(participant.getExternalId())) {
                     externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
                 } else {
                     throw new BadRequestException("External ID cannot be changed, removed after assignment, or left unassigned.");
