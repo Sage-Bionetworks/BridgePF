@@ -185,7 +185,9 @@ public class ParticipantService {
         if (isNew) {
             // Don't set it yet. Create the user first, and only assign it if that's successful.
             // Allows us to assure that credentials and ID will be related or not created at all.
-            externalIdService.reserveExternalId(study, participant.getExternalId());
+            if (isNotBlank(participant.getExternalId())) {
+                externalIdService.reserveExternalId(study, participant.getExternalId());    
+            }
             
             SignUp signUp = new SignUp(participant.getEmail(), participant.getPassword(), null, null);
             account = accountDao.signUp(study, signUp, study.isEmailVerificationEnabled());
@@ -218,7 +220,7 @@ public class ParticipantService {
         }
         accountDao.updateAccount(study, account);
         
-        if (isNew) {
+        if (isNew && isNotBlank(participant.getExternalId())) {
             externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
         }
     }
