@@ -169,7 +169,7 @@ public class ExternalIdControllerTest {
     }
     
     @Test(expected = BadRequestException.class)
-    public void deleteIdentifiersNoAtAll() throws Exception {
+    public void deleteIdentifiersNoneInQueryAtAll() throws Exception {
         Map<String,String[]> map = Maps.newHashMap();
         mockRequestWithQueryString(map);
         

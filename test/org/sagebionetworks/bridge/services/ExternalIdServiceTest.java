@@ -146,9 +146,14 @@ public class ExternalIdServiceTest {
         verify(externalIdDao).deleteExternalIds(STUDY.getStudyIdentifier(), EXT_IDS);
     }
     
-    @Test(expected = BadRequestException.class)
+    @Test
     public void deleteExternalIdsWithValidationEnabled() {
         STUDY.setExternalIdValidationEnabled(true);
-        externalIdService.deleteExternalIds(STUDY, EXT_IDS);
+        try {
+            externalIdService.deleteExternalIds(STUDY, EXT_IDS);
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+        }
+        verifyNoMoreInteractions(externalIdDao);
     }
 }
