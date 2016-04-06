@@ -660,4 +660,20 @@ public class ParticipantServiceTest {
         UserProfile profile = new UserProfile();
         participantService.updateProfile(STUDY, EMAIL, profile);
     }
+    
+    @Test
+    public void createParticipantWithoutExternalIdAndNoValidation() {
+        STUDY.setExternalIdValidationEnabled(false);
+        doReturn(account).when(accountDao).signUp(eq(STUDY), any(), eq(false));
+        doReturn("healthId").when(account).getHealthId();
+        doReturn(healthId).when(healthCodeService).getMapping("healthId");
+        doReturn("healthCode").when(healthId).getCode();
+        
+        // These are the minimal credentials and they should work.
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).withPassword("P@ssword1")
+                .build();
+        
+        participantService.createParticipant(STUDY, participant);
+        verifyNoMoreInteractions(externalIdService); // no ID, no calls to this service
+    }
 }
