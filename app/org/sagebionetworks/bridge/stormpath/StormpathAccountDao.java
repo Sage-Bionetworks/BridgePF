@@ -42,6 +42,8 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import org.apache.http.HttpStatus;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -160,9 +162,12 @@ public class StormpathAccountDao implements AccountDao {
         for (int i=0; i < pageSize; i++) {
             if (it.hasNext()) {
                 com.stormpath.sdk.account.Account acct = it.next();
+                java.util.Date javaDate = acct.getCreatedAt();
+                DateTime createdOn = (javaDate != null) ? new DateTime(javaDate) : null;;
+                
                 // This should not trigger further requests to the server (customData, groups, etc.).
                 AccountSummary summary = new AccountSummary(acct.getGivenName(), acct.getSurname(), 
-                        acct.getEmail(), AccountStatus.valueOf(acct.getStatus().name()));
+                        acct.getEmail(), createdOn, AccountStatus.valueOf(acct.getStatus().name()));
                 results.add(summary);
             }
         }
