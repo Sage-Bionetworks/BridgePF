@@ -184,7 +184,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                 mapper.save(identifier, getAssignmentExpression());
                 
             } catch(ConditionalCheckFailedException e) {
-                e.printStackTrace();
                 // The timeout is in effect or the healthCode is set, either way, code is "taken"
                 throw new EntityAlreadyExistsException(identifier);
             }        

@@ -24,7 +24,7 @@ public class AccountSummaryTest {
         // Set the time zone so it's not UTC, it should be converted to UTC so the strings are 
         // equal below (to demonstrate the ISO 8601 string is in UTC time zone).
         DateTime dateTime = DateTime.now().withZone(DateTimeZone.forOffsetHours(-8));
-        AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", dateTime.withZone(DateTimeZone.UTC), AccountStatus.UNVERIFIED);
+        AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", dateTime, AccountStatus.UNVERIFIED);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
         assertEquals("firstName", node.get("firstName").asText());
