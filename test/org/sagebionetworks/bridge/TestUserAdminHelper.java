@@ -33,7 +33,6 @@ import org.springframework.stereotype.Component;
 public class TestUserAdminHelper {
 
     private static final String PASSWORD = "P4ssword!";
-    private static final String EMAIL_DOMAIN = "@sagebridge.org";
 
     UserAdminService userAdminService;
     AuthenticationService authService;
@@ -177,8 +176,8 @@ public class TestUserAdminHelper {
             if (study == null) {
                 study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
             }
-            String name = TestUtils.makeRandomTestEmail(cls);
-            SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
+            String email = TestUtils.makeRandomTestEmail(cls);
+            SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(email, PASSWORD, roles, dataGroups);
             UserSession session = userAdminService.createUser(finalSignUp, study, subpopGuid, signIn, consent);
             
             return new TestUser(finalSignUp, study, session);
