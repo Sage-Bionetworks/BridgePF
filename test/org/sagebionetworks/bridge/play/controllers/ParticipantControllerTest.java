@@ -1,10 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
@@ -144,53 +139,6 @@ public class ParticipantControllerTest {
         verify(participantService).getParticipant(STUDY, "email@email.com");
     }
     
-    @SuppressWarnings("deprecation")
-    @Test
-    public void updateParticipantOptions() throws Exception {
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'sharingScope':'sponsors_and_partners',"+
-                "'notifyByEmail':true,'externalId':'abcd','dataGroups':['group1','group2'],"+
-                "'languages':['en','fr']}"));        
-        
-        Result result = controller.updateParticipantOptions("email@email.com");
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals("Participant options updated.", node.get("message").asText());
-        assertEquals(200, result.status());
-        
-        verify(participantService).updateParticipantOptions(eq(STUDY), eq("email@email.com"), optionMapCaptor.capture());
-        Map<ParticipantOption,String> options = optionMapCaptor.getValue();
-        assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), options.get(SHARING_SCOPE));
-        assertEquals(Boolean.TRUE.toString(), options.get(ParticipantOption.EMAIL_NOTIFICATIONS));
-        assertEquals("abcd", options.get(EXTERNAL_IDENTIFIER));
-        assertTrue(options.get(DATA_GROUPS).contains("group1"));
-        assertTrue(options.get(DATA_GROUPS).contains("group2"));
-        assertTrue(options.get(LANGUAGES).contains("en"));
-        assertTrue(options.get(LANGUAGES).contains("fr"));
-    }
-    
-    @SuppressWarnings("deprecation")
-    @Test
-    public void updateParticipantProfile() throws Exception {
-        STUDY.getUserProfileAttributes().add("phone");
-        
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson(
-            "{'firstName':'new first name','lastName':'new last name','phone':'new attribute'}"));
-        
-        Result result = controller.updateProfile("email@email.com");
-        String json = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
-        String message = node.get("message").asText();
-        
-        assertEquals("User profile updated.", message);
-        
-        verify(participantService).updateProfile(eq(STUDY), eq("email@email.com"), profileCaptor.capture());
-        UserProfile capturedProfile = profileCaptor.getValue();
-        
-        assertEquals("new first name", capturedProfile.getFirstName());
-        assertEquals("new last name", capturedProfile.getLastName());
-        assertEquals("new attribute", capturedProfile.getAttribute(("phone")));
-    }
-    
     @Test
     public void nullParametersUseDefaults() throws Exception {
         controller.getParticipants(null, null, null);
@@ -211,18 +159,6 @@ public class ParticipantControllerTest {
         controller.getParticipant(null);
     }
     
-    @SuppressWarnings("deprecation")
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantOptionsNoEmail() {
-        controller.updateParticipantOptions(null);
-    }
-    
-    @SuppressWarnings("deprecation")
-    @Test(expected = BadRequestException.class)
-    public void updateProfileNoEmail() {
-        controller.updateProfile(null);
-    }
-    
     @Test(expected = BadRequestException.class)
     public void signOutNoEmail() throws Exception {
         controller.signOut(null);
@@ -231,18 +167,6 @@ public class ParticipantControllerTest {
     @Test(expected = BadRequestException.class)
     public void getParticipantBlank() {
         controller.getParticipant("");
-    }
-    
-    @SuppressWarnings("deprecation")
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantOptionsBlank() {
-        controller.updateParticipantOptions("  ");
-    }
-    
-    @SuppressWarnings("deprecation")
-    @Test(expected = BadRequestException.class)
-    public void updateProfileBlank() {
-        controller.updateProfile("\t");
     }
     
     @Test(expected = BadRequestException.class)
