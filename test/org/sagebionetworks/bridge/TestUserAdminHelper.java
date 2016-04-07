@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.Set;
 
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
@@ -174,16 +173,11 @@ public class TestUserAdminHelper {
             this.signUp = signUp;
             return this;
         }
-        private String makeRandomUserName(Class<?> cls) {
-            String devPart = BridgeConfigFactory.getConfig().getUser();
-            String rndPart = TestUtils.randomName(cls);
-            return String.format("bridge-testing+%s-%s", devPart, rndPart);
-        }
         public TestUser build() {
             if (study == null) {
                 study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
             }
-            String name = makeRandomUserName(cls);
+            String name = TestUtils.makeRandomTestEmail(cls);
             SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(name + EMAIL_DOMAIN, PASSWORD, roles, dataGroups);
             UserSession session = userAdminService.createUser(finalSignUp, study, subpopGuid, signIn, consent);
             
