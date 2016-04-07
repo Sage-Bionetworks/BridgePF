@@ -50,14 +50,12 @@ import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
-import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -388,91 +386,6 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void updateOptions() {
-        mockGetAccount();
-        
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        
-        participantService.updateParticipantOptions(STUDY, EMAIL, options);
-        
-        verify(optionsService).setAllOptions(STUDY, "healthCode", options);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void updateOptionsInvalidDataGroup() {
-        mockGetAccount();
-
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        options.put(ParticipantOption.DATA_GROUPS, "group1,group3");
-        
-        participantService.updateParticipantOptions(STUDY, EMAIL, options);
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void updateOptionsNoAccount() {
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(null);
-        
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        participantService.updateParticipantOptions(STUDY, EMAIL, options);
-    }
-    
-    @Test
-    public void updateOptionsNoExternalIdValidation() {
-        mockGetAccount();
-
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        options.put(EXTERNAL_IDENTIFIER, "POWERS"); // <!-- this is okay
-        
-        participantService.updateParticipantOptions(STUDY, EMAIL, options);
-        
-        verifyNoMoreInteractions(externalIdService);
-    }
-    
-    @Test(expected = BridgeServiceException.class)
-    public void updateOptionsNoHealthCode() {
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(account);
-        when(account.getHealthId()).thenReturn(null);
-        when(healthId.getCode()).thenReturn(null);
-        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
-        
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        participantService.updateParticipantOptions(STUDY, EMAIL, options);
-    }
-
-    @Test
-    public void updateOptionsWithAssignedId() {
-        mockGetAccount();
-        doThrow(new EntityAlreadyExistsException(ExternalIdentifier.create(STUDY, "AAA")))
-                .when(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
-        
-        STUDY.setExternalIdValidationEnabled(true);
-        
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        options.put(EXTERNAL_IDENTIFIER, "POWERS");
-        
-        try {
-            participantService.updateParticipantOptions(STUDY, EMAIL, options);
-            fail("Should have thrown exception");
-        } catch(EntityAlreadyExistsException e) {
-        }
-        verify(optionsService, never()).setAllOptions(STUDY, "healthCode", options);
-    }
-
-    @Test
-    public void updateOptionsWithExternalIdValidation() {
-        mockGetAccount();
-        
-        STUDY.setExternalIdValidationEnabled(true);
-        
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        options.put(EXTERNAL_IDENTIFIER, "POWERS");
-        
-        participantService.updateParticipantOptions(STUDY, EMAIL, options);
-        
-        verify(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
-    }
-
-    @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
         STUDY.setExternalIdValidationEnabled(true);
         doReturn("healthId").when(account).getHealthId();
@@ -627,38 +540,6 @@ public class ParticipantServiceTest {
         doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
         
         participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
-    }
-    
-    @Test
-    public void updateUserProfile() {
-        UserProfile profile = new UserProfile();
-        profile.setFirstName("first name");
-        profile.setLastName("last name");
-        profile.setAttribute("attr1", "new attr1");
-        profile.setAttribute("attr2", "new attr2");
-
-        // Need an account object on which we can actually set the values...
-        Account acct = new SimpleAccount();
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(acct);
-        
-        participantService.updateProfile(STUDY, EMAIL, profile);
-        
-        ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
-        verify(accountDao).updateAccount(eq(STUDY), captor.capture());
-        
-        Account capturedAccount = captor.getValue();
-        assertEquals("first name", capturedAccount.getFirstName());
-        assertEquals("last name", capturedAccount.getLastName());
-        assertEquals("new attr1", capturedAccount.getAttribute("attr1"));
-        assertEquals("new attr2", capturedAccount.getAttribute("attr2"));
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void updateUserProfileNoAccount() {
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(null);
-        
-        UserProfile profile = new UserProfile();
-        participantService.updateProfile(STUDY, EMAIL, profile);
     }
     
     @Test

@@ -14,12 +14,10 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -30,16 +28,13 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
-import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.validators.DataGroupsValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -161,6 +156,14 @@ public class ParticipantService {
         }
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
     }
+    
+    public void signUserOut(Study study, String email) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(email));
+        
+        Account account = getAccountThrowingException(study, email);
+        cacheProvider.removeSessionByUserId(account.getId());
+    }
 
     /**
      * Create a study participant. A password must be provided, even if it is added on behalf of a 
@@ -225,60 +228,6 @@ public class ParticipantService {
         }
     }
     
-    public void updateParticipantOptions(Study study, String email, Map<ParticipantOption,String> options) {
-        checkNotNull(study);
-        checkArgument(isNotBlank(email));
-        checkNotNull(options);
-        
-        Account account = getAccountThrowingException(study, email);
-        String healthCode = getHealthCodeThrowingException(account);
-        if (healthCode == null) {
-            // This is possibly also an IllegalStateException, it's not exactly a bad request. User in bad state.
-            // Could arguably be a 404 since user is not fully initialized.
-            throw new BridgeServiceException("Participant options cannot be assigned to this account (no health code generated; user may not have verified account email address.");
-        }
-        // Validate data groups.
-        String dataGroupsString = options.get(ParticipantOption.DATA_GROUPS);
-        if (dataGroupsString != null) {
-            Set<String> dataGroupsSet = BridgeUtils.commaListToOrderedSet(dataGroupsString);
-            DataGroups dataGroups = new DataGroups(dataGroupsSet);
-            Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);    
-        }
-        // Set external ID through service. It validates and throws exception if we should not update options
-        String externalIdentifier = options.get(EXTERNAL_IDENTIFIER);
-        if (study.isExternalIdValidationEnabled() && externalIdentifier != null) {
-            externalIdService.assignExternalId(study, externalIdentifier, healthCode);
-        }
-        optionsService.setAllOptions(study, healthCode, options);
-    }
-
-    /**
-     * Update the fields of a user profile that can be updated, on behalf of a user (using an 
-     * email address only).
-     */
-    public void updateProfile(Study study, String email, UserProfile profile) {
-        checkNotNull(study);
-        checkArgument(isNotBlank(email));
-        checkNotNull(profile);
-        
-        Account account = getAccountThrowingException(study, email);
-        account.setFirstName(profile.getFirstName());
-        account.setLastName(profile.getLastName());
-        for(String attribute : study.getUserProfileAttributes()) {
-            String value = profile.getAttribute(attribute);
-            account.setAttribute(attribute, value);
-        }
-        accountDao.updateAccount(study, account);
-    }
-    
-    public void signUserOut(Study study, String email) {
-        checkNotNull(study);
-        checkArgument(isNotBlank(email));
-        
-        Account account = getAccountThrowingException(study, email);
-        cacheProvider.removeSessionByUserId(account.getId());
-    }
-
     private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
         // If not enabled, we'll update the value like any other ParticipantOption
         if (study.isExternalIdValidationEnabled()) {
