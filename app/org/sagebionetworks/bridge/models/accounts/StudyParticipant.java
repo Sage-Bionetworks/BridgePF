@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -35,11 +37,13 @@ public class StudyParticipant implements BridgeEntity {
     private final Map<String,List<UserConsentHistory>> consentHistories;
     private final Set<Roles> roles;
     private final LinkedHashSet<String> languages;
+    private final AccountStatus status;
+    private final DateTime createdOn;
     
     private StudyParticipant(String firstName, String lastName, String email, String externalId, String password,
             SharingScope sharingScope, boolean notifyByEmail, Set<String> dataGroups, String healthCode,
             Map<String, String> attributes, Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles,
-            LinkedHashSet<String> languages) {
+            LinkedHashSet<String> languages, AccountStatus status, DateTime createdOn) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -53,6 +57,8 @@ public class StudyParticipant implements BridgeEntity {
         this.consentHistories = consentHistories;
         this.roles = roles;
         this.languages = languages;
+        this.status = status;
+        this.createdOn = createdOn;
     }
     
     public String getFirstName() {
@@ -94,6 +100,12 @@ public class StudyParticipant implements BridgeEntity {
     public LinkedHashSet<String> getLanguages() {
         return languages;
     }
+    public AccountStatus getStatus() {
+        return status;
+    }
+    public DateTime getCreatedOn() {
+        return createdOn;
+    }
     
     public static class Builder {
         private String firstName;
@@ -109,6 +121,8 @@ public class StudyParticipant implements BridgeEntity {
         private Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         private Set<Roles> roles = Sets.newHashSet();
         private LinkedHashSet<String> languages = new LinkedHashSet<>();
+        private AccountStatus status;
+        private DateTime createdOn;
         
         public Builder withFirstName(String firstName) {
             this.firstName = firstName;
@@ -178,10 +192,18 @@ public class StudyParticipant implements BridgeEntity {
             }
             return this;
         }
+        public Builder withStatus(AccountStatus status) {
+            this.status = status;
+            return this;
+        }
+        public Builder withCreatedOn(DateTime createdOn) {
+            this.createdOn = createdOn;
+            return this;
+        }
         
         public StudyParticipant build() {
             return new StudyParticipant(firstName, lastName, email, externalId, password, sharingScope, notifyByEmail,
-                    dataGroups, healthCode, attributes, consentHistories, roles, languages);
+                    dataGroups, healthCode, attributes, consentHistories, roles, languages, status, createdOn);
         }
     }
 

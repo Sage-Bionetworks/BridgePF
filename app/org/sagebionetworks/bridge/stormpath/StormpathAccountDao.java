@@ -43,7 +43,6 @@ import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import org.apache.http.HttpStatus;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

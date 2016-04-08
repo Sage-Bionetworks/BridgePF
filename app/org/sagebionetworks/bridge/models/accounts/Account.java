@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -44,6 +46,9 @@ public interface Account extends BridgeEntity {
     public String getHealthId();
     public void setHealthId(String healthId);
 
+    public AccountStatus getStatus();
+    public void setStatus(AccountStatus status);
+
     public StudyIdentifier getStudyIdentifier();
     
     public Set<Roles> getRoles();
@@ -54,4 +59,6 @@ public interface Account extends BridgeEntity {
      * @return
      */
     public String getId();
+    
+    public DateTime getCreatedOn();
 }

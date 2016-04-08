@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,6 +45,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -76,6 +78,7 @@ public class ParticipantServiceTest {
             .withDataGroups(STUDY_DATA_GROUPS)
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
+            .withStatus(AccountStatus.DISABLED)
             .withExternalId("POWERS").build();
 
     private static final Study STUDY = new DynamoStudy();
@@ -149,6 +152,7 @@ public class ParticipantServiceTest {
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
         when(accountDao.signUp(eq(STUDY), any(), eq(false))).thenReturn(account);
+        doReturn("id").when(account).getId();
         
         participantService.createParticipant(STUDY, PARTICIPANT);
 
@@ -175,6 +179,11 @@ public class ParticipantServiceTest {
         verify(account).setFirstName("firstName");
         verify(account).setLastName("lastName");
         verify(account).setAttribute("phone", "123456789");
+        // Not called on create
+        verify(account, never()).setStatus(AccountStatus.DISABLED);
+        
+        // don't update cache
+        verify(cacheProvider, never()).removeSessionByUserId("id");
     }
     
     // Or any other failure to reserve an externalId
@@ -291,10 +300,13 @@ public class ParticipantServiceTest {
     @Test
     public void getStudyParticipant() {
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
+        DateTime createdOn = DateTime.now();
         when(account.getHealthId()).thenReturn("healthId");
         when(account.getFirstName()).thenReturn("firstName");
         when(account.getLastName()).thenReturn("lastName");
         when(account.getEmail()).thenReturn(EMAIL);
+        when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
+        when(account.getCreatedOn()).thenReturn(createdOn);
         when(account.getAttribute("attr2")).thenReturn("anAttribute2");
         
         mockGetAccount();
@@ -346,6 +358,8 @@ public class ParticipantServiceTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, participant.getSharingScope());
         assertEquals("healthCode", participant.getHealthCode());
         assertEquals(EMAIL, participant.getEmail());
+        assertEquals(AccountStatus.DISABLED, participant.getStatus());
+        assertEquals(createdOn, participant.getCreatedOn());
         assertEquals(TestUtils.newLinkedHashSet("fr","de"), participant.getLanguages());
         
         assertNull(participant.getAttributes().get("attr1"));
@@ -392,6 +406,7 @@ public class ParticipantServiceTest {
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
         doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn("id").when(account).getId();
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -410,7 +425,10 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         verify(account).setFirstName("firstName");
         verify(account).setLastName("lastName");
+        verify(account).setStatus(AccountStatus.DISABLED);
         verify(account).setAttribute("phone", "123456789");
+        
+        verify(cacheProvider).removeSessionByUserId("id");
     }
     
     @Test(expected = BadRequestException.class)

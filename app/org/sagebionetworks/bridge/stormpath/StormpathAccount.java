@@ -9,6 +9,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
@@ -16,6 +19,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -170,7 +174,19 @@ public final class StormpathAccount implements Account {
     public String getId() {
         return acct.getHref().split("/accounts/")[1];
     }
-
+    @Override
+    public AccountStatus getStatus() {
+        return AccountStatus.valueOf(acct.getStatus().name());
+    };
+    @Override
+    public void setStatus(AccountStatus status) {
+        acct.setStatus(com.stormpath.sdk.account.AccountStatus.valueOf(status.name()));
+    };
+    @Override
+    public DateTime getCreatedOn() {
+        java.util.Date javaDate = acct.getCreatedAt();
+        return (javaDate == null) ? null : new DateTime(javaDate).withZone(DateTimeZone.UTC); 
+    }
     private void encryptJSONTo(String key, Object value) {
         if (value == null) {
             acct.getCustomData().remove(key);

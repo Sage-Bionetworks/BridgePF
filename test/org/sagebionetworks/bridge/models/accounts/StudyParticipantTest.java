@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.Roles;
@@ -24,6 +26,8 @@ import com.google.common.collect.Sets;
 
 public class StudyParticipantTest {
 
+    private static final DateTime CREATED_ON = DateTime.now();
+    private static final DateTime CREATED_ON_UTC = CREATED_ON.withZone(DateTimeZone.UTC);
     private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
     private static final LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","fr");
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");
@@ -45,7 +49,9 @@ public class StudyParticipantTest {
                 .withHealthCode("healthCode")
                 .withAttributes(ATTRIBUTES)
                 .withRoles(ROLES)
-                .withLanguages(LANGS);
+                .withLanguages(LANGS)
+                .withCreatedOn(CREATED_ON)
+                .withStatus(AccountStatus.ENABLED);
         
         List<UserConsentHistory> histories = Lists.newArrayList();
         UserConsentHistory history = new UserConsentHistory.Builder()
@@ -61,6 +67,7 @@ public class StudyParticipantTest {
         StudyParticipant participant = builder.build();
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(participant);
+        
         assertEquals("firstName", node.get("firstName").asText());
         assertEquals("lastName", node.get("lastName").asText());
         assertEquals("email@email.com", node.get("email").asText());
@@ -69,6 +76,8 @@ public class StudyParticipantTest {
         assertEquals("sponsors_and_partners", node.get("sharingScope").asText());
         assertTrue(node.get("notifyByEmail").asBoolean());
         assertEquals("healthCode", node.get("healthCode").asText());
+        assertEquals("enabled", node.get("status").asText());
+        assertEquals(CREATED_ON_UTC.toString(), node.get("createdOn").asText());
         assertEquals("StudyParticipant", node.get("type").asText());
 
         Set<String> roleNames = Sets.newHashSet(
@@ -88,7 +97,7 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        assertEquals(14, node.size());
+        assertEquals(16, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -101,6 +110,8 @@ public class StudyParticipantTest {
         assertEquals(DATA_GROUPS, deserParticipant.getDataGroups());
         assertEquals("healthCode", deserParticipant.getHealthCode());
         assertEquals(ATTRIBUTES, deserParticipant.getAttributes());
+        assertEquals(CREATED_ON_UTC, deserParticipant.getCreatedOn());
+        assertEquals(AccountStatus.ENABLED, deserParticipant.getStatus());
         
         UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
         assertEquals("2002-02-02", deserHistory.getBirthdate());
