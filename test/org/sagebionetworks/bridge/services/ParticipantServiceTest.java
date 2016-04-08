@@ -152,6 +152,7 @@ public class ParticipantServiceTest {
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
         when(accountDao.signUp(eq(STUDY), any(), eq(false))).thenReturn(account);
+        doReturn("id").when(account).getId();
         
         participantService.createParticipant(STUDY, PARTICIPANT);
 
@@ -180,6 +181,9 @@ public class ParticipantServiceTest {
         verify(account).setAttribute("phone", "123456789");
         // Not called on create
         verify(account, never()).setStatus(AccountStatus.DISABLED);
+        
+        // don't update cache
+        verify(cacheProvider, never()).removeSessionByUserId("id");
     }
     
     // Or any other failure to reserve an externalId
@@ -402,6 +406,7 @@ public class ParticipantServiceTest {
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
         doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn("id").when(account).getId();
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -422,6 +427,8 @@ public class ParticipantServiceTest {
         verify(account).setLastName("lastName");
         verify(account).setStatus(AccountStatus.DISABLED);
         verify(account).setAttribute("phone", "123456789");
+        
+        verify(cacheProvider).removeSessionByUserId("id");
     }
     
     @Test(expected = BadRequestException.class)

@@ -233,6 +233,10 @@ public class ParticipantService {
         if (isNew && isNotBlank(participant.getExternalId())) {
             externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
         }
+        // Clear the user's session so that any changes are picked up by the app. New accounts don't have this issue.
+        if (!isNew) {
+            cacheProvider.removeSessionByUserId(account.getId());
+        }
     }
     
     private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
