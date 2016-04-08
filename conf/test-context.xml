@@ -4,7 +4,7 @@
         http://www.springframework.org/schema/beans     
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <import resource="file:conf/shared-config.xml" />
+    <import resource="classpath:/shared-config.xml" />
 
     <bean class="org.sagebionetworks.bridge.config.BridgeTestSpringConfig" />
 
