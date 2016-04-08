@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,7 +54,7 @@ public class ParticipantControllerTest {
     
     private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
 
-    private static final AccountSummary SUMMARY = new AccountSummary("firstName","lastName","email",AccountStatus.ENABLED);
+    private static final AccountSummary SUMMARY = new AccountSummary("firstName","lastName","email",DateTime.now(),AccountStatus.ENABLED);
     
     private static final Study STUDY = new DynamoStudy();
     
