@@ -429,7 +429,7 @@ public class StormpathAccountTest {
         assertEquals("lastName", account.getLastName());
         assertEquals(Sets.newHashSet(Roles.DEVELOPER,Roles.ADMIN), account.getRoles());
         assertEquals("123", account.getId());
-        assertEquals(createdOn, account.getCreatedOn());
+        assertEquals(createdOn.getMillis(), account.getCreatedOn().getMillis());
         assertEquals(org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED, account.getStatus());
         
         account.setFirstName("New First Name");
