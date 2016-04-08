@@ -130,6 +130,8 @@ public class ParticipantService {
         participant.withFirstName(account.getFirstName());
         participant.withLastName(account.getLastName());
         participant.withEmail(account.getEmail());
+        participant.withStatus(account.getStatus());
+        participant.withCreatedOn(account.getCreatedOn());
         participant.withRoles(account.getRoles());
         
         Map<String,String> attributes = Maps.newHashMap();
@@ -220,6 +222,11 @@ public class ParticipantService {
         for(String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.setAttribute(attribute, value);
+        }
+        // When creating a user, the study flag to verify email addresses directs what happens with workflow on Stormpath. 
+        // After creation, you can change the status to whatever you want (manually verify a user, disable a user, etc.)
+        if (!isNew && participant.getStatus() != null) {
+            account.setStatus(participant.getStatus());
         }
         accountDao.updateAccount(study, account);
         
