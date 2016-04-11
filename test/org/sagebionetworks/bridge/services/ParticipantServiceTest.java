@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -372,6 +373,39 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
+    }
+    
+    @Test
+    public void getStudyParticipantWithoutHealthCode() {
+        // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
+        DateTime createdOn = DateTime.now();
+        when(account.getHealthId()).thenReturn(null);
+        when(account.getFirstName()).thenReturn("firstName");
+        when(account.getLastName()).thenReturn("lastName");
+        when(account.getEmail()).thenReturn(EMAIL);
+        when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
+        when(account.getCreatedOn()).thenReturn(createdOn);
+        when(account.getAttribute("attr2")).thenReturn("anAttribute2");
+        
+        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(account);
+        when(healthId.getCode()).thenReturn(null);
+        
+        StudyParticipant participant = participantService.getParticipant(STUDY, EMAIL);
+        
+        assertEquals("firstName", participant.getFirstName());
+        assertEquals("lastName", participant.getLastName());
+        assertFalse(participant.isNotifyByEmail());
+        assertTrue(participant.getDataGroups().isEmpty());
+        assertNull(participant.getExternalId());
+        assertNull(participant.getSharingScope());
+        assertNull(participant.getHealthCode());
+        assertEquals(EMAIL, participant.getEmail());
+        assertEquals(AccountStatus.DISABLED, participant.getStatus());
+        assertEquals(createdOn, participant.getCreatedOn());
+        assertTrue(participant.getLanguages().isEmpty());
+        assertNull(participant.getAttributes().get("attr1"));
+        assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
+        assertTrue(participant.getConsentHistories().isEmpty());
     }
     
     private void mockGetAccount() {

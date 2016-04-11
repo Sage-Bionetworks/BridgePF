@@ -103,7 +103,7 @@ public class ParticipantService {
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
         Account account = getAccountThrowingException(study, email);
-        String healthCode = getHealthCodeThrowingException(account);
+        String healthCode = getHealthCode(account);
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpopulations) {
@@ -267,14 +267,22 @@ public class ParticipantService {
         return account;
     }
     
-    private String getHealthCodeThrowingException(Account account) {
+    private String getHealthCode(Account account) {
         if (account.getHealthId() != null) {
             HealthId healthId = healthCodeService.getMapping(account.getHealthId());
             if (healthId != null && healthId.getCode() != null) {
                 return healthId.getCode();
             }
         }
-        throw new BridgeServiceException("Participant cannot be updated (no health code exists for user).");
+        return null;
+    }
+    
+    private String getHealthCodeThrowingException(Account account) {
+        String healthCode = getHealthCode(account);
+        if (healthCode == null) {
+            throw new BridgeServiceException("Participant cannot be updated (no health code exists for user).");    
+        }
+        return healthCode;
     }
     
 }
