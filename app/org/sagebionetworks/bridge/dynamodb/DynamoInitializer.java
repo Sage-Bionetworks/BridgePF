@@ -84,7 +84,7 @@ public class DynamoInitializer {
         }
     }
 
-    void backupPipelineForTables(final Collection<String> tables) {
+    private void backupPipelineForTables(final Collection<String> tables) {
         Environment env = bridgeConfig.getEnvironment();
 
         String envAndUser = env.name().toLowerCase() + "-" + bridgeConfig.getUser();
@@ -93,19 +93,14 @@ public class DynamoInitializer {
         String pipelineUniqueId = "dynamo-backup-bridge." + envAndUser;
         String s3Bucket = DYNAMO_BACKUP_BUCKET_PREFIX + envAndUser;
 
-        List<PipelineObject> pipelineObjects = DynamoDataPipelineHelper.createPipelineObjects(DYNAMO_REGION,
-                tables,
-                s3Bucket,
-                BACKUP_SCHEDULED_TIME,
-                LOCAL_TIME_ZONE
-        );
+        List<PipelineObject> pipelineObjects =
+                DynamoDataPipelineHelper.createPipelineObjects(DYNAMO_REGION, tables, s3Bucket, BACKUP_SCHEDULED_TIME, LOCAL_TIME_ZONE);
 
         LOG.debug("Pipeline objects: " + pipelineObjects.toString());
 
         //If pipeline with this uniqueId already exists, existing pipeline will be returned
-        CreatePipelineResult createPipelineResult = dataPipelineClient.createPipeline(new CreatePipelineRequest()
-                .withName(pipelineName)
-                .withUniqueId(pipelineUniqueId));
+        CreatePipelineResult createPipelineResult =
+                dataPipelineClient.createPipeline(new CreatePipelineRequest().withName(pipelineName).withUniqueId(pipelineUniqueId));
 
         String pipelineId = createPipelineResult.getPipelineId();
 
@@ -114,8 +109,7 @@ public class DynamoInitializer {
         PutPipelineDefinitionRequest putPipelineDefinitionRequest =
                 new PutPipelineDefinitionRequest().withPipelineId(pipelineId).withPipelineObjects(pipelineObjects);
 
-        PutPipelineDefinitionResult putPipelineDefinitionResult =
-                dataPipelineClient.putPipelineDefinition(putPipelineDefinitionRequest);
+        PutPipelineDefinitionResult putPipelineDefinitionResult = dataPipelineClient.putPipelineDefinition(putPipelineDefinitionRequest);
         LOG.debug(putPipelineDefinitionResult.toString());
 
         if (putPipelineDefinitionResult.isErrored()) {

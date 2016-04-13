@@ -131,11 +131,11 @@ public class BridgeSpringConfig {
 
     @Bean(name = "dynamoDbClient")
     @Resource(name = "awsCredentials")
-    public AmazonDynamoDBClient dynamoDbClient(BasicAWSCredentials awsCredentials) {
+    public AmazonDynamoDBClient dynamoDbClient() {
         int maxRetries = bridgeConfig().getPropertyAsInt("ddb.max.retries");
         ClientConfiguration awsClientConfig = PredefinedClientConfigurations.dynamoDefault()
                 .withMaxErrorRetry(maxRetries);
-        return new AmazonDynamoDBClient(awsCredentials, awsClientConfig);
+        return new AmazonDynamoDBClient(awsCredentials(), awsClientConfig);
     }
 
     @Bean(name = "dataPipelineClient")

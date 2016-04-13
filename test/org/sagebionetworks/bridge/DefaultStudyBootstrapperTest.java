@@ -1,39 +1,38 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import javax.annotation.Resource;
-
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.sagebionetworks.bridge.config.BridgeTestSpringConfig;
+import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 
-import com.google.common.collect.Sets;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-@ContextConfiguration(classes = {BridgeTestSpringConfig.class})
-@RunWith(SpringJUnit4ClassRunner.class)
 public class DefaultStudyBootstrapperTest {
-    @Resource
+
     private StudyService studyService;
-    @Resource
+
     private DefaultStudyBootstrapper defaultStudyBootstrapper;
 
     @Before
     public void before() {
         studyService = mock(StudyService.class);
-        when(studyService.getStudy("api")).thenThrow(new EntityNotFoundException(
-                Study.class,
+
+        when(studyService.getStudy("api")).thenThrow(new EntityNotFoundException(Study.class,
                 "Study 'api' not found."
         ));
+        defaultStudyBootstrapper = new DefaultStudyBootstrapper(studyService,
+                mock(AnnotationBasedTableCreator.class),
+                mock(DynamoInitializer.class)
+        );
     }
 
     @Test

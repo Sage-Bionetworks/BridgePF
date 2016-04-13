@@ -74,8 +74,7 @@ public class DynamoSurveyResponseDaoTest {
     public void after() {
         // These have to be deleted or the survey won't delete. In practice you can't
         // delete these without deleting a user, and that isn't going to happen in production.
-        List<TableDescription> tables =
-                annotationBasedTableCreator.getTables(DynamoSurvey.class, DynamoSurveyResponse.class);
+        List<TableDescription> tables = annotationBasedTableCreator.getTables(DynamoSurvey.class, DynamoSurveyResponse.class);
         dynamoInitializer.init(tables);
         DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
@@ -131,8 +130,7 @@ public class DynamoSurveyResponseDaoTest {
 
         List<SurveyAnswer> answers = Lists.newArrayList();
 
-        SurveyResponse response =
-                surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, BridgeUtils.generateGuid());
+        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, BridgeUtils.generateGuid());
         assertNotNull("Has been assigned a GUID", response.getIdentifier());
         assertFalse("Survey is now in use", noResponses(survey));
 
@@ -185,24 +183,14 @@ public class DynamoSurveyResponseDaoTest {
     public void canTellWhenSurveyHasResponses() throws Exception {
         assertFalse(surveyResponseDao.surveyHasResponses(survey));
 
-        surveyResponseDao.createSurveyResponse(
-                survey,
-                HEALTH_DATA_CODE,
-                Lists.<SurveyAnswer>newArrayList(),
-                SURVEY_RESPONSE_IDENTIFIER
-        );
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
 
         assertFalse(noResponses(survey));
     }
 
     @Test
     public void canDeleteSurveyResponseByHealthCode() {
-        surveyResponseDao.createSurveyResponse(
-                survey,
-                HEALTH_DATA_CODE,
-                Lists.<SurveyAnswer>newArrayList(),
-                SURVEY_RESPONSE_IDENTIFIER
-        );
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
 
         SurveyResponse response = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, SURVEY_RESPONSE_IDENTIFIER);
         assertNotNull(response);
@@ -222,24 +210,9 @@ public class DynamoSurveyResponseDaoTest {
     @Test
     public void createTwoResponsesAndRetrieveTheCorrectOneByIdentifier() {
         String targetIdentifier = BridgeUtils.generateGuid();
-        surveyResponseDao.createSurveyResponse(
-                survey,
-                HEALTH_DATA_CODE,
-                Lists.<SurveyAnswer>newArrayList(),
-                BridgeUtils.generateGuid()
-        );
-        surveyResponseDao.createSurveyResponse(
-                survey,
-                HEALTH_DATA_CODE,
-                Lists.<SurveyAnswer>newArrayList(),
-                targetIdentifier
-        );
-        surveyResponseDao.createSurveyResponse(
-                survey,
-                HEALTH_DATA_CODE,
-                Lists.<SurveyAnswer>newArrayList(),
-                BridgeUtils.generateGuid()
-        );
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), BridgeUtils.generateGuid());
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), targetIdentifier);
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), BridgeUtils.generateGuid());
 
         SurveyResponse response = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, targetIdentifier);
         assertEquals(targetIdentifier, response.getIdentifier());

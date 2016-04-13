@@ -130,7 +130,7 @@
     <bean id="SurveyResponseControllerProxied" parent="proxiedController">
         <property name="targetName" value="surveyResponseController"/>
     </bean>
-
+    
     <bean id="ParticipantControllerProxied" parent="proxiedController">
         <property name="targetName" value="participantController"/>
     </bean>
@@ -166,7 +166,7 @@
     <bean id="FPHSControllerProxied" parent="proxiedController">
         <property name="targetName" value="fphsController"/>
     </bean>
-
+    
     <bean id="ExternalIdControllerProxied" parent="proxiedController">
         <property name="targetName" value="externalIdController"/>
     </bean>

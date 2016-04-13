@@ -28,12 +28,12 @@ public class DefaultStudyBootstrapper {
      * The task identifiers set in the test (api) study. This includes task identifiers that are required for the SDK
      * integration tests.
      */
-    public static final Set<String> TEST_TASK_IDENTIFIERS =
-            Sets.newHashSet("task:AAA", "task:BBB", "task:CCC", "CCC", "task1");
+    public static final Set<String> TEST_TASK_IDENTIFIERS = Sets.newHashSet("task:AAA", "task:BBB", "task:CCC", "CCC", "task1");
 
     private final StudyService studyService;
     private final DynamoInitializer dynamoInitializer;
     private final AnnotationBasedTableCreator annotationBasedTableCreator;
+
 
     @Autowired
     public DefaultStudyBootstrapper(StudyService studyService,
