@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.crypto.BcCmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.PemUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.springframework.core.io.ClassPathResource;
 
 @SuppressWarnings("unchecked")
 public class UploadArchiveServiceTest {
@@ -32,10 +33,10 @@ public class UploadArchiveServiceTest {
     @Before
     public void before() throws Exception {
         // encryptor
-        File certFile = new File("test/resources/cms/rsacert.pem");
+        File certFile = new ClassPathResource("/cms/rsacert.pem").getFile();
         byte[] certBytes = Files.readAllBytes(certFile.toPath());
         X509Certificate cert = PemUtils.loadCertificateFromPem(new String(certBytes));
-        File privateKeyFile = new File("test/resources/cms/rsaprivkey.pem");
+        File privateKeyFile = new ClassPathResource("/cms/rsaprivkey.pem").getFile();
         byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile.toPath());
         PrivateKey privateKey = PemUtils.loadPrivateKeyFromPem(new String(privateKeyBytes));
         CmsEncryptor encryptor = new BcCmsEncryptor(cert, privateKey);
@@ -99,7 +100,7 @@ public class UploadArchiveServiceTest {
     @Test
     public void decryptAndUnzipRealFile() throws Exception {
         // get archive file, which is stored in git
-        File archiveFile = new File("test/resources/cms/data/archive");
+        File archiveFile = new ClassPathResource("/cms/data/archive").getFile();
         byte[] encryptedBytes = Files.readAllBytes(archiveFile.toPath());
 
         // decrypt

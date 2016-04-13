@@ -4,12 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -26,12 +21,12 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -53,16 +48,13 @@ public class DynamoExternalIdDaoTest {
     @Resource(name = "externalIdDdbMapper")
     private DynamoDBMapper mapper;
     
-    @Resource
-    private BridgeConfig config;
-    
     private StudyIdentifier studyId;
 
     @Before
     public void before() {
         studyId = new StudyIdentifierImpl(TestUtils.randomName(DynamoExternalIdDaoTest.class));
-        
-        dao.setConfig(config);
+
+        dao.setConfig(makeConfig(10, 30000));
         dao.addExternalIds(studyId, EXT_IDS);
     }
     
@@ -105,32 +97,6 @@ public class DynamoExternalIdDaoTest {
         DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
         DynamoExternalIdentifier identifier = mapper.load(keyObject);
         assertEquals("healthCode", identifier.getHealthCode());
-    }
-    
-    @SuppressWarnings("unchecked")
-    @Test
-    public void cannotAddNullValues() {
-        mapper = spy(mapper);
-        dao.setMapper(mapper);
-        try {
-            dao.addExternalIds(studyId, Lists.newArrayList("DDD", null));
-            fail("Should have thrown exception");
-        } catch(BadRequestException e) {}
-        verify(mapper, never()).load(any());
-        verify(mapper, never()).batchSave((List<DynamoExternalIdentifier>)any());
-    }
-    
-    @SuppressWarnings("unchecked")
-    @Test
-    public void cannotAddEmptyValues() {
-        mapper = spy(mapper);
-        dao.setMapper(mapper);
-        try {
-            dao.addExternalIds(studyId, Lists.newArrayList("DDD", "  \t"));
-            fail("Should have thrown exception");
-        } catch(BadRequestException e) {}
-        verify(mapper, never()).load(any());
-        verify(mapper, never()).batchSave((List<DynamoExternalIdentifier>)any());
     }
     
     @Test
@@ -234,7 +200,7 @@ public class DynamoExternalIdDaoTest {
     
     @Test
     public void canGetIds() {
-        PagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, null, null);
+        PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 10, null, null);
         
         assertEquals(3, page.getItems().size());
         assertEquals(10, page.getPageSize());
@@ -248,7 +214,7 @@ public class DynamoExternalIdDaoTest {
             dao.addExternalIds(studyId, moreIds);
             
             // AAA, AEE, AFF
-            PagedResourceList<String> page = dao.getExternalIds(studyId, null, 10, "A", null);
+            PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 10, "A", null);
             assertEquals(3, page.getItems().size());
             assertEquals(10, page.getPageSize());
             assertEquals("A", page.getFilters().get("idFilter"));
@@ -266,7 +232,7 @@ public class DynamoExternalIdDaoTest {
 
             page = dao.getExternalIds(studyId, null, 10, null, Boolean.TRUE);
             assertEquals(2, page.getItems().size());
-            assertEquals(Sets.newHashSet("AAA", "BBB"), Sets.newHashSet(page.getItems()));
+            assertEquals(toSet(true, "AAA", "BBB"), Sets.newHashSet(page.getItems()));
         } finally {
             dao.deleteExternalIds(studyId, moreIds);
         }
@@ -280,26 +246,47 @@ public class DynamoExternalIdDaoTest {
         try {
             dao.addExternalIds(studyId, moreIds);
 
-            PagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, null);
+            PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, null);
             assertEquals(5, page.getItems().size());
             assertEquals(26, page.getTotal());
-            assertEquals("EEE", page.getLastKey());
-            assertEquals(Sets.newHashSet("AAA","BBB","CCC","DDD","EEE"), Sets.newHashSet(page.getItems()));
+            assertEquals("EEE", page.getOffsetKey());
+            assertEquals(toSet(false, "AAA","BBB","CCC","DDD","EEE"), Sets.newHashSet(page.getItems()));
             
-            page = dao.getExternalIds(studyId, page.getLastKey(), 5, null, null);
-            assertEquals(Sets.newHashSet("FFF","GGG","HHH","III","JJJ"), Sets.newHashSet(page.getItems()));
+            page = dao.getExternalIds(studyId, page.getOffsetKey(), 5, null, null);
+            assertEquals(toSet(false, "FFF","GGG","HHH","III","JJJ"), Sets.newHashSet(page.getItems()));
             
-            page = dao.getExternalIds(studyId, page.getLastKey(), 5, null, null);
-            assertEquals(Sets.newHashSet("KKK","LLL","MMM","NNN","OOO"), Sets.newHashSet(page.getItems()));
+            page = dao.getExternalIds(studyId, page.getOffsetKey(), 5, null, null);
+            assertEquals(toSet(false, "KKK","LLL","MMM","NNN","OOO"), Sets.newHashSet(page.getItems()));
             
-            page = dao.getExternalIds(studyId, page.getLastKey(), 15, null, null);
-            assertEquals(Sets.newHashSet("PPP","QQQ","RRR","SSS","TTT","UUU","VVV","WWW","XXX","YYY","ZZZ"), Sets.newHashSet(page.getItems()));
+            page = dao.getExternalIds(studyId, page.getOffsetKey(), 15, null, null);
+            assertEquals(toSet(false, "PPP", "QQQ", "RRR", "SSS", "TTT", "UUU", "VVV", "WWW", "XXX", "YYY", "ZZZ"),
+                    Sets.newHashSet(page.getItems()));
             assertEquals(26, page.getTotal());
-            assertNull(page.getLastKey());
+            assertNull(page.getOffsetKey());
             
         } finally {
             dao.deleteExternalIds(studyId, moreIds);
         }
+    }
+    
+    @Test
+    public void pagingWithFilterResetsInapplicableOffsetKey() {
+        PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "B", 5, "C", null);
+        assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
+        assertNull(page.getOffsetKey());
+    }
+    
+    @Test
+    public void pagingWithFilterLongerThanKeyWorks() {
+        PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "CCCCC", 5, "CC", null);
+        assertTrue(page.getItems().isEmpty());
+    }
+    
+    @Test
+    public void pagingWithFilterShorterThanKeyWorks() {
+        PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "C", 5, "CC", null);
+        assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
+        assertNull(page.getOffsetKey());
     }
     
     // Sometimes paging fails when the total records divided by the page has no remainder. 
@@ -310,15 +297,15 @@ public class DynamoExternalIdDaoTest {
         try {
             dao.addExternalIds(studyId, moreIds);
             
-            PagedResourceList<String> page = dao.getExternalIds(studyId, null, 3, null, null);
+            PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 3, null, null);
             assertEquals(6, page.getTotal());
             assertEquals(3, page.getItems().size());
-            assertNotNull(page.getLastKey());
+            assertNotNull(page.getOffsetKey());
             
-            page = dao.getExternalIds(studyId, page.getLastKey(), 3, null, null);
+            page = dao.getExternalIds(studyId, page.getOffsetKey(), 3, null, null);
             assertEquals(6, page.getTotal());
             assertEquals(3, page.getItems().size());
-            assertNull(page.getLastKey());
+            assertNull(page.getOffsetKey());
         } finally {
             dao.deleteExternalIds(studyId, moreIds);
         }
@@ -331,15 +318,15 @@ public class DynamoExternalIdDaoTest {
         dao.assignExternalId(studyId, "AAA", "healthCode1");
         dao.reserveExternalId(studyId, "BBB"); // only reserved
         
-        PagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
+        PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
         assertEquals(1, page.getItems().size());
-        assertEquals("CCC", page.getItems().get(0));
+        assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
         
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
         assertEquals(2, page.getItems().size());
-        assertTrue(page.getItems().contains("BBB"));
-        assertTrue(page.getItems().contains("CCC"));
+        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("BBB", false)));
+        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("CCC", false)));
     }
     
     @Test
@@ -349,16 +336,16 @@ public class DynamoExternalIdDaoTest {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         dao.reserveExternalId(studyId, "BBB");
         
-        PagedResourceList<String> page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
+        PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
         assertEquals(2, page.getItems().size());
-        assertTrue(page.getItems().contains("AAA"));
-        assertTrue(page.getItems().contains("BBB"));
+        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("AAA", true)));
+        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("BBB", true)));
         
         // Wait until lock is released, item is no longer in results that are considered assigned.
         Thread.sleep(10000);
         page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
         assertEquals(1, page.getItems().size());
-        assertTrue(page.getItems().contains("AAA"));
+        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("AAA", true)));
     }
     
     @Test
@@ -367,10 +354,18 @@ public class DynamoExternalIdDaoTest {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         dao.reserveExternalId(studyId, "BBB");
         
-        PagedResourceList<String> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
+        PagedResourceList<ExternalIdentifierInfo> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         
         assertEquals(1, ids.getItems().size());
-        assertEquals("CCC", ids.getItems().get(0));
+        assertEquals("CCC", ids.getItems().get(0).getIdentifier());
+    }
+
+    private Set<ExternalIdentifierInfo> toSet(boolean isAssigned, String... infos) {
+        Set<ExternalIdentifierInfo> set = Sets.newHashSetWithExpectedSize(infos.length);
+        for (String identifier : infos) {
+            set.add(new ExternalIdentifierInfo(identifier, isAssigned));
+        }
+        return set; 
     }
     
 }

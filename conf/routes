@@ -15,9 +15,9 @@ POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.control
 
 # Participants Researcher APIs
 GET  /v3/participants                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null)
+POST /v3/participants                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant
 GET  /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(email: String ?= null)
-POST /v3/participants/member/options  @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipantOptions(email: String ?= null)
-POST /v3/participants/member/profile  @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateProfile(email: String ?= null)
+POST /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(email: String ?= null)
 POST /v3/participants/member/signOut  @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(email: String ?= null)
 
 # Study Subpopulations
@@ -128,6 +128,7 @@ DELETE /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers
 
 GET    /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.getExternalIds(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
 POST   /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.addExternalIds
+DELETE /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.deleteExternalIds
 
 # APIs for getting entities across studies
 GET /v3/studies/:studyId/surveys/published @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)

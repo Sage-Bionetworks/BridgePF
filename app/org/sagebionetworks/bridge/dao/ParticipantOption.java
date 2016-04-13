@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -16,6 +17,9 @@ import com.fasterxml.jackson.databind.node.TextNode;
 public enum ParticipantOption {
 
     SHARING_SCOPE(SharingScope.NO_SHARING.name(), "sharingScope") {
+        public String fromParticipant(StudyParticipant participant) {
+            return (participant.getSharingScope() == null) ? null : participant.getSharingScope().name();
+        }
         public String deserialize(JsonNode node) {
             checkNotNull(node);
             // Both incorrect enum names and JsonNode type problems end up throwing IllegalArgumentException
@@ -27,6 +31,9 @@ public enum ParticipantOption {
         }
     },
     EMAIL_NOTIFICATIONS(Boolean.TRUE.toString(), "notifyByEmail") {
+        public String fromParticipant(StudyParticipant participant) {
+            return Boolean.toString(participant.isNotifyByEmail());
+        }
         public String deserialize(JsonNode node) {
             checkNotNull(node);
             checkTypeAndThrow(node, "notifyByEmail", BooleanNode.class);
@@ -34,6 +41,9 @@ public enum ParticipantOption {
         }
     },
     EXTERNAL_IDENTIFIER(null, "externalId") {
+        public String fromParticipant(StudyParticipant participant) {
+            return participant.getExternalId();
+        }
         public String deserialize(JsonNode node) {
             checkNotNull(node);
             checkTypeAndThrow(node, "externalId", TextNode.class);
@@ -41,6 +51,9 @@ public enum ParticipantOption {
         }
     },
     DATA_GROUPS(null, "dataGroups") {
+        public String fromParticipant(StudyParticipant participant) {
+            return BridgeUtils.setToCommaList(participant.getDataGroups());
+        }
         public String deserialize(JsonNode node) {
             checkNotNull(node);
             checkTypeAndThrow(node, "dataGroups", ArrayNode.class);
@@ -48,6 +61,9 @@ public enum ParticipantOption {
         }
     },
     LANGUAGES(null, "languages") {
+        public String fromParticipant(StudyParticipant participant) {
+            return BridgeUtils.setToCommaList(participant.getLanguages());
+        }
         public String deserialize(JsonNode node) {
             checkNotNull(node);
             checkTypeAndThrow(node, "language", ArrayNode.class);
@@ -86,6 +102,8 @@ public enum ParticipantOption {
     public String getDefaultValue() {
         return defaultValue;
     }
+    
+    public abstract String fromParticipant(StudyParticipant participant);
     
     public abstract String deserialize(JsonNode node);
 

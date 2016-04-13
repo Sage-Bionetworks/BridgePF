@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
@@ -35,11 +36,13 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import org.apache.http.HttpStatus;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,6 +78,7 @@ public class StormpathAccountDao implements AccountDao {
     private Client client;
     private StudyService studyService;
     private SubpopulationService subpopService;
+    private HealthCodeService healthCodeService;
     private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Resource(name = "stormpathApplication")
@@ -92,6 +96,10 @@ public class StormpathAccountDao implements AccountDao {
     @Autowired
     public final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
+    }
+    @Autowired
+    final void setHealthCodeService(HealthCodeService healthCodeService) {
+        this.healthCodeService = healthCodeService;
     }
     @Resource(name="encryptorList")
     public final void setEncryptors(List<BridgeEncryptor> list) {
@@ -153,9 +161,12 @@ public class StormpathAccountDao implements AccountDao {
         for (int i=0; i < pageSize; i++) {
             if (it.hasNext()) {
                 com.stormpath.sdk.account.Account acct = it.next();
+                java.util.Date javaDate = acct.getCreatedAt();
+                DateTime createdOn = (javaDate != null) ? new DateTime(javaDate) : null;;
+                
                 // This should not trigger further requests to the server (customData, groups, etc.).
                 AccountSummary summary = new AccountSummary(acct.getGivenName(), acct.getSurname(), 
-                        acct.getEmail(), AccountStatus.valueOf(acct.getStatus().name()));
+                        acct.getEmail(), createdOn, AccountStatus.valueOf(acct.getStatus().name()));
                 results.add(summary);
             }
         }
@@ -287,6 +298,10 @@ public class StormpathAccountDao implements AccountDao {
         if (signUp.getRoles() != null) {
             account.getRoles().addAll(signUp.getRoles());
         }
+        // Create the healthCode mapping when we create the account. Stop waiting to create it
+        HealthId healthId = healthCodeService.createMapping(study);
+        account.setHealthId(healthId.getId());
+        
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             directory.createAccount(acct, sendEmail);

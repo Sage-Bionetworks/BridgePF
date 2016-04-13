@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -21,8 +22,8 @@ public class PagedResourceListTest {
     @Test
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", AccountStatus.DISABLED));
-        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", AccountStatus.ENABLED));
+        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", DateTime.now(), AccountStatus.DISABLED));
+        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", DateTime.now(), AccountStatus.ENABLED));
         
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(accounts, 2, 100, 123)
                 .withFilter("emailFilter", "filterString");
@@ -73,7 +74,7 @@ public class PagedResourceListTest {
     // DynamoDB, that was easily incorporated into this implementation. This test verifies
     // that the results are the same as before.
     @Test
-    public void canSerializeWithDynamoLastKey() throws Exception {
+    public void canSerializeWithDynamoOffsetKey() throws Exception {
         List<String> accounts = Lists.newArrayListWithCapacity(2);
         accounts.add("value1");
         accounts.add("value2");
@@ -101,8 +102,8 @@ public class PagedResourceListTest {
         
         assertEquals(page.getTotal(), serPage.getTotal());
         assertEquals(page.getPageSize(), serPage.getPageSize());
-        assertEquals(page.getFilters().get("lastKey"), serPage.getFilters().get("lastKey"));
-        assertEquals(page.getLastKey(), serPage.getLastKey());
+        assertEquals(page.getFilters().get("offsetKey"), serPage.getFilters().get("offsetKey"));
+        assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
         assertEquals(page.getFilters().get("idFilter"), serPage.getFilters().get("idFilter"));
         assertEquals(page.getFilters().get("assignmentFilter"), serPage.getFilters().get("assignmentFilter"));
         assertEquals(page.getItems(), serPage.getItems());

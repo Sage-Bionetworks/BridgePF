@@ -160,7 +160,7 @@ public class CacheProvider {
             String ser = jedisOps.get(redisKey);
             if (ser != null) {
                 jedisOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-                return BridgeObjectMapper.get().readValue(ser, Study.class);
+                return bridgeObjectMapper.readValue(ser, Study.class);
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);

@@ -7,10 +7,10 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.nio.file.Files;
 
+import com.google.common.base.Charsets;
 import org.junit.Test;
 import org.sagebionetworks.bridge.s3.S3Helper;
-
-import com.google.common.base.Charsets;
+import org.springframework.core.io.ClassPathResource;
 
 public class CmsEncryptorCacheLoaderTest {
     @Test
@@ -19,10 +19,10 @@ public class CmsEncryptorCacheLoaderTest {
         // test materials instead of calling through to S3.
 
         // set up cert and priv key PEM files as strings
-        File certFile = new File("test/resources/cms/rsacert.pem");
+        File certFile =  new ClassPathResource("/cms/rsacert.pem").getFile();
         byte[] certBytes = Files.readAllBytes(certFile.toPath());
         String certString = new String(certBytes, Charsets.UTF_8);
-        File privKeyFile = new File("test/resources/cms/rsaprivkey.pem");
+        File privKeyFile =  new ClassPathResource("/cms/rsaprivkey.pem").getFile();
         byte[] privKeyBytes = Files.readAllBytes(privKeyFile.toPath());
         String privKeyString = new String(privKeyBytes, Charsets.UTF_8);
 

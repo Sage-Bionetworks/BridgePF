@@ -4,26 +4,19 @@ import static java.lang.Integer.parseInt;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
-import java.util.Map;
-
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Maps;
 
 import play.mvc.Result;
 
@@ -60,39 +53,31 @@ public class ParticipantController extends BaseController {
         return okResult(page);
     }
     
-    public Result updateParticipantOptions(String email) {
+    public Result createParticipant() throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        if (isBlank(email)) {
-            throw new BadRequestException(EMAIL_REQUIRED);
-        }
         
-        JsonNode node = requestToJSON(request());
+        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        for (ParticipantOption option : ParticipantOption.values()) {
-            JsonNode fieldNode = node.get(option.getFieldName());
-            if (fieldNode != null) {
-                String value = option.deserialize(fieldNode);
-                options.put(option, value);
-            }
-        }
-        participantService.updateParticipantOptions(study, email, options);
+        participantService.createParticipant(study, participant);
         
-        return okResult("Participant options updated.");
+        return createdResult("Participant created.");
     }
     
-    public Result updateProfile(String email) {
+    public Result updateParticipant(String email) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         if (isBlank(email)) {
             throw new BadRequestException(EMAIL_REQUIRED);
         }
+        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
+        // Just stop right here because something is wrong
+        if (participant.getEmail() != null && !participant.getEmail().equals(email)) {
+            throw new BadRequestException("Email in JSON does not match email query parameter.");
+        }
+        participantService.updateParticipant(study, email, participant);
         
-        UserProfile profile = UserProfile.fromJson(study.getUserProfileAttributes(), requestToJSON(request()));
-        
-        participantService.updateProfile(study, email, profile);
-        return okResult("User profile updated.");
+        return okResult("Participant updated.");
     }
     
     public Result signOut(String email) throws Exception {

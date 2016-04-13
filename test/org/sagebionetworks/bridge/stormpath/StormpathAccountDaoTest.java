@@ -108,6 +108,8 @@ public class StormpathAccountDaoTest {
             // offsetBy is advanced
             AccountSummary account1 = accountDao.getPagedAccountSummaries(study, 1, 5, null).getItems().get(0);
             AccountSummary account2 = accountDao.getPagedAccountSummaries(study, 2, 5, null).getItems().get(0);
+            assertNotNull(account1.getCreatedOn());
+            assertNotNull(account2.getCreatedOn());
             assertEquals(accounts.getItems().get(1), account1);
             assertEquals(accounts.getItems().get(2), account2);
             

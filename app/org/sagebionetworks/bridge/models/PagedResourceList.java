@@ -23,7 +23,7 @@ import com.google.common.collect.Maps;
  */
 public class PagedResourceList<T> {
 
-    public static final String LAST_KEY_FILTER = "lastKey";
+    public static final String OFFSET_KEY_FILTER = "offsetKey";
     
     private final List<T> items;
     /**
@@ -61,8 +61,8 @@ public class PagedResourceList<T> {
      * Convenience method for adding the DDB key as a filter. The key must be returned to retrieve 
      * the next page of DDB records.
      */
-    public PagedResourceList<T> withLastKey(String lastKey) {
-        return withFilter(LAST_KEY_FILTER, lastKey);
+    public PagedResourceList<T> withOffsetKey(String offsetKey) {
+        return withFilter(OFFSET_KEY_FILTER, offsetKey);
     }
     public List<T> getItems() {
         return items;
@@ -70,8 +70,8 @@ public class PagedResourceList<T> {
     public Integer getOffsetBy() {
         return offsetBy;
     }
-    public String getLastKey() {
-        return filters.get(LAST_KEY_FILTER);
+    public String getOffsetKey() {
+        return filters.get(OFFSET_KEY_FILTER);
     }
     public int getPageSize() {
         return pageSize;

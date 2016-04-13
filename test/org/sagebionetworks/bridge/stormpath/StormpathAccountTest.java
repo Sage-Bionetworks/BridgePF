@@ -393,6 +393,8 @@ public class StormpathAccountTest {
 
     @Test
     public void convertsStormpathToBridgeAccount() {
+        Date javaDate = new Date();
+        DateTime createdOn = new DateTime(javaDate);
         SortedMap<Integer,BridgeEncryptor> map = new TreeMap<>();
         
         StudyIdentifier studyId = new StudyIdentifierImpl("test-key");
@@ -413,6 +415,7 @@ public class StormpathAccountTest {
         when(acct.getGivenName()).thenReturn("firstName");
         when(acct.getSurname()).thenReturn("lastName");
         when(acct.getGroups()).thenReturn(groupList);
+        when(acct.getCreatedAt()).thenReturn(javaDate);
         when(acct.getHref()).thenReturn("http://something/accounts/123");
 
         // Signatures and encrypted values (including attributes) are tested in more depth in other tests
@@ -426,6 +429,19 @@ public class StormpathAccountTest {
         assertEquals("lastName", account.getLastName());
         assertEquals(Sets.newHashSet(Roles.DEVELOPER,Roles.ADMIN), account.getRoles());
         assertEquals("123", account.getId());
+        assertEquals(createdOn.getMillis(), account.getCreatedOn().getMillis());
+        assertEquals(org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED, account.getStatus());
+        
+        account.setFirstName("New First Name");
+        account.setLastName("New Last Name");
+        account.setEmail("email2@email.com");
+        account.setStatus(org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED);
+        
+        com.stormpath.sdk.account.Account updatedAcct = account.getAccount();
+        verify(updatedAcct).setGivenName("New First Name");
+        verify(updatedAcct).setSurname("New Last Name");
+        verify(updatedAcct).setEmail("email2@email.com");
+        verify(updatedAcct).setStatus(com.stormpath.sdk.account.AccountStatus.DISABLED);
     }
     
     private void verifyOneConsentStream(SubpopulationGuid guid, ConsentSignature sig1)
