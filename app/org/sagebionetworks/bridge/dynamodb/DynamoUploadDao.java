@@ -3,23 +3,23 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
-import java.util.List;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
+import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
-import org.springframework.stereotype.Component;
 
 @Component
 public class DynamoUploadDao implements UploadDao {
@@ -70,7 +70,11 @@ public class DynamoUploadDao implements UploadDao {
 
         // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
         upload2.setUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
-        mapper.save(upload2);
+        try {
+            mapper.save(upload2);
+        } catch (ConditionalCheckFailedException ex) {
+            throw new ConcurrentModificationException("Upload " + upload.getUploadId() + " is already complete");
+        }
     }
 
     /**
