@@ -42,7 +42,7 @@ import com.google.common.collect.Maps;
  * updating these values, the version keys will be updated.
  */
 @BridgeTypeName("Account")
-public final class StormpathAccount implements Account {
+public class StormpathAccount implements Account {
     
     static final String PLACEHOLDER_STRING = "<EMPTY>";
     

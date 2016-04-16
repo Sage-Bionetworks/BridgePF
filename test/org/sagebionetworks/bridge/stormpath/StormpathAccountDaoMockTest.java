@@ -4,13 +4,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
+import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.group.GroupList;
+import com.stormpath.sdk.impl.account.DefaultAccount;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
 import org.junit.Before;
@@ -18,6 +30,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -243,7 +256,66 @@ public class StormpathAccountDaoMockTest {
             assertEquals(HttpStatus.SC_LOCKED, ex.getStatusCode());
         }
     }
-    
+
+    private com.stormpath.sdk.account.Account setupGroupChangeTest(Set<String> oldGroupSet, Set<Roles> newGroupSet) {
+        // mock Stormpath account
+        List<Group> mockGroupJavaList = new ArrayList<>();
+        for (String oneGroupName : oldGroupSet) {
+            Group mockGroup = mock(Group.class);
+            when(mockGroup.getName()).thenReturn(oneGroupName);
+            mockGroupJavaList.add(mockGroup);
+        }
+
+        GroupList mockGroupSpList = mock(GroupList.class);
+        when(mockGroupSpList.iterator()).thenReturn(mockGroupJavaList.iterator());
+
+        // Due to some funkiness in Stormpath's type tree, DefaultAccount is the only public class we can mock.
+        com.stormpath.sdk.account.Account mockSpAccount = mock(DefaultAccount.class);
+        when(mockSpAccount.getCustomData()).thenReturn(mock(CustomData.class));
+        when(mockSpAccount.getGroups()).thenReturn(mockGroupSpList);
+
+        // mock Bridge account
+        StormpathAccount mockAccount = mock(StormpathAccount.class);
+        when(mockAccount.getAccount()).thenReturn(mockSpAccount);
+        when(mockAccount.getRoles()).thenReturn(newGroupSet);
+
+        // execute
+        StormpathAccountDao dao = new StormpathAccountDao();
+        dao.updateAccount(study, mockAccount);
+
+        // return this, so the caller can verify back-end mock calls
+        return mockSpAccount;
+    }
+
+    @Test
+    public void updatingAccountWithNoGroupChanges() {
+        Set<String> oldGroupSet = ImmutableSet.of("test_users", "worker");
+        Set<Roles> newGroupSet = EnumSet.of(Roles.TEST_USERS, Roles.WORKER);
+        com.stormpath.sdk.account.Account mockSpAccount = setupGroupChangeTest(oldGroupSet, newGroupSet);
+        verify(mockSpAccount, never()).addGroup(anyString());
+        verify(mockSpAccount, never()).removeGroup(anyString());
+    }
+
+    @Test
+    public void updatingAccountWithAddedGroups() {
+        Set<String> oldGroupSet = ImmutableSet.of("test_users", "worker");
+        Set<Roles> newGroupSet = EnumSet.of(Roles.RESEARCHER, Roles.TEST_USERS, Roles.WORKER);
+        com.stormpath.sdk.account.Account mockSpAccount = setupGroupChangeTest(oldGroupSet, newGroupSet);
+        verify(mockSpAccount, times(1)).addGroup("researcher");
+        verify(mockSpAccount, times(1)).addGroup(anyString());
+        verify(mockSpAccount, never()).removeGroup(anyString());
+    }
+
+    @Test
+    public void updatingAccountWithRemovedGroups() {
+        Set<String> oldGroupSet = ImmutableSet.of("test_users", "worker");
+        Set<Roles> newGroupSet = EnumSet.of(Roles.TEST_USERS);
+        com.stormpath.sdk.account.Account mockSpAccount = setupGroupChangeTest(oldGroupSet, newGroupSet);
+        verify(mockSpAccount, never()).addGroup(anyString());
+        verify(mockSpAccount, times(1)).removeGroup("worker");
+        verify(mockSpAccount, times(1)).removeGroup(anyString());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsPageSizeTooSmall() {
         StormpathAccountDao dao = new StormpathAccountDao();

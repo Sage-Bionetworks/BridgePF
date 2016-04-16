@@ -7,6 +7,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -65,7 +66,6 @@ import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
-import com.stormpath.sdk.group.GroupMembership;
 import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
 
@@ -306,7 +306,7 @@ public class StormpathAccountDao implements AccountDao {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             directory.createAccount(acct, sendEmail);
             if (!account.getRoles().isEmpty()) {
-                updateGroups(directory, account);
+                updateGroups(account);
             }
         } catch(ResourceException e) {
             rethrowResourceException(e, account);
@@ -324,9 +324,7 @@ public class StormpathAccountDao implements AccountDao {
             throw new BridgeServiceException("Account has not been initialized correctly (use new account methods)");
         }
         try {
-            Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-            updateGroups(directory, account);
-            
+            updateGroups(account);
             acct.getCustomData().save();
             
             // This will throw an exception if the account object has not changed, which it may not have
@@ -376,31 +374,28 @@ public class StormpathAccountDao implements AccountDao {
         }
     }
 
-    private void updateGroups(Directory directory, Account account) {
-        Set<String> roles = Sets.newHashSet();
+    private void updateGroups(Account account) {
+        // new groups, defined by the passed in Account obj
+        Set<String> newGroupSet = new HashSet<>();
+        //noinspection Convert2streamapi
         for (Roles role : account.getRoles()) {
-            roles.add(role.name().toLowerCase());
+            newGroupSet.add(role.name().toLowerCase());
         }
+
+        // old groups, stored in Stormpath
         com.stormpath.sdk.account.Account acct = ((StormpathAccount)account).getAccount();
-        
-        // Remove any memberships that don't match a role
-        for (GroupMembership membership : acct.getGroupMemberships()) {
-            String groupName = membership.getGroup().getName();
-            if (!roles.contains(groupName)) {
-                // In membership, but not the current list of roles... remove from memberships
-                membership.delete();
-            } else {
-                roles.remove(groupName);
-            }
+        Set<String> oldGroupSet = new HashSet<>();
+        for (Group group : acct.getGroups()) {
+            oldGroupSet.add(group.getName());
         }
-        // Any roles left over need to be added if the group exists
-        for (Group group : directory.getGroups()) {
-            String groupName = group.getName();
-            if (roles.contains(groupName)) {
-                // In roles, but not currently in membership... add to memberships
-                acct.addGroup(group);
-            }
-        }
+
+        // added groups = new groups - old groups
+        Set<String> addedGroupSet = Sets.difference(newGroupSet, oldGroupSet);
+        addedGroupSet.forEach(acct::addGroup);
+
+        // removed groups = old groups - new groups
+        Set<String> removedGroupSet = Sets.difference(oldGroupSet, newGroupSet);
+        removedGroupSet.forEach(acct::removeGroup);
     }
     
     private List<SubpopulationGuid> getSubpopulationGuids(StudyIdentifier studyId) {

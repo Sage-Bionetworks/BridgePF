@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,6 +22,8 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -222,14 +225,25 @@ public class StormpathAccountDaoTest {
             assertEquals("value of attribute one", account.getAttribute("attribute_one"));
             assertNull(account.getAttribute("attribute_two"));
 
-            // Just remove a group... this gets into verifying and avoiding saving the underlying
-            // Stormpath account. 
-            account.getRoles().remove(TEST_USERS);
-            accountDao.updateAccount(study, account);
-            
-            newAccount = accountDao.getAccount(study, newAccount.getEmail());
-            assertEquals(0, newAccount.getRoles().size());
-            
+            // Test adding and removing some groups. This gets into verifying and avoiding saving the underlying
+            // Stormpath account. There are 4 cases to consider: (1) adding groups, (2) removing groups, (3) account in
+            // groups unchanged, (4) account not in groups unchanged. To test this, we always leave the account in
+            // TEST_USERS and never add it to ADMIN.
+            newAccount.getRoles().addAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER));
+            accountDao.updateAccount(study, newAccount);
+
+            newAccount = accountDao.getAccount(study, email);
+            assertEquals(4, newAccount.getRoles().size());
+            assertTrue(newAccount.getRoles().containsAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER,
+                    Roles.TEST_USERS, Roles.WORKER)));
+
+            newAccount.getRoles().removeAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER));
+            accountDao.updateAccount(study, newAccount);
+
+            newAccount = accountDao.getAccount(study, email);
+            assertEquals(1, newAccount.getRoles().size());
+            assertTrue(newAccount.getRoles().contains(Roles.TEST_USERS));
+
             // finally, test the name
             newAccount.setFirstName("Test");
             newAccount.setLastName("Tester");
