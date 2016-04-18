@@ -9,6 +9,7 @@ import javax.annotation.Resource;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.PredefinedClientConfigurations;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.datapipeline.DataPipelineClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -27,6 +28,7 @@ import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
+import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -90,6 +92,11 @@ public class BridgeSpringConfig {
         return BridgeConfigFactory.getConfig();
     }
 
+    @Bean(name = "annotationBasedTableCreator")
+    public AnnotationBasedTableCreator annotationBasedTableCreator() {
+        return new AnnotationBasedTableCreator(bridgeConfig());
+    }
+
     @Bean(name = "healthCodeEncryptor")
     @Resource(name = "bridgeConfig")
     public BridgeEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
@@ -104,8 +111,8 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "mpowerVisualizationDdbMapper")
-    public DynamoDBMapper mpowerVisualizationDdbMapper() {
-        return DynamoUtils.getMapper(DynamoMpowerVisualization.class, bridgeConfig(), dynamoDbClient());
+    public DynamoDBMapper mpowerVisualizationDdbMapper(AmazonDynamoDBClient dynamoDBClient) {
+        return DynamoUtils.getMapper(DynamoMpowerVisualization.class, bridgeConfig(), dynamoDBClient);
     }
 
     @Bean(name = "s3UploadCredentials")
@@ -123,11 +130,18 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "dynamoDbClient")
+    @Resource(name = "awsCredentials")
     public AmazonDynamoDBClient dynamoDbClient() {
         int maxRetries = bridgeConfig().getPropertyAsInt("ddb.max.retries");
         ClientConfiguration awsClientConfig = PredefinedClientConfigurations.dynamoDefault()
                 .withMaxErrorRetry(maxRetries);
         return new AmazonDynamoDBClient(awsCredentials(), awsClientConfig);
+    }
+
+    @Bean(name = "dataPipelineClient")
+    @Resource(name = "awsCredentials")
+    public DataPipelineClient dataPipelineClient(BasicAWSCredentials awsCredentials) {
+        return new DataPipelineClient(awsCredentials);
     }
 
     @Bean(name = "s3Client")
@@ -294,8 +308,8 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "uploadDedupeDdbMapper")
-    public DynamoDBMapper uploadDedupeDdbMapper() {
-        return DynamoUtils.getMapper(DynamoUploadDedupe.class, bridgeConfig(), dynamoDbClient());
+    public DynamoDBMapper uploadDedupeDdbMapper(AmazonDynamoDBClient dynamoDBClient) {
+        return DynamoUtils.getMapper(DynamoUploadDedupe.class, bridgeConfig(), dynamoDBClient);
     }
     
     @Bean(name = "fphsExternalIdDdbMapper")
