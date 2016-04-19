@@ -1,21 +1,20 @@
 package org.sagebionetworks.bridge.play.modules;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.amazonaws.services.dynamodbv2.model.TableDescription;
-import com.google.inject.AbstractModule;
-import com.google.inject.Binder;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
 import play.mvc.Controller;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Binder;
 
 /**
  * <p>
@@ -30,27 +29,23 @@ import play.mvc.Controller;
  * </p>
  */
 public abstract class BridgeSpringContextModule extends AbstractModule {
-    private static final Logger LOG = LoggerFactory.getLogger(BridgeSpringContextModule.class);
+    private static final Logger logger = LoggerFactory.getLogger(BridgeSpringContextModule.class);
 
     @Override
     protected void configure() {
-        LOG.info("Environment: " + BridgeConfigFactory.getConfig().getEnvironment().name());
-        ConfigurableApplicationContext appContext = loadAppContext();
-        loadDynamo(appContext);
+        logger.info("Environment: " + BridgeConfigFactory.getConfig().getEnvironment().name());
+        loadDynamo();
+        final AbstractApplicationContext appContext = loadAppContext();
         bindControllers(appContext);
     }
 
-    private void loadDynamo(ConfigurableApplicationContext appContext) {
-        AnnotationBasedTableCreator tableCreator = appContext.getBean(AnnotationBasedTableCreator.class);
-        DynamoInitializer dynamoInitializer = appContext.getBean(DynamoInitializer.class);
-
-        List<TableDescription> tables = tableCreator.getTables("org.sagebionetworks.bridge.dynamodb");
-        dynamoInitializer.init(tables);
-        LOG.info("DynamoDB tables loaded.");
+    private void loadDynamo() {
+        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
+        logger.info("DynamoDB tables loaded.");
     }
 
-    private ConfigurableApplicationContext loadAppContext() {
-        final ConfigurableApplicationContext bridgeAppContext =
+    private AbstractApplicationContext loadAppContext() {
+        final AbstractApplicationContext bridgeAppContext =
                 new ClassPathXmlApplicationContext(getSpringXmlFilename());
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
@@ -60,11 +55,11 @@ public abstract class BridgeSpringContextModule extends AbstractModule {
             }
         });
         bridgeAppContext.start();
-        LOG.info("Bridge Spring context loaded.");
+        logger.info("Bridge Spring context loaded.");
         return bridgeAppContext;
     }
 
-    private void bindControllers(final ConfigurableApplicationContext appContext) {
+    private void bindControllers(final AbstractApplicationContext appContext) {
         final Binder spBinder = binder();
         final BeanFactory beanFactory = appContext.getBeanFactory();
         final Map<String, Controller> controllers = appContext.getBeansOfType(Controller.class);
@@ -80,7 +75,7 @@ public abstract class BridgeSpringContextModule extends AbstractModule {
             binder.bind(clazz).toInstance(clazz.cast(
                     beanFactory.getBean(clazz.getSimpleName() + "Proxied")));
         }
-        LOG.info(clazz.getName() + " is bound.");
+        logger.info(clazz.getName() + " is bound.");
     }
 
     /**
