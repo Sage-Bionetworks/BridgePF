@@ -172,7 +172,7 @@ public class StormpathAccount implements Account {
     }
     @Override
     public String getId() {
-        return acct.getHref().split("/accounts/")[1];
+        return BridgeUtils.getIdFromStormpathHref(acct.getHref());
     }
     @Override
     public AccountStatus getStatus() {

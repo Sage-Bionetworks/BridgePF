@@ -11,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -26,17 +25,12 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.redis.RedisKey;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("userAdminService")
 public class UserAdminService {
-
-    private static final Logger logger = LoggerFactory.getLogger(UserAdminService.class);
 
     private AuthenticationService authenticationService;
     private AccountDao accountDao;
@@ -47,7 +41,6 @@ public class UserAdminService {
     private SurveyResponseService surveyResponseService;
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
-    private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
     private ParticipantOptionsService optionsService;
     private ExternalIdService externalIdService;
@@ -71,10 +64,6 @@ public class UserAdminService {
     @Autowired
     public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
-    }
-    @Autowired
-    public final void setDistributedLockDao(DistributedLockDao lockDao) {
-        this.lockDao = lockDao;
     }
     @Autowired
     public final void setHealthIdDao(HealthIdDao healthIdDao) {
@@ -138,9 +127,10 @@ public class UserAdminService {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withStudyIdentifier(study.getStudyIdentifier()).build();
         
+        UserSession newUserSession = null;
         try {
             SignIn signIn = new SignIn(signUp.getEmail(), signUp.getPassword());
-            UserSession newUserSession = authenticationService.signIn(study, context, signIn);
+            newUserSession = authenticationService.signIn(study, context, signIn);
 
             if (consentUser) {
                 String name = String.format("[Signature for %s]", signUp.getEmail());
@@ -162,13 +152,15 @@ public class UserAdminService {
 
             if (!signUserIn) {
                 authenticationService.signOut(newUserSession);
-                newUserSession = null;
+                newUserSession.setAuthenticated(false);
             }
             return newUserSession;
         } catch (RuntimeException ex) {
             // Created the account, but failed to process the account properly. To avoid leaving behind a bunch of test
             // accounts, delete this account.
-            deleteUser(study, signUp.getEmail());
+            if (newUserSession != null && newUserSession.getUser() != null) {
+                deleteUser(study, newUserSession.getUser().getId());    
+            }
             throw ex;
         }
     }
@@ -176,35 +168,16 @@ public class UserAdminService {
     /**
      * Delete the target user.
      *
-     * @param email
+     * @param id
      *            target user
      * @throws BridgeServiceException
      */
-    public void deleteUser(Study study, String email) {
+    public void deleteUser(Study study, String id) {
         checkNotNull(study);
-        checkArgument(StringUtils.isNotBlank(email));
-        Account account = accountDao.getAccount(study, email);
+        checkArgument(StringUtils.isNotBlank(id));
+        Account account = accountDao.getAccount(study, id);
         if (account != null) {
             deleteUser(account);
-        }
-    }
-
-    void deleteUser(Account account) {
-        checkNotNull(account);
-        int retryCount = 0;
-        boolean shouldRetry = true;
-        while (shouldRetry) {
-            boolean deleted = deleteUserAttempt(account);
-            if (deleted) {
-                return;
-            }
-            shouldRetry = retryCount < 5;
-            retryCount++;
-            try {
-                Thread.sleep(100 * 2 ^ retryCount);
-            } catch(InterruptedException ie) {
-                throw new BridgeServiceException(ie);
-            }
         }
     }
 
@@ -218,66 +191,35 @@ public class UserAdminService {
         }
     }
 
-    private boolean deleteUserAttempt(Account account) {
-        String key = RedisKey.USER_LOCK.getRedisKey(account.getEmail());
-        String lock = null;
-        boolean success = false;
-        try {
-            lock = lockDao.acquireLock(User.class, key);
-            if (account != null) {
-                Study study = studyService.getStudy(account.getStudyIdentifier());
-                deleteUserInStudy(study, account);
-                accountDao.deleteAccount(study, account.getEmail());
-                // Check if the delete succeeded
-                success = accountDao.getAccount(study, account.getEmail()) == null ? true : false;
-                cacheProvider.removeSessionByUserId(account.getId());
-            }
-        } catch(Throwable t) {
-            success = false;
-            logger.error(t.getMessage(), t);
-        } finally {
-            // This used to silently fail, not there is a precondition check that
-            // throws an exception. If there has been an exception, lock == null
-            if (lock != null) {
-                lockDao.releaseLock(User.class, key, lock);
-            }
-        }
-        return success;
-    }
-
-    private boolean deleteUserInStudy(Study study, Account account) throws BridgeServiceException {
-        checkNotNull(study);
+    private void deleteUser(Account account) {
         checkNotNull(account);
 
-        try {
-            // health id/code are not assigned until consent is given. They may not exist.
-            if (account.getHealthId() != null) {
-                // This is the fastest way to do this that I know of
-                String healthCode = healthIdDao.getCode(account.getHealthId());
-                // We expect to have health code, but when tests fail, we can get users who have signed in 
-                // and do not have a health code.
-                if (!StringUtils.isBlank(healthCode)) {
-                    consentService.deleteAllConsentsForUser(study, healthCode);
-                    healthDataService.deleteRecordsForHealthCode(healthCode);
-                    scheduledActivityService.deleteActivitiesForUser(healthCode);
-                    activityEventService.deleteActivityEvents(healthCode);
-                    surveyResponseService.deleteSurveyResponses(healthCode);
-                    
-                    // Remove the externalId from the table even if validation is not enabled. If the study
-                    // turns it off/back on again, we want to track what has changed
-                    ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-                    String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
-                    if (externalId != null) {
-                        externalIdService.unassignExternalId(study, externalId, healthCode);    
-                    }
-                    optionsService.deleteAllParticipantOptions(healthCode);
+        Study study = studyService.getStudy(account.getStudyIdentifier());
+        // remove this first so if account is partially deleted, re-authenticating will pick
+        // up accurate information about the state of the account (as we can recover it)
+        cacheProvider.removeSessionByUserId(account.getId());
+        if (account.getHealthId() != null) {
+            // This is the fastest way to do this that I know of
+            String healthCode = healthIdDao.getCode(account.getHealthId());
+            // We expect to have health code, but when tests fail, we can get users who have signed in 
+            // and do not have a health code.
+            if (healthCode != null) {
+                consentService.deleteAllConsentsForUser(study, healthCode);
+                healthDataService.deleteRecordsForHealthCode(healthCode);
+                scheduledActivityService.deleteActivitiesForUser(healthCode);
+                activityEventService.deleteActivityEvents(healthCode);
+                surveyResponseService.deleteSurveyResponses(healthCode);
+                
+                // Remove the externalId from the table even if validation is not enabled. If the study
+                // turns it off/back on again, we want to track what has changed
+                ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+                String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
+                if (externalId != null) {
+                    externalIdService.unassignExternalId(study, externalId, healthCode);    
                 }
+                optionsService.deleteAllParticipantOptions(healthCode);
             }
-            return true;
-        } catch (Throwable e) {
-            logger.error(e.getMessage(), e);
-            return false;
         }
+        accountDao.deleteAccount(study, account.getId());
     }
-
 }

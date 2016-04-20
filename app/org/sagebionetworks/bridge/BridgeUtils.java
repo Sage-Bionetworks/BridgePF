@@ -178,5 +178,15 @@ public class BridgeUtils {
         return (set == null) ? ImmutableSet.of() : ImmutableSet.copyOf(set.stream()
                 .filter(element -> element != null).collect(Collectors.toSet()));
     }
+    
+    public static String getIdFromStormpathHref(String href) {
+        if (href != null) {
+            if (!href.contains(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF)) {
+                throw new IllegalArgumentException("Invalid Stormpath URL: " + href);
+            }
+            return href.substring(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF.length());
+        }
+        return null;
+    }
 
 }

@@ -59,6 +59,7 @@ public class UserSessionInfoTest {
         assertEquals("researcher", node.get("roles").get(0).asText());
         assertEquals("foo", node.get("dataGroups").get(0).asText());
         assertEquals("staging", node.get("environment").asText());
+        assertEquals(user.getId(), node.get("id").asText());
         assertEquals("UserSessionInfo", node.get("type").asText());
         JsonNode consentMap = node.get("consentStatuses");
         
@@ -72,7 +73,7 @@ public class UserSessionInfoTest {
         assertEquals(6, consentStatus.size());
         
         // ... and no things that shouldn't be there
-        assertEquals(13, node.size());
+        assertEquals(14, node.size());
     }
     
 }

@@ -101,6 +101,23 @@ public class BridgeUtilsTest {
         assertEquals(Sets.newHashSet("A"), BridgeUtils.nullSafeImmutableSet(Sets.newHashSet(null, "A")));
     }
     
+    @Test
+    public void getIdFromStormpathHref() {
+        String href = "https://enterprise.stormpath.io/v1/accounts/6278jk74xoPOXkruh9vJnh";
+        String id = BridgeUtils.getIdFromStormpathHref(href);
+        assertEquals("6278jk74xoPOXkruh9vJnh", id);
+    }
+    
+    @Test
+    public void getIdFromStormpathHrefNullSafe() {
+        assertNull(BridgeUtils.getIdFromStormpathHref(null));
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void unexpectedIdFormatThrowsUnambiguousException() {
+        BridgeUtils.getIdFromStormpathHref("https://enterprise.stormpath.io/v2/accounts/6278jk74xoPOXkruh9vJnh");
+    }
+    
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(first.size(), second.size());

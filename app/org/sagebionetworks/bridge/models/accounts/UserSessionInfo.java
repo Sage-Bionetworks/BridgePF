@@ -33,6 +33,7 @@ public class UserSessionInfo {
     private final Set<Roles> roles;
     private final Set<String> dataGroups;
     private final Map<SubpopulationGuid,ConsentStatus> consentStatuses;
+    private final String id;
 
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
@@ -43,6 +44,7 @@ public class UserSessionInfo {
         this.environment = ENVIRONMENTS.get(session.getEnvironment());
         this.email = session.getUser().getEmail();
         this.consentStatuses = session.getUser().getConsentStatuses();
+        this.id = session.getUser().getId();
     }
 
     public boolean isAuthenticated() {
@@ -84,5 +86,8 @@ public class UserSessionInfo {
     }
     public Set<String> getDataGroups() {
         return dataGroups;
+    }
+    public String getId() {
+        return id;
     }
 }

@@ -15,6 +15,8 @@ import java.util.SortedMap;
 
 import javax.annotation.Resource;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -55,6 +57,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
+import com.stormpath.sdk.account.AccountOptions;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.account.VerificationEmailRequest;
 import com.stormpath.sdk.account.VerificationEmailRequestBuilder;
@@ -62,7 +65,7 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.application.Applications;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.AuthenticationResult;
-import com.stormpath.sdk.authc.UsernamePasswordRequest;
+import com.stormpath.sdk.authc.UsernamePasswordRequests;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
@@ -162,11 +165,12 @@ public class StormpathAccountDao implements AccountDao {
             if (it.hasNext()) {
                 com.stormpath.sdk.account.Account acct = it.next();
                 java.util.Date javaDate = acct.getCreatedAt();
-                DateTime createdOn = (javaDate != null) ? new DateTime(javaDate) : null;;
+                DateTime createdOn = (javaDate != null) ? new DateTime(javaDate) : null;
+                String id = BridgeUtils.getIdFromStormpathHref(acct.getHref());
                 
                 // This should not trigger further requests to the server (customData, groups, etc.).
                 AccountSummary summary = new AccountSummary(acct.getGivenName(), acct.getSurname(), 
-                        acct.getEmail(), createdOn, AccountStatus.valueOf(acct.getStatus().name()));
+                        acct.getEmail(), id, createdOn, AccountStatus.valueOf(acct.getStatus().name()));
                 results.add(summary);
             }
         }
@@ -244,10 +248,10 @@ public class StormpathAccountDao implements AccountDao {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
             
-            AuthenticationRequest<?,?> request = UsernamePasswordRequest.builder()
+            AuthenticationRequest<?,?> request = UsernamePasswordRequests.builder()
                     .setUsernameOrEmail(signIn.getEmail())
                     .setPassword(signIn.getPassword())
-                    .withResponseOptions(UsernamePasswordRequest.options().withAccount())
+                    .withResponseOptions(UsernamePasswordRequests.options().withAccount())
                     .inAccountStore(directory).build();
             
             AuthenticationResult result = application.authenticateAccount(request);
@@ -266,10 +270,20 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public Account getAccount(Study study, String email) {
+    public Account getAccount(Study study, String identifier) {
         checkNotNull(study);
-        checkArgument(isNotBlank(email));
-
+        checkArgument(isNotBlank(identifier));
+        
+        // We are transitioning away from using email address, and this code path will be removed.
+        // The Stormpath identifier contains only alphanumeric characters, so this is a reasonable
+        // test we've been given an email.
+        if (identifier.contains("@")) {
+            return getAccountWithEmail(study, identifier);
+        }
+        return getAccountWithId(study, identifier);
+    }
+    
+    private Account getAccountWithEmail(Study study, String email) {
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
 
@@ -278,6 +292,30 @@ public class StormpathAccountDao implements AccountDao {
         if (accounts.iterator().hasNext()) {
             com.stormpath.sdk.account.Account acct = accounts.iterator().next();
             return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
+        }
+        return null;
+    }
+    
+    private Account getAccountWithId(Study study, String id) {
+        String href = BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF+id;
+        
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
+
+        AccountOptions<?> options = Accounts.options();
+        options.withCustomData();
+        options.withGroups();
+        options.withGroupMemberships();
+        try {
+            com.stormpath.sdk.account.Account acct = client.getResource(href, com.stormpath.sdk.account.Account.class, options);
+            
+            // Validate the user is in the correct directory
+            Directory directory = acct.getDirectory();
+            if (directory.getHref().equals(study.getStormpathHref())) {
+                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors); 
+            }
+        } catch(ResourceException e) {
+            // In keeping with the email implementation, just return null
+            logger.debug("Account ID " + id + " not found in Stormpath: " + e.getMessage());
         }
         return null;
     }
@@ -341,11 +379,11 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public void deleteAccount(Study study, String email) {
+    public void deleteAccount(Study study, String id) {
         checkNotNull(study);
-        checkArgument(isNotBlank(email));
+        checkArgument(isNotBlank(id));
         
-        Account account = getAccount(study, email);
+        Account account = getAccount(study, id);
         com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
         acct.delete();
     }

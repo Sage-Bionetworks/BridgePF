@@ -204,7 +204,7 @@ public class ConsentServiceMockTest {
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         
         verify(userConsentDao).withdrawConsent(user.getHealthCode(), SUBPOP_GUID, UNIX_TIMESTAMP);
-        verify(accountDao).getAccount(study, user.getEmail());
+        verify(accountDao).getAccount(study, user.getId());
         verify(accountDao).updateAccount(any(Study.class), captor.capture());
         // It happens twice because we do it the first time to set up the test properly
         //verify(account, times(2)).getConsentSignatures(setterCaptor.capture());
@@ -251,7 +251,7 @@ public class ConsentServiceMockTest {
         List<ConsentSignature> signatures =  acct.getConsentSignatureHistory(SUBPOP_GUID); 
         signatures.add(new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1969-04-05").build());
         
-        when(accountDao.getAccount(study, user.getEmail())).thenReturn(acct);
+        when(accountDao.getAccount(study, user.getId())).thenReturn(acct);
         doThrow(new BridgeServiceException("Something bad happend", 500)).when(userConsentDao)
             .withdrawConsent("BBB", SUBPOP_GUID, UNIX_TIMESTAMP);
         

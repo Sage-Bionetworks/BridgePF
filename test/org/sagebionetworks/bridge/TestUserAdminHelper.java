@@ -79,6 +79,9 @@ public class TestUserAdminHelper {
         public Study getStudy() {
             return study;
         }
+        public String getId() {
+            return (session == null) ? null : session.getUser().getId();
+        }
         public StudyIdentifier getStudyIdentifier() {
             return study.getStudyIdentifier();
         }
@@ -111,22 +114,18 @@ public class TestUserAdminHelper {
 
     public void deleteUser(TestUser testUser) {
         checkNotNull(testUser);
-
+        
         if (testUser.getSession() != null) {
-            // Delete using session if it exists
             authService.signOut(testUser.getSession());
-            userAdminService.deleteUser(testUser.getStudy(), testUser.getUser().getEmail());
-        } else {
-            // Otherwise delete using the user's email
-            deleteUser(testUser.getStudy(), testUser.getEmail());
         }
+        deleteUser(testUser.getStudy(), testUser.getId());
     }
 
-    public void deleteUser(Study study, String email) {
+    public void deleteUser(Study study, String id) {
         checkNotNull(study);
-        checkNotNull(email);
+        checkNotNull(id);
 
-        userAdminService.deleteUser(study, email);
+        userAdminService.deleteUser(study, id);
     }
     
     public class Builder {

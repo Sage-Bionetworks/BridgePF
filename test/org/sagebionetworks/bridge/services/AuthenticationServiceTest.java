@@ -4,8 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -22,6 +22,7 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,13 +98,22 @@ public class AuthenticationServiceTest {
     
     private Study study;
     
+    private TestUser testUser;
+    
     @Before
     public void before() {
         study = studyService.getStudy("api");
     }
     
-    private TestUser makeTestUser() {
-        return helper.getBuilder(AuthenticationServiceTest.class).build();
+    @After
+    public void after() {
+        if (testUser != null && testUser.getId() != null) {
+            helper.deleteUser(testUser);
+        }
+    }
+    
+    private void initTestUser() {
+        testUser = helper.getBuilder(AuthenticationServiceTest.class).build();
     }
 
     @Test(expected = BridgeServiceException.class)
@@ -123,39 +133,27 @@ public class AuthenticationServiceTest {
 
     @Test
     public void signInCorrectCredentials() throws Exception {
-        TestUser testUser = makeTestUser();
-        try {
-            UserSession newSession = authService.getSession(testUser.getSessionToken());
-            assertEquals("Email is for test2 user", newSession.getUser().getEmail(), testUser.getEmail());
-            assertTrue("Session token has been assigned", StringUtils.isNotBlank(testUser.getSessionToken()));
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        initTestUser();
+        UserSession newSession = authService.getSession(testUser.getSessionToken());
+        assertEquals("Email is for test2 user", newSession.getUser().getEmail(), testUser.getEmail());
+        assertTrue("Session token has been assigned", StringUtils.isNotBlank(testUser.getSessionToken()));
     }
 
     @Test
     public void signInWhenSignedIn() throws Exception {
-        TestUser testUser = makeTestUser();
-        try {
-            String sessionToken = testUser.getSessionToken();
-            UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-            assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
-            assertEquals("Should update the existing session instead of creating a new one.",
-                    sessionToken, newSession.getSessionToken());
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        initTestUser();
+        String sessionToken = testUser.getSessionToken();
+        UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
+        assertEquals("Should update the existing session instead of creating a new one.",
+                sessionToken, newSession.getSessionToken());
     }
 
     @Test
-    public void signInSetsSharingScope() { 
-        TestUser testUser = makeTestUser();
-        try {
-            UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-            assertEquals(SharingScope.NO_SHARING, newSession.getUser().getSharingScope()); // this is the default.
-        } finally {
-            helper.deleteUser(testUser);
-        }
+    public void signInSetsSharingScope() {
+        initTestUser();
+        UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+        assertEquals(SharingScope.NO_SHARING, newSession.getUser().getSharingScope()); // this is the default.
     }
 
     @Test
@@ -169,15 +167,11 @@ public class AuthenticationServiceTest {
 
     @Test
     public void getSessionWhenAuthenticated() throws Exception {
-        TestUser testUser = makeTestUser();
-        try {
-            UserSession newSession = authService.getSession(testUser.getSessionToken());
+        initTestUser();
+        UserSession newSession = authService.getSession(testUser.getSessionToken());
 
-            assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
-            assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
+        assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
     @Test(expected = NullPointerException.class)
@@ -198,43 +192,32 @@ public class AuthenticationServiceTest {
 
     @Test
     public void canResendEmailVerification() throws Exception {
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
-                .withConsent(false).withSignIn(false).build();
-        try {
-            Email email = new Email(testUser.getStudyIdentifier(), testUser.getEmail());
-            authService.resendEmailVerification(testUser.getStudyIdentifier(), email);
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
+        Email email = new Email(testUser.getStudyIdentifier(), testUser.getEmail());
+        authService.resendEmailVerification(testUser.getStudyIdentifier(), email);
     }
 
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        TestUser researcher = helper.getBuilder(AuthenticationServiceTest.class)
+        testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.RESEARCHER).build();
-        try {
-            authService.signIn(researcher.getStudy(), TEST_CONTEXT, researcher.getSignIn());
-            // no exception should have been thrown.
-        } finally {
-            helper.deleteUser(researcher);
-        }
+        // Can no longer delete an account without getting a session, and the assigned ID, first, so there's
+        // no way to use finally here if sign in fails for some reason.
+        UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+        helper.deleteUser(testUser.getStudy(), session.getUser().getId());
     }
 
     @Test
     public void createAdminAndSignInWithoutConsentError() {
-        TestUser researcher = helper.getBuilder(AuthenticationServiceTest.class)
+        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.ADMIN).build();
-        try {
-            authService.signIn(researcher.getStudy(), TEST_CONTEXT, researcher.getSignIn());
-            // no exception should have been thrown.
-        } finally {
-            helper.deleteUser(researcher);
-        }
+        UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+        helper.deleteUser(testUser.getStudy(), session.getUser().getId());
     }
 
     @Test
     public void testSignOut() {
-        TestUser testUser = makeTestUser();
+        initTestUser();
         try {
             final String sessionToken = testUser.getSessionToken();
             final String userId = testUser.getUser().getId();
@@ -248,71 +231,60 @@ public class AuthenticationServiceTest {
 
     @Test
     public void testSignOutWhenSignedOut() {
-        TestUser testUser = makeTestUser();
-        try {
-            final String sessionToken = testUser.getSessionToken();
-            final String userId = testUser.getUser().getId();
-            authService.signOut(testUser.getSession());
-            authService.signOut(testUser.getSession());
-            assertNull(cacheProvider.getUserSession(sessionToken));
-            assertNull(cacheProvider.getUserSessionByUserId(userId));
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        initTestUser();
+        final String sessionToken = testUser.getSessionToken();
+        final String userId = testUser.getUser().getId();
+        authService.signOut(testUser.getSession());
+        authService.signOut(testUser.getSession());
+        assertNull(cacheProvider.getUserSession(sessionToken));
+        assertNull(cacheProvider.getUserSessionByUserId(userId));
     }
     
     @Test
     public void signUpWillCreateDataGroups() {
+        String name = TestUtils.randomName(AuthenticationServiceTest.class);
+        String email = "bridge-testing+"+name+"@sagebase.org";
+        Set<Roles> roles = Sets.newHashSet(Roles.TEST_USERS);
+        Set<String> groups = Sets.newHashSet("group1");
+        
+        testUser = helper.getBuilder(AuthenticationServiceTest.class).withStudy(study).withConsent(true)
+                .withSignIn(true).withSignUp(new SignUp(email, "P@ssword1", roles, groups)).build();
+        
         authService = spy(authService);
         optionsService = spy(optionsService);
         authService.setOptionsService(optionsService);
+        accountDao = spy(accountDao);
         
-        Set<String> list = Sets.newHashSet("group1");
-        String name = TestUtils.randomName(AuthenticationServiceTest.class);
-        String email = "bridge-testing+"+name+"@sagebase.org";
-        
-        try {
-            SignUp signUp = new SignUp(email, "P@ssword1", null, list);
+        authService.signUp(study, testUser.getSignUp(), true);
 
-            authService.signUp(study, signUp, true);
-            Account account = accountDao.getAccount(study, email);
-            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-            
-            verify(authService).signUp(study, signUp, true);
-            // Verify that data groups were set correctly as an option
-            Set<String> persistedGroups = optionsService.getOptions(healthId.getCode()).getStringSet(DATA_GROUPS);
-            assertEquals(list, persistedGroups);
-            
-        } finally {
-            accountDao.deleteAccount(study, email);
-        }
+        UserSession session = authService.signIn(study, testUser.getCriteriaContext(), testUser.getSignIn());
+        Account account = accountDao.getAccount(study, session.getUser().getId());
+        
+        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+        
+        verify(authService).signUp(any(Study.class), eq(testUser.getSignUp()), eq(true));
+        // Verify that data groups were set correctly as an option
+        Set<String> persistedGroups = optionsService.getOptions(healthId.getCode()).getStringSet(DATA_GROUPS);
+        assertEquals(groups, persistedGroups);
     }
     
     @Test
     public void userCreatedWithDataGroupsHasThemOnSignIn() throws Exception {
         int numOfGroups = DefaultStudyBootstrapper.TEST_DATA_GROUPS.size();
-        TestUser user = helper.getBuilder(AuthenticationServiceTest.class).withConsent(true)
+        testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(true)
                 .withDataGroups(DefaultStudyBootstrapper.TEST_DATA_GROUPS).build();
-        try {
-            UserSession session = authService.signIn(user.getStudy(), TEST_CONTEXT, user.getSignIn());
-            // Verify we created a list and the anticipated group was not null
-            assertEquals(numOfGroups, session.getUser().getDataGroups().size()); 
-            assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getUser().getDataGroups());
-        } finally {
-            helper.deleteUser(user);
-        }
+
+        UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+        // Verify we created a list and the anticipated group was not null
+        assertEquals(numOfGroups, session.getUser().getDataGroups().size()); 
+        assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getUser().getDataGroups());
     }
     
-    @Test
+    @Test(expected = InvalidEntityException.class)
     public void invalidDataGroupsAreRejected() throws Exception {
-        try {
-            Set<String> dataGroups = Sets.newHashSet("bugleboy");
-            helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false)
-                    .withDataGroups(dataGroups).build();
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("dataGroups 'bugleboy' is not one of these valid values"));
-        }
+        Set<String> dataGroups = Sets.newHashSet("bugleboy");
+        helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false)
+                .withDataGroups(dataGroups).build();
     }
     
     // Account enumeration security. Verify the service is quite (throws no exceptions) when we don't
@@ -323,14 +295,10 @@ public class AuthenticationServiceTest {
         // Verify that requestResetPassword is called in this case
         authService = spy(authService);
         
-        TestUser user = helper.getBuilder(AuthenticationServiceTest.class)
+        testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
-        try {
-            authService.signUp(user.getStudy(), user.getSignUp(), true);
-            verify(authService).requestResetPassword(any(Study.class), any(Email.class));
-        } finally {
-            helper.deleteUser(user);
-        }
+        authService.signUp(testUser.getStudy(), testUser.getSignUp(), true);
+        verify(authService).requestResetPassword(any(Study.class), any(Email.class));
     }
     
     @Test
@@ -350,157 +318,135 @@ public class AuthenticationServiceTest {
     @Test
     public void consentStatusesPresentInSession() {
         // User is consenting
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+        testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
-        try {
-            SubpopulationGuid guid = SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier());
-            
-            // This is the object we pass back to the user, we want to see the statuses copied or present
-            // all the way from the user to the sessionInfo. We test elsewhere that these are properly 
-            // serialized/deserialized (SubpopulationGuidDeserializer)
-            UserSessionInfo sessionInfo = new UserSessionInfo(testUser.getSession());
-            
-            ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
-            assertTrue(status.isConsented());
-            assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        SubpopulationGuid guid = SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier());
+        
+        // This is the object we pass back to the user, we want to see the statuses copied or present
+        // all the way from the user to the sessionInfo. We test elsewhere that these are properly 
+        // serialized/deserialized (SubpopulationGuidDeserializer)
+        UserSessionInfo sessionInfo = new UserSessionInfo(testUser.getSession());
+        
+        ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
+        assertTrue(status.isConsented());
+        assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
     }
     
     @Test
     public void userWithSignatureAndNoDbRecordIsRepaired() throws Exception {
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+        testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
-        try {
-            authService.signOut(testUser.getSession());
+        authService.signOut(testUser.getSession());
+        
+        // now delete any and all consent records, and zero out the signed on dates
+        
+        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
+        
+        List<Subpopulation> subpops = subpopService.getSubpopulations(testUser.getStudyIdentifier());
+        for (Subpopulation subpop : subpops) {
+            // Delete all DDB records
+            userConsentDao.deleteAllConsents(testUser.getUser().getHealthCode(), subpop.getGuid());
             
-            // now delete any and all consent records, and zero out the signed on dates
+            // zero out the signed on date
+            ConsentSignature sig = account.getConsentSignatureHistory(subpop.getGuid()).get(0);
+            sig = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(0L).build();
             
-            Account account = accountDao.getAccount(testUser.getStudy(), testUser.getEmail());
-            
-            List<Subpopulation> subpops = subpopService.getSubpopulations(testUser.getStudyIdentifier());
-            for (Subpopulation subpop : subpops) {
-                // Delete all DDB records
-                userConsentDao.deleteAllConsents(testUser.getUser().getHealthCode(), subpop.getGuid());
-                
-                // zero out the signed on date
-                ConsentSignature sig = account.getConsentSignatureHistory(subpop.getGuid()).get(0);
-                sig = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(0L).build();
-                
-                // alter the customData object so it stores the one signature and no history, as 
-                // was stored in the past when this problem was present
-                com.stormpath.sdk.account.Account stormpathAcct = ((StormpathAccount)account).getAccount();
-                CustomData data = stormpathAcct.getCustomData();
-                data.put(subpop.getGuidString()+"_signature", BridgeObjectMapper.get().writeValueAsString(sig));
-                data.put(subpop.getGuidString()+"_signature_version", 2);
-                data.remove(subpop.getGuidString()+"_signatures");
-                data.remove(subpop.getGuidString()+"_signatures_version");                
-            }
-            accountDao.updateAccount(testUser.getStudy(), account);
-            
-            // Signing in should still work to create a consented user.
-            Study study = studyService.getStudy(testUser.getStudyIdentifier());
-            
-            // Create the context you would get for an unauthenticated user, don't use the now 
-            // fully-initialized testUser.getCriteriaContext()
-            CriteriaContext context =  new CriteriaContext.Builder()
-                    .withStudyIdentifier(study.getStudyIdentifier())
-                    .withLanguages(TestUtils.newLinkedHashSet("en"))
-                    .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                    .build();
-            
-            UserSession session = authService.signIn(study, context, testUser.getSignIn());
-            
-            // and this person should be recorded as consented...
-            for (ConsentStatus status : session.getUser().getConsentStatuses().values()) {
-                assertTrue(!status.isRequired() || status.isConsented());
-                UserConsent consent  = userConsentDao.getActiveUserConsent(session.getUser().getHealthCode(), SubpopulationGuid.create(status.getSubpopulationGuid()));
-                assertTrue(consent.getSignedOn() > 0L);
-            }
-        } finally {
-            helper.deleteUser(testUser);
+            // alter the customData object so it stores the one signature and no history, as 
+            // was stored in the past when this problem was present
+            com.stormpath.sdk.account.Account stormpathAcct = ((StormpathAccount)account).getAccount();
+            CustomData data = stormpathAcct.getCustomData();
+            data.put(subpop.getGuidString()+"_signature", BridgeObjectMapper.get().writeValueAsString(sig));
+            data.put(subpop.getGuidString()+"_signature_version", 2);
+            data.remove(subpop.getGuidString()+"_signatures");
+            data.remove(subpop.getGuidString()+"_signatures_version");                
+        }
+        accountDao.updateAccount(testUser.getStudy(), account);
+        
+        // Signing in should still work to create a consented user.
+        Study study = studyService.getStudy(testUser.getStudyIdentifier());
+        
+        // Create the context you would get for an unauthenticated user, don't use the now 
+        // fully-initialized testUser.getCriteriaContext()
+        CriteriaContext context =  new CriteriaContext.Builder()
+                .withStudyIdentifier(study.getStudyIdentifier())
+                .withLanguages(TestUtils.newLinkedHashSet("en"))
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .build();
+        
+        UserSession session = authService.signIn(study, context, testUser.getSignIn());
+        
+        // and this person should be recorded as consented...
+        for (ConsentStatus status : session.getUser().getConsentStatuses().values()) {
+            assertTrue(!status.isRequired() || status.isConsented());
+            UserConsent consent  = userConsentDao.getActiveUserConsent(session.getUser().getHealthCode(), SubpopulationGuid.create(status.getSubpopulationGuid()));
+            assertTrue(consent.getSignedOn() > 0L);
         }
     }
     
     @Test
     public void existingLanguagePreferencesAreLoaded() {
         LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","es");
-        
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+        testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
-        try {
-            String healthCode = testUser.getUser().getHealthCode();
-            optionsService.setOrderedStringSet(
-                    testUser.getStudyIdentifier(), healthCode, ParticipantOption.LANGUAGES, LANGS);
+        
+        String healthCode = testUser.getUser().getHealthCode();
+        optionsService.setOrderedStringSet(
+                testUser.getStudyIdentifier(), healthCode, ParticipantOption.LANGUAGES, LANGS);
 
-            authService.signOut(testUser.getSession());
-            
-            Study study = studyService.getStudy(testUser.getStudyIdentifier());
-            CriteriaContext context = testUser.getCriteriaContext();
-            
-            UserSession session = authService.signIn(study, context, testUser.getSignIn());
-            assertEquals(LANGS, session.getUser().getLanguages());
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        authService.signOut(testUser.getSession());
+        
+        Study study = studyService.getStudy(testUser.getStudyIdentifier());
+        CriteriaContext context = testUser.getCriteriaContext();
+        
+        UserSession session = authService.signIn(study, context, testUser.getSignIn());
+        assertEquals(LANGS, session.getUser().getLanguages());
     }
     
     @Test
     public void languagePreferencesAreRetrievedFromContext() {
         LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("fr","es");
-        
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+        testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
-        try {
             
-            testUser.getUser().setLanguages(LANGS);
-            CriteriaContext context = testUser.getCriteriaContext();
-            
-            authService.signOut(testUser.getSession());
-            
-            Study study = studyService.getStudy(testUser.getStudyIdentifier());
-            
-            UserSession session = authService.signIn(study, context, testUser.getSignIn());
-            assertEquals(LANGS, session.getUser().getLanguages());
-            
-            LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getUser().getHealthCode()).getOrderedStringSet(LANGUAGES);
-            assertEquals(LANGS, persistedLangs);
-        } finally {
-            helper.deleteUser(testUser);
-        }        
+        testUser.getUser().setLanguages(LANGS);
+        CriteriaContext context = testUser.getCriteriaContext();
+        
+        authService.signOut(testUser.getSession());
+        
+        Study study = studyService.getStudy(testUser.getStudyIdentifier());
+        
+        UserSession session = authService.signIn(study, context, testUser.getSignIn());
+        assertEquals(LANGS, session.getUser().getLanguages());
+        
+        LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getUser().getHealthCode()).getOrderedStringSet(LANGUAGES);
+        assertEquals(LANGS, persistedLangs);
     }
     
     @Test
     public void verifyEmailWorksWithRepairConsents() throws Exception {
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
-                .withConsent(false).withSignIn(false).build();
-        try {
-            // Calling verifyEmail fails if you don't have a valid sptoken, which we don't have. So we have to mock the 
-            // DAO to verify that the call succeeds
-            EmailVerification verification = new EmailVerification("asdf");
-            Study study = testUser.getStudy();
-            String email = testUser.getEmail();
-            
-            // We need to mock the client because it will throw an exception when it gets the garbage token "asdf", 
-            // and we're only concerned with what happens when this is successful. Tedious to mock the Stormpath client.
-            AccountDao accountDaoSpy = mock(AccountDao.class);
-            when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, email));
-            authService.setAccountDao(accountDaoSpy);
-            
-            CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier()).build();
-            
-            UserSession session = authService.verifyEmail(study, context, verification);
-            // Consents are okay. User hasn't consented.
-            ConsentStatus status = session.getUser().getConsentStatuses().values().iterator().next();
-            assertFalse(status.isConsented());
-            
-            // This should not have been altered in any way by the lack of consents.
-            verify(accountDaoSpy).verifyEmail(study, verification);
-        } finally {
-            authService.setAccountDao(accountDao);
-            helper.deleteUser(testUser);
-        }        
+        testUser = helper.getBuilder(AuthenticationServiceTest.class)
+                .withConsent(false).withSignIn(true).build();
+        // Calling verifyEmail fails if you don't have a valid sptoken, which we don't have. So we have to mock the 
+        // DAO to verify that the call succeeds
+        EmailVerification verification = new EmailVerification("asdf");
+        Study study = testUser.getStudy();
+        
+        // We need to mock the client because it will throw an exception when it gets the garbage token "asdf", 
+        // and we're only concerned with what happens when this is successful. Tedious to mock the Stormpath client.
+        AccountDao accountDaoSpy = mock(AccountDao.class);
+        when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, testUser.getUser().getId()));
+        authService.setAccountDao(accountDaoSpy);
+        
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier()).build();
+        
+        UserSession session = authService.verifyEmail(study, context, verification);
+        // Consents are okay. User hasn't consented.
+        ConsentStatus status = session.getUser().getConsentStatuses().values().iterator().next();
+        assertFalse(status.isConsented());
+        
+        // This should not have been altered in any way by the lack of consents.
+        verify(accountDaoSpy).verifyEmail(study, verification);
+        authService.setAccountDao(accountDao);
     }
     
 }

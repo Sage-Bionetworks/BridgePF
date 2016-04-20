@@ -39,11 +39,12 @@ public class StudyParticipant implements BridgeEntity {
     private final LinkedHashSet<String> languages;
     private final AccountStatus status;
     private final DateTime createdOn;
+    private final String id;
     
     private StudyParticipant(String firstName, String lastName, String email, String externalId, String password,
             SharingScope sharingScope, boolean notifyByEmail, Set<String> dataGroups, String healthCode,
             Map<String, String> attributes, Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles,
-            LinkedHashSet<String> languages, AccountStatus status, DateTime createdOn) {
+            LinkedHashSet<String> languages, AccountStatus status, DateTime createdOn, String id) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -59,6 +60,7 @@ public class StudyParticipant implements BridgeEntity {
         this.languages = languages;
         this.status = status;
         this.createdOn = createdOn;
+        this.id = id;
     }
     
     public String getFirstName() {
@@ -106,6 +108,9 @@ public class StudyParticipant implements BridgeEntity {
     public DateTime getCreatedOn() {
         return createdOn;
     }
+    public String getId() {
+        return id;
+    }
     
     public static class Builder {
         private String firstName;
@@ -123,6 +128,7 @@ public class StudyParticipant implements BridgeEntity {
         private LinkedHashSet<String> languages = new LinkedHashSet<>();
         private AccountStatus status;
         private DateTime createdOn;
+        private String id;
         
         public Builder withFirstName(String firstName) {
             this.firstName = firstName;
@@ -200,10 +206,14 @@ public class StudyParticipant implements BridgeEntity {
             this.createdOn = createdOn;
             return this;
         }
+        public Builder withId(String id) {
+            this.id = id;
+            return this;
+        }
         
         public StudyParticipant build() {
             return new StudyParticipant(firstName, lastName, email, externalId, password, sharingScope, notifyByEmail,
-                    dataGroups, healthCode, attributes, consentHistories, roles, languages, status, createdOn);
+                    dataGroups, healthCode, attributes, consentHistories, roles, languages, status, createdOn, id);
         }
     }
 

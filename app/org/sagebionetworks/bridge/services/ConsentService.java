@@ -111,7 +111,7 @@ public class ConsentService {
         // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
         subpopService.getSubpopulation(study, subpopGuid);
         
-        Account account = accountDao.getAccount(study, user.getEmail());
+        Account account = accountDao.getAccount(study, user.getId());
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
         if (signature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);    
@@ -155,7 +155,7 @@ public class ConsentService {
         Validate.entityThrowingException(validator, consentSignature);
 
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
-        Account account = accountDao.getAccount(study, user.getEmail());
+        Account account = accountDao.getAccount(study, user.getId());
 
         // Throws exception if we have exceeded enrollment limit.
         if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
@@ -234,7 +234,7 @@ public class ConsentService {
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
-        Account account = accountDao.getAccount(study, user.getEmail());
+        Account account = accountDao.getAccount(study, user.getId());
         
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
         if (active == null) {
@@ -283,8 +283,8 @@ public class ConsentService {
      * @param healthCode
      * @param email
      */
-    public List<UserConsentHistory> getUserConsentHistory(Study study, SubpopulationGuid subpopGuid, String healthCode, String email) {
-        Account account = accountDao.getAccount(study, email);
+    public List<UserConsentHistory> getUserConsentHistory(Study study, SubpopulationGuid subpopGuid, String healthCode, String id) {
+        Account account = accountDao.getAccount(study, id);
         
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
             UserConsent consent = userConsentDao.getUserConsent(
