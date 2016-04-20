@@ -1,37 +1,56 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static play.test.Helpers.contentAsString;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
+import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
+
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestUtils;
+
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import play.mvc.Http;
 import play.mvc.Result;
 
+@RunWith(MockitoJUnitRunner.class)
 public class UserManagementControllerTest {
 
+    @Mock
+    AuthenticationService authService;
+    
+    @Mock
+    StudyService studyService;
+    
+    @Mock
+    UserAdminService userAdminService;
+    
+    @Mock
+    Study study;
+    
+    @Spy
     UserManagementController controller;
     
     @Before
@@ -45,14 +64,9 @@ public class UserManagementControllerTest {
         session.setAuthenticated(true);
         session.setStudyIdentifier(TEST_STUDY);
         
-        AuthenticationService authService = mock(AuthenticationService.class);
         when(authService.getSession(any(String.class))).thenReturn(session);
-        StudyService studyService = mock(StudyService.class);
-        UserAdminService userAdminService = mock(UserAdminService.class);
+        when(studyService.getStudy(new StudyIdentifierImpl("api"))).thenReturn(study);
         
-        // Using a spy on the controller, even though it's under test, because there's a reference
-        // to Cache in BaseController which is a Play class with a static method.
-        controller = spy(new UserManagementController());
         controller.setStudyService(studyService);
         controller.setUserAdminService(userAdminService);
         controller.setAuthenticationService(authService);
@@ -60,7 +74,7 @@ public class UserManagementControllerTest {
         Map<String,String[]> map = Maps.newHashMap();
         map.put(BridgeConstants.SESSION_TOKEN_HEADER, new String[]{"AAA"});
         
-        TestUtils.mockPlayContextWithJson("{}");
+        mockPlayContextWithJson("{}");
         Http.Context context = Http.Context.current.get();
         Http.Request request = context.request();
         when(request.headers()).thenReturn(map);
@@ -70,11 +84,33 @@ public class UserManagementControllerTest {
     @Test
     public void createdResponseReturnsJSONPayload() throws Exception {
         Result result = controller.createUser();
-        
-        JsonNode node = new ObjectMapper().readTree(contentAsString(result));
-        
-        // This is the one assertion in this test... Play is hard to test.
-        assertEquals("User created.", node.get("message").asText());
+
+        assertResult(result, 201, "User created.");
     }
     
+    @Test
+    public void deleteUser() throws Exception {
+        Result result = controller.deleteUser("ASDF");
+        
+        assertResult(result, 200, "User deleted.");
+        verify(userAdminService).deleteUser(study, "ASDF");
+    }
+    
+    @Test
+    public void deleteUser2() throws Exception {
+        Result result = controller.deleteUser2("email@email.com");
+        
+        assertResult(result, 200, "User deleted.");
+        verify(userAdminService).deleteUser(study, "email@email.com");
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteUser2Missing() throws Exception {
+        controller.deleteUser2(null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteUser2Blank() throws Exception {
+        controller.deleteUser2("");
+    }
 }

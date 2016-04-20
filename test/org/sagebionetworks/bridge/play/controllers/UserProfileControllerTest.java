@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
 import org.junit.Before;
@@ -142,8 +143,7 @@ public class UserProfileControllerTest {
         
         assertEquals(dataGroupSet, session.getUser().getDataGroups());
         
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals("Data groups updated.", node.get("message").asText());
+        assertResult(result, 200, "Data groups updated.");
     }
     
     @SuppressWarnings({"unchecked"})
@@ -191,7 +191,6 @@ public class UserProfileControllerTest {
         Set<String> dataGroups = (Set<String>)captor.getValue();
         assertEquals(Sets.newHashSet(), dataGroups);
         
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals("Data groups updated.", node.get("message").asText());
+        assertResult(result, 200, "Data groups updated.");
     }
 }

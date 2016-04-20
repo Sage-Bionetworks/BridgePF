@@ -97,19 +97,19 @@ public class ParticipantService {
         this.cacheProvider = cacheProvider;
     }
     
-    public StudyParticipant getParticipant(Study study, String email) {
+    public StudyParticipant getParticipant(Study study, String id) {
         checkNotNull(study);
-        checkArgument(isNotBlank(email));
+        checkArgument(isNotBlank(id));
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
-        Account account = getAccountThrowingException(study, email);
+        Account account = getAccountThrowingException(study, id);
         String healthCode = getHealthCode(account);
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpopulations) {
             if (healthCode != null) {
                 // always returns a list, even if empty
-                List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(), healthCode, email);
+                List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(), healthCode, id);
                 participant.addConsentHistory(subpop.getGuid(), history);
             } else {
                 // Create an empty history if there's no health Code.
@@ -133,6 +133,7 @@ public class ParticipantService {
         participant.withStatus(account.getStatus());
         participant.withCreatedOn(account.getCreatedOn());
         participant.withRoles(account.getRoles());
+        participant.withId(account.getId());
         
         Map<String,String> attributes = Maps.newHashMap();
         for (String attribute : study.getUserProfileAttributes()) {

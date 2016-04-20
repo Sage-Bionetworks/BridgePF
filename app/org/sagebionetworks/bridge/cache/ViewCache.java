@@ -18,6 +18,8 @@ public class ViewCache {
     
     private static final Logger logger = LoggerFactory.getLogger(ViewCache.class);
     
+    private static final Joiner COLON_JOINER = Joiner.on(":");
+    
     public final class ViewCacheKey<T> {
         private final String key;
         public ViewCacheKey(String key) {
@@ -73,7 +75,7 @@ public class ViewCache {
      * @return
      */
     public <T> ViewCacheKey<T> getCacheKey(Class<T> clazz, String... identifiers) {
-        String id = Joiner.on(":").join(identifiers);
+        String id = COLON_JOINER.join(identifiers);
         return new ViewCacheKey<T>(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getName()));
     }
     

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -155,8 +156,7 @@ public class FPHSControllerTest {
         setExternalIdentifierPost(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo"));
 
         Result result = controller.registerExternalIdentifier();
-        JsonNode node = resultToJson(result);
-        assertEquals("External identifier added to user profile.", node.get("message").asText());
+        assertResult(result, 200, "External identifier added to user profile.");
 
         assertEquals(Sets.newHashSet("football_player"), user.getDataGroups());
         verify(consentService).getConsentStatuses(any(CriteriaContext.class));
@@ -221,7 +221,6 @@ public class FPHSControllerTest {
         List<FPHSExternalIdentifier> passedList = (List<FPHSExternalIdentifier>)captor.getValue();
         assertEquals(2, passedList.size());
         
-        JsonNode node = resultToJson(result);
-        assertEquals("External identifiers added.", node.get("message").asText());
+        assertResult(result, 201, "External identifiers added.");
     }
 }

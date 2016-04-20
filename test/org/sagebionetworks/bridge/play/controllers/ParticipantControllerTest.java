@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,6 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -52,6 +52,10 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
     
+    private static final String ID = "ASDF";
+
+    private static final String EMAIL = "email@email.com";
+
     private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
 
     private static final AccountSummary SUMMARY = new AccountSummary("firstName","lastName","email","id",DateTime.now(),AccountStatus.ENABLED);
@@ -124,20 +128,69 @@ public class ParticipantControllerTest {
         // paging with defaults
         verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
     }
-    
+
     @Test
-    public void getParticipant2() throws Exception {
+    public void getParticipant() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
         
-        when(participantService.getParticipant(STUDY, "email@email.com")).thenReturn(studyParticipant);
+        when(participantService.getParticipant(STUDY, ID)).thenReturn(studyParticipant);
         
-        Result result = controller.getParticipant2("email@email.com");
+        Result result = controller.getParticipant(ID);
         String string = Helpers.contentAsString(result);
         StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(string, StudyParticipant.class);
         // Verify that there's a field, full serialization tested in StudyParticipant2Test
         assertEquals("Test", retrievedParticipant.getFirstName());
         
-        verify(participantService).getParticipant(STUDY, "email@email.com");
+        verify(participantService).getParticipant(STUDY, ID);
+    }
+    
+    @Test
+    public void signUserOut() throws Exception {
+        controller.signOut(ID);
+        
+        verify(participantService).signUserOut(STUDY, ID);
+    }
+
+    @Test
+    public void updateParticipant() throws Exception {
+        STUDY.getUserProfileAttributes().add("phone");
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
+                "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
+                "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
+                "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
+        
+        Result result = controller.updateParticipant(ID);
+        
+        assertResult(result, 200, "Participant updated.");
+        
+        verify(participantService).updateParticipant(eq(STUDY), eq(ID), participantCaptor.capture());
+        
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals("firstName", participant.getFirstName());
+        assertEquals("lastName", participant.getLastName());
+        assertEquals(EMAIL, participant.getEmail());
+        assertEquals("newUserPassword", participant.getPassword());
+        assertEquals("externalId", participant.getExternalId());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, participant.getSharingScope());
+        assertTrue(participant.isNotifyByEmail());
+        assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
+        assertEquals("123456789", participant.getAttributes().get("phone"));
+        assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
+    }
+    
+    @Test
+    public void getParticipant2() throws Exception {
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
+        
+        when(participantService.getParticipant(STUDY, EMAIL)).thenReturn(studyParticipant);
+        
+        Result result = controller.getParticipant2(EMAIL);
+        String string = Helpers.contentAsString(result);
+        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(string, StudyParticipant.class);
+        // Verify that there's a field, full serialization tested in StudyParticipant2Test
+        assertEquals("Test", retrievedParticipant.getFirstName());
+        
+        verify(participantService).getParticipant(STUDY, EMAIL);
     }
     
     @Test
@@ -150,9 +203,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void signUserOut2() throws Exception {
-        controller.signOut2("email@email.com");
+        controller.signOut2(EMAIL);
         
-        verify(participantService).signUserOut(STUDY, "email@email.com");
+        verify(participantService).signUserOut(STUDY, EMAIL);
     }
 
     @Test(expected = BadRequestException.class)
@@ -184,17 +237,15 @@ public class ParticipantControllerTest {
                 "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
         
         Result result = controller.createParticipant();
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         
-        assertEquals(201, result.status());
-        assertEquals("Participant created.", node.get("message").asText());
+        assertResult(result, 201, "Participant created.");
         
         verify(participantService).createParticipant(eq(STUDY), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());
-        assertEquals("email@email.com", participant.getEmail());
+        assertEquals(EMAIL, participant.getEmail());
         assertEquals("newUserPassword", participant.getPassword());
         assertEquals("externalId", participant.getExternalId());
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, participant.getSharingScope());
@@ -212,18 +263,16 @@ public class ParticipantControllerTest {
                 "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
                 "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
         
-        Result result = controller.updateParticipant2("email@email.com");
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        Result result = controller.updateParticipant2(EMAIL);
         
-        assertEquals(200, result.status());
-        assertEquals("Participant updated.", node.get("message").asText());
+        assertResult(result, 200, "Participant updated.");
         
-        verify(participantService).updateParticipant(eq(STUDY), eq("email@email.com"), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(EMAIL), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());
-        assertEquals("email@email.com", participant.getEmail());
+        assertEquals(EMAIL, participant.getEmail());
         assertEquals("newUserPassword", participant.getPassword());
         assertEquals("externalId", participant.getExternalId());
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, participant.getSharingScope());

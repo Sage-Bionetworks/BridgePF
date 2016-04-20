@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.apache.http.HttpHeaders.USER_AGENT;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
@@ -28,6 +29,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -52,6 +54,8 @@ import org.sagebionetworks.bridge.runnable.FailableRunnable;
 import play.Application;
 import play.inject.guice.GuiceApplicationBuilder;
 import play.mvc.Http;
+import play.mvc.Result;
+import play.test.Helpers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,6 +73,13 @@ public class TestUtils {
         Map<String,List<String>> errors = e.getErrors();
         List<String> messages = errors.get(propName);
         assertTrue(messages.get(0).contains(propName + error));
+    }
+    
+    public static void assertResult(Result result, int statusCode, String message) throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        String resultMessage = node.get("message").asText();
+        assertEquals(statusCode, result.status());
+        assertEquals(message, resultMessage);
     }
 
     /**
