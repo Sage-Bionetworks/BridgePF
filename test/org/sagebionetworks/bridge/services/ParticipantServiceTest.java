@@ -68,11 +68,13 @@ public class ParticipantServiceTest {
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final LinkedHashSet<String> USER_LANGUAGES = (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet("de,fr");
     private static final String EMAIL = "email@email.com";
+    private static final String ID = "ASDF";
     private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("phone","123456789").build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName("firstName")
             .withLastName("lastName")
             .withEmail(EMAIL)
+            .withId(ID)
             .withPassword("P@ssword1")
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
             .withNotifyByEmail(true)
@@ -293,9 +295,9 @@ public class ParticipantServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void getParticipantEmailDoesNotExist() {
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(null);
+        when(accountDao.getAccount(STUDY, ID)).thenReturn(null);
         
-        participantService.getParticipant(STUDY, EMAIL);
+        participantService.getParticipant(STUDY, ID);
     }
     
     @Test
@@ -306,6 +308,7 @@ public class ParticipantServiceTest {
         when(account.getFirstName()).thenReturn("firstName");
         when(account.getLastName()).thenReturn("lastName");
         when(account.getEmail()).thenReturn(EMAIL);
+        when(account.getId()).thenReturn(ID);
         when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
         when(account.getCreatedOn()).thenReturn(createdOn);
         when(account.getAttribute("attr2")).thenReturn("anAttribute2");
@@ -338,8 +341,8 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> histories2 = Lists.newArrayList();
         
-        when(consentService.getUserConsentHistory(STUDY, subpop1.getGuid(), "healthCode", EMAIL)).thenReturn(histories1);
-        when(consentService.getUserConsentHistory(STUDY, subpop2.getGuid(), "healthCode", EMAIL)).thenReturn(histories2);
+        when(consentService.getUserConsentHistory(STUDY, subpop1.getGuid(), "healthCode", ID)).thenReturn(histories1);
+        when(consentService.getUserConsentHistory(STUDY, subpop2.getGuid(), "healthCode", ID)).thenReturn(histories2);
         
         when(lookup.getEnum(SHARING_SCOPE, SharingScope.class)).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         when(lookup.getBoolean(EMAIL_NOTIFICATIONS)).thenReturn(true);
@@ -349,7 +352,7 @@ public class ParticipantServiceTest {
         when(optionsService.getOptions("healthCode")).thenReturn(lookup);
         
         // Get the participant
-        StudyParticipant participant = participantService.getParticipant(STUDY, EMAIL);
+        StudyParticipant participant = participantService.getParticipant(STUDY, ID);
         
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());
@@ -359,6 +362,7 @@ public class ParticipantServiceTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, participant.getSharingScope());
         assertEquals("healthCode", participant.getHealthCode());
         assertEquals(EMAIL, participant.getEmail());
+        assertEquals(ID, participant.getId());
         assertEquals(AccountStatus.DISABLED, participant.getStatus());
         assertEquals(createdOn, participant.getCreatedOn());
         assertEquals(TestUtils.newLinkedHashSet("fr","de"), participant.getLanguages());
@@ -383,14 +387,15 @@ public class ParticipantServiceTest {
         when(account.getFirstName()).thenReturn("firstName");
         when(account.getLastName()).thenReturn("lastName");
         when(account.getEmail()).thenReturn(EMAIL);
+        when(account.getId()).thenReturn(ID);
         when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
         when(account.getCreatedOn()).thenReturn(createdOn);
         when(account.getAttribute("attr2")).thenReturn("anAttribute2");
         
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(account);
+        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(healthId.getCode()).thenReturn(null);
         
-        StudyParticipant participant = participantService.getParticipant(STUDY, EMAIL);
+        StudyParticipant participant = participantService.getParticipant(STUDY, ID);
         
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());
@@ -400,6 +405,7 @@ public class ParticipantServiceTest {
         assertNull(participant.getSharingScope());
         assertNull(participant.getHealthCode());
         assertEquals(EMAIL, participant.getEmail());
+        assertEquals(ID, participant.getId());
         assertEquals(AccountStatus.DISABLED, participant.getStatus());
         assertEquals(createdOn, participant.getCreatedOn());
         assertTrue(participant.getLanguages().isEmpty());
@@ -409,7 +415,7 @@ public class ParticipantServiceTest {
     }
     
     private void mockGetAccount() {
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(account);
+        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(account.getHealthId()).thenReturn("healthId");
         when(healthId.getCode()).thenReturn("healthCode");
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
@@ -417,19 +423,19 @@ public class ParticipantServiceTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void signOutUserWhoDoesNotExist() {
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(null);
+        when(accountDao.getAccount(STUDY, ID)).thenReturn(null);
         
-        participantService.signUserOut(STUDY, EMAIL);
+        participantService.signUserOut(STUDY, ID);
     }
     
     @Test
     public void signOutUser() {
-        when(accountDao.getAccount(STUDY, EMAIL)).thenReturn(account);
+        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(account.getId()).thenReturn("userId");
         
-        participantService.signUserOut(STUDY, EMAIL);
+        participantService.signUserOut(STUDY, ID);
         
-        verify(accountDao).getAccount(STUDY, EMAIL);
+        verify(accountDao).getAccount(STUDY, ID);
         verify(cacheProvider).removeSessionByUserId("userId");
     }
     
@@ -439,13 +445,13 @@ public class ParticipantServiceTest {
         doReturn("healthId").when(account).getHealthId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
         doReturn("id").when(account).getId();
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
         
-        participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
+        participantService.updateParticipant(STUDY, ID, PARTICIPANT);
         
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq("healthCode"), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
@@ -471,12 +477,12 @@ public class ParticipantServiceTest {
         doReturn("healthId").when(account).getHealthId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
         
-        participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
+        participantService.updateParticipant(STUDY, ID, PARTICIPANT);
     }
 
     @Test(expected = BadRequestException.class)
@@ -485,7 +491,7 @@ public class ParticipantServiceTest {
         doReturn("healthId").when(account).getHealthId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -498,7 +504,7 @@ public class ParticipantServiceTest {
                 .withDataGroups(PARTICIPANT.getDataGroups())
                 .withAttributes(PARTICIPANT.getAttributes())
                 .withLanguages(PARTICIPANT.getLanguages()).build();
-        participantService.updateParticipant(STUDY, EMAIL, participant);
+        participantService.updateParticipant(STUDY, ID, participant);
     }
     
     @Test
@@ -507,13 +513,13 @@ public class ParticipantServiceTest {
         doReturn("healthId").when(account).getHealthId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn("POWERS").when(lookup).getString(EXTERNAL_IDENTIFIER);
         
         // This just succeeds because the IDs are the same, and we'll verify no attempt was made to update it.
-        participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
+        participantService.updateParticipant(STUDY, ID, PARTICIPANT);
         
         verifyNoMoreInteractions(externalIdService);
     }
@@ -524,7 +530,7 @@ public class ParticipantServiceTest {
         doReturn("healthId").when(account).getHealthId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -537,12 +543,12 @@ public class ParticipantServiceTest {
                 .withDataGroups(PARTICIPANT.getDataGroups())
                 .withAttributes(PARTICIPANT.getAttributes())
                 .withLanguages(PARTICIPANT.getLanguages()).build();
-        participantService.updateParticipant(STUDY, EMAIL, participant);
+        participantService.updateParticipant(STUDY, ID, participant);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void updateParticipantWithInvalidParticipant() {
-        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
         doReturn("healthId").when(account).getHealthId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
@@ -551,14 +557,14 @@ public class ParticipantServiceTest {
                 .withDataGroups(Sets.newHashSet("bogusGroup"))
                 .build();
         
-        participantService.updateParticipant(STUDY, EMAIL, participant);
+        participantService.updateParticipant(STUDY, ID, participant);
     }
     
     @Test
     public void updateParticipantWithNoAccount() {
-        doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(STUDY, EMAIL);
+        doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(STUDY, ID);
         try {
-            participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
+            participantService.updateParticipant(STUDY, ID, PARTICIPANT);
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
@@ -574,9 +580,9 @@ public class ParticipantServiceTest {
         doReturn("healthId").when(account).getHealthId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
         
-        participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
+        participantService.updateParticipant(STUDY, ID, PARTICIPANT);
         
         verifyNoMoreInteractions(externalIdService);
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq("healthCode"), optionsCaptor.capture());
@@ -589,9 +595,9 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         doReturn(null).when(healthCodeService).getMapping("healthId");
         doReturn(null).when(account).getHealthId();
-        doReturn(account).when(accountDao).getAccount(STUDY, EMAIL);
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
         
-        participantService.updateParticipant(STUDY, EMAIL, PARTICIPANT);
+        participantService.updateParticipant(STUDY, ID, PARTICIPANT);
     }
     
     @Test

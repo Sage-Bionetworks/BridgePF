@@ -9,6 +9,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
@@ -129,10 +130,7 @@ public class ConsentControllerMockedTest {
         ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV2();
-        
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("Consent to research has been recorded.", node.get("message").asText());
+        assertResult(result, 201, "Consent to research has been recorded.");
 
         validateSignature(captor.getValue());
     }
@@ -146,10 +144,7 @@ public class ConsentControllerMockedTest {
         ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV2();
-        
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("Consent to research has been recorded.", node.get("message").asText());
+        assertResult(result, 201, "Consent to research has been recorded.");
         
         validateSignature(captor.getValue());
     }
@@ -162,9 +157,7 @@ public class ConsentControllerMockedTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsent();
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
         verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), user,
@@ -182,9 +175,7 @@ public class ConsentControllerMockedTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsent();
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        assertResult(result, 200, "User has been withdrawn from the study.");
         
         verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), user,
                 new Withdrawal(null), 20000);
@@ -220,10 +211,7 @@ public class ConsentControllerMockedTest {
         ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
-        
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("Consent to research has been recorded.", node.get("message").asText());
+        assertResult(result, 201, "Consent to research has been recorded.");
         
         validateSignature(captor.getValue());
     }
@@ -236,11 +224,8 @@ public class ConsentControllerMockedTest {
         ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
+        assertResult(result, 201, "Consent to research has been recorded.");
         
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("Consent to research has been recorded.", node.get("message").asText());
-
         validateSignature(captor.getValue());
     }
     
@@ -251,9 +236,7 @@ public class ConsentControllerMockedTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
         verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal("Because, reasons."), 20000);
@@ -269,9 +252,7 @@ public class ConsentControllerMockedTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        assertResult(result, 200, "User has been withdrawn from the study.");
         
         verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal(null), 20000);
     }
@@ -279,9 +260,8 @@ public class ConsentControllerMockedTest {
     @Test
     public void emailCopyV2() throws Exception {
         Result result = controller.emailCopyV2(SUBPOP_GUID.getGuid());
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("Emailed consent.", node.get("message").asText());
+        
+        assertResult(result, 200, "Emailed consent.");
         
         verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, user);
     }
@@ -294,10 +274,8 @@ public class ConsentControllerMockedTest {
         ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV3("test-subpop");
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("Consent to research has been recorded.", node.get("message").asText());
-
+        assertResult(result, 201, "Consent to research has been recorded.");
+        
         verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("test-subpop")), eq(user),
                 captor.capture(), eq(SharingScope.NO_SHARING), eq(true));
         
@@ -311,9 +289,7 @@ public class ConsentControllerMockedTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsentV2("test-subpop");
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
         verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), user,
@@ -330,9 +306,7 @@ public class ConsentControllerMockedTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawConsentV2("test-subpop");
-        String response = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(response);
-        assertEquals("User has been withdrawn from the study.", node.get("message").asText());
+        assertResult(result, 200, "User has been withdrawn from the study.");
         
         verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), user,
                 new Withdrawal(null), 20000);

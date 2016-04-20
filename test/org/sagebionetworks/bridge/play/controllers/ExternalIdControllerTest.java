@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,6 @@ import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -115,11 +115,7 @@ public class ExternalIdControllerTest {
         TestUtils.mockPlayContextWithJson(MAPPER.writeValueAsString(identifiers));
         
         Result result = controller.addExternalIds();
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
-        String message = node.get("message").asText();
-        
-        assertEquals("External identifiers added.", message);
-        assertEquals(201, result.status());
+        assertResult(result, 201, "External identifiers added.");
         
         verify(externalIdService).addExternalIds(study, identifiers);
     }
@@ -129,11 +125,7 @@ public class ExternalIdControllerTest {
         TestUtils.mockPlayContextWithJson("[]");
         
         Result result = controller.addExternalIds();
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
-        String message = node.get("message").asText();
-        
-        assertEquals("External identifiers added.", message);
-        assertEquals(201, result.status());
+        assertResult(result, 201, "External identifiers added.");
         
         verify(externalIdService).addExternalIds(study, Lists.newArrayList());
     }
@@ -146,11 +138,7 @@ public class ExternalIdControllerTest {
         mockRequestWithQueryString(map);
         
         Result result = controller.deleteExternalIds();
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
-        String message = node.get("message").asText();
-        
-        assertEquals("External identifiers deleted.", message);
-        assertEquals(200, result.status());
+        assertResult(result, 200, "External identifiers deleted.");
         
         verify(externalIdService).deleteExternalIds(eq(study), externalIdCaptor.capture());
         

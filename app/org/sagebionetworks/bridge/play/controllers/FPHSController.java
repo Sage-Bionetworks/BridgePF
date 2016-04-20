@@ -88,6 +88,6 @@ public class FPHSController extends BaseController {
         List<FPHSExternalIdentifier> externalIds = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
         fphsService.addExternalIdentifiers(externalIds);
         
-        return okResult("External identifiers added.");
+        return createdResult("External identifiers added.");
     }
 }

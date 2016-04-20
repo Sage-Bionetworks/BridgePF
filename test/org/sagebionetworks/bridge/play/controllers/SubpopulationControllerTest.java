@@ -7,6 +7,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
 import java.util.List;
 
@@ -190,11 +191,8 @@ public class SubpopulationControllerTest {
         TestUtils.mockPlayContext();
 
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), null);
-        assertEquals(200, result.status());
-        String json = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
-        assertEquals("Subpopulation has been deleted.", node.get("message").asText());
         
+        assertResult(result, 200, "Subpopulation has been deleted.");
         verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, false);
     }
     
@@ -208,21 +206,13 @@ public class SubpopulationControllerTest {
         user.setRoles(Sets.newHashSet(Roles.ADMIN));
         
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
-        assertEquals(200, result.status());
-        String json = Helpers.contentAsString(result);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         // Message indicates a physical (permanent) delete, true is submitted
-        assertEquals("Subpopulation has been permanently deleted.", node.get("message").asText());
+        assertResult(result, 200, "Subpopulation has been permanently deleted.");
         
         user.setRoles(Sets.newHashSet(Roles.DEVELOPER, Roles.ADMIN));
         result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
-        assertEquals(200, result.status());
-        json = Helpers.contentAsString(result);
-        node = BridgeObjectMapper.get().readTree(json);
-        
-        // Message indicates a physical (permanent) delete, true is submitted
-        assertEquals("Subpopulation has been permanently deleted.", node.get("message").asText());
+        assertResult(result, 200, "Subpopulation has been permanently deleted.");
         
         verify(subpopService, times(2)).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, true);
     }

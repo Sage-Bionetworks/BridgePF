@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
@@ -147,9 +148,9 @@ public class StudyConsentControllerTest {
         
         Result result = controller.publishConsentV2(GUID, DATETIME_STRING);
         
+        assertResult(result, 200, "Consent document set as active.");
+
         verify(studyConsentService).publishConsent(STUDY, SUBPOP_GUID, DateTime.parse(DATETIME_STRING).getMillis());
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals("Consent document set as active.", node.get("message").asText());
     }
     
 }
