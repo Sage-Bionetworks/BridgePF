@@ -65,7 +65,7 @@ public class UserProfileController extends BaseController {
         ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getId(), study.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<UserProfile>() {
             @Override public UserProfile get() {
-                return userProfileService.getProfile(study, session.getUser().getEmail());
+                return userProfileService.getProfile(study, session.getUser().getId());
             }
         });
         return ok(json).as(BridgeConstants.JSON_MIME_TYPE);

@@ -18,13 +18,13 @@ public class UserProfileService {
         this.accountDao = accountDao;
     }
     
-    public UserProfile getProfile(Study study, String email) {
-        Account account = accountDao.getAccount(study, email);
+    public UserProfile getProfile(Study study, String id) {
+        Account account = accountDao.getAccount(study, id);
         return profileFromAccount(study, account);
     }
     
     public User updateProfile(Study study, User user, UserProfile profile) {
-        Account account = accountDao.getAccount(study, user.getEmail());
+        Account account = accountDao.getAccount(study, user.getId());
         account.setFirstName(profile.getFirstName());
         account.setLastName(profile.getLastName());
         for(String attribute : study.getUserProfileAttributes()) {

@@ -175,13 +175,13 @@ public class ParticipantService {
         saveParticipant(study, null, participant, true);
     }
     
-    public void updateParticipant(Study study, String email, StudyParticipant participant) {
-        saveParticipant(study, email, participant, false);
+    public void updateParticipant(Study study, String id, StudyParticipant participant) {
+        saveParticipant(study, id, participant, false);
     }
 
-    public void saveParticipant(Study study, String email, StudyParticipant participant, boolean isNew) {
+    public void saveParticipant(Study study, String id, StudyParticipant participant, boolean isNew) {
         checkNotNull(study);
-        checkArgument(isNew || isNotBlank(email));
+        checkArgument(isNew || isNotBlank(id));
         checkNotNull(participant);
         
         Validate.entityThrowingException(new StudyParticipantValidator(study, isNew), participant);
@@ -199,7 +199,7 @@ public class ParticipantService {
             
             healthCode = getHealthCodeThrowingException(account);
         } else {
-            account = getAccountThrowingException(study, email);
+            account = getAccountThrowingException(study, id);
             
             healthCode = getHealthCodeThrowingException(account);
             
@@ -259,8 +259,8 @@ public class ParticipantService {
         return (isBlank(id1) || isBlank(id2) || !id1.equals(id2));
     }
 
-    private Account getAccountThrowingException(Study study, String email) {
-        Account account = accountDao.getAccount(study, email);
+    private Account getAccountThrowingException(Study study, String id) {
+        Account account = accountDao.getAccount(study, id);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

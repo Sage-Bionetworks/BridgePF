@@ -166,7 +166,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private static ApplicationAccountStoreMapping getApplicationMapping(String href, Application app) {
         // This is tedious but I see no way to search for or make a reference to this 
         // mapping without iterating through the application's mappings.
-        for (ApplicationAccountStoreMapping mapping : app.getApplicationAccountStoreMappings(asmCriteria)) {
+        for (ApplicationAccountStoreMapping mapping : app.getAccountStoreMappings(asmCriteria)) {
             if (mapping.getAccountStore().getHref().equals(href)) {
                 return mapping;
             }

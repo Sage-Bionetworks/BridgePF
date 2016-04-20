@@ -39,7 +39,7 @@ public class UserProfileServiceTest {
     
     @Test
     public void canUpdateUserProfile() {
-        UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getId());
         profile.setFirstName("Test");
         profile.setLastName("Powers");
         profile.setAttribute("phone", "123-456-7890");
@@ -51,7 +51,7 @@ public class UserProfileServiceTest {
         profile.setAttribute("email", "NotEmail");
 
         profileService.updateProfile(testUser.getStudy(), testUser.getUser(), profile);
-        profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        profile = profileService.getProfile(testUser.getStudy(), testUser.getId());
         
         assertEquals("First name is persisted", "Test", profile.getFirstName());
         assertEquals("Last name is persisted", "Powers", profile.getLastName());
@@ -63,12 +63,12 @@ public class UserProfileServiceTest {
 
     @Test
     public void cannotBreakProfileWithBadNameValues() {
-        UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getId());
         profile.setFirstName("");
         profile.setLastName(null);
         profileService.updateProfile(testUser.getStudy(), testUser.getUser(), profile);
 
-        profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        profile = profileService.getProfile(testUser.getStudy(), testUser.getId());
         assertNull(profile.getFirstName());
         assertNull(profile.getLastName());
     }

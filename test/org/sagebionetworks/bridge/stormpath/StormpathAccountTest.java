@@ -21,6 +21,7 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
@@ -416,7 +417,7 @@ public class StormpathAccountTest {
         when(acct.getSurname()).thenReturn("lastName");
         when(acct.getGroups()).thenReturn(groupList);
         when(acct.getCreatedAt()).thenReturn(javaDate);
-        when(acct.getHref()).thenReturn("http://something/accounts/123");
+        when(acct.getHref()).thenReturn(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF+"123");
 
         // Signatures and encrypted values (including attributes) are tested in more depth in other tests
         // These are basic values from the Stormpath account

@@ -31,17 +31,6 @@ public class ParticipantController extends BaseController {
         this.participantService = participantService;
     }
     
-    public Result getParticipant(String email) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        if (isBlank(email)) {
-            throw new BadRequestException(EMAIL_REQUIRED);
-        }
-        
-        StudyParticipant participant = participantService.getParticipant(study, email);
-        return okResult(participant);
-    }
-    
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         
@@ -64,31 +53,56 @@ public class ParticipantController extends BaseController {
         return createdResult("Participant created.");
     }
     
-    public Result updateParticipant(String email) {
+    public Result getParticipant(String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        if (isBlank(email)) {
-            throw new BadRequestException(EMAIL_REQUIRED);
-        }
+        
+        StudyParticipant participant = participantService.getParticipant(study, userId);
+        return okResult(participant);
+    }
+    
+    public Result updateParticipant(String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         // Just stop right here because something is wrong
-        if (participant.getEmail() != null && !participant.getEmail().equals(email)) {
-            throw new BadRequestException("Email in JSON does not match email query parameter.");
+        if (participant.getId() != null && !userId.equals(participant.getId())) {
+            throw new BadRequestException("ID in JSON does not match email in URL.");
         }
-        participantService.updateParticipant(study, email, participant);
+        participantService.updateParticipant(study, userId, participant);
         
         return okResult("Participant updated.");
     }
     
-    public Result signOut(String email) throws Exception {
+    public Result signOut(String userId) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        participantService.signUserOut(study, userId);
+
+        return okResult("User signed out.");
+    }
+
+    public Result getParticipant2(String email) {
         if (isBlank(email)) {
             throw new BadRequestException(EMAIL_REQUIRED);
         }
-        participantService.signUserOut(study, email);
-
-        return okResult("User signed out.");
+        return getParticipant(email);
+    }
+    
+    public Result updateParticipant2(String email) {
+        if (isBlank(email)) {
+            throw new BadRequestException(EMAIL_REQUIRED);
+        }
+        return updateParticipant(email);
+    }
+    
+    public Result signOut2(String email) throws Exception {
+        if (isBlank(email)) {
+            throw new BadRequestException(EMAIL_REQUIRED);
+        }
+        return signOut(email);
     }
 
     private int getIntOrDefault(String value, int defaultValue) {

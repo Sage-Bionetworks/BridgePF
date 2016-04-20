@@ -13,16 +13,18 @@ public final class AccountSummary {
     private final String firstName;
     private final String lastName;
     private final String email;
+    private final String id;
     private final DateTime createdOn;
     private final AccountStatus status;
     
     @JsonCreator
     public AccountSummary(@JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
-            @JsonProperty("email") String email, @JsonProperty("createdOn") DateTime createdOn,
-            @JsonProperty("status") AccountStatus status) {
+            @JsonProperty("email") String email, @JsonProperty("id") String id,
+            @JsonProperty("createdOn") DateTime createdOn, @JsonProperty("status") AccountStatus status) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
+        this.id = id;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
     }
@@ -38,6 +40,10 @@ public final class AccountSummary {
     public String getEmail() {
         return email;
     }
+    
+    public String getId() {
+        return id;
+    }
 
     public DateTime getCreatedOn() {
         return createdOn;
@@ -49,7 +55,7 @@ public final class AccountSummary {
 
     @Override
     public int hashCode() {
-        return Objects.hash(firstName, lastName, email, createdOn, status);
+        return Objects.hash(firstName, lastName, email, id, createdOn, status);
     }
 
     @Override
@@ -61,7 +67,7 @@ public final class AccountSummary {
         AccountSummary other = (AccountSummary) obj;
         return Objects.equals(firstName, other.firstName) && Objects.equals(lastName, other.lastName)
                 && Objects.equals(email, other.email) && Objects.equals(createdOn, other.createdOn)
-                && Objects.equals(status, other.status);
+                && Objects.equals(status, other.status) && Objects.equals(id, other.id);
     }
     
     // no toString() method as the information is sensitive.

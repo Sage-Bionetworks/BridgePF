@@ -22,8 +22,8 @@ public class PagedResourceListTest {
     @Test
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", DateTime.now(), AccountStatus.DISABLED));
-        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", DateTime.now(), AccountStatus.ENABLED));
+        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", "id", DateTime.now(), AccountStatus.DISABLED));
+        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", "id2", DateTime.now(), AccountStatus.ENABLED));
         
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(accounts, 2, 100, 123)
                 .withFilter("emailFilter", "filterString");
@@ -42,6 +42,7 @@ public class PagedResourceListTest {
         assertEquals("firstName1", child1.get("firstName").asText());
         assertEquals("lastName1", child1.get("lastName").asText());
         assertEquals("email1@email.com", child1.get("email").asText());
+        assertEquals("id", child1.get("id").asText());
         assertEquals("disabled", child1.get("status").asText());
         
         PagedResourceList<AccountSummary> serPage = BridgeObjectMapper.get().readValue(node.toString(), 

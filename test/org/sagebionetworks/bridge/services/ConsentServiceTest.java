@@ -127,7 +127,7 @@ public class ConsentServiceTest {
         assertNotConsented(statuses);
         
         List<UserConsentHistory> histories = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getUser().getEmail());
+                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getId());
         assertTrue(histories.isEmpty());
         
         try {
@@ -189,7 +189,7 @@ public class ConsentServiceTest {
         // However we have a historical record of the consent, including a revocation date
         // data is exported with the sharing status set at the time it was exported
         List<UserConsentHistory> histories = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getUser().getEmail());
+                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getId());
         assertEquals(1, histories.size());
         assertNotNull(histories.get(0).getWithdrewOn());
     }
@@ -294,7 +294,7 @@ public class ConsentServiceTest {
             assertEquals("ConsentSignature not found.", e.getMessage());
         }
         
-        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getEmail());
+        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
         assertEquals(1, account.getConsentSignatureHistory(defaultSubpopulation.getGuid()).size());
         ConsentSignature historicalSignature = account.getConsentSignatureHistory(defaultSubpopulation.getGuid()).get(0);
         
@@ -311,7 +311,7 @@ public class ConsentServiceTest {
         
         // Finally, verify there is a history for this user.
         List<UserConsentHistory> history = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getUser().getEmail());
+                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getId());
         assertEquals(2, history.size());
         
         UserConsentHistory withdrawnConsent = history.get(0);

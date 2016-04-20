@@ -56,4 +56,6 @@ public class BridgeConstants {
     
     public static final int API_MAXIMUM_PAGE_SIZE = 100;
     
+    public static final String STORMPATH_ACCOUNT_BASE_HREF = "https://enterprise.stormpath.io/v1/accounts/";
+    
 }

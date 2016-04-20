@@ -92,7 +92,7 @@ public class UserAdminServiceTest {
     @After
     public void after() {
         if (testUser != null) {
-            userAdminService.deleteUser(study, testUser.getEmail());
+            userAdminService.deleteUser(study, testUser.getId());
         }
     }
 
@@ -100,7 +100,7 @@ public class UserAdminServiceTest {
     public void deletedUserHasBeenDeleted() {
         testUser = userAdminService.createUser(signUp, study, null, true, true).getUser();
 
-        userAdminService.deleteUser(study, testUser.getEmail());
+        userAdminService.deleteUser(study, testUser.getId());
 
         // This should fail with a 404.
         authService.signIn(study, TEST_CONTEXT, new SignIn(signUp.getEmail(), signUp.getPassword()));
@@ -109,7 +109,7 @@ public class UserAdminServiceTest {
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
         UserSession session1 = userAdminService.createUser(signUp, study, null, false, false);
-        assertNull("No session", session1);
+        assertFalse(session1.isAuthenticated());
 
         UserSession session = authService.signIn(study, TEST_CONTEXT, new SignIn(signUp.getEmail(),
                 signUp.getPassword()));
@@ -140,17 +140,17 @@ public class UserAdminServiceTest {
         authService.signOut(session);
         assertNull(authService.getSession(session.getSessionToken()));
         // Shouldn't crash
-        userAdminService.deleteUser(study, session.getUser().getEmail());
+        userAdminService.deleteUser(study, session.getUser().getId());
         assertNull(authService.getSession(session.getSessionToken()));
     }
 
     @Test
     public void testDeleteUserThatHasBeenDeleted() {
         UserSession session = userAdminService.createUser(signUp, study, null, true, true);
-        userAdminService.deleteUser(study, session.getUser().getEmail());
+        userAdminService.deleteUser(study, session.getUser().getId());
         assertNull(authService.getSession(session.getSessionToken()));
         // Delete again shouldn't crash
-        userAdminService.deleteUser(study, session.getUser().getEmail());
+        userAdminService.deleteUser(study, session.getUser().getId());
         assertNull(authService.getSession(session.getSessionToken()));
     }
     
@@ -167,7 +167,7 @@ public class UserAdminServiceTest {
             assertEquals(session.getUser().getHealthCode(), identifier.getHealthCode());
             
             // Now delete the user, and the assignment should then be free;
-            userAdminService.deleteUser(study, session.getUser().getEmail());
+            userAdminService.deleteUser(study, session.getUser().getId());
             
             identifier = getDynamoExternalIdentifier(session);
             assertNull(identifier.getHealthCode());

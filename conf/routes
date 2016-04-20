@@ -16,9 +16,15 @@ POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.control
 # Participants Researcher APIs
 GET  /v3/participants                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null)
 POST /v3/participants                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant
-GET  /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(email: String ?= null)
-POST /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(email: String ?= null)
-POST /v3/participants/member/signOut  @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(email: String ?= null)
+# DEPRECATED: will remove once SDK, Researcher UI are updated
+GET  /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant2(email: String ?= null)
+POST /v3/participants/member          @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant2(email: String ?= null)
+POST /v3/participants/member/signOut  @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut2(email: String ?= null)
+# New routes, must come second for now, as member looks like the :userId of the routes below
+GET  /v3/participants/:userId         @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String)
+POST /v3/participants/:userId         @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)
+POST /v3/participants/:userId/signOut @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(userId: String)
+
 
 # Study Subpopulations
 GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations
@@ -53,7 +59,8 @@ POST   /v3/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.contro
 
 # Users
 POST   /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
-DELETE /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
+DELETE /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser2(email: String ?= null)
+DELETE /v3/users/:userId                @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(userId: String)
 GET    /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
 POST   /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
 POST   /v3/users/self/externalId        @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier

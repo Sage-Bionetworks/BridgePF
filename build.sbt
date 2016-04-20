@@ -46,8 +46,8 @@ libraryDependencies ++= Seq(
   // Joda-Time
   "joda-time" % "joda-time" % "2.8.2",
   // Stormpath
-  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC8.1",
-  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC8.1",
+  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC9",
+  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC9",
   "org.apache.httpcomponents" % "httpclient" % "4.5",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",

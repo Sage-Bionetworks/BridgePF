@@ -54,7 +54,7 @@ public class ParticipantControllerTest {
     
     private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
 
-    private static final AccountSummary SUMMARY = new AccountSummary("firstName","lastName","email",DateTime.now(),AccountStatus.ENABLED);
+    private static final AccountSummary SUMMARY = new AccountSummary("firstName","lastName","email","id",DateTime.now(),AccountStatus.ENABLED);
     
     private static final Study STUDY = new DynamoStudy();
     
@@ -126,12 +126,12 @@ public class ParticipantControllerTest {
     }
     
     @Test
-    public void getParticipant() throws Exception {
+    public void getParticipant2() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
         
         when(participantService.getParticipant(STUDY, "email@email.com")).thenReturn(studyParticipant);
         
-        Result result = controller.getParticipant("email@email.com");
+        Result result = controller.getParticipant2("email@email.com");
         String string = Helpers.contentAsString(result);
         StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(string, StudyParticipant.class);
         // Verify that there's a field, full serialization tested in StudyParticipant2Test
@@ -149,30 +149,30 @@ public class ParticipantControllerTest {
     }
     
     @Test
-    public void signUserOut() throws Exception {
-        controller.signOut("email@email.com");
+    public void signUserOut2() throws Exception {
+        controller.signOut2("email@email.com");
         
         verify(participantService).signUserOut(STUDY, "email@email.com");
     }
 
     @Test(expected = BadRequestException.class)
-    public void getParticipantNoEmail() {
-        controller.getParticipant(null);
+    public void getParticipantNoEmail2() {
+        controller.getParticipant2(null);
     }
     
     @Test(expected = BadRequestException.class)
-    public void signOutNoEmail() throws Exception {
-        controller.signOut(null);
+    public void signOutNoEmail2() throws Exception {
+        controller.signOut2(null);
     }
 
     @Test(expected = BadRequestException.class)
-    public void getParticipantBlank() {
-        controller.getParticipant("");
+    public void getParticipantBlank2() {
+        controller.getParticipant2("");
     }
     
     @Test(expected = BadRequestException.class)
-    public void signOutBlank() throws Exception {
-        controller.signOut("");
+    public void signOutBlank2() throws Exception {
+        controller.signOut2("");
     }
     
     @Test
@@ -205,14 +205,14 @@ public class ParticipantControllerTest {
     }
 
     @Test
-    public void updateParticipant() throws Exception {
+    public void updateParticipant2() throws Exception {
         STUDY.getUserProfileAttributes().add("phone");
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
                 "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
                 "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
                 "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
         
-        Result result = controller.updateParticipant("email@email.com");
+        Result result = controller.updateParticipant2("email@email.com");
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         
         assertEquals(200, result.status());
@@ -234,27 +234,27 @@ public class ParticipantControllerTest {
     }
     
     @Test(expected = BadRequestException.class)
-    public void updateParticipantMissing() {
-        controller.updateParticipant(null);
+    public void updateParticipantMissing2() {
+        controller.updateParticipant2(null);
     }
     
     @Test(expected = BadRequestException.class)
-    public void updateParticipantBlank() {
-        controller.updateParticipant("");
+    public void updateParticipantBlank2() {
+        controller.updateParticipant2("");
     }
     
     @Test(expected = BadRequestException.class)
-    public void updateParticipantRequiresEmailMatch() throws Exception {
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com'}"));
+    public void updateParticipantRequiresIdMatch() throws Exception {
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'id':'id2'}"));
         
-        controller.updateParticipant("email-different@email.com");
+        controller.updateParticipant("id1");
     }
 
     @Test
-    public void updateParticipantNoJsonEmailOK() throws Exception {
+    public void updateParticipantNoJsonEmailOK2() throws Exception {
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{}"));
         
-        controller.updateParticipant("email-different@email.com");
+        controller.updateParticipant2("email-different@email.com");
         verify(participantService).updateParticipant(eq(STUDY), eq("email-different@email.com"), any());
     }
     
