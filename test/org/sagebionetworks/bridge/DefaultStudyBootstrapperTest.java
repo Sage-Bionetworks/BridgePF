@@ -1,47 +1,37 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
-import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.google.common.collect.Sets;
+
 public class DefaultStudyBootstrapperTest {
 
     private StudyService studyService;
-
-    private DefaultStudyBootstrapper defaultStudyBootstrapper;
-
+    
     @Before
     public void before() {
         studyService = mock(StudyService.class);
-
-        when(studyService.getStudy("api")).thenThrow(new EntityNotFoundException(Study.class,
-                "Study 'api' not found."
-        ));
-        defaultStudyBootstrapper = new DefaultStudyBootstrapper(studyService,
-                mock(AnnotationBasedTableCreator.class),
-                mock(DynamoInitializer.class)
-        );
+        when(studyService.getStudy("api")).thenThrow(new EntityNotFoundException(Study.class, "Study 'api' not found."));
     }
-
+    
     @Test
     public void createsDefaultStudyWhenMissing() {
-        defaultStudyBootstrapper.initializeDatabase();
+        DefaultStudyBootstrapper bootstrapper = new DefaultStudyBootstrapper();
+        bootstrapper.setStudyService(studyService);
+        bootstrapper.initializeDatabase();
 
         ArgumentCaptor<Study> argument = ArgumentCaptor.forClass(Study.class);
         verify(studyService).createStudy(argument.capture());
-
+        
         Study study = argument.getValue();
         assertEquals("Test Study", study.getName());
         assertEquals("api", study.getIdentifier());
@@ -54,5 +44,5 @@ public class DefaultStudyBootstrapperTest {
         assertEquals(Sets.newHashSet("phone", "can_be_recontacted"), study.getUserProfileAttributes());
         assertEquals(new PasswordPolicy(2, false, false, false, false), study.getPasswordPolicy());
     }
-
+    
 }
