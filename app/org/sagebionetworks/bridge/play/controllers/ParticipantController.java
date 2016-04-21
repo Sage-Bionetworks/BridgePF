@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -48,9 +49,9 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        participantService.createParticipant(study, participant);
+        IdentifierHolder holder = participantService.createParticipant(study, participant);
         
-        return createdResult("Participant created.");
+        return createdResult(holder);
     }
     
     public Result getParticipant(String userId) {

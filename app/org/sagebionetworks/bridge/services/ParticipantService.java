@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -172,15 +173,15 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a 
      * user before triggering a reset password request.  
      */
-    public void createParticipant(Study study, StudyParticipant participant) {
-        saveParticipant(study, null, participant, true);
+    public IdentifierHolder createParticipant(Study study, StudyParticipant participant) {
+        return saveParticipant(study, null, participant, true);
     }
     
     public void updateParticipant(Study study, String id, StudyParticipant participant) {
         saveParticipant(study, id, participant, false);
     }
 
-    public void saveParticipant(Study study, String id, StudyParticipant participant, boolean isNew) {
+    public IdentifierHolder saveParticipant(Study study, String id, StudyParticipant participant, boolean isNew) {
         checkNotNull(study);
         checkArgument(isNew || isNotBlank(id));
         checkNotNull(participant);
@@ -238,6 +239,7 @@ public class ParticipantService {
         if (!isNew) {
             cacheProvider.removeSessionByUserId(account.getId());
         }
+        return new IdentifierHolder(account.getId());
     }
     
     private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
