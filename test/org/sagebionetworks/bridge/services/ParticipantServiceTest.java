@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -157,8 +158,9 @@ public class ParticipantServiceTest {
         when(accountDao.signUp(eq(STUDY), any(), eq(false))).thenReturn(account);
         doReturn("id").when(account).getId();
         
-        participantService.createParticipant(STUDY, PARTICIPANT);
-
+        IdentifierHolder idHolder = participantService.createParticipant(STUDY, PARTICIPANT);
+        assertEquals("id", idHolder.getIdentifier());
+        
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         verify(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
         
@@ -605,6 +607,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(false);
         doReturn(account).when(accountDao).signUp(eq(STUDY), any(), eq(false));
         doReturn("healthId").when(account).getHealthId();
+        doReturn("id").when(account).getId();
         doReturn(healthId).when(healthCodeService).getMapping("healthId");
         doReturn("healthCode").when(healthId).getCode();
         
@@ -612,7 +615,8 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).withPassword("P@ssword1")
                 .build();
         
-        participantService.createParticipant(STUDY, participant);
+        IdentifierHolder idHolder = participantService.createParticipant(STUDY, participant);
+        assertEquals("id", idHolder.getIdentifier());
         verifyNoMoreInteractions(externalIdService); // no ID, no calls to this service
     }
 }

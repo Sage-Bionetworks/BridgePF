@@ -88,7 +88,7 @@ public class ScheduledActivityServiceTest {
         DateTimeUtils.setCurrentMillisSystem();
         schedulePlanService.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
         if (testUser != null) {
-            helper.deleteUser(study, testUser.getEmail());
+            helper.deleteUser(study, testUser.getId());
         }
     }
     

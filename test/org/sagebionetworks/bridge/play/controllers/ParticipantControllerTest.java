@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -230,6 +231,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void createParticipant() throws Exception {
+        IdentifierHolder holder = new IdentifierHolder("ABCD");
+        doReturn(holder).when(participantService).createParticipant(eq(STUDY), any(StudyParticipant.class));
+        
         STUDY.getUserProfileAttributes().add("phone");
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
                 "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
@@ -238,7 +242,9 @@ public class ParticipantControllerTest {
         
         Result result = controller.createParticipant();
         
-        assertResult(result, 201, "Participant created.");
+        assertEquals(201, result.status());
+        String id = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result)).get("identifier").asText();
+        assertEquals(holder.getIdentifier(), id);
         
         verify(participantService).createParticipant(eq(STUDY), participantCaptor.capture());
         
