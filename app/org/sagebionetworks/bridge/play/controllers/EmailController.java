@@ -60,8 +60,11 @@ public class EmailController extends BaseController {
                 throw new RuntimeException("Email not found.");
             }
             
-            // This should always return a healthCode
+            // This should always return a healthCode unless this is not actually an email in Stormpath
             String healthCode = accountDao.getHealthCodeForEmail(study, email);
+            if (healthCode == null) {
+                throw new RuntimeException("Email not found.");
+            }
             optionsService.setBoolean(study, healthCode, EMAIL_NOTIFICATIONS, false);
             
             return ok("You have been unsubscribed from future email.");

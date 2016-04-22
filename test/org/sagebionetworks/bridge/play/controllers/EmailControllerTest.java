@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -13,7 +14,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.play.controllers.EmailController;
-import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Maps;
@@ -108,7 +107,7 @@ public class EmailControllerTest {
         
         EmailController controller = createController("bridge-testing@sagebase.org");
         Result result = controller.unsubscribeFromEmail();
-        contentAsString(result).contains("Study not found");
+        assertTrue(contentAsString(result).contains("Study not found"));
     }
     
     @Test
@@ -117,7 +116,7 @@ public class EmailControllerTest {
         
         EmailController controller = createController(null);
         Result result = controller.unsubscribeFromEmail();
-        contentAsString(result).contains("Email not found");
+        assertTrue(contentAsString(result).contains("Email not found"));
     }
     
     @Test
@@ -125,10 +124,11 @@ public class EmailControllerTest {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api", "token", "unsubscribeToken");
         
         EmailController controller = createController("bridge-testing@sagebase.org");
-        when(accountDao.getAccount(study, "bridge-testing@sagebase.org")).thenReturn(null);
+        when(accountDao.getHealthCodeForEmail(study, "bridge-testing@sagebase.org")).thenReturn(null);
         
         Result result = controller.unsubscribeFromEmail();
-        contentAsString(result).contains("Account not found");
+
+        assertTrue(contentAsString(result).contains("Email not found"));
     }
     
     @Test
@@ -137,7 +137,7 @@ public class EmailControllerTest {
         
         EmailController controller = createController("bridge-testing@sagebase.org");
         Result result = controller.unsubscribeFromEmail();
-        contentAsString(result).contains("Not authorized");
+        assertTrue(contentAsString(result).contains("Not authorized"));
     }
     
 }
