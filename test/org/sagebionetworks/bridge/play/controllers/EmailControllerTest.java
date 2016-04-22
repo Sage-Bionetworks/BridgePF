@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -107,7 +108,9 @@ public class EmailControllerTest {
         
         EmailController controller = createController("bridge-testing@sagebase.org");
         Result result = controller.unsubscribeFromEmail();
-        assertTrue(contentAsString(result).contains("Study not found"));
+        
+        assertEquals(200, result.status());
+        assertEquals("Study not found.", contentAsString(result));
     }
     
     @Test
@@ -116,7 +119,9 @@ public class EmailControllerTest {
         
         EmailController controller = createController(null);
         Result result = controller.unsubscribeFromEmail();
-        assertTrue(contentAsString(result).contains("Email not found"));
+        
+        assertEquals(200, result.status());
+        assertEquals("Email not found.", contentAsString(result));
     }
     
     @Test
@@ -128,7 +133,8 @@ public class EmailControllerTest {
         
         Result result = controller.unsubscribeFromEmail();
 
-        assertTrue(contentAsString(result).contains("Email not found"));
+        assertEquals(200, result.status());
+        assertEquals("Email not found.", contentAsString(result));
     }
     
     @Test
@@ -137,7 +143,9 @@ public class EmailControllerTest {
         
         EmailController controller = createController("bridge-testing@sagebase.org");
         Result result = controller.unsubscribeFromEmail();
-        assertTrue(contentAsString(result).contains("Not authorized"));
+        
+        assertEquals(200, result.status());
+        assertEquals("Not authorized.", contentAsString(result));
     }
     
 }
