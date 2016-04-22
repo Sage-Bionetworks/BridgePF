@@ -95,7 +95,7 @@ public class StormpathAccountDaoTest {
             if (accounts.getTotal() < 6) {
                 for (int i=0; i < (6-accounts.getTotal()); i++) {
                     String random = RandomStringUtils.randomAlphabetic(5);
-                    String email = "bridge-testing+"+random+"@sagebridge.org";
+                    String email = "bridge-testing+SADT"+random+"@sagebridge.org";
                     SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
                     Account account = accountDao.signUp(study, signUp, false);
                     newAccounts.add(account.getId());
@@ -128,6 +128,13 @@ public class StormpathAccountDaoTest {
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridgeit@");
             assertEquals(1, accounts.getItems().size());
             assertEquals("bridgeit@sagebase.org", accounts.getItems().get(0).getEmail());
+            
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridge-testing+SADT");
+            assertTrue(accounts.getItems().size() > 0);
+            for (AccountSummary summary : accounts.getItems()) {
+                assertNull(summary.getFirstName());
+                assertNull(summary.getLastName());
+            }
         } finally {
             for (String id : newAccounts) {
                 accountDao.deleteAccount(study, id);
