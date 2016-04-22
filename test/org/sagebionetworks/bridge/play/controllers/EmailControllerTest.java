@@ -69,13 +69,8 @@ public class EmailControllerTest {
         
         accountDao = mock(AccountDao.class);
         when(accountDao.getAccount(study, "bridge-testing@sagebase.org")).thenReturn(account);
-        
-        HealthId healthId = mock(HealthId.class);
-        when(healthId.getCode()).thenReturn("healthCode");
-        
-        HealthCodeService healthCodeService = mock(HealthCodeService.class);
-        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
-        
+        when(accountDao.getHealthCodeForEmail(study, "bridge-testing@sagebase.org")).thenReturn("healthCode");
+
         StudyService studyService = mock(StudyService.class);
         when(studyService.getStudy("api")).thenReturn(study);
         when(studyService.getStudy((String)null)).thenThrow(new EntityNotFoundException(Study.class));
@@ -92,7 +87,6 @@ public class EmailControllerTest {
         controller.setParticipantOptionsService(optionsService);
         controller.setStudyService(studyService);
         controller.setAccountDao(accountDao);
-        controller.setHealthCodeService(healthCodeService);
         controller.setBridgeConfig(config);
 
         return controller;

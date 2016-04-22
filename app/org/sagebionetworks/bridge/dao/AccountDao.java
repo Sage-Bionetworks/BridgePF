@@ -122,4 +122,12 @@ public interface AccountDao {
      *      about the request and the total number of records.
      */
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter);
+    
+    /**
+     * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
+     * @param study
+     * @param email
+     * @return
+     */
+    public String getHealthCodeForEmail(Study study, String email);
 }

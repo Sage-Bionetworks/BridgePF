@@ -274,13 +274,30 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(study);
         checkArgument(isNotBlank(identifier));
         
-        // We are transitioning away from using email address, and this code path will be removed.
-        // The Stormpath identifier contains only alphanumeric characters, so this is a reasonable
-        // test we've been given an email.
-        if (identifier.contains("@")) {
-            return getAccountWithEmail(study, identifier);
-        }
         return getAccountWithId(study, identifier);
+    }
+    
+    @Override
+    public String getHealthCodeForEmail(Study study, String email) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(email));
+        
+        Account account = getAccountWithEmail(study, email);
+        if (account == null) {
+            return null;
+        }
+        
+        // This method is called to update a user's preferences, including requests to no longer 
+        // be sent unsolicited email. So even if this user hasn't been assigned a healthCode (I 
+        // only recently changed this to create a healthCode when an account is created, and not later), 
+        // we need to create one so the preference can be recorded.
+        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+        if (healthId == null) {
+            healthId = healthCodeService.createMapping(study.getStudyIdentifier());
+            account.setHealthId(healthId.getId());
+            updateAccount(study, account);
+        }
+        return healthId.getCode();
     }
     
     private Account getAccountWithEmail(Study study, String email) {
