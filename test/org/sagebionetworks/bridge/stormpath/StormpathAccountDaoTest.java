@@ -212,13 +212,14 @@ public class StormpathAccountDaoTest {
             // Update Account
             accountDao.updateAccount(study, account);
             
-            // Retrieve account with email currently works
+            // Retrieve account with ID
             Account newAccount = accountDao.getAccount(study, account.getId());
             assertEqual(signedOn, account, newAccount);
 
-            // Using account ID also works
-            newAccount = accountDao.getAccount(study,  account.getId());
-            assertEqual(signedOn, account, newAccount);
+            // Verify that you can get the health code using the email. We still need this for MailChimp.
+            String healthCode = accountDao.getHealthCodeForEmail(study, email);
+            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+            assertEquals(healthCode, healthId.getCode());
             
             // Test adding and removing some groups. This gets into verifying and avoiding saving the underlying
             // Stormpath account. There are 4 cases to consider: (1) adding groups, (2) removing groups, (3) account in
