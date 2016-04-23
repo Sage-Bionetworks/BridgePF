@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -106,17 +105,20 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, id);
         String healthCode = getHealthCode(account);
 
+        Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpopulations) {
             if (healthCode != null) {
                 // always returns a list, even if empty
                 List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(), healthCode, id);
-                participant.addConsentHistory(subpop.getGuid(), history);
+                consentHistories.put(subpop.getGuidString(), history);
             } else {
                 // Create an empty history if there's no health Code.
-                participant.addConsentHistory(subpop.getGuid(), NO_HISTORY);
+                consentHistories.put(subpop.getGuidString(), NO_HISTORY);
             }
         }
+        participant.withConsentHistories(consentHistories);
+        
         // Accounts exist that have signatures but no health codes (when created but email is 
         // never verified, for example). Do not want roster generation to fail because of this,
         // so we just skip things that require the healthCode.
@@ -196,7 +198,9 @@ public class ParticipantService {
                 externalIdService.reserveExternalId(study, participant.getExternalId());    
             }
             
-            SignUp signUp = new SignUp(participant.getEmail(), participant.getPassword(), null, null);
+            StudyParticipant signUp = new StudyParticipant.Builder().withEmail(participant.getEmail())
+                    .withPassword(participant.getPassword()).build();
+            
             account = accountDao.signUp(study, signUp, study.isEmailVerificationEnabled());
             
             healthCode = getHealthCodeThrowingException(account);

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.accounts;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.joda.time.DateTime;
@@ -10,19 +11,17 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /**
- * This object will replace the existing StudyParticipant object that is used to generate the 
- * participant roster (which is also going away).
+ * This object represents a participant in the system.
  */
 @JsonDeserialize(builder=StudyParticipant.Builder.class)
-public class StudyParticipant implements BridgeEntity {
+public final class StudyParticipant implements BridgeEntity {
 
     private final String firstName;
     private final String lastName;
@@ -112,6 +111,32 @@ public class StudyParticipant implements BridgeEntity {
         return id;
     }
     
+    @Override
+    public int hashCode() {
+        return Objects.hash(attributes, consentHistories, createdOn, dataGroups, email, 
+                externalId, firstName, healthCode, id, languages, lastName, notifyByEmail, 
+                password, roles, sharingScope, status);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        StudyParticipant other = (StudyParticipant) obj;
+        return Objects.equals(attributes, other.attributes) && Objects.equals(consentHistories, other.consentHistories)
+                && Objects.equals(createdOn, other.createdOn) && Objects.equals(dataGroups, other.dataGroups)
+                && Objects.equals(email, other.email) && Objects.equals(externalId, other.externalId)
+                && Objects.equals(firstName, other.firstName) && Objects.equals(healthCode, other.healthCode)
+                && Objects.equals(id, other.id) && Objects.equals(languages, other.languages)
+                && Objects.equals(lastName, other.lastName) && Objects.equals(notifyByEmail, other.notifyByEmail)
+                && Objects.equals(password, other.password) && Objects.equals(roles, other.roles)
+                && Objects.equals(sharingScope, other.sharingScope) && Objects.equals(status, other.status);
+    }
+
+
+
     public static class Builder {
         private String firstName;
         private String lastName;
@@ -122,14 +147,33 @@ public class StudyParticipant implements BridgeEntity {
         private boolean notifyByEmail;
         private Set<String> dataGroups = ImmutableSet.of();
         private String healthCode;
-        private Map<String,String> attributes = Maps.newHashMap();
-        private Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
-        private Set<Roles> roles = Sets.newHashSet();
+        private Map<String,String> attributes = ImmutableMap.of();
+        private Map<String,List<UserConsentHistory>> consentHistories = ImmutableMap.of();
+        private Set<Roles> roles = ImmutableSet.of();
         private LinkedHashSet<String> languages = new LinkedHashSet<>();
         private AccountStatus status;
         private DateTime createdOn;
         private String id;
         
+        public Builder copyOf(StudyParticipant participant) {
+            this.firstName = participant.getFirstName();
+            this.lastName = participant.getLastName();
+            this.email = participant.getEmail();
+            this.externalId = participant.getExternalId();
+            this.password = participant.getPassword();
+            this.sharingScope = participant.getSharingScope();
+            this.notifyByEmail = participant.isNotifyByEmail();
+            this.healthCode = participant.getHealthCode();
+            this.dataGroups = ImmutableSet.copyOf(participant.getDataGroups());
+            this.attributes = ImmutableMap.copyOf(participant.getAttributes());
+            this.consentHistories = ImmutableMap.copyOf(participant.getConsentHistories());
+            this.roles = ImmutableSet.copyOf(participant.getRoles());
+            this.languages = Sets.newLinkedHashSet(participant.getLanguages());
+            this.status = participant.getStatus();
+            this.createdOn = participant.getCreatedOn();
+            this.id = participant.getId();
+            return this;
+        }
         public Builder withFirstName(String firstName) {
             this.firstName = firstName;
             return this;
@@ -171,12 +215,6 @@ public class StudyParticipant implements BridgeEntity {
         public Builder withAttributes(Map<String,String> attributes) {
             if (attributes != null) {
                 this.attributes = attributes;
-            }
-            return this;
-        }
-        public Builder addConsentHistory(SubpopulationGuid guid, List<UserConsentHistory> history) {
-            if (guid != null && history != null) {
-                this.consentHistories.put(guid.getGuid(), history);
             }
             return this;
         }

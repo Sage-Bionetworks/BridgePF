@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -25,6 +25,7 @@ import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
 
 @Controller
 public class AuthenticationController extends BaseController {
@@ -44,9 +45,12 @@ public class AuthenticationController extends BaseController {
 
     public Result signUp() throws Exception {
         JsonNode json = requestToJSON(request());
-        SignUp signUp = parseJson(request(), SignUp.class);
-        // this is now the only way to eliminate roles if set by the user...
-        signUp = new SignUp(signUp.getEmail(), signUp.getPassword(), null, signUp.getDataGroups()); 
+        StudyParticipant signUp = parseJson(request(), StudyParticipant.class);
+        
+        // You cannot set roles through the signUp() method.
+        if (!signUp.getRoles().isEmpty()) {
+            signUp = new StudyParticipant.Builder().copyOf(signUp).withRoles(Sets.newHashSet()).build();
+        }
         Study study = getStudyOrThrowException(json);
         authenticationService.signUp(study, signUp, true);
         return createdResult("Signed up.");

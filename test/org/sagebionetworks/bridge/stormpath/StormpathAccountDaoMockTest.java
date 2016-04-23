@@ -39,7 +39,7 @@ import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.services.HealthCodeService;
@@ -164,7 +164,7 @@ public class StormpathAccountDaoMockTest {
         
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
-        SignUp signUp = new SignUp(email, PASSWORD, null, null);
+        StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
         Account account = dao.signUp(study, signUp, false);
         assertNotNull(account);
         

@@ -34,7 +34,7 @@ import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -321,7 +321,7 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override 
-    public Account signUp(Study study, SignUp signUp, boolean sendEmail) {
+    public Account signUp(Study study, StudyParticipant signUp, boolean sendEmail) {
         checkNotNull(study);
         checkNotNull(signUp);
         

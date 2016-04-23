@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class StudyParticipantTest {
@@ -38,22 +39,9 @@ public class StudyParticipantTest {
     
     @Test
     public void canSerialize() throws Exception {
-        StudyParticipant.Builder builder = new StudyParticipant.Builder()
-                .withFirstName("firstName")
-                .withLastName("lastName")
-                .withEmail("email@email.com")
-                .withExternalId("externalId")
-                .withPassword("newUserPassword")
-                .withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)
-                .withNotifyByEmail(true)
-                .withDataGroups(DATA_GROUPS)
-                .withHealthCode("healthCode")
-                .withAttributes(ATTRIBUTES)
-                .withRoles(ROLES)
-                .withLanguages(LANGS)
-                .withCreatedOn(CREATED_ON)
-                .withId(STORMPATH_ID)
-                .withStatus(AccountStatus.ENABLED);
+        StudyParticipant.Builder builder = makeParticipant();
+        
+        Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
         
         List<UserConsentHistory> histories = Lists.newArrayList();
         UserConsentHistory history = new UserConsentHistory.Builder()
@@ -64,8 +52,9 @@ public class StudyParticipantTest {
                 .withSubpopulationGuid(SubpopulationGuid.create("AAA"))
                 .withWithdrewOn(3000000L).build();
         histories.add(history);
-        builder.addConsentHistory(SubpopulationGuid.create("AAA"), histories);
-
+        historiesMap.put("AAA", histories);
+        builder.withConsentHistories(historiesMap);
+        
         StudyParticipant participant = builder.build();
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(participant);
@@ -124,6 +113,49 @@ public class StudyParticipantTest {
         assertEquals("Test User", deserHistory.getName());
         assertEquals("AAA", deserHistory.getSubpopulationGuid());
         assertEquals(new Long(3000000L), deserHistory.getWithdrewOn());
+    }
+
+    @Test
+    public void canCopy() {
+        StudyParticipant participant = makeParticipant().build();
+        StudyParticipant copy = new StudyParticipant.Builder().copyOf(participant).build();
+        
+        assertEquals("firstName", copy.getFirstName());
+        assertEquals("lastName", copy.getLastName());
+        assertEquals("email@email.com", copy.getEmail());
+        assertEquals("externalId", copy.getExternalId());
+        assertEquals("newUserPassword", copy.getPassword());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, copy.getSharingScope());
+        assertTrue(copy.isNotifyByEmail());
+        assertEquals(DATA_GROUPS, copy.getDataGroups());
+        assertEquals("healthCode", copy.getHealthCode());
+        assertEquals(ATTRIBUTES, copy.getAttributes());
+        assertEquals(CREATED_ON, copy.getCreatedOn());
+        assertEquals(AccountStatus.ENABLED, copy.getStatus());
+        assertEquals(STORMPATH_ID, copy.getId());
+        
+        // And they are equal in the Java sense
+        assertEquals(copy, participant);
+    }
+
+    private StudyParticipant.Builder makeParticipant() {
+        StudyParticipant.Builder builder = new StudyParticipant.Builder()
+                .withFirstName("firstName")
+                .withLastName("lastName")
+                .withEmail("email@email.com")
+                .withExternalId("externalId")
+                .withPassword("newUserPassword")
+                .withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)
+                .withNotifyByEmail(true)
+                .withDataGroups(DATA_GROUPS)
+                .withHealthCode("healthCode")
+                .withAttributes(ATTRIBUTES)
+                .withRoles(ROLES)
+                .withLanguages(LANGS)
+                .withCreatedOn(CREATED_ON)
+                .withId(STORMPATH_ID)
+                .withStatus(AccountStatus.ENABLED);
+        return builder;
     }
     
     @Test

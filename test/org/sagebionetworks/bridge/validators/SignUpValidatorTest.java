@@ -4,22 +4,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertFalse;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 
 import com.google.common.collect.Sets;
 
 public class SignUpValidatorTest {
-
-    private final static Set<Roles> EMPTY_ROLES = new HashSet<>();
     
     private SignUpValidator validator;
     
@@ -28,7 +23,7 @@ public class SignUpValidatorTest {
         validator = new SignUpValidator(new PasswordPolicy(8, true, true, true, true), Sets.newHashSet("bluebell"));
     }
     
-    public void assertCorrectMessage(SignUp signUp, String fieldName, String message) {
+    public void assertCorrectMessage(StudyParticipant signUp, String fieldName, String message) {
         try {
             Validate.entityThrowingException(validator, signUp);
             fail("should have thrown exception");
@@ -40,16 +35,17 @@ public class SignUpValidatorTest {
         }
     }
     
-    private SignUp withPassword(String password) {
-        return new SignUp("email@email.com", password, EMPTY_ROLES, null);
+    private StudyParticipant withPassword(String password) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword(password).build();
     }
     
-    private SignUp withEmail(String email) {
-        return new SignUp(email, "aAz1%_aAz1%", EMPTY_ROLES, null);
+    private StudyParticipant withEmail(String email) {
+        return new StudyParticipant.Builder().withEmail(email).withPassword("aAz1%_aAz1%").build();
     }
     
-    private SignUp withDataGroup(String dataGroup) {
-        return new SignUp("email@email.com", "aAz1%_aAz1%", EMPTY_ROLES, Sets.newHashSet(dataGroup));
+    private StudyParticipant withDataGroup(String dataGroup) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withDataGroups(Sets.newHashSet(dataGroup)).build();
     }
     
     @Test

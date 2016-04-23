@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -31,7 +32,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -96,7 +97,8 @@ public class StormpathAccountDaoTest {
                 for (int i=0; i < (6-accounts.getTotal()); i++) {
                     String random = RandomStringUtils.randomAlphabetic(5);
                     String email = "bridge-testing+"+random+"@sagebridge.org";
-                    SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+                    StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                            .withRoles(Sets.newHashSet(TEST_USERS)).build();
                     Account account = accountDao.signUp(study, signUp, false);
                     newAccounts.add(account.getId());
                 }
@@ -148,7 +150,8 @@ public class StormpathAccountDaoTest {
         Account account = null;
         
         try {
-            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+            StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                        .withRoles(Sets.newHashSet(TEST_USERS)).build();
             accountDao.signUp(study, signUp, false);
             
             account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
@@ -165,7 +168,8 @@ public class StormpathAccountDaoTest {
         String email = "bridge-testing+"+random+"@sagebridge.org";
         Account account = null;
         try {
-            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+            StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                    .withRoles(Sets.newHashSet(TEST_USERS)).build();
             account = accountDao.signUp(study, signUp, false);
             
             try {
@@ -195,7 +199,8 @@ public class StormpathAccountDaoTest {
             ConsentSignature sig = new ConsentSignature.Builder().withName("Test Test").withBirthdate("1970-01-01")
                     .withSignedOn(signedOn).build();
             
-            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+            StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                    .withRoles(Sets.newHashSet(TEST_USERS)).build();
             account = accountDao.signUp(study, signUp, false);
             
             assertNull(account.getFirstName()); // defaults are not visible
@@ -272,8 +277,9 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void canResendEmailVerification() throws Exception {
-        String random = RandomStringUtils.randomAlphabetic(5);
-        SignUp signUp = new SignUp("bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null);
+        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
+        StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
+        
         Account account = null;
         try {
             account = accountDao.signUp(study, signUp, false); // don't send email
@@ -310,8 +316,8 @@ public class StormpathAccountDaoTest {
                 .withSignedOn(DateTime.now().getMillis())
                 .build();
 
-        String random = RandomStringUtils.randomAlphabetic(5);
-        SignUp signUp = new SignUp("bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null);
+        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
+        StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
         Account account = null;
         try {
             account = accountDao.signUp(study, signUp, false); // don't send email

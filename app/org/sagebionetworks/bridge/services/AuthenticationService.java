@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -174,7 +174,7 @@ public class AuthenticationService {
         }
     }
 
-    public void signUp(Study study, SignUp signUp, boolean isAnonSignUp) {
+    public void signUp(Study study, StudyParticipant signUp, boolean isAnonSignUp) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         
@@ -182,7 +182,7 @@ public class AuthenticationService {
         
         String lockId = null;
         try {
-            lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail(), LOCK_EXPIRE_IN_SECONDS);
+            lockId = lockDao.acquireLock(StudyParticipant.class, signUp.getEmail(), LOCK_EXPIRE_IN_SECONDS);
             if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
@@ -205,7 +205,7 @@ public class AuthenticationService {
                 throw e;
             }
         } finally {
-            lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
+            lockDao.releaseLock(StudyParticipant.class, signUp.getEmail(), lockId);
         }
     }
 

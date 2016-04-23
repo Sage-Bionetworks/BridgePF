@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -28,7 +28,7 @@ public interface AccountDao {
      * @param sendEmail
      * @return account
      */
-    public Account signUp(Study study, SignUp signUp, boolean sendEmail);
+    public Account signUp(Study study, StudyParticipant signUp, boolean sendEmail);
     
     /**
      * Verify an email address using a supplied, one-time token for verification.

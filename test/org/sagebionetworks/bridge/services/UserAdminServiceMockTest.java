@@ -17,7 +17,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -70,7 +70,7 @@ public class UserAdminServiceMockTest {
     @Test
     public void creatingUserConsentsToAllRequiredConsents() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
-        SignUp signUp = new SignUp("email@email.com", "password", null, null);
+        StudyParticipant signUp = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         UserSession session = service.createUser(signUp, study, null, true, true);
         
@@ -82,7 +82,7 @@ public class UserAdminServiceMockTest {
     @Test
     public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
-        SignUp signUp = new SignUp("email@email.com", "password", null, null);
+        StudyParticipant signUp = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = Iterables.getFirst(user.getConsentStatuses().keySet(), null);
         
         UserSession session = service.createUser(signUp, study, consentedGuid, true, true);

@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -115,7 +115,7 @@ public class UserAdminService {
      *
      * @throws BridgeServiceException
      */
-    public UserSession createUser(SignUp signUp, Study study, SubpopulationGuid subpopGuid,
+    public UserSession createUser(StudyParticipant signUp, Study study, SubpopulationGuid subpopGuid,
             boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");

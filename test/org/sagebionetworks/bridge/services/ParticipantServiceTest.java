@@ -51,7 +51,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -128,7 +127,7 @@ public class ParticipantServiceTest {
     private ExternalIdService externalIdService;
     
     @Captor
-    ArgumentCaptor<SignUp> signUpCaptor;
+    ArgumentCaptor<StudyParticipant> signUpCaptor;
     
     @Captor
     ArgumentCaptor<Map<ParticipantOption,String>> optionsCaptor;
@@ -165,7 +164,7 @@ public class ParticipantServiceTest {
         verify(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
         
         verify(accountDao).signUp(eq(STUDY), signUpCaptor.capture(), eq(false));
-        SignUp signUp = signUpCaptor.getValue();
+        StudyParticipant signUp = signUpCaptor.getValue();
         assertEquals("email@email.com", signUp.getEmail());
         assertEquals("P@ssword1", signUp.getPassword());
         

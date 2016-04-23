@@ -5,7 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.eq;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -52,7 +52,7 @@ import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
@@ -244,11 +244,10 @@ public class AuthenticationServiceTest {
     public void signUpWillCreateDataGroups() {
         String name = TestUtils.randomName(AuthenticationServiceTest.class);
         String email = "bridge-testing+"+name+"@sagebase.org";
-        Set<Roles> roles = Sets.newHashSet(Roles.TEST_USERS);
         Set<String> groups = Sets.newHashSet("group1");
         
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withStudy(study).withConsent(true)
-                .withSignIn(true).withSignUp(new SignUp(email, "P@ssword1", roles, groups)).build();
+                .withSignIn(true).withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
         
         authService = spy(authService);
         optionsService = spy(optionsService);
@@ -262,7 +261,7 @@ public class AuthenticationServiceTest {
         
         HealthId healthId = healthCodeService.getMapping(account.getHealthId());
         
-        verify(authService).signUp(any(Study.class), eq(testUser.getSignUp()), eq(true));
+        verify(authService).signUp(any(Study.class), any(StudyParticipant.class), eq(true));
         // Verify that data groups were set correctly as an option
         Set<String> persistedGroups = optionsService.getOptions(healthId.getCode()).getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);
@@ -448,5 +447,6 @@ public class AuthenticationServiceTest {
         verify(accountDaoSpy).verifyEmail(study, verification);
         authService.setAccountDao(accountDao);
     }
-    
+
+
 }

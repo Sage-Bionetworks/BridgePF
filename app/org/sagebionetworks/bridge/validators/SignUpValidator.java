@@ -6,7 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 
 import org.sagebionetworks.bridge.models.accounts.DataGroups;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.springframework.validation.Errors;
 
@@ -23,12 +23,12 @@ public class SignUpValidator extends DataGroupsValidator {
     
     @Override
     public boolean supports(Class<?> clazz) {
-        return SignUp.class.isAssignableFrom(clazz);
+        return StudyParticipant.class.isAssignableFrom(clazz);
     }
 
     @Override
     public void validate(Object object, Errors errors) {
-        SignUp signUp = (SignUp) object;
+        StudyParticipant signUp = (StudyParticipant) object;
         
         super.validate(new DataGroups(signUp.getDataGroups()), errors);
 

@@ -37,7 +37,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -72,7 +72,7 @@ public class AuthenticationControllerMockTest {
     StudyService studyService;
     
     @Captor
-    ArgumentCaptor<SignUp> signUpCaptor;
+    ArgumentCaptor<StudyParticipant> signUpCaptor;
     
     @Before
     public void before() {
@@ -92,7 +92,7 @@ public class AuthenticationControllerMockTest {
         assertEquals(201, result.status());
         verify(authenticationService).signUp(same(study), signUpCaptor.capture(), eq(true));
         
-        SignUp signUp = signUpCaptor.getValue();
+        StudyParticipant signUp = signUpCaptor.getValue();
         assertTrue(signUp.getRoles().isEmpty());
     }
 

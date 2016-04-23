@@ -26,7 +26,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -64,7 +64,7 @@ public class UserAdminServiceTest {
     
     private Study study;
 
-    private SignUp signUp;
+    private StudyParticipant signUp;
 
     private User testUser;
 
@@ -83,7 +83,7 @@ public class UserAdminServiceTest {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         study.setExternalIdValidationEnabled(true);
         String email = TestUtils.makeRandomTestEmail(UserAdminServiceTest.class);
-        signUp = new SignUp(email, "P4ssword!", null, null);
+        signUp = new StudyParticipant.Builder().withEmail(email).withPassword("P4ssword!").build();
 
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, TEST_CONTEXT, signIn).getUser();
