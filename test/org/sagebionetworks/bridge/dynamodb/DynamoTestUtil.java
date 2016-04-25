@@ -23,18 +23,19 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 public class DynamoTestUtil {
 
     private static final AmazonDynamoDB DYNAMO;
+    private static final DynamoNamingHelper DYNAMO_NAMING_HELPER;
     static {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         String awsKey = config.getProperty("aws.key");
         String secretKey = config.getProperty("aws.secret.key");
         DYNAMO = new AmazonDynamoDBClient(new BasicAWSCredentials(awsKey,
                 secretKey));
+        DYNAMO_NAMING_HELPER = new DynamoNamingHelper(config);
     }
 
     public static void clearTable(Class<?> clazz) {
         List<String> keyAttrs = getKeyAttrs(clazz);
-        BridgeConfig config = BridgeConfigFactory.getConfig();
-        String tableName = DynamoUtils.getFullyQualifiedTableName(clazz, config);
+        String tableName = DYNAMO_NAMING_HELPER.getFullyQualifiedTableName(clazz);
         ScanResult result = DYNAMO.scan((new ScanRequest(tableName)).withAttributesToGet(keyAttrs));
         List<Map<String, AttributeValue>> items = result.getItems();
         do {

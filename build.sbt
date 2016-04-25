@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "bridge-base" % "1.2",
+  "org.sagebionetworks" % "bridge-base" % "2.0",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",
