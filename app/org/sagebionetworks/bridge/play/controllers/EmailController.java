@@ -16,8 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import play.data.DynamicForm;
-import play.data.Form;
+import play.mvc.Http;
 import play.mvc.Result;
 
 @Controller
@@ -43,7 +42,6 @@ public class EmailController extends BaseController {
      * deal with non-200 status codes. The token that is submitted is set in the configuration, and must match to allow
      * this call to succeed. Subject to change without warning or backwards compatibility.
      * 
-     * @return
      * @throws Exception
      */
     public Result unsubscribeFromEmail() throws Exception {
@@ -88,27 +86,25 @@ public class EmailController extends BaseController {
         }
     }
 
-    /**
-     * No idea how you're supposed to test all this static PF stuff. Will use a spy
-     * to work around it.
-     */
-    protected DynamicForm getPostData() {
-        return Form.form().bindFromRequest();
-    }
-
     private String getParameter(String paramName) {
-        Map<String, String[]> parameters = request().queryString();
-        String[] values = parameters.get(paramName);
-        String param = (values != null && values.length > 0) ? values[0] : null;
-        if (param == null) {
-            // How are you supposed to test crap like this?
-            DynamicForm requestData = getPostData();
-            param = requestData.get("data[email]");
-            if (param == null) {
-                param = requestData.get("email");
+        Http.Request request = request();
+
+        Map<String, String[]> queryParamMap = request.queryString();
+        if (queryParamMap != null) {
+            String[] queryParamValueArray = queryParamMap.get(paramName);
+            if (queryParamValueArray != null && queryParamValueArray.length > 0) {
+                return queryParamValueArray[0];
             }
         }
-        return param;
-    }
 
+        Map<String, String[]> formPostMap = request.body().asFormUrlEncoded();
+        if (formPostMap != null) {
+            String[] formPostValueArray = formPostMap.get(paramName);
+            if (formPostValueArray != null && formPostValueArray.length > 0) {
+                return formPostValueArray[0];
+            }
+        }
+
+        return null;
+    }
 }
