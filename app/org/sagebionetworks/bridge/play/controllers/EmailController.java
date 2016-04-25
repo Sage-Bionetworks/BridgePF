@@ -36,9 +36,6 @@ public class EmailController extends BaseController {
      * notifications back on through this endpoint. This cannot be part of the public API, because MailChimp doesn't
      * deal with non-200 status codes. The token that is submitted is set in the configuration, and must match to allow
      * this call to succeed. Subject to change without warning or backwards compatibility. 
-     * 
-     * @throws NotAuthenticatedException - if caller does not provide the token for this callback
-     * @throws BadRequestException - if there's any other problem, like missing email, missing study, etc.
      */
     public Result unsubscribeFromEmail() throws Exception {
         // We catch and return 200s because MailChimp makes a validation call when configuring the web hook, and if it fails,
