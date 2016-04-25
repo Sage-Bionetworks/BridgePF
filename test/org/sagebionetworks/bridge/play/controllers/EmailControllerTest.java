@@ -19,6 +19,8 @@ import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.mvc.Http;
+import play.mvc.Result;
+import play.test.Helpers;
 
 import java.util.Map;
 
@@ -138,12 +140,9 @@ public class EmailControllerTest {
         mockContext(map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, TOKEN, UNSUBSCRIBE_TOKEN), null);
         EmailController controller = createController();
 
-        try {
-            controller.unsubscribeFromEmail();
-            fail("Should have thrown exception.");
-        } catch (BadRequestException e) {
-            assertEquals("Study not found.", e.getMessage());
-        }
+        Result result = controller.unsubscribeFromEmail();
+        assertEquals(200, result.status());
+        assertEquals("Study not found.", Helpers.contentAsString(result));
     }
 
     @Test
@@ -151,12 +150,9 @@ public class EmailControllerTest {
         mockContext(map(STUDY2, API, TOKEN, UNSUBSCRIBE_TOKEN), null);
         EmailController controller = createController();
 
-        try {
-            controller.unsubscribeFromEmail();
-            fail("Should have thrown exception");
-        } catch (BadRequestException e) {
-            assertEquals("Email not found.", e.getMessage());
-        }
+        Result result = controller.unsubscribeFromEmail();
+        assertEquals(200, result.status());
+        assertEquals("Email not found.", Helpers.contentAsString(result));
     }
 
     @Test
@@ -165,12 +161,9 @@ public class EmailControllerTest {
         EmailController controller = createController();
         doReturn(null).when(accountDao).getHealthCodeForEmail(study, EMAIL_ADDRESS);
 
-        try {
-            controller.unsubscribeFromEmail();
-            fail("Should have thrown exception");
-        } catch (BadRequestException e) {
-            assertEquals("Email not found.", e.getMessage());
-        }
+        Result result = controller.unsubscribeFromEmail();
+        assertEquals(200, result.status());
+        assertEquals("Email not found.", Helpers.contentAsString(result));
     }
 
     @Test
@@ -178,12 +171,8 @@ public class EmailControllerTest {
         mockContext(map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, API), null);
         EmailController controller = createController();
 
-        try {
-            controller.unsubscribeFromEmail();
-            fail("Should have thrown exception");
-        } catch (BridgeServiceException e) {
-            assertEquals("No authentication token provided.", e.getMessage());
-            assertEquals(HttpStatus.SC_UNAUTHORIZED, e.getStatusCode());
-        }
+        Result result = controller.unsubscribeFromEmail();
+        assertEquals(200, result.status());
+        assertEquals("No authentication token provided.", Helpers.contentAsString(result));
     }
 }
