@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.stormpath.StormpathAccount.PLACEHOLDER_STRING;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -168,8 +169,11 @@ public class StormpathAccountDao implements AccountDao {
                 DateTime createdOn = (javaDate != null) ? new DateTime(javaDate) : null;
                 String id = BridgeUtils.getIdFromStormpathHref(acct.getHref());
                 
+                String firstName = (PLACEHOLDER_STRING.equals(acct.getGivenName())) ? null : acct.getGivenName();
+                String lastName = (PLACEHOLDER_STRING.equals(acct.getSurname())) ? null : acct.getSurname();
+                
                 // This should not trigger further requests to the server (customData, groups, etc.).
-                AccountSummary summary = new AccountSummary(acct.getGivenName(), acct.getSurname(), 
+                AccountSummary summary = new AccountSummary(firstName, lastName, 
                         acct.getEmail(), id, createdOn, AccountStatus.valueOf(acct.getStatus().name()));
                 results.add(summary);
             }
@@ -274,13 +278,30 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(study);
         checkArgument(isNotBlank(identifier));
         
-        // We are transitioning away from using email address, and this code path will be removed.
-        // The Stormpath identifier contains only alphanumeric characters, so this is a reasonable
-        // test we've been given an email.
-        if (identifier.contains("@")) {
-            return getAccountWithEmail(study, identifier);
-        }
         return getAccountWithId(study, identifier);
+    }
+    
+    @Override
+    public String getHealthCodeForEmail(Study study, String email) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(email));
+        
+        Account account = getAccountWithEmail(study, email);
+        if (account == null) {
+            return null;
+        }
+        
+        // This method is called to update a user's preferences, including requests to no longer 
+        // be sent unsolicited email. So even if this user hasn't been assigned a healthCode (I 
+        // only recently changed this to create a healthCode when an account is created, and not later), 
+        // we need to create one so the preference can be recorded.
+        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+        if (healthId == null) {
+            healthId = healthCodeService.createMapping(study.getStudyIdentifier());
+            account.setHealthId(healthId.getId());
+            updateAccount(study, account);
+        }
+        return healthId.getCode();
     }
     
     private Account getAccountWithEmail(Study study, String email) {

@@ -24,17 +24,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
@@ -58,6 +61,9 @@ public class StormpathAccountDaoTest {
 
     @Resource
     private SubpopulationService subpopService;
+    
+    @Resource
+    private HealthCodeService healthCodeService;
     
     private Study study;
     
@@ -90,18 +96,19 @@ public class StormpathAccountDaoTest {
         List<String> newAccounts = Lists.newArrayList();
         try {
             PagedResourceList<AccountSummary> accounts = accountDao.getPagedAccountSummaries(study, 0, 10, null);
-            // This test requires 6 accounts be present (one more than a page so we can verify the results are capped)
-            // API directories already have 3-6 accounts. They don't need to be verified, consented, etc.
-            if (accounts.getTotal() < 6) {
-                for (int i=0; i < (6-accounts.getTotal()); i++) {
-                    String random = RandomStringUtils.randomAlphabetic(5);
-                    String email = "bridge-testing+"+random+"@sagebridge.org";
-                    SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
-                    Account account = accountDao.signUp(study, signUp, false);
-                    newAccounts.add(account.getId());
-                }
-            }
             
+            // Make sure you add 2 records with the "SADT" infix so searching will work and be tested, 
+            // and at least 6 records in total so that paging can be tested.
+            int totalAccounts = accounts.getTotal();
+            int addAccounts = (totalAccounts < 6) ? (6-totalAccounts)+2 : 2;
+            
+            for (int i=0; i < addAccounts; i++) {
+                String random = RandomStringUtils.randomAlphabetic(5);
+                String email = "bridge-testing+SADT"+random+"@sagebridge.org";
+                SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+                Account account = accountDao.signUp(study, signUp, false);
+                newAccounts.add(account.getId());
+            }
             // Fetch only 5 accounts. Empty search string ignored
             accounts = accountDao.getPagedAccountSummaries(study, 0, 5, "");
             
@@ -128,6 +135,13 @@ public class StormpathAccountDaoTest {
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridgeit@");
             assertEquals(1, accounts.getItems().size());
             assertEquals("bridgeit@sagebase.org", accounts.getItems().get(0).getEmail());
+            
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridge-testing+SADT");
+            assertTrue(accounts.getItems().size() > 0);
+            for (AccountSummary summary : accounts.getItems()) {
+                assertNull(summary.getFirstName());
+                assertNull(summary.getLastName());
+            }
         } finally {
             for (String id : newAccounts) {
                 accountDao.deleteAccount(study, id);
@@ -143,8 +157,7 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void canAuthenticate() {
-        String random = RandomStringUtils.randomAlphabetic(5);
-        String email = "bridge-testing+"+random+"@sagebridge.org";
+        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
         Account account = null;
         
         try {
@@ -161,8 +174,7 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void badPasswordReportedAs404() {
-        String random = RandomStringUtils.randomAlphabetic(5);
-        String email = "bridge-testing+"+random+"@sagebridge.org";
+        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
         Account account = null;
         try {
             SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
@@ -186,8 +198,7 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void crudAccount() {
-        String random = RandomStringUtils.randomAlphabetic(5);
-        String email = "bridge-testing+"+random+"@sagebridge.org";
+        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
         Account account = null;
         try {
             // Sign Up
@@ -209,13 +220,14 @@ public class StormpathAccountDaoTest {
             // Update Account
             accountDao.updateAccount(study, account);
             
-            // Retrieve account with email currently works
+            // Retrieve account with ID
             Account newAccount = accountDao.getAccount(study, account.getId());
             assertEqual(signedOn, account, newAccount);
 
-            // Using account ID also works
-            newAccount = accountDao.getAccount(study,  account.getId());
-            assertEqual(signedOn, account, newAccount);
+            // Verify that you can get the health code using the email. We still need this for MailChimp.
+            String healthCode = accountDao.getHealthCodeForEmail(study, email);
+            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+            assertEquals(healthCode, healthId.getCode());
             
             // Test adding and removing some groups. This gets into verifying and avoiding saving the underlying
             // Stormpath account. There are 4 cases to consider: (1) adding groups, (2) removing groups, (3) account in
@@ -252,30 +264,31 @@ public class StormpathAccountDaoTest {
         }
     }
 
-    private void assertEqual(long signedOn, Account account, Account newAccount) {
-        assertNotNull(newAccount.getEmail());
-        assertNull(newAccount.getFirstName());
-        assertNull(newAccount.getLastName());
-        assertEquals(account.getEmail(), newAccount.getEmail());
-        assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
-        assertEquals(account.getHealthId(), newAccount.getHealthId());
-        assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
-                newAccount.getActiveConsentSignature(subpop.getGuid()));
-        assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
-                newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
-        assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
-        assertEquals(1, newAccount.getRoles().size());
-        assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
-        assertEquals("value of attribute one", account.getAttribute("attribute_one"));
-        assertNull(account.getAttribute("attribute_two"));
+    @Test
+    public void canGetHealthCodeGivenEmailAddress() {
+        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
+        Account account = null;
+        try {
+            SignUp signUp = new SignUp(email, "P@ssword`1", null, null);
+            account = accountDao.signUp(study, signUp, false);
+            
+            // Great... now we should be able to get a healthCode
+            String healthCode = accountDao.getHealthCodeForEmail(study, email);
+            assertNotNull(healthCode);
+            
+            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+            assertEquals(healthCode, healthId.getCode());
+        } finally {
+            accountDao.deleteAccount(study, account.getId());
+        }
     }
     
     @Test
     public void canResendEmailVerification() throws Exception {
-        String random = RandomStringUtils.randomAlphabetic(5);
-        SignUp signUp = new SignUp("bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null);
+        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
         Account account = null;
         try {
+            SignUp signUp = new SignUp(email, PASSWORD, null, null);
             account = accountDao.signUp(study, signUp, false); // don't send email
             
             Email emailObj = new Email(study.getStudyIdentifier(), signUp.getEmail());
@@ -335,5 +348,23 @@ public class StormpathAccountDaoTest {
         } finally {
             accountDao.deleteAccount(study, account.getId());
         }
+    }
+    
+    private void assertEqual(long signedOn, Account account, Account newAccount) {
+        assertNotNull(newAccount.getEmail());
+        assertNull(newAccount.getFirstName());
+        assertNull(newAccount.getLastName());
+        assertEquals(account.getEmail(), newAccount.getEmail());
+        assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
+        assertEquals(account.getHealthId(), newAccount.getHealthId());
+        assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
+                newAccount.getActiveConsentSignature(subpop.getGuid()));
+        assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
+                newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
+        assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
+        assertEquals(1, newAccount.getRoles().size());
+        assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
+        assertEquals("value of attribute one", account.getAttribute("attribute_one"));
+        assertNull(account.getAttribute("attribute_two"));
     }
 }
