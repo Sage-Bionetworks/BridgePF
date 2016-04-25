@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
+import java.util.Collections;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 @Controller
@@ -49,7 +52,7 @@ public class AuthenticationController extends BaseController {
         
         // You cannot set roles through the signUp() method.
         if (!participant.getRoles().isEmpty()) {
-            participant = new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build();
+            participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build();
         }
         Study study = getStudyOrThrowException(json);
         authenticationService.signUp(study, participant, true);
