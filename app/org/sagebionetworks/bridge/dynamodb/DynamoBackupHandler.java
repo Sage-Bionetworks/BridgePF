@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.datapipeline.DataPipelineClient;
@@ -16,7 +17,6 @@ import com.amazonaws.services.datapipeline.model.CreatePipelineResult;
 import com.amazonaws.services.datapipeline.model.DeletePipelineRequest;
 import com.amazonaws.services.datapipeline.model.GetPipelineDefinitionRequest;
 import com.amazonaws.services.datapipeline.model.GetPipelineDefinitionResult;
-import com.amazonaws.services.datapipeline.model.InvalidRequestException;
 import com.amazonaws.services.datapipeline.model.PipelineObject;
 import com.amazonaws.services.datapipeline.model.PutPipelineDefinitionRequest;
 import com.amazonaws.services.datapipeline.model.PutPipelineDefinitionResult;
@@ -111,7 +111,7 @@ public class DynamoBackupHandler {
 
             currentPipeline = dataPipelineClient
                     .getPipelineDefinition(new GetPipelineDefinitionRequest().withPipelineId(createPipelineResult.getPipelineId()));
-        } catch (Exception e) {
+        } catch (AmazonClientException e) {
             LOG.error("Could not get the backup pipeline", e);
             return false;
         }
@@ -146,7 +146,7 @@ public class DynamoBackupHandler {
 
                 createPipelineResult = dataPipelineClient
                         .createPipeline(new CreatePipelineRequest().withName(pipelineName).withUniqueId(pipelineUniqueId));
-            } catch (Exception e) {
+            } catch (AmazonClientException e) {
                 LOG.error("Could not create delete/recreate backup pipeline", e);
                 return false;
             }
@@ -185,7 +185,7 @@ public class DynamoBackupHandler {
 
                 return false;
             }
-        } catch (Exception e) {
+        } catch (AmazonClientException e) {
             LOG.error("Failed to update backup pipeline", e);
             return false;
         }
@@ -197,7 +197,7 @@ public class DynamoBackupHandler {
         LOG.info("Activating backup pipeline, pipelineId=" + pipelineId);
         try {
             dataPipelineClient.activatePipeline(new ActivatePipelineRequest().withPipelineId(pipelineId)).toString();
-        } catch (InvalidRequestException e) {
+        } catch (AmazonClientException e) {
             LOG.warn("Failed to activate backup pipeline", e);
             return false;
         }
