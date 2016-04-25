@@ -11,13 +11,18 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -41,6 +46,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 @Component
 public class ParticipantService {
@@ -48,6 +54,8 @@ public class ParticipantService {
     private static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
     
     private static final List<UserConsentHistory> NO_HISTORY = ImmutableList.of();
+    
+    private static final Set<Roles> CAN_CHANGE_STATUS_ROLES = Sets.newHashSet(RESEARCHER, ADMIN);
     
     private AccountDao accountDao;
     
@@ -173,16 +181,18 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a 
      * user before triggering a reset password request.  
      */
-    public IdentifierHolder createParticipant(Study study, StudyParticipant participant) {
-        return saveParticipant(study, null, participant, true);
+    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
+        return saveParticipant(study, callerRoles, null, participant, true);
     }
     
-    public void updateParticipant(Study study, String id, StudyParticipant participant) {
-        saveParticipant(study, id, participant, false);
+    public void updateParticipant(Study study, String id, Set<Roles> callerRoles, StudyParticipant participant) {
+        saveParticipant(study, callerRoles, id, participant, false);
     }
 
-    public IdentifierHolder saveParticipant(Study study, String id, StudyParticipant participant, boolean isNew) {
+    public IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, String id,
+            StudyParticipant participant, boolean isNew) {
         checkNotNull(study);
+        checkNotNull(callerRoles);
         checkArgument(isNew || isNotBlank(id));
         checkNotNull(participant);
         
@@ -225,11 +235,17 @@ public class ParticipantService {
             String value = participant.getAttributes().get(attribute);
             account.setAttribute(attribute, value);
         }
-        // When creating a user, the study flag to verify email addresses directs what happens with workflow on Stormpath. 
-        // After creation, you can change the status to whatever you want (manually verify a user, disable a user, etc.)
-        if (!isNew && participant.getStatus() != null) {
+        
+        // On creation, Stormpath determines what the initial status will be. After that, only researchers and developers
+        // can change status.
+        if (!isNew && callerHasAnyOf(callerRoles, CAN_CHANGE_STATUS_ROLES) && participant.getStatus() != null) {
             account.setStatus(participant.getStatus());
         }
+        
+        // Roles. Can only set roles that are in the allowable roles for the caller's role.
+        for (Roles role : participant.getRoles()) {
+        }
+        
         accountDao.updateAccount(study, account);
         
         if (isNew && isNotBlank(participant.getExternalId())) {
@@ -240,6 +256,12 @@ public class ParticipantService {
             cacheProvider.removeSessionByUserId(account.getId());
         }
         return new IdentifierHolder(account.getId());
+    }
+    
+    
+    
+    private boolean callerHasAnyOf(Set<Roles> callerRoles, Set<Roles> targetRoles) {
+        return !Collections.disjoint(callerRoles, targetRoles);
     }
     
     private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
