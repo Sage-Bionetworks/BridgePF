@@ -185,7 +185,7 @@ public class ParticipantService {
         return saveParticipant(study, callerRoles, null, participant, true);
     }
     
-    public void updateParticipant(Study study, String id, Set<Roles> callerRoles, StudyParticipant participant) {
+    public void updateParticipant(Study study, Set<Roles> callerRoles, String id, StudyParticipant participant) {
         saveParticipant(study, callerRoles, id, participant, false);
     }
 
@@ -236,8 +236,8 @@ public class ParticipantService {
             account.setAttribute(attribute, value);
         }
         
-        // On creation, Stormpath determines what the initial status will be. After that, only researchers and developers
-        // can change status.
+        // On creation, Stormpath determines the initials status of the account
+        // On edit, only researchers and admins can change status
         if (!isNew && callerHasAnyOf(callerRoles, CAN_CHANGE_STATUS_ROLES) && participant.getStatus() != null) {
             account.setStatus(participant.getStatus());
         }

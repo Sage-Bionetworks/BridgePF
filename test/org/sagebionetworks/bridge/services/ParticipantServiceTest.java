@@ -455,7 +455,7 @@ public class ParticipantServiceTest {
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
         
-        participantService.updateParticipant(STUDY, ID, CALLER_ROLES, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
         
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq("healthCode"), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
@@ -486,7 +486,7 @@ public class ParticipantServiceTest {
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
         
-        participantService.updateParticipant(STUDY, ID, CALLER_ROLES, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
     }
 
     @Test(expected = BadRequestException.class)
@@ -508,7 +508,7 @@ public class ParticipantServiceTest {
                 .withDataGroups(PARTICIPANT.getDataGroups())
                 .withAttributes(PARTICIPANT.getAttributes())
                 .withLanguages(PARTICIPANT.getLanguages()).build();
-        participantService.updateParticipant(STUDY, ID, CALLER_ROLES, participant);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, participant);
     }
     
     @Test
@@ -523,7 +523,7 @@ public class ParticipantServiceTest {
         doReturn("POWERS").when(lookup).getString(EXTERNAL_IDENTIFIER);
         
         // This just succeeds because the IDs are the same, and we'll verify no attempt was made to update it.
-        participantService.updateParticipant(STUDY, ID, CALLER_ROLES, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
         
         verifyNoMoreInteractions(externalIdService);
     }
@@ -547,7 +547,7 @@ public class ParticipantServiceTest {
                 .withDataGroups(PARTICIPANT.getDataGroups())
                 .withAttributes(PARTICIPANT.getAttributes())
                 .withLanguages(PARTICIPANT.getLanguages()).build();
-        participantService.updateParticipant(STUDY, ID, CALLER_ROLES, participant);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, participant);
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -561,14 +561,14 @@ public class ParticipantServiceTest {
                 .withDataGroups(Sets.newHashSet("bogusGroup"))
                 .build();
         
-        participantService.updateParticipant(STUDY, ID, CALLER_ROLES, participant);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, participant);
     }
     
     @Test
     public void updateParticipantWithNoAccount() {
         doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(STUDY, ID);
         try {
-            participantService.updateParticipant(STUDY, ID, CALLER_ROLES, PARTICIPANT);
+            participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
@@ -586,7 +586,7 @@ public class ParticipantServiceTest {
         doReturn("healthCode").when(healthId).getCode();
         doReturn(account).when(accountDao).getAccount(STUDY, ID);
         
-        participantService.updateParticipant(STUDY, ID, CALLER_ROLES, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
         
         verifyNoMoreInteractions(externalIdService);
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq("healthCode"), optionsCaptor.capture());
@@ -601,7 +601,7 @@ public class ParticipantServiceTest {
         doReturn(null).when(account).getHealthId();
         doReturn(account).when(accountDao).getAccount(STUDY, ID);
         
-        participantService.updateParticipant(STUDY, ID, CALLER_ROLES, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
     }
     
     @Test
@@ -620,5 +620,41 @@ public class ParticipantServiceTest {
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, participant);
         assertEquals("id", idHolder.getIdentifier());
         verifyNoMoreInteractions(externalIdService); // no ID, no calls to this service
+    }
+    
+    @Test
+    public void nooneCanSetStatusOnCreate() {
+    }
+    
+    @Test
+    public void userCannotChangeStatus() {
+    }
+    
+    @Test
+    public void developerCannotChangeStatus() {
+    }
+    
+    @Test
+    public void researcherCanChangeStatusOnEdit() {
+    }
+    
+    @Test
+    public void adminCanChangeStatusOnEdit() {
+    }
+    
+    @Test
+    public void userCannotSetAnyRoles() {
+    }
+    
+    @Test
+    public void developerCanSetDeveloperRole() {
+    }
+    
+    @Test
+    public void researcherCanSetDeveloperOrResearcherRole() {
+    }
+    
+    @Test
+    public void adminCanAllRoles() {
     }
 }

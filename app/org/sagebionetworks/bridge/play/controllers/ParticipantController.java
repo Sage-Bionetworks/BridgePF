@@ -71,7 +71,7 @@ public class ParticipantController extends BaseController {
         if (participant.getId() != null && !userId.equals(participant.getId())) {
             throw new BadRequestException("ID in JSON does not match email in URL.");
         }
-        participantService.updateParticipant(study, userId, session.getUser().getRoles(), participant);
+        participantService.updateParticipant(study, session.getUser().getRoles(), userId, participant);
         
         return okResult("Participant updated.");
     }

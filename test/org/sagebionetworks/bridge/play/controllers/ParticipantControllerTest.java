@@ -171,7 +171,7 @@ public class ParticipantControllerTest {
         
         assertResult(result, 200, "Participant updated.");
         
-        verify(participantService).updateParticipant(eq(STUDY), eq(ID), eq(CALLER_ROLES), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -280,7 +280,7 @@ public class ParticipantControllerTest {
         
         assertResult(result, 200, "Participant updated.");
         
-        verify(participantService).updateParticipant(eq(STUDY), eq(ID), eq(CALLER_ROLES), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -317,7 +317,7 @@ public class ParticipantControllerTest {
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{}"));
         
         controller.updateParticipant2(ID);
-        verify(participantService).updateParticipant(eq(STUDY), eq(ID), eq(CALLER_ROLES), any());
+        verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), eq(ID), any());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
