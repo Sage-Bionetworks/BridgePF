@@ -31,7 +31,14 @@ import com.google.common.collect.Maps;
 
 public class EmailControllerTest {
 
-    private static final String EMAIL = "bridge-testing@sagebase.org";
+    private static final String EMAIL = "email";
+    private static final String DATA_BRACKET_EMAIL = "data[email]";
+    private static final String HEALTH_CODE = "healthCode";
+    private static final String UNSUBSCRIBE_TOKEN = "unsubscribeToken";
+    private static final String TOKEN = "token";
+    private static final String STUDY2 = "study";
+    private static final String API = "api";
+    private static final String EMAIL_ADDRESS = "bridge-testing@sagebase.org";
 
     private ParticipantOptionsService optionsService;
 
@@ -65,17 +72,17 @@ public class EmailControllerTest {
         optionsService = mock(ParticipantOptionsService.class);
 
         study = TestUtils.getValidStudy(EmailControllerTest.class);
-        study.setIdentifier("api");
+        study.setIdentifier(API);
 
         accountDao = mock(AccountDao.class);
-        when(accountDao.getHealthCodeForEmail(study, EMAIL)).thenReturn("healthCode");
+        when(accountDao.getHealthCodeForEmail(study, EMAIL_ADDRESS)).thenReturn(HEALTH_CODE);
 
         StudyService studyService = mock(StudyService.class);
-        when(studyService.getStudy("api")).thenReturn(study);
+        when(studyService.getStudy(API)).thenReturn(study);
         when(studyService.getStudy((String) null)).thenThrow(new EntityNotFoundException(Study.class));
 
         BridgeConfig config = mock(BridgeConfig.class);
-        when(config.getEmailUnsubscribeToken()).thenReturn("unsubscribeToken");
+        when(config.getEmailUnsubscribeToken()).thenReturn(UNSUBSCRIBE_TOKEN);
 
         EmailController controller = spy(new EmailController());
         controller.setParticipantOptionsService(optionsService);
@@ -87,38 +94,48 @@ public class EmailControllerTest {
 
     @Test
     public void fromQueryParams() throws Exception {
-        mockContext(map("data[email]", EMAIL, "study", "api", "token", "unsubscribeToken"), null);
+        mockContext(map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, API, TOKEN, UNSUBSCRIBE_TOKEN), null);
 
         EmailController controller = createController();
         controller.unsubscribeFromEmail();
 
-        verify(optionsService).setBoolean(study, "healthCode", EMAIL_NOTIFICATIONS, false);
+        verify(optionsService).setBoolean(study, HEALTH_CODE, EMAIL_NOTIFICATIONS, false);
     }
 
     @Test
     public void fromFormPost() throws Exception {
-        mockContext(null, map("data[email]", EMAIL, "study", "api", "token", "unsubscribeToken"));
+        mockContext(null, map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, API, TOKEN, UNSUBSCRIBE_TOKEN));
 
         EmailController controller = createController();
         controller.unsubscribeFromEmail();
 
-        verify(optionsService).setBoolean(study, "healthCode", EMAIL_NOTIFICATIONS, false);
+        verify(optionsService).setBoolean(study, HEALTH_CODE, EMAIL_NOTIFICATIONS, false);
     }
 
     @Test
-    public void mixed() throws Exception {
-        // study and token from query params, like in a real use case. email from form post
-        mockContext(map("study", "api", "token", "unsubscribeToken"), map("data[email]", EMAIL));
+    public void fromFormPostWithEmail() throws Exception {
+        mockContext(null, map(EMAIL, EMAIL_ADDRESS, STUDY2, API, TOKEN, UNSUBSCRIBE_TOKEN));
 
         EmailController controller = createController();
         controller.unsubscribeFromEmail();
 
-        verify(optionsService).setBoolean(study, "healthCode", EMAIL_NOTIFICATIONS, false);
+        verify(optionsService).setBoolean(study, HEALTH_CODE, EMAIL_NOTIFICATIONS, false);
+    }
+    
+    @Test
+    public void mixed() throws Exception {
+        // study and token from query params, like in a real use case. email from form post
+        mockContext(map(STUDY2, API, TOKEN, UNSUBSCRIBE_TOKEN), map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS));
+
+        EmailController controller = createController();
+        controller.unsubscribeFromEmail();
+
+        verify(optionsService).setBoolean(study, HEALTH_CODE, EMAIL_NOTIFICATIONS, false);
     }
 
     @Test
     public void noStudyThrowsException() throws Exception {
-        mockContext(map("data[email]", EMAIL, "token", "unsubscribeToken"), null);
+        mockContext(map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, TOKEN, UNSUBSCRIBE_TOKEN), null);
         EmailController controller = createController();
 
         try {
@@ -131,7 +148,7 @@ public class EmailControllerTest {
 
     @Test
     public void noEmailThrowsException() throws Exception {
-        mockContext(map("study", "api", "token", "unsubscribeToken"), null);
+        mockContext(map(STUDY2, API, TOKEN, UNSUBSCRIBE_TOKEN), null);
         EmailController controller = createController();
 
         try {
@@ -144,9 +161,9 @@ public class EmailControllerTest {
 
     @Test
     public void noAccountThrowsException() throws Exception {
-        mockContext(map("data[email]", EMAIL, "study", "api", "token", "unsubscribeToken"), null);
+        mockContext(map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, API, TOKEN, UNSUBSCRIBE_TOKEN), null);
         EmailController controller = createController();
-        doReturn(null).when(accountDao).getHealthCodeForEmail(study, EMAIL);
+        doReturn(null).when(accountDao).getHealthCodeForEmail(study, EMAIL_ADDRESS);
 
         try {
             controller.unsubscribeFromEmail();
@@ -158,7 +175,7 @@ public class EmailControllerTest {
 
     @Test
     public void missingTokenThrowsException() throws Exception {
-        mockContext(map("data[email]", EMAIL, "study", "api"), null);
+        mockContext(map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, API), null);
         EmailController controller = createController();
 
         try {
