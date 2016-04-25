@@ -10,7 +10,10 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.studies.Study;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -19,7 +22,8 @@ import play.mvc.Result;
 
 @Controller
 public class EmailController extends BaseController {
-
+    private final Logger LOG = LoggerFactory.getLogger(EmailController.class);
+    
     private AccountDao accountDao;
 
     @Autowired
@@ -37,35 +41,44 @@ public class EmailController extends BaseController {
      * @throws BadRequestException - if there's any other problem, like missing email, missing study, etc.
      */
     public Result unsubscribeFromEmail() throws Exception {
-        // Token has to be provided as an URL parameter
-        String token = getParameter("token");
-        if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
-            throw new BridgeServiceException("No authentication token provided.", HttpStatus.SC_UNAUTHORIZED);
+        try {
+            // Token has to be provided as an URL parameter
+            String token = getParameter("token");
+            if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
+                throw new BridgeServiceException("No authentication token provided.", HttpStatus.SC_UNAUTHORIZED);
+            }
+            // Study has to be provided as an URL parameter
+            String studyId = getParameter("study");
+            if (studyId == null) {
+                throw new BadRequestException("Study not found.");
+            }
+            Study study = studyService.getStudy(studyId);
+            
+            // MailChimp submits email as data[email]
+            String email = getParameter("data[email]");
+            if (email == null) {
+                email = getParameter("email");
+            }
+            if (email == null) {
+                throw new BadRequestException("Email not found.");
+            }
+            
+            // This should always return a healthCode unless this is not actually an email in Stormpath
+            String healthCode = accountDao.getHealthCodeForEmail(study, email);
+            if (healthCode == null) {
+                throw new BadRequestException("Email not found.");
+            }
+            optionsService.setBoolean(study, healthCode, EMAIL_NOTIFICATIONS, false);
+            
+            return ok("You have been unsubscribed from future email.");
+        } catch(Throwable throwable) {
+            String errorMsg = "Unknown error";
+            if (StringUtils.isNotBlank(throwable.getMessage())) {
+                errorMsg = throwable.getMessage();
+            }
+            LOG.error("Error unsubscribing: " + errorMsg, throwable);
+            return ok(errorMsg);
         }
-        // Study has to be provided as an URL parameter
-        String studyId = getParameter("study");
-        if (studyId == null) {
-            throw new BadRequestException("Study not found.");
-        }
-        Study study = studyService.getStudy(studyId);
-        
-        // MailChimp submits email as data[email]
-        String email = getParameter("data[email]");
-        if (email == null) {
-            email = getParameter("email");
-        }
-        if (email == null) {
-            throw new BadRequestException("Email not found.");
-        }
-        
-        // This should always return a healthCode unless this is not actually an email in Stormpath
-        String healthCode = accountDao.getHealthCodeForEmail(study, email);
-        if (healthCode == null) {
-            throw new BadRequestException("Email not found.");
-        }
-        optionsService.setBoolean(study, healthCode, EMAIL_NOTIFICATIONS, false);
-        
-        return ok("You have been unsubscribed from future email.");
     }
 
     private String getParameter(String paramName) {
