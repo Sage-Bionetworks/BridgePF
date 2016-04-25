@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -37,6 +38,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -52,6 +54,8 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
+    
+    private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
     private static final String ID = "ASDF";
 
@@ -83,11 +87,14 @@ public class ParticipantControllerTest {
     
     @Before
     public void before() throws Exception {
+        User user = new User();
+        user.setRoles(CALLER_ROLES);
+        
         UserSession session = new UserSession();
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
+        session.setUser(user);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
-        
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
         
         List<AccountSummary> summaries = Lists.newArrayListWithCapacity(3);
@@ -164,7 +171,7 @@ public class ParticipantControllerTest {
         
         assertResult(result, 200, "Participant updated.");
         
-        verify(participantService).updateParticipant(eq(STUDY), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(ID), eq(CALLER_ROLES), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -232,7 +239,7 @@ public class ParticipantControllerTest {
     @Test
     public void createParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder("ABCD");
-        doReturn(holder).when(participantService).createParticipant(eq(STUDY), any(StudyParticipant.class));
+        doReturn(holder).when(participantService).createParticipant(eq(STUDY), any(), any(StudyParticipant.class));
         
         STUDY.getUserProfileAttributes().add("phone");
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
@@ -246,7 +253,7 @@ public class ParticipantControllerTest {
         String id = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result)).get("identifier").asText();
         assertEquals(holder.getIdentifier(), id);
         
-        verify(participantService).createParticipant(eq(STUDY), participantCaptor.capture());
+        verify(participantService).createParticipant(eq(STUDY), eq(CALLER_ROLES), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -269,11 +276,11 @@ public class ParticipantControllerTest {
                 "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
                 "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
         
-        Result result = controller.updateParticipant2(EMAIL);
+        Result result = controller.updateParticipant2(ID);
         
         assertResult(result, 200, "Participant updated.");
         
-        verify(participantService).updateParticipant(eq(STUDY), eq(EMAIL), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(ID), eq(CALLER_ROLES), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -309,8 +316,8 @@ public class ParticipantControllerTest {
     public void updateParticipantNoJsonEmailOK2() throws Exception {
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{}"));
         
-        controller.updateParticipant2("email-different@email.com");
-        verify(participantService).updateParticipant(eq(STUDY), eq("email-different@email.com"), any());
+        controller.updateParticipant2(ID);
+        verify(participantService).updateParticipant(eq(STUDY), eq(ID), eq(CALLER_ROLES), any());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {

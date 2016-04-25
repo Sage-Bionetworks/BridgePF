@@ -222,8 +222,8 @@ public class ParticipantService {
         for (ParticipantOption option : ParticipantOption.values()) {
             options.put(option, option.fromParticipant(participant));
         }
-        // If we're validing the ID, we do this through the externalIdService, which writes to the participant options table
-        // when its appropriate to do so
+        // If we're validating the ID, we do this through the externalIdService, which writes to the participant options
+        // table when its appropriate to do so
         if (study.isExternalIdValidationEnabled()) {
             options.remove(EXTERNAL_IDENTIFIER);
         }
@@ -242,8 +242,11 @@ public class ParticipantService {
             account.setStatus(participant.getStatus());
         }
         
-        // Roles. Can only set roles that are in the allowable roles for the caller's role.
+        // Whether a caller can add a role depends on whether that role has the permission to do it. 
         for (Roles role : participant.getRoles()) {
+            if (callerHasAnyOf(callerRoles, role)) {
+                account.getRoles().add(role);
+            }
         }
         
         accountDao.updateAccount(study, account);
@@ -258,12 +261,14 @@ public class ParticipantService {
         return new IdentifierHolder(account.getId());
     }
     
-    
-    
     private boolean callerHasAnyOf(Set<Roles> callerRoles, Set<Roles> targetRoles) {
         return !Collections.disjoint(callerRoles, targetRoles);
     }
     
+    private boolean callerHasAnyOf(Set<Roles> callerRoles, Roles targetRole) {
+        return !Collections.disjoint(callerRoles, Roles.CAN_BE_CREATED_BY.get(targetRole));
+    }
+
     private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
         // If not enabled, we'll update the value like any other ParticipantOption
         if (study.isExternalIdValidationEnabled()) {
