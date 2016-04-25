@@ -180,53 +180,11 @@ public class ParticipantControllerTest {
     }
     
     @Test
-    public void getParticipant2() throws Exception {
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        
-        when(participantService.getParticipant(STUDY, EMAIL)).thenReturn(studyParticipant);
-        
-        Result result = controller.getParticipant2(EMAIL);
-        String string = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(string, StudyParticipant.class);
-        // Verify that there's a field, full serialization tested in StudyParticipant2Test
-        assertEquals("Test", retrievedParticipant.getFirstName());
-        
-        verify(participantService).getParticipant(STUDY, EMAIL);
-    }
-    
-    @Test
     public void nullParametersUseDefaults() throws Exception {
         controller.getParticipants(null, null, null);
 
         // paging with defaults
         verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
-    }
-    
-    @Test
-    public void signUserOut2() throws Exception {
-        controller.signOut2(EMAIL);
-        
-        verify(participantService).signUserOut(STUDY, EMAIL);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void getParticipantNoEmail2() {
-        controller.getParticipant2(null);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void signOutNoEmail2() throws Exception {
-        controller.signOut2(null);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void getParticipantBlank2() {
-        controller.getParticipant2("");
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void signOutBlank2() throws Exception {
-        controller.signOut2("");
     }
     
     @Test
@@ -261,56 +219,11 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
     }
 
-    @Test
-    public void updateParticipant2() throws Exception {
-        STUDY.getUserProfileAttributes().add("phone");
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
-                "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
-                "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
-                "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
-        
-        Result result = controller.updateParticipant2(EMAIL);
-        
-        assertResult(result, 200, "Participant updated.");
-        
-        verify(participantService).updateParticipant(eq(STUDY), eq(EMAIL), participantCaptor.capture());
-        
-        StudyParticipant participant = participantCaptor.getValue();
-        assertEquals("firstName", participant.getFirstName());
-        assertEquals("lastName", participant.getLastName());
-        assertEquals(EMAIL, participant.getEmail());
-        assertEquals("newUserPassword", participant.getPassword());
-        assertEquals("externalId", participant.getExternalId());
-        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, participant.getSharingScope());
-        assertTrue(participant.isNotifyByEmail());
-        assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
-        assertEquals("123456789", participant.getAttributes().get("phone"));
-        assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantMissing2() {
-        controller.updateParticipant2(null);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantBlank2() {
-        controller.updateParticipant2("");
-    }
-    
     @Test(expected = BadRequestException.class)
     public void updateParticipantRequiresIdMatch() throws Exception {
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'id':'id2'}"));
         
         controller.updateParticipant("id1");
-    }
-
-    @Test
-    public void updateParticipantNoJsonEmailOK2() throws Exception {
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{}"));
-        
-        controller.updateParticipant2("email-different@email.com");
-        verify(participantService).updateParticipant(eq(STUDY), eq("email-different@email.com"), any());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
