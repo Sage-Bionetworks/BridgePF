@@ -28,10 +28,10 @@ public class SignUpTest {
     public void canSerialize() throws Exception {
         Set<Roles> roles = Sets.newHashSet(Roles.ADMIN);
         Set<String> dataGroups = Sets.newHashSet("group1", "group2");
-        StudyParticipant signUp = new StudyParticipant.Builder().withEmail("email@email.com")
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
                 .withPassword("password").withRoles(roles).withDataGroups(dataGroups).build();
         
-        String json = BridgeObjectMapper.get().writeValueAsString(signUp);
+        String json = BridgeObjectMapper.get().writeValueAsString(participant);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("email@email.com", node.get("email").asText());
@@ -51,17 +51,17 @@ public class SignUpTest {
         
         assertEquals(9, TestUtils.getFieldNamesSet(node).size());
         
-        StudyParticipant newSignUp = BridgeObjectMapper.get().readValue(json, StudyParticipant.class); 
-        assertEquals(signUp, newSignUp);
+        StudyParticipant newParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class); 
+        assertEquals(participant, newParticipant);
     }
     
     @Test
     public void nullParametersBreakNothing() throws Exception {
-        StudyParticipant signUp = new StudyParticipant.Builder().withEmail("email@email.com")
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
                 .withPassword("password").build();
         
-        assertEquals(0, signUp.getRoles().size());
-        assertEquals(0, signUp.getDataGroups().size());
+        assertEquals(0, participant.getRoles().size());
+        assertEquals(0, participant.getDataGroups().size());
     }
     
     @Test
@@ -69,9 +69,9 @@ public class SignUpTest {
         // Old clients will continue to submit a username, this will be ignored.
         String json = "{\"email\":\"email@email.com\",\"username\":\"username@email.com\",\"password\":\"password\",\"roles\":[],\"dataGroups\":[],\"type\":\"SignUp\"}";
         
-        StudyParticipant signUp = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
-        assertEquals("email@email.com", signUp.getEmail());
-        assertEquals("password", signUp.getPassword());
+        StudyParticipant participant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
+        assertEquals("email@email.com", participant.getEmail());
+        assertEquals("password", participant.getPassword());
     }
 
 }

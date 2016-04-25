@@ -72,7 +72,7 @@ public class AuthenticationControllerMockTest {
     StudyService studyService;
     
     @Captor
-    ArgumentCaptor<StudyParticipant> signUpCaptor;
+    ArgumentCaptor<StudyParticipant> participantCaptor;
     
     @Before
     public void before() {
@@ -90,10 +90,10 @@ public class AuthenticationControllerMockTest {
         
         Result result = controller.signUp();
         assertEquals(201, result.status());
-        verify(authenticationService).signUp(same(study), signUpCaptor.capture(), eq(true));
+        verify(authenticationService).signUp(same(study), participantCaptor.capture(), eq(true));
         
-        StudyParticipant signUp = signUpCaptor.getValue();
-        assertTrue(signUp.getRoles().isEmpty());
+        StudyParticipant participant = participantCaptor.getValue();
+        assertTrue(participant.getRoles().isEmpty());
     }
 
     @Test

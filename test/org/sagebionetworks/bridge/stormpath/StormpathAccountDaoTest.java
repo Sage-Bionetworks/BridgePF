@@ -97,9 +97,9 @@ public class StormpathAccountDaoTest {
                 for (int i=0; i < (6-accounts.getTotal()); i++) {
                     String random = RandomStringUtils.randomAlphabetic(5);
                     String email = "bridge-testing+"+random+"@sagebridge.org";
-                    StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                    StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
                             .withRoles(Sets.newHashSet(TEST_USERS)).build();
-                    Account account = accountDao.signUp(study, signUp, false);
+                    Account account = accountDao.signUp(study, participant, false);
                     newAccounts.add(account.getId());
                 }
             }
@@ -150,9 +150,9 @@ public class StormpathAccountDaoTest {
         Account account = null;
         
         try {
-            StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+            StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
                         .withRoles(Sets.newHashSet(TEST_USERS)).build();
-            accountDao.signUp(study, signUp, false);
+            accountDao.signUp(study, participant, false);
             
             account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
             assertEquals(email, account.getEmail());
@@ -168,9 +168,9 @@ public class StormpathAccountDaoTest {
         String email = "bridge-testing+"+random+"@sagebridge.org";
         Account account = null;
         try {
-            StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+            StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
                     .withRoles(Sets.newHashSet(TEST_USERS)).build();
-            account = accountDao.signUp(study, signUp, false);
+            account = accountDao.signUp(study, participant, false);
             
             try {
                 accountDao.authenticate(study, new SignIn(email, "BadPassword"));
@@ -199,9 +199,9 @@ public class StormpathAccountDaoTest {
             ConsentSignature sig = new ConsentSignature.Builder().withName("Test Test").withBirthdate("1970-01-01")
                     .withSignedOn(signedOn).build();
             
-            StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+            StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
                     .withRoles(Sets.newHashSet(TEST_USERS)).build();
-            account = accountDao.signUp(study, signUp, false);
+            account = accountDao.signUp(study, participant, false);
             
             assertNull(account.getFirstName()); // defaults are not visible
             assertNull(account.getLastName());
@@ -278,13 +278,13 @@ public class StormpathAccountDaoTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
-        StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
         
         Account account = null;
         try {
-            account = accountDao.signUp(study, signUp, false); // don't send email
+            account = accountDao.signUp(study, participant, false); // don't send email
             
-            Email emailObj = new Email(study.getStudyIdentifier(), signUp.getEmail());
+            Email emailObj = new Email(study.getStudyIdentifier(), participant.getEmail());
             accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), emailObj); // now send email
         } finally {
             accountDao.deleteAccount(study, account.getId());
@@ -317,10 +317,10 @@ public class StormpathAccountDaoTest {
                 .build();
 
         String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
-        StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
         Account account = null;
         try {
-            account = accountDao.signUp(study, signUp, false); // don't send email
+            account = accountDao.signUp(study, participant, false); // don't send email
             
             account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
             account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);

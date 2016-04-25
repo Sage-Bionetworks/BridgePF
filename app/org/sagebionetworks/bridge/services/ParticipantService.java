@@ -197,11 +197,7 @@ public class ParticipantService {
             if (isNotBlank(participant.getExternalId())) {
                 externalIdService.reserveExternalId(study, participant.getExternalId());    
             }
-            
-            StudyParticipant signUp = new StudyParticipant.Builder().withEmail(participant.getEmail())
-                    .withPassword(participant.getPassword()).build();
-            
-            account = accountDao.signUp(study, signUp, study.isEmailVerificationEnabled());
+            account = accountDao.signUp(study, participant, study.isEmailVerificationEnabled());
             
             healthCode = getHealthCodeThrowingException(account);
         } else {

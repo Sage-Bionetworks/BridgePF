@@ -64,7 +64,7 @@ public class UserAdminServiceTest {
     
     private Study study;
 
-    private StudyParticipant signUp;
+    private StudyParticipant participant;
 
     private User testUser;
 
@@ -83,7 +83,7 @@ public class UserAdminServiceTest {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         study.setExternalIdValidationEnabled(true);
         String email = TestUtils.makeRandomTestEmail(UserAdminServiceTest.class);
-        signUp = new StudyParticipant.Builder().withEmail(email).withPassword("P4ssword!").build();
+        participant = new StudyParticipant.Builder().withEmail(email).withPassword("P4ssword!").build();
 
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, TEST_CONTEXT, signIn).getUser();
@@ -98,36 +98,36 @@ public class UserAdminServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
-        testUser = userAdminService.createUser(signUp, study, null, true, true).getUser();
+        testUser = userAdminService.createUser(participant, study, null, true, true).getUser();
 
         userAdminService.deleteUser(study, testUser.getId());
 
         // This should fail with a 404.
-        authService.signIn(study, TEST_CONTEXT, new SignIn(signUp.getEmail(), signUp.getPassword()));
+        authService.signIn(study, TEST_CONTEXT, new SignIn(participant.getEmail(), participant.getPassword()));
     }
 
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session1 = userAdminService.createUser(signUp, study, null, false, false);
+        UserSession session1 = userAdminService.createUser(participant, study, null, false, false);
         assertFalse(session1.isAuthenticated());
 
-        UserSession session = authService.signIn(study, TEST_CONTEXT, new SignIn(signUp.getEmail(),
-                signUp.getPassword()));
+        UserSession session = authService.signIn(study, TEST_CONTEXT, new SignIn(participant.getEmail(),
+                participant.getPassword()));
         testUser = session.getUser();
         assertFalse(testUser.doesConsent());
     }
 
     // Next two test the same thing in two different ways.
     public void cannotCreateTheSameUserTwice() {
-        testUser = userAdminService.createUser(signUp, study, null, true, true).getUser();
-        testUser = userAdminService.createUser(signUp, study, null, true, true).getUser();
+        testUser = userAdminService.createUser(participant, study, null, true, true).getUser();
+        testUser = userAdminService.createUser(participant, study, null, true, true).getUser();
     }
     
     @Test
     public void cannotCreateUserWithSameEmail() {
-        testUser = userAdminService.createUser(signUp, study, null, true, false).getUser();
+        testUser = userAdminService.createUser(participant, study, null, true, false).getUser();
         try {
-            userAdminService.createUser(signUp, study, null, false, false);
+            userAdminService.createUser(participant, study, null, false, false);
             fail("Sign up with email already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) { 
             assertEquals("Account already exists.", e.getMessage());
@@ -136,7 +136,7 @@ public class UserAdminServiceTest {
 
     @Test
     public void testDeleteUserWhenSignedOut() {
-        UserSession session = userAdminService.createUser(signUp, study, null, true, true);
+        UserSession session = userAdminService.createUser(participant, study, null, true, true);
         authService.signOut(session);
         assertNull(authService.getSession(session.getSessionToken()));
         // Shouldn't crash
@@ -146,7 +146,7 @@ public class UserAdminServiceTest {
 
     @Test
     public void testDeleteUserThatHasBeenDeleted() {
-        UserSession session = userAdminService.createUser(signUp, study, null, true, true);
+        UserSession session = userAdminService.createUser(participant, study, null, true, true);
         userAdminService.deleteUser(study, session.getUser().getId());
         assertNull(authService.getSession(session.getSessionToken()));
         // Delete again shouldn't crash
@@ -159,7 +159,7 @@ public class UserAdminServiceTest {
         List<String> idForTest = Lists.newArrayList("AAA");
         externalIdService.addExternalIds(study, idForTest);
         try {
-            UserSession session = userAdminService.createUser(signUp, study, null, true, true);
+            UserSession session = userAdminService.createUser(participant, study, null, true, true);
             
             externalIdService.assignExternalId(study, "AAA", session.getUser().getHealthCode());
 

@@ -45,14 +45,14 @@ public class AuthenticationController extends BaseController {
 
     public Result signUp() throws Exception {
         JsonNode json = requestToJSON(request());
-        StudyParticipant signUp = parseJson(request(), StudyParticipant.class);
+        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
         // You cannot set roles through the signUp() method.
-        if (!signUp.getRoles().isEmpty()) {
-            signUp = new StudyParticipant.Builder().copyOf(signUp).withRoles(Sets.newHashSet()).build();
+        if (!participant.getRoles().isEmpty()) {
+            participant = new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build();
         }
         Study study = getStudyOrThrowException(json);
-        authenticationService.signUp(study, signUp, true);
+        authenticationService.signUp(study, participant, true);
         return createdResult("Signed up.");
     }
 

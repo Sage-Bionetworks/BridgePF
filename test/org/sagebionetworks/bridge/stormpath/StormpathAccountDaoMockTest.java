@@ -164,8 +164,8 @@ public class StormpathAccountDaoMockTest {
         
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
-        StudyParticipant signUp = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
-        Account account = dao.signUp(study, signUp, false);
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
+        Account account = dao.signUp(study, participant, false);
         assertNotNull(account);
         
         ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);

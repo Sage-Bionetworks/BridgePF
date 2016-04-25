@@ -127,7 +127,7 @@ public class ParticipantServiceTest {
     private ExternalIdService externalIdService;
     
     @Captor
-    ArgumentCaptor<StudyParticipant> signUpCaptor;
+    ArgumentCaptor<StudyParticipant> participantCaptor;
     
     @Captor
     ArgumentCaptor<Map<ParticipantOption,String>> optionsCaptor;
@@ -163,10 +163,10 @@ public class ParticipantServiceTest {
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         verify(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
         
-        verify(accountDao).signUp(eq(STUDY), signUpCaptor.capture(), eq(false));
-        StudyParticipant signUp = signUpCaptor.getValue();
-        assertEquals("email@email.com", signUp.getEmail());
-        assertEquals("P@ssword1", signUp.getPassword());
+        verify(accountDao).signUp(eq(STUDY), participantCaptor.capture(), eq(false));
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals("email@email.com", participant.getEmail());
+        assertEquals("P@ssword1", participant.getPassword());
         
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq("healthCode"), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();

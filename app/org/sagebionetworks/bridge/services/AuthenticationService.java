@@ -41,7 +41,7 @@ import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
-import org.sagebionetworks.bridge.validators.SignUpValidator;
+import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import org.joda.time.DateTimeUtils;
@@ -174,22 +174,22 @@ public class AuthenticationService {
         }
     }
 
-    public void signUp(Study study, StudyParticipant signUp, boolean isAnonSignUp) {
+    public void signUp(Study study, StudyParticipant participant, boolean isAnonSignUp) {
         checkNotNull(study, "Study cannot be null");
-        checkNotNull(signUp, "Sign up cannot be null");
+        checkNotNull(participant, "Participant cannot be null");
         
-        Validate.entityThrowingException(new SignUpValidator(study.getPasswordPolicy(), study.getDataGroups()), signUp);
+        Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
         String lockId = null;
         try {
-            lockId = lockDao.acquireLock(StudyParticipant.class, signUp.getEmail(), LOCK_EXPIRE_IN_SECONDS);
+            lockId = lockDao.acquireLock(StudyParticipant.class, participant.getEmail(), LOCK_EXPIRE_IN_SECONDS);
             if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
-            Account account = accountDao.signUp(study, signUp, isAnonSignUp);
-            if (!signUp.getDataGroups().isEmpty()) {
+            Account account = accountDao.signUp(study, participant, isAnonSignUp);
+            if (!participant.getDataGroups().isEmpty()) {
                 final String healthCode = getHealthCode(study, account);
-                optionsService.setStringSet(study, healthCode, DATA_GROUPS, signUp.getDataGroups());
+                optionsService.setStringSet(study, healthCode, DATA_GROUPS, participant.getDataGroups());
             }
             
         } catch(EntityAlreadyExistsException e) {
@@ -198,14 +198,14 @@ public class AuthenticationService {
             // request to the email address in case user has forgotten password and is trying to sign 
             // up again. Non-anonymous sign ups (sign ups done by admins on behalf of users) still get a 404
             if (isAnonSignUp) {
-                Email email = new Email(study.getIdentifier(), signUp.getEmail());
+                Email email = new Email(study.getIdentifier(), participant.getEmail());
                 requestResetPassword(study, email);
                 logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
             } else {
                 throw e;
             }
         } finally {
-            lockDao.releaseLock(StudyParticipant.class, signUp.getEmail(), lockId);
+            lockDao.releaseLock(StudyParticipant.class, participant.getEmail(), lockId);
         }
     }
 

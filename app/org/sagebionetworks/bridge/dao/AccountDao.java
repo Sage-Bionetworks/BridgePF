@@ -24,11 +24,11 @@ public interface AccountDao {
      * Create an account within the context of the study. Sending email address confirmation
      * and sign up confirmation emails is optional. 
      * @param study
-     * @param signUp
+     * @param participant
      * @param sendEmail
      * @return account
      */
-    public Account signUp(Study study, StudyParticipant signUp, boolean sendEmail);
+    public Account signUp(Study study, StudyParticipant participant, boolean sendEmail);
     
     /**
      * Verify an email address using a supplied, one-time token for verification.

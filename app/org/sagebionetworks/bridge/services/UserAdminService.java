@@ -101,7 +101,7 @@ public class UserAdminService {
      * Note that currently, the ability to consent someone to a subpopulation other than the default 
      * subpopulation is not supported in the API.
      *
-     * @param signUp
+     * @param participant
      *            sign up information for the target user
      * @param study
      *            the study of the target user
@@ -115,13 +115,13 @@ public class UserAdminService {
      *
      * @throws BridgeServiceException
      */
-    public UserSession createUser(StudyParticipant signUp, Study study, SubpopulationGuid subpopGuid,
+    public UserSession createUser(StudyParticipant participant, Study study, SubpopulationGuid subpopGuid,
             boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
-        checkNotNull(signUp, "Sign up cannot be null");
-        checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
+        checkNotNull(participant, "Participant cannot be null");
+        checkNotNull(participant.getEmail(), "Sign up email cannot be null");
 
-        authenticationService.signUp(study, signUp, false);
+        authenticationService.signUp(study, participant, false);
 
         // We don't filter users by any of these filtering criteria in the admin API.
         CriteriaContext context = new CriteriaContext.Builder()
@@ -129,11 +129,11 @@ public class UserAdminService {
         
         UserSession newUserSession = null;
         try {
-            SignIn signIn = new SignIn(signUp.getEmail(), signUp.getPassword());
+            SignIn signIn = new SignIn(participant.getEmail(), participant.getPassword());
             newUserSession = authenticationService.signIn(study, context, signIn);
 
             if (consentUser) {
-                String name = String.format("[Signature for %s]", signUp.getEmail());
+                String name = String.format("[Signature for %s]", participant.getEmail());
                 ConsentSignature signature = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 

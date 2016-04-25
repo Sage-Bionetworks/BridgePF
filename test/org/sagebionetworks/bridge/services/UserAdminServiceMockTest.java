@@ -70,9 +70,9 @@ public class UserAdminServiceMockTest {
     @Test
     public void creatingUserConsentsToAllRequiredConsents() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
-        StudyParticipant signUp = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
-        UserSession session = service.createUser(signUp, study, null, true, true);
+        UserSession session = service.createUser(participant, study, null, true, true);
         
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             verify(consentService).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
@@ -82,10 +82,10 @@ public class UserAdminServiceMockTest {
     @Test
     public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
-        StudyParticipant signUp = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = Iterables.getFirst(user.getConsentStatuses().keySet(), null);
         
-        UserSession session = service.createUser(signUp, study, consentedGuid, true, true);
+        UserSession session = service.createUser(participant, study, consentedGuid, true, true);
         
         // consented to the indicated subpopulation
         verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));

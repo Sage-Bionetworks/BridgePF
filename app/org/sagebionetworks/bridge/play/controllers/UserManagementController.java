@@ -34,11 +34,11 @@ public class UserManagementController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         JsonNode node = requestToJSON(request());
-        StudyParticipant signUp = parseJson(request(), StudyParticipant.class);
+        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
         
-        userAdminService.createUser(signUp, study, null, false, consent);
+        userAdminService.createUser(participant, study, null, false, consent);
 
         return createdResult("User created.");
     }

@@ -321,20 +321,20 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override 
-    public Account signUp(Study study, StudyParticipant signUp, boolean sendEmail) {
+    public Account signUp(Study study, StudyParticipant participant, boolean sendEmail) {
         checkNotNull(study);
-        checkNotNull(signUp);
+        checkNotNull(participant);
         
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
         
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
         Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
-        account.setEmail(signUp.getEmail());
+        account.setEmail(participant.getEmail());
         account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
         account.setLastName(StormpathAccount.PLACEHOLDER_STRING);
-        acct.setPassword(signUp.getPassword());
-        if (signUp.getRoles() != null) {
-            account.getRoles().addAll(signUp.getRoles());
+        acct.setPassword(participant.getPassword());
+        if (participant.getRoles() != null) {
+            account.getRoles().addAll(participant.getRoles());
         }
         // Create the healthCode mapping when we create the account. Stop waiting to create it
         HealthId healthId = healthCodeService.createMapping(study);

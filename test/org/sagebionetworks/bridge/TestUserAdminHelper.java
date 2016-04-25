@@ -62,7 +62,7 @@ public class TestUserAdminHelper {
             this.study = study;
             this.session = session;
         }
-        public StudyParticipant getSignUp() {
+        public StudyParticipant getStudyParticipant() {
             return new StudyParticipant.Builder().withEmail(email).withPassword(password)
                     .withRoles(roles).withDataGroups(dataGroups).build();
         }
@@ -195,13 +195,13 @@ public class TestUserAdminHelper {
             Study finalStudy = (study == null) ? studyService.getStudy(TEST_STUDY_IDENTIFIER) : study;
             String finalEmail = (email == null) ? TestUtils.makeRandomTestEmail(cls) : email;
             String finalPassword = (password == null) ? PASSWORD : password;
-            StudyParticipant finalSignUp = new StudyParticipant.Builder().withEmail(finalEmail)
+            StudyParticipant finalParticipant = new StudyParticipant.Builder().withEmail(finalEmail)
                     .withPassword(finalPassword).withRoles(roles).withDataGroups(dataGroups).build();
             
-            UserSession session = userAdminService.createUser(finalSignUp, finalStudy, subpopGuid, signIn, consent);
+            UserSession session = userAdminService.createUser(finalParticipant, finalStudy, subpopGuid, signIn, consent);
             
-            return new TestUser(finalSignUp.getEmail(), finalSignUp.getPassword(), finalSignUp.getRoles(), 
-                    finalSignUp.getDataGroups(), finalStudy, session);
+            return new TestUser(finalParticipant.getEmail(), finalParticipant.getPassword(), finalParticipant.getRoles(), 
+                    finalParticipant.getDataGroups(), finalStudy, session);
         }
     }
 
