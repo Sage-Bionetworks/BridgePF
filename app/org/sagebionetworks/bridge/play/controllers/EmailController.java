@@ -5,21 +5,20 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.studies.Study;
 
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import play.data.DynamicForm;
-import play.data.Form;
+import play.mvc.Http;
 import play.mvc.Result;
 
 @Controller
 public class EmailController extends BaseController {
-    private final Logger LOG = LoggerFactory.getLogger(EmailController.class);
 
     private AccountDao accountDao;
 
@@ -34,67 +33,60 @@ public class EmailController extends BaseController {
      * deal with non-200 status codes. The token that is submitted is set in the configuration, and must match to allow
      * this call to succeed. Subject to change without warning or backwards compatibility. 
      * 
-     * @return
-     * @throws Exception
+     * @throws NotAuthenticatedException - if caller does not provide the token for this callback
+     * @throws BadRequestException - if there's any other problem, like missing email, missing study, etc.
      */
     public Result unsubscribeFromEmail() throws Exception {
-        try {
-            // Token has to be provided as an URL parameter
-            String token = getParameter("token");
-            if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
-                throw new RuntimeException("Not authorized.");
-            }
-            // Study has to be provided as an URL parameter
-            String studyId = getParameter("study");
-            if (studyId == null) {
-                throw new RuntimeException("Study not found.");
-            }
-            Study study = studyService.getStudy(studyId);
-            
-            // MailChimp submits email as data[email]
-            String email = getParameter("data[email]");
-            if (email == null) {
-                email = getParameter("email");
-            }
-            if (email == null) {
-                throw new RuntimeException("Email not found.");
-            }
-            
-            // This should always return a healthCode unless this is not actually an email in Stormpath
-            String healthCode = accountDao.getHealthCodeForEmail(study, email);
-            if (healthCode == null) {
-                throw new RuntimeException("Email not found.");
-            }
-            optionsService.setBoolean(study, healthCode, EMAIL_NOTIFICATIONS, false);
-            
-            return ok("You have been unsubscribed from future email.");
-            
-        } catch(Throwable throwable) {
-            String errorMsg = "Unknown error";
-            if (StringUtils.isNotBlank(throwable.getMessage())) {
-                errorMsg = throwable.getMessage();
-            }
-            LOG.error("Error unsubscribing: " + errorMsg, throwable);
-            return ok(errorMsg);
+        // Token has to be provided as an URL parameter
+        String token = getParameter("token");
+        if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
+            throw new BridgeServiceException("No authentication token provided.", HttpStatus.SC_UNAUTHORIZED);
         }
+        // Study has to be provided as an URL parameter
+        String studyId = getParameter("study");
+        if (studyId == null) {
+            throw new BadRequestException("Study not found.");
+        }
+        Study study = studyService.getStudy(studyId);
+        
+        // MailChimp submits email as data[email]
+        String email = getParameter("data[email]");
+        if (email == null) {
+            email = getParameter("email");
+        }
+        if (email == null) {
+            throw new BadRequestException("Email not found.");
+        }
+        
+        // This should always return a healthCode unless this is not actually an email in Stormpath
+        String healthCode = accountDao.getHealthCodeForEmail(study, email);
+        if (healthCode == null) {
+            throw new BadRequestException("Email not found.");
+        }
+        optionsService.setBoolean(study, healthCode, EMAIL_NOTIFICATIONS, false);
+        
+        return ok("You have been unsubscribed from future email.");
     }
 
-    protected DynamicForm getPostData() {
-        return Form.form().bindFromRequest();
-    }
-    
-    protected Map<String, String[]> getParams() {
-        return request().queryString();
-    }
-
-    // Checks both query string parameters and form data for the required values.
     private String getParameter(String paramName) {
-        String[] values = getParams().get(paramName);
-        if (values != null && values.length > 0) {
-            return values[0];
-        }
-        DynamicForm postData = getPostData();
-        return postData.get(paramName);
-    }
+        Http.Request request = request();
 
+        Map<String, String[]> queryParamMap = request.queryString();
+        if (queryParamMap != null) {
+            String[] queryParamValueArray = queryParamMap.get(paramName);
+            if (queryParamValueArray != null && queryParamValueArray.length > 0) {
+                return queryParamValueArray[0];
+            }
+        }
+
+        Map<String, String[]> formPostMap = request.body().asFormUrlEncoded();
+        if (formPostMap != null) {
+            String[] formPostValueArray = formPostMap.get(paramName);
+            if (formPostValueArray != null && formPostValueArray.length > 0) {
+                return formPostValueArray[0];
+            }
+        }
+
+        return null;
+    }
 }

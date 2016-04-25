@@ -23,17 +23,11 @@ public interface AccountDao {
     /**
      * Create an account within the context of the study. Sending email address confirmation
      * and sign up confirmation emails is optional. 
-     * @param study
-     * @param signUp
-     * @param sendEmail
-     * @return account
      */
     public Account signUp(Study study, SignUp signUp, boolean sendEmail);
     
     /**
      * Verify an email address using a supplied, one-time token for verification.
-     * @param study
-     * @param verification
      * @return
      */
     public Account verifyEmail(StudyIdentifier study, EmailVerification verification);
@@ -41,31 +35,24 @@ public interface AccountDao {
     /**
      * Sign up sends an email address with a link that includes a one-time token for verification. That email
      * can be resent by calling this method.
-     * @param studyIdentifier
-     * @param email
      */
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email);
     
     /**
      * Request that an email be sent to the account holder with a link to reset a password, including a 
      * one-time verification token. 
-     * @param email
      */
     public void requestResetPassword(Study study, Email email);
     
     /**
      * Reset a password, supplying a new password and the one-time verification token that was sent via email 
      * to the account holder.
-     * @param passwordReset
      */
     public void resetPassword(PasswordReset passwordReset);
     
     /**
      * Authenticate a user with the supplied credentials, returning that user's account record
      * if successful. 
-     * @param study
-     * @param signIn
-     * @return
      */
     public Account authenticate(Study study, SignIn signIn);
     
@@ -73,16 +60,11 @@ public interface AccountDao {
      * Get an account in the context of a study by the user's ID or by their email address (email is 
      * deprecated and in the process of being removed). Returns null if there is no account, it is 
      * up to callers to translate this into the appropriate exception, if any. 
-     * @param study
-     * @param id
-     * @return
      */
     public Account getAccount(Study study, String id);
     
     /**
      * Save account changes.
-     * @param study
-     * @param account
      */
     public void updateAccount(Study study, Account account);
     
@@ -125,9 +107,6 @@ public interface AccountDao {
     
     /**
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
-     * @param study
-     * @param email
-     * @return
      */
     public String getHealthCodeForEmail(Study study, String email);
 }
