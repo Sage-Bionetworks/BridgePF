@@ -191,7 +191,7 @@ public class TestUserAdminHelper {
         public TestUser build() {
             // There are tests where we partially create a user with the builder, then change just
             // some fields before creating another test user with multiple build() calls. Anything we
-            // default here needs to be updated with each call to build().
+            // default in thie build method needs to be updated with each call to build().
             Study finalStudy = (study == null) ? studyService.getStudy(TEST_STUDY_IDENTIFIER) : study;
             String finalEmail = (email == null) ? TestUtils.makeRandomTestEmail(cls) : email;
             String finalPassword = (password == null) ? PASSWORD : password;
@@ -201,7 +201,7 @@ public class TestUserAdminHelper {
             UserSession session = userAdminService.createUser(finalSignUp, finalStudy, subpopGuid, signIn, consent);
             
             return new TestUser(finalSignUp.getEmail(), finalSignUp.getPassword(), finalSignUp.getRoles(), 
-                    finalSignUp.getDataGroups(), study, session);
+                    finalSignUp.getDataGroups(), finalStudy, session);
         }
     }
 
