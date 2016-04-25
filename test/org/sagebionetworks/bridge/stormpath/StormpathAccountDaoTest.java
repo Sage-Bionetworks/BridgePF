@@ -96,18 +96,19 @@ public class StormpathAccountDaoTest {
         List<String> newAccounts = Lists.newArrayList();
         try {
             PagedResourceList<AccountSummary> accounts = accountDao.getPagedAccountSummaries(study, 0, 10, null);
-            // This test requires 6 accounts be present (one more than a page so we can verify the results are capped)
-            // API directories already have 3-6 accounts. They don't need to be verified, consented, etc.
-            if (accounts.getTotal() < 6) {
-                for (int i=0; i < (6-accounts.getTotal()); i++) {
-                    String random = RandomStringUtils.randomAlphabetic(5);
-                    String email = "bridge-testing+"+random+"@sagebridge.org";
-                    SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
-                    Account account = accountDao.signUp(study, signUp, false);
-                    newAccounts.add(account.getId());
-                }
-            }
             
+            // Make sure you add 2 records with the "SADT" infix so searching will work and be tested, 
+            // and at least 6 records in total so that paging can be tested.
+            int totalAccounts = accounts.getTotal();
+            int addAccounts = (totalAccounts < 6) ? (6-totalAccounts)+2 : 2;
+            
+            for (int i=0; i < addAccounts; i++) {
+                String random = RandomStringUtils.randomAlphabetic(5);
+                String email = "bridge-testing+SADT"+random+"@sagebridge.org";
+                SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+                Account account = accountDao.signUp(study, signUp, false);
+                newAccounts.add(account.getId());
+            }
             // Fetch only 5 accounts. Empty search string ignored
             accounts = accountDao.getPagedAccountSummaries(study, 0, 5, "");
             
@@ -134,6 +135,13 @@ public class StormpathAccountDaoTest {
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridgeit@");
             assertEquals(1, accounts.getItems().size());
             assertEquals("bridgeit@sagebase.org", accounts.getItems().get(0).getEmail());
+            
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridge-testing+SADT");
+            assertTrue(accounts.getItems().size() > 0);
+            for (AccountSummary summary : accounts.getItems()) {
+                assertNull(summary.getFirstName());
+                assertNull(summary.getLastName());
+            }
         } finally {
             for (String id : newAccounts) {
                 accountDao.deleteAccount(study, id);
