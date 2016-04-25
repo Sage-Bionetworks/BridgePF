@@ -41,6 +41,10 @@ public class EmailController extends BaseController {
      * @throws BadRequestException - if there's any other problem, like missing email, missing study, etc.
      */
     public Result unsubscribeFromEmail() throws Exception {
+        // We catch and return 200s because MailChimp makes a validation call when configuring the web hook, and if it fails,
+        // MailChimp won't persist the configuration. We could also detect the validation call because it has a different
+        // User-Agent than the real callbacks, "MailChimp.com WebHook Validator" versus "MailChimp.com", and always return 
+        // 200 for that validation call.
         try {
             // Token has to be provided as an URL parameter
             String token = getParameter("token");
