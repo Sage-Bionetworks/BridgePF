@@ -278,7 +278,27 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(study);
         checkArgument(isNotBlank(identifier));
         
-        return getAccountWithId(study, identifier);
+        String href = BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF+identifier;
+        
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
+
+        AccountOptions<?> options = Accounts.options();
+        options.withCustomData();
+        options.withGroups();
+        options.withGroupMemberships();
+        try {
+            com.stormpath.sdk.account.Account acct = client.getResource(href, com.stormpath.sdk.account.Account.class, options);
+            
+            // Validate the user is in the correct directory
+            Directory directory = acct.getDirectory();
+            if (directory.getHref().equals(study.getStormpathHref())) {
+                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors); 
+            }
+        } catch(ResourceException e) {
+            // In keeping with the email implementation, just return null
+            logger.debug("Account ID " + identifier + " not found in Stormpath: " + e.getMessage());
+        }
+        return null;
     }
     
     @Override
@@ -302,43 +322,6 @@ public class StormpathAccountDao implements AccountDao {
             updateAccount(study, account);
         }
         return healthId.getCode();
-    }
-    
-    private Account getAccountWithEmail(Study study, String email) {
-        Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
-
-        AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
-                .withCustomData().withGroups().withGroupMemberships());
-        if (accounts.iterator().hasNext()) {
-            com.stormpath.sdk.account.Account acct = accounts.iterator().next();
-            return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
-        }
-        return null;
-    }
-    
-    private Account getAccountWithId(Study study, String id) {
-        String href = BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF+id;
-        
-        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
-
-        AccountOptions<?> options = Accounts.options();
-        options.withCustomData();
-        options.withGroups();
-        options.withGroupMemberships();
-        try {
-            com.stormpath.sdk.account.Account acct = client.getResource(href, com.stormpath.sdk.account.Account.class, options);
-            
-            // Validate the user is in the correct directory
-            Directory directory = acct.getDirectory();
-            if (directory.getHref().equals(study.getStormpathHref())) {
-                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors); 
-            }
-        } catch(ResourceException e) {
-            // In keeping with the email implementation, just return null
-            logger.debug("Account ID " + id + " not found in Stormpath: " + e.getMessage());
-        }
-        return null;
     }
     
     @Override 
@@ -407,6 +390,19 @@ public class StormpathAccountDao implements AccountDao {
         Account account = getAccount(study, id);
         com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
         acct.delete();
+    }
+    
+    private Account getAccountWithEmail(Study study, String email) {
+        Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
+
+        AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
+                .withCustomData().withGroups().withGroupMemberships());
+        if (accounts.iterator().hasNext()) {
+            com.stormpath.sdk.account.Account acct = accounts.iterator().next();
+            return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
+        }
+        return null;
     }
     
     private void rethrowResourceException(ResourceException e, Account account) {
