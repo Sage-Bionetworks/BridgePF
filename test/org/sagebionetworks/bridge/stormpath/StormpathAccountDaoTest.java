@@ -90,18 +90,17 @@ public class StormpathAccountDaoTest {
         List<String> newAccounts = Lists.newArrayList();
         try {
             PagedResourceList<AccountSummary> accounts = accountDao.getPagedAccountSummaries(study, 0, 10, null);
-            // This test requires 6 accounts be present (one more than a page so we can verify the results are capped)
-            // API directories already have 3-6 accounts. They don't need to be verified, consented, etc.
-            if (accounts.getTotal() < 6) {
-                for (int i=0; i < (6-accounts.getTotal()); i++) {
-                    String random = RandomStringUtils.randomAlphabetic(5);
-                    String email = "bridge-testing+SADT"+random+"@sagebridge.org";
-                    SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
-                    Account account = accountDao.signUp(study, signUp, false);
-                    newAccounts.add(account.getId());
-                }
-            }
             
+            int totalAccounts = accounts.getTotal();
+            int addAccounts = (totalAccounts < 6) ? (6-totalAccounts)+2 : 2;
+            
+            for (int i=0; i < addAccounts; i++) {
+                String random = RandomStringUtils.randomAlphabetic(5);
+                String email = "bridge-testing+SADT"+random+"@sagebridge.org";
+                SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
+                Account account = accountDao.signUp(study, signUp, false);
+                newAccounts.add(account.getId());
+            }
             // Fetch only 5 accounts. Empty search string ignored
             accounts = accountDao.getPagedAccountSummaries(study, 0, 5, "");
             
@@ -258,24 +257,6 @@ public class StormpathAccountDaoTest {
             assertNull(account);
         }
     }
-
-    private void assertEqual(long signedOn, Account account, Account newAccount) {
-        assertNotNull(newAccount.getEmail());
-        assertNull(newAccount.getFirstName());
-        assertNull(newAccount.getLastName());
-        assertEquals(account.getEmail(), newAccount.getEmail());
-        assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
-        assertEquals(account.getHealthId(), newAccount.getHealthId());
-        assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
-                newAccount.getActiveConsentSignature(subpop.getGuid()));
-        assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
-                newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
-        assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
-        assertEquals(1, newAccount.getRoles().size());
-        assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
-        assertEquals("value of attribute one", account.getAttribute("attribute_one"));
-        assertNull(account.getAttribute("attribute_two"));
-    }
     
     @Test
     public void canResendEmailVerification() throws Exception {
@@ -342,5 +323,23 @@ public class StormpathAccountDaoTest {
         } finally {
             accountDao.deleteAccount(study, account.getId());
         }
+    }
+    
+    private void assertEqual(long signedOn, Account account, Account newAccount) {
+        assertNotNull(newAccount.getEmail());
+        assertNull(newAccount.getFirstName());
+        assertNull(newAccount.getLastName());
+        assertEquals(account.getEmail(), newAccount.getEmail());
+        assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
+        assertEquals(account.getHealthId(), newAccount.getHealthId());
+        assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
+                newAccount.getActiveConsentSignature(subpop.getGuid()));
+        assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
+                newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
+        assertEquals(signedOn, newAccount.getActiveConsentSignature(subpop.getGuid()).getSignedOn());
+        assertEquals(1, newAccount.getRoles().size());
+        assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
+        assertEquals("value of attribute one", account.getAttribute("attribute_one"));
+        assertNull(account.getAttribute("attribute_two"));
     }
 }
