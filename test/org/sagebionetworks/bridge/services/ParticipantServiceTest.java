@@ -18,6 +18,9 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -66,7 +69,8 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantServiceTest {
 
-    private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
+    private static final String PASSWORD = "P@ssword1";
+    private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(RESEARCHER);
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final LinkedHashSet<String> USER_LANGUAGES = (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet("de,fr");
@@ -78,7 +82,7 @@ public class ParticipantServiceTest {
             .withLastName("lastName")
             .withEmail(EMAIL)
             .withId(ID)
-            .withPassword("P@ssword1")
+            .withPassword(PASSWORD)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
             .withNotifyByEmail(true)
             .withDataGroups(STUDY_DATA_GROUPS)
@@ -169,7 +173,7 @@ public class ParticipantServiceTest {
         verify(accountDao).signUp(eq(STUDY), signUpCaptor.capture(), eq(false));
         SignUp signUp = signUpCaptor.getValue();
         assertEquals("email@email.com", signUp.getEmail());
-        assertEquals("P@ssword1", signUp.getPassword());
+        assertEquals(PASSWORD, signUp.getPassword());
         
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq("healthCode"), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
@@ -614,7 +618,7 @@ public class ParticipantServiceTest {
         doReturn("healthCode").when(healthId).getCode();
         
         // These are the minimal credentials and they should work.
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).withPassword("P@ssword1")
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).withPassword(PASSWORD)
                 .build();
         
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, participant);
@@ -622,24 +626,117 @@ public class ParticipantServiceTest {
         verifyNoMoreInteractions(externalIdService); // no ID, no calls to this service
     }
     
+    private void setUpHealthCodeLookup() {
+        doReturn("healthId").when(account).getHealthId();
+        doReturn("id").when(account).getId();
+        doReturn(healthId).when(healthCodeService).getMapping("healthId");
+        doReturn("healthCode").when(healthId).getCode();
+        doReturn(account).when(accountDao).signUp(eq(STUDY), any(), eq(false));
+        doReturn(account).when(accountDao).getAccount(STUDY, "id");
+    }
+    
     @Test
-    public void nooneCanSetStatusOnCreate() {
+    public void userCannotSetStatusOnCreate() {
+        setUpHealthCodeLookup();
+        Set<Roles> roles = Sets.newHashSet();
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD)
+                .withStatus(AccountStatus.ENABLED).build();
+        
+        participantService.createParticipant(STUDY, roles, participant);
+        
+        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        
+        verify(account, never()).setStatus(any());
+    }
+    
+    @Test
+    public void noRoleCannotSetStatusOnCreate() {
+        setUpHealthCodeLookup();
+        Set<Roles> roles = Sets.newHashSet(RESEARCHER, ADMIN, DEVELOPER);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD)
+                .withStatus(AccountStatus.ENABLED).build();
+        
+        participantService.createParticipant(STUDY, roles, participant);
+        
+        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        
+        verify(account, never()).setStatus(any());
     }
     
     @Test
     public void userCannotChangeStatus() {
+        setUpHealthCodeLookup();
+        Set<Roles> roles = Sets.newHashSet();
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD)
+                .withStatus(AccountStatus.DISABLED).build();
+        
+        participantService.updateParticipant(STUDY, roles, "id", participant);
+        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        
+        verify(account, never()).setStatus(any());
     }
     
     @Test
-    public void developerCannotChangeStatus() {
+    public void developerCanChangeStatusOnEdit() {
+        setUpHealthCodeLookup();
+        Set<Roles> roles = Sets.newHashSet(DEVELOPER);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD)
+                .withStatus(AccountStatus.DISABLED).build();
+        
+        participantService.updateParticipant(STUDY, roles, "id", participant);
+        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+
+        verify(account).setStatus(AccountStatus.DISABLED);
     }
     
     @Test
     public void researcherCanChangeStatusOnEdit() {
+        setUpHealthCodeLookup();
+        Set<Roles> roles = Sets.newHashSet(RESEARCHER);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD)
+                .withStatus(AccountStatus.DISABLED).build();
+        
+        participantService.updateParticipant(STUDY, roles, "id", participant);
+        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+
+        verify(account).setStatus(AccountStatus.DISABLED);
     }
     
     @Test
     public void adminCanChangeStatusOnEdit() {
+        setUpHealthCodeLookup();
+        Set<Roles> roles = Sets.newHashSet(ADMIN);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD)
+                .withStatus(AccountStatus.DISABLED).build();
+        
+        participantService.updateParticipant(STUDY, roles, "id", participant);
+        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+
+        verify(account).setStatus(AccountStatus.DISABLED);
     }
     
     @Test
@@ -655,6 +752,6 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void adminCanAllRoles() {
+    public void adminCanSetAllRoles() {
     }
 }

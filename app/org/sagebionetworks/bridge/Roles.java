@@ -15,8 +15,8 @@ public enum Roles {
 
     public static final Set<Roles> ADMINISTRATIVE_ROLES = EnumSet.of(DEVELOPER, RESEARCHER, ADMIN, WORKER);
     
-    public static final Map<Roles,EnumSet<Roles>> CAN_BE_CREATED_BY = new ImmutableMap.Builder<Roles, EnumSet<Roles>>()
+    public static final Map<Roles,EnumSet<Roles>> CAN_BE_EDITED_BY = new ImmutableMap.Builder<Roles, EnumSet<Roles>>()
         .put(ADMIN, EnumSet.of(ADMIN))
-        .put(RESEARCHER, EnumSet.of(ADMIN, RESEARCHER, ADMIN))
+        .put(RESEARCHER, EnumSet.of(ADMIN, RESEARCHER))
         .put(DEVELOPER, EnumSet.of(ADMIN, RESEARCHER, DEVELOPER)).build();
 }

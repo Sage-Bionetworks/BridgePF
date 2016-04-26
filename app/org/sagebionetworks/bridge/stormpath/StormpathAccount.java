@@ -62,7 +62,7 @@ public class StormpathAccount implements Account {
     private final String healthIdKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
-    private final Set<Roles> roles;
+    private Set<Roles> roles;
     private Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
     
     StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
@@ -169,6 +169,10 @@ public class StormpathAccount implements Account {
     @Override
     public Set<Roles> getRoles() {
         return this.roles;
+    }
+    @Override
+    public void setRoles(Set<Roles> roles) {
+        this.roles = roles;
     }
     @Override
     public String getId() {

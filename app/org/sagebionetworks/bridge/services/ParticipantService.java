@@ -11,8 +11,6 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.Collections;
 import java.util.List;
@@ -54,8 +52,6 @@ public class ParticipantService {
     private static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
     
     private static final List<UserConsentHistory> NO_HISTORY = ImmutableList.of();
-    
-    private static final Set<Roles> CAN_CHANGE_STATUS_ROLES = Sets.newHashSet(RESEARCHER, ADMIN);
     
     private AccountDao accountDao;
     
@@ -236,18 +232,11 @@ public class ParticipantService {
             account.setAttribute(attribute, value);
         }
         
-        // On creation, Stormpath determines the initials status of the account
-        // On edit, only researchers and admins can change status
-        if (!isNew && callerHasAnyOf(callerRoles, CAN_CHANGE_STATUS_ROLES) && participant.getStatus() != null) {
+        // Only admin roles can change status, after participant is created
+        if (!isNew && participant.getStatus() != null && isAdmin(callerRoles)) {
             account.setStatus(participant.getStatus());
         }
-        
-        // Whether a caller can add a role depends on whether that role has the permission to do it. 
-        for (Roles role : participant.getRoles()) {
-            if (callerHasAnyOf(callerRoles, role)) {
-                account.getRoles().add(role);
-            }
-        }
+        updateRoles(callerRoles, participant, account);
         
         accountDao.updateAccount(study, account);
         
@@ -261,14 +250,32 @@ public class ParticipantService {
         return new IdentifierHolder(account.getId());
     }
     
-    private boolean callerHasAnyOf(Set<Roles> callerRoles, Set<Roles> targetRoles) {
-        return !Collections.disjoint(callerRoles, targetRoles);
+    private boolean isAdmin(Set<Roles> roles) {
+        return !Collections.disjoint(roles, Roles.ADMINISTRATIVE_ROLES);
     }
     
-    private boolean callerHasAnyOf(Set<Roles> callerRoles, Roles targetRole) {
-        return !Collections.disjoint(callerRoles, Roles.CAN_BE_CREATED_BY.get(targetRole));
+    private boolean callerHasAccessToRole(Set<Roles> callerRoles, Roles targetRole) {
+        return !Collections.disjoint(callerRoles, Roles.CAN_BE_EDITED_BY.get(targetRole));
     }
 
+    /**
+     * First, user has to have the right to edit role (users can set a role, for example). Then for each role
+     * being proposed to be added, we check to see the caller "has access" to that role. So for example, a 
+     * developer cannot create an administrator, for security purposes.
+     */
+    private void updateRoles(Set<Roles> callerRoles, StudyParticipant participant, Account account) {
+        // Is this user someone who can edit roles at all? Must have one of the admin roles.
+        if (isAdmin(callerRoles)) {
+            Set<Roles> newRoleSet = Sets.newHashSet();
+            for (Roles role : participant.getRoles()) {
+                if (callerHasAccessToRole(callerRoles, role)) {
+                    newRoleSet.add(role);
+                }
+            }
+            account.setRoles(newRoleSet);
+        }
+    }
+    
     private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
         // If not enabled, we'll update the value like any other ParticipantOption
         if (study.isExternalIdValidationEnabled()) {

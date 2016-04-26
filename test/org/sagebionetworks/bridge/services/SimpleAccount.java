@@ -81,6 +81,10 @@ public class SimpleAccount implements Account {
         return studyId;
     }
     @Override
+    public void setRoles(Set<Roles> roles) {
+        this.roles = roles;
+    }
+    @Override
     public Set<Roles> getRoles() {
         return roles;
     }

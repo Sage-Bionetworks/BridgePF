@@ -52,6 +52,7 @@ public interface Account extends BridgeEntity {
     public StudyIdentifier getStudyIdentifier();
     
     public Set<Roles> getRoles();
+    public void setRoles(Set<Roles> roles);
 
     /**
      * This is the store-specific identifier for the account (in the case of 
