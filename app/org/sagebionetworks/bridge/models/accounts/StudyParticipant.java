@@ -258,7 +258,8 @@ public final class StudyParticipant implements BridgeEntity {
             if (consentHistories != null) {
                 for (Map.Entry<String, List<UserConsentHistory>> entry : consentHistories.entrySet()) {
                     if (entry.getValue() != null) {
-                        builder.put(entry);
+                        List<UserConsentHistory> immutableList = BridgeUtils.nullSafeImmutableList(entry.getValue());
+                        builder.put(entry.getKey(), immutableList);
                     }
                 }
             }
