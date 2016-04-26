@@ -147,7 +147,7 @@ public class AuthenticationController extends BaseController {
      * headers. If the study cannot be found in any of these places, it throws an exception, because the API will not
      * work correctly without it.
      * 
-     * @param email
+     * @param node
      * @return
      */
     private Study getStudyOrThrowException(JsonNode node) {
