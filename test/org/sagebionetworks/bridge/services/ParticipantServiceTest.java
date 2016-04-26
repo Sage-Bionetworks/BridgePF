@@ -175,8 +175,10 @@ public class ParticipantServiceTest {
         // Because strict validation is enabled, we do not update this property along with the others, we
         // go through externalIdService
         assertNull(options.get(EXTERNAL_IDENTIFIER));
-        assertEquals("group1,group2", options.get(DATA_GROUPS));
-        assertEquals("de,fr", options.get(LANGUAGES));
+        assertTrue(options.get(DATA_GROUPS).contains("group1"));
+        assertTrue(options.get(DATA_GROUPS).contains("group2"));
+        assertTrue(options.get(LANGUAGES).contains("de"));
+        assertTrue(options.get(LANGUAGES).contains("fr"));
         
         verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
         Account account = accountCaptor.getValue();
@@ -458,8 +460,10 @@ public class ParticipantServiceTest {
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), options.get(SHARING_SCOPE));
         assertEquals("true", options.get(EMAIL_NOTIFICATIONS));
-        assertEquals("group1,group2", options.get(DATA_GROUPS));
-        assertEquals("de,fr", options.get(LANGUAGES));
+        assertTrue(options.get(DATA_GROUPS).contains("group1"));
+        assertTrue(options.get(DATA_GROUPS).contains("group2"));
+        assertTrue(options.get(LANGUAGES).contains("de"));
+        assertTrue(options.get(LANGUAGES).contains("fr"));
         assertNull(options.get(EXTERNAL_IDENTIFIER));
         
         verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());

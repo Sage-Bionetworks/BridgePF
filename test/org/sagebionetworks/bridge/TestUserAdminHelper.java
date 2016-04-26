@@ -54,7 +54,6 @@ public class TestUserAdminHelper {
             if (roles != null) {
                 this.roles.addAll(roles);    
             }
-            this.roles.add(TEST_USERS);
             this.dataGroups = Sets.newHashSet();
             if (dataGroups != null) {
                 this.dataGroups.addAll(dataGroups);

@@ -136,6 +136,13 @@ public class StormpathAccountDaoTest {
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridgeit@");
             assertEquals(1, accounts.getItems().size());
             assertEquals("bridgeit@sagebase.org", accounts.getItems().get(0).getEmail());
+            
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridge-testing+SADT");
+            assertTrue(accounts.getItems().size() > 0);
+            for (AccountSummary summary : accounts.getItems()) {
+                assertNull(summary.getFirstName());
+                assertNull(summary.getLastName());
+            }            
         } finally {
             for (String id : newAccounts) {
                 accountDao.deleteAccount(study, id);

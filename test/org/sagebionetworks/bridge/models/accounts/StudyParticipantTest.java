@@ -25,6 +25,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class StudyParticipantTest {
 
     private static final String STORMPATH_ID = "6278uk74xoQkXkrbh9vJnh";
@@ -36,6 +38,11 @@ public class StudyParticipantTest {
     private static final Map<String,String> ATTRIBUTES = ImmutableMap.<String,String>builder()
             .put("A", "B")
             .put("C", "D").build();
+    
+    @Test
+    public void hashEquals() {
+        EqualsVerifier.forClass(StudyParticipant.class).allFieldsShouldBeUsed().verify();
+    }
     
     @Test
     public void canSerialize() throws Exception {

@@ -15,9 +15,12 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 
 import java.util.EnumSet;
+import java.util.HashSet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
+
 import org.apache.http.HttpStatus;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +54,8 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationControllerMockTest {
+    
+    private static final HashSet<String> DATA_GROUPS = Sets.newHashSet("A","B");
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
     private static final String TEST_PASSWORD = "password";
     private static final String TEST_USER_STORMPATH_ID = "spId";
@@ -80,13 +85,15 @@ public class AuthenticationControllerMockTest {
         controller.setAuthenticationService(authenticationService);
         
         study = new DynamoStudy();
+        study.setDataGroups(DATA_GROUPS);
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
         controller.setStudyService(studyService);
     }
     
     @Test
     public void userCannotAssignRolesToSelfOnSignUp() throws Exception {
-        TestUtils.mockPlayContextWithJson("{\"study\":\"study-key\",\"email\":\"bridge-testing+test@sagebase.org\",\"password\":\"P@ssword1\",\"roles\":[\"admin\"]}");
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'bridge-testing+test@sagebase.org',"+
+                "'password':'P@ssword1','roles':['admin'],'dataGroups':['A','B']}"));
         
         Result result = controller.signUp();
         assertEquals(201, result.status());
@@ -94,6 +101,9 @@ public class AuthenticationControllerMockTest {
         
         StudyParticipant participant = participantCaptor.getValue();
         assertTrue(participant.getRoles().isEmpty());
+        assertEquals("bridge-testing+test@sagebase.org", participant.getEmail());
+        assertEquals("P@ssword1", participant.getPassword());
+        assertEquals(DATA_GROUPS, participant.getDataGroups());
     }
 
     @Test

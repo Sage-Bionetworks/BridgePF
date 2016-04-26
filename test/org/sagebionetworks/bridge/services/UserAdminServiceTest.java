@@ -81,7 +81,7 @@ public class UserAdminServiceTest {
     @Before
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
-        study.setExternalIdValidationEnabled(true);
+        study.setExternalIdValidationEnabled(false);
         String email = TestUtils.makeRandomTestEmail(UserAdminServiceTest.class);
         participant = new StudyParticipant.Builder().withEmail(email).withPassword("P4ssword!").build();
 
@@ -155,11 +155,12 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void creatingUserThenDeletingRemovesExternalIdAssignment() {
+    public void creatingUserWithExternalIdManagement() {
         List<String> idForTest = Lists.newArrayList("AAA");
         externalIdService.addExternalIds(study, idForTest);
         try {
             UserSession session = userAdminService.createUser(participant, study, null, true, true);
+            study.setExternalIdValidationEnabled(true);
             
             externalIdService.assignExternalId(study, "AAA", session.getUser().getHealthCode());
 

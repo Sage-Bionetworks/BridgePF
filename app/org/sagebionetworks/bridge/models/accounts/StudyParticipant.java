@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -15,7 +16,6 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 /**
  * This object represents a participant in the system.
@@ -164,11 +164,11 @@ public final class StudyParticipant implements BridgeEntity {
             this.sharingScope = participant.getSharingScope();
             this.notifyByEmail = participant.isNotifyByEmail();
             this.healthCode = participant.getHealthCode();
-            this.dataGroups = ImmutableSet.copyOf(participant.getDataGroups());
-            this.attributes = ImmutableMap.copyOf(participant.getAttributes());
-            this.consentHistories = ImmutableMap.copyOf(participant.getConsentHistories());
-            this.roles = ImmutableSet.copyOf(participant.getRoles());
-            this.languages = Sets.newLinkedHashSet(participant.getLanguages());
+            this.dataGroups = participant.getDataGroups();
+            this.attributes = participant.getAttributes();
+            this.consentHistories = participant.getConsentHistories();
+            this.roles = participant.getRoles();
+            this.languages = participant.getLanguages();
             this.status = participant.getStatus();
             this.createdOn = participant.getCreatedOn();
             this.id = participant.getId();
@@ -250,8 +250,23 @@ public final class StudyParticipant implements BridgeEntity {
         }
         
         public StudyParticipant build() {
+            Set<String> immutableDataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
+            Set<Roles> immutableRoles = BridgeUtils.nullSafeImmutableSet(roles);
+            Map<String,String> immutableAttributes = BridgeUtils.nullSafeImmutableMap(attributes);
+            
+            ImmutableMap.Builder<String, List<UserConsentHistory>> builder = new ImmutableMap.Builder<>();
+            if (consentHistories != null) {
+                for (Map.Entry<String, List<UserConsentHistory>> entry : consentHistories.entrySet()) {
+                    if (entry.getValue() != null) {
+                        builder.put(entry);
+                    }
+                }
+            }
+            Map<String, List<UserConsentHistory>> immutableConsentHistories = builder.build();
+
             return new StudyParticipant(firstName, lastName, email, externalId, password, sharingScope, notifyByEmail,
-                    dataGroups, healthCode, attributes, consentHistories, roles, languages, status, createdOn, id);
+                    immutableDataGroups, healthCode, immutableAttributes, immutableConsentHistories, immutableRoles,
+                    languages, status, createdOn, id);
         }
     }
 
