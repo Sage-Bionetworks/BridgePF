@@ -259,9 +259,9 @@ public class ParticipantService {
     }
 
     /**
-     * First, user has to have the right to edit role (users can set a role, for example). Then for each role
-     * being proposed to be added, we check to see the caller "has access" to that role. So for example, a 
-     * developer cannot create an administrator, for security purposes.
+     * First, user has to have the right to edit roles. Then for each role being added, 
+     * we check to see the caller "has access" to that role. So for example, a developer 
+     * cannot create an administrator, for security purposes.
      */
     private void updateRoles(Set<Roles> callerRoles, StudyParticipant participant, Account account) {
         // Is this user someone who can edit roles at all? Must have one of the admin roles.
@@ -269,6 +269,12 @@ public class ParticipantService {
             Set<Roles> newRoleSet = Sets.newHashSet();
             for (Roles role : participant.getRoles()) {
                 if (callerHasAccessToRole(callerRoles, role)) {
+                    newRoleSet.add(role);
+                }
+            }
+            // you also can't unset a role if you don't have access to it.
+            for (Roles role : account.getRoles()) {
+                if (!callerHasAccessToRole(callerRoles, role)) {
                     newRoleSet.add(role);
                 }
             }

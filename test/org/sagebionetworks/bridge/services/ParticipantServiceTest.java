@@ -692,25 +692,47 @@ public class ParticipantServiceTest {
         verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(DEVELOPER, RESEARCHER, ADMIN, WORKER));
     }
     
-    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
+    @Test
+    public void developerCannotDowngradeAdminRoles() {
+        mockHealthCodeAndAccountRetrieval();
+        doReturn(Sets.newHashSet(ADMIN)).when(account).getRoles();
+        
+        // It ends up being a combination of what the user can set and what they can't change
+        verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(ADMIN, DEVELOPER));
+    }
+    
+    @Test
+    public void researcherCanUpgradeDeveloperRole() {
+        mockHealthCodeAndAccountRetrieval();
+        doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
+        
+        // It ends up being a combination of what the user can set and what they can't change
+        verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
+    }
+    
+    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> toSet, Set<Roles> expected) {
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(EMAIL)
                 .withPassword(PASSWORD)
-                .withRoles(Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
+                .withRoles(toSet).build();
         
         participantService.updateParticipant(STUDY, callerRoles, ID, participant);
         
         verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
         Account account = accountCaptor.getValue();
         
-        if (rolesThatAreSet != null) {
+        if (expected != null) {
             verify(account).setRoles(rolesCaptor.capture());
-            assertEquals(rolesThatAreSet, rolesCaptor.getValue());
+            assertEquals(expected, rolesCaptor.getValue());
         } else {
             verify(account, never()).setRoles(any());
         }
+    }
+    
+    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> expected) {
+        verifyRoleUpdate(callerRoles, Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER), expected);
     }
 
     private void verifyRoleCreate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
