@@ -24,7 +24,6 @@ import play.mvc.Result;
 @Controller
 public class ParticipantController extends BaseController {
     
-    private static final String EMAIL_REQUIRED = "Participant email is required.";
     private ParticipantService participantService;
     
     @Autowired
@@ -83,27 +82,6 @@ public class ParticipantController extends BaseController {
         participantService.signUserOut(study, userId);
 
         return okResult("User signed out.");
-    }
-
-    public Result getParticipant2(String email) {
-        if (isBlank(email)) {
-            throw new BadRequestException(EMAIL_REQUIRED);
-        }
-        return getParticipant(email);
-    }
-    
-    public Result updateParticipant2(String email) {
-        if (isBlank(email)) {
-            throw new BadRequestException(EMAIL_REQUIRED);
-        }
-        return updateParticipant(email);
-    }
-    
-    public Result signOut2(String email) throws Exception {
-        if (isBlank(email)) {
-            throw new BadRequestException(EMAIL_REQUIRED);
-        }
-        return signOut(email);
     }
 
     private int getIntOrDefault(String value, int defaultValue) {

@@ -20,7 +20,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -94,23 +93,5 @@ public class UserManagementControllerTest {
         
         assertResult(result, 200, "User deleted.");
         verify(userAdminService).deleteUser(study, "ASDF");
-    }
-    
-    @Test
-    public void deleteUser2() throws Exception {
-        Result result = controller.deleteUser2("email@email.com");
-        
-        assertResult(result, 200, "User deleted.");
-        verify(userAdminService).deleteUser(study, "email@email.com");
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void deleteUser2Missing() throws Exception {
-        controller.deleteUser2(null);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void deleteUser2Blank() throws Exception {
-        controller.deleteUser2("");
     }
 }

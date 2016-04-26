@@ -1,12 +1,11 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -15,8 +14,6 @@ import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.Table;
-
-import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -28,13 +25,13 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 public class DynamoIndexHelper {
 
     public static DynamoIndexHelper create(final Class<?> dynamoTable, final String indexName,
-            final Config config, final AmazonDynamoDB client) {
+           final AmazonDynamoDB client, DynamoNamingHelper dynamoNamingHelper, DynamoUtils dynamoUtils) {
         final DynamoDB ddb = new DynamoDB(client);
-        final Table ddbTable = ddb.getTable(DynamoUtils.getFullyQualifiedTableName(dynamoTable, config));
+        final Table ddbTable = ddb.getTable(dynamoNamingHelper.getFullyQualifiedTableName(dynamoTable));
         final Index ddbIndex = ddbTable.getIndex(indexName);
         final DynamoIndexHelper indexHelper = new DynamoIndexHelper();
         indexHelper.setIndex(ddbIndex);
-        indexHelper.setMapper(DynamoUtils.getMapper(dynamoTable, config, client));
+        indexHelper.setMapper(dynamoUtils.getMapper(dynamoTable));
         return indexHelper;
     }
 
@@ -42,13 +39,13 @@ public class DynamoIndexHelper {
     private DynamoDBMapper mapper;
 
     /** DynamoDB index. This is used to query the secondary index. This is configured by Spring. */
-    public void setIndex(Index index) {
+    private void setIndex(Index index) {
         this.index = index;
     }
 
     /**
-     * DynamoDB mapper. This is used to re-query the DynamoDB table to get full entries from the key objects. This is
-     * configured by Spring.
+     * DynamoDB mapper. This is used to re-query the DynamoDB table to get full entries from the key objects. This setter is
+     * called by tests.
      */
     public void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
