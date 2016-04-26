@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -186,7 +185,7 @@ public class BridgeUtils {
     
     public @Nonnull static <T> ImmutableList<T> nullSafeImmutableList(List<T> list) {
         return (list == null) ? ImmutableList.of() : ImmutableList.copyOf(list.stream()
-                .filter(element -> element != null).collect(Collectors.toSet()));
+                .filter(element -> element != null).collect(Collectors.toList()));
     }
     
     public @Nonnull static <S,T> ImmutableMap<S,T> nullSafeImmutableMap(Map<S,T> map) {
