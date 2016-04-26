@@ -151,6 +151,7 @@ public class StudyEnrollmentServiceTest {
     @Test
     public void getNumberOfParticipants() {
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
+        study.setExternalIdValidationEnabled(false);
         study = studyService.createStudy(study);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         

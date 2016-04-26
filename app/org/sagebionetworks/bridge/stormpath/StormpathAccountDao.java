@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -325,20 +325,20 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override 
-    public Account signUp(Study study, SignUp signUp, boolean sendEmail) {
+    public Account signUp(Study study, StudyParticipant participant, boolean sendEmail) {
         checkNotNull(study);
-        checkNotNull(signUp);
+        checkNotNull(participant);
         
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
         
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
         Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
-        account.setEmail(signUp.getEmail());
+        account.setEmail(participant.getEmail());
         account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
         account.setLastName(StormpathAccount.PLACEHOLDER_STRING);
-        acct.setPassword(signUp.getPassword());
-        if (signUp.getRoles() != null) {
-            account.setRoles(signUp.getRoles());
+        acct.setPassword(participant.getPassword());
+        if (participant.getRoles() != null) {
+            account.setRoles(participant.getRoles());
         }
         // Create the healthCode mapping when we create the account. Stop waiting to create it
         HealthId healthId = healthCodeService.createMapping(study);

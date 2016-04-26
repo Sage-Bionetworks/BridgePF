@@ -56,7 +56,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -135,7 +134,7 @@ public class ParticipantServiceTest {
     private ExternalIdService externalIdService;
     
     @Captor
-    ArgumentCaptor<SignUp> signUpCaptor;
+    ArgumentCaptor<StudyParticipant> participantCaptor;
     
     @Captor
     ArgumentCaptor<Map<ParticipantOption,String>> optionsCaptor;
@@ -179,10 +178,10 @@ public class ParticipantServiceTest {
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         verify(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
         
-        verify(accountDao).signUp(eq(STUDY), signUpCaptor.capture(), eq(false));
-        SignUp signUp = signUpCaptor.getValue();
-        assertEquals("email@email.com", signUp.getEmail());
-        assertEquals(PASSWORD, signUp.getPassword());
+        verify(accountDao).signUp(eq(STUDY), participantCaptor.capture(), eq(false));
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals("email@email.com", participant.getEmail());
+        assertEquals("P@ssword1", participant.getPassword());
         
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq("healthCode"), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
@@ -191,8 +190,10 @@ public class ParticipantServiceTest {
         // Because strict validation is enabled, we do not update this property along with the others, we
         // go through externalIdService
         assertNull(options.get(EXTERNAL_IDENTIFIER));
-        assertEquals("group1,group2", options.get(DATA_GROUPS));
-        assertEquals("de,fr", options.get(LANGUAGES));
+        assertTrue(options.get(DATA_GROUPS).contains("group1"));
+        assertTrue(options.get(DATA_GROUPS).contains("group2"));
+        assertTrue(options.get(LANGUAGES).contains("de"));
+        assertTrue(options.get(LANGUAGES).contains("fr"));
         
         verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
         Account account = accountCaptor.getValue();
@@ -461,8 +462,10 @@ public class ParticipantServiceTest {
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), options.get(SHARING_SCOPE));
         assertEquals("true", options.get(EMAIL_NOTIFICATIONS));
-        assertEquals("group1,group2", options.get(DATA_GROUPS));
-        assertEquals("de,fr", options.get(LANGUAGES));
+        assertTrue(options.get(DATA_GROUPS).contains("group1"));
+        assertTrue(options.get(DATA_GROUPS).contains("group2"));
+        assertTrue(options.get(LANGUAGES).contains("de"));
+        assertTrue(options.get(LANGUAGES).contains("fr"));
         assertNull(options.get(EXTERNAL_IDENTIFIER));
         
         verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());

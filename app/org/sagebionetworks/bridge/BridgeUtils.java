@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nonnull;
+
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -23,6 +25,8 @@ import org.springframework.core.annotation.AnnotationUtils;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -174,9 +178,26 @@ public class BridgeUtils {
      * @param set
      * @return
      */
-    public static <T> Set<T> nullSafeImmutableSet(Set<T> set) {
+    public @Nonnull static <T> ImmutableSet<T> nullSafeImmutableSet(Set<T> set) {
         return (set == null) ? ImmutableSet.of() : ImmutableSet.copyOf(set.stream()
                 .filter(element -> element != null).collect(Collectors.toSet()));
+    }
+    
+    public @Nonnull static <T> ImmutableList<T> nullSafeImmutableList(List<T> list) {
+        return (list == null) ? ImmutableList.of() : ImmutableList.copyOf(list.stream()
+                .filter(element -> element != null).collect(Collectors.toList()));
+    }
+    
+    public @Nonnull static <S,T> ImmutableMap<S,T> nullSafeImmutableMap(Map<S,T> map) {
+        ImmutableMap.Builder<S, T> builder = new ImmutableMap.Builder<>();
+        if (map != null) {
+            for (S key : map.keySet()) {
+                if (map.get(key) != null) {
+                    builder.put(key, map.get(key));
+                }
+            }
+        }
+        return builder.build();
     }
     
     public static String getIdFromStormpathHref(String href) {

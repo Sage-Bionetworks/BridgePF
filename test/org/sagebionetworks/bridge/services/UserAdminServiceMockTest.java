@@ -17,7 +17,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -70,9 +70,9 @@ public class UserAdminServiceMockTest {
     @Test
     public void creatingUserConsentsToAllRequiredConsents() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
-        SignUp signUp = new SignUp("email@email.com", "password", null, null);
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
-        UserSession session = service.createUser(signUp, study, null, true, true);
+        UserSession session = service.createUser(participant, study, null, true, true);
         
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             verify(consentService).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
@@ -82,10 +82,10 @@ public class UserAdminServiceMockTest {
     @Test
     public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
-        SignUp signUp = new SignUp("email@email.com", "password", null, null);
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = Iterables.getFirst(user.getConsentStatuses().keySet(), null);
         
-        UserSession session = service.createUser(signUp, study, consentedGuid, true, true);
+        UserSession session = service.createUser(participant, study, consentedGuid, true, true);
         
         // consented to the indicated subpopulation
         verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
