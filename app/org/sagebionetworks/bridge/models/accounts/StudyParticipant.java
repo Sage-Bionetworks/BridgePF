@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 /**
  * This object represents a participant in the system.
@@ -145,12 +144,12 @@ public final class StudyParticipant implements BridgeEntity {
         private String password;
         private SharingScope sharingScope;
         private boolean notifyByEmail;
-        private Set<String> dataGroups = ImmutableSet.of();
+        private Set<String> dataGroups;
         private String healthCode;
-        private Map<String,String> attributes = ImmutableMap.of();
-        private Map<String,List<UserConsentHistory>> consentHistories = ImmutableMap.of();
-        private Set<Roles> roles = ImmutableSet.of();
-        private LinkedHashSet<String> languages = new LinkedHashSet<>();
+        private Map<String,String> attributes;
+        private Map<String,List<UserConsentHistory>> consentHistories;
+        private Set<Roles> roles;
+        private LinkedHashSet<String> languages;
         private AccountStatus status;
         private DateTime createdOn;
         private String id;
@@ -253,6 +252,7 @@ public final class StudyParticipant implements BridgeEntity {
             Set<String> immutableDataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
             Set<Roles> immutableRoles = BridgeUtils.nullSafeImmutableSet(roles);
             Map<String,String> immutableAttributes = BridgeUtils.nullSafeImmutableMap(attributes);
+            LinkedHashSet<String> langs = (languages == null) ? new LinkedHashSet<>() : languages;
             
             ImmutableMap.Builder<String, List<UserConsentHistory>> builder = new ImmutableMap.Builder<>();
             if (consentHistories != null) {
@@ -266,7 +266,7 @@ public final class StudyParticipant implements BridgeEntity {
 
             return new StudyParticipant(firstName, lastName, email, externalId, password, sharingScope, notifyByEmail,
                     immutableDataGroups, healthCode, immutableAttributes, immutableConsentHistories, immutableRoles,
-                    languages, status, createdOn, id);
+                    langs, status, createdOn, id);
         }
     }
 
