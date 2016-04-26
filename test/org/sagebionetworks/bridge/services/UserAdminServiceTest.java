@@ -68,16 +68,6 @@ public class UserAdminServiceTest {
 
     private User testUser;
 
-    @BeforeClass
-    public static void initialSetUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent3.class);
-    }
-
-    @AfterClass
-    public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent3.class);
-    }
-
     @Before
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
