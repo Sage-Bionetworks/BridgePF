@@ -8,7 +8,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -46,17 +46,24 @@ public class TestUserAdminHelper {
         private final Study study;
         private final UserSession session;
 
-        public TestUser(SignUp signUp, Study study, UserSession session) {
-            this.email = signUp.getEmail();
-            this.password = signUp.getPassword();
-            this.roles = Sets.newHashSet(signUp.getRoles());
-            this.roles.add(TEST_USERS);
-            this.dataGroups = signUp.getDataGroups();
+        public TestUser(String email, String password, Set<Roles> roles, Set<String> dataGroups, Study study,
+                UserSession session) {
+            this.email = email;
+            this.password = password;
+            this.roles = Sets.newHashSet(TEST_USERS);
+            if (roles != null) {
+                this.roles.addAll(roles);    
+            }
+            this.dataGroups = Sets.newHashSet();
+            if (dataGroups != null) {
+                this.dataGroups.addAll(dataGroups);
+            }
             this.study = study;
             this.session = session;
         }
-        public SignUp getSignUp() {
-            return new SignUp(email, password, roles, dataGroups);
+        public StudyParticipant getStudyParticipant() {
+            return new StudyParticipant.Builder().withEmail(email).withPassword(password)
+                    .withRoles(roles).withDataGroups(dataGroups).build();
         }
         public SignIn getSignIn() {
             return new SignIn(email, password);
@@ -136,7 +143,8 @@ public class TestUserAdminHelper {
         private boolean consent;
         private Set<Roles> roles;
         private Set<String> dataGroups;
-        private SignUp signUp;
+        private String email;
+        private String password;
         
         private Builder(Class<?> cls) {
             this.cls = cls;
@@ -159,6 +167,10 @@ public class TestUserAdminHelper {
             this.consent = consent;
             return this;
         }
+        public Builder withRoles(Set<Roles> roles) {
+            this.roles = Sets.newHashSet(roles);
+            return this;
+        }
         public Builder withRoles(Roles... roles) {
             this.roles = Sets.newHashSet(roles);
             return this;
@@ -167,19 +179,28 @@ public class TestUserAdminHelper {
             this.dataGroups = dataGroups;
             return this;
         }
-        public Builder withSignUp(SignUp signUp) {
-            this.signUp = signUp;
+        public Builder withEmail(String email) {
+            this.email = email;
+            return this;
+        }
+        public Builder withPassword(String password) {
+            this.password = password;
             return this;
         }
         public TestUser build() {
-            if (study == null) {
-                study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
-            }
-            String email = TestUtils.makeRandomTestEmail(cls);
-            SignUp finalSignUp = (signUp != null) ? signUp : new SignUp(email, PASSWORD, roles, dataGroups);
-            UserSession session = userAdminService.createUser(finalSignUp, study, subpopGuid, signIn, consent);
+            // There are tests where we partially create a user with the builder, then change just
+            // some fields before creating another test user with multiple build() calls. Anything we
+            // default in thie build method needs to be updated with each call to build().
+            Study finalStudy = (study == null) ? studyService.getStudy(TEST_STUDY_IDENTIFIER) : study;
+            String finalEmail = (email == null) ? TestUtils.makeRandomTestEmail(cls) : email;
+            String finalPassword = (password == null) ? PASSWORD : password;
+            StudyParticipant finalParticipant = new StudyParticipant.Builder().withEmail(finalEmail)
+                    .withPassword(finalPassword).withRoles(roles).withDataGroups(dataGroups).build();
             
-            return new TestUser(finalSignUp, study, session);
+            UserSession session = userAdminService.createUser(finalParticipant, finalStudy, subpopGuid, signIn, consent);
+            
+            return new TestUser(finalParticipant.getEmail(), finalParticipant.getPassword(), finalParticipant.getRoles(), 
+                    finalParticipant.getDataGroups(), finalStudy, session);
         }
     }
 

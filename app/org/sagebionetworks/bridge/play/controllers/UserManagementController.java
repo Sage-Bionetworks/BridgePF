@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -31,11 +31,11 @@ public class UserManagementController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         JsonNode node = requestToJSON(request());
-        SignUp signUp = parseJson(request(), SignUp.class);
+        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
         
-        userAdminService.createUser(signUp, study, null, false, consent);
+        userAdminService.createUser(participant, study, null, false, consent);
 
         return createdResult("User created.");
     }

@@ -98,6 +98,7 @@ public class ConsentServiceTest {
     @Before
     public void before() {
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
+        study.setExternalIdValidationEnabled(false);
         study = studyService.createStudy(study);
         
         // Default is always created, so use it for this test.

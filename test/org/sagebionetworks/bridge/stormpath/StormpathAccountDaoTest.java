@@ -33,7 +33,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -105,8 +105,9 @@ public class StormpathAccountDaoTest {
             for (int i=0; i < addAccounts; i++) {
                 String random = RandomStringUtils.randomAlphabetic(5);
                 String email = "bridge-testing+SADT"+random+"@sagebridge.org";
-                SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
-                Account account = accountDao.signUp(study, signUp, false);
+                StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                        .withRoles(Sets.newHashSet(TEST_USERS)).build();
+                Account account = accountDao.signUp(study, participant, false);
                 newAccounts.add(account.getId());
             }
             // Fetch only 5 accounts. Empty search string ignored
@@ -141,7 +142,7 @@ public class StormpathAccountDaoTest {
             for (AccountSummary summary : accounts.getItems()) {
                 assertNull(summary.getFirstName());
                 assertNull(summary.getLastName());
-            }
+            }            
         } finally {
             for (String id : newAccounts) {
                 accountDao.deleteAccount(study, id);
@@ -161,8 +162,9 @@ public class StormpathAccountDaoTest {
         Account account = null;
         
         try {
-            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
-            accountDao.signUp(study, signUp, false);
+            StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                        .withRoles(Sets.newHashSet(TEST_USERS)).build();
+            accountDao.signUp(study, participant, false);
             
             account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
             assertEquals(email, account.getEmail());
@@ -177,8 +179,9 @@ public class StormpathAccountDaoTest {
         String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
         Account account = null;
         try {
-            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
-            account = accountDao.signUp(study, signUp, false);
+            StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                    .withRoles(Sets.newHashSet(TEST_USERS)).build();
+            account = accountDao.signUp(study, participant, false);
             
             try {
                 accountDao.authenticate(study, new SignIn(email, "BadPassword"));
@@ -206,8 +209,9 @@ public class StormpathAccountDaoTest {
             ConsentSignature sig = new ConsentSignature.Builder().withName("Test Test").withBirthdate("1970-01-01")
                     .withSignedOn(signedOn).build();
             
-            SignUp signUp = new SignUp(email, PASSWORD, Sets.newHashSet(TEST_USERS), null);
-            account = accountDao.signUp(study, signUp, false);
+            StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
+                    .withRoles(Sets.newHashSet(TEST_USERS)).build();
+            account = accountDao.signUp(study, participant, false);
             
             assertNull(account.getFirstName()); // defaults are not visible
             assertNull(account.getLastName());
@@ -269,8 +273,9 @@ public class StormpathAccountDaoTest {
         String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
         Account account = null;
         try {
-            SignUp signUp = new SignUp(email, "P@ssword`1", null, null);
-            account = accountDao.signUp(study, signUp, false);
+            StudyParticipant participant = new StudyParticipant.Builder().withEmail(email)
+                .withPassword("P@ssword`1").build();
+            account = accountDao.signUp(study, participant, false);
             
             // Great... now we should be able to get a healthCode
             String healthCode = accountDao.getHealthCodeForEmail(study, email);
@@ -286,12 +291,13 @@ public class StormpathAccountDaoTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
+        
         Account account = null;
         try {
-            SignUp signUp = new SignUp(email, PASSWORD, null, null);
-            account = accountDao.signUp(study, signUp, false); // don't send email
+            account = accountDao.signUp(study, participant, false); // don't send email
             
-            Email emailObj = new Email(study.getStudyIdentifier(), signUp.getEmail());
+            Email emailObj = new Email(study.getStudyIdentifier(), participant.getEmail());
             accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), emailObj); // now send email
         } finally {
             accountDao.deleteAccount(study, account.getId());
@@ -323,11 +329,11 @@ public class StormpathAccountDaoTest {
                 .withSignedOn(DateTime.now().getMillis())
                 .build();
 
-        String random = RandomStringUtils.randomAlphabetic(5);
-        SignUp signUp = new SignUp("bridge-testing+" + random + "@sagebridge.org", PASSWORD, null, null);
+        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
         Account account = null;
         try {
-            account = accountDao.signUp(study, signUp, false); // don't send email
+            account = accountDao.signUp(study, participant, false); // don't send email
             
             account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
             account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);
