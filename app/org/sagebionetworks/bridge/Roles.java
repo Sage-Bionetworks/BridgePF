@@ -18,5 +18,6 @@ public enum Roles {
     public static final Map<Roles,EnumSet<Roles>> CAN_BE_EDITED_BY = new ImmutableMap.Builder<Roles, EnumSet<Roles>>()
         .put(ADMIN, EnumSet.of(ADMIN))
         .put(RESEARCHER, EnumSet.of(ADMIN, RESEARCHER))
-        .put(DEVELOPER, EnumSet.of(ADMIN, RESEARCHER, DEVELOPER)).build();
+        .put(DEVELOPER, EnumSet.of(ADMIN, RESEARCHER, DEVELOPER))
+        .put(WORKER, EnumSet.of(ADMIN)).build();
 }

@@ -18,9 +18,10 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -142,6 +143,9 @@ public class ParticipantServiceTest {
     @Captor
     ArgumentCaptor<Account> accountCaptor;
     
+    @Captor
+    ArgumentCaptor<Set<Roles>> rolesCaptor;
+
     @Before
     public void before() {
         STUDY.setExternalIdValidationEnabled(false);
@@ -155,17 +159,22 @@ public class ParticipantServiceTest {
         participantService.setExternalIdService(externalIdService);
     }
     
+    private void mockHealthCodeAndAccountRetrieval() {
+        doReturn("healthId").when(account).getHealthId();
+        doReturn(ID).when(account).getId();
+        doReturn(healthId).when(healthCodeService).getMapping("healthId");
+        doReturn("healthCode").when(healthId).getCode();
+        doReturn(account).when(accountDao).signUp(eq(STUDY), any(), eq(false));
+        doReturn(account).when(accountDao).getAccount(STUDY, ID);
+    }
+
     @Test
     public void createParticipant() {
         STUDY.setExternalIdValidationEnabled(true);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        when(accountDao.signUp(eq(STUDY), any(), eq(false))).thenReturn(account);
-        doReturn("id").when(account).getId();
+        mockHealthCodeAndAccountRetrieval();
         
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
-        assertEquals("id", idHolder.getIdentifier());
+        assertEquals(ID, idHolder.getIdentifier());
         
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         verify(externalIdService).assignExternalId(STUDY, "POWERS", "healthCode");
@@ -194,7 +203,7 @@ public class ParticipantServiceTest {
         verify(account, never()).setStatus(AccountStatus.DISABLED);
         
         // don't update cache
-        verify(cacheProvider, never()).removeSessionByUserId("id");
+        verify(cacheProvider, never()).removeSessionByUserId(ID);
     }
     
     // Or any other failure to reserve an externalId
@@ -219,10 +228,7 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantWithExternalIdValidation() {
         STUDY.setExternalIdValidationEnabled(true);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        when(accountDao.signUp(eq(STUDY), any(), eq(false))).thenReturn(account);
+        mockHealthCodeAndAccountRetrieval();
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
@@ -252,10 +258,7 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantWithNoExternalIdValidation() {
         STUDY.setExternalIdValidationEnabled(false);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        when(accountDao.signUp(eq(STUDY), any(), eq(false))).thenReturn(account);
+        mockHealthCodeAndAccountRetrieval();
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
 
@@ -321,7 +324,7 @@ public class ParticipantServiceTest {
         when(account.getCreatedOn()).thenReturn(createdOn);
         when(account.getAttribute("attr2")).thenReturn("anAttribute2");
         
-        mockGetAccount();
+        mockHealthCodeAndAccountRetrieval();
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -421,13 +424,6 @@ public class ParticipantServiceTest {
         assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
         assertTrue(participant.getConsentHistories().isEmpty());
     }
-    
-    private void mockGetAccount() {
-        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
-        when(account.getHealthId()).thenReturn("healthId");
-        when(healthId.getCode()).thenReturn("healthCode");
-        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
-    }
 
     @Test(expected = EntityNotFoundException.class)
     public void signOutUserWhoDoesNotExist() {
@@ -450,11 +446,7 @@ public class ParticipantServiceTest {
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
         STUDY.setExternalIdValidationEnabled(true);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
-        doReturn("id").when(account).getId();
+        mockHealthCodeAndAccountRetrieval();
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -476,16 +468,13 @@ public class ParticipantServiceTest {
         verify(account).setStatus(AccountStatus.DISABLED);
         verify(account).setAttribute("phone", "123456789");
         
-        verify(cacheProvider).removeSessionByUserId("id");
+        verify(cacheProvider).removeSessionByUserId(ID);
     }
     
     @Test(expected = BadRequestException.class)
     public void updateParticipantWithExternalIdValidationChangingId() {
         STUDY.setExternalIdValidationEnabled(true);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
+        mockHealthCodeAndAccountRetrieval();
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -496,10 +485,7 @@ public class ParticipantServiceTest {
     @Test(expected = BadRequestException.class)
     public void updateParticipantWithExternalIdValidationRemovingId() {
         STUDY.setExternalIdValidationEnabled(true);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
+        mockHealthCodeAndAccountRetrieval();
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -518,10 +504,7 @@ public class ParticipantServiceTest {
     @Test
     public void updateParticipantWithExternalIdValidationNoIdChange() {
         STUDY.setExternalIdValidationEnabled(true);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
+        mockHealthCodeAndAccountRetrieval();
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn("POWERS").when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -535,10 +518,7 @@ public class ParticipantServiceTest {
     @Test(expected = BadRequestException.class)
     public void updateParticipantWithExternalIdValidationIdMissing() {
         STUDY.setExternalIdValidationEnabled(true);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
+        mockHealthCodeAndAccountRetrieval();   
         
         doReturn(lookup).when(optionsService).getOptions("healthCode");
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -556,10 +536,7 @@ public class ParticipantServiceTest {
     
     @Test(expected = InvalidEntityException.class)
     public void updateParticipantWithInvalidParticipant() {
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
+        mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withDataGroups(Sets.newHashSet("bogusGroup"))
@@ -585,10 +562,7 @@ public class ParticipantServiceTest {
     @Test
     public void updateParticipantWithNoExternalIdValidation() {
         STUDY.setExternalIdValidationEnabled(false);
-        doReturn("healthId").when(account).getHealthId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
+        mockHealthCodeAndAccountRetrieval();
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
         
@@ -611,33 +585,20 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantWithoutExternalIdAndNoValidation() {
         STUDY.setExternalIdValidationEnabled(false);
-        doReturn(account).when(accountDao).signUp(eq(STUDY), any(), eq(false));
-        doReturn("healthId").when(account).getHealthId();
-        doReturn("id").when(account).getId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        
+        mockHealthCodeAndAccountRetrieval();
+
         // These are the minimal credentials and they should work.
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).withPassword(PASSWORD)
                 .build();
         
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, participant);
-        assertEquals("id", idHolder.getIdentifier());
+        assertEquals(ID, idHolder.getIdentifier());
         verifyNoMoreInteractions(externalIdService); // no ID, no calls to this service
-    }
-    
-    private void setUpHealthCodeLookup() {
-        doReturn("healthId").when(account).getHealthId();
-        doReturn("id").when(account).getId();
-        doReturn(healthId).when(healthCodeService).getMapping("healthId");
-        doReturn("healthCode").when(healthId).getCode();
-        doReturn(account).when(accountDao).signUp(eq(STUDY), any(), eq(false));
-        doReturn(account).when(accountDao).getAccount(STUDY, "id");
     }
     
     @Test
     public void userCannotSetStatusOnCreate() {
-        setUpHealthCodeLookup();
+        mockHealthCodeAndAccountRetrieval();
         Set<Roles> roles = Sets.newHashSet();
         
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -654,8 +615,8 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void noRoleCannotSetStatusOnCreate() {
-        setUpHealthCodeLookup();
+    public void noRoleCanSetStatusOnCreate() {
+        mockHealthCodeAndAccountRetrieval();
         Set<Roles> roles = Sets.newHashSet(RESEARCHER, ADMIN, DEVELOPER);
         
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -673,85 +634,122 @@ public class ParticipantServiceTest {
     
     @Test
     public void userCannotChangeStatus() {
-        setUpHealthCodeLookup();
-        Set<Roles> roles = Sets.newHashSet();
-        
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(EMAIL)
-                .withPassword(PASSWORD)
-                .withStatus(AccountStatus.DISABLED).build();
-        
-        participantService.updateParticipant(STUDY, roles, "id", participant);
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
-        Account account = accountCaptor.getValue();
-        
-        verify(account, never()).setStatus(any());
+        verifyStatus(Sets.newHashSet(), null);
     }
     
     @Test
     public void developerCanChangeStatusOnEdit() {
-        setUpHealthCodeLookup();
-        Set<Roles> roles = Sets.newHashSet(DEVELOPER);
-        
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(EMAIL)
-                .withPassword(PASSWORD)
-                .withStatus(AccountStatus.DISABLED).build();
-        
-        participantService.updateParticipant(STUDY, roles, "id", participant);
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
-        Account account = accountCaptor.getValue();
-
-        verify(account).setStatus(AccountStatus.DISABLED);
+        verifyStatus(Sets.newHashSet(DEVELOPER), AccountStatus.DISABLED);
     }
     
     @Test
     public void researcherCanChangeStatusOnEdit() {
-        setUpHealthCodeLookup();
-        Set<Roles> roles = Sets.newHashSet(RESEARCHER);
-        
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(EMAIL)
-                .withPassword(PASSWORD)
-                .withStatus(AccountStatus.DISABLED).build();
-        
-        participantService.updateParticipant(STUDY, roles, "id", participant);
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
-        Account account = accountCaptor.getValue();
-
-        verify(account).setStatus(AccountStatus.DISABLED);
+        verifyStatus(Sets.newHashSet(RESEARCHER), AccountStatus.DISABLED);
     }
     
     @Test
     public void adminCanChangeStatusOnEdit() {
-        setUpHealthCodeLookup();
-        Set<Roles> roles = Sets.newHashSet(ADMIN);
+        verifyStatus(Sets.newHashSet(ADMIN), AccountStatus.DISABLED);
+    }
+    
+    @Test
+    public void userCannotCreateAnyRoles() {
+        verifyRoleCreate(Sets.newHashSet(), null);
+    }
+    
+    @Test
+    public void developerCanCreateDeveloperRole() {
+        verifyRoleCreate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
+    }
+    
+    @Test
+    public void researcherCanCreateDeveloperOrResearcherRole() {
+        verifyRoleCreate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER, RESEARCHER));
+    }
+    
+    @Test
+    public void adminCanCreateAllRoles() {
+        verifyRoleCreate(Sets.newHashSet(ADMIN), Sets.newHashSet(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    }
+    
+    @Test
+    public void userCannotUpdateAnyRoles() {
+        verifyRoleUpdate(Sets.newHashSet(), null);
+    }
+    
+    @Test
+    public void developerCanUpdateDeveloperRole() {
+        verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
+    }
+    
+    @Test
+    public void researcherCanUpdateDeveloperOrResearcherRole() {
+        verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER, RESEARCHER));
+    }
+    
+    @Test
+    public void adminCanUpdateAllRoles() {
+        verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    }
+    
+    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
+        mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(EMAIL)
                 .withPassword(PASSWORD)
-                .withStatus(AccountStatus.DISABLED).build();
+                .withRoles(Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
         
-        participantService.updateParticipant(STUDY, roles, "id", participant);
+        participantService.updateParticipant(STUDY, callerRoles, ID, participant);
+        
+        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        
+        if (rolesThatAreSet != null) {
+            verify(account).setRoles(rolesCaptor.capture());
+            assertEquals(rolesThatAreSet, rolesCaptor.getValue());
+        } else {
+            verify(account, never()).setRoles(any());
+        }
+    }
+
+    private void verifyRoleCreate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
+        mockHealthCodeAndAccountRetrieval();
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD)
+                .withRoles(Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
+        
+        participantService.createParticipant(STUDY, callerRoles, participant);
+        
+        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        
+        if (rolesThatAreSet != null) {
+            verify(account).setRoles(rolesCaptor.capture());
+            assertEquals(rolesThatAreSet, rolesCaptor.getValue());
+        } else {
+            verify(account, never()).setRoles(any());
+        }
+    }
+    
+    private void verifyStatus(Set<Roles> roles, AccountStatus status) {
+        mockHealthCodeAndAccountRetrieval();
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD)
+                .withStatus(status).build();
+        
+        participantService.updateParticipant(STUDY, roles, ID, participant);
         verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
         Account account = accountCaptor.getValue();
 
-        verify(account).setStatus(AccountStatus.DISABLED);
-    }
-    
-    @Test
-    public void userCannotSetAnyRoles() {
-    }
-    
-    @Test
-    public void developerCanSetDeveloperRole() {
-    }
-    
-    @Test
-    public void researcherCanSetDeveloperOrResearcherRole() {
-    }
-    
-    @Test
-    public void adminCanSetAllRoles() {
+        if (status == null) {
+            verify(account, never()).setStatus(any());    
+        } else {
+            verify(account).setStatus(status);
+        }
     }
 }
