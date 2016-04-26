@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;

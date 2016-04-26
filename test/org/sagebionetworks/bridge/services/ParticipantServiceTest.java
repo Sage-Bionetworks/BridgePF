@@ -308,7 +308,7 @@ public class ParticipantServiceTest {
     public void getParticipantEmailDoesNotExist() {
         when(accountDao.getAccount(STUDY, ID)).thenReturn(null);
         
-        participantService.getParticipant(STUDY, ID);
+        participantService.getParticipant(STUDY, CALLER_ROLES, ID);
     }
     
     @Test
@@ -363,7 +363,7 @@ public class ParticipantServiceTest {
         when(optionsService.getOptions("healthCode")).thenReturn(lookup);
         
         // Get the participant
-        StudyParticipant participant = participantService.getParticipant(STUDY, ID);
+        StudyParticipant participant = participantService.getParticipant(STUDY, CALLER_ROLES, ID);
         
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());
@@ -388,6 +388,10 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
+        
+        // A non-researcher will not get the healthCode
+        participant = participantService.getParticipant(STUDY, Sets.newHashSet(DEVELOPER), ID);
+        assertNull(participant.getHealthCode());
     }
     
     @Test
@@ -406,7 +410,7 @@ public class ParticipantServiceTest {
         when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(healthId.getCode()).thenReturn(null);
         
-        StudyParticipant participant = participantService.getParticipant(STUDY, ID);
+        StudyParticipant participant = participantService.getParticipant(STUDY, CALLER_ROLES, ID);
         
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());

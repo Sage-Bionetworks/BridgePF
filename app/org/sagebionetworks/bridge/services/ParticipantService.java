@@ -102,7 +102,7 @@ public class ParticipantService {
         this.cacheProvider = cacheProvider;
     }
     
-    public StudyParticipant getParticipant(Study study, String id) {
+    public StudyParticipant getParticipant(Study study, Set<Roles> callerRoles, String id) {
         checkNotNull(study);
         checkArgument(isNotBlank(id));
         
@@ -147,7 +147,7 @@ public class ParticipantService {
         }
         participant.withAttributes(attributes);
         
-        if (study.isHealthCodeExportEnabled()) {
+        if (study.isHealthCodeExportEnabled() && callerRoles.contains(Roles.RESEARCHER)) {
             participant.withHealthCode(healthCode);
         }
         return participant.build();

@@ -141,7 +141,7 @@ public class ParticipantControllerTest {
     public void getParticipant() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
         
-        when(participantService.getParticipant(STUDY, ID)).thenReturn(studyParticipant);
+        when(participantService.getParticipant(STUDY, CALLER_ROLES, ID)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
         String string = Helpers.contentAsString(result);
@@ -149,7 +149,7 @@ public class ParticipantControllerTest {
         // Verify that there's a field, full serialization tested in StudyParticipant2Test
         assertEquals("Test", retrievedParticipant.getFirstName());
         
-        verify(participantService).getParticipant(STUDY, ID);
+        verify(participantService).getParticipant(STUDY, CALLER_ROLES, ID);
     }
     
     @Test

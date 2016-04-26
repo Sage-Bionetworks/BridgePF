@@ -57,7 +57,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, userId);
+        StudyParticipant participant = participantService.getParticipant(study, session.getUser().getRoles(), userId);
         return okResult(participant);
     }
     

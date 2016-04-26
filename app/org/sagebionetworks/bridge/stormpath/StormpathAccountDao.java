@@ -338,7 +338,7 @@ public class StormpathAccountDao implements AccountDao {
         account.setLastName(StormpathAccount.PLACEHOLDER_STRING);
         acct.setPassword(signUp.getPassword());
         if (signUp.getRoles() != null) {
-            account.getRoles().addAll(signUp.getRoles());
+            account.setRoles(signUp.getRoles());
         }
         // Create the healthCode mapping when we create the account. Stop waiting to create it
         HealthId healthId = healthCodeService.createMapping(study);
