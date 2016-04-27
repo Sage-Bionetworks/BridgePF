@@ -106,6 +106,7 @@ public class ParticipantService {
     
     public StudyParticipant getParticipant(Study study, Set<Roles> callerRoles, String id) {
         checkNotNull(study);
+        checkNotNull(callerRoles);
         checkArgument(isNotBlank(id));
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
