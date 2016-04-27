@@ -369,7 +369,7 @@ public class ParticipantServiceTest {
         when(lookup.getBoolean(EMAIL_NOTIFICATIONS)).thenReturn(true);
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
         when(lookup.getStringSet(DATA_GROUPS)).thenReturn(TestUtils.newLinkedHashSet("group1","group2"));
-        when(lookup.getOrderedStringSet(LANGUAGES)).thenReturn(TestUtils.newLinkedHashSet("fr","de"));
+        when(lookup.getOrderedStringSet(LANGUAGES)).thenReturn(USER_LANGUAGES);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
         // Get the participant
@@ -386,7 +386,7 @@ public class ParticipantServiceTest {
         assertEquals(ID, participant.getId());
         assertEquals(AccountStatus.DISABLED, participant.getStatus());
         assertEquals(createdOn, participant.getCreatedOn());
-        assertEquals(TestUtils.newLinkedHashSet("fr","de"), participant.getLanguages());
+        assertEquals(USER_LANGUAGES, participant.getLanguages());
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
@@ -594,52 +594,52 @@ public class ParticipantServiceTest {
     
     @Test
     public void userCannotSetStatusOnCreate() {
-        verifyRoleCreate(Sets.newHashSet());
+        verifyStatusCreate(Sets.newHashSet());
     }
     
     @Test
     public void noRoleCanSetStatusOnCreate() {
-        verifyRoleCreate(Sets.newHashSet(RESEARCHER, ADMIN, DEVELOPER));
+        verifyStatusCreate(Sets.newHashSet(RESEARCHER, ADMIN, DEVELOPER));
     }
     
     @Test
     public void userCannotChangeStatus() {
-        verifyStatus(Sets.newHashSet(), null);
+        verifyStatusUpdate(Sets.newHashSet(), null);
     }
     
     @Test
     public void developerCanChangeStatusOnEdit() {
-        verifyStatus(Sets.newHashSet(DEVELOPER), AccountStatus.DISABLED);
+        verifyStatusUpdate(Sets.newHashSet(DEVELOPER), AccountStatus.DISABLED);
     }
     
     @Test
     public void researcherCanChangeStatusOnEdit() {
-        verifyStatus(Sets.newHashSet(RESEARCHER), AccountStatus.DISABLED);
+        verifyStatusUpdate(Sets.newHashSet(RESEARCHER), AccountStatus.DISABLED);
     }
     
     @Test
     public void adminCanChangeStatusOnEdit() {
-        verifyStatus(Sets.newHashSet(ADMIN), AccountStatus.DISABLED);
+        verifyStatusUpdate(Sets.newHashSet(ADMIN), AccountStatus.DISABLED);
     }
     
     @Test
     public void userCannotCreateAnyRoles() {
-        verifyRoleCreateWithExistingRoles(Sets.newHashSet(), null);
+        verifyRoleCreate(Sets.newHashSet(), null);
     }
     
     @Test
     public void developerCanCreateDeveloperRole() {
-        verifyRoleCreateWithExistingRoles(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
+        verifyRoleCreate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
     }
     
     @Test
     public void researcherCanCreateDeveloperOrResearcherRole() {
-        verifyRoleCreateWithExistingRoles(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER, RESEARCHER));
+        verifyRoleCreate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER, RESEARCHER));
     }
     
     @Test
     public void adminCanCreateAllRoles() {
-        verifyRoleCreateWithExistingRoles(Sets.newHashSet(ADMIN), Sets.newHashSet(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+        verifyRoleCreate(Sets.newHashSet(ADMIN), Sets.newHashSet(DEVELOPER, RESEARCHER, ADMIN, WORKER));
     }
     
     @Test
@@ -662,13 +662,42 @@ public class ParticipantServiceTest {
         verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(DEVELOPER, RESEARCHER, ADMIN, WORKER));
     }
     
+    // Now, verify that roles cannot *remove* roles they don't have permissions to remove
+    
     @Test
-    public void developerCannotDowngradeAdminRoles() {
+    public void developerCannotDowngradeAdmin() {
         mockHealthCodeAndAccountRetrieval();
         doReturn(Sets.newHashSet(ADMIN)).when(account).getRoles();
         
-        // It ends up being a combination of what the user can set and what they can't change
+        // developer can add the developer role, but they cannot remove the admin role
         verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(ADMIN, DEVELOPER));
+    }
+    
+    @Test
+    public void developerCannotDowngradeResearcher() {
+        mockHealthCodeAndAccountRetrieval();
+        doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
+        
+        // developer can add the developer role, but they cannot remove the admin role
+        verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER, RESEARCHER));
+    }
+    
+    @Test
+    public void researcherCanDowngradeResearcher() {
+        mockHealthCodeAndAccountRetrieval();
+        doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
+        
+        // developer can add the developer role, but they cannot remove the admin role
+        verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
+    }
+    
+    @Test
+    public void adminCanChangeDeveloperToResearcher() {
+        mockHealthCodeAndAccountRetrieval();
+        doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
+        
+        // developer can add the developer role, but they cannot remove the admin role
+        verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
     }
     
     @Test
@@ -676,16 +705,14 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
         
-        // It ends up being a combination of what the user can set and what they can't change
+        // researcher can remove developer and add researcher, so final result is researcher
         verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
     }
     
-    private void verifyRoleCreate(Set<Roles> callerRoles) {
+    private void verifyStatusCreate(Set<Roles> callerRoles) {
         mockHealthCodeAndAccountRetrieval();
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(EMAIL)
-                .withPassword(PASSWORD)
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStatus(AccountStatus.ENABLED).build();
         
         participantService.createParticipant(STUDY, callerRoles, participant);
@@ -696,36 +723,28 @@ public class ParticipantServiceTest {
         verify(account, never()).setStatus(any());
     }
     
-    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> toSet, Set<Roles> expected) {
+    private void verifyStatusUpdate(Set<Roles> roles, AccountStatus status) {
         mockHealthCodeAndAccountRetrieval();
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(EMAIL)
-                .withPassword(PASSWORD)
-                .withRoles(toSet).build();
-        participantService.updateParticipant(STUDY, callerRoles, ID, participant);
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withStatus(status).build();
         
+        participantService.updateParticipant(STUDY, roles, ID, participant);
+
         verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
         Account account = accountCaptor.getValue();
-        
-        if (expected != null) {
-            verify(account).setRoles(rolesCaptor.capture());
-            assertEquals(expected, rolesCaptor.getValue());
+
+        if (status == null) {
+            verify(account, never()).setStatus(any());    
         } else {
-            verify(account, never()).setRoles(any());
+            verify(account).setStatus(status);
         }
     }
-    
-    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> expected) {
-        verifyRoleUpdate(callerRoles, Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER), expected);
-    }
 
-    private void verifyRoleCreateWithExistingRoles(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
+    private void verifyRoleCreate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
         mockHealthCodeAndAccountRetrieval();
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(EMAIL)
-                .withPassword(PASSWORD)
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withRoles(Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
         
         participantService.createParticipant(STUDY, callerRoles, participant);
@@ -741,21 +760,25 @@ public class ParticipantServiceTest {
         }
     }
     
-    private void verifyStatus(Set<Roles> roles, AccountStatus status) {
+    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet, Set<Roles> expected) {
         mockHealthCodeAndAccountRetrieval();
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(EMAIL)
-                .withPassword(PASSWORD)
-                .withStatus(status).build();
-        participantService.updateParticipant(STUDY, roles, ID, participant);
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withRoles(rolesThatAreSet).build();
+        participantService.updateParticipant(STUDY, callerRoles, ID, participant);
+        
         verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
         Account account = accountCaptor.getValue();
-
-        if (status == null) {
-            verify(account, never()).setStatus(any());    
+        
+        if (expected != null) {
+            verify(account).setRoles(rolesCaptor.capture());
+            assertEquals(expected, rolesCaptor.getValue());
         } else {
-            verify(account).setStatus(status);
+            verify(account, never()).setRoles(any());
         }
+    }
+    
+    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> expected) {
+        verifyRoleUpdate(callerRoles, Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER), expected);
     }
 }
