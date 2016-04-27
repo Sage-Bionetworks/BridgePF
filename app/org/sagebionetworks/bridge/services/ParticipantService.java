@@ -11,13 +11,19 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
+import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -40,6 +46,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 @Component
 public class ParticipantService {
@@ -97,8 +104,9 @@ public class ParticipantService {
         this.cacheProvider = cacheProvider;
     }
     
-    public StudyParticipant getParticipant(Study study, String id) {
+    public StudyParticipant getParticipant(Study study, Set<Roles> callerRoles, String id) {
         checkNotNull(study);
+        checkNotNull(callerRoles);
         checkArgument(isNotBlank(id));
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
@@ -145,7 +153,7 @@ public class ParticipantService {
         }
         participant.withAttributes(attributes);
         
-        if (study.isHealthCodeExportEnabled()) {
+        if (study.isHealthCodeExportEnabled() && callerRoles.contains(RESEARCHER)) {
             participant.withHealthCode(healthCode);
         }
         return participant.build();
@@ -175,16 +183,18 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a 
      * user before triggering a reset password request.  
      */
-    public IdentifierHolder createParticipant(Study study, StudyParticipant participant) {
-        return saveParticipant(study, null, participant, true);
+    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
+        return saveParticipant(study, callerRoles, null, participant, true);
     }
     
-    public void updateParticipant(Study study, String id, StudyParticipant participant) {
-        saveParticipant(study, id, participant, false);
+    public void updateParticipant(Study study, Set<Roles> callerRoles, String id, StudyParticipant participant) {
+        saveParticipant(study, callerRoles, id, participant, false);
     }
 
-    public IdentifierHolder saveParticipant(Study study, String id, StudyParticipant participant, boolean isNew) {
+    public IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, String id,
+            StudyParticipant participant, boolean isNew) {
         checkNotNull(study);
+        checkNotNull(callerRoles);
         checkArgument(isNew || isNotBlank(id));
         checkNotNull(participant);
         
@@ -198,11 +208,9 @@ public class ParticipantService {
                 externalIdService.reserveExternalId(study, participant.getExternalId());    
             }
             account = accountDao.signUp(study, participant, study.isEmailVerificationEnabled());
-            
             healthCode = getHealthCodeThrowingException(account);
         } else {
             account = getAccountThrowingException(study, id);
-            
             healthCode = getHealthCodeThrowingException(account);
             
             // Verify now that the assignment is valid, or throw an exception before any other updates
@@ -212,8 +220,8 @@ public class ParticipantService {
         for (ParticipantOption option : ParticipantOption.values()) {
             options.put(option, option.fromParticipant(participant));
         }
-        // If we're validing the ID, we do this through the externalIdService, which writes to the participant options table
-        // when its appropriate to do so
+        // If we're validating the ID, we do this through the externalIdService, which writes to the participant options
+        // table when its appropriate to do so
         if (study.isExternalIdValidationEnabled()) {
             options.remove(EXTERNAL_IDENTIFIER);
         }
@@ -225,11 +233,15 @@ public class ParticipantService {
             String value = participant.getAttributes().get(attribute);
             account.setAttribute(attribute, value);
         }
-        // When creating a user, the study flag to verify email addresses directs what happens with workflow on Stormpath. 
-        // After creation, you can change the status to whatever you want (manually verify a user, disable a user, etc.)
-        if (!isNew && participant.getStatus() != null) {
+        
+        // Only admin roles can change status, after participant is created
+        if (!isNew && participant.getStatus() != null && callerIsAdmin(callerRoles)) {
             account.setStatus(participant.getStatus());
         }
+        if (callerIsAdmin(callerRoles)) {
+            updateRoles(callerRoles, participant, account);    
+        }
+        
         accountDao.updateAccount(study, account);
         
         if (isNew && isNotBlank(participant.getExternalId())) {
@@ -240,6 +252,36 @@ public class ParticipantService {
             cacheProvider.removeSessionByUserId(account.getId());
         }
         return new IdentifierHolder(account.getId());
+    }
+    
+    private boolean callerIsAdmin(Set<Roles> roles) {
+        return !Collections.disjoint(roles, ADMINISTRATIVE_ROLES);
+    }
+    
+    private boolean callerCanEditRole(Set<Roles> callerRoles, Roles targetRole) {
+        return !Collections.disjoint(callerRoles, CAN_BE_EDITED_BY.get(targetRole));
+    }
+
+    /**
+     * For each role added, the caller must have the right to add the role. Then for every role 
+     * currently assigned, we check and if the caller doesn't have the right to remove that role, 
+     * we'll add it back. Then we save those results.
+     */
+    private void updateRoles(Set<Roles> callerRoles, StudyParticipant participant, Account account) {
+        Set<Roles> newRoleSet = Sets.newHashSet();
+        // Caller can only add roles they have the rights to edit
+        for (Roles role : participant.getRoles()) {
+            if (callerCanEditRole(callerRoles, role)) {
+                newRoleSet.add(role);
+            }
+        }
+        // Callers also can't remove roles they don't have the rights to edit
+        for (Roles role : account.getRoles()) {
+            if (!callerCanEditRole(callerRoles, role)) {
+                newRoleSet.add(role);
+            }
+        }
+        account.setRoles(newRoleSet);
     }
     
     private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {

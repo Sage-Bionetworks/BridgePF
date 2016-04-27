@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -237,7 +238,10 @@ public class StormpathAccountDaoTest {
             // Stormpath account. There are 4 cases to consider: (1) adding groups, (2) removing groups, (3) account in
             // groups unchanged, (4) account not in groups unchanged. To test this, we always leave the account in
             // TEST_USERS and never add it to ADMIN.
-            newAccount.getRoles().addAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER));
+            Set<Roles> roles = Sets.newHashSet(newAccount.getRoles());
+            roles.addAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER));
+            
+            newAccount.setRoles(roles);
             accountDao.updateAccount(study, newAccount);
 
             newAccount = accountDao.getAccount(study, account.getId());
@@ -245,7 +249,7 @@ public class StormpathAccountDaoTest {
             assertTrue(newAccount.getRoles().containsAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER,
                     Roles.TEST_USERS, Roles.WORKER)));
 
-            newAccount.getRoles().removeAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER));
+            newAccount.setRoles(EnumSet.of(Roles.TEST_USERS));
             accountDao.updateAccount(study, newAccount);
 
             newAccount = accountDao.getAccount(study, account.getId());

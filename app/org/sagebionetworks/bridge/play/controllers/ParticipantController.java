@@ -48,7 +48,7 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        IdentifierHolder holder = participantService.createParticipant(study, participant);
+        IdentifierHolder holder = participantService.createParticipant(study, session.getUser().getRoles(), participant);
         
         return createdResult(holder);
     }
@@ -57,7 +57,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, userId);
+        StudyParticipant participant = participantService.getParticipant(study, session.getUser().getRoles(), userId);
         return okResult(participant);
     }
     
@@ -70,7 +70,7 @@ public class ParticipantController extends BaseController {
         if (participant.getId() != null && !userId.equals(participant.getId())) {
             throw new BadRequestException("ID in JSON does not match email in URL.");
         }
-        participantService.updateParticipant(study, userId, participant);
+        participantService.updateParticipant(study, session.getUser().getRoles(), userId, participant);
         
         return okResult("Participant updated.");
     }
