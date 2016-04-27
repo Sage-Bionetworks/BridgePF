@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
-import org.sagebionetworks.bridge.services.UserProfileService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
@@ -56,8 +55,6 @@ public class StudyControllerTest {
     private UploadCertificateService mockUploadCertService;
     @Mock
     private Study mockStudy;
-    @Mock
-    private UserProfileService mockUserProfileService;
     @Mock
     private StudyService mockStudyService;
     @Mock

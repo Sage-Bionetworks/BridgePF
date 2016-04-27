@@ -7,7 +7,7 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.accounts.UserProfile;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -77,7 +77,7 @@ public class StudyValidator implements Validator {
         validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate");
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
-            if (UserProfile.RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
+            if (StudyParticipant.RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
                 String msg = String.format("'%s' conflicts with existing user profile property", userProfileAttribute);
                 errors.rejectValue("userProfileAttributes", msg);
             }

@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static play.test.Helpers.contentAsString;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -24,11 +22,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -36,6 +36,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -44,6 +45,7 @@ import org.sagebionetworks.bridge.play.controllers.UserProfileController;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -61,6 +63,8 @@ public class UserProfileControllerTest {
     
     private static final Set<String> TEST_STUDY_DATA_GROUPS = Sets.newHashSet("group1", "group2");
     
+    private static final String ID = "ABC";
+    
     @Mock
     private ParticipantOptionsService optionsService;
     
@@ -77,7 +81,13 @@ public class UserProfileControllerTest {
     private StudyService studyService;
     
     @Mock
+    private ParticipantService participantService;
+    
+    @Mock
     private UserSession session;
+    
+    @Captor
+    private ArgumentCaptor<StudyParticipant> participantCaptor;
     
     private Study study;
     
@@ -88,10 +98,14 @@ public class UserProfileControllerTest {
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setDataGroups(TEST_STUDY_DATA_GROUPS);
+        study.setUserProfileAttributes(Sets.newHashSet("foo","bar"));
 
         when(consentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUSES_MAP);
         
         when(studyService.getStudy((StudyIdentifier)any())).thenReturn(study);
+        
+        ViewCache viewCache = new ViewCache();
+        viewCache.setCacheProvider(cacheProvider);
         
         controller = spy(new UserProfileController());
         controller.setStudyService(studyService);
@@ -99,10 +113,13 @@ public class UserProfileControllerTest {
         controller.setCacheProvider(cacheProvider);
         controller.setExternalIdService(externalIdService);
         controller.setConsentService(consentService);
+        controller.setParticipantService(participantService);
+        controller.setViewCache(viewCache);
         
         User user = new User();
         user.setStudyKey(TEST_STUDY.getIdentifier());
         user.setHealthCode("healthCode");
+        user.setId(ID);
         
         when(session.getUser()).thenReturn(user);
         when(session.getStudyIdentifier()).thenReturn(TEST_STUDY);
@@ -111,13 +128,54 @@ public class UserProfileControllerTest {
     }
     
     @Test
+    public void getUserProfile() throws Exception {
+        Map<String,String> attributes = Maps.newHashMap();
+        attributes.put("bar","baz");
+        StudyParticipant participant = new StudyParticipant.Builder().withLastName("Last")
+                .withFirstName("First").withEmail("email@email.com").withAttributes(attributes).build();
+        
+        doReturn(participant).when(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        
+        Result result = controller.getUserProfile();
+        assertEquals(200, result.status());
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        
+        verify(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        
+        assertEquals("First", node.get("firstName").asText());
+        assertEquals("Last", node.get("lastName").asText());
+        assertEquals("email@email.com", node.get("email").asText());
+        assertEquals("email@email.com", node.get("username").asText());
+        assertEquals("baz", node.get("bar").asText());
+        assertEquals("UserProfile", node.get("type").asText());
+    }
+    
+    @Test
+    public void updateUserProfile() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().build();
+        doReturn(participant).when(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'First','lastName':'Last',"+
+                "'username':'email@email.com','foo':'belgium','type':'UserProfile'}"));
+        
+        Result result = controller.updateUserProfile();
+        TestUtils.assertResult(result, 200, "Profile updated.");
+
+        verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), eq(ID), participantCaptor.capture());
+        
+        StudyParticipant persisted = participantCaptor.getValue();
+        assertEquals("First", persisted.getFirstName());
+        assertEquals("Last", persisted.getLastName());
+        assertEquals("belgium", persisted.getAttributes().get("foo"));
+    }
+    
+    @Test
     public void canSubmitExternalIdentifier() throws Exception {
         TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
                 
         Result result = controller.createExternalIdentifier();
-        assertEquals(200, result.status());
-        assertEquals("application/json", result.contentType());
-        assertEquals("{\"message\":\"External identifier added to user profile.\"}", contentAsString(result));
+        assertResult(result, 200, "External identifier added to user profile.");
         
         verify(externalIdService).assignExternalId(study, "ABC-123-XYZ", "healthCode");
     }
@@ -129,6 +187,7 @@ public class UserProfileControllerTest {
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
         
         Result result = controller.updateDataGroups();
+        assertResult(result, 200, "Data groups updated.");
         
         ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
         ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
@@ -140,10 +199,7 @@ public class UserProfileControllerTest {
         assertEquals(dataGroupSet, dataGroups);
         
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
-        
         assertEquals(dataGroupSet, session.getUser().getDataGroups());
-        
-        assertResult(result, 200, "Data groups updated.");
     }
     
     @SuppressWarnings({"unchecked"})
@@ -184,13 +240,12 @@ public class UserProfileControllerTest {
         TestUtils.mockPlayContextWithJson("{}");
         
         Result result = controller.updateDataGroups();
+        assertResult(result, 200, "Data groups updated.");
         
         ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
         verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
         
         Set<String> dataGroups = (Set<String>)captor.getValue();
         assertEquals(Sets.newHashSet(), dataGroups);
-        
-        assertResult(result, 200, "Data groups updated.");
     }
 }

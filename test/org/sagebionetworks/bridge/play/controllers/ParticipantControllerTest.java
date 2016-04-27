@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +40,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -54,6 +54,8 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
+
+    private static final Set<Roles> NO_ROLES = Collections.emptySet();
     
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
@@ -78,9 +80,6 @@ public class ParticipantControllerTest {
     
     @Captor
     private ArgumentCaptor<Map<ParticipantOption,String>> optionMapCaptor;
-
-    @Captor
-    private ArgumentCaptor<UserProfile> profileCaptor;
     
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -89,12 +88,14 @@ public class ParticipantControllerTest {
     public void before() throws Exception {
         User user = new User();
         user.setRoles(CALLER_ROLES);
+        user.setId(ID);
         
         UserSession session = new UserSession();
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
         session.setUser(user);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
+        doReturn(session).when(controller).getAuthenticatedSession();
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
         
         List<AccountSummary> summaries = Lists.newArrayListWithCapacity(3);
@@ -231,6 +232,38 @@ public class ParticipantControllerTest {
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'id':'id2'}"));
         
         controller.updateParticipant("id1");
+    }
+    
+    @Test
+    public void getSelfParticipant() throws Exception {
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
+        
+        when(participantService.getParticipant(STUDY, NO_ROLES, ID)).thenReturn(studyParticipant);
+
+        Result result = controller.getSelfParticipant();
+        
+        verify(participantService).getParticipant(STUDY, NO_ROLES, ID);
+        
+        StudyParticipant deserParticipant = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), StudyParticipant.class);
+
+        assertEquals("Test", deserParticipant.getFirstName());
+    }
+    
+    @Test
+    public void updateSelfParticipant() throws Exception {
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
+                "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
+                "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
+                "'attributes':{'phone':'123456789'},'languages':['en','fr'],'status':'disabled','roles':['admin']}"));
+
+        Result result = controller.updateSelfParticipant();
+        assertResult(result, 200, "Participant updated.");
+        
+        // verify the object is passed to service, one field is sufficient
+        verify(participantService).updateParticipant(eq(STUDY), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals("firstName", participant.getFirstName());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {

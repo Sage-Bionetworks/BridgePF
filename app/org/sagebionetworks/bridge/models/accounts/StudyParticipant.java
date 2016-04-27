@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 /**
  * This object represents a participant in the system.
@@ -22,6 +23,10 @@ import com.google.common.collect.ImmutableMap;
 @JsonDeserialize(builder=StudyParticipant.Builder.class)
 public final class StudyParticipant implements BridgeEntity {
 
+    public static final Set<String> RESERVED_ATTR_NAMES = Sets.newHashSet("firstName", "lastName", "email",
+            "externalId", "password", "sharingScope", "notifyByEmail", "dataGroups", "healthCode", "attributes",
+            "consentHistories", "roles", "languages", "status", "createdOn", "id");
+    
     private final String firstName;
     private final String lastName;
     private final String email;

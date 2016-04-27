@@ -19,7 +19,8 @@ POST /v3/participants                 @org.sagebionetworks.bridge.play.controlle
 GET  /v3/participants/:userId         @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String)
 POST /v3/participants/:userId         @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)
 POST /v3/participants/:userId/signOut @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(userId: String)
-
+GET  /v3/participants/self            @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant
+POST /v3/participants/self            @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateSelfParticipant
 
 # Study Subpopulations
 GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations
