@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
@@ -47,6 +49,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import play.mvc.Result;
@@ -68,6 +71,9 @@ public class ParticipantControllerTest {
     private static final AccountSummary SUMMARY = new AccountSummary("firstName","lastName","email","id",DateTime.now(),AccountStatus.ENABLED);
     
     private static final Study STUDY = new DynamoStudy();
+    static {
+        STUDY.setUserProfileAttributes(Sets.newHashSet("foo","baz"));
+    }
     
     @Spy
     private ParticipantController controller;
@@ -252,6 +258,10 @@ public class ParticipantControllerTest {
     
     @Test
     public void updateSelfParticipant() throws Exception {
+        // All values should be copied over here.
+        StudyParticipant participant = new StudyParticipant.Builder().build();
+        doReturn(participant).when(participantService).getParticipant(STUDY, NO_ROLES, ID);
+        
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
                 "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
                 "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
@@ -262,8 +272,55 @@ public class ParticipantControllerTest {
         
         // verify the object is passed to service, one field is sufficient
         verify(participantService).updateParticipant(eq(STUDY), eq(NO_ROLES), eq(ID), participantCaptor.capture());
-        StudyParticipant participant = participantCaptor.getValue();
-        assertEquals("firstName", participant.getFirstName());
+        StudyParticipant captured = participantCaptor.getValue();
+        assertEquals("firstName", captured.getFirstName());
+    }
+    
+    // Some values will be missing in the JSON and should be preserved from this original participant object.
+    // This allows client to provide JSON that's less than the entire participant.
+    @Test
+    public void partialUpdateSelfParticipant() throws Exception {
+        Map<String,String> attrs = Maps.newHashMap();
+        attrs.put("foo", "bar");
+        attrs.put("baz", "bap");
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName("firstName")
+                .withLastName("lastName")
+                .withEmail("email@email.com")
+                .withId("id")
+                .withPassword("password")
+                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withNotifyByEmail(true)
+                .withDataGroups(Sets.newHashSet("group1","group2"))
+                .withAttributes(attrs)
+                .withLanguages(TestUtils.newLinkedHashSet("en"))
+                .withStatus(AccountStatus.DISABLED)
+                .withExternalId("POWERS").build();
+        doReturn(participant).when(participantService).getParticipant(STUDY, NO_ROLES, ID);
+        
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'externalId':'simpleStringChange',"+
+                "'sharingScope':'no_sharing','notifyByEmail':false,'attributes':{'baz':'belgium'},"+
+                "'languages':['fr'],'status':'enabled','roles':['admin']}"));
+        
+        Result result = controller.updateSelfParticipant();
+        assertResult(result, 200, "Participant updated.");
+
+        verify(participantService).updateParticipant(eq(STUDY), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+        StudyParticipant captured = participantCaptor.getValue();
+        assertEquals("firstName", captured.getFirstName());
+        assertEquals("lastName", captured.getLastName());
+        assertEquals("email@email.com", captured.getEmail());
+        assertEquals("id", captured.getId());
+        assertEquals("password", captured.getPassword());
+        assertEquals(SharingScope.NO_SHARING, captured.getSharingScope());
+        assertFalse(captured.isNotifyByEmail());
+        assertEquals(Sets.newHashSet("group1","group2"), captured.getDataGroups());
+        assertNull(captured.getAttributes().get("foo"));
+        assertEquals("belgium", captured.getAttributes().get("baz"));
+        assertEquals(AccountStatus.ENABLED, captured.getStatus());
+        assertEquals(Sets.newHashSet("fr"), captured.getLanguages());
+        assertEquals("simpleStringChange", captured.getExternalId());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {

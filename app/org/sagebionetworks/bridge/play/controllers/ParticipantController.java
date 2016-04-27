@@ -23,6 +23,9 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
+
 import play.mvc.Result;
 
 @Controller
@@ -47,14 +50,23 @@ public class ParticipantController extends BaseController {
         return okResult(participant);
     }
     
-    public Result updateSelfParticipant() {
+    public Result updateSelfParticipant() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         String userId = session.getUser().getId();
         
-        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
-        participantService.updateParticipant(study, NO_ROLES, userId, participant);
+        // By copying only values that were included in the JSON onto the existing StudyParicipant,
+        // we allow clients to only send back partial JSON to update the user. This has been the 
+        JsonNode node = requestToJSON(request());
+        Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
         
+        StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
+        StudyParticipant existing = participantService.getParticipant(study, NO_ROLES, userId);
+        StudyParticipant updated = new StudyParticipant.Builder()
+                .copyOf(existing)
+                .copyOnly(participant, fieldNames).build();
+        
+        participantService.updateParticipant(study, NO_ROLES, userId, updated);
         return okResult("Participant updated.");
     }
     

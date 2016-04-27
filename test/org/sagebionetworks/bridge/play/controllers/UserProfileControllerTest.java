@@ -60,10 +60,10 @@ import play.test.Helpers;
 public class UserProfileControllerTest {
     
     private static final Map<SubpopulationGuid,ConsentStatus> CONSENT_STATUSES_MAP = Maps.newHashMap();
-    
     private static final Set<String> TEST_STUDY_DATA_GROUPS = Sets.newHashSet("group1", "group2");
-    
+    private static final Set<String> TEST_STUDY_ATTRIBUTES = Sets.newHashSet("foo","bar"); 
     private static final String ID = "ABC";
+    private static final String HEALTH_CODE = "healthCode";
     
     @Mock
     private ParticipantOptionsService optionsService;
@@ -98,7 +98,7 @@ public class UserProfileControllerTest {
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setDataGroups(TEST_STUDY_DATA_GROUPS);
-        study.setUserProfileAttributes(Sets.newHashSet("foo","bar"));
+        study.setUserProfileAttributes(TEST_STUDY_ATTRIBUTES);
 
         when(consentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUSES_MAP);
         
@@ -118,7 +118,7 @@ public class UserProfileControllerTest {
         
         User user = new User();
         user.setStudyKey(TEST_STUDY.getIdentifier());
-        user.setHealthCode("healthCode");
+        user.setHealthCode(HEALTH_CODE);
         user.setId(ID);
         
         when(session.getUser()).thenReturn(user);
@@ -177,7 +177,7 @@ public class UserProfileControllerTest {
         Result result = controller.createExternalIdentifier();
         assertResult(result, 200, "External identifier added to user profile.");
         
-        verify(externalIdService).assignExternalId(study, "ABC-123-XYZ", "healthCode");
+        verify(externalIdService).assignExternalId(study, "ABC-123-XYZ", HEALTH_CODE);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -192,7 +192,7 @@ public class UserProfileControllerTest {
         ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
         ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
         
-        verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
+        verify(optionsService).setStringSet(eq(TEST_STUDY), eq(HEALTH_CODE), eq(DATA_GROUPS), captor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());
         
         Set<String> dataGroups = (Set<String>)captor.getValue();
@@ -211,7 +211,7 @@ public class UserProfileControllerTest {
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
             assertTrue(e.getMessage().contains("DataGroups is invalid"));
-            verify(optionsService, never()).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), any(Set.class));
+            verify(optionsService, never()).setStringSet(eq(TEST_STUDY), eq(HEALTH_CODE), eq(DATA_GROUPS), any(Set.class));
         }
     }
 
@@ -221,7 +221,7 @@ public class UserProfileControllerTest {
         map.put(DATA_GROUPS.name(), "group1,group2");
         ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
         
-        when(optionsService.getOptions("healthCode")).thenReturn(lookup);
+        when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
         Result result = controller.getDataGroups();
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
@@ -243,7 +243,7 @@ public class UserProfileControllerTest {
         assertResult(result, 200, "Data groups updated.");
         
         ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
-        verify(optionsService).setStringSet(eq(TEST_STUDY), eq("healthCode"), eq(DATA_GROUPS), captor.capture());
+        verify(optionsService).setStringSet(eq(TEST_STUDY), eq(HEALTH_CODE), eq(DATA_GROUPS), captor.capture());
         
         Set<String> dataGroups = (Set<String>)captor.getValue();
         assertEquals(Sets.newHashSet(), dataGroups);
