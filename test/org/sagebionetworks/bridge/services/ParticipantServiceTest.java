@@ -666,7 +666,6 @@ public class ParticipantServiceTest {
     
     @Test
     public void developerCannotDowngradeAdmin() {
-        mockHealthCodeAndAccountRetrieval();
         doReturn(Sets.newHashSet(ADMIN)).when(account).getRoles();
         
         // developer can add the developer role, but they cannot remove the admin role
@@ -675,7 +674,6 @@ public class ParticipantServiceTest {
     
     @Test
     public void developerCannotDowngradeResearcher() {
-        mockHealthCodeAndAccountRetrieval();
         doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
         
         // developer can add the developer role, but they cannot remove the admin role
@@ -684,7 +682,6 @@ public class ParticipantServiceTest {
     
     @Test
     public void researcherCanDowngradeResearcher() {
-        mockHealthCodeAndAccountRetrieval();
         doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
         
         // developer can add the developer role, but they cannot remove the admin role
@@ -693,7 +690,6 @@ public class ParticipantServiceTest {
     
     @Test
     public void adminCanChangeDeveloperToResearcher() {
-        mockHealthCodeAndAccountRetrieval();
         doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
         
         // developer can add the developer role, but they cannot remove the admin role
@@ -702,7 +698,6 @@ public class ParticipantServiceTest {
     
     @Test
     public void researcherCanUpgradeDeveloperRole() {
-        mockHealthCodeAndAccountRetrieval();
         doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
         
         // researcher can remove developer and add researcher, so final result is researcher
