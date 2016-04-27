@@ -11,6 +11,9 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
+import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.Collections;
 import java.util.List;
@@ -149,7 +152,7 @@ public class ParticipantService {
         }
         participant.withAttributes(attributes);
         
-        if (study.isHealthCodeExportEnabled() && callerRoles.contains(Roles.RESEARCHER)) {
+        if (study.isHealthCodeExportEnabled() && callerRoles.contains(RESEARCHER)) {
             participant.withHealthCode(healthCode);
         }
         return participant.build();
@@ -204,11 +207,9 @@ public class ParticipantService {
                 externalIdService.reserveExternalId(study, participant.getExternalId());    
             }
             account = accountDao.signUp(study, participant, study.isEmailVerificationEnabled());
-            
             healthCode = getHealthCodeThrowingException(account);
         } else {
             account = getAccountThrowingException(study, id);
-            
             healthCode = getHealthCodeThrowingException(account);
             
             // Verify now that the assignment is valid, or throw an exception before any other updates
@@ -233,10 +234,12 @@ public class ParticipantService {
         }
         
         // Only admin roles can change status, after participant is created
-        if (!isNew && participant.getStatus() != null && isAdmin(callerRoles)) {
+        if (!isNew && participant.getStatus() != null && callerIsAdmin(callerRoles)) {
             account.setStatus(participant.getStatus());
         }
-        updateRoles(callerRoles, participant, account);
+        if (callerIsAdmin(callerRoles)) {
+            updateRoles(callerRoles, participant, account);    
+        }
         
         accountDao.updateAccount(study, account);
         
@@ -250,36 +253,34 @@ public class ParticipantService {
         return new IdentifierHolder(account.getId());
     }
     
-    private boolean isAdmin(Set<Roles> roles) {
-        return !Collections.disjoint(roles, Roles.ADMINISTRATIVE_ROLES);
+    private boolean callerIsAdmin(Set<Roles> roles) {
+        return !Collections.disjoint(roles, ADMINISTRATIVE_ROLES);
     }
     
-    private boolean callerHasAccessToRole(Set<Roles> callerRoles, Roles targetRole) {
-        return !Collections.disjoint(callerRoles, Roles.CAN_BE_EDITED_BY.get(targetRole));
+    private boolean callerCanEditRole(Set<Roles> callerRoles, Roles targetRole) {
+        return !Collections.disjoint(callerRoles, CAN_BE_EDITED_BY.get(targetRole));
     }
 
     /**
-     * First, user has to have the right to edit roles. Then for each role being added, 
-     * we check to see the caller "has access" to that role. So for example, a developer 
-     * cannot create an administrator, for security purposes.
+     * For each role added, the caller must have the right to add the role. Then for every role 
+     * currently assigned, we check and if the caller doesn't have the right to remove that role, 
+     * we'll add it back. Then we save those results.
      */
     private void updateRoles(Set<Roles> callerRoles, StudyParticipant participant, Account account) {
-        // Is this user someone who can edit roles at all? Must have one of the admin roles.
-        if (isAdmin(callerRoles)) {
-            Set<Roles> newRoleSet = Sets.newHashSet();
-            for (Roles role : participant.getRoles()) {
-                if (callerHasAccessToRole(callerRoles, role)) {
-                    newRoleSet.add(role);
-                }
+        Set<Roles> newRoleSet = Sets.newHashSet();
+        // Caller can only add roles they have the rights to edit
+        for (Roles role : participant.getRoles()) {
+            if (callerCanEditRole(callerRoles, role)) {
+                newRoleSet.add(role);
             }
-            // you also can't unset a role if you don't have access to it.
-            for (Roles role : account.getRoles()) {
-                if (!callerHasAccessToRole(callerRoles, role)) {
-                    newRoleSet.add(role);
-                }
-            }
-            account.setRoles(newRoleSet);
         }
+        // Callers also can't remove roles they don't have the rights to edit
+        for (Roles role : account.getRoles()) {
+            if (!callerCanEditRole(callerRoles, role)) {
+                newRoleSet.add(role);
+            }
+        }
+        account.setRoles(newRoleSet);
     }
     
     private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {

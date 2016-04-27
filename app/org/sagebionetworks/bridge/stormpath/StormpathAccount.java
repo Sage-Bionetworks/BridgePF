@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.PLACEHOLDER_STRING;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,17 +45,14 @@ import com.google.common.collect.Maps;
 @BridgeTypeName("Account")
 public class StormpathAccount implements Account {
     
-    static final String PLACEHOLDER_STRING = "<EMPTY>";
-    
     private static final TypeReference<List<ConsentSignature>> CONSENT_SIGNATURES_TYPE = new TypeReference<List<ConsentSignature>>() {};
-    
     private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final String PHONE_ATTRIBUTE = "phone";
-    public static final String HEALTH_CODE_SUFFIX = "_code";
-    public static final String CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
-    public static final String CONSENT_SIGNATURES_SUFFIX = "_consent_signatures";
-    public static final String VERSION_SUFFIX = "_version";
-    public static final String OLD_VERSION_SUFFIX = "version";
+    private static final String HEALTH_CODE_SUFFIX = "_code";
+    private static final String CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
+    private static final String CONSENT_SIGNATURES_SUFFIX = "_consent_signatures";
+    private static final String VERSION_SUFFIX = "_version";
+    private static final String OLD_VERSION_SUFFIX = "version";
     
     private final com.stormpath.sdk.account.Account acct;
     private final StudyIdentifier studyIdentifier;
@@ -62,8 +60,8 @@ public class StormpathAccount implements Account {
     private final String healthIdKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
-    private Set<Roles> roles;
-    private Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
+    private final Set<Roles> roles;
+    private final Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
     
     StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
@@ -172,7 +170,10 @@ public class StormpathAccount implements Account {
     }
     @Override
     public void setRoles(Set<Roles> roles) {
-        this.roles = roles;
+        this.roles.clear();
+        if (roles != null) {
+            this.roles.addAll(roles);    
+        }
     }
     @Override
     public String getId() {

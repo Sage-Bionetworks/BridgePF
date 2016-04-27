@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.stormpath.StormpathAccount.PLACEHOLDER_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.PLACEHOLDER_STRING;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -334,8 +334,8 @@ public class StormpathAccountDao implements AccountDao {
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
         Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
         account.setEmail(participant.getEmail());
-        account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
-        account.setLastName(StormpathAccount.PLACEHOLDER_STRING);
+        account.setFirstName(PLACEHOLDER_STRING);
+        account.setLastName(PLACEHOLDER_STRING);
         acct.setPassword(participant.getPassword());
         if (participant.getRoles() != null) {
             account.setRoles(participant.getRoles());
