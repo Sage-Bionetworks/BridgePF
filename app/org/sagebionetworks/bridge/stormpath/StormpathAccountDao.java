@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.PLACEHOLDER_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.STORMPATH_NAME_PLACEHOLDER_STRING;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -169,8 +169,8 @@ public class StormpathAccountDao implements AccountDao {
                 DateTime createdOn = (javaDate != null) ? new DateTime(javaDate) : null;
                 String id = BridgeUtils.getIdFromStormpathHref(acct.getHref());
                 
-                String firstName = (PLACEHOLDER_STRING.equals(acct.getGivenName())) ? null : acct.getGivenName();
-                String lastName = (PLACEHOLDER_STRING.equals(acct.getSurname())) ? null : acct.getSurname();
+                String firstName = (STORMPATH_NAME_PLACEHOLDER_STRING.equals(acct.getGivenName())) ? null : acct.getGivenName();
+                String lastName = (STORMPATH_NAME_PLACEHOLDER_STRING.equals(acct.getSurname())) ? null : acct.getSurname();
                 
                 // This should not trigger further requests to the server (customData, groups, etc.).
                 AccountSummary summary = new AccountSummary(firstName, lastName, 
@@ -334,8 +334,8 @@ public class StormpathAccountDao implements AccountDao {
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
         Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
         account.setEmail(participant.getEmail());
-        account.setFirstName(PLACEHOLDER_STRING);
-        account.setLastName(PLACEHOLDER_STRING);
+        account.setFirstName(STORMPATH_NAME_PLACEHOLDER_STRING);
+        account.setLastName(STORMPATH_NAME_PLACEHOLDER_STRING);
         acct.setPassword(participant.getPassword());
         if (participant.getRoles() != null) {
             account.setRoles(participant.getRoles());

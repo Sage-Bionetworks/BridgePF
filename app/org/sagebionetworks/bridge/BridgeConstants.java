@@ -58,5 +58,5 @@ public class BridgeConstants {
     
     public static final String STORMPATH_ACCOUNT_BASE_HREF = "https://enterprise.stormpath.io/v1/accounts/";
     
-    public static final String PLACEHOLDER_STRING = "<EMPTY>";
+    public static final String STORMPATH_NAME_PLACEHOLDER_STRING = "<EMPTY>";
 }

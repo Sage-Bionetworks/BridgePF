@@ -676,7 +676,7 @@ public class ParticipantServiceTest {
     public void developerCannotDowngradeResearcher() {
         doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
         
-        // developer can add the developer role, but they cannot remove the admin role
+        // developer can add the developer role, but they cannot remove the researcher role
         verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER, RESEARCHER));
     }
     
@@ -684,7 +684,7 @@ public class ParticipantServiceTest {
     public void researcherCanDowngradeResearcher() {
         doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
         
-        // developer can add the developer role, but they cannot remove the admin role
+        // researcher can change a researcher to a developer
         verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
     }
     
@@ -692,15 +692,23 @@ public class ParticipantServiceTest {
     public void adminCanChangeDeveloperToResearcher() {
         doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
         
-        // developer can add the developer role, but they cannot remove the admin role
+        // admin can convert a developer to a researcher
         verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
+    }
+    
+    @Test
+    public void adminCanChangeResearcherToAdmin() {
+        doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
+        
+        // admin can convert a researcher to an admin
+        verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(ADMIN), Sets.newHashSet(ADMIN));
     }
     
     @Test
     public void researcherCanUpgradeDeveloperRole() {
         doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
         
-        // researcher can remove developer and add researcher, so final result is researcher
+        // researcher can convert a developer to a researcher
         verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
     }
     
@@ -718,6 +726,8 @@ public class ParticipantServiceTest {
         verify(account, never()).setStatus(any());
     }
     
+    // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying, 
+    // that it has been set. If the setter is not called, the existing status will be sent back to Stormpath.
     private void verifyStatusUpdate(Set<Roles> roles, AccountStatus status) {
         mockHealthCodeAndAccountRetrieval();
         

@@ -335,7 +335,7 @@ public class StormpathAccountTest {
     
     @Test
     public void canSetAndGetRoles() {
-        acct.getRoles().add(DEVELOPER);
+        acct.setRoles(Sets.newHashSet(DEVELOPER));
         
         assertEquals(1, acct.getRoles().size());
         assertEquals(DEVELOPER, acct.getRoles().iterator().next());

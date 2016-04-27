@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.PLACEHOLDER_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.STORMPATH_NAME_PLACEHOLDER_STRING;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -60,8 +61,8 @@ public class StormpathAccount implements Account {
     private final String healthIdKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
-    private final Set<Roles> roles;
     private final Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
+    private ImmutableSet<Roles> roles;
     
     StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
@@ -77,7 +78,7 @@ public class StormpathAccount implements Account {
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
-        this.roles = BridgeUtils.convertRolesQuietly(acct.getGroups());
+        this.roles = ImmutableSet.copyOf(BridgeUtils.convertRolesQuietly(acct.getGroups()));
         this.allSignatures = Maps.newHashMap();
         
         for (SubpopulationGuid subpopGuid : subpopGuids) {
@@ -103,12 +104,12 @@ public class StormpathAccount implements Account {
     @Override
     public String getFirstName() {
         String firstName = acct.getGivenName();
-        return (PLACEHOLDER_STRING.equals(firstName)) ? null : firstName;
+        return (STORMPATH_NAME_PLACEHOLDER_STRING.equals(firstName)) ? null : firstName;
     }
     @Override
     public void setFirstName(String firstName) {
         if (isBlank(firstName)) {
-            acct.setGivenName(PLACEHOLDER_STRING);
+            acct.setGivenName(STORMPATH_NAME_PLACEHOLDER_STRING);
         } else {
             acct.setGivenName(firstName);    
         }
@@ -116,12 +117,12 @@ public class StormpathAccount implements Account {
     @Override
     public String getLastName() {
         String lastName = acct.getSurname();
-        return (PLACEHOLDER_STRING.equals(lastName)) ? null : lastName;
+        return (STORMPATH_NAME_PLACEHOLDER_STRING.equals(lastName)) ? null : lastName;
     }
     @Override
     public void setLastName(String lastName) {
         if (isBlank(lastName)) {
-            acct.setSurname(PLACEHOLDER_STRING);
+            acct.setSurname(STORMPATH_NAME_PLACEHOLDER_STRING);
         } else {
             acct.setSurname(lastName);    
         }
@@ -170,10 +171,7 @@ public class StormpathAccount implements Account {
     }
     @Override
     public void setRoles(Set<Roles> roles) {
-        this.roles.clear();
-        if (roles != null) {
-            this.roles.addAll(roles);    
-        }
+        this.roles = (roles == null) ? ImmutableSet.of() : ImmutableSet.copyOf(roles);
     }
     @Override
     public String getId() {
