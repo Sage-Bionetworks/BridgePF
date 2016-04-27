@@ -11,6 +11,10 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
+
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -22,6 +26,12 @@ public class StudyValidator implements Validator {
     private static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
     private static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     private static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
+    /**
+     * Dynamically inspect an instance of StudyParticipant with null fields included in the JSON
+     * to get the field names that are reserved, and cannot be used for user profile attributes.
+     */
+    private static final Set<String> RESERVED_ATTR_NAMES = Sets
+            .newHashSet(new ObjectMapper().valueToTree(new StudyParticipant.Builder().build()).fieldNames());
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -77,7 +87,7 @@ public class StudyValidator implements Validator {
         validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate");
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
-            if (StudyParticipant.RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
+            if (RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
                 String msg = String.format("'%s' conflicts with existing user profile property", userProfileAttribute);
                 errors.rejectValue("userProfileAttributes", msg);
             }
