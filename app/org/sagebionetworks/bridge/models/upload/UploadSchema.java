@@ -26,11 +26,8 @@ public interface UploadSchema extends BridgeEntity {
     String getName();
 
     /**
-     * Schema revision number. This is managed by the Bridge back-end. For creating new schemas, this should initially
-     * be unset (or set to the default value of zero). For updating schemas, this should be set to the revision number
-     * of the schema you are updating, to ensure that you aren't updating an older version of the schema. Upon creating
-     * or updating a schema, the Bridge back-end will automatically increment this revision number by 1 (for updating
-     * existing schemas) or from 0 to 1 (for creating new schemas).
+     * Revision number. This is a secondary ID used to partition different Synapse tables based on breaking changes in
+     * a schema.
      */
     int getRevision();
 
@@ -47,9 +44,27 @@ public interface UploadSchema extends BridgeEntity {
     /** Schema type, for example survey vs data. */
     UploadSchemaType getSchemaType();
 
+    /** The survey GUID if this is a survey schema. */
+    String getSurveyGuid();
+
+    /** For survey createdOn (versionedOn) if this is a survey schema. */
+    Long getSurveyCreatedOn();
+
     /**
      * Study ID that this schema lives in. This is not exposed to the callers of the upload schema API, but is
      * available here for internal usage.
      */
     String getStudyId();
+
+    /**
+     * <p>
+     * Version number of a particular schema revision. This is used to detect concurrent modification. Callers should
+     * not modify this value. This will be automatically incremented by Bridge.
+     * </p>
+     * <p>
+     * This is currently ignored by the Schema v3 API, which manages its own versioning via revision. However, the
+     * Schema v4 API needs this as revision and versions are now independent of each other.
+     * </p>
+     */
+    Long getVersion();
 }

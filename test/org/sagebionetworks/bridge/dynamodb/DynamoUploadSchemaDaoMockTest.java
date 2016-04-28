@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -50,7 +51,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class DynamoUploadSchemaDaoTest {
+public class DynamoUploadSchemaDaoMockTest {
     @Test
     public void createNewSchema() {
         testCreateUpdate("createStudy", "newSchema", null, 0);
@@ -79,10 +80,14 @@ public class DynamoUploadSchemaDaoTest {
         }
         DynamoDBMapper mockMapper = setupMockMapperWithSchema(schema);
 
+        // Make schema that we create/update. Add a version number 1 just to make sure the DAO clears it.
+        DynamoUploadSchema schemaToPost = makeUploadSchema(null, schemaId, newRev);
+        schemaToPost.setVersion(1L);
+
         // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
         dao.setDdbMapper(mockMapper);
-        UploadSchema retVal = dao.createOrUpdateUploadSchema(studyId, makeUploadSchema(null, schemaId, newRev));
+        UploadSchema retVal = dao.createOrUpdateUploadSchema(studyId, schemaToPost);
 
         // Validate call to DDB - we can't compare if the captured argument is equal to the passed in upload
         // schema since DDB objects are mutable.
@@ -95,6 +100,9 @@ public class DynamoUploadSchemaDaoTest {
 
         // DAO auto-increments the revision
         assertEquals(newRev + 1, arg.getValue().getRevision());
+
+        // validate we clear the DDB version
+        assertNull(arg.getValue().getVersion());
 
         // The retVal should be the same object as the schema was sent to DDB.
         assertSame(arg.getValue(), retVal);

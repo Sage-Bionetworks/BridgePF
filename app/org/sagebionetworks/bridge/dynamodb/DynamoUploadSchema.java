@@ -11,15 +11,20 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshaller;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -31,16 +36,18 @@ import org.sagebionetworks.bridge.validators.Validate;
  * The DynamoDB implementation of UploadSchema. This is a mutable class with getters and setters so that it can work
  * with the DynamoDB mapper.
  */
-@DynamoThroughput(readCapacity=50, writeCapacity=25)
+@DynamoThroughput(readCapacity=15, writeCapacity=1)
 @DynamoDBTable(tableName = "UploadSchema")
 public class DynamoUploadSchema implements UploadSchema {
-    
     private List<UploadFieldDefinition> fieldDefList;
     private String name;
     private int rev;
     private String schemaId;
     private UploadSchemaType schemaType;
+    private String surveyGuid;
+    private Long surveyCreatedOn;
     private String studyId;
+    private Long version;
     
     /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = FieldDefinitionListMarshaller.class)
@@ -103,11 +110,9 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** {@inheritDoc} */
-    // We don't use the DynamoDBVersionAttribute here because we want to keep multiple versions of the schema so we can
-    // parse older versions of the data. Similarly, we make this a range key so that we can always find the latest
-    // version of the schema.
-    // Additionally, we don't need to use the version attribute to do optimistic locking, since we use a save
-    // expression that checks whether the row already exists. (See DynamoUploadSchemaDao for further details.)
+    // This is separate from the DynamoDBVersionAttribute. Different schema revisions can co-exist. They correspond to
+    // different data versions and different schema tables. Schema revisions themselves can be modified, so they have
+    // versions in DDB to support concurrent modification detection and optimistic locking.
     @DynamoDBRangeKey
     @Override
     public int getRevision() {
@@ -151,6 +156,30 @@ public class DynamoUploadSchema implements UploadSchema {
         this.schemaType = schemaType;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public String getSurveyGuid() {
+        return surveyGuid;
+    }
+
+    /** @see #getSurveyGuid */
+    public void setSurveyGuid(String surveyGuid) {
+        this.surveyGuid = surveyGuid;
+    }
+
+    /** {@inheritDoc} */
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @Override
+    public Long getSurveyCreatedOn() {
+        return surveyCreatedOn;
+    }
+
+    /** @see #getSurveyCreatedOn */
+    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
+    public void setSurveyCreatedOn(Long surveyCreatedOn) {
+        this.surveyCreatedOn = surveyCreatedOn;
+    }
+
     /**
      * <p>
      * The ID of the study that this schema lives in. This is not exposed to the callers of the upload schema API, but
@@ -172,6 +201,18 @@ public class DynamoUploadSchema implements UploadSchema {
     @JsonIgnore
     public void setStudyId(String studyId) {
         this.studyId = studyId;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBVersionAttribute
+    @Override
+    public Long getVersion() {
+        return version;
+    }
+
+    /** @see #getVersion */
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     /** Custom DynamoDB marshaller for the field definition list. This uses Jackson to convert to and from JSON. */

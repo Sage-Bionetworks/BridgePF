@@ -86,6 +86,9 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         ddbUploadSchema.setRevision(oldRev + 1);
         ddbUploadSchema.setStudyId(studyId);
 
+        // Clear version. We're creating a new row to handle the new rev, so this starts at version 0 (null).
+        ddbUploadSchema.setVersion(null);
+
         try {
             mapper.save(uploadSchema, DOES_NOT_EXIST_EXPRESSION);
         } catch (ConditionalCheckFailedException ex) {

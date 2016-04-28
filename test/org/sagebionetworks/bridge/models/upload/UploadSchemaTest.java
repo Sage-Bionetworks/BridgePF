@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -118,6 +119,9 @@ public class UploadSchemaTest {
 
     @Test
     public void testSerialization() throws Exception {
+        String surveyCreatedOnStr = "2016-04-27T19:00:00.002-0700";
+        long surveyCreatedOnMillis = DateTime.parse(surveyCreatedOnStr).getMillis();
+
         // start with JSON. Some field definitions may already be serialized using upper-case enums
         // so leave this test string as it is. We know from other tests that lower-case 
         // strings work.
@@ -126,6 +130,9 @@ public class UploadSchemaTest {
                 "   \"revision\":3,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
                 "   \"schemaType\":\"ios_survey\",\n" +
+                "   \"surveyGuid\":\"survey-guid\",\n" +
+                "   \"surveyCreatedOn\":\"" + surveyCreatedOnStr + "\",\n" +
+                "   \"version\":6,\n" +
                 "   \"fieldDefinitions\":[\n" +
                 "       {\n" +
                 "           \"name\":\"foo\",\n" +
@@ -146,6 +153,9 @@ public class UploadSchemaTest {
         assertEquals(3, uploadSchema.getRevision());
         assertEquals("test-schema", uploadSchema.getSchemaId());
         assertEquals(UploadSchemaType.IOS_SURVEY, uploadSchema.getSchemaType());
+        assertEquals("survey-guid", uploadSchema.getSurveyGuid());
+        assertEquals(surveyCreatedOnMillis, uploadSchema.getSurveyCreatedOn().longValue());
+        assertEquals(6, uploadSchema.getVersion().longValue());
 
         UploadFieldDefinition fooFieldDef = uploadSchema.getFieldDefinitions().get(0);
         assertEquals("foo", fooFieldDef.getName());
@@ -165,12 +175,19 @@ public class UploadSchemaTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(6, jsonMap.size());
+        assertEquals(9, jsonMap.size());
         assertEquals("Test Schema", jsonMap.get("name"));
         assertEquals(3, jsonMap.get("revision"));
         assertEquals("test-schema", jsonMap.get("schemaId"));
         assertEquals("ios_survey", jsonMap.get("schemaType"));
+        assertEquals("survey-guid", jsonMap.get("surveyGuid"));
         assertEquals("UploadSchema", jsonMap.get("type"));
+        assertEquals(6,  jsonMap.get("version"));
+
+        // The createdOn time is converted into ISO timestamp, but might be in a different timezone. Ensure that it
+        // still refers to the correct instant in time, down to the millisecond.
+        long resultSurveyCreatedOnMillis = DateTime.parse((String) jsonMap.get("surveyCreatedOn")).getMillis();
+        assertEquals(surveyCreatedOnMillis, resultSurveyCreatedOnMillis);
 
         List<Map<String, Object>> fieldDefJsonList = (List<Map<String, Object>>) jsonMap.get("fieldDefinitions");
         assertEquals(2, fieldDefJsonList.size());
