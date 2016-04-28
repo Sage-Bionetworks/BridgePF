@@ -144,12 +144,12 @@ public class UserProfileController extends BaseController {
                 session.getUser().getHealthCode()).getStringSet(DATA_GROUPS);
         
         ArrayNode array = JsonNodeFactory.instance.arrayNode();
-        for (String group : dataGroups) {
-            array.add(group);
-        }
+        dataGroups.stream().forEach(array::add);
+
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.set("dataGroups", array);
         node.put(TYPE_FIELD, "DataGroups");
+
         return ok(node).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
