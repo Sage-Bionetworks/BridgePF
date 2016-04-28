@@ -161,11 +161,13 @@ public class UserProfileControllerTest {
     
     @Test
     public void updateUserProfile() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().build();
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId("originalId").build();
         doReturn(participant).when(participantService).getParticipant(study, Sets.newHashSet(), ID);
         
+        // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
+        // (externalId)
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'First','lastName':'Last',"+
-                "'username':'email@email.com','foo':'belgium','type':'UserProfile'}"));
+                "'username':'email@email.com','foo':'belgium','externalId':'updatedId','type':'UserProfile'}"));
         
         Result result = controller.updateUserProfile();
         TestUtils.assertResult(result, 200, "Profile updated.");
@@ -175,6 +177,7 @@ public class UserProfileControllerTest {
         StudyParticipant persisted = participantCaptor.getValue();
         assertEquals("First", persisted.getFirstName());
         assertEquals("Last", persisted.getLastName());
+        assertEquals("originalId", persisted.getExternalId()); // not changed by the JSON submitted
         assertEquals("belgium", persisted.getAttributes().get("foo"));
     }
     
