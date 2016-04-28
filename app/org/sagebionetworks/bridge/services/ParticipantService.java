@@ -38,7 +38,9 @@ import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
@@ -249,9 +251,23 @@ public class ParticipantService {
         }
         // Clear the user's session so that any changes are picked up by the app. New accounts don't have this issue.
         if (!isNew) {
-            cacheProvider.removeSessionByUserId(account.getId());
+            updateSession(participant);
         }
         return new IdentifierHolder(account.getId());
+    }
+    
+    private void updateSession(StudyParticipant participant) {
+        UserSession session = cacheProvider.getUserSessionByUserId(participant.getId());
+        if (session != null) {
+            User user = session.getUser();
+            user.setFirstName(participant.getFirstName());
+            user.setLastName(participant.getLastName());
+            user.setRoles(participant.getRoles());
+            user.setDataGroups(participant.getDataGroups());
+            user.setLanguages(participant.getLanguages());
+            user.setSharingScope(participant.getSharingScope());
+            cacheProvider.setUserSession(session);
+        }
     }
     
     private boolean callerIsAdmin(Set<Roles> roles) {
