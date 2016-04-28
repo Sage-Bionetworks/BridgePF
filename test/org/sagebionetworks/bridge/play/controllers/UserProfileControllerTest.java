@@ -8,8 +8,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -26,6 +26,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -62,6 +63,7 @@ public class UserProfileControllerTest {
     private static final Map<SubpopulationGuid,ConsentStatus> CONSENT_STATUSES_MAP = Maps.newHashMap();
     private static final Set<String> TEST_STUDY_DATA_GROUPS = Sets.newHashSet("group1", "group2");
     private static final Set<String> TEST_STUDY_ATTRIBUTES = Sets.newHashSet("foo","bar"); 
+    private static final Set<Roles> NO_ROLES = Sets.newHashSet();
     private static final String ID = "ABC";
     private static final String HEALTH_CODE = "healthCode";
     
@@ -88,6 +90,12 @@ public class UserProfileControllerTest {
     
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
+    
+    @Captor
+    private ArgumentCaptor<Set<String>> stringSetCaptor;
+    
+    @Captor
+    private ArgumentCaptor<CriteriaContext> contextCaptor;
     
     private Study study;
     
@@ -180,38 +188,42 @@ public class UserProfileControllerTest {
         verify(externalIdService).assignExternalId(study, "ABC-123-XYZ", HEALTH_CODE);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
+        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
+        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
+        
         Set<String> dataGroupSet = Sets.newHashSet("group1");
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
         
         Result result = controller.updateDataGroups();
         assertResult(result, 200, "Data groups updated.");
         
-        ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
-        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        
-        verify(optionsService).setStringSet(eq(TEST_STUDY), eq(HEALTH_CODE), eq(DATA_GROUPS), captor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), participantCaptor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());
         
-        Set<String> dataGroups = (Set<String>)captor.getValue();
-        assertEquals(dataGroupSet, dataGroups);
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals(dataGroupSet, participant.getDataGroups());
+        assertEquals("First", participant.getFirstName());
         
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
         assertEquals(dataGroupSet, session.getUser().getDataGroups());
     }
     
-    @SuppressWarnings({"unchecked"})
+    // Validation is no longer done in the controller, but verify that user is not changed
+    // when the service throws an InvalidEntityException.
     @Test
     public void invalidDataGroupsRejected() throws Exception {
+        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
+        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
+        doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), any());
+        
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
         try {
             controller.updateDataGroups();
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("DataGroups is invalid"));
-            verify(optionsService, never()).setStringSet(eq(TEST_STUDY), eq(HEALTH_CODE), eq(DATA_GROUPS), any(Set.class));
+            assertEquals(Sets.newHashSet(), session.getUser().getDataGroups());
         }
     }
 
@@ -224,6 +236,7 @@ public class UserProfileControllerTest {
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
         Result result = controller.getDataGroups();
+        
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         
         assertEquals("DataGroups", node.get("type").asText());
@@ -237,15 +250,17 @@ public class UserProfileControllerTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
+        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
+        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
         TestUtils.mockPlayContextWithJson("{}");
         
         Result result = controller.updateDataGroups();
         assertResult(result, 200, "Data groups updated.");
         
-        ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
-        verify(optionsService).setStringSet(eq(TEST_STUDY), eq(HEALTH_CODE), eq(DATA_GROUPS), captor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), participantCaptor.capture());
         
-        Set<String> dataGroups = (Set<String>)captor.getValue();
-        assertEquals(Sets.newHashSet(), dataGroups);
+        StudyParticipant updated = participantCaptor.getValue();
+        assertTrue(updated.getDataGroups().isEmpty());
+        assertEquals("First", updated.getFirstName());
     }
 }

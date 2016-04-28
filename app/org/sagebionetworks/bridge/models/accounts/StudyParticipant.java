@@ -173,7 +173,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.id = participant.getId();
             return this;
         }
-        public Builder copyOnly(StudyParticipant participant, Set<String> fieldNames) {
+        public Builder copyFieldsOf(StudyParticipant participant, Set<String> fieldNames) {
             if (fieldNames.contains("firstName")) {
                 this.firstName = participant.getFirstName();    
             }

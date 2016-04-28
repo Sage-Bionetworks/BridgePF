@@ -13,7 +13,6 @@ import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.DataGroups;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -23,17 +22,17 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.ParticipantService;
-import org.sagebionetworks.bridge.validators.DataGroupsValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import play.mvc.Result;
 
@@ -47,6 +46,7 @@ public class UserProfileController extends BaseController {
     private static final String TYPE_FIELD = "type";
     private static final String TYPE_VALUE = "UserProfile";
     private static final Set<Roles> NO_ROLES = Collections.emptySet();
+    private static final Set<String> DATA_GROUPS_SET = Sets.newHashSet("dataGroups");
 
     private ParticipantService participantService;
     
@@ -143,21 +143,31 @@ public class UserProfileController extends BaseController {
         Set<String> dataGroups = optionsService.getOptions(
                 session.getUser().getHealthCode()).getStringSet(DATA_GROUPS);
         
-        return okResult(new DataGroups(dataGroups));
+        ArrayNode array = JsonNodeFactory.instance.arrayNode();
+        for (String group : dataGroups) {
+            array.add(group);
+        }
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.set("dataGroups", array);
+        node.put(TYPE_FIELD, "DataGroups");
+        return ok(node).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
     public Result updateDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
-        DataGroups dataGroups = parseJson(request(), DataGroups.class);
-        Validate.entityThrowingException(new DataGroupsValidator(study.getDataGroups()), dataGroups);
-        
-        optionsService.setStringSet(session.getStudyIdentifier(), 
-                session.getUser().getHealthCode(), DATA_GROUPS, dataGroups.getDataGroups());
-        
         User user = session.getUser();
-        user.setDataGroups(dataGroups.getDataGroups());
+        String userId = user.getId();
+        
+        StudyParticipant dataGroups = parseJson(request(), StudyParticipant.class);
+        
+        StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, userId);
+        
+        StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
+                .copyFieldsOf(dataGroups, DATA_GROUPS_SET).build();
+        
+        participantService.updateParticipant(study, NO_ROLES, userId, updated);
+        user.setDataGroups(updated.getDataGroups());
         
         CriteriaContext context = getCriteriaContext(session);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);

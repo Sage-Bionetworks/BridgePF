@@ -55,8 +55,9 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         String userId = session.getUser().getId();
         
-        // By copying only values that were included in the JSON onto the existing StudyParicipant,
+        // By copying only values that were included in the JSON onto the existing StudyParticipant,
         // we allow clients to only send back partial JSON to update the user. This has been the 
+        // usage pattern in prior APIs and it will make refactoring to use this API easier.
         JsonNode node = requestToJSON(request());
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
         
@@ -64,7 +65,7 @@ public class ParticipantController extends BaseController {
         StudyParticipant existing = participantService.getParticipant(study, NO_ROLES, userId);
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
-                .copyOnly(participant, fieldNames).build();
+                .copyFieldsOf(participant, fieldNames).build();
         
         participantService.updateParticipant(study, NO_ROLES, userId, updated);
         return okResult("Participant updated.");
