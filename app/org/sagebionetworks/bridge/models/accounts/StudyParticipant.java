@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableMap;
  */
 @JsonDeserialize(builder=StudyParticipant.Builder.class)
 public final class StudyParticipant implements BridgeEntity {
-
+    
     private final String firstName;
     private final String lastName;
     private final String email;
@@ -171,6 +171,57 @@ public final class StudyParticipant implements BridgeEntity {
             this.status = participant.getStatus();
             this.createdOn = participant.getCreatedOn();
             this.id = participant.getId();
+            return this;
+        }
+        public Builder copyFieldsOf(StudyParticipant participant, Set<String> fieldNames) {
+            if (fieldNames.contains("firstName")) {
+                this.firstName = participant.getFirstName();    
+            }
+            if (fieldNames.contains("lastName")) {
+                this.lastName = participant.getLastName();    
+            }
+            if (fieldNames.contains("email")) {
+                this.email = participant.getEmail();
+            }
+            if (fieldNames.contains("externalId")) {
+                this.externalId = participant.getExternalId();    
+            }
+            if (fieldNames.contains("password")) {
+                this.password = participant.getPassword();    
+            }
+            if (fieldNames.contains("sharingScope")) {
+                this.sharingScope = participant.getSharingScope();
+            }
+            if (fieldNames.contains("notifyByEmail")) {
+                this.notifyByEmail = participant.isNotifyByEmail();    
+            }
+            if (fieldNames.contains("healthCode")) {
+                this.healthCode = participant.getHealthCode();    
+            }
+            if (fieldNames.contains("dataGroups")) {
+                this.dataGroups = participant.getDataGroups();    
+            }
+            if (fieldNames.contains("attributes")) {
+                this.attributes = participant.getAttributes();    
+            }
+            if (fieldNames.contains("consentHistories")) {
+                this.consentHistories = participant.getConsentHistories();    
+            }
+            if (fieldNames.contains("roles")) {
+                this.roles = participant.getRoles();    
+            }
+            if (fieldNames.contains("languages")) {
+                this.languages = participant.getLanguages();    
+            }
+            if (fieldNames.contains("status")){
+                this.status = participant.getStatus();    
+            }
+            if (fieldNames.contains("createdOn")) {
+                this.createdOn = participant.getCreatedOn();    
+            }
+            if (fieldNames.contains("id")) {
+                this.id = participant.getId();    
+            }
             return this;
         }
         public Builder withFirstName(String firstName) {

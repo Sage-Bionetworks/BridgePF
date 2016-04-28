@@ -79,6 +79,7 @@ public class TestUtils {
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         String resultMessage = node.get("message").asText();
         assertEquals(statusCode, result.status());
+        assertEquals("application/json", result.contentType());
         assertEquals(message, resultMessage);
     }
 

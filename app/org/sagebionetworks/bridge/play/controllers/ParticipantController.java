@@ -4,12 +4,16 @@ import static java.lang.Integer.parseInt;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
+import java.util.Collections;
+import java.util.Set;
+
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -19,16 +23,52 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
+
 import play.mvc.Result;
 
 @Controller
 public class ParticipantController extends BaseController {
+    
+    private static final Set<Roles> NO_ROLES = Collections.emptySet();
     
     private ParticipantService participantService;
     
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
+    }
+    
+    public Result getSelfParticipant() {
+        UserSession session = getAuthenticatedSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        String userId = session.getUser().getId();
+        
+        StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, userId);
+        
+        return okResult(participant);
+    }
+    
+    public Result updateSelfParticipant() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        String userId = session.getUser().getId();
+        
+        // By copying only values that were included in the JSON onto the existing StudyParticipant,
+        // we allow clients to only send back partial JSON to update the user. This has been the 
+        // usage pattern in prior APIs and it will make refactoring to use this API easier.
+        JsonNode node = requestToJSON(request());
+        Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
+        
+        StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
+        StudyParticipant existing = participantService.getParticipant(study, NO_ROLES, userId);
+        StudyParticipant updated = new StudyParticipant.Builder()
+                .copyOf(existing)
+                .copyFieldsOf(participant, fieldNames).build();
+        
+        participantService.updateParticipant(study, NO_ROLES, userId, updated);
+        return okResult("Participant updated.");
     }
     
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter) {
