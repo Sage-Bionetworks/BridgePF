@@ -1,9 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.Objects;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.base.Objects;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -15,15 +16,57 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
  */
 @JsonDeserialize(builder = DynamoUploadFieldDefinition.Builder.class)
 public final class DynamoUploadFieldDefinition implements UploadFieldDefinition {
+    private final @Nullable String fileExtension;
+    private final @Nullable String mimeType;
+    private final @Nullable Integer minAppVersion;
+    private final @Nullable Integer maxAppVersion;
+    private final @Nullable Integer maxLength;
     private final @Nonnull String name;
     private final boolean required;
     private final @Nonnull UploadFieldType type;
 
     /** Private constructor. Construction of a DynamoUploadFieldDefinition should go through the Builder. */
-    private DynamoUploadFieldDefinition(@Nonnull String name, boolean required, @Nonnull UploadFieldType type) {
+    private DynamoUploadFieldDefinition(@Nullable String fileExtension, @Nullable String mimeType,
+            @Nullable Integer minAppVersion, @Nullable Integer maxAppVersion, @Nullable Integer maxLength,
+            @Nonnull String name, boolean required, @Nonnull UploadFieldType type) {
+        this.fileExtension = fileExtension;
+        this.mimeType = mimeType;
+        this.minAppVersion = minAppVersion;
+        this.maxAppVersion = maxAppVersion;
+        this.maxLength = maxLength;
         this.name = name;
         this.required = required;
         this.type = type;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable String getFileExtension() {
+        return fileExtension;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable String getMimeType() {
+        return mimeType;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable Integer getMinAppVersion() {
+        return minAppVersion;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable Integer getMaxAppVersion() {
+        return maxAppVersion;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable Integer getMaxLength() {
+        return maxLength;
     }
 
     /** {@inheritDoc} */
@@ -54,22 +97,62 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             return false;
         }
         DynamoUploadFieldDefinition that = (DynamoUploadFieldDefinition) o;
-        return Objects.equal(required, that.required) &&
-                Objects.equal(name, that.name) &&
-                Objects.equal(type, that.type);
+        return required == that.required &&
+                Objects.equals(fileExtension, that.fileExtension) &&
+                Objects.equals(mimeType, that.mimeType) &&
+                Objects.equals(minAppVersion, that.minAppVersion) &&
+                Objects.equals(maxAppVersion, that.maxAppVersion) &&
+                Objects.equals(maxLength, that.maxLength) &&
+                Objects.equals(name, that.name) &&
+                type == that.type;
     }
 
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        return Objects.hashCode(name, required, type);
+        return Objects.hash(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength, name, required, type);
     }
 
     /** Builder for DynamoUploadFieldDefinition */
     public static class Builder {
+        private String fileExtension;
+        private String mimeType;
+        private Integer minAppVersion;
+        private Integer maxAppVersion;
+        private Integer maxLength;
         private String name;
         private Boolean required;
         private UploadFieldType type;
+
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getFileExtension */
+        public Builder withFileExtension(String fileExtension) {
+            this.fileExtension = fileExtension;
+            return this;
+        }
+
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMimeType */
+        public Builder withMimeType(String mimeType) {
+            this.mimeType = mimeType;
+            return this;
+        }
+
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMinAppVersion */
+        public Builder withMinAppVersion(Integer minAppVersion) {
+            this.minAppVersion = minAppVersion;
+            return this;
+        }
+
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMaxAppVersion */
+        public Builder withMaxAppVersion(Integer maxAppVersion) {
+            this.maxAppVersion = maxAppVersion;
+            return this;
+        }
+
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMaxLength */
+        public Builder withMaxLength(Integer maxLength) {
+            this.maxLength = maxLength;
+            return this;
+        }
 
         /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getName */
         public Builder withName(String name) {
@@ -102,7 +185,8 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             if (required == null) {
                 required = true;
             }
-            return new DynamoUploadFieldDefinition(name, required, type);
+            return new DynamoUploadFieldDefinition(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength,
+                    name, required, type);
         }
     }
 }
