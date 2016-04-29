@@ -29,17 +29,15 @@ public final class Activity implements BridgeEntity {
     private String guid;
     private TaskReference task;
     private SurveyReference survey;
-    private SurveyResponseReference response;
     private ActivityType activityType;
 
     private Activity(String label, String labelDetail, String guid, 
-        TaskReference task, SurveyReference survey, SurveyResponseReference response) {
+        TaskReference task, SurveyReference survey) {
         this.label = label;
         this.labelDetail = labelDetail;
         this.guid = guid;
         this.survey = survey;
         this.task = task;
-        this.response = response;
         this.activityType = (task != null) ? TASK : SURVEY;
     }
     
@@ -61,9 +59,6 @@ public final class Activity implements BridgeEntity {
     public SurveyReference getSurvey() {
         return survey;
     }
-    public SurveyResponseReference getSurveyResponse() {
-        return response;
-    }
     public boolean isPersistentlyRescheduledBy(Schedule schedule) {
         return schedule.schedulesImmediatelyAfterEvent() && getActivityFinishedEventId(schedule);
     }
@@ -83,7 +78,6 @@ public final class Activity implements BridgeEntity {
         private String guid;
         private TaskReference task;
         private SurveyReference survey;
-        private SurveyResponseReference response;
         
         public Builder withActivity(Activity activity) {
             this.label = activity.label;
@@ -91,7 +85,6 @@ public final class Activity implements BridgeEntity {
             this.guid = activity.guid;
             this.task = activity.task;
             this.survey = activity.survey;
-            this.response = activity.response;
             return this;
         }
         public Builder withLabel(String label) {
@@ -128,20 +121,11 @@ public final class Activity implements BridgeEntity {
             this.survey = new SurveyReference(identifier, guid, createdOn);
             return this;
         }
-        @JsonSetter
-        public Builder withSurveyResponse(SurveyResponseReference reference) { 
-            this.response = reference;
-            return this;
-        }
-        public Builder withSurveyResponse(String identifier) {
-            this.response = new SurveyResponseReference(identifier);
-            return this;
-        }
         public Activity build() {
             if (guid == null) {
                 guid = BridgeUtils.generateGuid();
             }
-            return new Activity(label, labelDetail, guid, task, survey, response);
+            return new Activity(label, labelDetail, guid, task, survey);
         }
     }
     
@@ -153,7 +137,6 @@ public final class Activity implements BridgeEntity {
         result = prime * result + Objects.hashCode(label);
         result = prime * result + Objects.hashCode(labelDetail);
         result = prime * result + Objects.hashCode(guid);
-        result = prime * result + Objects.hashCode(response);
         result = prime * result + Objects.hashCode(survey);
         result = prime * result + Objects.hashCode(task);
         return result;
@@ -168,13 +151,12 @@ public final class Activity implements BridgeEntity {
         Activity other = (Activity) obj;
         return (Objects.equals(activityType, other.activityType) && 
             Objects.equals(label, other.label) && Objects.equals(labelDetail, other.labelDetail) &&
-            Objects.equals(guid,  other.guid) && Objects.equals(response, other.response) && 
-            Objects.equals(survey, other.survey) && Objects.equals(task, other.task));
+            Objects.equals(guid,  other.guid) && Objects.equals(survey, other.survey) && Objects.equals(task, other.task));
     }
 
     @Override
     public String toString() {
-        return String.format("Activity [label=%s, labelDetail=%s, guid=%s, task=%s, survey=%s, response=%s, activityType=%s]",
-            label, labelDetail, guid, task, survey, response, activityType);
+        return String.format("Activity [label=%s, labelDetail=%s, guid=%s, task=%s, survey=%s, activityType=%s]",
+            label, labelDetail, guid, task, survey, activityType);
     }
 }

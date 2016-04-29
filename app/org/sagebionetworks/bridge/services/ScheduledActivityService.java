@@ -10,58 +10,33 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
-import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 @Component
 public class ScheduledActivityService {
     
-    private static final Logger LOG = LoggerFactory.getLogger(ScheduledActivityService.class);
-    
     private static final ScheduleContextValidator VALIDATOR = new ScheduleContextValidator();
-    private static final List<SurveyAnswer> EMPTY_ANSWERS = ImmutableList.of();
     
     private ScheduledActivityDao activityDao;
     
     private ActivityEventService activityEventService;
     
     private SchedulePlanService schedulePlanService;
-    
-    private UserConsentDao userConsentDao;
-    
-    private SurveyService surveyService;
-    
-    private SurveyResponseService surveyResponseService;
-    
-    private SubpopulationService subpopService;
     
     @Autowired
     public final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
@@ -74,22 +49,6 @@ public class ScheduledActivityService {
     @Autowired
     public final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
-    }
-    @Autowired
-    public final void setUserConsentDao(UserConsentDao userConsentDao) {
-        this.userConsentDao = userConsentDao;
-    }
-    @Autowired
-    public final void setSurveyService(SurveyService surveyService) {
-        this.surveyService = surveyService;
-    }
-    @Autowired
-    public final void setSurveyResponseService(SurveyResponseService surveyResponseService) {
-        this.surveyResponseService = surveyResponseService;
-    }
-    @Autowired
-    public final void setSubpopulationService(SubpopulationService subpopService) {
-        this.subpopService = subpopService;
     }
     
     public List<ScheduledActivity> getScheduledActivities(User user, ScheduleContext context) {
@@ -108,15 +67,6 @@ public class ScheduledActivityService {
         List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
         
         List<ScheduledActivity> saves = updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
-        
-        // if a survey activity, it may need a survey response generated (currently we're not using these though).
-        for (ScheduledActivity schActivity : saves) {
-            Activity activity = createSurveyResponseIfNeeded(
-                    context.getCriteriaContext().getStudyIdentifier(), 
-                    context.getCriteriaContext().getHealthCode(), 
-                    schActivity.getActivity());
-            schActivity.setActivity(activity);
-        }
         activityDao.saveActivities(saves);
 
         return orderActivities(scheduledActivities);
@@ -182,44 +132,12 @@ public class ScheduledActivityService {
             .collect(toImmutableList());
     }
     
-    /**
-     * @param user
-     * @return
-     */
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
         Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getHealthCode());
-        if (!events.containsKey("enrollment")) {
-            return createEnrollmentEventFromConsent(context, events);
-        }
+        events.putIfAbsent("enrollment", context.getAccountCreatedOn());
         return events;
     }
     
-    /**
-     * No events have been recorded for this participant, so get an enrollment event from the consent records.
-     * We have back-filled this event, so this should no longer be needed, but it is left here just in case.
-     * @param user
-     * @param events
-     * @return
-     */
-    private Map<String, DateTime> createEnrollmentEventFromConsent(ScheduleContext context, Map<String, DateTime> events) {
-        // This should no longer happen, but in case a record was never migrated, go back to the consents to find the 
-        // enrollment date. It's the earliest of all the signature dates.
-        long signedOn = Long.MAX_VALUE;
-        List<Subpopulation> subpops = subpopService.getSubpopulations(context.getCriteriaContext().getStudyIdentifier());
-        for (Subpopulation subpop : subpops) {
-            UserConsent consent = userConsentDao.getActiveUserConsent(
-                    context.getCriteriaContext().getHealthCode(), subpop.getGuid());
-            if (consent != null && consent.getSignedOn() < signedOn) {
-                signedOn = consent.getSignedOn();
-            }
-        }
-        Map<String,DateTime> newEvents = Maps.newHashMap();
-        newEvents.putAll(events);
-        newEvents.put("enrollment", new DateTime(signedOn));
-        LOG.warn("Enrollment missing from activity event table, pulling from consent records");
-        return newEvents;
-    }
-   
     private List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         
@@ -233,32 +151,6 @@ public class ScheduledActivityService {
             }
         }
         return scheduledActivities;
-    }
-    
-    private Activity createSurveyResponseIfNeeded(StudyIdentifier studyIdentifier, String healthCode, Activity activity) {
-        // If this activity is a task activity, or the survey response for this survey has already been determined
-        // and added to the activity, then do not generate a survey response for this activity.
-        if (activity.getActivityType() == ActivityType.TASK || activity.getSurveyResponse() != null) {
-            return activity;
-        }
-        
-        // Get a survey reference and if necessary, resolve the timestamp to use for the survey
-        SurveyReference ref = activity.getSurvey();
-        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
-        if (keys.getCreatedOn() == 0L) {
-            keys = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, ref.getGuid());
-        }   
-        
-        // Now create a response for that specific survey version
-        SurveyResponseView response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS, null);
-        
-        // And reconstruct the activity with that survey instance as well as the new response object.
-        return new Activity.Builder()
-            .withLabel(activity.getLabel())
-            .withLabelDetail(activity.getLabelDetail())
-            .withSurvey(response.getSurvey().getIdentifier(), keys.getGuid(), ref.getCreatedOn())
-            .withSurveyResponse(response.getResponse().getIdentifier())
-            .build();
     }
     
 }

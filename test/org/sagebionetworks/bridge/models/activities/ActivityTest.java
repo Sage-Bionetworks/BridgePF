@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -133,53 +132,6 @@ public class ActivityTest {
     }
     
     @Test
-    public void canSerializeSurveyResponseActivity() throws Exception {
-        Activity activity = new Activity.Builder().withLabel("Label")
-            .withLabelDetail("Label Detail").withPublishedSurvey("identifier", "guid")
-            .withSurveyResponse("BBB").build();
-        
-        BridgeObjectMapper mapper = BridgeObjectMapper.get();
-        String json = mapper.writeValueAsString(activity);
-
-        JsonNode node = mapper.readTree(json);
-        assertEquals("Label", node.get("label").asText());
-        assertEquals("Label Detail", node.get("labelDetail").asText());
-        assertEquals("survey", node.get("activityType").asText());
-        String hrefString = node.get("survey").get("href").asText();
-        assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
-        assertNotNull("guid", node.get("guid"));
-        assertEquals("Activity", node.get("type").asText());
-        
-        JsonNode ref = node.get("survey");
-        assertEquals("identifier", ref.get("identifier").asText());
-        assertEquals("guid", ref.get("guid").asText());
-        String href = ref.get("href").asText();
-        assertTrue(href.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
-        assertEquals("SurveyReference", ref.get("type").asText());
-        
-        ref = node.get("surveyResponse");
-        assertEquals("BBB", ref.get("identifier").asText());
-        href = ref.get("href").asText();
-        assertTrue(href.matches("http[s]?://.*/v3/surveyresponses/BBB"));
-        assertEquals("SurveyResponseReference", ref.get("type").asText());
-        
-        activity = mapper.readValue(json, Activity.class);
-        assertEquals("Label", activity.getLabel());
-        assertEquals("Label Detail", activity.getLabelDetail());
-        assertEquals(ActivityType.SURVEY, activity.getActivityType());
-        
-        SurveyReference ref1 = activity.getSurvey();
-        assertEquals("identifier", ref1.getIdentifier());
-        assertNull("createdOn", ref1.getCreatedOn());
-        assertEquals("guid", ref1.getGuid());
-        assertTrue(ref1.getHref().matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
-        
-        SurveyResponseReference ref2 = activity.getSurveyResponse();
-        assertEquals("BBB", ref2.getIdentifier());
-        assertTrue(ref2.getHref().matches("http[s]?://.*/v3/surveyresponses/BBB"));
-    }
-    
-    @Test
     public void olderPublishedActivitiesCanBeDeserialized() throws Exception {
         String oldJson = "{\"label\":\"Personal Health Survey\",\"ref\":\"https://webservices-staging.sagebridge.org/api/v2/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published\",\"activityType\":\"survey\",\"survey\":{\"guid\":\"ac1e57fd-5e8e-473f-b82f-bac7547b6783\",\"identifier\":\"identifier\",\"type\":\"GuidCreatedOnVersionHolder\"},\"type\":\"Activity\"}";
         
@@ -259,7 +211,6 @@ public class ActivityTest {
         Activity activity1 = new Activity.Builder().withGuid("AAA").withLabel("Label").withLabelDetail("LabelDetail")
                 .withTask("TaskId")
                 .withPublishedSurvey("identifier", "BBB")
-                .withSurveyResponse("CCC")
                 .build();
         
         Activity activity2 = new Activity.Builder().withActivity(activity1).build();
@@ -269,7 +220,6 @@ public class ActivityTest {
         assertEquals("TaskId", activity2.getTask().getIdentifier());
         assertEquals("BBB", activity2.getSurvey().getGuid());
         assertEquals("identifier", activity2.getSurvey().getIdentifier());
-        assertEquals("CCC", activity2.getSurveyResponse().getIdentifier());
     }
 
 }

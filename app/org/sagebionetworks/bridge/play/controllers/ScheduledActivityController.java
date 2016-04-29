@@ -6,13 +6,20 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -27,13 +34,22 @@ import play.mvc.Result;
 @Controller
 public class ScheduledActivityController extends BaseController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ScheduledActivityController.class);  
+    
     private static final TypeReference<ArrayList<ScheduledActivity>> scheduledActivityTypeRef = new TypeReference<ArrayList<ScheduledActivity>>() {};
 
     private ScheduledActivityService scheduledActivityService;
+    
+    private AccountDao accountDao;
 
     @Autowired
     public void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
+    }
+    
+    @Autowired
+    public void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
     
     // This annotation adds a deprecation header to the REST API method.
@@ -94,6 +110,23 @@ public class ScheduledActivityController extends BaseController {
         }
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
+        DateTime accountCreatedOn = session.getUser().getAccountCreatedOn();
+        if (accountCreatedOn == null) {
+            Study study = studyService.getStudy(session.getStudyIdentifier());
+            User user = session.getUser();
+            // Everyone should have an ID at this point... otherwise sessions are hanging out for over a week.
+            if (user.getId() == null) {
+                accountCreatedOn = DateTime.now();
+                LOG.debug("neither accountCreatedOn nor ID exist in session, using current time");
+            } else {
+                Account account = accountDao.getAccount(study, user.getId());
+                accountCreatedOn = account.getCreatedOn();
+                LOG.debug("accountCreatedOn not in session, retrieving it and updating session");
+            }
+            user.setAccountCreatedOn(accountCreatedOn);
+            updateSessionUser(session, user);
+        }
+        
         ScheduleContext context = new ScheduleContext.Builder()
                 .withLanguages(getLanguages(session))
                 .withUserDataGroups(session.getUser().getDataGroups())
@@ -101,6 +134,7 @@ public class ScheduledActivityController extends BaseController {
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(clientInfo)
                 .withTimeZone(zone)
+                .withAccountCreatedOn(accountCreatedOn)
                 .withEndsOn(endsOn).build();
         return scheduledActivityService.getScheduledActivities(session.getUser(), context);
     }

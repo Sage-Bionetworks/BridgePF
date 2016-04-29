@@ -5,10 +5,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
@@ -22,9 +26,31 @@ import nl.jqno.equalsverifier.Warning;
 
 public class UserTest {
 
+    private static final DateTime CREATED_ON = DateTime.now();
+    private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.DEVELOPER);
+    
     @Test
     public void hashCodeEquals() {
         EqualsVerifier.forClass(User.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
+    
+    @Test
+    public void initializedFromAccount() {
+        Account account = mock(Account.class);
+        doReturn("email.email.com").when(account).getEmail();
+        doReturn("first").when(account).getFirstName();
+        doReturn("last").when(account).getLastName();
+        doReturn("id").when(account).getId();
+        doReturn(CREATED_ON).when(account).getCreatedOn();
+        doReturn(ROLES).when(account).getRoles();
+        
+        User user = new User(account);
+        assertEquals("email.email.com", user.getEmail());
+        assertEquals("first", user.getFirstName());
+        assertEquals("last", user.getLastName());
+        assertEquals("id", user.getId());
+        assertEquals(CREATED_ON, user.getAccountCreatedOn());
+        assertEquals(ROLES, user.getRoles());
     }
     
     @Test
