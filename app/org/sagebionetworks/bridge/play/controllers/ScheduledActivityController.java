@@ -6,7 +6,10 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -32,6 +35,8 @@ import play.mvc.Result;
 @Controller
 public class ScheduledActivityController extends BaseController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ScheduledActivityController.class);  
+    
     private static final TypeReference<ArrayList<ScheduledActivity>> scheduledActivityTypeRef = new TypeReference<ArrayList<ScheduledActivity>>() {};
 
     private ScheduledActivityService scheduledActivityService;
@@ -113,9 +118,11 @@ public class ScheduledActivityController extends BaseController {
             // Everyone should have an ID at this point... otherwise sessions are hanging out for over a week.
             if (user.getId() == null) {
                 accountCreatedOn = DateTime.now();
+                LOG.debug("neither accountCreatedOn nor ID exist in session, using current time");
             } else {
                 Account account = accountDao.getAccount(study, user.getId());
                 accountCreatedOn = account.getCreatedOn();
+                LOG.debug("accountCreatedOn not in session, retrieving it and updating session");
             }
             user.setAccountCreatedOn(accountCreatedOn);
             updateSessionUser(session, user);
