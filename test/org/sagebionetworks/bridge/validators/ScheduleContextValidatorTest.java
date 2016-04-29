@@ -22,6 +22,7 @@ public class ScheduleContextValidatorTest {
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withEndsOn(DateTime.now().plusDays(2))
             .withTimeZone(DateTimeZone.forOffsetHours(-3))
+            .withAccountCreatedOn(DateTime.now())
             .withHealthCode("AAA")
             .build();
         

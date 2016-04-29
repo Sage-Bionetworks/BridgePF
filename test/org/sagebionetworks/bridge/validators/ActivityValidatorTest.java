@@ -9,7 +9,6 @@ import java.util.Set;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
 
 import com.google.common.collect.Sets;
 
@@ -84,18 +83,7 @@ public class ActivityValidatorTest {
     }
     
     @Test
-    public void rejectsSurveyResponseWithoutSurvey() {
-        try {
-            Activity activity = new Activity.Builder().withLabel("Label").withSurveyResponse((String)null).build();
-            Validate.entityThrowingException(new ActivityValidator(EMPTY_TASKS), activity);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("Activity has a survey response, so it must also reference the survey", e.getErrors().get("Activity").get(0));
-        }
-    }
-    
-    @Test
     public void surveyResponseWithoutIdentifierIsOK() {
-        new Activity.Builder().withLabel("Label").withSurveyResponse((SurveyResponseReference)null).withPublishedSurvey("identifier", "guid").build();
+        new Activity.Builder().withLabel("Label").withPublishedSurvey("identifier", "guid").build();
     }
 }

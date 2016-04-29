@@ -27,29 +27,17 @@ import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivityDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
 import com.google.common.collect.Lists;
@@ -68,8 +56,6 @@ public class ScheduledActivityServiceMockTest {
     
     private SchedulePlanService schedulePlanService;
     
-    private UserConsentDao userConsentDao;
-    
     private User user;
     
     private ScheduledActivityDao activityDao;
@@ -84,6 +70,7 @@ public class ScheduledActivityServiceMockTest {
         user = new User();
         user.setStudyKey(TEST_STUDY.getIdentifier());
         user.setHealthCode(HEALTH_CODE);
+        user.setAccountCreatedOn(ENROLLMENT.minusHours(3));
         
         endsOn = DateTime.now().plusDays(2);
         
@@ -92,28 +79,6 @@ public class ScheduledActivityServiceMockTest {
         schedulePlanService = mock(SchedulePlanService.class);
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
 
-        // Each subpopulation pulls a consent with different signOn dates, we want to use the lowest one.
-        Subpopulation subpop1 = Subpopulation.create();
-        subpop1.setGuidString("guid1");
-        Subpopulation subpop2 = Subpopulation.create();
-        subpop2.setGuidString("guid2");
-        
-        SubpopulationService subpopService = mock(SubpopulationService.class);
-        when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpop1, subpop2));
-        
-        // If this enrollment date (Long.MAX_VALUE) is used in the changePublishedAndAbsoluteSurveyActivity()
-        // test, it breaks Joda Time. So success of that test verifies we're taking the lower of the 
-        // to signOn dates
-        UserConsent consent1 = mock(DynamoUserConsent3.class);
-        when(consent1.getSignedOn()).thenReturn(Long.MAX_VALUE);
-        
-        UserConsent consent2 = mock(DynamoUserConsent3.class);
-        when(consent2.getSignedOn()).thenReturn(ENROLLMENT.getMillis());
-        
-        userConsentDao = mock(UserConsentDao.class);
-        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, subpop1.getGuid())).thenReturn(consent1);
-        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, subpop2.getGuid())).thenReturn(consent2);
-        
         Map<String,DateTime> map = Maps.newHashMap();
         activityEventService = mock(ActivityEventService.class);
         when(activityEventService.getActivityEventMap(anyString())).thenReturn(map);
@@ -131,35 +96,16 @@ public class ScheduledActivityServiceMockTest {
         });
         when(activityDao.getActivities(context.getZone(), scheduledActivities)).thenReturn(scheduledActivities);
         
-        Survey survey = new DynamoSurvey();
-        survey.setGuid("guid");
-        survey.setIdentifier("identifier");
-        survey.setCreatedOn(20000L);
-        SurveyService surveyService = mock(SurveyService.class);
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString())).thenReturn(survey);
-        
-        SurveyResponse response = new DynamoSurveyResponse();
-        response.setHealthCode("healthCode");
-        response.setIdentifier("identifier");
-        
-        SurveyResponseView surveyResponse = new SurveyResponseView(response, survey);
-        SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
-        when(surveyResponseService.createSurveyResponse(
-            any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class), anyString())).thenReturn(surveyResponse);
-
         service.setSchedulePlanService(schedulePlanService);
-        service.setUserConsentDao(userConsentDao);
-        service.setSurveyService(surveyService);
-        service.setSurveyResponseService(surveyResponseService);
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
-        service.setSubpopulationService(subpopService);
     }
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
         service.getScheduledActivities(user, new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
+            .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withTimeZone(DateTimeZone.UTC).withEndsOn(DateTime.now().minusSeconds(1)).build());
     }
     
@@ -167,6 +113,7 @@ public class ScheduledActivityServiceMockTest {
     public void rejectsEndsOnTooFarInFuture() {
         service.getScheduledActivities(user, new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
+            .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).plusSeconds(1)).build());
     }
@@ -254,33 +201,6 @@ public class ScheduledActivityServiceMockTest {
         verifyNoMoreInteractions(activityDao);
     }
 
-    @SuppressWarnings({"unchecked","rawtypes"})
-    @Test
-    public void changePublishedAndAbsoluteSurveyActivity() {
-        service.getScheduledActivities(user, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
-            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(DateTimeZone.UTC)
-            .withEndsOn(endsOn.plusDays(2))
-            .withHealthCode(HEALTH_CODE).build());
-
-        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
-        verify(activityDao).saveActivities(argument.capture());
-        
-        boolean foundActivity3 = false;
-        for (ScheduledActivity schActivity : (List<ScheduledActivity>)argument.getValue()) {
-            // ignoring tapTest
-            Activity act = schActivity.getActivity();
-            if (act.getTask() != null && !"tapTest".equals(act.getTask().getIdentifier())) {
-                String ref = act.getSurveyResponse().getHref();
-                assertTrue("Found activity with survey response ref", ref.contains("/v3/surveyresponses/identifier"));        
-            } else {
-                foundActivity3 = true;
-            }
-        }
-        assertTrue("Found activity with tapTest ref", foundActivity3);
-    }
-    
     @Test
     public void deleteScheduledActivitiesForUser() {
         service.deleteActivitiesForUser("AAA");
@@ -528,6 +448,7 @@ public class ScheduledActivityServiceMockTest {
             .withEndsOn(DateTime.now().plusDays(1).withTimeAtStartOfDay())
             .withTimeZone(DateTimeZone.UTC)
             .withHealthCode("AAA")
+            .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .build();
         
         // Is a parkinson patient, gets 3 tasks
@@ -578,7 +499,8 @@ public class ScheduledActivityServiceMockTest {
         events.put("enrollment", ENROLLMENT);
         
         return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withTimeZone(DateTimeZone.UTC)
-            .withEndsOn(endsOn).withHealthCode(HEALTH_CODE).withEvents(events).build();
+                .withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn).withHealthCode(HEALTH_CODE)
+                .withEvents(events).build();
     }
     
 }

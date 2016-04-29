@@ -209,6 +209,7 @@ public class ScheduledActivityServiceTest {
             .withStudyIdentifier(TEST_STUDY)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(zone)
+            .withAccountCreatedOn(DateTime.now())
             // Setting the endsOn value to the end of the day, as we do in the controller.
             .withEndsOn(endsOn.withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
             .withHealthCode(testUser.getUser().getHealthCode()).build();

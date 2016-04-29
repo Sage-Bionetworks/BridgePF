@@ -74,12 +74,13 @@ public class SchedulePlanControllerMockTest {
         try {
             controller.updateSchedulePlan("test-study");
         } catch(InvalidEntityException e) {
+            System.out.println(e.getMessage());
             assertMessage(e, "label", "cannot be missing, null, or blank");
             assertMessage(e, "strategy.scheduleGroups", "groups must add up to 100%");
             assertMessage(e, "strategy.scheduleGroups[0].schedule.activities", "are required");
             assertMessage(e, "strategy.scheduleGroups[0].schedule.scheduleType", "is required");
             assertMessage(e, "strategy.scheduleGroups[1].schedule.scheduleType", "is required");
-            assertMessage(e, "strategy.scheduleGroups[1].schedule.activities[0].reference", "must have a task or survey reference");
+            assertMessage(e, "strategy.scheduleGroups[1].schedule.activities[0]", "must have a task or survey reference");
         }
     }
 }

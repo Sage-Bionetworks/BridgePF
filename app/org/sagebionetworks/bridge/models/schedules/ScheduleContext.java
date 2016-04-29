@@ -27,14 +27,16 @@ public final class ScheduleContext {
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
     private final DateTime now;
+    private final DateTime accountCreatedOn;
     private final CriteriaContext criteriaContext;
     
     private ScheduleContext(DateTimeZone zone, DateTime endsOn, Map<String, DateTime> events, DateTime now,
-            CriteriaContext criteriaContext) {
+            DateTime accountCreatedOn, CriteriaContext criteriaContext) {
         this.zone = zone;
         this.endsOn = endsOn;
         this.events = events;
         this.now = now;
+        this.accountCreatedOn = accountCreatedOn;
         this.criteriaContext = criteriaContext;
     }
     
@@ -83,13 +85,17 @@ public final class ScheduleContext {
         return now;
     }
     
+    public DateTime getAccountCreatedOn() {
+        return accountCreatedOn;
+    }
+    
     public CriteriaContext getCriteriaContext() {
         return criteriaContext;
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(zone, endsOn, events, now, criteriaContext);
+        return Objects.hash(zone, endsOn, events, now, accountCreatedOn, criteriaContext);
     }
 
     @Override
@@ -100,21 +106,24 @@ public final class ScheduleContext {
             return false;
         ScheduleContext other = (ScheduleContext) obj;
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
-                Objects.equals(events, other.events) && Objects.equals(now, other.now) && 
+                Objects.equals(events, other.events) && Objects.equals(now, other.now) &&
+                Objects.equals(accountCreatedOn, other.accountCreatedOn) && 
                 Objects.equals(criteriaContext, other.criteriaContext));
     }
 
     @Override
     public String toString() {
-        return "ScheduleContext [zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + ", criteriaContext="
-                + criteriaContext + "]";
+        return "ScheduleContext [zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + ", now=" + now
+                + ", accountCreatedOn=" + accountCreatedOn + ", criteriaContext=" + criteriaContext + "]";
     }
-    
+
+
     public static class Builder {
         private DateTimeZone zone;
         private DateTime endsOn;
         private Map<String,DateTime> events;
         private DateTime now;
+        private DateTime accountCreatedOn;
         private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
         
         public Builder withStudyIdentifier(String studyId) {
@@ -155,6 +164,10 @@ public final class ScheduleContext {
             this.now = now;
             return this;
         }
+        public Builder withAccountCreatedOn(DateTime accountCreatedOn) {
+            this.accountCreatedOn = accountCreatedOn;
+            return this;
+        }
         public Builder withLanguages(LinkedHashSet<String> languages) {
             contextBuilder.withLanguages(languages);
             return this;
@@ -164,6 +177,7 @@ public final class ScheduleContext {
             this.endsOn = context.endsOn;
             this.events = context.events;
             this.now = context.now;
+            this.accountCreatedOn = context.accountCreatedOn;
             contextBuilder.withContext(context.criteriaContext);
             return this;
         }
@@ -174,7 +188,7 @@ public final class ScheduleContext {
             if (now == null) {
                 now = (zone == null) ? DateTime.now() : DateTime.now(zone);
             }
-            return new ScheduleContext(zone, endsOn, events, now, contextBuilder.build());
+            return new ScheduleContext(zone, endsOn, events, now, accountCreatedOn, contextBuilder.build());
         }
     }
 }

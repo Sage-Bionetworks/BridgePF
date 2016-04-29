@@ -30,6 +30,9 @@ public class ScheduleContextValidator implements Validator {
         if (context.getCriteriaContext().getHealthCode() == null) {
             errors.rejectValue("healthCode", "is required");
         }
+        if (context.getAccountCreatedOn() == null) {
+            errors.rejectValue("accountCreatedOn", "is required");
+        }
         // Very the ending timestamp is not invalid.
         DateTime now = context.getNow();
         if (context.getEndsOn() == null) {

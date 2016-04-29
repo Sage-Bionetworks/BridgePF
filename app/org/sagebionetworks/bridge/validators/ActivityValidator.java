@@ -8,7 +8,6 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
 import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -35,21 +34,12 @@ public class ActivityValidator implements Validator {
         if (isBlank(activity.getLabel())) {
             errors.rejectValue("label", CANNOT_BE_BLANK);
         }
-        if (activity.getTask() == null && activity.getSurvey() == null && activity.getSurveyResponse() == null) {
-            errors.rejectValue("reference", "must have a task or survey reference");
-            return;
-        }
         if (activity.getTask() != null) {
             validate(errors, activity.getTask());
-        } else if (activity.getSurveyResponse() != null) {
-            if (activity.getSurvey() != null) {
-                validate(errors, activity.getSurvey());
-            } else {
-                errors.reject("has a survey response, so it must also reference the survey");
-            }
-            validate(errors, activity.getSurveyResponse());
-        } else {
+        } else if (activity.getSurvey() != null){
             validate(errors, activity.getSurvey());
+        } else {
+            errors.rejectValue("", "must have a task or survey reference");
         }
     }
     
@@ -67,14 +57,6 @@ public class ActivityValidator implements Validator {
         errors.pushNestedPath("survey");
         if (isBlank(ref.getGuid())) {
             errors.rejectValue("guid", CANNOT_BE_BLANK);
-        }
-        errors.popNestedPath();
-    }
-    
-    private void validate(Errors errors, SurveyResponseReference ref) {
-        errors.pushNestedPath("surveyResponse");
-        if (isBlank(ref.getIdentifier())) {
-            errors.rejectValue("identifier", CANNOT_BE_BLANK);
         }
         errors.popNestedPath();
     }

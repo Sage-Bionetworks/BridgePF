@@ -5,6 +5,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -33,6 +35,7 @@ public final class User implements BridgeEntity {
     private String healthCode;
     private String studyKey;
     private SharingScope sharingScope;
+    private DateTime accountCreatedOn;
     private Set<Roles> roles;
     private Set<String> dataGroups;
     private Map<SubpopulationGuid,ConsentStatus> consentStatuses;
@@ -51,6 +54,7 @@ public final class User implements BridgeEntity {
         this.firstName = account.getFirstName();
         this.lastName = account.getLastName();
         this.id = account.getId();
+        this.accountCreatedOn = account.getCreatedOn();
         setRoles(account.getRoles());
     }
 
@@ -88,6 +92,14 @@ public final class User implements BridgeEntity {
         this.healthCode = healthCode;
     }
 
+    public DateTime getAccountCreatedOn() {
+        return accountCreatedOn;
+    }
+    
+    public void setAccountCreatedOn(DateTime accountCreatedOn) {
+        this.accountCreatedOn = accountCreatedOn;
+    }
+    
     public String getEncryptedHealthCode() {
         return ENCRYPTOR.encrypt(healthCode);
     }
@@ -179,7 +191,7 @@ public final class User implements BridgeEntity {
     @Override
     public int hashCode() {
         return Objects.hashCode(email, firstName, lastName, healthCode, id, roles, sharingScope, 
-                studyKey, dataGroups, consentStatuses, languages);
+                accountCreatedOn, studyKey, dataGroups, consentStatuses, languages);
     }
 
     @Override
@@ -194,13 +206,14 @@ public final class User implements BridgeEntity {
                 && Objects.equal(id, other.id) && Objects.equal(roles, other.roles)
                 && Objects.equal(sharingScope, other.sharingScope) && Objects.equal(studyKey, other.studyKey)
                 && Objects.equal(dataGroups, other.dataGroups)
+                && Objects.equal(accountCreatedOn, other.accountCreatedOn)
                 && Objects.equal(consentStatuses, other.consentStatuses)
                 && Objects.equal(languages, other.languages));
     }
 
     @Override
     public String toString() {
-        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, dataGroups=%s, consentStatuses=%s, languages=%s]", 
-                email, firstName, lastName, id, roles, sharingScope, studyKey, dataGroups, consentStatuses, languages);
+        return String.format("User [email=%s, firstName=%s, lastName=%s, id=%s, roles=%s, sharingScope=%s, studyKey=%s, accountCreatedOn=%s, dataGroups=%s, consentStatuses=%s, languages=%s]", 
+                email, firstName, lastName, id, roles, sharingScope, studyKey, accountCreatedOn, dataGroups, consentStatuses, languages);
     }
 }
