@@ -230,6 +230,14 @@ public class ScheduledActivityControllerTest {
     }
     
     @Test
+    public void fullyInitializedSessionProvidesAccountCreatedOnInScheduleContext() throws Exception {
+        controller.getScheduledActivities(null, "-07:00", "3");
+        verify(scheduledActivityService).getScheduledActivities(any(), contextCaptor.capture());
+        ScheduleContext context = contextCaptor.getValue();
+        assertEquals(ACCOUNT_CREATED_ON, context.getAccountCreatedOn());
+    }
+    
+    @Test
     public void oldSessionsWithIdAndNoAccountCreatedOn() throws Exception {
         session.getUser().setAccountCreatedOn(null); // this is not currently in the session
         

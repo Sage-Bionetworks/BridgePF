@@ -30,7 +30,7 @@ public class ScheduleContextValidatorTest {
     }
     
     @Test
-    public void studyIdentifierTimeZoneHealthCodeAndEndsOnAlwaysRequired() {
+    public void requiredFields() {
         ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier("test").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
@@ -39,13 +39,15 @@ public class ScheduleContextValidatorTest {
             assertTrue(e.getMessage().contains("offset must set a time zone offset"));
             assertTrue(e.getMessage().contains("healthCode is required"));
             assertTrue(e.getMessage().contains("endsOn is required"));
+            assertTrue(e.getMessage().contains("accountCreatedOn is required"));
         }
     }
 
     @Test
     public void endsOnAfterNow() {
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier("study-id").withTimeZone(DateTimeZone.UTC)
+            .withStudyIdentifier("study-id")
+            .withTimeZone(DateTimeZone.UTC)
             .withEndsOn(DateTime.now().minusHours(1)).withHealthCode("healthCode").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
@@ -69,7 +71,5 @@ public class ScheduleContextValidatorTest {
             assertTrue(e.getMessage().contains("endsOn must be 5 days or less"));
         }
     }
-    
-    
     
 }
