@@ -24,12 +24,15 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 @Component
 public class ScheduledActivityService {
     
+    private static final String ENROLLMENT = "enrollment";
+
     private static final ScheduleContextValidator VALIDATOR = new ScheduleContextValidator();
     
     private ScheduledActivityDao activityDao;
@@ -134,7 +137,10 @@ public class ScheduledActivityService {
     
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
         Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getHealthCode());
-        events.putIfAbsent("enrollment", context.getAccountCreatedOn());
+        if (!events.containsKey(ENROLLMENT)) {
+            events = new ImmutableMap.Builder<String, DateTime>().putAll(events)
+                    .put(ENROLLMENT, context.getAccountCreatedOn()).build();
+        }
         return events;
     }
     
