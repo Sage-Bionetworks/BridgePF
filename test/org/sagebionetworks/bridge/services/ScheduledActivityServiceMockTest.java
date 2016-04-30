@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -79,7 +80,7 @@ public class ScheduledActivityServiceMockTest {
         schedulePlanService = mock(SchedulePlanService.class);
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
 
-        Map<String,DateTime> map = Maps.newHashMap();
+        Map<String,DateTime> map = ImmutableMap.of();
         activityEventService = mock(ActivityEventService.class);
         when(activityEventService.getActivityEventMap(anyString())).thenReturn(map);
         
@@ -134,6 +135,16 @@ public class ScheduledActivityServiceMockTest {
         scheduledActivities.get(0).setGuid(null);
         
         service.updateScheduledActivities("AAA", scheduledActivities);
+    }
+    
+    @Test
+    public void missingEnrollmentEventIsSuppliedFromAccountCreatedOn() {
+        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withTimeZone(DateTimeZone.UTC)
+        .withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn).withHealthCode(HEALTH_CODE)
+        .build();        
+        
+        List<ScheduledActivity> activities = service.getScheduledActivities(user, context);
+        assertEquals(3, activities.size());
     }
     
     @SuppressWarnings({"unchecked","rawtypes"})
