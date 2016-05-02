@@ -216,6 +216,7 @@ public class ParticipantService {
             healthCode = getHealthCodeThrowingException(account);
             
             // Verify now that the assignment is valid, or throw an exception before any other updates
+            // TODO: Since we're enforcing addition at account creation, we might just be able to skip this.
             addValidatedExternalId(study, participant, healthCode);
         }
         Map<ParticipantOption,String> options = Maps.newHashMap();
