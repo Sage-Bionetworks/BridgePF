@@ -70,7 +70,7 @@ public class ParticipantController extends BaseController {
         
         participantService.updateParticipant(study, NO_ROLES, userId, updated);
         
-        // Update the user's session, including consent statuses.
+        // Update this user's session (creates one if it doesn't exist, but this is safe)
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         session = authenticationService.updateSession(study, context, userId);
         updateSessionUser(session, session.getUser());
@@ -119,7 +119,7 @@ public class ParticipantController extends BaseController {
         }
         participantService.updateParticipant(study, session.getUser().getRoles(), userId, participant);
         
-        // Update this user's session (creates one if it doesn't exist, but this is safe)
+        // Push changes to the user's session, including consent statuses.
         CriteriaContext context = new CriteriaContext.Builder()
                 .withStudyIdentifier(study.getStudyIdentifier()).build();
         session = authenticationService.updateSession(study, context, userId);
