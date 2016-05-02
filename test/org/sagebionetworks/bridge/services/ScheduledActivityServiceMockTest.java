@@ -139,9 +139,12 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void missingEnrollmentEventIsSuppliedFromAccountCreatedOn() {
-        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withTimeZone(DateTimeZone.UTC)
-        .withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn).withHealthCode(HEALTH_CODE)
-        .build();        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(TEST_STUDY)
+                .withTimeZone(DateTimeZone.UTC)
+                .withAccountCreatedOn(ENROLLMENT.minusHours(2))
+                .withEndsOn(endsOn)
+                .withHealthCode(HEALTH_CODE).build();        
         
         List<ScheduledActivity> activities = service.getScheduledActivities(user, context);
         assertTrue(activities.size() > 0);
