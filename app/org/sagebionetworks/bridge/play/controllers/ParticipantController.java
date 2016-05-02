@@ -15,6 +15,7 @@ import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -68,6 +69,12 @@ public class ParticipantController extends BaseController {
                 .copyFieldsOf(participant, fieldNames).build();
         
         participantService.updateParticipant(study, NO_ROLES, userId, updated);
+        
+        // Update this user's session (creates one if it doesn't exist, but this is safe)
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        session = authenticationService.updateSession(study, context, userId);
+        updateSessionUser(session, session.getUser());
+        
         return okResult("Participant updated.");
     }
     
@@ -112,6 +119,12 @@ public class ParticipantController extends BaseController {
         }
         participantService.updateParticipant(study, session.getUser().getRoles(), userId, participant);
         
+        // Push changes to the user's session, including consent statuses.
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(study.getStudyIdentifier()).build();
+        session = authenticationService.updateSession(study, context, userId);
+        updateSessionUser(session, session.getUser());
+
         return okResult("Participant updated.");
     }
     

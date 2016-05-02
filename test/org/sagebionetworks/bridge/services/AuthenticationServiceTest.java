@@ -69,6 +69,10 @@ import com.stormpath.sdk.directory.CustomData;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceTest {
     
+    private static final Set<Roles> CALLER_ROLES = Sets.newHashSet();
+    private static final Set<String> ORIGINAL_DATA_GROUPS = Sets.newHashSet("group1");
+    private static final Set<String> UPDATED_DATA_GROUPS = Sets.newHashSet("sdk-int-1","sdk-int-2","group1");
+    
     @Resource
     private CacheProvider cacheProvider;
 
@@ -95,6 +99,9 @@ public class AuthenticationServiceTest {
     
     @Resource
     private SubpopulationService subpopService;
+    
+    @Resource
+    private ParticipantService participantService;
     
     private Study study;
     
@@ -448,5 +455,22 @@ public class AuthenticationServiceTest {
         authService.setAccountDao(accountDao);
     }
 
+    @Test
+    public void updateSession() {
+        testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false)
+                .withDataGroups(ORIGINAL_DATA_GROUPS).withSignIn(false).build();
+        String userId = testUser.getUser().getId();
+        
+        // Update the data groups
+        StudyParticipant participant = participantService.getParticipant(study, CALLER_ROLES, userId);
+        StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant).withDataGroups(UPDATED_DATA_GROUPS).build();
+        participantService.updateParticipant(study, CALLER_ROLES, userId, updated);
+        
+        // Now update the session, these changes should be reflected
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
+        Set<String> retrievedSessionDataGroups = authService.updateSession(study, context, userId)
+                .getUser().getDataGroups();
 
+        assertEquals(UPDATED_DATA_GROUPS, retrievedSessionDataGroups);
+    }
 }

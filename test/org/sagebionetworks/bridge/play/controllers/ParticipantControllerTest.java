@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -44,6 +45,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -73,6 +75,7 @@ public class ParticipantControllerTest {
     private static final Study STUDY = new DynamoStudy();
     static {
         STUDY.setUserProfileAttributes(Sets.newHashSet("foo","baz"));
+        STUDY.setIdentifier("test-study");
     }
     
     @Spy
@@ -83,6 +86,12 @@ public class ParticipantControllerTest {
     
     @Mock
     private StudyService studyService;
+    
+    @Mock
+    private AuthenticationService authService;
+    
+    @Mock
+    private CacheProvider cacheProvider;
     
     @Captor
     private ArgumentCaptor<Map<ParticipantOption,String>> optionMapCaptor;
@@ -108,13 +117,16 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
-        
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
+        
+        when(authService.updateSession(eq(STUDY), any(), eq(ID))).thenReturn(session);
         
         when(participantService.getPagedAccountSummaries(eq(STUDY), anyInt(), anyInt(), any())).thenReturn(page);
         
         controller.setParticipantService(participantService);
         controller.setStudyService(studyService);
+        controller.setAuthenticationService(authService);
+        controller.setCacheProvider(cacheProvider);
         
         TestUtils.mockPlayContext();
     }
@@ -179,6 +191,7 @@ public class ParticipantControllerTest {
         assertResult(result, 200, "Participant updated.");
         
         verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(authService).updateSession(eq(STUDY), any(), eq(ID));
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -271,7 +284,9 @@ public class ParticipantControllerTest {
         assertResult(result, 200, "Participant updated.");
         
         // verify the object is passed to service, one field is sufficient
+        verify(authService).updateSession(eq(STUDY), any(), eq(ID));
         verify(participantService).updateParticipant(eq(STUDY), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals("firstName", captured.getFirstName());
     }
