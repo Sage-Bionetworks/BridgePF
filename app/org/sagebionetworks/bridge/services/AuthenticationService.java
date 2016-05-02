@@ -254,6 +254,11 @@ public class AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
     
+    public UserSession updateSession(Study study, CriteriaContext context, String userId) {
+        Account account = accountDao.getAccount(study, userId);
+        return getSessionFromAccount(study, context, account);
+    }
+    
     /**
      * Early in the production lifetime of the application, some accounts were created that have a signature 
      * in Stormpath, but no record in DynamoDB. Some other records had a DynamoDB record in an earlier version 

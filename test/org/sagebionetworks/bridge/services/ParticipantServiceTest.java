@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -504,26 +503,6 @@ public class ParticipantServiceTest {
         verify(account).setLastName(LAST_NAME);
         verify(account).setStatus(AccountStatus.DISABLED);
         verify(account).setAttribute(PHONE, "123456789");
-        
-        verify(cacheProvider).setUserSession(sessionCaptor.capture());
-        
-        UserSession session = sessionCaptor.getValue();
-        assertEquals(EMAIL, session.getUser().getEmail());
-        assertEquals(FIRST_NAME, session.getUser().getFirstName());
-        assertEquals(LAST_NAME, session.getUser().getLastName());
-        assertEquals(HEALTH_CODE, session.getUser().getHealthCode());
-        assertEquals(ID, session.getUser().getId());
-        assertEquals(STUDY.getStudyIdentifier(), session.getStudyIdentifier());
-        assertEquals(Sets.newHashSet(), session.getUser().getRoles());
-        assertEquals(STUDY_DATA_GROUPS, session.getUser().getDataGroups());
-        assertEquals(USER_LANGUAGES, session.getUser().getLanguages());
-        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, session.getUser().getSharingScope());
-        assertNotNull(session.getUser().getConsentStatuses());
-        assertEquals("sessionToken", session.getSessionToken());
-        assertEquals("internalSessionToken", session.getInternalSessionToken());
-        assertTrue(session.isAuthenticated());
-        assertEquals(Environment.DEV, session.getEnvironment());
-        assertEquals(STUDY.getStudyIdentifier(), session.getStudyIdentifier());
     }
     
     @Test(expected = BadRequestException.class)

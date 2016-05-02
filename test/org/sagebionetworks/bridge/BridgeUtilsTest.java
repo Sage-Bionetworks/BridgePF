@@ -127,6 +127,8 @@ public class BridgeUtilsTest {
         map.put("A", "B");
         map.put("C", "D");
         
+        assertEquals("B", map.get("A"));
+        assertEquals("D", map.get("C"));
         assertEquals(map, BridgeUtils.nullSafeImmutableMap(map));
         
         Map<String,String> newMap = BridgeUtils.nullSafeImmutableMap(map);
