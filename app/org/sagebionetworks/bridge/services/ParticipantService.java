@@ -251,13 +251,13 @@ public class ParticipantService {
         }
         // Clear the user's session so that any changes are picked up by the app. New accounts don't have this issue.
         if (!isNew) {
-            updateSession(participant);
+            updateSession(account.getId(), participant);
         }
         return new IdentifierHolder(account.getId());
     }
     
-    private void updateSession(StudyParticipant participant) {
-        UserSession session = cacheProvider.getUserSessionByUserId(participant.getId());
+    private void updateSession(String userId, StudyParticipant participant) {
+        UserSession session = cacheProvider.getUserSessionByUserId(userId);
         if (session != null) {
             User user = session.getUser();
             user.setFirstName(participant.getFirstName());
