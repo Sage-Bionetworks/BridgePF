@@ -36,9 +36,9 @@ import com.stormpath.sdk.group.GroupList;
 public class BridgeUtils {
     
     public static final Joiner COMMA_SPACE_JOINER = Joiner.on(", ");
-
     public static final Joiner COMMA_JOINER = Joiner.on(",");
-    
+    public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
+
     /**
      * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
      * This value will be replaced with the value of the variable name. The variable name/value pairs are passed to the

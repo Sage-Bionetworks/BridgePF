@@ -11,6 +11,19 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 /** DAO for upload schemas. This encapsulates standard CRUD operations as well as list operations. */
 public interface UploadSchemaDao {
     /**
+     * DAO for creating schema revision using the new V4 semantics. The schema ID and revision will be taken from the
+     * UploadSchema object. If the revision isn't specified, we'll get the latest schema rev for the schema ID and use
+     * that rev + 1.
+     *
+     * @param studyId
+     *         study that will contain the schema
+     * @param uploadSchema
+     *         schema to create
+     * @return the created schema revision
+     */
+    @Nonnull UploadSchema createSchemaRevisionV4(@Nonnull StudyIdentifier studyId, @Nonnull UploadSchema uploadSchema);
+
+    /**
      * DAO method for creating and updating upload schemas. This method creates an upload schema, using the study ID
      * and schema ID of the specified schema, or updates an existing one if it already exists.
      *
@@ -107,4 +120,21 @@ public interface UploadSchemaDao {
      * @return a list of upload schemas
      */
     @Nonnull List<UploadSchema> getUploadSchemasForStudy(@Nonnull StudyIdentifier studyId);
+
+    /**
+     * DAO for updating a schema rev using V4 semantics. This also validates that the schema changes are legal. Legal
+     * changes means schema fields cannot be deleted or modified (except for adding the maxAppVersion attributes).
+     *
+     * @param studyId
+     *         study that contains the schema
+     * @param schemaId
+     *         schema ID to update
+     * @param schemaRev
+     *         schema revision to update
+     * @param uploadSchema
+     *         schema with updates to persist
+     * @return the updated schema revision
+     */
+    @Nonnull UploadSchema updateSchemaRevisionV4(@Nonnull StudyIdentifier studyId, @Nonnull String schemaId, int schemaRev,
+            @Nonnull UploadSchema uploadSchema);
 }

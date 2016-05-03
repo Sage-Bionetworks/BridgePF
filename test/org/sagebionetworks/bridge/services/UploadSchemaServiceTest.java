@@ -11,6 +11,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
@@ -24,6 +25,39 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 
 public class UploadSchemaServiceTest {
+    private static final UploadFieldDefinition FIELD_DEF = new DynamoUploadFieldDefinition.Builder().withName("field")
+            .withType(UploadFieldType.STRING).build();
+    private static final List<UploadFieldDefinition> FIELD_DEF_LIST = ImmutableList.of(FIELD_DEF);
+    private static final String SCHEMA_ID = "test-schema";
+    private static final String SCHEMA_NAME = "My Schema";
+    private static final int SCHEMA_REV = 1;
+
+    @Test(expected = InvalidEntityException.class)
+    public void createV4NullSchema() {
+        new UploadSchemaService().createSchemaRevisionV4(TestConstants.TEST_STUDY, null);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void createV4InvalidSchema() {
+        // Simple invalid schema, like one with no fields.
+        new UploadSchemaService().createSchemaRevisionV4(TestConstants.TEST_STUDY, new DynamoUploadSchema());
+    }
+
+    @Test
+    public void createV4Success() {
+        // mock dao
+        UploadSchema inputSchema = makeSimpleSchema();
+        UploadSchema outputSchema = new DynamoUploadSchema();
+        UploadSchemaDao dao = mock(UploadSchemaDao.class);
+        when(dao.createSchemaRevisionV4(TestConstants.TEST_STUDY, inputSchema)).thenReturn(outputSchema);
+
+        // execute and validate
+        UploadSchemaService svc = new UploadSchemaService();
+        svc.setUploadSchemaDao(dao);
+        UploadSchema retVal = svc.createSchemaRevisionV4(TestConstants.TEST_STUDY, inputSchema);
+        assertSame(outputSchema, retVal);
+    }
+
     @Test(expected = InvalidEntityException.class)
     public void createNullSchema() {
         new UploadSchemaService().createOrUpdateUploadSchema(makeTestStudy(), null);
@@ -241,7 +275,71 @@ public class UploadSchemaServiceTest {
         assertSame(daoRetVal, svcRetVal);
     }
 
+    @Test(expected = BadRequestException.class)
+    public void updateV4NullId() {
+        new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, null, SCHEMA_REV,
+                makeSimpleSchema());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void updateV4EmptyId() {
+        new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, "", SCHEMA_REV, makeSimpleSchema());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void updateV4BlankId() {
+        new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, "   ", SCHEMA_REV,
+                makeSimpleSchema());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void updateV4NegativeRev() {
+        new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, -1, makeSimpleSchema());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void updateV4ZeroRev() {
+        new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, 0, makeSimpleSchema());
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void updateV4NullSchema() {
+        new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, null);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void updateV4InvalidSchema() {
+        // Simple invalid schema, like one with no fields.
+        new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV,
+                new DynamoUploadSchema());
+    }
+
+    @Test
+    public void updateV4Success() {
+        // mock dao
+        UploadSchema inputSchema = makeSimpleSchema();
+        UploadSchema outputSchema = new DynamoUploadSchema();
+        UploadSchemaDao dao = mock(UploadSchemaDao.class);
+        when(dao.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, inputSchema)).thenReturn(
+                outputSchema);
+
+        // execute and validate
+        UploadSchemaService svc = new UploadSchemaService();
+        svc.setUploadSchemaDao(dao);
+        UploadSchema retVal = svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, inputSchema);
+        assertSame(outputSchema, retVal);
+    }
+
     private static StudyIdentifier makeTestStudy() {
         return new StudyIdentifierImpl("test-study");
+    }
+
+    private static UploadSchema makeSimpleSchema() {
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setFieldDefinitions(FIELD_DEF_LIST);
+        schema.setName(SCHEMA_NAME);
+        schema.setSchemaId(SCHEMA_ID);
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+        return schema;
     }
 }

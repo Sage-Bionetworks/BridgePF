@@ -27,6 +27,27 @@ public class UploadSchemaService {
     }
 
     /**
+     * Service handler for creating a new schema revision, using V4 API semantics. See
+     * {@link UploadSchemaDao#createSchemaRevisionV4}
+     *
+     * @param studyId
+     *         study that will contain the schema
+     * @param uploadSchema
+     *         schema to create
+     * @return the created schema revision
+     */
+    public UploadSchema createSchemaRevisionV4(StudyIdentifier studyId, UploadSchema uploadSchema) {
+        // validate schema
+        if (uploadSchema == null) {
+            throw new InvalidEntityException("Upload schema can't be null");
+        }
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
+
+        // call through to DAO
+        return uploadSchemaDao.createSchemaRevisionV4(studyId, uploadSchema);
+    }
+
+    /**
      * <p>
      * Service handler for creating and updating upload schemas. This method creates an upload schema, using the study
      * ID and schema ID of the specified schema, or updates an existing one if it already exists.
@@ -186,5 +207,40 @@ public class UploadSchemaService {
      */
     public List<UploadSchema> getUploadSchemasForStudy(StudyIdentifier studyId) {
         return uploadSchemaDao.getUploadSchemasForStudy(studyId);
+    }
+
+    /**
+     * Service handler for updating schema revision, using V4 API semantics. See
+     * {@link UploadSchemaDao#updateSchemaRevisionV4}
+     *
+     * @param studyId
+     *         study that contains the schema
+     * @param schemaId
+     *         schema ID to update
+     * @param schemaRevision
+     *         schema revision to update
+     * @param uploadSchema
+     *         schema with updates to persist
+     * @return the updated schema revision
+     */
+    public UploadSchema updateSchemaRevisionV4(StudyIdentifier studyId, String schemaId, int schemaRevision,
+            UploadSchema uploadSchema) {
+        // Validate inputs. Study ID is the only one that doesn't need validation, since it comes from the controller,
+        // not user input.
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException("Schema ID must be specified");
+        }
+
+        if (schemaRevision <= 0) {
+            throw new BadRequestException("Schema revision must be positive");
+        }
+
+        if (uploadSchema == null) {
+            throw new InvalidEntityException("Upload schema can't be null");
+        }
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
+
+        // Call through to the DAO
+        return uploadSchemaDao.updateSchemaRevisionV4(studyId, schemaId, schemaRevision, uploadSchema);
     }
 }

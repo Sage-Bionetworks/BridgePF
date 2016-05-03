@@ -124,6 +124,19 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         private Boolean required;
         private UploadFieldType type;
 
+        /** Copies attributes from the given field definition. */
+        public Builder copyOf(UploadFieldDefinition other) {
+            this.fileExtension = other.getFileExtension();
+            this.mimeType = other.getMimeType();
+            this.minAppVersion = other.getMinAppVersion();
+            this.maxAppVersion = other.getMaxAppVersion();
+            this.maxLength = other.getMaxLength();
+            this.name = other.getName();
+            this.required = other.isRequired();
+            this.type = other.getType();
+            return this;
+        }
+
         /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getFileExtension */
         public Builder withFileExtension(String fileExtension) {
             this.fileExtension = fileExtension;
