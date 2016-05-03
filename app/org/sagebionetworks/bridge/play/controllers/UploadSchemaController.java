@@ -26,6 +26,21 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
+     * Service handler for creating a new schema revision, using V4 API semantics. See
+     * {@link org.sagebionetworks.bridge.dao.UploadSchemaDao#createSchemaRevisionV4}
+     *
+     * @return Play result, with the created schema
+     */
+    public Result createSchemaRevisionV4() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        StudyIdentifier studyId = session.getStudyIdentifier();
+
+        UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
+        UploadSchema createdSchema = uploadSchemaService.createSchemaRevisionV4(studyId, uploadSchema);
+        return createdResult(createdSchema);
+    }
+
+    /**
      * Play controller for POST /researcher/v1/uploadSchema/:schemaId. This API creates an upload schema, using the
      * study for the current service endpoint and the schema of the specified schema. If the schema already exists,
      * this method updates it instead.
@@ -138,5 +153,25 @@ public class UploadSchemaController extends BaseController {
 
         List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId);
         return okResult(schemaList);
+    }
+
+    /**
+     * Service handler for updating a new schema revision, using V4 API semantics. See
+     * {@link org.sagebionetworks.bridge.dao.UploadSchemaDao#updateSchemaRevisionV4}
+     *
+     * @param schemaId
+     *         schema ID to update
+     * @param revision
+     *         schema revision to update
+     * @return Play result, with the updated schema
+     */
+    public Result updateSchemaRevisionV4(String schemaId, int revision) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        StudyIdentifier studyId = session.getStudyIdentifier();
+
+        UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
+        UploadSchema updatedSchema = uploadSchemaService.updateSchemaRevisionV4(studyId, schemaId, revision,
+                uploadSchema);
+        return okResult(updatedSchema);
     }
 }

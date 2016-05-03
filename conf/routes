@@ -103,6 +103,8 @@ GET    /v3/uploadstatuses/:uploadId    @org.sagebionetworks.bridge.play.controll
 # Upload Schemas
 GET    /v3/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy
 POST   /v3/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.createOrUpdateUploadSchema
+POST   /v4/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.createSchemaRevisionV4
+POST   /v4/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.updateSchemaRevisionV4(schemaId: String, revision: Int)
 GET    /v3/uploadschemas/:schemaId                 @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaAllRevisions(schemaId: String)
 GET    /v3/uploadschemas/:schemaId/recent          @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchema(schemaId: String)
 GET    /v3/uploadschemas/:schemaId/revisions/:rev  @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByIdAndRev(schemaId: String, rev: Int)

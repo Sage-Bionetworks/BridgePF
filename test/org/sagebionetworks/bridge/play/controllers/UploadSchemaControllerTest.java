@@ -20,6 +20,7 @@ import play.mvc.Result;
 import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -44,6 +45,22 @@ public class UploadSchemaControllerTest {
                     "       }\n" +
                     "   ]\n" +
                     "}";
+
+    @Test
+    public void createV4() throws Exception {
+        // mock service
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+        ArgumentCaptor<UploadSchema> createdSchemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
+        when(mockSvc.createSchemaRevisionV4(eq(TestConstants.TEST_STUDY), createdSchemaCaptor.capture())).thenReturn(
+                makeUploadSchema());
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
+        Result result = controller.createSchemaRevisionV4();
+        assertEquals(201, result.status());
+        assertSchemaInResult(result);
+        assertSchemaInArgCaptor(createdSchemaCaptor);
+    }
 
     @Test
     public void createSchema() throws Exception {
@@ -247,6 +264,22 @@ public class UploadSchemaControllerTest {
     }
 
     @Test
+    public void updateV4() throws Exception {
+        // mock service
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+        ArgumentCaptor<UploadSchema> updatedSchemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
+        when(mockSvc.updateSchemaRevisionV4(eq(TestConstants.TEST_STUDY), eq(TEST_SCHEMA_ID), eq(1),
+                updatedSchemaCaptor.capture())).thenReturn(makeUploadSchema());
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
+        Result result = controller.updateSchemaRevisionV4(TEST_SCHEMA_ID, 1);
+        assertEquals(200, result.status());
+        assertSchemaInResult(result);
+        assertSchemaInArgCaptor(updatedSchemaCaptor);
+    }
+
+    @Test
     public void invalidSchemaThrowsCompleteValidationException() throws Exception {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("create-schema-study");
@@ -274,6 +307,21 @@ public class UploadSchemaControllerTest {
         }
     }
 
+    private static UploadSchemaController setupControllerWithService(UploadSchemaService svc) throws Exception {
+        // mock session
+        UserSession mockSession = new UserSession();
+        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+
+        // mock request JSON
+        TestUtils.mockPlayContextWithJson(TEST_SCHEMA_JSON);
+
+        // spy controller
+        UploadSchemaController controller = spy(new UploadSchemaController());
+        controller.setUploadSchemaService(svc);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
+        return controller;
+    }
+
     private static UploadSchema makeUploadSchema() throws Exception {
         return makeUploadSchema(3);
     }
@@ -282,5 +330,18 @@ public class UploadSchemaControllerTest {
         ObjectNode node = (ObjectNode)BridgeObjectMapper.get().readTree(TEST_SCHEMA_JSON);
         node.put("revision", revision);
         return BridgeObjectMapper.get().convertValue(node, UploadSchema.class);
+    }
+
+    private static void assertSchemaInResult(Result result) throws Exception {
+        // JSON validation is already tested, so just check obvious things like schema ID
+        String jsonText = Helpers.contentAsString(result);
+        UploadSchema schema = BridgeObjectMapper.get().readValue(jsonText, UploadSchema.class);
+        assertEquals(TEST_SCHEMA_ID, schema.getSchemaId());
+    }
+
+    private static void assertSchemaInArgCaptor(ArgumentCaptor<UploadSchema> argCaptor) {
+        // Similarly, just check schema ID
+        UploadSchema arg = argCaptor.getValue();
+        assertEquals(TEST_SCHEMA_ID, arg.getSchemaId());
     }
 }

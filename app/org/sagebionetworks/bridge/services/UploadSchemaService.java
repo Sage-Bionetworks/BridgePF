@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,28 @@ public class UploadSchemaService {
     @Autowired
     public void setUploadSchemaDao(UploadSchemaDao uploadSchemaDao) {
         this.uploadSchemaDao = uploadSchemaDao;
+    }
+
+    /**
+     * Service handler for creating a new schema revision, using V4 API semantics. See
+     * {@link UploadSchemaDao#createSchemaRevisionV4}
+     *
+     * @param studyId
+     *         study that will contain the schema
+     * @param uploadSchema
+     *         schema to create
+     * @return the created schema revision
+     */
+    public UploadSchema createSchemaRevisionV4(StudyIdentifier studyId, UploadSchema uploadSchema) {
+        // Controller guarantees valid studyId and non-null uploadSchema
+        Preconditions.checkNotNull(studyId, "studyId must be non-null");
+        Preconditions.checkNotNull(uploadSchema, "uploadSchema must be non-null");
+
+        // validate schema
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
+
+        // call through to DAO
+        return uploadSchemaDao.createSchemaRevisionV4(studyId, uploadSchema);
     }
 
     /**
@@ -186,5 +209,40 @@ public class UploadSchemaService {
      */
     public List<UploadSchema> getUploadSchemasForStudy(StudyIdentifier studyId) {
         return uploadSchemaDao.getUploadSchemasForStudy(studyId);
+    }
+
+    /**
+     * Service handler for updating schema revision, using V4 API semantics. See
+     * {@link UploadSchemaDao#updateSchemaRevisionV4}
+     *
+     * @param studyId
+     *         study that contains the schema
+     * @param schemaId
+     *         schema ID to update
+     * @param schemaRevision
+     *         schema revision to update
+     * @param uploadSchema
+     *         schema with updates to persist
+     * @return the updated schema revision
+     */
+    public UploadSchema updateSchemaRevisionV4(StudyIdentifier studyId, String schemaId, int schemaRevision,
+            UploadSchema uploadSchema) {
+        // Controller guarantees valid studyId and non-null uploadSchema
+        Preconditions.checkNotNull(studyId, "studyId must be non-null");
+        Preconditions.checkNotNull(uploadSchema, "uploadSchema must be non-null");
+
+        // Validate user inputs.
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException("Schema ID must be specified");
+        }
+
+        if (schemaRevision <= 0) {
+            throw new BadRequestException("Schema revision must be positive");
+        }
+
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
+
+        // Call through to the DAO
+        return uploadSchemaDao.updateSchemaRevisionV4(studyId, schemaId, schemaRevision, uploadSchema);
     }
 }

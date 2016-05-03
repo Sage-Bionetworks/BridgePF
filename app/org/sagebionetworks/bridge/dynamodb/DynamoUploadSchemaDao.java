@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -17,9 +19,12 @@ import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -66,6 +71,37 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     @Resource(name = "uploadSchemaStudyIdIndex")
     public void setStudyIdIndex(DynamoIndexHelper studyIdIndex) {
         this.studyIdIndex = studyIdIndex;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nonnull UploadSchema createSchemaRevisionV4(@Nonnull StudyIdentifier studyId,
+            @Nonnull UploadSchema uploadSchema) {
+        // Currently, all UploadSchemas are DynamoUploadSchemas, so we don't need to validate this class cast.
+        DynamoUploadSchema ddbUploadSchema = (DynamoUploadSchema) uploadSchema;
+
+        // Set revision if needed. 0 represents an unset schema rev.
+        if (uploadSchema.getRevision() == 0) {
+            int oldRev = getCurrentSchemaRevision(studyId.getIdentifier(), uploadSchema.getSchemaId());
+            ddbUploadSchema.setRevision(oldRev + 1);
+        }
+
+        // Set study.
+        ddbUploadSchema.setStudyId(studyId.getIdentifier());
+
+        // Blank of version. This allows people to copy-paste schema revs from other studies, or easily create a new
+        // schema rev from a previously existing one. It also means if they get a schema rev and then try to create
+        // that schema rev again, we'll correctly throw a ConcurrentModificationException.
+        ddbUploadSchema.setVersion(null);
+
+        // Call DDB to create.
+        try {
+            mapper.save(ddbUploadSchema);
+        } catch (ConditionalCheckFailedException ex) {
+            throw new ConcurrentModificationException(ddbUploadSchema);
+        }
+
+        return ddbUploadSchema;
     }
 
     /** {@inheritDoc} */
@@ -365,5 +401,103 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         }
         // Do we care if it's sorted? What would it be sorted by?
         return ImmutableList.copyOf(schemaMap.values());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nonnull UploadSchema updateSchemaRevisionV4(@Nonnull StudyIdentifier studyId, @Nonnull String schemaId,
+            int schemaRev, @Nonnull UploadSchema uploadSchema) {
+        List<String> errorMessageList = new ArrayList<>();
+
+        // Get existing version of the schema rev (throws if it doesn't exist).
+        UploadSchema oldSchema = getUploadSchemaByIdAndRev(studyId, schemaId, schemaRev);
+
+        // Get field names for old and new schema and compute the fields that have been deleted or retained. (Don't
+        // care about added fields.)
+        Map<String, UploadFieldDefinition> oldFieldMap = getFieldsByName(oldSchema);
+        Set<String> oldFieldNameSet = oldFieldMap.keySet();
+
+        Map<String, UploadFieldDefinition> newFieldMap = getFieldsByName(uploadSchema);
+        Set<String> newFieldNameSet = newFieldMap.keySet();
+
+        Set<String> deletedFieldNameSet = Sets.difference(oldFieldNameSet, newFieldNameSet);
+        Set<String> retainedFieldNameSet = Sets.intersection(oldFieldNameSet, newFieldNameSet);
+
+        // Check deleted fields.
+        if (!deletedFieldNameSet.isEmpty()) {
+            errorMessageList.add("Can't delete fields: " + BridgeUtils.COMMA_SPACE_JOINER.join(deletedFieldNameSet));
+        }
+
+        // Check retained fields, make sure none are modified.
+        Set<String> modifiedFieldNameSet = new TreeSet<>();
+        for (String oneRetainedFieldName : retainedFieldNameSet) {
+            UploadFieldDefinition oldFieldDef = oldFieldMap.get(oneRetainedFieldName);
+            UploadFieldDefinition newFieldDef = newFieldMap.get(oneRetainedFieldName);
+
+            if (!equalsExceptMaxAppVersion(oldFieldDef, newFieldDef)) {
+                modifiedFieldNameSet.add(oneRetainedFieldName);
+            }
+        }
+        if (!modifiedFieldNameSet.isEmpty()) {
+            errorMessageList.add("Can't modify fields: " + BridgeUtils.COMMA_SPACE_JOINER.join(modifiedFieldNameSet));
+        }
+
+        // If we have any errors, concat them together and throw a 400 bad request.
+        if (!errorMessageList.isEmpty()) {
+            throw new BadRequestException("Can't update study " + studyId.getIdentifier() + " schema " + schemaId +
+                    " revision " + schemaRev + ": " + BridgeUtils.SEMICOLON_SPACE_JOINER.join(errorMessageList));
+        }
+
+        // Currently, all UploadSchemas are DynamoUploadSchemas, so we don't need to validate this class cast.
+        DynamoUploadSchema ddbUploadSchema = (DynamoUploadSchema) uploadSchema;
+
+        // Set the study ID, since clients don't have this.
+        ddbUploadSchema.setStudyId(studyId.getIdentifier());
+
+        // Use the schema ID and rev from the params. This allows callers to copy schemas and schema revs.
+        ddbUploadSchema.setSchemaId(schemaId);
+        ddbUploadSchema.setRevision(schemaRev);
+
+        // Everything checks out. Write the upload schema. Watch out for concurrent modification.
+        try {
+            mapper.save(ddbUploadSchema);
+        } catch (ConditionalCheckFailedException ex) {
+            throw new ConcurrentModificationException(ddbUploadSchema);
+        }
+
+        return ddbUploadSchema;
+    }
+
+    // Helper method to get a map of fields by name for an Upload Schema. Returns a TreeMap so our error messaging has
+    // the fields in a consistent order.
+    private static Map<String, UploadFieldDefinition> getFieldsByName(UploadSchema uploadSchema) {
+        Map<String, UploadFieldDefinition> fieldsByName = new TreeMap<>();
+        fieldsByName.putAll(Maps.uniqueIndex(uploadSchema.getFieldDefinitions(), UploadFieldDefinition::getName));
+        return fieldsByName;
+    }
+
+    // Helper method to test that two field defs are identical except for the maxAppVersion field (which can only be
+    // added to newFieldDef). This is because adding maxAppVersion is how we mark fields as deprecated. Package-scoped
+    // to facilitate unit tests.
+    static boolean equalsExceptMaxAppVersion(UploadFieldDefinition oldFieldDef, UploadFieldDefinition newFieldDef) {
+        // Short-cut: If they're equal with maxAppVersion, then they're equal regardless.
+        if (oldFieldDef.equals(newFieldDef)) {
+            return true;
+        }
+
+        // Make copies of both, but blank out maxAppVersion so we can use .equals().
+        UploadFieldDefinition copyOldFieldDef = new DynamoUploadFieldDefinition.Builder().copyOf(oldFieldDef)
+                .withMaxAppVersion(null).build();
+        UploadFieldDefinition copyNewFieldDef = new DynamoUploadFieldDefinition.Builder().copyOf(newFieldDef)
+                .withMaxAppVersion(null).build();
+
+        // If the .equals() fails, short-circuit.
+        if (!copyOldFieldDef.equals(copyNewFieldDef)) {
+            return false;
+        }
+
+        // Now we know they differ only in the maxAppVersion. This is valid if old has no maxAppVersion. (Because we
+        // know the differ in maxAppVersion, if old is null, we don't need to check new.)
+        return oldFieldDef.getMaxAppVersion() == null;
     }
 }

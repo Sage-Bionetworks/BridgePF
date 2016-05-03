@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.eq;
@@ -50,7 +51,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 
-@SuppressWarnings({ "unchecked", "rawtypes" })
+@SuppressWarnings({ "unchecked", "rawtypes", "RedundantCast" })
 public class DynamoUploadSchemaDaoMockTest {
     @Test
     public void createNewSchema() {
@@ -789,7 +790,52 @@ public class DynamoUploadSchemaDaoMockTest {
         assertEquals(2, outputSchemaList.get(1).getRevision());
         assertEquals(1, outputSchemaList.get(2).getRevision());
     }
-    
+
+    @Test
+    public void fieldDefsEqual() {
+        UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).build();
+        UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).build();
+        assertTrue(DynamoUploadSchemaDao.equalsExceptMaxAppVersion(oldFieldDef, newFieldDef));
+    }
+
+    @Test
+    public void fieldDefsEqualWithAddedMaxAppVersion() {
+        UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).build();
+        UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).withMaxAppVersion(13).build();
+        assertTrue(DynamoUploadSchemaDao.equalsExceptMaxAppVersion(oldFieldDef, newFieldDef));
+    }
+
+    @Test
+    public void fieldDefsEqualExceptModifiedMaxAppVersion() {
+        UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).withMaxAppVersion(37).build();
+        UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).withMaxAppVersion(42).build();
+        assertFalse(DynamoUploadSchemaDao.equalsExceptMaxAppVersion(oldFieldDef, newFieldDef));
+    }
+
+    @Test
+    public void fieldDefsEqualExceptRemovedMaxAppVersion() {
+        UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).withMaxAppVersion(7).build();
+        UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).build();
+        assertFalse(DynamoUploadSchemaDao.equalsExceptMaxAppVersion(oldFieldDef, newFieldDef));
+    }
+
+    @Test
+    public void fieldDefsUnequalOnOtherField() {
+        UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.INT).build();
+        UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.BOOLEAN).build();
+        assertFalse(DynamoUploadSchemaDao.equalsExceptMaxAppVersion(oldFieldDef, newFieldDef));
+    }
+
     private static DynamoDBMapper setupMockMapperWithSchema(DynamoUploadSchema schema) {
         // mock get result
         PaginatedQueryList<DynamoUploadSchema> mockGetResult = mock(PaginatedQueryList.class);
@@ -815,7 +861,7 @@ public class DynamoUploadSchemaDaoMockTest {
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         
         // Reverse order, as queried
-        List<DynamoUploadSchema> results = ImmutableList.<DynamoUploadSchema>of(
+        List<DynamoUploadSchema> results = ImmutableList.of(
             makeUploadSchema("test-study", "AAA", 3), 
             makeUploadSchema("test-study", "AAA", 2), 
             makeUploadSchema("test-study", "AAA", 1));

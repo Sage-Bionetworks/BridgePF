@@ -46,14 +46,19 @@ public class UploadFieldDefinitionTest {
     public void testOptionalFields() {
         UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withFileExtension(".test")
                 .withMimeType("text/plain").withMinAppVersion(10).withMaxAppVersion(13).withMaxLength(128)
-                .withName("optional-stuff").withType(UploadFieldType.STRING).build();
+                .withName("optional-stuff").withRequired(false).withType(UploadFieldType.STRING).build();
         assertEquals(".test", fieldDef.getFileExtension());
         assertEquals("text/plain", fieldDef.getMimeType());
         assertEquals(10, fieldDef.getMinAppVersion().intValue());
         assertEquals(13, fieldDef.getMaxAppVersion().intValue());
         assertEquals(128, fieldDef.getMaxLength().intValue());
         assertEquals("optional-stuff", fieldDef.getName());
+        assertFalse(fieldDef.isRequired());
         assertEquals(UploadFieldType.STRING, fieldDef.getType());
+
+        // Also test copy constructor.
+        UploadFieldDefinition copy = new DynamoUploadFieldDefinition.Builder().copyOf(fieldDef).build();
+        assertEquals(fieldDef, copy);
     }
 
     @Test
