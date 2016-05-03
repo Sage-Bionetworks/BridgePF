@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.mockito.Matchers.any;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,7 +22,7 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -28,11 +31,13 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import play.mvc.Http;
 import play.mvc.Result;
+import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserManagementControllerTest {
@@ -59,16 +64,19 @@ public class UserManagementControllerTest {
         user.setHealthCode("BBB");
         user.setStudyKey("api");
         user.setRoles(Sets.newHashSet(ADMIN));
+        user.setEmail("email@email.com");
         session.setUser(user);
         session.setAuthenticated(true);
         session.setStudyIdentifier(TEST_STUDY);
         
-        when(authService.getSession(any(String.class))).thenReturn(session);
-        when(studyService.getStudy(new StudyIdentifierImpl("api"))).thenReturn(study);
-        
         controller.setStudyService(studyService);
         controller.setUserAdminService(userAdminService);
         controller.setAuthenticationService(authService);
+        
+        doReturn(session).when(userAdminService).createUser(
+                anyObject(), anyObject(), anyObject(), anyBoolean(), anyBoolean());
+        doReturn(session).when(authService).getSession(any(String.class));
+        doReturn(study).when(studyService).getStudy(new StudyIdentifierImpl("api"));
 
         Map<String,String[]> map = Maps.newHashMap();
         map.put(BridgeConstants.SESSION_TOKEN_HEADER, new String[]{"AAA"});
@@ -84,7 +92,11 @@ public class UserManagementControllerTest {
     public void createdResponseReturnsJSONPayload() throws Exception {
         Result result = controller.createUser();
 
-        assertResult(result, 201, "User created.");
+        assertEquals(201, result.status());
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+
+        assertEquals("UserSessionInfo", node.get("type").asText());
+        assertEquals("email@email.com", node.get("email").asText());
     }
     
     @Test

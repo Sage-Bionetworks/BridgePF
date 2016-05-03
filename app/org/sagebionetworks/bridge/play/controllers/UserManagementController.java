@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
@@ -35,9 +36,9 @@ public class UserManagementController extends BaseController {
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
         
-        userAdminService.createUser(participant, study, null, false, consent);
+        UserSession userSession = userAdminService.createUser(participant, study, null, false, consent);
 
-        return createdResult("User created.");
+        return createdResult(new UserSessionInfo(userSession));
     }
 
     public Result deleteUser(String userId) throws Exception {

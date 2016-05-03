@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
@@ -75,7 +76,7 @@ public class ParticipantController extends BaseController {
         session = authenticationService.updateSession(study, context, userId);
         updateSessionUser(session, session.getUser());
         
-        return okResult("Participant updated.");
+        return okResult(new UserSessionInfo(session));
     }
     
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter) {
