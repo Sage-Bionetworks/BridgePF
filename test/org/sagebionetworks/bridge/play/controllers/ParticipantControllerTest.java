@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -187,7 +188,6 @@ public class ParticipantControllerTest {
                 "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
         
         Result result = controller.updateParticipant(ID);
-        
         assertResult(result, 200, "Participant updated.");
         
         verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
@@ -281,9 +281,12 @@ public class ParticipantControllerTest {
                 "'attributes':{'phone':'123456789'},'languages':['en','fr'],'status':'disabled','roles':['admin']}"));
 
         Result result = controller.updateSelfParticipant();
-        assertResult(result, 200, "Participant updated.");
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(200, result.status());
+        assertEquals("UserSessionInfo", node.get("type").asText());
         
         // verify the object is passed to service, one field is sufficient
+        verify(cacheProvider).setUserSession(any());
         verify(authService).updateSession(eq(STUDY), any(), eq(ID));
         verify(participantService).updateParticipant(eq(STUDY), eq(NO_ROLES), eq(ID), participantCaptor.capture());
 
@@ -319,8 +322,11 @@ public class ParticipantControllerTest {
                 "'languages':['fr'],'status':'enabled','roles':['admin']}"));
         
         Result result = controller.updateSelfParticipant();
-        assertResult(result, 200, "Participant updated.");
+        assertEquals(200, result.status());
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals("UserSessionInfo", node.get("type").asText());
 
+        verify(authService).updateSession(eq(STUDY), any(), eq(ID));
         verify(participantService).updateParticipant(eq(STUDY), eq(NO_ROLES), eq(ID), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals("firstName", captured.getFirstName());
