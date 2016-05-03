@@ -19,6 +19,7 @@ import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -90,7 +91,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
         // Blank of version. This allows people to copy-paste schema revs from other studies, or easily create a new
         // schema rev from a previously existing one. It also means if they get a schema rev and then try to create
-        // that schema rev again, we'll correctly through a ConcurrentModificationException.
+        // that schema rev again, we'll correctly throw a ConcurrentModificationException.
         ddbUploadSchema.setVersion(null);
 
         // Call DDB to create.
@@ -471,10 +472,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     // the fields in a consistent order.
     private static Map<String, UploadFieldDefinition> getFieldsByName(UploadSchema uploadSchema) {
         Map<String, UploadFieldDefinition> fieldsByName = new TreeMap<>();
-        List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
-        for (UploadFieldDefinition oneFieldDef : fieldDefList) {
-            fieldsByName.put(oneFieldDef.getName(), oneFieldDef);
-        }
+        fieldsByName.putAll(Maps.uniqueIndex(uploadSchema.getFieldDefinitions(), UploadFieldDefinition::getName));
         return fieldsByName;
     }
 

@@ -33,11 +33,6 @@ public class UploadSchemaServiceTest {
     private static final int SCHEMA_REV = 1;
 
     @Test(expected = InvalidEntityException.class)
-    public void createV4NullSchema() {
-        new UploadSchemaService().createSchemaRevisionV4(TestConstants.TEST_STUDY, null);
-    }
-
-    @Test(expected = InvalidEntityException.class)
     public void createV4InvalidSchema() {
         // Simple invalid schema, like one with no fields.
         new UploadSchemaService().createSchemaRevisionV4(TestConstants.TEST_STUDY, new DynamoUploadSchema());
@@ -300,11 +295,6 @@ public class UploadSchemaServiceTest {
     @Test(expected = BadRequestException.class)
     public void updateV4ZeroRev() {
         new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, 0, makeSimpleSchema());
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void updateV4NullSchema() {
-        new UploadSchemaService().updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, null);
     }
 
     @Test(expected = InvalidEntityException.class)

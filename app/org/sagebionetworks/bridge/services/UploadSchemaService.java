@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,10 +38,11 @@ public class UploadSchemaService {
      * @return the created schema revision
      */
     public UploadSchema createSchemaRevisionV4(StudyIdentifier studyId, UploadSchema uploadSchema) {
+        // Controller guarantees valid studyId and non-null uploadSchema
+        Preconditions.checkNotNull(studyId, "studyId must be non-null");
+        Preconditions.checkNotNull(uploadSchema, "uploadSchema must be non-null");
+
         // validate schema
-        if (uploadSchema == null) {
-            throw new InvalidEntityException("Upload schema can't be null");
-        }
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
 
         // call through to DAO
@@ -225,8 +227,11 @@ public class UploadSchemaService {
      */
     public UploadSchema updateSchemaRevisionV4(StudyIdentifier studyId, String schemaId, int schemaRevision,
             UploadSchema uploadSchema) {
-        // Validate inputs. Study ID is the only one that doesn't need validation, since it comes from the controller,
-        // not user input.
+        // Controller guarantees valid studyId and non-null uploadSchema
+        Preconditions.checkNotNull(studyId, "studyId must be non-null");
+        Preconditions.checkNotNull(uploadSchema, "uploadSchema must be non-null");
+
+        // Validate user inputs.
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException("Schema ID must be specified");
         }
@@ -235,9 +240,6 @@ public class UploadSchemaService {
             throw new BadRequestException("Schema revision must be positive");
         }
 
-        if (uploadSchema == null) {
-            throw new InvalidEntityException("Upload schema can't be null");
-        }
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
 
         // Call through to the DAO
