@@ -22,7 +22,8 @@ public interface AccountDao {
 
     /**
      * Create an account within the context of the study. Sending email address confirmation
-     * email is optional. 
+     * email is optional. Creating an account *always* creates a healthCode and assigns the 
+     * healthId for that healthCode to the created account.
      */
     public Account signUp(Study study, StudyParticipant participant, boolean sendEmail);
     
@@ -66,7 +67,7 @@ public interface AccountDao {
     /**
      * Save account changes.
      */
-    public void updateAccount(Study study, Account account);
+    public void updateAccount(Account account);
     
     /**
      * Delete an account along with the authentication credentials.

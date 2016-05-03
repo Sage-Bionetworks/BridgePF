@@ -366,7 +366,7 @@ public class AuthenticationServiceTest {
             data.remove(subpop.getGuidString()+"_signatures");
             data.remove(subpop.getGuidString()+"_signatures_version");                
         }
-        accountDao.updateAccount(testUser.getStudy(), account);
+        accountDao.updateAccount(account);
         
         // Signing in should still work to create a consented user.
         Study study = studyService.getStudy(testUser.getStudyIdentifier());

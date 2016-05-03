@@ -86,19 +86,19 @@ public class StormpathAccountDao implements AccountDao {
     private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Resource(name = "stormpathApplication")
-    public final void setStormpathApplication(Application application) {
+    final void setStormpathApplication(Application application) {
         this.application = application;
     }
     @Resource(name = "stormpathClient")
-    public final void setStormpathClient(Client client) {
+    final void setStormpathClient(Client client) {
         this.client = client;
     }
     @Autowired
-    public final void setStudyService(StudyService studyService) {
+    final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
     @Autowired
-    public final void setSubpopulationService(SubpopulationService subpopService) {
+    final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
     @Autowired
@@ -106,7 +106,7 @@ public class StormpathAccountDao implements AccountDao {
         this.healthCodeService = healthCodeService;
     }
     @Resource(name="encryptorList")
-    public final void setEncryptors(List<BridgeEncryptor> list) {
+    final void setEncryptors(List<BridgeEncryptor> list) {
         for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
@@ -188,10 +188,8 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(verification);
         
         try {
-            List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
-            
             com.stormpath.sdk.account.Account acct = client.verifyAccountEmail(verification.getSptoken());
-            return (acct == null) ? null : new StormpathAccount(study, subpopGuids, acct, encryptors);
+            return (acct == null) ? null : constructAccount(study, acct);
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
         }
@@ -250,7 +248,6 @@ public class StormpathAccountDao implements AccountDao {
         
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-            List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
             
             AuthenticationRequest<?,?> request = UsernamePasswordRequests.builder()
                     .setUsernameOrEmail(signIn.getEmail())
@@ -265,7 +262,7 @@ public class StormpathAccountDao implements AccountDao {
                 // call, this has been verified with Stormpath). If we fail to fully initialize the user, we want it to 
                 // happen here, not later in the call where we don't expect it.
                 acct.getCustomData();
-                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
+                return constructAccount(study, acct);
             }
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
@@ -279,8 +276,6 @@ public class StormpathAccountDao implements AccountDao {
         checkArgument(isNotBlank(identifier));
         
         String href = BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF+identifier;
-        
-        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
 
         AccountOptions<?> options = Accounts.options();
         options.withCustomData();
@@ -292,7 +287,7 @@ public class StormpathAccountDao implements AccountDao {
             // Validate the user is in the correct directory
             Directory directory = acct.getDirectory();
             if (directory.getHref().equals(study.getStormpathHref())) {
-                return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors); 
+                return constructAccount(study, acct);
             }
         } catch(ResourceException e) {
             // In keeping with the email implementation, just return null
@@ -311,17 +306,8 @@ public class StormpathAccountDao implements AccountDao {
             return null;
         }
         
-        // This method is called to update a user's preferences, including requests to no longer 
-        // be sent unsolicited email. So even if this user hasn't been assigned a healthCode (I 
-        // only recently changed this to create a healthCode when an account is created, and not later), 
-        // we need to create one so the preference can be recorded.
-        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-        if (healthId == null) {
-            healthId = healthCodeService.createMapping(study.getStudyIdentifier());
-            account.setHealthId(healthId.getId());
-            updateAccount(study, account);
-        }
-        return healthId.getCode();
+        // This method should always succeed because construction of account will create a health code if it's missing.
+        return healthCodeService.getMapping(account.getHealthId()).getCode();
     }
     
     @Override 
@@ -357,8 +343,7 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override
-    public void updateAccount(Study study, Account account) {
-        checkNotNull(study);
+    public void updateAccount(Account account) {
         checkNotNull(account);
         
         com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
@@ -392,15 +377,33 @@ public class StormpathAccountDao implements AccountDao {
         acct.delete();
     }
     
+    // NOTE: There's no case where we don't want a health code for this account. We may simply want to have
+    // the account have the health code, and entirely hide the healthId as an implementation detail, like
+    // encryption.
+    private Account constructAccount(StudyIdentifier studyId, com.stormpath.sdk.account.Account acct) {
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(studyId);
+        Account account = new StormpathAccount(studyId, subpopGuids, acct, encryptors);
+        HealthId healthId = null;
+        if (account.getHealthId() != null) {
+            healthId = healthCodeService.getMapping(account.getHealthId());
+        }
+        if (healthId == null) {
+            healthId = healthCodeService.createMapping(studyId);
+            account.setHealthId(healthId.getId());
+            updateAccount(account);
+        }
+        account.setHealthId(healthId.getId());
+        return account;
+    }
+    
     private Account getAccountWithEmail(Study study, String email) {
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
 
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
                 .withCustomData().withGroups().withGroupMemberships());
         if (accounts.iterator().hasNext()) {
             com.stormpath.sdk.account.Account acct = accounts.iterator().next();
-            return new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
+            return constructAccount(study, acct);
         }
         return null;
     }

@@ -367,7 +367,7 @@ public class AuthenticationService {
         if (healthId == null) {
             healthId = healthCodeService.createMapping(study);
             account.setHealthId(healthId.getId());
-            accountDao.updateAccount(study, account);
+            accountDao.updateAccount(account);
             logger.debug("Health ID/code pair created for " + account.getId() + " in study " + study.getName());
         }
         return healthId.getCode();

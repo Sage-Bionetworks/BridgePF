@@ -223,7 +223,7 @@ public class StormpathAccountDaoTest {
             account.setAttribute("attribute_one", "value of attribute one");
             
             // Update Account
-            accountDao.updateAccount(study, account);
+            accountDao.updateAccount(account);
             
             // Retrieve account with ID
             Account newAccount = accountDao.getAccount(study, account.getId());
@@ -242,7 +242,7 @@ public class StormpathAccountDaoTest {
             roles.addAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER));
             
             newAccount.setRoles(roles);
-            accountDao.updateAccount(study, newAccount);
+            accountDao.updateAccount(newAccount);
 
             newAccount = accountDao.getAccount(study, account.getId());
             assertEquals(4, newAccount.getRoles().size());
@@ -250,7 +250,7 @@ public class StormpathAccountDaoTest {
                     Roles.TEST_USERS, Roles.WORKER)));
 
             newAccount.setRoles(EnumSet.of(Roles.TEST_USERS));
-            accountDao.updateAccount(study, newAccount);
+            accountDao.updateAccount(newAccount);
 
             newAccount = accountDao.getAccount(study, account.getId());
             assertEquals(1, newAccount.getRoles().size());
@@ -259,7 +259,7 @@ public class StormpathAccountDaoTest {
             // finally, test the name
             newAccount.setFirstName("Test");
             newAccount.setLastName("Tester");
-            accountDao.updateAccount(study, newAccount);
+            accountDao.updateAccount(newAccount);
             
             newAccount = accountDao.getAccount(study, newAccount.getId());
             assertEquals("Test", newAccount.getFirstName()); // name is now visible
@@ -341,7 +341,7 @@ public class StormpathAccountDaoTest {
             
             account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
             account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);
-            accountDao.updateAccount(study, account);
+            accountDao.updateAccount(account);
             
             account = accountDao.getAccount(study, account.getId());
             

@@ -55,7 +55,7 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
                 // and has not consented in other studies yet.
                 mapping = healthCodeService.createMapping(study);
                 account.setHealthId(mapping.getId());
-                accountDao.updateAccount(study, account);
+                accountDao.updateAccount(account);
                 callback.newRecords(getBackfillRecordFactory().createAndSave(
                         task, study, account, "health code created"));
             } 

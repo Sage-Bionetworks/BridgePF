@@ -111,7 +111,7 @@ public class ParticipantService {
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
         Account account = getAccountThrowingException(study, id);
-        String healthCode = getHealthCode(account);
+        String healthCode = getHealthCodeThrowingException(account);
 
         Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
@@ -243,7 +243,7 @@ public class ParticipantService {
             updateRoles(callerRoles, participant, account);    
         }
         
-        accountDao.updateAccount(study, account);
+        accountDao.updateAccount(account);
         
         if (isNew && isNotBlank(participant.getExternalId())) {
             externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
@@ -309,22 +309,22 @@ public class ParticipantService {
         return account;
     }
     
-    private String getHealthCode(Account account) {
-        if (account.getHealthId() != null) {
-            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-            if (healthId != null && healthId.getCode() != null) {
-                return healthId.getCode();
-            }
-        }
-        return null;
-    }
-    
+    /**
+     * Get healthCode for account. This should never fail because the contract of the AccountDao is to always
+     * return an account with an assigned healthCode.
+     */
     private String getHealthCodeThrowingException(Account account) {
-        String healthCode = getHealthCode(account);
-        if (healthCode == null) {
-            throw new BridgeServiceException("Participant cannot be updated (no health code exists for user).");    
+        if (account.getHealthId() == null) {
+            throw new BridgeServiceException("Participant cannot be updated (account has no healthId).");
         }
-        return healthCode;
+        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+        if (healthId == null) {
+            throw new BridgeServiceException("Participant cannot be updated (no HealthId mapping).");
+        }
+        if (healthId.getCode() == null) {
+            throw new BridgeServiceException("Participant cannot be updated (no health code in HealthId mapping).");
+        }
+        return healthId.getCode();
     }
     
 }
