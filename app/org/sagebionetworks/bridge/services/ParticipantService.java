@@ -300,6 +300,16 @@ public class ParticipantService {
     private boolean idsDontExistOrAreNotEqual(String id1, String id2) {
         return (isBlank(id1) || isBlank(id2) || !id1.equals(id2));
     }
+    
+    private String getHealthCodeThrowingException(Account account) {
+        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+        if (healthId != null) {
+            return healthId.getCode();
+        }
+        // This should NEVER happen, but there are tests that verify if it happens, we send back the right 
+        // exception.
+        throw new BridgeServiceException("Participant cannot be updated. Health code could not be found.");
+    }
 
     private Account getAccountThrowingException(Study study, String id) {
         Account account = accountDao.getAccount(study, id);
@@ -307,24 +317,6 @@ public class ParticipantService {
             throw new EntityNotFoundException(Account.class);
         }
         return account;
-    }
-    
-    /**
-     * Get healthCode for account. This should never fail because the contract of the AccountDao is to always
-     * return an account with an assigned healthCode.
-     */
-    private String getHealthCodeThrowingException(Account account) {
-        if (account.getHealthId() == null) {
-            throw new BridgeServiceException("Participant cannot be updated (account has no healthId).");
-        }
-        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-        if (healthId == null) {
-            throw new BridgeServiceException("Participant cannot be updated (no HealthId mapping).");
-        }
-        if (healthId.getCode() == null) {
-            throw new BridgeServiceException("Participant cannot be updated (no health code in HealthId mapping).");
-        }
-        return healthId.getCode();
     }
     
 }

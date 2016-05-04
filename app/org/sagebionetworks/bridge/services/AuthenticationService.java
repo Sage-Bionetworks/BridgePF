@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -188,7 +187,7 @@ public class AuthenticationService {
             }
             Account account = accountDao.signUp(study, participant, isAnonSignUp);
             if (!participant.getDataGroups().isEmpty()) {
-                final String healthCode = getHealthCode(study, account);
+                final String healthCode = healthCodeService.getMapping(account.getHealthId()).getCode();
                 optionsService.setStringSet(study, healthCode, DATA_GROUPS, participant.getDataGroups());
             }
             
@@ -311,7 +310,7 @@ public class AuthenticationService {
         final User user = new User(account);
         user.setStudyKey(study.getIdentifier());
 
-        final String healthCode = getHealthCode(study, account);
+        final String healthCode = healthCodeService.getMapping(account.getHealthId()).getCode();
         user.setHealthCode(healthCode);
         
         ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
@@ -351,25 +350,5 @@ public class AuthenticationService {
         // Internal session token to identify sessions internally (e.g. in metrics)
         newSession.setInternalSessionToken(BridgeUtils.generateGuid());
         return newSession;
-    }
-
-    /**
-     * Any user who authenticates has a health ID/code generated and assigned. It happens at authentication 
-     * because some users are automatically marked as consented, which means we have these users accessing 
-     * all the APIs that expect users to have health codes, which unknown consequences if they don't. We 
-     * do not have to do it at sign up or when the user actually consents (interestingly enough). 
-     * @param study
-     * @param account
-     * @return
-     */
-    private String getHealthCode(Study study, Account account) {
-        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-        if (healthId == null) {
-            healthId = healthCodeService.createMapping(study);
-            account.setHealthId(healthId.getId());
-            accountDao.updateAccount(account);
-            logger.debug("Health ID/code pair created for " + account.getId() + " in study " + study.getName());
-        }
-        return healthId.getCode();
     }
 }
