@@ -7,6 +7,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -94,7 +95,7 @@ public class StormpathAccountDaoMockTest {
     BridgeEncryptor encryptor;
     
     @Mock
-    CustomData data;
+    CustomData customData;
 
     StormpathAccountDao dao;
     
@@ -131,9 +132,9 @@ public class StormpathAccountDaoMockTest {
         when(client.getCurrentTenant()).thenReturn(tenant);
         when(client.verifyAccountEmail("tokenAAA")).thenReturn(stormpathAccount);
         
-        when(data.get("test-study_version")).thenReturn(2);
-        when(data.get("test-study_code")).thenReturn("healthId");
-        when(stormpathAccount.getCustomData()).thenReturn(data);
+        when(customData.get("test-study_version")).thenReturn(2);
+        when(customData.get("test-study_code")).thenReturn("healthId");
+        when(stormpathAccount.getCustomData()).thenReturn(customData);
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
 
         Account account = dao.verifyEmail(study, verification);
@@ -177,7 +178,7 @@ public class StormpathAccountDaoMockTest {
     
     @Test
     public void stormpathAccountCorrectlyInitialized() {
-        when(stormpathAccount.getCustomData()).thenReturn(data);
+        when(stormpathAccount.getCustomData()).thenReturn(customData);
         
         when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(stormpathAccount);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
@@ -216,9 +217,9 @@ public class StormpathAccountDaoMockTest {
         // mock stormpath application
         when(application.authenticateAccount(any())).thenReturn(authResult);
         
-        when(data.get("test-study_version")).thenReturn(2);
-        when(data.get("test-study_code")).thenReturn("healthId");
-        when(stormpathAccount.getCustomData()).thenReturn(data);
+        when(customData.get("test-study_version")).thenReturn(2);
+        when(customData.get("test-study_code")).thenReturn("healthId");
+        when(stormpathAccount.getCustomData()).thenReturn(customData);
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
         
         // authenticate
@@ -301,7 +302,67 @@ public class StormpathAccountDaoMockTest {
     public void getStudyPagedAccountsRejectsNonsenseOffsetBy() {
         dao.getPagedAccountSummaries(study, -10, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
     }
+    
+    @Test
+    public void verifyEmailCreatesHealthCode() {
+        mockAccountWithoutHealthCode();
+        
+        doReturn(stormpathAccount).when(client).verifyAccountEmail("spToken");
+        EmailVerification emailVerification = new EmailVerification("spToken");
+        
+        Account account = dao.verifyEmail(study, emailVerification);
+        assertEquals("ABC", account.getHealthCode());
+    }
+    
+    @Test
+    public void authenticatedCreatesHealthCode() {
+        mockAccountWithoutHealthCode();
+        
+        SignIn signIn = new SignIn("email@email.com", "password");
+        
+        AuthenticationResult result = mock(AuthenticationResult.class);
+        doReturn(stormpathAccount).when(result).getAccount();
+        doReturn(result).when(application).authenticateAccount(any());
+        
+        Account account = dao.authenticate(study, signIn);
+        assertEquals("ABC", account.getHealthCode());
+    }
+    
+    @Test
+    public void getAccountCreatesHealthCode() {
+        mockAccountWithoutHealthCode();
+        
+        Account account = dao.getAccount(study, "id");
+        assertEquals("ABC", account.getHealthCode());
+    }
 
+    private void mockAccountWithoutHealthCode() {
+        // Necessary to override this method where we do a cast that fails on the mock stormpathAccount
+        dao = org.mockito.Mockito.spy(dao);
+        doReturn(false).when(dao).isAccountDirty(any());
+        
+        doReturn(stormpathAccount).when(client).getResource(any(), eq(com.stormpath.sdk.account.Account.class), any());
+        doReturn(directory).when(stormpathAccount).getDirectory();
+        doReturn(directory).when(client).getResource(study.getStormpathHref(), Directory.class);
+        doReturn(study.getStormpathHref()).when(directory).getHref();
+        
+        GroupList groupList = mock(GroupList.class);
+        when(groupList.iterator()).thenReturn(Lists.<Group>newArrayList().iterator());
+        
+        HealthId healthId = mock(HealthId.class);
+        doReturn("ABC").when(healthId).getCode();
+        doReturn("healthId").when(healthId).getId();
+        
+        doReturn(null).when(healthCodeService).getMapping("healthId");
+        doReturn(healthId).when(healthCodeService).createMapping(study);
+        
+        // There is no healthId in the custom data, which is key to the setup of this test.
+        doReturn(null).when(customData).get("test-study_version");
+        doReturn(null).when(customData).get("test-study_code");
+        doReturn(customData).when(stormpathAccount).getCustomData();
+        doReturn(groupList).when(stormpathAccount).getGroups();
+    }
+    
     private com.stormpath.sdk.account.Account setupGroupChangeTest(Set<String> oldGroupSet, Set<Roles> newGroupSet) {
         // mock Stormpath account
         List<Group> mockGroupJavaList = new ArrayList<>();

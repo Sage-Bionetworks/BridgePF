@@ -269,7 +269,7 @@ public class StormpathAccountDao implements AccountDao {
         options.withGroupMemberships();
         try {
             com.stormpath.sdk.account.Account acct = client.getResource(href, com.stormpath.sdk.account.Account.class, options);
-            
+
             // Validate the user is in the correct directory
             Directory directory = acct.getDirectory();
             if (directory.getHref().equals(study.getStormpathHref())) {
@@ -291,8 +291,6 @@ public class StormpathAccountDao implements AccountDao {
         if (account == null) {
             return null;
         }
-        
-        // This method should always succeed because construction of account will create a health code if it's missing.
         return account.getHealthCode();
     }
     
@@ -339,18 +337,22 @@ public class StormpathAccountDao implements AccountDao {
         try {
             updateGroups(account);
             acct.getCustomData().save();
-            
             // This will throw an exception if the account object has not changed, which it may not have
             // if this call was made simply to persist a change in the groups. To get around this, we dig 
-            // into the implementation internals of the account because the Stormpath code is tracking the 
-            // dirty state of the object.
-            AbstractResource res = (AbstractResource)acct;
-            if (res.isDirty()) {
+            // into the implementation internals of the account and check the dirty state of the object. 
+            // In mock tests we override the method involved to avoid test errors. This was verified to be 
+            // an issue as of stormpath 1.0.RC9.
+            if (isAccountDirty(acct)) {
                 acct.save();
             }
         } catch(ResourceException e) {
             rethrowResourceException(e, account);
         }
+    }
+    
+    public boolean isAccountDirty(com.stormpath.sdk.account.Account acct) {
+        AbstractResource res = (AbstractResource)acct;
+        return res.isDirty();
     }
 
     @Override
@@ -375,7 +377,6 @@ public class StormpathAccountDao implements AccountDao {
         }
         if (healthId == null) {
             healthId = healthCodeService.createMapping(studyId);
-            account.setHealthId(healthId);
             updateAccount(account);
         }
         account.setHealthId(healthId);
