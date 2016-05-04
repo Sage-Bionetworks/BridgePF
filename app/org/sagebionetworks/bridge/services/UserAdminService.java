@@ -180,25 +180,21 @@ public class UserAdminService {
         // up accurate information about the state of the account (as we can recover it)
         cacheProvider.removeSessionByUserId(account.getId());
         
-        // Because this account was retrieved via the iterators in AccountDao, the existence of 
-        // a health code is not enforce.
         String healthCode = account.getHealthCode();
-        if (account.getHealthCode() != null) {
-            consentService.deleteAllConsentsForUser(study, healthCode);
-            healthDataService.deleteRecordsForHealthCode(healthCode);
-            scheduledActivityService.deleteActivitiesForUser(healthCode);
-            activityEventService.deleteActivityEvents(healthCode);
-            surveyResponseService.deleteSurveyResponses(healthCode);
-            
-            // Remove the externalId from the table even if validation is not enabled. If the study
-            // turns it off/back on again, we want to track what has changed
-            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-            String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
-            if (externalId != null) {
-                externalIdService.unassignExternalId(study, externalId, healthCode);    
-            }
-            optionsService.deleteAllParticipantOptions(healthCode);
+        consentService.deleteAllConsentsForUser(study, healthCode);
+        healthDataService.deleteRecordsForHealthCode(healthCode);
+        scheduledActivityService.deleteActivitiesForUser(healthCode);
+        activityEventService.deleteActivityEvents(healthCode);
+        surveyResponseService.deleteSurveyResponses(healthCode);
+        
+        // Remove the externalId from the table even if validation is not enabled. If the study
+        // turns it off/back on again, we want to track what has changed
+        ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+        String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
+        if (externalId != null) {
+            externalIdService.unassignExternalId(study, externalId, healthCode);    
         }
+        optionsService.deleteAllParticipantOptions(healthCode);
         accountDao.deleteAccount(study, account.getId());
     }
 }

@@ -52,20 +52,19 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     void doBackfill(final BackfillTask task, final BackfillCallback callback) {
         
         for (Iterator<Account> i = accountDao.getAllAccounts(); i.hasNext();) {
-            Account account = i.next();
-            Study study = studyService.getStudy(account.getStudyIdentifier());
-            
+            // This ensures the healthCode is created.
+            Account acct = i.next();
+            Study study = studyService.getStudy(acct.getStudyIdentifier());
+            Account account = accountDao.getAccount(study, acct.getId());
             try {
                 String healthCode = account.getHealthCode();
-                if (healthCode != null) {
-                    final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
-                    if (isBlank(studyId)) {
-                        String msg = "Backfill needed as study ID is blank.";
-                        callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
-                    } else {
-                        String msg = "Study ID already exists.";
-                        callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
-                    }
+                final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
+                if (isBlank(studyId)) {
+                    String msg = "Backfill needed as study ID is blank.";
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
+                } else {
+                    String msg = "Study ID already exists.";
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
                 }
             } catch (final RuntimeException e) {
                 LOGGER.error(e.getMessage(), e);

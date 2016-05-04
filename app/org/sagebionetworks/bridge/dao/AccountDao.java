@@ -21,9 +21,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 public interface AccountDao {
 
     /**
-     * Create an account within the context of the study. Sending email address confirmation
-     * email is optional. Creating an account *always* creates a healthCode and assigns the 
-     * healthId for that healthCode to the created account.
+     * Create an account within the context of the study. Sending an email to verify the user's 
+     * email address is optional. Creating an account *always* creates a healthCode and assigns 
+     * the healthId for that healthCode to the created account.
      */
     public Account signUp(Study study, StudyParticipant participant, boolean sendEmail);
     
