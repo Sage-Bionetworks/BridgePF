@@ -401,26 +401,6 @@ public class ParticipantServiceTest {
         assertNull(participant.getHealthCode());
     }
     
-    @Test(expected = BridgeServiceException.class)
-    @Ignore
-    public void getStudyParticipantWithoutHealthCode() {
-        // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
-        DateTime createdOn = DateTime.now();
-        when(account.getHealthCode()).thenReturn(null);
-        when(account.getFirstName()).thenReturn(FIRST_NAME);
-        when(account.getLastName()).thenReturn(LAST_NAME);
-        when(account.getEmail()).thenReturn(EMAIL);
-        when(account.getId()).thenReturn(ID);
-        when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
-        when(account.getCreatedOn()).thenReturn(createdOn);
-        when(account.getAttribute("attr2")).thenReturn("anAttribute2");
-        
-        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
-        when(healthId.getCode()).thenReturn(null);
-        
-        participantService.getParticipant(STUDY, CALLER_ROLES, ID);
-    }
-
     @Test(expected = EntityNotFoundException.class)
     public void signOutUserWhoDoesNotExist() {
         when(accountDao.getAccount(STUDY, ID)).thenReturn(null);
@@ -562,16 +542,6 @@ public class ParticipantServiceTest {
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
         assertEquals("POWERS", options.get(EXTERNAL_IDENTIFIER));
-    }
-    
-    @Test(expected = BridgeServiceException.class)
-    @Ignore
-    public void updateParticipantWithNoHealthCode() {
-        STUDY.setExternalIdValidationEnabled(true);
-        doReturn(null).when(account).getHealthCode();
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
-        
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
     }
     
     @Test
