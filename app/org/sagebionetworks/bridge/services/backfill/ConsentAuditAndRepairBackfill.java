@@ -13,7 +13,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -21,7 +20,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ActivityEventService;
-import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 /**
@@ -36,31 +34,26 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
     private UserConsentDao userConsentDao;
     private ActivityEventService activityEventService;
     private StudyConsentDao studyConsentDao;
-    private HealthCodeService healthCodeService;
     private ParticipantOptionsService optionsService;
     
     @Autowired
-    public final void setAccountDao(AccountDao accountDao) {
+    final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     @Autowired
-    public final void setUserConsentDao(UserConsentDao userConsentDao) {
+    final void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
     @Autowired
-    public final void setActivityEventService(ActivityEventService activityEventService) {
+    final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
     @Autowired
-    public final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
     @Autowired
-    public final void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
-    }
-    @Autowired
-    public final void setOptionsService(ParticipantOptionsService optionsService) {
+    final void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
     
@@ -163,10 +156,13 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
         return signedOn;
     }
     
+    /**
+     * Because these records are retrieved through the iterators, we don't guarantee there are health codes 
+     * (these methods can be removed at some point, they're only used in the backfills).
+     */
     private String getHealthCode(BackfillTask task, BackfillCallback callback, Account account) {
-        HealthId mapping = healthCodeService.getMapping(account.getHealthId());
-        if (mapping != null) {
-            return mapping.getCode();
+        if (account.getHealthCode() != null) {
+            return account.getHealthCode();
         }
         callback.newRecords(getBackfillRecordFactory().createOnly(task, "No health code found: " + account.getId()));
         return null;

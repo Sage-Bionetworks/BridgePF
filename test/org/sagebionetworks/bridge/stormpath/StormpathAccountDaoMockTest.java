@@ -229,7 +229,7 @@ public class StormpathAccountDaoMockTest {
         // verify eager fetch occurring. Can't verify AuthenticationRequest configuration because 
         // you can set it but settings themselves are hidden in implementation. 
         verify(authResult).getAccount();
-        verify(stormpathAccount, times(9)).getCustomData();
+        verify(stormpathAccount, times(6)).getCustomData();
         verify(stormpathAccount).getGroups();
     }
 

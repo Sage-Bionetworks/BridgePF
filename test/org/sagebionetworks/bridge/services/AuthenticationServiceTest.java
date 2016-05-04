@@ -49,7 +49,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -84,9 +83,6 @@ public class AuthenticationServiceTest {
     
     @Resource
     private AccountDao accountDao;
-    
-    @Resource
-    private HealthCodeService healthCodeService;
     
     @Resource
     private StudyService studyService;
@@ -266,11 +262,9 @@ public class AuthenticationServiceTest {
         UserSession session = authService.signIn(study, testUser.getCriteriaContext(), testUser.getSignIn());
         Account account = accountDao.getAccount(study, session.getUser().getId());
         
-        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-        
         verify(authService).signUp(any(Study.class), any(StudyParticipant.class), eq(true));
         // Verify that data groups were set correctly as an option
-        Set<String> persistedGroups = optionsService.getOptions(healthId.getCode()).getStringSet(DATA_GROUPS);
+        Set<String> persistedGroups = optionsService.getOptions(account.getHealthCode()).getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);
     }
     

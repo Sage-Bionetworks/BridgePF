@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -63,6 +64,7 @@ public class StormpathAccount implements Account {
     private final String oldConsentSignatureKey;
     private final Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
     private ImmutableSet<Roles> roles;
+    private String healthCode;
     
     StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
@@ -144,13 +146,19 @@ public class StormpathAccount implements Account {
         acct.setEmail(email);
         acct.setUsername(email);
     }
-    @Override
     public String getHealthId(){
         return decryptFrom(healthIdKey);
     }
     @Override
-    public void setHealthId(String healthId) {
-        encryptTo(healthIdKey, healthId);
+    public String getHealthCode(){
+        return healthCode;
+    }
+    @Override
+    public void setHealthId(HealthId healthId) {
+        if (healthId != null) {
+            encryptTo(healthIdKey, healthId.getId());
+            this.healthCode = healthId.getCode();
+        }
     };
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {

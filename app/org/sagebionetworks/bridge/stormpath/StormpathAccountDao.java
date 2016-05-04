@@ -307,7 +307,7 @@ public class StormpathAccountDao implements AccountDao {
         }
         
         // This method should always succeed because construction of account will create a health code if it's missing.
-        return healthCodeService.getMapping(account.getHealthId()).getCode();
+        return account.getHealthCode();
     }
     
     @Override 
@@ -328,7 +328,7 @@ public class StormpathAccountDao implements AccountDao {
         }
         // Create the healthCode mapping when we create the account. Stop waiting to create it
         HealthId healthId = healthCodeService.createMapping(study);
-        account.setHealthId(healthId.getId());
+        account.setHealthId(healthId);
         
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
@@ -382,17 +382,17 @@ public class StormpathAccountDao implements AccountDao {
     // encryption.
     private Account constructAccount(StudyIdentifier studyId, com.stormpath.sdk.account.Account acct) {
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(studyId);
-        Account account = new StormpathAccount(studyId, subpopGuids, acct, encryptors);
+        StormpathAccount account = new StormpathAccount(studyId, subpopGuids, acct, encryptors);
         HealthId healthId = null;
-        if (account.getHealthId() != null) {
+        if (account.getHealthCode() == null) {
             healthId = healthCodeService.getMapping(account.getHealthId());
         }
         if (healthId == null) {
             healthId = healthCodeService.createMapping(studyId);
-            account.setHealthId(healthId.getId());
+            account.setHealthId(healthId);
             updateAccount(account);
         }
-        account.setHealthId(healthId.getId());
+        account.setHealthId(healthId);
         return account;
     }
     
