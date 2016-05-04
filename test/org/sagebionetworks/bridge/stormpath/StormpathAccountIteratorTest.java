@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -37,7 +37,7 @@ public class StormpathAccountIteratorTest {
     public void canIterateThroughMultipleStudiesMultiplePages() {
         StormpathAccountDao accountDao = getMockAccountDao();
         
-        Iterator<Account> accounts = accountDao.getAllAccounts();
+        Iterator<AccountSummary> accounts = accountDao.getAllAccounts();
         assertEquals(370, count(accounts));
     }
     
@@ -45,7 +45,7 @@ public class StormpathAccountIteratorTest {
     public void canIterateThroughOneStudyMultiplePages() {
         StormpathAccountDao accountDao = getMockAccountDao();
         
-        Iterator<Account> accounts = accountDao.getStudyAccounts(createStudy("study1"));
+        Iterator<AccountSummary> accounts = accountDao.getStudyAccounts(createStudy("study1"));
         assertEquals(10, count(accounts));
     }
 
@@ -115,6 +115,8 @@ public class StormpathAccountIteratorTest {
         for (int i=0; i < numAccounts; i++) {
             com.stormpath.sdk.account.Account acct = mock(com.stormpath.sdk.account.Account.class);
             when(acct.getCustomData()).thenReturn(mock(CustomData.class));
+            when(acct.getEmail()).thenReturn("email" + i + "@email.com");
+            when(acct.getStatus()).thenReturn(com.stormpath.sdk.account.AccountStatus.DISABLED);
             accounts.add(acct);
         }
         AccountList list = mock(AccountList.class);
@@ -126,7 +128,7 @@ public class StormpathAccountIteratorTest {
         return dir;
     }
     
-    private int count(Iterator<Account> accounts) {
+    private int count(Iterator<AccountSummary> accounts) {
         int count = 0;
         while(accounts.hasNext()) {
             accounts.next();

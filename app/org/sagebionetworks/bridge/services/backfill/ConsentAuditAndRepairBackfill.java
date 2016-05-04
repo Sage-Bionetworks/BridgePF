@@ -13,14 +13,17 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 /**
  * Looking for Stormpath accounts that have consent signatures, but no DynamoDB consent record. Count and attempt to
@@ -35,6 +38,7 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
     private ActivityEventService activityEventService;
     private StudyConsentDao studyConsentDao;
     private ParticipantOptionsService optionsService;
+    private StudyService studyService;
     
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
@@ -56,6 +60,10 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
     final void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
     
     @Override
     int getLockExpireInSeconds() {
@@ -68,11 +76,15 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
         
         int repaired = 0;
         int total = 0;
-        Iterator<Account> i = accountDao.getAllAccounts();
+        Iterator<AccountSummary> i = accountDao.getAllAccounts();
         while (i.hasNext()) {
-            Account account = i.next();
+            AccountSummary summary = i.next();
             total++;
-            callback.newRecords(getBackfillRecordFactory().createOnly(task, "Looking at: " + account.getId()));
+            callback.newRecords(getBackfillRecordFactory().createOnly(task, "Looking at: " + summary.getId()));
+            
+            Study study = studyService.getStudy(summary.getStudyIdentifier());
+            Account account = accountDao.getAccount(study, summary.getId());
+            
             StudyIdentifier studyId = account.getStudyIdentifier();
             SubpopulationGuid subpopGuid = SubpopulationGuid.create(studyId.getIdentifier());
             

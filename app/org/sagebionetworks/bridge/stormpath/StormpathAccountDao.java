@@ -17,7 +17,6 @@ import java.util.SortedMap;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -28,7 +27,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
@@ -46,7 +44,6 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import org.apache.http.HttpStatus;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,10 +110,10 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public Iterator<Account> getAllAccounts() {
-        Iterator<Account> combinedIterator = null;
+    public Iterator<AccountSummary> getAllAccounts() {
+        Iterator<AccountSummary> combinedIterator = null;
         for (Study study : studyService.getStudies()) {
-            Iterator<Account> studyIterator = getStudyAccounts(study);
+            Iterator<AccountSummary> studyIterator = getStudyAccounts(study);
             if (combinedIterator ==  null) {
                 combinedIterator = studyIterator;
             } else {
@@ -127,16 +124,15 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public Iterator<Account> getStudyAccounts(Study study) {
+    public Iterator<AccountSummary> getStudyAccounts(Study study) {
         checkNotNull(study);
 
         // Otherwise default pagination is 25 records per request (100 is the limit, or we'd go higher).
         // Also eagerly fetch custom data, which we typically examine every time for every user.
         AccountCriteria criteria = Accounts.criteria().limitTo(100).withCustomData().withGroupMemberships();
-        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
         
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        return new StormpathAccountIterator(study, subpopGuids, encryptors, directory.getAccounts(criteria).iterator());
+        return new StormpathAccountIterator(study.getStudyIdentifier(), directory.getAccounts(criteria).iterator());
     }
 
     @Override
@@ -165,17 +161,7 @@ public class StormpathAccountDao implements AccountDao {
         for (int i=0; i < pageSize; i++) {
             if (it.hasNext()) {
                 com.stormpath.sdk.account.Account acct = it.next();
-                java.util.Date javaDate = acct.getCreatedAt();
-                DateTime createdOn = (javaDate != null) ? new DateTime(javaDate) : null;
-                String id = BridgeUtils.getIdFromStormpathHref(acct.getHref());
-                
-                String firstName = (STORMPATH_NAME_PLACEHOLDER_STRING.equals(acct.getGivenName())) ? null : acct.getGivenName();
-                String lastName = (STORMPATH_NAME_PLACEHOLDER_STRING.equals(acct.getSurname())) ? null : acct.getSurname();
-                
-                // This should not trigger further requests to the server (customData, groups, etc.).
-                AccountSummary summary = new AccountSummary(firstName, lastName, 
-                        acct.getEmail(), id, createdOn, AccountStatus.valueOf(acct.getStatus().name()));
-                results.add(summary);
+                results.add(AccountSummary.create(study.getStudyIdentifier(), acct));
             }
         }
         return new PagedResourceList<AccountSummary>(results, offsetBy, pageSize, accts.getSize())

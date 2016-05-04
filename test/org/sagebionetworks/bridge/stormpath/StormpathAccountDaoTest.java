@@ -77,7 +77,7 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void getStudyAccounts() {
-        Iterator<Account> i = accountDao.getStudyAccounts(study);
+        Iterator<AccountSummary> i = accountDao.getStudyAccounts(study);
         
         // There's always one... the behavior of the iterator is tested separately
         assertTrue(i.hasNext());
@@ -85,7 +85,7 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void getAllAccounts() {
-        Iterator<Account> i = accountDao.getAllAccounts(); 
+        Iterator<AccountSummary> i = accountDao.getAllAccounts(); 
         
         // There's always one... the behavior of the iterator is tested separately
         assertTrue(i.hasNext());

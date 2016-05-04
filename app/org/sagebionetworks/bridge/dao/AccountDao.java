@@ -77,17 +77,17 @@ public interface AccountDao {
     public void deleteAccount(Study study, String email);
     
     /**
-     * Get all accounts in all studies in a given environment.
+     * Get all account summaries in all studies in a given environment.
      * @return
      */
-    public Iterator<Account> getAllAccounts();
+    public Iterator<AccountSummary> getAllAccounts();
     
     /**
-     * Get all accounts in one study in a given environment.
+     * Get all account summaries in one study in a given environment.
      * @param study
      * @return
      */
-    public Iterator<Account> getStudyAccounts(Study study);
+    public Iterator<AccountSummary> getStudyAccounts(Study study);
     
     /**
      * Get a page of lightweight account summaries (most importantly, the email addresses of 

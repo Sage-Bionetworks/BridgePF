@@ -70,7 +70,8 @@ public class ParticipantControllerTest {
 
     private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
 
-    private static final AccountSummary SUMMARY = new AccountSummary("firstName","lastName","email","id",DateTime.now(),AccountStatus.ENABLED);
+    private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email", "id",
+            DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
     
     private static final Study STUDY = new DynamoStudy();
     static {

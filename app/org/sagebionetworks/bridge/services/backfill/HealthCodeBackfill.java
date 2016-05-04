@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.services.backfill;
 import java.util.Iterator;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -36,12 +36,12 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
 
     @Override
     void doBackfill(final BackfillTask task, BackfillCallback callback) {
-        for (Iterator<Account> i = accountDao.getAllAccounts(); i.hasNext();) {
-            Account account = i.next();
-            Study study = studyService.getStudy(account.getStudyIdentifier());
+        for (Iterator<AccountSummary> i = accountDao.getAllAccounts(); i.hasNext();) {
+            AccountSummary summary = i.next();
+            Study study = studyService.getStudy(summary.getStudyIdentifier());
             
             // getting the individual account is sufficient to create a mapping if it does not exist.
-            accountDao.getAccount(study, account.getId());
+            accountDao.getAccount(study, summary.getId());
         }
     }
 }
