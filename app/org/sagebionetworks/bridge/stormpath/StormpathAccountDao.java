@@ -363,9 +363,9 @@ public class StormpathAccountDao implements AccountDao {
         acct.delete();
     }
     
-    // NOTE: There's no case where we don't want a health code for this account. We may simply want to have
-    // the account have the health code, and entirely hide the healthId as an implementation detail, like
-    // encryption.
+    /**
+     * Construct a StormpathAccount and guarantee that the healthid<->healthCode mapping exists for the account.
+     */
     private Account constructAccount(StudyIdentifier studyId, com.stormpath.sdk.account.Account acct) {
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(studyId);
         StormpathAccount account = new StormpathAccount(studyId, subpopGuids, acct, encryptors);

@@ -90,6 +90,12 @@ public class StormpathAccountDaoMockTest {
     @Mock
     AuthenticationResult authResult;
     
+    @Mock
+    BridgeEncryptor encryptor;
+    
+    @Mock
+    CustomData data;
+
     StormpathAccountDao dao;
     
     Study study;
@@ -104,7 +110,6 @@ public class StormpathAccountDaoMockTest {
         subpop.setGuidString(study.getIdentifier());
         when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(Lists.newArrayList(subpop));
         
-        BridgeEncryptor encryptor = mock(BridgeEncryptor.class);
         when(encryptor.decrypt("2")).thenReturn("2");
         when(encryptor.decrypt("healthId")).thenReturn("healthId");
         
@@ -126,7 +131,6 @@ public class StormpathAccountDaoMockTest {
         when(client.getCurrentTenant()).thenReturn(tenant);
         when(client.verifyAccountEmail("tokenAAA")).thenReturn(stormpathAccount);
         
-        CustomData data = mock(CustomData.class);
         when(data.get("test-study_version")).thenReturn(2);
         when(data.get("test-study_code")).thenReturn("healthId");
         when(stormpathAccount.getCustomData()).thenReturn(data);
@@ -173,7 +177,7 @@ public class StormpathAccountDaoMockTest {
     
     @Test
     public void stormpathAccountCorrectlyInitialized() {
-        when(stormpathAccount.getCustomData()).thenReturn(mock(CustomData.class));
+        when(stormpathAccount.getCustomData()).thenReturn(data);
         
         when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(stormpathAccount);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
@@ -212,7 +216,6 @@ public class StormpathAccountDaoMockTest {
         // mock stormpath application
         when(application.authenticateAccount(any())).thenReturn(authResult);
         
-        CustomData data = mock(CustomData.class);
         when(data.get("test-study_version")).thenReturn(2);
         when(data.get("test-study_code")).thenReturn("healthId");
         when(stormpathAccount.getCustomData()).thenReturn(data);

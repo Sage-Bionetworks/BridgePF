@@ -1,19 +1,27 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class AccountSummaryTest {
+    
+    private static final String TIMESTAMP = "2016-05-04T19:36:46.675Z";
 
     @Test
     public void hashCodeEquals() {
@@ -40,6 +48,27 @@ public class AccountSummaryTest {
         
         AccountSummary newSummary = BridgeObjectMapper.get().treeToValue(node, AccountSummary.class);
         assertEquals(summary, newSummary);
+    }
+    
+    @Test
+    public void create() {
+        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
+        com.stormpath.sdk.account.Account acct = mock(com.stormpath.sdk.account.Account.class);
+        doReturn(DateTime.parse(TIMESTAMP).toDate()).when(acct).getCreatedAt();
+        doReturn(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF+"ABC").when(acct).getHref();
+        doReturn("<EMPTY>").when(acct).getGivenName();
+        doReturn("Powers").when(acct).getSurname();
+        doReturn(com.stormpath.sdk.account.AccountStatus.DISABLED).when(acct).getStatus();
+        doReturn("email@email.com").when(acct).getEmail();
+        
+        AccountSummary summary = AccountSummary.create(studyId, acct);
+        assertEquals(DateTime.parse(TIMESTAMP), summary.getCreatedOn());
+        assertEquals("ABC", summary.getId());
+        assertNull(summary.getFirstName());
+        assertEquals("email@email.com", summary.getEmail());
+        assertEquals("Powers", summary.getLastName());
+        assertEquals(studyId, summary.getStudyIdentifier());
+        assertEquals(AccountStatus.DISABLED, summary.getStatus());
     }
     
 }
