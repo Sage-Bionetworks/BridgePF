@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,7 +84,8 @@ public class StrictValidationHandler implements UploadValidationHandler {
         UploadSchema schema = uploadSchemaService.getUploadSchemaByIdAndRev(studyIdentifier, schemaId, schemaRev);
         List<UploadFieldDefinition> fieldDefList = schema.getFieldDefinitions();
 
-        List<String> errorList = validateAllFields(fieldDefList, attachmentFieldNameSet, recordDataNode);
+        List<String> errorList = validateAllFields(context.getAppVersion(), fieldDefList, attachmentFieldNameSet,
+                recordDataNode);
 
         handleErrors(context, schemaId, schemaRev, errorList);
     }
@@ -142,6 +144,8 @@ public class StrictValidationHandler implements UploadValidationHandler {
      * Given the schema, the attachments (all we need are names), and the JSON data nodes, we validate the data against
      * the schema.
      *
+     * @param appVersion
+     *         app version of the upload, null if the app version is not present
      * @param fieldDefList
      *         list of field definitions from the schema
      * @param attachmentFieldNameSet
@@ -150,14 +154,15 @@ public class StrictValidationHandler implements UploadValidationHandler {
      *         JSON node of the parsed data to validate
      * @return list of error messages, empty if there are no errors
      */
-    private static List<String> validateAllFields(@Nonnull List<UploadFieldDefinition> fieldDefList,
-            @Nonnull Set<String> attachmentFieldNameSet, @Nonnull JsonNode recordDataNode) {
+    private static List<String> validateAllFields(@Nullable Integer appVersion,
+            @Nonnull List<UploadFieldDefinition> fieldDefList, @Nonnull Set<String> attachmentFieldNameSet,
+            @Nonnull JsonNode recordDataNode) {
         // walk the field definitions and validate fields
         List<String> errorList = new ArrayList<>();
         for (UploadFieldDefinition oneFieldDef : fieldDefList) {
             String fieldName = oneFieldDef.getName();
             UploadFieldType fieldType = oneFieldDef.getType();
-            boolean isRequired = oneFieldDef.isRequired();
+            boolean isRequired = computeIsRequired(appVersion, oneFieldDef);
 
             if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldType)) {
                 // For attachment types, since they just get exported as raw files, we only need to check if it's
@@ -181,6 +186,40 @@ public class StrictValidationHandler implements UploadValidationHandler {
         }
 
         return errorList;
+    }
+
+    /**
+     * <p>
+     * Given the upload's app version and the parameters in the field definition, compute whether we should treat the
+     * field value as required. In particular, we look at the field's required, minAppVersion, and maxAppVersion
+     * attributes.
+     * </p>
+     * <p>
+     * Package-scoped to facilitate unit tests.
+     * </p>
+     *
+     * @param appVersion
+     *         app version from the upload
+     * @param fieldDef
+     *         field definition to validate
+     * @return true if the field is required, false otherwise
+     */
+    static boolean computeIsRequired(@Nullable Integer appVersion, @Nonnull UploadFieldDefinition fieldDef) {
+        if (!fieldDef.isRequired()) {
+            // If the field definition says it's not required, then it's always not required.
+            return false;
+        }
+
+        if (appVersion == null) {
+            // If the app version isn't specified, we can't apply min/maxAppVersion logic. Assume it is required.
+            return true;
+        }
+
+        // If the field has min- and/or maxAppVersions set, we check the appVersion against these.
+        Integer minAppVersion = fieldDef.getMinAppVersion();
+        Integer maxAppVersion = fieldDef.getMaxAppVersion();
+        return (minAppVersion == null || minAppVersion <= appVersion) &&
+                (maxAppVersion == null || appVersion <= maxAppVersion);
     }
 
     /**
