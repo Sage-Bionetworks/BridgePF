@@ -312,6 +312,7 @@ public class StormpathAccountDaoMockTest {
         
         Account account = dao.verifyEmail(study, emailVerification);
         assertEquals("ABC", account.getHealthCode());
+        verify(healthCodeService).createMapping(study);
     }
     
     @Test
@@ -326,6 +327,7 @@ public class StormpathAccountDaoMockTest {
         
         Account account = dao.authenticate(study, signIn);
         assertEquals("ABC", account.getHealthCode());
+        verify(healthCodeService).createMapping(study);
     }
     
     @Test
@@ -334,6 +336,7 @@ public class StormpathAccountDaoMockTest {
         
         Account account = dao.getAccount(study, "id");
         assertEquals("ABC", account.getHealthCode());
+        verify(healthCodeService).createMapping(study);
     }
 
     private void mockAccountWithoutHealthCode() {
