@@ -183,16 +183,16 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a 
      * user before triggering a reset password request.  
      */
-    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
-        return saveParticipant(study, callerRoles, null, participant, true);
+    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant, boolean suppressEmail) {
+        return saveParticipant(study, callerRoles, null, participant, true, suppressEmail);
     }
     
     public void updateParticipant(Study study, Set<Roles> callerRoles, String id, StudyParticipant participant) {
-        saveParticipant(study, callerRoles, id, participant, false);
+        saveParticipant(study, callerRoles, id, participant, false, true);
     }
 
     public IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, String id,
-            StudyParticipant participant, boolean isNew) {
+            StudyParticipant participant, boolean isNew, boolean suppressEmail) {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkArgument(isNew || isNotBlank(id));
@@ -207,7 +207,8 @@ public class ParticipantService {
             if (isNotBlank(participant.getExternalId())) {
                 externalIdService.reserveExternalId(study, participant.getExternalId());    
             }
-            account = accountDao.signUp(study, participant, study.isEmailVerificationEnabled());
+            //account = accountDao.signUp(study, participant, !suppressEmail && study.isEmailVerificationEnabled());
+            account = accountDao.initializeAccount(study, participant.getEmail(), participant.getPassword());
             healthCode = getHealthCodeThrowingException(account);
         } else {
             account = getAccountThrowingException(study, id);
@@ -242,9 +243,11 @@ public class ParticipantService {
         if (callerIsAdmin(callerRoles)) {
             updateRoles(callerRoles, participant, account);    
         }
-        
-        accountDao.updateAccount(study, account);
-        
+        if (isNew) {
+            accountDao.createAccount(study, account, !suppressEmail && study.isEmailVerificationEnabled());    
+        } else {
+            accountDao.updateAccount(study, account);  
+        }
         if (isNew && isNotBlank(participant.getExternalId())) {
             externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
         }

@@ -217,7 +217,7 @@ public class ParticipantControllerTest {
     @Test
     public void createParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder("ABCD");
-        doReturn(holder).when(participantService).createParticipant(eq(STUDY), any(), any(StudyParticipant.class));
+        doReturn(holder).when(participantService).createParticipant(eq(STUDY), any(), any(StudyParticipant.class), true);
         
         STUDY.getUserProfileAttributes().add("phone");
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
@@ -231,7 +231,7 @@ public class ParticipantControllerTest {
         String id = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result)).get("identifier").asText();
         assertEquals(holder.getIdentifier(), id);
         
-        verify(participantService).createParticipant(eq(STUDY), eq(CALLER_ROLES), participantCaptor.capture());
+        verify(participantService).createParticipant(eq(STUDY), eq(CALLER_ROLES), participantCaptor.capture(), eq(true));
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());

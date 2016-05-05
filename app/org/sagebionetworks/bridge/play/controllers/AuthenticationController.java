@@ -52,7 +52,7 @@ public class AuthenticationController extends BaseController {
             participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build();
         }
         Study study = getStudyOrThrowException(json);
-        authenticationService.signUp(study, participant, true);
+        authenticationService.signUp(study, participant, false);
         return createdResult("Signed up.");
     }
 

@@ -97,7 +97,7 @@ public class AuthenticationControllerMockTest {
         
         Result result = controller.signUp();
         assertEquals(201, result.status());
-        verify(authenticationService).signUp(same(study), participantCaptor.capture(), eq(true));
+        verify(authenticationService).signUp(same(study), participantCaptor.capture(), eq(false));
         
         StudyParticipant participant = participantCaptor.getValue();
         assertTrue(participant.getRoles().isEmpty());

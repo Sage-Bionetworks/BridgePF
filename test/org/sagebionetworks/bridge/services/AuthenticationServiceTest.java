@@ -261,7 +261,7 @@ public class AuthenticationServiceTest {
         authService.setOptionsService(optionsService);
         accountDao = spy(accountDao);
         
-        authService.signUp(study, testUser.getStudyParticipant(), true);
+        authService.signUp(study, testUser.getStudyParticipant(), false);
 
         UserSession session = authService.signIn(study, testUser.getCriteriaContext(), testUser.getSignIn());
         Account account = accountDao.getAccount(study, session.getUser().getId());
@@ -303,7 +303,7 @@ public class AuthenticationServiceTest {
         
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
-        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant(), true);
+        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant(), false);
         verify(authService).requestResetPassword(any(Study.class), any(Email.class));
     }
     

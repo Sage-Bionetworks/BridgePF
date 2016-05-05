@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -324,7 +323,29 @@ public class StormpathAccountDao implements AccountDao {
         return healthId.getCode();
     }
     
-    @Override 
+    @Override
+    public Account initializeAccount(Study study, String email, String password) {
+        checkNotNull(study);
+        checkNotNull(email);
+        checkNotNull(password);
+        
+        List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
+        
+        com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
+        Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
+        
+        account.setEmail(email);
+        account.setFirstName(STORMPATH_NAME_PLACEHOLDER_STRING);
+        account.setLastName(STORMPATH_NAME_PLACEHOLDER_STRING);
+        acct.setPassword(password);
+        
+        HealthId healthId = healthCodeService.createMapping(study);
+        account.setHealthId(healthId.getId());
+        
+        return account;
+    }
+    /*
+    @Override
     public Account signUp(Study study, StudyParticipant participant, boolean sendEmail) {
         checkNotNull(study);
         checkNotNull(participant);
@@ -354,6 +375,20 @@ public class StormpathAccountDao implements AccountDao {
             rethrowResourceException(e, account);
         }
         return account;
+    }*/
+    
+    @Override
+    public void createAccount(Study study, Account account, boolean suppressEmail) {
+        com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
+        try {
+            Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
+            directory.createAccount(acct, !suppressEmail);
+            if (!account.getRoles().isEmpty()) {
+                updateGroups(account);
+            }
+        } catch(ResourceException e) {
+            rethrowResourceException(e, account);
+        }
     }
     
     @Override

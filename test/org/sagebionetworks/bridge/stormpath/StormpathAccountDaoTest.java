@@ -108,7 +108,7 @@ public class StormpathAccountDaoTest {
                 String email = "bridge-testing+SADT"+random+"@sagebridge.org";
                 StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
                         .withRoles(Sets.newHashSet(TEST_USERS)).build();
-                Account account = accountDao.signUp(study, participant, false);
+                Account account = accountDao.initializeAccount(study, participant.getEmail(), participant.getPassword());
                 newAccounts.add(account.getId());
             }
             // Fetch only 5 accounts. Empty search string ignored
@@ -165,7 +165,7 @@ public class StormpathAccountDaoTest {
         try {
             StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
                         .withRoles(Sets.newHashSet(TEST_USERS)).build();
-            accountDao.signUp(study, participant, false);
+            accountDao.initializeAccount(study, participant.getEmail(), participant.getPassword());
             
             account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
             assertEquals(email, account.getEmail());
@@ -182,7 +182,7 @@ public class StormpathAccountDaoTest {
         try {
             StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
                     .withRoles(Sets.newHashSet(TEST_USERS)).build();
-            account = accountDao.signUp(study, participant, false);
+            account = accountDao.initializeAccount(study, participant.getEmail(), participant.getPassword());
             
             try {
                 accountDao.authenticate(study, new SignIn(email, "BadPassword"));
@@ -212,7 +212,7 @@ public class StormpathAccountDaoTest {
             
             StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD)
                     .withRoles(Sets.newHashSet(TEST_USERS)).build();
-            account = accountDao.signUp(study, participant, false);
+            account = accountDao.initializeAccount(study, participant.getEmail(), participant.getPassword());
             
             assertNull(account.getFirstName()); // defaults are not visible
             assertNull(account.getLastName());
@@ -279,7 +279,7 @@ public class StormpathAccountDaoTest {
         try {
             StudyParticipant participant = new StudyParticipant.Builder().withEmail(email)
                 .withPassword("P@ssword`1").build();
-            account = accountDao.signUp(study, participant, false);
+            account = accountDao.initializeAccount(study, participant.getEmail(), participant.getPassword());
             
             // Great... now we should be able to get a healthCode
             String healthCode = accountDao.getHealthCodeForEmail(study, email);
@@ -299,7 +299,7 @@ public class StormpathAccountDaoTest {
         
         Account account = null;
         try {
-            account = accountDao.signUp(study, participant, false); // don't send email
+            account = accountDao.initializeAccount(study, participant.getEmail(), participant.getPassword());
             
             Email emailObj = new Email(study.getStudyIdentifier(), participant.getEmail());
             accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), emailObj); // now send email
@@ -337,7 +337,7 @@ public class StormpathAccountDaoTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
         Account account = null;
         try {
-            account = accountDao.signUp(study, participant, false); // don't send email
+            account = accountDao.initializeAccount(study, participant.getEmail(), participant.getPassword());
             
             account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
             account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);

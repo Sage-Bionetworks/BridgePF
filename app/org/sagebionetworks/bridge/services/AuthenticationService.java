@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -36,13 +35,14 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import com.google.common.collect.Sets;
 
 import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
@@ -55,9 +55,6 @@ public class AuthenticationService {
     
     private final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
 
-    private final int LOCK_EXPIRE_IN_SECONDS = 5;
-
-    private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
     private ConsentService consentService;
@@ -67,16 +64,13 @@ public class AuthenticationService {
     private StudyEnrollmentService studyEnrollmentService;
     private UserConsentDao userConsentDao;
     private StudyConsentDao studyConsentDao;
+    private ParticipantService participantService;
     
     private EmailVerificationValidator verificationValidator;
     private SignInValidator signInValidator;
     private PasswordResetValidator passwordResetValidator;
     private EmailValidator emailValidator;
 
-    @Autowired
-    final void setDistributedLockDao(DistributedLockDao lockDao) {
-        this.lockDao = lockDao;
-    }
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
@@ -129,6 +123,10 @@ public class AuthenticationService {
     final void setStudyConsentService(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
+    @Autowired
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
+    }
 
     /**
      * This method returns the cached session for the user. A ScheduleContext object is not provided to the method, 
@@ -151,21 +149,12 @@ public class AuthenticationService {
         checkNotNull(signIn, "Sign in cannot be null");
         Validate.entityThrowingException(signInValidator, signIn);
 
-        final String signInLock = study.getIdentifier() + RedisKey.SEPARATOR + signIn.getEmail();
-        String lockId = null;
-        try {
-            lockId = lockDao.acquireLock(SignIn.class, signInLock, LOCK_EXPIRE_IN_SECONDS);
-            Account account = accountDao.authenticate(study, signIn);
-            
-            UserSession session = getSessionFromAccount(study, context, account);
-            cacheProvider.setUserSession(session);
-            
-            return session;
-        } finally {
-            if (lockId != null) {
-                lockDao.releaseLock(SignIn.class, signInLock, lockId);
-            }
-        }
+        Account account = accountDao.authenticate(study, signIn);
+        
+        UserSession session = getSessionFromAccount(study, context, account);
+        cacheProvider.setUserSession(session);
+        
+        return session;
     }
 
     public void signOut(final UserSession session) {
@@ -174,38 +163,31 @@ public class AuthenticationService {
         }
     }
 
-    public void signUp(Study study, StudyParticipant participant, boolean isAnonSignUp) {
+    public void signUp(Study study, StudyParticipant participant, boolean suppressEmail) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(participant, "Participant cannot be null");
         
         Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
-        String lockId = null;
+        if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
+            throw new StudyLimitExceededException(study);
+        }
         try {
-            lockId = lockDao.acquireLock(StudyParticipant.class, participant.getEmail(), LOCK_EXPIRE_IN_SECONDS);
-            if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
-                throw new StudyLimitExceededException(study);
-            }
-            Account account = accountDao.signUp(study, participant, isAnonSignUp);
-            if (!participant.getDataGroups().isEmpty()) {
-                final String healthCode = getHealthCode(study, account);
-                optionsService.setStringSet(study, healthCode, DATA_GROUPS, participant.getDataGroups());
-            }
+            
+            participantService.createParticipant(study, Sets.newHashSet(), participant, suppressEmail);  
             
         } catch(EntityAlreadyExistsException e) {
             // Suppress this. Otherwise it the response reveals that the email has already been taken, 
             // and you can infer who is in the study from the response. Instead send a reset password 
             // request to the email address in case user has forgotten password and is trying to sign 
             // up again. Non-anonymous sign ups (sign ups done by admins on behalf of users) still get a 404
-            if (isAnonSignUp) {
+            if (!suppressEmail) {
                 Email email = new Email(study.getIdentifier(), participant.getEmail());
                 requestResetPassword(study, email);
                 logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
             } else {
                 throw e;
             }
-        } finally {
-            lockDao.releaseLock(StudyParticipant.class, participant.getEmail(), lockId);
         }
     }
 

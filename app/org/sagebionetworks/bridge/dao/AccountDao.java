@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -21,10 +20,15 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 public interface AccountDao {
 
     /**
-     * Create an account within the context of the study. Sending email address confirmation
-     * email is optional. 
+     * Construct a valid account to update. This account will not have been saved to the underlying
+     * persistence store. 
      */
-    public Account signUp(Study study, StudyParticipant participant, boolean sendEmail);
+    public Account initializeAccount(Study study, String email, String password);
+    
+    /**
+     * Create an account. Should have been intitialized from initializeAccount
+     */
+    public void createAccount(Study study, Account account, boolean suppressEmail);
     
     /**
      * Verify an email address using a supplied, one-time token for verification.

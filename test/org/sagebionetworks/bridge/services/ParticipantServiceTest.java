@@ -178,7 +178,8 @@ public class ParticipantServiceTest {
         doReturn(ID).when(account).getId();
         doReturn(healthId).when(healthCodeService).getMapping(HEALTH_ID);
         doReturn(HEALTH_CODE).when(healthId).getCode();
-        doReturn(account).when(accountDao).signUp(eq(STUDY), any(), eq(false));
+        
+        doReturn(account).when(accountDao).initializeAccount(STUDY, EMAIL, PASSWORD);
         doReturn(account).when(accountDao).getAccount(STUDY, ID);
     }
 
@@ -187,16 +188,14 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
         assertEquals(ID, idHolder.getIdentifier());
         
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         verify(externalIdService).assignExternalId(STUDY, "POWERS", HEALTH_CODE);
         
-        verify(accountDao).signUp(eq(STUDY), participantCaptor.capture(), eq(false));
-        StudyParticipant participant = participantCaptor.getValue();
-        assertEquals(EMAIL, participant.getEmail());
-        assertEquals(PASSWORD, participant.getPassword());
+        verify(accountDao).initializeAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
@@ -210,7 +209,6 @@ public class ParticipantServiceTest {
         assertTrue(options.get(LANGUAGES).contains("de"));
         assertTrue(options.get(LANGUAGES).contains("fr"));
         
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
@@ -231,7 +229,7 @@ public class ParticipantServiceTest {
             .when(externalIdService).reserveExternalId(STUDY, "POWERS");
         
         try {
-            participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+            participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
         }
@@ -246,7 +244,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         // Do not set the externalId with the other options, go through the externalIdService
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
@@ -261,7 +259,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().build();
         
         try {
-            participantService.createParticipant(STUDY, CALLER_ROLES, participant);
+            participantService.createParticipant(STUDY, CALLER_ROLES, participant, true);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
         }
@@ -276,7 +274,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(false);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
 
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         // set externalId like any other option, we're not using externalIdService
@@ -605,7 +603,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
 
         // These are the minimal credentials and they should work.
-        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
+        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, true);
         assertEquals(ID, idHolder.getIdentifier());
         verifyNoMoreInteractions(externalIdService); // no ID, no calls to this service
     }
@@ -736,9 +734,10 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStatus(AccountStatus.ENABLED).build();
         
-        participantService.createParticipant(STUDY, callerRoles, participant);
+        participantService.createParticipant(STUDY, callerRoles, participant, true);
         
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        verify(accountDao).initializeAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
         verify(account, never()).setStatus(any());
@@ -770,9 +769,10 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withRoles(Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
         
-        participantService.createParticipant(STUDY, callerRoles, participant);
+        participantService.createParticipant(STUDY, callerRoles, participant, true);
         
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        verify(accountDao).initializeAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
         if (rolesThatAreSet != null) {
