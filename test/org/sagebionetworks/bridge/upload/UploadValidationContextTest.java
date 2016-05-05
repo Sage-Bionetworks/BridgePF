@@ -43,6 +43,7 @@ public class UploadValidationContextTest {
         original.setDecryptedData(decryptedData);
         original.setUnzippedDataMap(unzippedDataMap);
         original.setJsonDataMap(jsonDataMap);
+        original.setAppVersion(42);
         original.setHealthDataRecordBuilder(recordBuilder);
         original.setAttachmentsByFieldName(attachmentMap);
         original.setRecordId("test-record");
@@ -56,6 +57,7 @@ public class UploadValidationContextTest {
         assertSame(decryptedData, copy.getDecryptedData());
         assertSame(unzippedDataMap, copy.getUnzippedDataMap());
         assertSame(jsonDataMap, copy.getJsonDataMap());
+        assertEquals(42, copy.getAppVersion().intValue());
         assertSame(recordBuilder, copy.getHealthDataRecordBuilder());
         assertSame(attachmentMap, copy.getAttachmentsByFieldName());
         assertEquals("test-record", copy.getRecordId());

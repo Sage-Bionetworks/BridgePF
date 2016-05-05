@@ -21,6 +21,7 @@ public class UploadValidationContext {
     private byte[] decryptedData;
     private Map<String, byte[]> unzippedDataMap;
     private Map<String, JsonNode> jsonDataMap;
+    private Integer appVersion;
     private HealthDataRecordBuilder healthDataRecordBuilder;
     private Map<String, byte[]> attachmentsByFieldName;
     private String recordId;
@@ -128,6 +129,20 @@ public class UploadValidationContext {
     }
 
     /**
+     * App version, parsed from info.json appVersion field, which is the form "version 1.1.0, build 32". The build
+     * number is the app version. This is filled in by IosSchemaValidationHandler and is used by
+     * StrictValidationHandler.
+     */
+    public Integer getAppVersion() {
+        return appVersion;
+    }
+
+    /** @see #getAppVersion */
+    public void setAppVersion(Integer appVersion) {
+        this.appVersion = appVersion;
+    }
+
+    /**
      * Health Data Record Builder, used to build a health data record that will be written to the health data record
      * table. This is initially created by IosSchemaValidationHandler, is further updated by the
      * TranscribeConsentHandler, and is finalized and persisted by UploadArtifactsHandler.
@@ -191,6 +206,7 @@ public class UploadValidationContext {
         copy.decryptedData = this.decryptedData;
         copy.unzippedDataMap = this.unzippedDataMap;
         copy.jsonDataMap = this.jsonDataMap;
+        copy.appVersion = this.appVersion;
         copy.healthDataRecordBuilder = this.healthDataRecordBuilder;
         copy.attachmentsByFieldName = this.attachmentsByFieldName;
         copy.recordId = this.recordId;
