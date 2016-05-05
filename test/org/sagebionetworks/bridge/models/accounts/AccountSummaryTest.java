@@ -1,18 +1,27 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class AccountSummaryTest {
+    
+    private static final String TIMESTAMP = "2016-05-04T19:36:46.675Z";
 
     @Test
     public void hashCodeEquals() {
@@ -24,7 +33,8 @@ public class AccountSummaryTest {
         // Set the time zone so it's not UTC, it should be converted to UTC so the strings are 
         // equal below (to demonstrate the ISO 8601 string is in UTC time zone).
         DateTime dateTime = DateTime.now().withZone(DateTimeZone.forOffsetHours(-8));
-        AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", "ABC", dateTime, AccountStatus.UNVERIFIED);
+        AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", "ABC", dateTime,
+                AccountStatus.UNVERIFIED, TestConstants.TEST_STUDY);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
         assertEquals("firstName", node.get("firstName").asText());
@@ -33,10 +43,32 @@ public class AccountSummaryTest {
         assertEquals("ABC", node.get("id").asText());
         assertEquals(dateTime.withZone(DateTimeZone.UTC).toString(), node.get("createdOn").asText());
         assertEquals("unverified", node.get("status").asText());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, node.get("studyIdentifier").get("identifier").asText());
         assertEquals("AccountSummary", node.get("type").asText());
         
         AccountSummary newSummary = BridgeObjectMapper.get().treeToValue(node, AccountSummary.class);
         assertEquals(summary, newSummary);
+    }
+    
+    @Test
+    public void create() {
+        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
+        com.stormpath.sdk.account.Account acct = mock(com.stormpath.sdk.account.Account.class);
+        doReturn(DateTime.parse(TIMESTAMP).toDate()).when(acct).getCreatedAt();
+        doReturn(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF+"ABC").when(acct).getHref();
+        doReturn("<EMPTY>").when(acct).getGivenName();
+        doReturn("Powers").when(acct).getSurname();
+        doReturn(com.stormpath.sdk.account.AccountStatus.DISABLED).when(acct).getStatus();
+        doReturn("email@email.com").when(acct).getEmail();
+        
+        AccountSummary summary = AccountSummary.create(studyId, acct);
+        assertEquals(DateTime.parse(TIMESTAMP), summary.getCreatedOn());
+        assertEquals("ABC", summary.getId());
+        assertNull(summary.getFirstName());
+        assertEquals("email@email.com", summary.getEmail());
+        assertEquals("Powers", summary.getLastName());
+        assertEquals(studyId, summary.getStudyIdentifier());
+        assertEquals(AccountStatus.DISABLED, summary.getStatus());
     }
     
 }

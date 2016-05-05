@@ -21,8 +21,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 public interface AccountDao {
 
     /**
-     * Create an account within the context of the study. Sending email address confirmation
-     * email is optional. 
+     * Create an account within the context of the study. Sending an email to verify the user's 
+     * email address is optional. Creating an account *always* creates a healthCode and assigns 
+     * the healthId for that healthCode to the created account.
      */
     public Account signUp(Study study, StudyParticipant participant, boolean sendEmail);
     
@@ -66,7 +67,7 @@ public interface AccountDao {
     /**
      * Save account changes.
      */
-    public void updateAccount(Study study, Account account);
+    public void updateAccount(Account account);
     
     /**
      * Delete an account along with the authentication credentials.
@@ -76,17 +77,17 @@ public interface AccountDao {
     public void deleteAccount(Study study, String email);
     
     /**
-     * Get all accounts in all studies in a given environment.
+     * Get all account summaries in all studies in a given environment.
      * @return
      */
-    public Iterator<Account> getAllAccounts();
+    public Iterator<AccountSummary> getAllAccounts();
     
     /**
-     * Get all accounts in one study in a given environment.
+     * Get all account summaries in one study in a given environment.
      * @param study
      * @return
      */
-    public Iterator<Account> getStudyAccounts(Study study);
+    public Iterator<AccountSummary> getStudyAccounts(Study study);
     
     /**
      * Get a page of lightweight account summaries (most importantly, the email addresses of 

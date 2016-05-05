@@ -29,12 +29,10 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -44,7 +42,6 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -53,15 +50,11 @@ public class ParticipantService {
 
     private static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
     
-    private static final List<UserConsentHistory> NO_HISTORY = ImmutableList.of();
-    
     private AccountDao accountDao;
     
     private ParticipantOptionsService optionsService;
     
     private SubpopulationService subpopService;
-    
-    private HealthCodeService healthCodeService;
     
     private ConsentService consentService;
     
@@ -82,11 +75,6 @@ public class ParticipantService {
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
-    }
-    
-    @Autowired
-    final void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
     }
     
     @Autowired
@@ -111,33 +99,23 @@ public class ParticipantService {
         
         StudyParticipant.Builder participant = new StudyParticipant.Builder();
         Account account = getAccountThrowingException(study, id);
-        String healthCode = getHealthCode(account);
 
         Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpopulations) {
-            if (healthCode != null) {
-                // always returns a list, even if empty
-                List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(), healthCode, id);
-                consentHistories.put(subpop.getGuidString(), history);
-            } else {
-                // Create an empty history if there's no health Code.
-                consentHistories.put(subpop.getGuidString(), NO_HISTORY);
-            }
+            // always returns a list, even if empty
+            List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(),
+                    account.getHealthCode(), id);
+            consentHistories.put(subpop.getGuidString(), history);
         }
         participant.withConsentHistories(consentHistories);
         
-        // Accounts exist that have signatures but no health codes (when created but email is 
-        // never verified, for example). Do not want roster generation to fail because of this,
-        // so we just skip things that require the healthCode.
-        if (healthCode != null) {
-            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-            participant.withSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
-            participant.withNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
-            participant.withExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
-            participant.withDataGroups(lookup.getStringSet(DATA_GROUPS));
-            participant.withLanguages(lookup.getOrderedStringSet(LANGUAGES));
-        }
+        ParticipantOptionsLookup lookup = optionsService.getOptions(account.getHealthCode());
+        participant.withSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+        participant.withNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
+        participant.withExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
+        participant.withDataGroups(lookup.getStringSet(DATA_GROUPS));
+        participant.withLanguages(lookup.getOrderedStringSet(LANGUAGES));
         participant.withFirstName(account.getFirstName());
         participant.withLastName(account.getLastName());
         participant.withEmail(account.getEmail());
@@ -154,7 +132,7 @@ public class ParticipantService {
         participant.withAttributes(attributes);
         
         if (study.isHealthCodeExportEnabled() && callerRoles.contains(RESEARCHER)) {
-            participant.withHealthCode(healthCode);
+            participant.withHealthCode(account.getHealthCode());
         }
         return participant.build();
     }
@@ -200,7 +178,6 @@ public class ParticipantService {
         
         Validate.entityThrowingException(new StudyParticipantValidator(study, isNew), participant);
         Account account = null;
-        String healthCode = null;
         if (isNew) {
             // Don't set it yet. Create the user first, and only assign it if that's successful.
             // Allows us to assure that credentials and ID will be related or not created at all.
@@ -208,14 +185,12 @@ public class ParticipantService {
                 externalIdService.reserveExternalId(study, participant.getExternalId());    
             }
             account = accountDao.signUp(study, participant, study.isEmailVerificationEnabled());
-            healthCode = getHealthCodeThrowingException(account);
         } else {
             account = getAccountThrowingException(study, id);
-            healthCode = getHealthCodeThrowingException(account);
             
             // Verify now that the assignment is valid, or throw an exception before any other updates
             // TODO: Since we're enforcing addition at account creation, we might just be able to skip this.
-            addValidatedExternalId(study, participant, healthCode);
+            addValidatedExternalId(study, participant, account.getHealthCode());
         }
         Map<ParticipantOption,String> options = Maps.newHashMap();
         for (ParticipantOption option : ParticipantOption.values()) {
@@ -226,7 +201,7 @@ public class ParticipantService {
         if (study.isExternalIdValidationEnabled()) {
             options.remove(EXTERNAL_IDENTIFIER);
         }
-        optionsService.setAllOptions(study.getStudyIdentifier(), healthCode, options);
+        optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
         
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
@@ -243,10 +218,10 @@ public class ParticipantService {
             updateRoles(callerRoles, participant, account);    
         }
         
-        accountDao.updateAccount(study, account);
+        accountDao.updateAccount(account);
         
         if (isNew && isNotBlank(participant.getExternalId())) {
-            externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
+            externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
         }
         return new IdentifierHolder(account.getId());
     }
@@ -300,31 +275,13 @@ public class ParticipantService {
     private boolean idsDontExistOrAreNotEqual(String id1, String id2) {
         return (isBlank(id1) || isBlank(id2) || !id1.equals(id2));
     }
-
+    
     private Account getAccountThrowingException(Study study, String id) {
         Account account = accountDao.getAccount(study, id);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
         return account;
-    }
-    
-    private String getHealthCode(Account account) {
-        if (account.getHealthId() != null) {
-            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-            if (healthId != null && healthId.getCode() != null) {
-                return healthId.getCode();
-            }
-        }
-        return null;
-    }
-    
-    private String getHealthCodeThrowingException(Account account) {
-        String healthCode = getHealthCode(account);
-        if (healthCode == null) {
-            throw new BridgeServiceException("Participant cannot be updated (no health code exists for user).");    
-        }
-        return healthCode;
     }
     
 }

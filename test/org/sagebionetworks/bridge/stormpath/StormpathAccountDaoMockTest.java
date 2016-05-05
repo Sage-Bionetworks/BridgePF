@@ -7,6 +7,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -27,10 +28,14 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -54,34 +59,84 @@ import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
 import com.stormpath.sdk.tenant.Tenant;
 
+@RunWith(MockitoJUnitRunner.class)
 public class StormpathAccountDaoMockTest {
 
     private static final String PASSWORD = "P4ssword!";
     
-    private Study study;
+    @Mock
+    SubpopulationService subpopService;
+
+    @Mock
+    Application application;
+    
+    @Mock
+    Directory directory;
+    
+    @Mock
+    Client client;
+    
+    @Mock
+    Tenant tenant;
+    
+    @Mock
+    HealthId healthId;
+    
+    @Mock
+    com.stormpath.sdk.account.Account stormpathAccount;
+    
+    @Mock
+    HealthCodeService healthCodeService;
+
+    @Mock
+    AuthenticationResult authResult;
+    
+    @Mock
+    BridgeEncryptor encryptor;
+    
+    @Mock
+    CustomData customData;
+
+    StormpathAccountDao dao;
+    
+    Study study;
     
     @Before
     public void setUp() {
         study = new DynamoStudy();
         study.setIdentifier("test-study");
         study.setStormpathHref("http://some/dumb.href");
+        
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuidString(study.getIdentifier());
+        when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(Lists.newArrayList(subpop));
+        
+        when(encryptor.decrypt("2")).thenReturn("2");
+        when(encryptor.decrypt("healthId")).thenReturn("healthId");
+        
+        List<BridgeEncryptor> encryptors = Lists.newArrayList();
+        encryptors.add(encryptor);
+        
+        dao = new StormpathAccountDao();
+        dao.setStormpathClient(client);
+        dao.setSubpopulationService(subpopService);
+        dao.setStormpathApplication(application);
+        dao.setHealthCodeService(healthCodeService);
+        dao.setEncryptors(encryptors);
     }
 
     @Test
     public void verifyEmail() {
-        StormpathAccountDao dao = new StormpathAccountDao();
-        
         EmailVerification verification = new EmailVerification("tokenAAA");
         
-        Client client = mock(Client.class);
-        Tenant tenant = mock(Tenant.class);
         when(client.getCurrentTenant()).thenReturn(tenant);
+        when(client.verifyAccountEmail("tokenAAA")).thenReturn(stormpathAccount);
         
-        when(client.verifyAccountEmail("tokenAAA")).thenReturn(mock(com.stormpath.sdk.account.Account.class));
-        
-        dao.setStormpathClient(client);
-        dao.setSubpopulationService(mockSubpopService());
-        
+        when(customData.get("test-study_version")).thenReturn(2);
+        when(customData.get("test-study_code")).thenReturn("healthId");
+        when(stormpathAccount.getCustomData()).thenReturn(customData);
+        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+
         Account account = dao.verifyEmail(study, verification);
         assertNotNull(account);
         verify(client).verifyAccountEmail("tokenAAA");
@@ -91,15 +146,7 @@ public class StormpathAccountDaoMockTest {
     public void requestResetPassword() {
         String emailString = "bridge-tester+43@sagebridge.org";
         
-        Application application = mock(Application.class);
-        Directory directory = mock(Directory.class);
-        Client client = mock(Client.class);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
-        
-        StormpathAccountDao dao = new StormpathAccountDao();
-        dao.setStormpathApplication(application);
-        dao.setStormpathClient(client);
-        dao.setSubpopulationService(mockSubpopService());
         
         dao.requestResetPassword(study, new Email(study.getStudyIdentifier(), emailString));
         
@@ -111,31 +158,18 @@ public class StormpathAccountDaoMockTest {
     public void requestPasswordRequestThrowsException() {
         String emailString = "bridge-tester+43@sagebridge.org";
         
-        Application application = mock(Application.class);
-        Directory directory = mock(Directory.class);
-        Client client = mock(Client.class);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
-        
-        StormpathAccountDao dao = new StormpathAccountDao();
-        dao.setStormpathApplication(application);
-        dao.setStormpathClient(client);
         
         com.stormpath.sdk.error.Error error = mock(com.stormpath.sdk.error.Error.class);
         ResourceException e = new ResourceException(error);
         when(application.sendPasswordResetEmail(emailString, directory)).thenThrow(e);
-        dao.setStormpathApplication(application);
         
         dao.requestResetPassword(study, new Email(study.getStudyIdentifier(), emailString));
     }
 
     @Test
     public void resetPassword() {
-        StormpathAccountDao dao = new StormpathAccountDao();
         PasswordReset passwordReset = new PasswordReset("password", "sptoken");
-        
-        Application application = mock(Application.class);
-        dao.setStormpathApplication(application);
-        dao.setSubpopulationService(mockSubpopService());
         
         dao.resetPassword(passwordReset);
         verify(application).resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
@@ -144,22 +178,11 @@ public class StormpathAccountDaoMockTest {
     
     @Test
     public void stormpathAccountCorrectlyInitialized() {
-        StormpathAccountDao dao = new StormpathAccountDao();
-        
-        HealthCodeService healthCodeService = mock(HealthCodeService.class);
-        dao.setHealthCodeService(healthCodeService);
-        
-        Directory directory = mock(Directory.class);
-        com.stormpath.sdk.account.Account stormpathAccount = mock(com.stormpath.sdk.account.Account.class);
-        when(stormpathAccount.getCustomData()).thenReturn(mock(CustomData.class));
-        Client client = mock(Client.class);
+        when(stormpathAccount.getCustomData()).thenReturn(customData);
         
         when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(stormpathAccount);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
-        dao.setStormpathClient(client);
-        dao.setSubpopulationService(mockSubpopService());
         
-        HealthId healthId = mock(HealthId.class);
         doReturn(healthId).when(healthCodeService).createMapping(study);
         
         String random = RandomStringUtils.randomAlphabetic(5);
@@ -181,35 +204,23 @@ public class StormpathAccountDaoMockTest {
     
     @Test
     public void authenticate() {
-        // mock stormpath director
-        Directory mockDirectory = mock(Directory.class);
-        
-        // mock stormpath client
-        Client mockClient = mock(Client.class);
-        when(mockClient.getResource(study.getStormpathHref(), Directory.class)).thenReturn(mockDirectory);
+        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
 
-        // mock subpopulation service
-        SubpopulationService mockSubpopService = mock(SubpopulationService.class);
-        
         // mock stormpath account
-        com.stormpath.sdk.account.Account mockAcct = mock(com.stormpath.sdk.account.Account.class);
-        when(mockAcct.getGivenName()).thenReturn("Test");
-        when(mockAcct.getSurname()).thenReturn("User");
-        when(mockAcct.getEmail()).thenReturn("email@email.com");
+        when(stormpathAccount.getGivenName()).thenReturn("Test");
+        when(stormpathAccount.getSurname()).thenReturn("User");
+        when(stormpathAccount.getEmail()).thenReturn("email@email.com");
         
         // mock authentication result
-        AuthenticationResult mockResult = mock(AuthenticationResult.class);
-        when(mockResult.getAccount()).thenReturn(mockAcct);
+        when(authResult.getAccount()).thenReturn(stormpathAccount);
         
         // mock stormpath application
-        Application mockApplication = mock(Application.class);
-        when(mockApplication.authenticateAccount(any())).thenReturn(mockResult);
+        when(application.authenticateAccount(any())).thenReturn(authResult);
         
-        // wire up DAO
-        StormpathAccountDao dao = new StormpathAccountDao();
-        dao.setStormpathClient(mockClient);
-        dao.setStormpathApplication(mockApplication);
-        dao.setSubpopulationService(mockSubpopService);
+        when(customData.get("test-study_version")).thenReturn(2);
+        when(customData.get("test-study_code")).thenReturn("healthId");
+        when(stormpathAccount.getCustomData()).thenReturn(customData);
+        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
         
         // authenticate
         Account account = dao.authenticate(study, new SignIn("dummy-user", PASSWORD));
@@ -221,17 +232,15 @@ public class StormpathAccountDaoMockTest {
         
         // verify eager fetch occurring. Can't verify AuthenticationRequest configuration because 
         // you can set it but settings themselves are hidden in implementation. 
-        verify(mockResult).getAccount();
-        verify(mockAcct).getCustomData();
-        verify(mockAcct).getGroups();
+        verify(authResult).getAccount();
+        verify(stormpathAccount, times(6)).getCustomData();
+        verify(stormpathAccount).getGroups();
     }
 
     @Test
     public void accountDisabled() {
         // mock stormpath client
-        Directory mockDirectory = mock(Directory.class);
-        Client mockClient = mock(Client.class);
-        when(mockClient.getResource(study.getStormpathHref(), Directory.class)).thenReturn(mockDirectory);
+        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
 
         // mock stormpath application - Don't check the args to Application.authenticateAccount(). This is tested
         // elsewhere.
@@ -239,14 +248,7 @@ public class StormpathAccountDaoMockTest {
         when(mockError.getCode()).thenReturn(7101);
         ResourceException spException = new ResourceException(mockError);
 
-        Application mockApplication = mock(Application.class);
-        when(mockApplication.authenticateAccount(any())).thenThrow(spException);
-
-        // setup dao
-        StormpathAccountDao dao = new StormpathAccountDao();
-        dao.setSubpopulationService(mockSubpopService());
-        dao.setStormpathApplication(mockApplication);
-        dao.setStormpathClient(mockClient);
+        when(application.authenticateAccount(any())).thenThrow(spException);
 
         // execute and validate
         try {
@@ -255,36 +257,6 @@ public class StormpathAccountDaoMockTest {
         } catch (BridgeServiceException ex) {
             assertEquals(HttpStatus.SC_LOCKED, ex.getStatusCode());
         }
-    }
-
-    private com.stormpath.sdk.account.Account setupGroupChangeTest(Set<String> oldGroupSet, Set<Roles> newGroupSet) {
-        // mock Stormpath account
-        List<Group> mockGroupJavaList = new ArrayList<>();
-        for (String oneGroupName : oldGroupSet) {
-            Group mockGroup = mock(Group.class);
-            when(mockGroup.getName()).thenReturn(oneGroupName);
-            mockGroupJavaList.add(mockGroup);
-        }
-
-        GroupList mockGroupSpList = mock(GroupList.class);
-        when(mockGroupSpList.iterator()).thenReturn(mockGroupJavaList.iterator());
-
-        // Due to some funkiness in Stormpath's type tree, DefaultAccount is the only public class we can mock.
-        com.stormpath.sdk.account.Account mockSpAccount = mock(DefaultAccount.class);
-        when(mockSpAccount.getCustomData()).thenReturn(mock(CustomData.class));
-        when(mockSpAccount.getGroups()).thenReturn(mockGroupSpList);
-
-        // mock Bridge account
-        StormpathAccount mockAccount = mock(StormpathAccount.class);
-        when(mockAccount.getAccount()).thenReturn(mockSpAccount);
-        when(mockAccount.getRoles()).thenReturn(newGroupSet);
-
-        // execute
-        StormpathAccountDao dao = new StormpathAccountDao();
-        dao.updateAccount(study, mockAccount);
-
-        // return this, so the caller can verify back-end mock calls
-        return mockSpAccount;
     }
 
     @Test
@@ -318,28 +290,109 @@ public class StormpathAccountDaoMockTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsPageSizeTooSmall() {
-        StormpathAccountDao dao = new StormpathAccountDao();
         dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE-1, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsPageSizeTooLarge() {
-        StormpathAccountDao dao = new StormpathAccountDao();
         dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1, null);
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsNonsenseOffsetBy() {
-        StormpathAccountDao dao = new StormpathAccountDao();
         dao.getPagedAccountSummaries(study, -10, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
     }
     
-    private SubpopulationService mockSubpopService() {
-        Subpopulation subpop = Subpopulation.create();
-        subpop.setGuidString(study.getIdentifier());
-        SubpopulationService subpopService = mock(SubpopulationService.class);
-        when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(Lists.newArrayList(subpop));
-        return subpopService;
+    @Test
+    public void verifyEmailCreatesHealthCode() {
+        mockAccountWithoutHealthCode();
+        
+        doReturn(stormpathAccount).when(client).verifyAccountEmail("spToken");
+        EmailVerification emailVerification = new EmailVerification("spToken");
+        
+        Account account = dao.verifyEmail(study, emailVerification);
+        assertEquals("ABC", account.getHealthCode());
+        verify(healthCodeService).createMapping(study);
+    }
+    
+    @Test
+    public void authenticatedCreatesHealthCode() {
+        mockAccountWithoutHealthCode();
+        
+        SignIn signIn = new SignIn("email@email.com", "password");
+        
+        AuthenticationResult result = mock(AuthenticationResult.class);
+        doReturn(stormpathAccount).when(result).getAccount();
+        doReturn(result).when(application).authenticateAccount(any());
+        
+        Account account = dao.authenticate(study, signIn);
+        assertEquals("ABC", account.getHealthCode());
+        verify(healthCodeService).createMapping(study);
+    }
+    
+    @Test
+    public void getAccountCreatesHealthCode() {
+        mockAccountWithoutHealthCode();
+        
+        Account account = dao.getAccount(study, "id");
+        assertEquals("ABC", account.getHealthCode());
+        verify(healthCodeService).createMapping(study);
+    }
+
+    private void mockAccountWithoutHealthCode() {
+        // Necessary to override this method where we do a cast that fails on the mock stormpathAccount
+        dao = org.mockito.Mockito.spy(dao);
+        doReturn(false).when(dao).isAccountDirty(any());
+        
+        doReturn(stormpathAccount).when(client).getResource(any(), eq(com.stormpath.sdk.account.Account.class), any());
+        doReturn(directory).when(stormpathAccount).getDirectory();
+        doReturn(directory).when(client).getResource(study.getStormpathHref(), Directory.class);
+        doReturn(study.getStormpathHref()).when(directory).getHref();
+        
+        GroupList groupList = mock(GroupList.class);
+        when(groupList.iterator()).thenReturn(Lists.<Group>newArrayList().iterator());
+        
+        HealthId healthId = mock(HealthId.class);
+        doReturn("ABC").when(healthId).getCode();
+        doReturn("healthId").when(healthId).getId();
+        
+        doReturn(null).when(healthCodeService).getMapping("healthId");
+        doReturn(healthId).when(healthCodeService).createMapping(study);
+        
+        // There is no healthId in the custom data, which is key to the setup of this test.
+        doReturn(null).when(customData).get("test-study_version");
+        doReturn(null).when(customData).get("test-study_code");
+        doReturn(customData).when(stormpathAccount).getCustomData();
+        doReturn(groupList).when(stormpathAccount).getGroups();
+    }
+    
+    private com.stormpath.sdk.account.Account setupGroupChangeTest(Set<String> oldGroupSet, Set<Roles> newGroupSet) {
+        // mock Stormpath account
+        List<Group> mockGroupJavaList = new ArrayList<>();
+        for (String oneGroupName : oldGroupSet) {
+            Group mockGroup = mock(Group.class);
+            when(mockGroup.getName()).thenReturn(oneGroupName);
+            mockGroupJavaList.add(mockGroup);
+        }
+
+        GroupList mockGroupSpList = mock(GroupList.class);
+        when(mockGroupSpList.iterator()).thenReturn(mockGroupJavaList.iterator());
+
+        // Due to some funkiness in Stormpath's type tree, DefaultAccount is the only public class we can mock.
+        com.stormpath.sdk.account.Account mockSpAccount = mock(DefaultAccount.class);
+        when(mockSpAccount.getCustomData()).thenReturn(mock(CustomData.class));
+        when(mockSpAccount.getGroups()).thenReturn(mockGroupSpList);
+
+        // mock Bridge account
+        StormpathAccount mockAccount = mock(StormpathAccount.class);
+        when(mockAccount.getAccount()).thenReturn(mockSpAccount);
+        when(mockAccount.getRoles()).thenReturn(newGroupSet);
+
+        // execute
+        dao.updateAccount(mockAccount);
+
+        // return this, so the caller can verify back-end mock calls
+        return mockSpAccount;
     }
 
 }

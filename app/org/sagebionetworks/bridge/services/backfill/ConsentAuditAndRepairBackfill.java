@@ -13,16 +13,17 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ActivityEventService;
-import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 /**
  * Looking for Stormpath accounts that have consent signatures, but no DynamoDB consent record. Count and attempt to
@@ -36,32 +37,32 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
     private UserConsentDao userConsentDao;
     private ActivityEventService activityEventService;
     private StudyConsentDao studyConsentDao;
-    private HealthCodeService healthCodeService;
     private ParticipantOptionsService optionsService;
+    private StudyService studyService;
     
     @Autowired
-    public final void setAccountDao(AccountDao accountDao) {
+    final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     @Autowired
-    public final void setUserConsentDao(UserConsentDao userConsentDao) {
+    final void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
     @Autowired
-    public final void setActivityEventService(ActivityEventService activityEventService) {
+    final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
     @Autowired
-    public final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
     @Autowired
-    public final void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
+    final void setOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
     }
     @Autowired
-    public final void setOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     @Override
@@ -75,70 +76,68 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
         
         int repaired = 0;
         int total = 0;
-        Iterator<Account> i = accountDao.getAllAccounts();
+        Iterator<AccountSummary> i = accountDao.getAllAccounts();
         while (i.hasNext()) {
-            Account account = i.next();
+            AccountSummary summary = i.next();
             total++;
-            callback.newRecords(getBackfillRecordFactory().createOnly(task, "Looking at: " + account.getId()));
+            callback.newRecords(getBackfillRecordFactory().createOnly(task, "Looking at: " + summary.getId()));
+            
+            Study study = studyService.getStudy(summary.getStudyIdentifier());
+            Account account = accountDao.getAccount(study, summary.getId());
+            
             StudyIdentifier studyId = account.getStudyIdentifier();
             SubpopulationGuid subpopGuid = SubpopulationGuid.create(studyId.getIdentifier());
             
             ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
             if (signature != null) {
                 
-                String healthCode = getHealthCode(task, callback, account);
-                if (healthCode != null) {
-                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
-                    if (consent == null) {
+                String healthCode = account.getHealthCode();
+                UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
+                if (consent == null) {
+                    
+                    // User has signature but no consent record. Try to repair and report on it.
+                    
+                    StringBuilder sb = new StringBuilder("Repairing account '"+account.getId()+"'");
+                    
+                    DateTime enrollment = activityEventService.getActivityEventMap(healthCode).get("enrollment");
+                    
+                    // We have to assume the active consent, information about the consent that was signed is contained
+                    // in the DDB record that is missing.
+                    StudyConsent studyConsent = studyConsentDao.getActiveConsent(subpopGuid);
+                    
+                    if (studyConsent != null) {
+                        long signedOn = getSignedOnDate(sb, enrollment, syntheticSignedOn);
                         
-                        // User has signature but no consent record. Try to repair and report on it.
+                        // Give consent
+                        consent = userConsentDao.giveConsent(healthCode, subpopGuid, studyConsent.getCreatedOn(), signedOn);
+                        repaired++;
                         
-                        StringBuilder sb = new StringBuilder("Repairing account '"+account.getId()+"'");
-                        
-                        DateTime enrollment = activityEventService.getActivityEventMap(healthCode).get("enrollment");
-                        
-                        // We have to assume the active consent, information about the consent that was signed is contained
-                        // in the DDB record that is missing.
-                        StudyConsent studyConsent = studyConsentDao.getActiveConsent(subpopGuid);
-                        
-                        if (studyConsent != null) {
-                            long signedOn = getSignedOnDate(sb, enrollment, syntheticSignedOn);
-                            
-                            // Give consent
-                            consent = userConsentDao.giveConsent(healthCode, subpopGuid, studyConsent.getCreatedOn(), signedOn);
-                            repaired++;
-                            
-                            // Create an enrollment event
-                            if (consent != null && enrollment == null){
-                                activityEventService.publishEnrollmentEvent(healthCode, consent);
-                            }
-                            updateSharingScope(sb, studyId, healthCode);
-                            
-                            // Things we don't do: we don't increment the study enrollment (that will eventually be
-                            // recalculated from the db), we don't send out email, and we don't update the user's
-                            // session. If their sharing scope is NO_SHARING, we set it to limited, because we don't 
-                            // know their original choice.                            
-                            
-                            callback.newRecords(getBackfillRecordFactory().createOnly(task, sb.toString()));
-                        } else {
-                            sb.append(", no study consent found for " + studyId.getIdentifier());
+                        // Create an enrollment event
+                        if (consent != null && enrollment == null){
+                            activityEventService.publishEnrollmentEvent(healthCode, consent);
                         }
+                        updateSharingScope(sb, studyId, healthCode);
+                        
+                        // Things we don't do: we don't increment the study enrollment (that will eventually be
+                        // recalculated from the db), we don't send out email, and we don't update the user's
+                        // session. If their sharing scope is NO_SHARING, we set it to limited, because we don't 
+                        // know their original choice.                            
+                        
+                        callback.newRecords(getBackfillRecordFactory().createOnly(task, sb.toString()));
+                    } else {
+                        sb.append(", no study consent found for " + studyId.getIdentifier());
                     }
                 }
                 
             } else if (!account.getConsentSignatureHistory(subpopGuid).isEmpty()) {
                 // This can happen because people withdraw from a study. It's okay, but interesting... we still wonder if this person
                 // has a record.
-                String healthCode = getHealthCode(task, callback, account);
-                if (healthCode != null) {
-                    UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
-                    if (consent == null) {
-                        callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no active signature and no DDB consent record (error state?): " + account.getId()));
-                    } else {
-                        callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no active signature (expected withdrawn state): " + account.getId()));
-                    }
+                String healthCode = account.getHealthCode();
+                UserConsent consent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
+                if (consent == null) {
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no active signature and no DDB consent record (error state?): " + account.getId()));
                 } else {
-                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no healthCode (error state): " + account.getId()));    
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent signatures exist but no active signature (expected withdrawn state): " + account.getId()));
                 }
             }
         }
@@ -161,14 +160,5 @@ public class ConsentAuditAndRepairBackfill extends AsyncBackfillTemplate {
             sb.append(", no enrollment event for signedOn date, using " + syntheticSignedOn);
         }
         return signedOn;
-    }
-    
-    private String getHealthCode(BackfillTask task, BackfillCallback callback, Account account) {
-        HealthId mapping = healthCodeService.getMapping(account.getHealthId());
-        if (mapping != null) {
-            return mapping.getCode();
-        }
-        callback.newRecords(getBackfillRecordFactory().createOnly(task, "No health code found: " + account.getId()));
-        return null;
     }
 }

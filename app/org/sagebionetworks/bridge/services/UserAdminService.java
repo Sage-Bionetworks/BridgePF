@@ -5,13 +5,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
-import java.util.Iterator;
-
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -36,7 +32,6 @@ public class UserAdminService {
     private AccountDao accountDao;
     private ConsentService consentService;
     private HealthDataService healthDataService;
-    private HealthIdDao healthIdDao;
     private StudyService studyService;
     private SurveyResponseService surveyResponseService;
     private ScheduledActivityService scheduledActivityService;
@@ -64,10 +59,6 @@ public class UserAdminService {
     @Autowired
     public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
-    }
-    @Autowired
-    public final void setHealthIdDao(HealthIdDao healthIdDao) {
-        this.healthIdDao = healthIdDao;
     }
     @Autowired
     public final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
@@ -181,16 +172,6 @@ public class UserAdminService {
         }
     }
 
-    public void deleteAllUsers(Roles role) {
-        Iterator<Account> iterator = accountDao.getAllAccounts();
-        while(iterator.hasNext()) {
-            Account account = iterator.next();
-            if (account.getRoles().contains(role)) {
-                deleteUser(account);
-            }
-        }
-    }
-
     private void deleteUser(Account account) {
         checkNotNull(account);
 
@@ -198,28 +179,22 @@ public class UserAdminService {
         // remove this first so if account is partially deleted, re-authenticating will pick
         // up accurate information about the state of the account (as we can recover it)
         cacheProvider.removeSessionByUserId(account.getId());
-        if (account.getHealthId() != null) {
-            // This is the fastest way to do this that I know of
-            String healthCode = healthIdDao.getCode(account.getHealthId());
-            // We expect to have health code, but when tests fail, we can get users who have signed in 
-            // and do not have a health code.
-            if (healthCode != null) {
-                consentService.deleteAllConsentsForUser(study, healthCode);
-                healthDataService.deleteRecordsForHealthCode(healthCode);
-                scheduledActivityService.deleteActivitiesForUser(healthCode);
-                activityEventService.deleteActivityEvents(healthCode);
-                surveyResponseService.deleteSurveyResponses(healthCode);
-                
-                // Remove the externalId from the table even if validation is not enabled. If the study
-                // turns it off/back on again, we want to track what has changed
-                ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-                String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
-                if (externalId != null) {
-                    externalIdService.unassignExternalId(study, externalId, healthCode);    
-                }
-                optionsService.deleteAllParticipantOptions(healthCode);
-            }
+        
+        String healthCode = account.getHealthCode();
+        consentService.deleteAllConsentsForUser(study, healthCode);
+        healthDataService.deleteRecordsForHealthCode(healthCode);
+        scheduledActivityService.deleteActivitiesForUser(healthCode);
+        activityEventService.deleteActivityEvents(healthCode);
+        surveyResponseService.deleteSurveyResponses(healthCode);
+        
+        // Remove the externalId from the table even if validation is not enabled. If the study
+        // turns it off/back on again, we want to track what has changed
+        ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+        String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
+        if (externalId != null) {
+            externalIdService.unassignExternalId(study, externalId, healthCode);    
         }
+        optionsService.deleteAllParticipantOptions(healthCode);
         accountDao.deleteAccount(study, account.getId());
     }
 }

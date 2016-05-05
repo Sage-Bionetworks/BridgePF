@@ -9,6 +9,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -21,7 +22,7 @@ public class SimpleAccount implements Account {
     private String firstName;
     private String lastName;
     private String email;
-    private String healthId;
+    private String healthCode;
     private StudyIdentifier studyId;
     private Map<SubpopulationGuid,List<ConsentSignature>> signatures = Maps.newHashMap();
     private Map<String,String> attributes = Maps.newHashMap();
@@ -69,12 +70,14 @@ public class SimpleAccount implements Account {
         return signatures;
     }
     @Override
-    public String getHealthId() {
-        return healthId;
+    public void setHealthId(HealthId healthId) {
+        if (healthId != null) {
+            this.healthCode = healthId.getCode();
+        }
     }
     @Override
-    public void setHealthId(String healthId) {
-        this.healthId = healthId;
+    public String getHealthCode() {
+        return healthCode;
     }
     @Override
     public StudyIdentifier getStudyIdentifier() {

@@ -7,10 +7,9 @@ import java.util.Iterator;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import org.slf4j.Logger;
@@ -29,7 +28,6 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     private StudyService studyService;
     private AccountDao accountDao;
     private HealthCodeDao healthCodeDao;
-    private HealthCodeService healthCodeService;
 
     @Autowired
     public void setStudyService(StudyService studyService) {
@@ -46,12 +44,6 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
         this.healthCodeDao = healthCodeDao;
     }
     
-    @Autowired
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
-    }
-    
-
     @Override
     int getLockExpireInSeconds() {
         return 30 * 60;
@@ -60,29 +52,25 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     @Override
     void doBackfill(final BackfillTask task, final BackfillCallback callback) {
         
-        for (Iterator<Account> i = accountDao.getAllAccounts(); i.hasNext();) {
-            Account account = i.next();
-            Study study = studyService.getStudy(account.getStudyIdentifier());
-            
-            HealthId mapping = healthCodeService.getMapping(account.getHealthId());
-            if (mapping != null) {
-                try {
-                    String healthCode = mapping.getCode();
-                    if (healthCode != null) {
-                        final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
-                        if (isBlank(studyId)) {
-                            String msg = "Backfill needed as study ID is blank.";
-                            callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
-                        } else {
-                            String msg = "Study ID already exists.";
-                            callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
-                        }
-                    }
-                } catch (final RuntimeException e) {
-                    LOGGER.error(e.getMessage(), e);
-                    String msg = e.getClass().getName() + " " + e.getMessage();
+        for (Iterator<AccountSummary> i = accountDao.getAllAccounts(); i.hasNext();) {
+            // This ensures the healthCode is created.
+            AccountSummary summary = i.next();
+            Study study = studyService.getStudy(summary.getStudyIdentifier());
+            Account account = accountDao.getAccount(study, summary.getId());
+            try {
+                String healthCode = account.getHealthCode();
+                final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
+                if (isBlank(studyId)) {
+                    String msg = "Backfill needed as study ID is blank.";
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
+                } else {
+                    String msg = "Study ID already exists.";
                     callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
                 }
+            } catch (final RuntimeException e) {
+                LOGGER.error(e.getMessage(), e);
+                String msg = e.getClass().getName() + " " + e.getMessage();
+                callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
             }
         }
     }

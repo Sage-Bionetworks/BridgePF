@@ -32,7 +32,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -78,7 +77,7 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void getStudyAccounts() {
-        Iterator<Account> i = accountDao.getStudyAccounts(study);
+        Iterator<AccountSummary> i = accountDao.getStudyAccounts(study);
         
         // There's always one... the behavior of the iterator is tested separately
         assertTrue(i.hasNext());
@@ -86,7 +85,7 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void getAllAccounts() {
-        Iterator<Account> i = accountDao.getAllAccounts(); 
+        Iterator<AccountSummary> i = accountDao.getAllAccounts(); 
         
         // There's always one... the behavior of the iterator is tested separately
         assertTrue(i.hasNext());
@@ -218,12 +217,11 @@ public class StormpathAccountDaoTest {
             assertNull(account.getLastName());
             account.setEmail(email);
             account.setAttribute("phone", "123-456-7890");
-            account.setHealthId("abc");
             account.getConsentSignatureHistory(subpop.getGuid()).add(sig);
             account.setAttribute("attribute_one", "value of attribute one");
             
             // Update Account
-            accountDao.updateAccount(study, account);
+            accountDao.updateAccount(account);
             
             // Retrieve account with ID
             Account newAccount = accountDao.getAccount(study, account.getId());
@@ -231,8 +229,7 @@ public class StormpathAccountDaoTest {
 
             // Verify that you can get the health code using the email. We still need this for MailChimp.
             String healthCode = accountDao.getHealthCodeForEmail(study, email);
-            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-            assertEquals(healthCode, healthId.getCode());
+            assertEquals(healthCode, account.getHealthCode());
             
             // Test adding and removing some groups. This gets into verifying and avoiding saving the underlying
             // Stormpath account. There are 4 cases to consider: (1) adding groups, (2) removing groups, (3) account in
@@ -242,7 +239,7 @@ public class StormpathAccountDaoTest {
             roles.addAll(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER));
             
             newAccount.setRoles(roles);
-            accountDao.updateAccount(study, newAccount);
+            accountDao.updateAccount(newAccount);
 
             newAccount = accountDao.getAccount(study, account.getId());
             assertEquals(4, newAccount.getRoles().size());
@@ -250,7 +247,7 @@ public class StormpathAccountDaoTest {
                     Roles.TEST_USERS, Roles.WORKER)));
 
             newAccount.setRoles(EnumSet.of(Roles.TEST_USERS));
-            accountDao.updateAccount(study, newAccount);
+            accountDao.updateAccount(newAccount);
 
             newAccount = accountDao.getAccount(study, account.getId());
             assertEquals(1, newAccount.getRoles().size());
@@ -259,7 +256,7 @@ public class StormpathAccountDaoTest {
             // finally, test the name
             newAccount.setFirstName("Test");
             newAccount.setLastName("Tester");
-            accountDao.updateAccount(study, newAccount);
+            accountDao.updateAccount(newAccount);
             
             newAccount = accountDao.getAccount(study, newAccount.getId());
             assertEquals("Test", newAccount.getFirstName()); // name is now visible
@@ -285,8 +282,7 @@ public class StormpathAccountDaoTest {
             String healthCode = accountDao.getHealthCodeForEmail(study, email);
             assertNotNull(healthCode);
             
-            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-            assertEquals(healthCode, healthId.getCode());
+            assertEquals(healthCode, account.getHealthCode());
         } finally {
             accountDao.deleteAccount(study, account.getId());
         }
@@ -341,7 +337,7 @@ public class StormpathAccountDaoTest {
             
             account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
             account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);
-            accountDao.updateAccount(study, account);
+            accountDao.updateAccount(account);
             
             account = accountDao.getAccount(study, account.getId());
             
@@ -366,7 +362,7 @@ public class StormpathAccountDaoTest {
         assertNull(newAccount.getLastName());
         assertEquals(account.getEmail(), newAccount.getEmail());
         assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
-        assertEquals(account.getHealthId(), newAccount.getHealthId());
+        assertEquals(account.getHealthCode(), newAccount.getHealthCode());
         assertEquals(account.getActiveConsentSignature(subpop.getGuid()), 
                 newAccount.getActiveConsentSignature(subpop.getGuid()));
         assertEquals(account.getActiveConsentSignature(subpop.getGuid()).getSignedOn(), 
