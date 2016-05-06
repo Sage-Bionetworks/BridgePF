@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +12,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoMpowerVisualizationTest;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
