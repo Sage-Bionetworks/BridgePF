@@ -177,7 +177,7 @@ public class AuthenticationService {
         }
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
-            return participantService.createParticipant(study, NO_CALLER_ROLES, participant, false);
+            return participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
             
         } catch(EntityAlreadyExistsException e) {
             // Suppress this. Otherwise it the response reveals that the email has already been taken, 

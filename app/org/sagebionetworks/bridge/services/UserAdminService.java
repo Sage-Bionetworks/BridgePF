@@ -117,7 +117,7 @@ public class UserAdminService {
         checkNotNull(participant, "Participant cannot be null");
         checkNotNull(participant.getEmail(), "Sign up email cannot be null");
         
-        participantService.createParticipant(study, ADMIN_ROLE, participant, true);
+        participantService.createParticipant(study, ADMIN_ROLE, participant, false);
 
         // We don't filter users by any of these filtering criteria in the admin API.
         CriteriaContext context = new CriteriaContext.Builder()

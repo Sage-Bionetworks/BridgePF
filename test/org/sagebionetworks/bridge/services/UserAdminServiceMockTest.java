@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -25,12 +26,16 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserAdminServiceMockTest {
     
     @Mock
     private AuthenticationService authenticationService;
+    
+    @Mock
+    private ParticipantService participantService;
     
     @Mock
     private ConsentService consentService;
@@ -44,6 +49,7 @@ public class UserAdminServiceMockTest {
         service = new UserAdminService();
         service.setAuthenticationService(authenticationService);
         service.setConsentService(consentService);
+        service.setParticipantService(participantService);
 
         // Make a user with multiple consent statuses, and just verify that we call the 
         // consent service that many times.
@@ -74,6 +80,8 @@ public class UserAdminServiceMockTest {
         
         UserSession session = service.createUser(study, participant, null, true, true);
         
+        verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
+        
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             verify(consentService).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
         }
@@ -86,6 +94,8 @@ public class UserAdminServiceMockTest {
         SubpopulationGuid consentedGuid = Iterables.getFirst(user.getConsentStatuses().keySet(), null);
         
         UserSession session = service.createUser(study, participant, consentedGuid, true, true);
+        
+        verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
         
         // consented to the indicated subpopulation
         verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));

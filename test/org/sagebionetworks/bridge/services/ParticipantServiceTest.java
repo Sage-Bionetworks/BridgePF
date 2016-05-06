@@ -177,13 +177,14 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         assertEquals(ID, idHolder.getIdentifier());
         
         verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         verify(externalIdService).assignExternalId(STUDY, USERS_HEALTH_CODE, HEALTH_CODE);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        // suppress email (true) == sendEmail (false)
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         
@@ -219,7 +220,7 @@ public class ParticipantServiceTest {
             .when(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         
         try {
-            participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+            participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
         }
@@ -233,7 +234,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         // Do not set the externalId with the other options, go through the externalIdService
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
@@ -248,7 +249,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().build();
         
         try {
-            participantService.createParticipant(STUDY, CALLER_ROLES, participant, true);
+            participantService.createParticipant(STUDY, CALLER_ROLES, participant, false);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
         }
@@ -262,7 +263,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(false);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
 
         verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         // set externalId like any other option, we're not using externalIdService
@@ -545,7 +546,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
 
         // These are the minimal credentials and they should work.
-        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, true);
+        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
         assertEquals(ID, idHolder.getIdentifier());
         verifyNoMoreInteractions(externalIdService); // no ID, no calls to this service
     }
@@ -676,7 +677,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStatus(AccountStatus.ENABLED).build();
         
-        participantService.createParticipant(STUDY, callerRoles, participant, true);
+        participantService.createParticipant(STUDY, callerRoles, participant, false);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
@@ -711,7 +712,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withRoles(Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
         
-        participantService.createParticipant(STUDY, callerRoles, participant, true);
+        participantService.createParticipant(STUDY, callerRoles, participant, false);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));

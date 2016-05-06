@@ -162,16 +162,16 @@ public class ParticipantService {
      * user before triggering a reset password request.  
      */
     public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
-            boolean suppressEmail) {
-        return saveParticipant(study, callerRoles, null, participant, true, suppressEmail);
+            boolean sendVerifyEmail) {
+        return saveParticipant(study, callerRoles, null, participant, true, sendVerifyEmail);
     }
     
     public void updateParticipant(Study study, Set<Roles> callerRoles, String id, StudyParticipant participant) {
-        saveParticipant(study, callerRoles, id, participant, false, true);
+        saveParticipant(study, callerRoles, id, participant, false, false);
     }
 
-    public IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, String id,
-            StudyParticipant participant, boolean isNew, boolean suppressEmail) {
+    private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, String id,
+            StudyParticipant participant, boolean isNew, boolean sendVerifyEmail) {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkArgument(isNew || isNotBlank(id));
@@ -185,13 +185,10 @@ public class ParticipantService {
             if (isNotBlank(participant.getExternalId())) {
                 externalIdService.reserveExternalId(study, participant.getExternalId());    
             }
-            //account = accountDao.signUp(study, participant, !suppressEmail && study.isEmailVerificationEnabled());
             account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
         } else {
             account = getAccountThrowingException(study, id);
             
-            // Verify now that the assignment is valid, or throw an exception before any other updates
-            // TODO: Since we're enforcing addition at account creation, we might just be able to skip this.
             addValidatedExternalId(study, participant, account.getHealthCode());
         }
         Map<ParticipantOption,String> options = Maps.newHashMap();
@@ -220,7 +217,7 @@ public class ParticipantService {
             updateRoles(callerRoles, participant, account);    
         }
         if (isNew) {
-            accountDao.createAccount(study, account, !suppressEmail && study.isEmailVerificationEnabled());
+            accountDao.createAccount(study, account, sendVerifyEmail && study.isEmailVerificationEnabled());
             if (isNotBlank(participant.getExternalId())) {
                 externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
             }
