@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Map;
 import java.util.Set;
@@ -144,8 +146,10 @@ public class AuthenticationService {
     }
 
     public UserSession signIn(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
-        checkNotNull(study, "Study cannot be null");
-        checkNotNull(signIn, "Sign in cannot be null");
+        checkNotNull(study);
+        checkNotNull(context);
+        checkNotNull(signIn);
+
         Validate.entityThrowingException(signInValidator, signIn);
 
         Account account = accountDao.authenticate(study, signIn);
@@ -163,18 +167,17 @@ public class AuthenticationService {
     }
 
     public IdentifierHolder signUp(Study study, StudyParticipant participant) {
-        checkNotNull(study, "Study cannot be null");
-        checkNotNull(participant, "Participant cannot be null");
+        checkNotNull(study);
+        checkNotNull(participant);
         
         Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
         if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
             throw new StudyLimitExceededException(study);
         }
-        IdentifierHolder holder = null;
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
-            holder = participantService.createParticipant(study, NO_CALLER_ROLES, participant, false);
+            return participantService.createParticipant(study, NO_CALLER_ROLES, participant, false);
             
         } catch(EntityAlreadyExistsException e) {
             // Suppress this. Otherwise it the response reveals that the email has already been taken, 
@@ -185,11 +188,13 @@ public class AuthenticationService {
             requestResetPassword(study, email);
             logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
         }
-        return holder;
+        return null;
     }
 
     public UserSession verifyEmail(Study study, CriteriaContext context, EmailVerification verification) throws ConsentRequiredException {
-        checkNotNull(verification, "Verification object cannot be null");
+        checkNotNull(study);
+        checkNotNull(context);
+        checkNotNull(verification);
 
         Validate.entityThrowingException(verificationValidator, verification);
         
@@ -200,8 +205,8 @@ public class AuthenticationService {
     }
     
     public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email) {
-        checkNotNull(studyIdentifier, "StudyIdentifier object cannnot be null");
-        checkNotNull(email, "Email object cannnot be null");
+        checkNotNull(studyIdentifier);
+        checkNotNull(email);
         
         Validate.entityThrowingException(emailValidator, email);
         try {
@@ -226,7 +231,7 @@ public class AuthenticationService {
     }
 
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException {
-        checkNotNull(passwordReset, "Password reset object required");
+        checkNotNull(passwordReset);
 
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
         
@@ -234,6 +239,10 @@ public class AuthenticationService {
     }
     
     public UserSession updateSession(Study study, CriteriaContext context, String userId) {
+        checkNotNull(study);
+        checkNotNull(context);
+        checkArgument(isNotBlank(userId));
+        
         Account account = accountDao.getAccount(study, userId);
         return getSessionFromAccount(study, context, account);
     }

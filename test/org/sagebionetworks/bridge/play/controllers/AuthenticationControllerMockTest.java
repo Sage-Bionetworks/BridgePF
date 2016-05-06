@@ -8,6 +8,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,9 +16,12 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.apache.http.HttpStatus;
@@ -32,6 +36,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -193,6 +198,48 @@ public class AuthenticationControllerMockTest {
         assertSessionInfoInMetrics(metrics);
     }
 
+    @Test
+    public void signUpWithCompleteUserData() throws Exception {
+        LinkedHashSet<String> langs = new LinkedHashSet<>();
+        langs.add("fr");
+
+        Map<String,String> attributes = Maps.newHashMap();
+        attributes.put("phone", "123-456-7890");
+        
+        // Other fields will be passed along to the PartcipantService, but it will not be utilized
+        // These are the fields that *can* be changed. They are all passed along.
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName("FirstName")
+                .withLastName("LastName")
+                .withEmail("email@email.com")
+                .withPassword("password")
+                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withNotifyByEmail(true)
+                .withDataGroups(Sets.newHashSet("group1"))
+                .withAttributes(attributes)
+                .withLanguages(langs).build();
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(participant);
+        node.put("study", TEST_STUDY_ID_STRING);
+        
+        TestUtils.mockPlayContextWithJson(node.toString());
+        
+        Result result = controller.signUp();
+        TestUtils.assertResult(result, 201, "Signed up.");
+        
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture());
+        
+        StudyParticipant persisted = participantCaptor.getValue();
+        assertEquals(participant.getFirstName(), persisted.getFirstName());
+        assertEquals(participant.getLastName(), persisted.getLastName());
+        assertEquals(participant.getEmail(), persisted.getEmail());
+        assertEquals(participant.getPassword(), persisted.getPassword());
+        assertEquals(participant.getSharingScope(), persisted.getSharingScope());
+        assertTrue(persisted.isNotifyByEmail());
+        assertEquals(participant.getDataGroups(), persisted.getDataGroups());
+        assertEquals(participant.getAttributes(), persisted.getAttributes());
+        assertEquals(participant.getLanguages(), persisted.getLanguages());
+    }
+    
     private void signInExistingSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();

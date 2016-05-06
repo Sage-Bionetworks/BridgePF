@@ -64,5 +64,4 @@ public class TestConstants {
     public static final ConsentStatus OPTIONAL_UNSIGNED = new ConsentStatus.Builder().withName("Name1")
             .withGuid(SubpopulationGuid.create("foo6")).withRequired(false).withConsented(false)
             .withSignedMostRecentConsent(false).build();
-    
 }
