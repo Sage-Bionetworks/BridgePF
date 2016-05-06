@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -97,7 +96,7 @@ public class UserAdminServiceMockTest {
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(TestConstants.TEST_STUDY, context.getStudyIdentifier());
+        assertEquals(study.getStudyIdentifier(), context.getStudyIdentifier());
         
         SignIn signIn = signInCaptor.getValue();
         assertEquals(participant.getEmail(), signIn.getEmail());
