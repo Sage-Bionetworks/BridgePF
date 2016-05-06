@@ -17,7 +17,6 @@ import java.util.SortedMap;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -187,6 +186,7 @@ public class StormpathAccountDao implements AccountDao {
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(studyIdentifier);
         checkNotNull(email);
+        
         final Study study = studyService.getStudy(studyIdentifier);
         final Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         VerificationEmailRequestBuilder requestBuilder = Applications.verificationEmailBuilder();
@@ -298,8 +298,8 @@ public class StormpathAccountDao implements AccountDao {
     @Override
     public Account constructAccount(Study study, String email, String password) {
         checkNotNull(study);
-        checkNotNull(email);
-        checkNotNull(password);
+        checkArgument(isNotBlank(email));
+        checkArgument(isNotBlank(password));
         
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
         
@@ -319,11 +319,13 @@ public class StormpathAccountDao implements AccountDao {
     
     @Override
     public void createAccount(Study study, Account account, boolean sendVerifyEmail) {
+        checkNotNull(study);
+        checkNotNull(account);
+        
         com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
         try {
-            // Sadly we have to make multiple calls here. You *have* to create the account and 
-            // then you can manipulate it's groups... you can't submit them all in one request
-            // so far as I have been able to find.
+            // Appears to be unavoidable to make multiple calls here. You have to create the account 
+            // before you can manipulate the groups, you cannot submit them all in one request.
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             acct = directory.createAccount(acct, sendVerifyEmail);
             updateGroups(account);
@@ -357,6 +359,9 @@ public class StormpathAccountDao implements AccountDao {
         }
     }
     
+    /**
+     * Factored out so it can be overridden in tests; mocks of the Account cannot be cast to AbstractResource.
+     */
     public boolean isAccountDirty(com.stormpath.sdk.account.Account acct) {
         AbstractResource res = (AbstractResource)acct;
         return res.isDirty();

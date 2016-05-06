@@ -186,6 +186,7 @@ public class StormpathAccountDaoMockTest {
         
         when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(stormpathAccount);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
+        when(directory.createAccount(any(), eq(false))).thenReturn(stormpathAccount);
         
         doReturn(healthId).when(healthCodeService).createMapping(study);
         
@@ -201,6 +202,8 @@ public class StormpathAccountDaoMockTest {
         verify(directory).createAccount(argument.capture(), anyBoolean());
 
         com.stormpath.sdk.account.Account acct = argument.getValue();
+        verify(acct).setSurname("<EMPTY>");
+        verify(acct).setGivenName("<EMPTY>");
         verify(acct).setUsername(email);
         verify(acct).setEmail(email);
         verify(acct).setPassword(PASSWORD);

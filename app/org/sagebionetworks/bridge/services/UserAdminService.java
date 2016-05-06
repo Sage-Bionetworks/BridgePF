@@ -12,7 +12,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -41,7 +40,6 @@ public class UserAdminService {
     private AccountDao accountDao;
     private ConsentService consentService;
     private HealthDataService healthDataService;
-    private StudyService studyService;
     private SurveyResponseService surveyResponseService;
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
@@ -70,10 +68,6 @@ public class UserAdminService {
         this.healthDataService = healthDataService;
     }
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    @Autowired
     final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
@@ -99,11 +93,10 @@ public class UserAdminService {
     }
     
     /**
-     * Create a user, sign that user is, and optionally consent that user to research. The method is idempotent: no
-     * error occurs if the user exists, or is already signed in, or has already consented.
-     * 
-     * Note that currently, the ability to consent someone to a subpopulation other than the default 
-     * subpopulation is not supported in the API.
+     * Create a user and optionally consent the user and/or sign the user in. If a specific subpopulation 
+     * is not specified (and currently the API for this method does not allow it), than the method iterates 
+     * through all subpopulations in the study and consents the user to all required consents. This should 
+     * allow the user to make calls without receiving a 412 response. 
      * 
      * @param study
      *            the study of the target user
@@ -112,13 +105,11 @@ public class UserAdminService {
      * @param subpopGuid
      *            the subpopulation to consent to (if null, it will use the default/study subpopulation).
      * @param signUserIn
-     *            sign user into Bridge web application in as part of the creation process
+     *            should the user be signed into Bridge after creation?
      * @param consentUser
      *            should the user be consented to the research?
      *
      * @return UserSession for the newly created user
-     *
-     * @throws BridgeServiceException
      */
     public UserSession createUser(Study study, StudyParticipant participant, SubpopulationGuid subpopGuid,
             boolean signUserIn, boolean consentUser) {
@@ -173,42 +164,37 @@ public class UserAdminService {
     /**
      * Delete the target user.
      *
+     * @param study
+     *      target user's study
      * @param id
-     *            target user
-     * @throws BridgeServiceException
+     *      target user's ID
      */
     public void deleteUser(Study study, String id) {
         checkNotNull(study);
         checkArgument(StringUtils.isNotBlank(id));
+        
         Account account = accountDao.getAccount(study, id);
         if (account != null) {
-            deleteUser(account);
+            // remove this first so if account is partially deleted, re-authenticating will pick
+            // up accurate information about the state of the account (as we can recover it)
+            cacheProvider.removeSessionByUserId(account.getId());
+            
+            String healthCode = account.getHealthCode();
+            consentService.deleteAllConsentsForUser(study, healthCode);
+            healthDataService.deleteRecordsForHealthCode(healthCode);
+            scheduledActivityService.deleteActivitiesForUser(healthCode);
+            activityEventService.deleteActivityEvents(healthCode);
+            surveyResponseService.deleteSurveyResponses(healthCode);
+            
+            // Remove the externalId from the table even if validation is not enabled. If the study
+            // turns it off/back on again, we want to track what has changed
+            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
+            if (externalId != null) {
+                externalIdService.unassignExternalId(study, externalId, healthCode);    
+            }
+            optionsService.deleteAllParticipantOptions(healthCode);
+            accountDao.deleteAccount(study, account.getId());
         }
-    }
-
-    private void deleteUser(Account account) {
-        checkNotNull(account);
-
-        Study study = studyService.getStudy(account.getStudyIdentifier());
-        // remove this first so if account is partially deleted, re-authenticating will pick
-        // up accurate information about the state of the account (as we can recover it)
-        cacheProvider.removeSessionByUserId(account.getId());
-        
-        String healthCode = account.getHealthCode();
-        consentService.deleteAllConsentsForUser(study, healthCode);
-        healthDataService.deleteRecordsForHealthCode(healthCode);
-        scheduledActivityService.deleteActivitiesForUser(healthCode);
-        activityEventService.deleteActivityEvents(healthCode);
-        surveyResponseService.deleteSurveyResponses(healthCode);
-        
-        // Remove the externalId from the table even if validation is not enabled. If the study
-        // turns it off/back on again, we want to track what has changed
-        ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-        String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
-        if (externalId != null) {
-            externalIdService.unassignExternalId(study, externalId, healthCode);    
-        }
-        optionsService.deleteAllParticipantOptions(healthCode);
-        accountDao.deleteAccount(study, account.getId());
     }
 }

@@ -43,6 +43,17 @@ public final class StudyParticipant implements BridgeEntity {
             SharingScope sharingScope, boolean notifyByEmail, Set<String> dataGroups, String healthCode,
             Map<String, String> attributes, Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles,
             LinkedHashSet<String> languages, AccountStatus status, DateTime createdOn, String id) {
+        
+        ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
+        if (consentHistories != null) {
+            for (Map.Entry<String, List<UserConsentHistory>> entry : consentHistories.entrySet()) {
+                if (entry.getValue() != null) {
+                    List<UserConsentHistory> immutableList = BridgeUtils.nullSafeImmutableList(entry.getValue());
+                    immutableConsentsBuilder.put(entry.getKey(), immutableList);
+                }
+            }
+        }
+        
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -50,12 +61,12 @@ public final class StudyParticipant implements BridgeEntity {
         this.password = password;
         this.sharingScope = sharingScope;
         this.notifyByEmail = notifyByEmail;
-        this.dataGroups = dataGroups;
+        this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
         this.healthCode = healthCode;
-        this.attributes = attributes;
-        this.consentHistories = consentHistories;
-        this.roles = roles;
-        this.languages = languages;
+        this.attributes = BridgeUtils.nullSafeImmutableMap(attributes);
+        this.consentHistories = immutableConsentsBuilder.build();
+        this.roles = BridgeUtils.nullSafeImmutableSet(roles);
+        this.languages = (languages == null) ? new LinkedHashSet<>() : languages;
         this.status = status;
         this.createdOn = createdOn;
         this.id = id;
@@ -300,25 +311,9 @@ public final class StudyParticipant implements BridgeEntity {
         }
         
         public StudyParticipant build() {
-            Set<String> immutableDataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
-            Set<Roles> immutableRoles = BridgeUtils.nullSafeImmutableSet(roles);
-            Map<String,String> immutableAttributes = BridgeUtils.nullSafeImmutableMap(attributes);
-            LinkedHashSet<String> langs = (languages == null) ? new LinkedHashSet<>() : languages;
-            
-            ImmutableMap.Builder<String, List<UserConsentHistory>> builder = new ImmutableMap.Builder<>();
-            if (consentHistories != null) {
-                for (Map.Entry<String, List<UserConsentHistory>> entry : consentHistories.entrySet()) {
-                    if (entry.getValue() != null) {
-                        List<UserConsentHistory> immutableList = BridgeUtils.nullSafeImmutableList(entry.getValue());
-                        builder.put(entry.getKey(), immutableList);
-                    }
-                }
-            }
-            Map<String, List<UserConsentHistory>> immutableConsentHistories = builder.build();
-
             return new StudyParticipant(firstName, lastName, email, externalId, password, sharingScope, notifyByEmail,
-                    immutableDataGroups, healthCode, immutableAttributes, immutableConsentHistories, immutableRoles,
-                    langs, status, createdOn, id);
+                    dataGroups, healthCode, attributes, consentHistories, roles,
+                    languages, status, createdOn, id);
         }
     }
 

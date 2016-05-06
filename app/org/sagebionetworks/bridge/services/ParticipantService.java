@@ -161,7 +161,8 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a 
      * user before triggering a reset password request.  
      */
-    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant, boolean suppressEmail) {
+    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
+            boolean suppressEmail) {
         return saveParticipant(study, callerRoles, null, participant, true, suppressEmail);
     }
     

@@ -14,8 +14,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
- * credentials.
- *
+ * credentials. To work with users, use the ParticipantService, which orchestrates calls 
+ * to the AccountDao in order to reduce the number of times we make calls to our external 
+ * authentication service.
  */
 public interface AccountDao {
     
@@ -50,18 +51,21 @@ public interface AccountDao {
     public Account authenticate(Study study, SignIn signIn);
 
     /**
-     * Construct a valid account object. This does NOT save the account, you must call createAccount() or 
-     * updateAccount() to save.
+     * A factory method to construct a valid Account object that will work with our underlying 
+     * persistence store. This does NOT save the account, you must call createAccount() after 
+     * the account has been updated.
      */
     public Account constructAccount(Study study, String email, String password);
     
     /**
-     * Create an account. Should have been intitialized from initializeAccount
+     * Create an account. The account object should initially be retrieved from the 
+     * constructAccount() factory method.
      */
     public void createAccount(Study study, Account account, boolean suppressEmail);
     
     /**
-     * Save account changes.
+     * Save account changes. Account should have been retrieved from the getAccount() method 
+     * (constructAccount() is not sufficient).
      */
     public void updateAccount(Account account);
     

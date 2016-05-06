@@ -69,6 +69,7 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantServiceTest {
 
+    private static final String USERS_HEALTH_CODE = "POWERS";
     private static final String EXTERNAL_ID = "externalId";
     private static final String HEALTH_CODE = "healthCode";
     private static final String PHONE = "phone";
@@ -96,7 +97,7 @@ public class ParticipantServiceTest {
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
             .withStatus(AccountStatus.DISABLED)
-            .withExternalId("POWERS").build();
+            .withExternalId(USERS_HEALTH_CODE).build();
     private static final StudyParticipant NO_ID_PARTICIPANT = new StudyParticipant.Builder()
             .copyOf(PARTICIPANT)
             .withExternalId(null).build();
@@ -166,7 +167,6 @@ public class ParticipantServiceTest {
     
     private void mockHealthCodeAndAccountRetrieval() {
         doReturn(ID).when(account).getId();
-        
         doReturn(account).when(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         doReturn(account).when(accountDao).getAccount(STUDY, ID);
         doReturn(HEALTH_CODE).when(account).getHealthCode();
@@ -180,13 +180,13 @@ public class ParticipantServiceTest {
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
         assertEquals(ID, idHolder.getIdentifier());
         
-        verify(externalIdService).reserveExternalId(STUDY, "POWERS");
-        verify(externalIdService).assignExternalId(STUDY, "POWERS", HEALTH_CODE);
+        verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
+        verify(externalIdService).assignExternalId(STUDY, USERS_HEALTH_CODE, HEALTH_CODE);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
-        
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
+        
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), options.get(SHARING_SCOPE));
         assertEquals("true", options.get(EMAIL_NOTIFICATIONS));
@@ -216,14 +216,14 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         
         doThrow(new EntityAlreadyExistsException(ExternalIdentifier.create(STUDY, "AAA")))
-            .when(externalIdService).reserveExternalId(STUDY, "POWERS");
+            .when(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         
         try {
             participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
         }
-        verify(externalIdService).reserveExternalId(STUDY, "POWERS");
+        verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         verifyNoMoreInteractions(accountDao);
         verifyNoMoreInteractions(optionsService);
     }
@@ -234,12 +234,12 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
-        verify(externalIdService).reserveExternalId(STUDY, "POWERS");
+        verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         // Do not set the externalId with the other options, go through the externalIdService
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption,String> options = optionsCaptor.getValue();
         assertNull(options.get(EXTERNAL_IDENTIFIER));
-        verify(externalIdService).assignExternalId(STUDY, "POWERS", HEALTH_CODE);
+        verify(externalIdService).assignExternalId(STUDY, USERS_HEALTH_CODE, HEALTH_CODE);
     }
     
     @Test
@@ -264,12 +264,12 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
 
-        verify(externalIdService).reserveExternalId(STUDY, "POWERS");
+        verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         // set externalId like any other option, we're not using externalIdService
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption,String> options = optionsCaptor.getValue();
-        assertEquals("POWERS", options.get(EXTERNAL_IDENTIFIER));
-        verify(externalIdService).assignExternalId(STUDY, "POWERS", HEALTH_CODE);
+        assertEquals(USERS_HEALTH_CODE, options.get(EXTERNAL_IDENTIFIER));
+        verify(externalIdService).assignExternalId(STUDY, USERS_HEALTH_CODE, HEALTH_CODE);
     }
     
     @Test
@@ -484,7 +484,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         
         doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
-        doReturn("POWERS").when(lookup).getString(EXTERNAL_IDENTIFIER);
+        doReturn(USERS_HEALTH_CODE).when(lookup).getString(EXTERNAL_IDENTIFIER);
         
         // This just succeeds because the IDs are the same, and we'll verify no attempt was made to update it.
         participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
@@ -536,7 +536,7 @@ public class ParticipantServiceTest {
         verifyNoMoreInteractions(externalIdService);
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
-        assertEquals("POWERS", options.get(EXTERNAL_IDENTIFIER));
+        assertEquals(USERS_HEALTH_CODE, options.get(EXTERNAL_IDENTIFIER));
     }
     
     @Test
