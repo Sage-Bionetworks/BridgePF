@@ -2,12 +2,17 @@ package org.sagebionetworks.bridge;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 public class TestConstants {
     public static final String DUMMY_IMAGE_DATA = "VGhpcyBpc24ndCBhIHJlYWwgaW1hZ2Uu";
@@ -64,4 +69,19 @@ public class TestConstants {
     public static final ConsentStatus OPTIONAL_UNSIGNED = new ConsentStatus.Builder().withName("Name1")
             .withGuid(SubpopulationGuid.create("foo6")).withRequired(false).withConsented(false)
             .withSignedMostRecentConsent(false).build();
+    
+    // Other fields will be passed along to the PartcipantService, but it will not be utilized
+    // These are the fields that *can* be changed. They are all passed along.
+    public static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
+            .withFirstName("FirstName")
+            .withLastName("LastName")
+            .withExternalId("externalId")
+            .withEmail("bridge-testing+email@sagebase.org")
+            .withPassword("password")
+            .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+            .withNotifyByEmail(true)
+            .withDataGroups(Sets.newHashSet("group1"))
+            .withAttributes(new ImmutableMap.Builder<String,String>().put("phone","123-456-7890").build())
+            .withLanguages(TestUtils.newLinkedHashSet("fr")).build();
+    
 }

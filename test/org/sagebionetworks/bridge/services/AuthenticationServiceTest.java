@@ -31,6 +31,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.DefaultStudyBootstrapper;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
@@ -99,6 +100,9 @@ public class AuthenticationServiceTest {
     
     @Resource
     private ParticipantService participantService;
+    
+    @Resource
+    private UserAdminService userAdminService;
     
     private Study study;
     
@@ -242,6 +246,29 @@ public class AuthenticationServiceTest {
         authService.signOut(testUser.getSession());
         assertNull(cacheProvider.getUserSession(sessionToken));
         assertNull(cacheProvider.getUserSessionByUserId(userId));
+    }
+    
+    // This test combines test of dataGroups, languages, and other data that can be set.
+    @Test
+    public void signUpDataExistsOnSignIn() {
+        StudyParticipant participant = TestConstants.PARTICIPANT;
+        IdentifierHolder holder = null;
+        try {
+            holder = authService.signUp(study, participant);
+            
+            StudyParticipant persisted = participantService.getParticipant(study, Sets.newHashSet(), holder.getIdentifier());
+            assertEquals("FirstName", persisted.getFirstName());
+            assertEquals("LastName", persisted.getLastName());
+            assertEquals("bridge-testing+email@sagebase.org", persisted.getEmail());
+            assertEquals("externalId", persisted.getExternalId());
+            assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, persisted.getSharingScope());
+            assertTrue(persisted.isNotifyByEmail());
+            assertEquals(Sets.newHashSet("group1"), persisted.getDataGroups());
+            assertEquals("123-456-7890", persisted.getAttributes().get("phone"));
+            assertEquals(TestUtils.newLinkedHashSet("fr"), persisted.getLanguages());
+        } finally {
+            userAdminService.deleteUser(study, holder.getIdentifier());
+        }
     }
     
     @Test

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
@@ -11,13 +12,18 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -39,6 +45,12 @@ public class UserAdminServiceMockTest {
     
     @Mock
     private ConsentService consentService;
+    
+    @Captor
+    private ArgumentCaptor<CriteriaContext> contextCaptor;
+    
+    @Captor
+    private ArgumentCaptor<SignIn> signInCaptor;
 
     private UserAdminService service;
     
@@ -81,6 +93,15 @@ public class UserAdminServiceMockTest {
         UserSession session = service.createUser(study, participant, null, true, true);
         
         verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
+        
+        verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
+        
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY, context.getStudyIdentifier());
+        
+        SignIn signIn = signInCaptor.getValue();
+        assertEquals(participant.getEmail(), signIn.getEmail());
+        assertEquals(participant.getPassword(), signIn.getPassword());
         
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             verify(consentService).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
