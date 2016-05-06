@@ -321,7 +321,6 @@ public class StormpathAccountDao implements AccountDao {
     public void createAccount(Study study, Account account, boolean sendVerifyEmail) {
         com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
         try {
-            System.out.println("sendVerifyEmail STATUS: " + sendVerifyEmail);
             // Sadly we have to make multiple calls here. You *have* to create the account and 
             // then you can manipulate it's groups... you can't submit them all in one request
             // so far as I have been able to find.
@@ -329,8 +328,6 @@ public class StormpathAccountDao implements AccountDao {
             acct = directory.createAccount(acct, sendVerifyEmail);
             updateGroups(account);
             ((StormpathAccount)account).setAccount(acct);
-            System.out.println("STATUS AFTER SAVE: " + account.getStatus());
-            
         } catch(ResourceException e) {
             rethrowResourceException(e, account);
         }
