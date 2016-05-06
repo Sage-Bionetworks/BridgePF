@@ -42,7 +42,7 @@ public class PasswordResetValidator implements Validator {
         if (errors.hasErrors()) {
             return;
         }
-        // This logic is now duplicated with study participant.
+        // This logic is now duplicated with StudyParticipant validation.
         Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
         PasswordPolicy passwordPolicy = study.getPasswordPolicy();
         String password = passwordReset.getPassword();

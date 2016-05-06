@@ -56,6 +56,7 @@ public class StudyParticipantValidator implements Validator {
             }
         }
         if (isNew) {
+            // This validation logic is also performed for reset password requests.
             String password = participant.getPassword();
             PasswordPolicy passwordPolicy = study.getPasswordPolicy();
             ValidatorUtils.validatePassword(errors, passwordPolicy, password);
