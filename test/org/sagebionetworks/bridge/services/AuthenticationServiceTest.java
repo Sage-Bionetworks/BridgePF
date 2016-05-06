@@ -190,7 +190,7 @@ public class AuthenticationServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
-        authService.resetPassword(new PasswordReset("newpassword", "resettoken"));
+        authService.resetPassword(new PasswordReset("newpassword", "resettoken", "api"));
     }
 
     @Test
