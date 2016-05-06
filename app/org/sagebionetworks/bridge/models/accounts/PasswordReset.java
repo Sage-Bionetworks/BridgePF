@@ -8,10 +8,17 @@ public class PasswordReset implements BridgeEntity {
 
     private final String password;
     private final String sptoken;
+    private final String studyIdentifier;
     
-    public PasswordReset(@JsonProperty("password") String password, @JsonProperty("sptoken") String sptoken) {
+    public PasswordReset(@JsonProperty("password") String password, @JsonProperty("sptoken") String sptoken,
+            @JsonProperty("study") String studyId) {
         this.password = password;
         this.sptoken = sptoken;
+        this.studyIdentifier = studyId;
+    }
+    
+    public String getStudyIdentifier() {
+        return studyIdentifier;
     }
     
     public String getPassword() {

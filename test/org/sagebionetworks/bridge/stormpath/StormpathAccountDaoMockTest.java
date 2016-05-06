@@ -170,7 +170,7 @@ public class StormpathAccountDaoMockTest {
 
     @Test
     public void resetPassword() {
-        PasswordReset passwordReset = new PasswordReset("password", "sptoken");
+        PasswordReset passwordReset = new PasswordReset("password", "sptoken", "api");
         
         dao.resetPassword(passwordReset);
         verify(application).resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());

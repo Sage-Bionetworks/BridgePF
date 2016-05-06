@@ -480,6 +480,24 @@ public class IntervalActivitySchedulerTest {
         assertDates(scheduledActivities, 
                 "2015-04-07 09:40", "2015-04-07 13:40", "2015-04-09 09:40", "2015-04-09 13:40");
     }
+    // This is a specific scenario in one of our studies and I wanted to have a test specifically to verify this works.
+    @Test
+    public void oneDayDelayWithTimesSchedulesTheNextDayAfterAnEvent() {
+        Schedule schedule = new Schedule();
+        schedule.getActivities().add(TestConstants.TEST_3_ACTIVITY);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setEventId("survey:AAA:completedOn");
+        schedule.setDelay("P1D");
+        schedule.setExpires("PT2H");
+        schedule.addTimes("08:00", "14:00", "20:00");
+
+        // This event happens late in the day on 4/6, we want tasks for the next day.
+        events.put("survey:AAA:completedOn", asDT("2015-04-06 22:32"));
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusWeeks(3)));
+        
+        assertDates(scheduledActivities, 
+                "2015-04-07 08:00", "2015-04-07 14:00", "2015-04-07 20:00");
+    }
 
     private ScheduleContext getContext(DateTime endsOn) {
         return new ScheduleContext.Builder()
