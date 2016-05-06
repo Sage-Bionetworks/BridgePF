@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.apache.http.HttpHeaders.USER_AGENT;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
@@ -17,6 +19,7 @@ import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 import static org.sagebionetworks.bridge.TestUtils.newLinkedHashSet;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -35,7 +38,6 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.play.controllers.BaseController;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 import com.google.common.collect.ImmutableSet;
@@ -183,7 +185,7 @@ public class BaseControllerTest {
         controller.verifySupportedVersionOrThrowException(study);
     }
     
-    @Test(expected = UnauthorizedException.class)
+    @Test
     public void roleEnforcedWhenRetrievingSession() throws Exception {
         mockPlayContext();
         
@@ -193,10 +195,31 @@ public class BaseControllerTest {
         session.getUser().setRoles(Sets.newHashSet(Roles.RESEARCHER));
 
         doReturn(session).when(controller).getAuthenticatedSession();
-        
+
+        // Single arg success.
+        assertNotNull(controller.getAuthenticatedSession(Roles.RESEARCHER));
+
         // This method, upon confronting the fact that the user does not have this role, 
         // throws an UnauthorizedException.
-        controller.getAuthenticatedSession(Roles.ADMIN);
+        try {
+            controller.getAuthenticatedSession(Roles.ADMIN);
+            fail("expected exception");
+        } catch (UnauthorizedException ex) {
+            // expected exception
+        }
+
+        // Success with sets.
+        assertNotNull(controller.getAuthenticatedSession(EnumSet.of(Roles.RESEARCHER)));
+        assertNotNull(controller.getAuthenticatedSession(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER)));
+        assertNotNull(controller.getAuthenticatedSession(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER)));
+
+        // Unauthorized with sets
+        try {
+            controller.getAuthenticatedSession(EnumSet.of(Roles.ADMIN, Roles.DEVELOPER, Roles.WORKER));
+            fail("expected exception");
+        } catch (UnauthorizedException ex) {
+            // expected exception
+        }
     }
     
     @Test

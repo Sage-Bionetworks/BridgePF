@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
+import java.util.EnumSet;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,7 +136,7 @@ public class UploadSchemaController extends BaseController {
      * @return Play result with the fetched schema in JSON format
      */
     public Result getUploadSchemaByIdAndRev(String schemaId, int rev) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(EnumSet.of(DEVELOPER, WORKER));
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchemaByIdAndRev(studyId, schemaId, rev);

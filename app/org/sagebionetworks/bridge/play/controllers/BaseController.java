@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
@@ -10,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Locale.LanguageRange;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -134,17 +136,28 @@ public abstract class BaseController extends Controller {
         }
         return session;
     }
-    
+
     UserSession getAuthenticatedSession(Roles role) {
         checkNotNull(role);
-        
+
         UserSession session = getAuthenticatedSession();
         if (session.getUser().isInRole(role)) {
             return session;
         }
         throw new UnauthorizedException();
     }
-    
+
+    UserSession getAuthenticatedSession(Set<Roles> roleSet) {
+        checkNotNull(roleSet);
+        checkArgument(!roleSet.isEmpty());
+
+        UserSession session = getAuthenticatedSession();
+        if (session.getUser().isInRole(roleSet)) {
+            return session;
+        }
+        throw new UnauthorizedException();
+    }
+
     void setSessionToken(String sessionToken) {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
