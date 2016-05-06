@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -157,6 +156,7 @@ public class StormpathAccountDao implements AccountDao {
         AccountList accts = directory.getAccounts(criteria);
         
         Iterator<com.stormpath.sdk.account.Account> it = accts.iterator();
+        
         List<AccountSummary> results = Lists.newArrayListWithCapacity(pageSize);
         for (int i=0; i < pageSize; i++) {
             if (it.hasNext()) {
@@ -186,6 +186,7 @@ public class StormpathAccountDao implements AccountDao {
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(studyIdentifier);
         checkNotNull(email);
+        
         final Study study = studyService.getStudy(studyIdentifier);
         final Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         VerificationEmailRequestBuilder requestBuilder = Applications.verificationEmailBuilder();
@@ -294,36 +295,44 @@ public class StormpathAccountDao implements AccountDao {
         return account.getHealthCode();
     }
     
-    @Override 
-    public Account signUp(Study study, StudyParticipant participant, boolean sendEmail) {
+    @Override
+    public Account constructAccount(Study study, String email, String password) {
         checkNotNull(study);
-        checkNotNull(participant);
+        checkArgument(isNotBlank(email));
+        checkArgument(isNotBlank(password));
         
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
         
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
+        acct.setEmail(email);
+        acct.setUsername(email);
+        acct.setGivenName(STORMPATH_NAME_PLACEHOLDER_STRING);
+        acct.setSurname(STORMPATH_NAME_PLACEHOLDER_STRING);
+        acct.setPassword(password);
         Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
-        account.setEmail(participant.getEmail());
-        account.setFirstName(STORMPATH_NAME_PLACEHOLDER_STRING);
-        account.setLastName(STORMPATH_NAME_PLACEHOLDER_STRING);
-        acct.setPassword(participant.getPassword());
-        if (participant.getRoles() != null) {
-            account.setRoles(participant.getRoles());
-        }
-        // Create the healthCode mapping when we create the account. Stop waiting to create it
+        
         HealthId healthId = healthCodeService.createMapping(study);
         account.setHealthId(healthId);
         
+        return account;
+    }
+    
+    @Override
+    public void createAccount(Study study, Account account, boolean sendVerifyEmail) {
+        checkNotNull(study);
+        checkNotNull(account);
+        
+        com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
         try {
+            // Appears to be unavoidable to make multiple calls here. You have to create the account 
+            // before you can manipulate the groups, you cannot submit them all in one request.
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-            directory.createAccount(acct, sendEmail);
-            if (!account.getRoles().isEmpty()) {
-                updateGroups(account);
-            }
+            acct = directory.createAccount(acct, sendVerifyEmail);
+            updateGroups(account);
+            ((StormpathAccount)account).setAccount(acct);
         } catch(ResourceException e) {
             rethrowResourceException(e, account);
         }
-        return account;
     }
     
     @Override
@@ -350,6 +359,9 @@ public class StormpathAccountDao implements AccountDao {
         }
     }
     
+    /**
+     * Factored out so it can be overridden in tests; mocks of the Account cannot be cast to AbstractResource.
+     */
     public boolean isAccountDirty(com.stormpath.sdk.account.Account acct) {
         AbstractResource res = (AbstractResource)acct;
         return res.isDirty();
@@ -369,6 +381,9 @@ public class StormpathAccountDao implements AccountDao {
      * Construct a StormpathAccount and guarantee that the healthid<->healthCode mapping exists for the account.
      */
     private Account constructAccount(StudyIdentifier studyId, com.stormpath.sdk.account.Account acct) {
+        checkNotNull(studyId);
+        checkNotNull(acct);
+        
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(studyId);
         StormpathAccount account = new StormpathAccount(studyId, subpopGuids, acct, encryptors);
         HealthId healthId = null;
@@ -430,8 +445,10 @@ public class StormpathAccountDao implements AccountDao {
         // old groups, stored in Stormpath
         com.stormpath.sdk.account.Account acct = ((StormpathAccount)account).getAccount();
         Set<String> oldGroupSet = new HashSet<>();
-        for (Group group : acct.getGroups()) {
-            oldGroupSet.add(group.getName());
+        if (acct.getGroups() != null) {
+            for (Group group : acct.getGroups()) {
+                oldGroupSet.add(group.getName());
+            }
         }
 
         // added groups = new groups - old groups

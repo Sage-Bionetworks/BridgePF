@@ -9,23 +9,16 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
- * credentials.
- *
+ * credentials. To work with users, use the ParticipantService, which orchestrates calls 
+ * to the AccountDao in order to reduce the number of times we make calls to our external 
+ * authentication service.
  */
 public interface AccountDao {
-
-    /**
-     * Create an account within the context of the study. Sending an email to verify the user's 
-     * email address is optional. Creating an account *always* creates a healthCode and assigns 
-     * the healthId for that healthCode to the created account.
-     */
-    public Account signUp(Study study, StudyParticipant participant, boolean sendEmail);
     
     /**
      * Verify an email address using a supplied, one-time token for verification.
@@ -56,6 +49,25 @@ public interface AccountDao {
      * if successful. 
      */
     public Account authenticate(Study study, SignIn signIn);
+
+    /**
+     * A factory method to construct a valid Account object that will work with our underlying 
+     * persistence store. This does NOT save the account, you must call createAccount() after 
+     * the account has been updated.
+     */
+    public Account constructAccount(Study study, String email, String password);
+    
+    /**
+     * Create an account. The account object should initially be retrieved from the 
+     * constructAccount() factory method.
+     */
+    public void createAccount(Study study, Account account, boolean suppressEmail);
+    
+    /**
+     * Save account changes. Account should have been retrieved from the getAccount() method 
+     * (constructAccount() is not sufficient).
+     */
+    public void updateAccount(Account account);
     
     /**
      * Get an account in the context of a study by the user's ID or by their email address (email is 
@@ -63,11 +75,6 @@ public interface AccountDao {
      * up to callers to translate this into the appropriate exception, if any. 
      */
     public Account getAccount(Study study, String id);
-    
-    /**
-     * Save account changes.
-     */
-    public void updateAccount(Account account);
     
     /**
      * Delete an account along with the authentication credentials.

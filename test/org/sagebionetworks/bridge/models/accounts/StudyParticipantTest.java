@@ -144,6 +144,40 @@ public class StudyParticipantTest {
         // And they are equal in the Java sense
         assertEquals(copy, participant);
     }
+    
+    @Test
+    public void testNullResiliency() {
+        // We don't remove nulls from the collections, at least not when reading them.
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withDataGroups(null)
+                .withAttributes(null)
+                .withRoles(null)
+                .withLanguages(null).build();
+        
+        assertTrue(participant.getDataGroups().isEmpty());
+        assertTrue(participant.getAttributes().isEmpty());
+        assertTrue(participant.getRoles().isEmpty());
+        assertTrue(participant.getLanguages().isEmpty());
+    }
+    
+    @Test
+    public void nullParametersBreakNothing() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
+                .withPassword("password").build();
+        
+        assertEquals(0, participant.getRoles().size());
+        assertEquals(0, participant.getDataGroups().size());
+    }
+    
+    @Test
+    public void oldJsonParsesCorrectly() throws Exception {
+        // Old clients will continue to submit a username, this will be ignored.
+        String json = "{\"email\":\"email@email.com\",\"username\":\"username@email.com\",\"password\":\"password\",\"roles\":[],\"dataGroups\":[],\"type\":\"SignUp\"}";
+        
+        StudyParticipant participant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
+        assertEquals("email@email.com", participant.getEmail());
+        assertEquals("password", participant.getPassword());
+    }    
 
     private StudyParticipant.Builder makeParticipant() {
         StudyParticipant.Builder builder = new StudyParticipant.Builder()
@@ -163,20 +197,5 @@ public class StudyParticipantTest {
                 .withId(STORMPATH_ID)
                 .withStatus(AccountStatus.ENABLED);
         return builder;
-    }
-    
-    @Test
-    public void testNullResiliency() {
-        // We don't remove nulls from the collections, at least not when reading them.
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withDataGroups(null)
-                .withAttributes(null)
-                .withRoles(null)
-                .withLanguages(null).build();
-        
-        assertTrue(participant.getDataGroups().isEmpty());
-        assertTrue(participant.getAttributes().isEmpty());
-        assertTrue(participant.getRoles().isEmpty());
-        assertTrue(participant.getLanguages().isEmpty());
     }
 }

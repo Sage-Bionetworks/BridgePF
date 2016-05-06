@@ -5,10 +5,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
+import java.util.Set;
+
 import org.apache.commons.lang3.StringUtils;
+
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -22,17 +25,21 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.google.common.collect.Sets;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("userAdminService")
 public class UserAdminService {
+    
+    private static final Set<Roles> ADMIN_ROLE = Sets.newHashSet(Roles.ADMIN);
 
     private AuthenticationService authenticationService;
+    private ParticipantService participantService;
     private AccountDao accountDao;
     private ConsentService consentService;
     private HealthDataService healthDataService;
-    private StudyService studyService;
     private SurveyResponseService surveyResponseService;
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
@@ -41,78 +48,76 @@ public class UserAdminService {
     private ExternalIdService externalIdService;
 
     @Autowired
-    public final void setAuthenticationService(AuthenticationService authenticationService) {
+    final void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
     @Autowired
-    public final void setAccountDao(AccountDao accountDao) {
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
+    }
+    @Autowired
+    final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     @Autowired
-    public final void setConsentService(ConsentService consentService) {
+    final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
     @Autowired
-    public final void setHealthDataService(HealthDataService healthDataService) {
+    final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
     @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    @Autowired
-    public final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
+    final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
     @Autowired
-    public final void setActivityEventService(ActivityEventService activityEventService) {
+    final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
     @Autowired
-    public final void setSurveyResponseService(SurveyResponseService surveyResponseService) {
+    final void setSurveyResponseService(SurveyResponseService surveyResponseService) {
         this.surveyResponseService = surveyResponseService;
     }
     @Autowired
-    public final void setCacheProvider(CacheProvider cache) {
+    final void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
     }
     @Autowired
-    public final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
+    final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
     @Autowired
-    public final void setExternalIdService(ExternalIdService externalIdService) {
+    final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
     
     /**
-     * Create a user, sign that user is, and optionally consent that user to research. The method is idempotent: no
-     * error occurs if the user exists, or is already signed in, or has already consented.
+     * Create a user and optionally consent the user and/or sign the user in. If a specific subpopulation 
+     * is not specified (and currently the API for this method does not allow it), than the method iterates 
+     * through all subpopulations in the study and consents the user to all required consents. This should 
+     * allow the user to make calls without receiving a 412 response. 
      * 
-     * Note that currently, the ability to consent someone to a subpopulation other than the default 
-     * subpopulation is not supported in the API.
-     *
-     * @param participant
-     *            sign up information for the target user
      * @param study
      *            the study of the target user
+     * @param participant
+     *            sign up information for the target user
      * @param subpopGuid
      *            the subpopulation to consent to (if null, it will use the default/study subpopulation).
      * @param signUserIn
-     *            sign user into Bridge web application in as part of the creation process
+     *            should the user be signed into Bridge after creation?
      * @param consentUser
      *            should the user be consented to the research?
-     * @return UserSession for the newly created user
      *
-     * @throws BridgeServiceException
+     * @return UserSession for the newly created user
      */
-    public UserSession createUser(StudyParticipant participant, Study study, SubpopulationGuid subpopGuid,
+    public UserSession createUser(Study study, StudyParticipant participant, SubpopulationGuid subpopGuid,
             boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(participant, "Participant cannot be null");
         checkNotNull(participant.getEmail(), "Sign up email cannot be null");
-
-        authenticationService.signUp(study, participant, false);
+        
+        participantService.createParticipant(study, ADMIN_ROLE, participant, false);
 
         // We don't filter users by any of these filtering criteria in the admin API.
         CriteriaContext context = new CriteriaContext.Builder()
@@ -159,42 +164,37 @@ public class UserAdminService {
     /**
      * Delete the target user.
      *
+     * @param study
+     *      target user's study
      * @param id
-     *            target user
-     * @throws BridgeServiceException
+     *      target user's ID
      */
     public void deleteUser(Study study, String id) {
         checkNotNull(study);
         checkArgument(StringUtils.isNotBlank(id));
+        
         Account account = accountDao.getAccount(study, id);
         if (account != null) {
-            deleteUser(account);
+            // remove this first so if account is partially deleted, re-authenticating will pick
+            // up accurate information about the state of the account (as we can recover it)
+            cacheProvider.removeSessionByUserId(account.getId());
+            
+            String healthCode = account.getHealthCode();
+            consentService.deleteAllConsentsForUser(study, healthCode);
+            healthDataService.deleteRecordsForHealthCode(healthCode);
+            scheduledActivityService.deleteActivitiesForUser(healthCode);
+            activityEventService.deleteActivityEvents(healthCode);
+            surveyResponseService.deleteSurveyResponses(healthCode);
+            
+            // Remove the externalId from the table even if validation is not enabled. If the study
+            // turns it off/back on again, we want to track what has changed
+            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
+            if (externalId != null) {
+                externalIdService.unassignExternalId(study, externalId, healthCode);    
+            }
+            optionsService.deleteAllParticipantOptions(healthCode);
+            accountDao.deleteAccount(study, account.getId());
         }
-    }
-
-    private void deleteUser(Account account) {
-        checkNotNull(account);
-
-        Study study = studyService.getStudy(account.getStudyIdentifier());
-        // remove this first so if account is partially deleted, re-authenticating will pick
-        // up accurate information about the state of the account (as we can recover it)
-        cacheProvider.removeSessionByUserId(account.getId());
-        
-        String healthCode = account.getHealthCode();
-        consentService.deleteAllConsentsForUser(study, healthCode);
-        healthDataService.deleteRecordsForHealthCode(healthCode);
-        scheduledActivityService.deleteActivitiesForUser(healthCode);
-        activityEventService.deleteActivityEvents(healthCode);
-        surveyResponseService.deleteSurveyResponses(healthCode);
-        
-        // Remove the externalId from the table even if validation is not enabled. If the study
-        // turns it off/back on again, we want to track what has changed
-        ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-        String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
-        if (externalId != null) {
-            externalIdService.unassignExternalId(study, externalId, healthCode);    
-        }
-        optionsService.deleteAllParticipantOptions(healthCode);
-        accountDao.deleteAccount(study, account.getId());
     }
 }

@@ -89,22 +89,6 @@ public class AuthenticationControllerMockTest {
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
         controller.setStudyService(studyService);
     }
-    
-    @Test
-    public void userCannotAssignRolesToSelfOnSignUp() throws Exception {
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'bridge-testing+test@sagebase.org',"+
-                "'password':'P@ssword1','roles':['admin'],'dataGroups':['A','B']}"));
-        
-        Result result = controller.signUp();
-        assertEquals(201, result.status());
-        verify(authenticationService).signUp(same(study), participantCaptor.capture(), eq(true));
-        
-        StudyParticipant participant = participantCaptor.getValue();
-        assertTrue(participant.getRoles().isEmpty());
-        assertEquals("bridge-testing+test@sagebase.org", participant.getEmail());
-        assertEquals("P@ssword1", participant.getPassword());
-        assertEquals(DATA_GROUPS, participant.getDataGroups());
-    }
 
     @Test
     public void getSessionIfItExistsNullToken() {
@@ -210,6 +194,34 @@ public class AuthenticationControllerMockTest {
         assertSessionInfoInMetrics(metrics);
     }
 
+    @Test
+    public void signUpWithCompleteUserData() throws Exception {
+        // Other fields will be passed along to the PartcipantService, but it will not be utilized
+        // These are the fields that *can* be changed. They are all passed along.
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(TestConstants.PARTICIPANT);
+        node.put("study", TEST_STUDY_ID_STRING);
+        
+        TestUtils.mockPlayContextWithJson(node.toString());
+        
+        Result result = controller.signUp();
+        TestUtils.assertResult(result, 201, "Signed up.");
+        
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture());
+        
+        StudyParticipant originalParticipant = TestConstants.PARTICIPANT;
+        StudyParticipant persistedParticipant = participantCaptor.getValue();
+        assertEquals(originalParticipant.getFirstName(), persistedParticipant.getFirstName());
+        assertEquals(originalParticipant.getLastName(), persistedParticipant.getLastName());
+        assertEquals(originalParticipant.getEmail(), persistedParticipant.getEmail());
+        assertEquals(originalParticipant.getPassword(), persistedParticipant.getPassword());
+        assertEquals(originalParticipant.getSharingScope(), persistedParticipant.getSharingScope());
+        assertEquals(originalParticipant.getExternalId(), persistedParticipant.getExternalId());
+        assertTrue(persistedParticipant.isNotifyByEmail());
+        assertEquals(originalParticipant.getDataGroups(), persistedParticipant.getDataGroups());
+        assertEquals(originalParticipant.getAttributes(), persistedParticipant.getAttributes());
+        assertEquals(originalParticipant.getLanguages(), persistedParticipant.getLanguages());
+    }
+    
     private void signInExistingSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();

@@ -56,31 +56,32 @@ public class StormpathAccount implements Account {
     private static final String VERSION_SUFFIX = "_version";
     private static final String OLD_VERSION_SUFFIX = "version";
     
-    private final com.stormpath.sdk.account.Account acct;
     private final StudyIdentifier studyIdentifier;
     private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final String healthIdKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
     private final Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
+
+    private com.stormpath.sdk.account.Account acct;
     private ImmutableSet<Roles> roles;
     private String healthCode;
     
-    StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
-            SortedMap<Integer, BridgeEncryptor> encryptors) {
+    StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids,
+            com.stormpath.sdk.account.Account acct, SortedMap<Integer, BridgeEncryptor> encryptors) {
         checkNotNull(studyIdentifier);
+        checkNotNull(subpopGuids);
         checkNotNull(acct);
         checkNotNull(encryptors);
-        
+
         String studyId = studyIdentifier.getIdentifier();
         
-        this.acct = acct;
+        setAccount(acct);
         this.studyIdentifier = studyIdentifier;
         this.encryptors = encryptors;
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
-        this.roles = ImmutableSet.copyOf(BridgeUtils.convertRolesQuietly(acct.getGroups()));
         this.allSignatures = Maps.newHashMap();
         
         for (SubpopulationGuid subpopGuid : subpopGuids) {
@@ -101,6 +102,10 @@ public class StormpathAccount implements Account {
             encryptJSONTo(entry.getKey().getGuid()+CONSENT_SIGNATURES_SUFFIX, entry.getValue());
         }
         return acct;
+    }
+    public void setAccount(com.stormpath.sdk.account.Account acct) {
+        this.acct = acct;
+        this.roles = ImmutableSet.copyOf(BridgeUtils.convertRolesQuietly(acct.getGroups()));
     }
     
     @Override

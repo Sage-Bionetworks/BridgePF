@@ -31,6 +31,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.DefaultStudyBootstrapper;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
@@ -49,6 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -98,6 +100,9 @@ public class AuthenticationServiceTest {
     
     @Resource
     private ParticipantService participantService;
+    
+    @Resource
+    private UserAdminService userAdminService;
     
     private Study study;
     
@@ -243,6 +248,29 @@ public class AuthenticationServiceTest {
         assertNull(cacheProvider.getUserSessionByUserId(userId));
     }
     
+    // This test combines test of dataGroups, languages, and other data that can be set.
+    @Test
+    public void signUpDataExistsOnSignIn() {
+        StudyParticipant participant = TestConstants.PARTICIPANT;
+        IdentifierHolder holder = null;
+        try {
+            holder = authService.signUp(study, participant);
+            
+            StudyParticipant persisted = participantService.getParticipant(study, Sets.newHashSet(), holder.getIdentifier());
+            assertEquals("FirstName", persisted.getFirstName());
+            assertEquals("LastName", persisted.getLastName());
+            assertEquals("bridge-testing+email@sagebase.org", persisted.getEmail());
+            assertEquals("externalId", persisted.getExternalId());
+            assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, persisted.getSharingScope());
+            assertTrue(persisted.isNotifyByEmail());
+            assertEquals(Sets.newHashSet("group1"), persisted.getDataGroups());
+            assertEquals("123-456-7890", persisted.getAttributes().get("phone"));
+            assertEquals(TestUtils.newLinkedHashSet("fr"), persisted.getLanguages());
+        } finally {
+            userAdminService.deleteUser(study, holder.getIdentifier());
+        }
+    }
+    
     @Test
     public void signUpWillCreateDataGroups() {
         String name = TestUtils.randomName(AuthenticationServiceTest.class);
@@ -257,12 +285,12 @@ public class AuthenticationServiceTest {
         authService.setOptionsService(optionsService);
         accountDao = spy(accountDao);
         
-        authService.signUp(study, testUser.getStudyParticipant(), true);
+        authService.signUp(study, testUser.getStudyParticipant());
 
         UserSession session = authService.signIn(study, testUser.getCriteriaContext(), testUser.getSignIn());
         Account account = accountDao.getAccount(study, session.getUser().getId());
         
-        verify(authService).signUp(any(Study.class), any(StudyParticipant.class), eq(true));
+        verify(authService).signUp(eq(study), any(StudyParticipant.class));
         // Verify that data groups were set correctly as an option
         Set<String> persistedGroups = optionsService.getOptions(account.getHealthCode()).getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);
@@ -297,7 +325,7 @@ public class AuthenticationServiceTest {
         
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
-        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant(), true);
+        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant());
         verify(authService).requestResetPassword(any(Study.class), any(Email.class));
     }
     
@@ -466,5 +494,18 @@ public class AuthenticationServiceTest {
                 .getUser().getDataGroups();
 
         assertEquals(UPDATED_DATA_GROUPS, retrievedSessionDataGroups);
+    }
+    
+    @Test
+    public void signUpWillNotSetRoles() {
+        String email = TestUtils.makeRandomTestEmail(AuthenticationServiceTest.class);
+        Set<Roles> roles = Sets.newHashSet(Roles.DEVELOPER, Roles.RESEARCHER);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(email).withPassword("P@ssword`1").withRoles(roles).build();
+        
+        IdentifierHolder idHolder = authService.signUp(study, participant);
+        
+        participant = participantService.getParticipant(study, Sets.newHashSet(), idHolder.getIdentifier());
+        assertTrue(participant.getRoles().isEmpty());
     }
 }

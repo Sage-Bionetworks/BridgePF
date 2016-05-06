@@ -10,6 +10,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -178,22 +179,28 @@ public class StormpathAccountDaoMockTest {
     
     @Test
     public void stormpathAccountCorrectlyInitialized() {
+        dao = spy(dao);
+        doReturn(false).when(dao).isAccountDirty(any());
+        
         when(stormpathAccount.getCustomData()).thenReturn(customData);
         
         when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(stormpathAccount);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
+        when(directory.createAccount(any(), eq(false))).thenReturn(stormpathAccount);
         
         doReturn(healthId).when(healthCodeService).createMapping(study);
         
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
-        Account account = dao.signUp(study, participant, false);
-        assertNotNull(account);
         
+        Account account = dao.constructAccount(study, participant.getEmail(), participant.getPassword());
+        assertNotNull(account);
+        dao.createAccount(study, account, false);
+
         ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);
         verify(directory).createAccount(argument.capture(), anyBoolean());
-        
+
         com.stormpath.sdk.account.Account acct = argument.getValue();
         verify(acct).setSurname("<EMPTY>");
         verify(acct).setGivenName("<EMPTY>");

@@ -39,40 +39,26 @@ public class TestUserAdminHelper {
     StudyService studyService;
 
     public class TestUser {
-        private final String email;
-        private final String password;
-        private final Set<Roles> roles;
-        private final Set<String> dataGroups;
         private final Study study;
+        private final StudyParticipant participant;
         private final UserSession session;
 
-        public TestUser(String email, String password, Set<Roles> roles, Set<String> dataGroups, Study study,
-                UserSession session) {
-            this.email = email;
-            this.password = password;
-            this.roles = Sets.newHashSet(TEST_USERS);
-            if (roles != null) {
-                this.roles.addAll(roles);    
-            }
-            this.dataGroups = Sets.newHashSet();
-            if (dataGroups != null) {
-                this.dataGroups.addAll(dataGroups);
-            }
+        public TestUser(Study study, StudyParticipant participant, UserSession session) {
+            this.participant = participant;
             this.study = study;
             this.session = session;
         }
         public StudyParticipant getStudyParticipant() {
-            return new StudyParticipant.Builder().withEmail(email).withPassword(password)
-                    .withRoles(roles).withDataGroups(dataGroups).build();
+            return participant;
         }
         public SignIn getSignIn() {
-            return new SignIn(email, password);
+            return new SignIn(participant.getEmail(), participant.getPassword());
         }
         public String getEmail() {
-            return email;
+            return participant.getEmail();
         }
         public String getPassword() {
-            return password;
+            return participant.getPassword();
         }
         public UserSession getSession() {
             return session;
@@ -173,6 +159,7 @@ public class TestUserAdminHelper {
         }
         public Builder withRoles(Roles... roles) {
             this.roles = Sets.newHashSet(roles);
+            this.roles.add(TEST_USERS);
             return this;
         }
         public Builder withDataGroups(Set<String> dataGroups) {
@@ -197,10 +184,10 @@ public class TestUserAdminHelper {
             StudyParticipant finalParticipant = new StudyParticipant.Builder().withEmail(finalEmail)
                     .withPassword(finalPassword).withRoles(roles).withDataGroups(dataGroups).build();
             
-            UserSession session = userAdminService.createUser(finalParticipant, finalStudy, subpopGuid, signIn, consent);
+            UserSession session = userAdminService.createUser(
+                    finalStudy, finalParticipant, subpopGuid, signIn, consent);
             
-            return new TestUser(finalParticipant.getEmail(), finalParticipant.getPassword(), finalParticipant.getRoles(), 
-                    finalParticipant.getDataGroups(), finalStudy, session);
+            return new TestUser(finalStudy, finalParticipant, session);
         }
     }
 
