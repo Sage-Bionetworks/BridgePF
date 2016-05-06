@@ -10,6 +10,8 @@ import static org.mockito.Mockito.spy;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -45,7 +47,7 @@ public class SchedulePlanControllerMockTest {
         
         UserSession session = mock(UserSession.class);
         when(session.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("test-study"));
-        doReturn(session).when(controller).getAuthenticatedSession(any());
+        doReturn(session).when(controller).getAuthenticatedSession(any(Roles.class));
     }
 
     private void assertMessage(InvalidEntityException e, String key, String error) {
