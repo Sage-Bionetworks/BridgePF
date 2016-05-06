@@ -197,7 +197,8 @@ public class TestUserAdminHelper {
             StudyParticipant finalParticipant = new StudyParticipant.Builder().withEmail(finalEmail)
                     .withPassword(finalPassword).withRoles(roles).withDataGroups(dataGroups).build();
             
-            UserSession session = userAdminService.createUser(finalParticipant, finalStudy, subpopGuid, signIn, consent);
+            UserSession session = userAdminService.createUser(finalStudy, finalParticipant, subpopGuid, signIn,
+                    consent);
             
             return new TestUser(finalParticipant.getEmail(), finalParticipant.getPassword(), finalParticipant.getRoles(), 
                     finalParticipant.getDataGroups(), finalStudy, session);

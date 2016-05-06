@@ -8,7 +8,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -88,22 +87,6 @@ public class AuthenticationControllerMockTest {
         study.setDataGroups(DATA_GROUPS);
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
         controller.setStudyService(studyService);
-    }
-    
-    @Test
-    public void userCannotAssignRolesToSelfOnSignUp() throws Exception {
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'bridge-testing+test@sagebase.org',"+
-                "'password':'P@ssword1','roles':['admin'],'dataGroups':['A','B']}"));
-        
-        Result result = controller.signUp();
-        assertEquals(201, result.status());
-        verify(authenticationService).signUp(same(study), participantCaptor.capture(), eq(false));
-        
-        StudyParticipant participant = participantCaptor.getValue();
-        assertTrue(participant.getRoles().isEmpty());
-        assertEquals("bridge-testing+test@sagebase.org", participant.getEmail());
-        assertEquals("P@ssword1", participant.getPassword());
-        assertEquals(DATA_GROUPS, participant.getDataGroups());
     }
 
     @Test

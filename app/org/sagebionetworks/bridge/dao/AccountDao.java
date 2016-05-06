@@ -18,17 +18,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
  *
  */
 public interface AccountDao {
-
-    /**
-     * Construct a valid account to update. This account will not have been saved to the underlying
-     * persistence store. 
-     */
-    public Account initializeAccount(Study study, String email, String password);
-    
-    /**
-     * Create an account. Should have been intitialized from initializeAccount
-     */
-    public void createAccount(Study study, Account account, boolean suppressEmail);
     
     /**
      * Verify an email address using a supplied, one-time token for verification.
@@ -59,6 +48,22 @@ public interface AccountDao {
      * if successful. 
      */
     public Account authenticate(Study study, SignIn signIn);
+
+    /**
+     * Construct a valid account object. This does NOT save the account, you must call createAccount() or 
+     * updateAccount() to save.
+     */
+    public Account constructAccount(Study study, String email, String password);
+    
+    /**
+     * Create an account. Should have been intitialized from initializeAccount
+     */
+    public void createAccount(Study study, Account account, boolean suppressEmail);
+    
+    /**
+     * Save account changes.
+     */
+    public void updateAccount(Account account);
     
     /**
      * Get an account in the context of a study by the user's ID or by their email address (email is 
@@ -68,11 +73,6 @@ public interface AccountDao {
     public Account getAccount(Study study, String id);
     
     /**
-     * Save account changes.
-     */
-    public void updateAccount(Study study, Account account);
-    
-    /**
      * Delete an account along with the authentication credentials.
      * @param study
      * @param email
@@ -80,17 +80,17 @@ public interface AccountDao {
     public void deleteAccount(Study study, String email);
     
     /**
-     * Get all accounts in all studies in a given environment.
+     * Get all account summaries in all studies in a given environment.
      * @return
      */
-    public Iterator<Account> getAllAccounts();
+    public Iterator<AccountSummary> getAllAccounts();
     
     /**
-     * Get all accounts in one study in a given environment.
+     * Get all account summaries in one study in a given environment.
      * @param study
      * @return
      */
-    public Iterator<Account> getStudyAccounts(Study study);
+    public Iterator<AccountSummary> getStudyAccounts(Study study);
     
     /**
      * Get a page of lightweight account summaries (most importantly, the email addresses of 

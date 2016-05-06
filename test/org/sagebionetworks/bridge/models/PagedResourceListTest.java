@@ -8,6 +8,7 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -22,8 +23,10 @@ public class PagedResourceListTest {
     @Test
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", "id", DateTime.now(), AccountStatus.DISABLED));
-        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", "id2", DateTime.now(), AccountStatus.ENABLED));
+        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", "id", DateTime.now(),
+                AccountStatus.DISABLED, TestConstants.TEST_STUDY));
+        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", "id2", DateTime.now(),
+                AccountStatus.ENABLED, TestConstants.TEST_STUDY));
         
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(accounts, 2, 100, 123)
                 .withFilter("emailFilter", "filterString");

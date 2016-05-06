@@ -83,7 +83,7 @@ public class UserAdminServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
-        testUser = userAdminService.createUser(participant, study, null, true, true).getUser();
+        testUser = userAdminService.createUser(study, participant, null, true, true).getUser();
 
         userAdminService.deleteUser(study, testUser.getId());
 
@@ -93,7 +93,7 @@ public class UserAdminServiceTest {
 
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session1 = userAdminService.createUser(participant, study, null, false, false);
+        UserSession session1 = userAdminService.createUser(study, participant, null, false, false);
         assertFalse(session1.isAuthenticated());
 
         UserSession session = authService.signIn(study, TEST_CONTEXT, new SignIn(participant.getEmail(),
@@ -104,15 +104,15 @@ public class UserAdminServiceTest {
 
     // Next two test the same thing in two different ways.
     public void cannotCreateTheSameUserTwice() {
-        testUser = userAdminService.createUser(participant, study, null, true, true).getUser();
-        testUser = userAdminService.createUser(participant, study, null, true, true).getUser();
+        testUser = userAdminService.createUser(study, participant, null, true, true).getUser();
+        testUser = userAdminService.createUser(study, participant, null, true, true).getUser();
     }
     
     @Test
     public void cannotCreateUserWithSameEmail() {
-        testUser = userAdminService.createUser(participant, study, null, true, false).getUser();
+        testUser = userAdminService.createUser(study, participant, null, true, false).getUser();
         try {
-            userAdminService.createUser(participant, study, null, false, false);
+            userAdminService.createUser(study, participant, null, false, false);
             fail("Sign up with email already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) { 
             assertEquals("Account already exists.", e.getMessage());
@@ -121,7 +121,7 @@ public class UserAdminServiceTest {
 
     @Test
     public void testDeleteUserWhenSignedOut() {
-        UserSession session = userAdminService.createUser(participant, study, null, true, true);
+        UserSession session = userAdminService.createUser(study, participant, null, true, true);
         authService.signOut(session);
         assertNull(authService.getSession(session.getSessionToken()));
         // Shouldn't crash
@@ -131,7 +131,7 @@ public class UserAdminServiceTest {
 
     @Test
     public void testDeleteUserThatHasBeenDeleted() {
-        UserSession session = userAdminService.createUser(participant, study, null, true, true);
+        UserSession session = userAdminService.createUser(study, participant, null, true, true);
         userAdminService.deleteUser(study, session.getUser().getId());
         assertNull(authService.getSession(session.getSessionToken()));
         // Delete again shouldn't crash
@@ -144,7 +144,7 @@ public class UserAdminServiceTest {
         List<String> idForTest = Lists.newArrayList("AAA");
         externalIdService.addExternalIds(study, idForTest);
         try {
-            UserSession session = userAdminService.createUser(participant, study, null, true, true);
+            UserSession session = userAdminService.createUser(study, participant, null, true, true);
             study.setExternalIdValidationEnabled(true);
             
             externalIdService.assignExternalId(study, "AAA", session.getUser().getHealthCode());

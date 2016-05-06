@@ -71,7 +71,8 @@ public class ParticipantControllerTest {
 
     private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
 
-    private static final AccountSummary SUMMARY = new AccountSummary("firstName","lastName","email","id",DateTime.now(),AccountStatus.ENABLED);
+    private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email", "id",
+            DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
     
     private static final Study STUDY = new DynamoStudy();
     static {
@@ -217,7 +218,7 @@ public class ParticipantControllerTest {
     @Test
     public void createParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder("ABCD");
-        doReturn(holder).when(participantService).createParticipant(eq(STUDY), any(), any(StudyParticipant.class), true);
+        doReturn(holder).when(participantService).createParticipant(eq(STUDY), any(), any(StudyParticipant.class), eq(true));
         
         STUDY.getUserProfileAttributes().add("phone");
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+

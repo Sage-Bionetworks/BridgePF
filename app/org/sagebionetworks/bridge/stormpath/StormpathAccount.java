@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -55,7 +56,7 @@ public class StormpathAccount implements Account {
     private static final String VERSION_SUFFIX = "_version";
     private static final String OLD_VERSION_SUFFIX = "version";
     
-    private final com.stormpath.sdk.account.Account acct;
+    private com.stormpath.sdk.account.Account acct;
     private final StudyIdentifier studyIdentifier;
     private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final String healthIdKey;
@@ -63,6 +64,7 @@ public class StormpathAccount implements Account {
     private final String oldConsentSignatureKey;
     private final Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
     private ImmutableSet<Roles> roles;
+    private String healthCode;
     
     StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, BridgeEncryptor> encryptors) {
@@ -72,13 +74,12 @@ public class StormpathAccount implements Account {
         
         String studyId = studyIdentifier.getIdentifier();
         
-        this.acct = acct;
+        setAccount(acct);
         this.studyIdentifier = studyIdentifier;
         this.encryptors = encryptors;
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
-        this.roles = ImmutableSet.copyOf(BridgeUtils.convertRolesQuietly(acct.getGroups()));
         this.allSignatures = Maps.newHashMap();
         
         for (SubpopulationGuid subpopGuid : subpopGuids) {
@@ -99,6 +100,10 @@ public class StormpathAccount implements Account {
             encryptJSONTo(entry.getKey().getGuid()+CONSENT_SIGNATURES_SUFFIX, entry.getValue());
         }
         return acct;
+    }
+    public void setAccount(com.stormpath.sdk.account.Account acct) {
+        this.acct = acct;
+        this.roles = ImmutableSet.copyOf(BridgeUtils.convertRolesQuietly(acct.getGroups()));
     }
     
     @Override
@@ -144,13 +149,19 @@ public class StormpathAccount implements Account {
         acct.setEmail(email);
         acct.setUsername(email);
     }
-    @Override
     public String getHealthId(){
         return decryptFrom(healthIdKey);
     }
     @Override
-    public void setHealthId(String healthId) {
-        encryptTo(healthIdKey, healthId);
+    public String getHealthCode(){
+        return healthCode;
+    }
+    @Override
+    public void setHealthId(HealthId healthId) {
+        if (healthId != null) {
+            encryptTo(healthIdKey, healthId.getId());
+            this.healthCode = healthId.getCode();
+        }
     };
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {

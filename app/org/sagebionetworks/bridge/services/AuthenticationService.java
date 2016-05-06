@@ -6,8 +6,10 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -24,7 +26,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -55,12 +57,13 @@ public class AuthenticationService {
     
     private final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
 
+    private static final Set<Roles> NO_CALLER_ROLES = Sets.newHashSet();
+    
     private CacheProvider cacheProvider;
     private BridgeConfig config;
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
-    private HealthCodeService healthCodeService;
     private StudyEnrollmentService studyEnrollmentService;
     private UserConsentDao userConsentDao;
     private StudyConsentDao studyConsentDao;
@@ -90,10 +93,6 @@ public class AuthenticationService {
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
-    }
-    @Autowired
-    final void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
     }
     @Autowired
     final void setStudyEnrollmentService(StudyEnrollmentService studyEnrollmentService) {
@@ -163,7 +162,7 @@ public class AuthenticationService {
         }
     }
 
-    public void signUp(Study study, StudyParticipant participant, boolean suppressEmail) {
+    public IdentifierHolder signUp(Study study, StudyParticipant participant) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(participant, "Participant cannot be null");
         
@@ -172,23 +171,21 @@ public class AuthenticationService {
         if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
             throw new StudyLimitExceededException(study);
         }
+        IdentifierHolder holder = null;
         try {
-            
-            participantService.createParticipant(study, Sets.newHashSet(), participant, suppressEmail);  
+            // Since caller has no roles, no roles can be assigned on sign up.
+            holder = participantService.createParticipant(study, NO_CALLER_ROLES, participant, false);
             
         } catch(EntityAlreadyExistsException e) {
             // Suppress this. Otherwise it the response reveals that the email has already been taken, 
             // and you can infer who is in the study from the response. Instead send a reset password 
             // request to the email address in case user has forgotten password and is trying to sign 
-            // up again. Non-anonymous sign ups (sign ups done by admins on behalf of users) still get a 404
-            if (!suppressEmail) {
-                Email email = new Email(study.getIdentifier(), participant.getEmail());
-                requestResetPassword(study, email);
-                logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
-            } else {
-                throw e;
-            }
+            // up again.
+            Email email = new Email(study.getIdentifier(), participant.getEmail());
+            requestResetPassword(study, email);
+            logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
         }
+        return holder;
     }
 
     public UserSession verifyEmail(Study study, CriteriaContext context, EmailVerification verification) throws ConsentRequiredException {
@@ -293,7 +290,7 @@ public class AuthenticationService {
         final User user = new User(account);
         user.setStudyKey(study.getIdentifier());
 
-        final String healthCode = getHealthCode(study, account);
+        final String healthCode = account.getHealthCode();
         user.setHealthCode(healthCode);
         
         ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
@@ -333,25 +330,5 @@ public class AuthenticationService {
         // Internal session token to identify sessions internally (e.g. in metrics)
         newSession.setInternalSessionToken(BridgeUtils.generateGuid());
         return newSession;
-    }
-
-    /**
-     * Any user who authenticates has a health ID/code generated and assigned. It happens at authentication 
-     * because some users are automatically marked as consented, which means we have these users accessing 
-     * all the APIs that expect users to have health codes, which unknown consequences if they don't. We 
-     * do not have to do it at sign up or when the user actually consents (interestingly enough). 
-     * @param study
-     * @param account
-     * @return
-     */
-    private String getHealthCode(Study study, Account account) {
-        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-        if (healthId == null) {
-            healthId = healthCodeService.createMapping(study);
-            account.setHealthId(healthId.getId());
-            accountDao.updateAccount(study, account);
-            logger.debug("Health ID/code pair created for " + account.getId() + " in study " + study.getName());
-        }
-        return healthId.getCode();
     }
 }

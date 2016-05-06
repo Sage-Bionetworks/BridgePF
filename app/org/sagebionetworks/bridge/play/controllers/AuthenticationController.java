@@ -25,7 +25,6 @@ import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableSet;
 
 @Controller
 public class AuthenticationController extends BaseController {
@@ -47,12 +46,8 @@ public class AuthenticationController extends BaseController {
         JsonNode json = requestToJSON(request());
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        // You cannot set roles through the signUp() method.
-        if (!participant.getRoles().isEmpty()) {
-            participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build();
-        }
         Study study = getStudyOrThrowException(json);
-        authenticationService.signUp(study, participant, false);
+        authenticationService.signUp(study, participant);
         return createdResult("Signed up.");
     }
 

@@ -49,7 +49,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -84,9 +84,6 @@ public class AuthenticationServiceTest {
     
     @Resource
     private AccountDao accountDao;
-    
-    @Resource
-    private HealthCodeService healthCodeService;
     
     @Resource
     private StudyService studyService;
@@ -261,16 +258,14 @@ public class AuthenticationServiceTest {
         authService.setOptionsService(optionsService);
         accountDao = spy(accountDao);
         
-        authService.signUp(study, testUser.getStudyParticipant(), false);
+        authService.signUp(study, testUser.getStudyParticipant());
 
         UserSession session = authService.signIn(study, testUser.getCriteriaContext(), testUser.getSignIn());
         Account account = accountDao.getAccount(study, session.getUser().getId());
         
-        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-        
-        verify(authService).signUp(any(Study.class), any(StudyParticipant.class), eq(true));
+        verify(authService).signUp(eq(study), any(StudyParticipant.class));
         // Verify that data groups were set correctly as an option
-        Set<String> persistedGroups = optionsService.getOptions(healthId.getCode()).getStringSet(DATA_GROUPS);
+        Set<String> persistedGroups = optionsService.getOptions(account.getHealthCode()).getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);
     }
     
@@ -303,7 +298,7 @@ public class AuthenticationServiceTest {
         
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
-        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant(), false);
+        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant());
         verify(authService).requestResetPassword(any(Study.class), any(Email.class));
     }
     
@@ -366,7 +361,7 @@ public class AuthenticationServiceTest {
             data.remove(subpop.getGuidString()+"_signatures");
             data.remove(subpop.getGuidString()+"_signatures_version");                
         }
-        accountDao.updateAccount(testUser.getStudy(), account);
+        accountDao.updateAccount(account);
         
         // Signing in should still work to create a consented user.
         Study study = studyService.getStudy(testUser.getStudyIdentifier());
@@ -472,5 +467,18 @@ public class AuthenticationServiceTest {
                 .getUser().getDataGroups();
 
         assertEquals(UPDATED_DATA_GROUPS, retrievedSessionDataGroups);
+    }
+    
+    @Test
+    public void signUpWillNotSetRoles() {
+        String email = TestUtils.makeRandomTestEmail(AuthenticationServiceTest.class);
+        Set<Roles> roles = Sets.newHashSet(Roles.DEVELOPER, Roles.RESEARCHER);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(email).withPassword("P@ssword`1").withRoles(roles).build();
+        
+        IdentifierHolder idHolder = authService.signUp(study, participant);
+        
+        participant = participantService.getParticipant(study, Sets.newHashSet(), idHolder.getIdentifier());
+        assertTrue(participant.getRoles().isEmpty());
     }
 }

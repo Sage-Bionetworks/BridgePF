@@ -43,8 +43,9 @@ public interface Account extends BridgeEntity {
     
     public Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
     
-    public String getHealthId();
-    public void setHealthId(String healthId);
+    public String getHealthCode();
+
+    public void setHealthId(HealthId healthId);
 
     public AccountStatus getStatus();
     public void setStatus(AccountStatus status);

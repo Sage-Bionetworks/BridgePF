@@ -96,7 +96,7 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        IdentifierHolder holder = participantService.createParticipant(study, session.getUser().getRoles(), participant, true);
+        IdentifierHolder holder = participantService.createParticipant(study, session.getUser().getRoles(), participant, false);
         
         return createdResult(holder);
     }

@@ -163,7 +163,7 @@ public class ConsentService {
         }
         
         account.getConsentSignatureHistory(subpopGuid).add(consentSignature);
-        accountDao.updateAccount(study, account);
+        accountDao.updateAccount(account);
         
         UserConsent userConsent = null;
         try {
@@ -172,7 +172,7 @@ public class ConsentService {
         } catch (Throwable e) {
             int len = account.getConsentSignatureHistory(subpopGuid).size();
             account.getConsentSignatureHistory(subpopGuid).remove(len-1);
-            accountDao.updateAccount(study, account);
+            accountDao.updateAccount(account);
             throw e;
         }
         // Save supplemental records, fire events, etc.
@@ -246,14 +246,14 @@ public class ConsentService {
         int index = account.getConsentSignatureHistory(subpopGuid).indexOf(active); // should be length-1
         
         account.getConsentSignatureHistory(subpopGuid).set(index, withdrawn);
-        accountDao.updateAccount(study, account);
+        accountDao.updateAccount(account);
 
         try {
             userConsentDao.withdrawConsent(user.getHealthCode(), subpopGuid, withdrewOn);    
         } catch(Exception e) {
             // Could not record the consent, compensate and rethrow the exception
             account.getConsentSignatureHistory(subpopGuid).set(index, active);
-            accountDao.updateAccount(study, account);
+            accountDao.updateAccount(account);
             throw e;
         }
         

@@ -205,7 +205,7 @@ public class ConsentServiceMockTest {
         
         verify(userConsentDao).withdrawConsent(user.getHealthCode(), SUBPOP_GUID, UNIX_TIMESTAMP);
         verify(accountDao).getAccount(study, user.getId());
-        verify(accountDao).updateAccount(any(Study.class), captor.capture());
+        verify(accountDao).updateAccount(captor.capture());
         // It happens twice because we do it the first time to set up the test properly
         //verify(account, times(2)).getConsentSignatures(setterCaptor.capture());
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -263,7 +263,7 @@ public class ConsentServiceMockTest {
         } catch(BridgeServiceException e) {
         }
         verify(accountDao).getAccount(any(), any());
-        verify(accountDao, times(2)).updateAccount(any(), captor.capture());
+        verify(accountDao, times(2)).updateAccount(captor.capture());
         verifyNoMoreInteractions(sendMailService);
         
         Account account = captor.getAllValues().get(1);

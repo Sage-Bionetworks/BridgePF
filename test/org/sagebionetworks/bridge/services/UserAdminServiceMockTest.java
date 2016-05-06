@@ -28,7 +28,7 @@ import com.google.common.collect.Maps;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserAdminServiceMockTest {
-  
+    
     @Mock
     private AuthenticationService authenticationService;
     
@@ -72,7 +72,7 @@ public class UserAdminServiceMockTest {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
-        UserSession session = service.createUser(participant, study, null, true, true);
+        UserSession session = service.createUser(study, participant, null, true, true);
         
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             verify(consentService).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
@@ -85,7 +85,7 @@ public class UserAdminServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = Iterables.getFirst(user.getConsentStatuses().keySet(), null);
         
-        UserSession session = service.createUser(participant, study, consentedGuid, true, true);
+        UserSession session = service.createUser(study, participant, consentedGuid, true, true);
         
         // consented to the indicated subpopulation
         verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -47,14 +46,12 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -73,13 +70,13 @@ import com.google.common.collect.Sets;
 public class ParticipantServiceTest {
 
     private static final String EXTERNAL_ID = "externalId";
-    private static final String HEALTH_ID = "healthId";
     private static final String HEALTH_CODE = "healthCode";
     private static final String PHONE = "phone";
     private static final String LAST_NAME = "lastName";
     private static final String FIRST_NAME = "firstName";
     private static final String PASSWORD = "P@ssword1";
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(RESEARCHER);
+    private static final Set<Roles> USER_ROLES = Sets.newHashSet(DEVELOPER);
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final LinkedHashSet<String> USER_LANGUAGES = (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet("de,fr");
@@ -94,6 +91,7 @@ public class ParticipantServiceTest {
             .withPassword(PASSWORD)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
             .withNotifyByEmail(true)
+            .withRoles(USER_ROLES)
             .withDataGroups(STUDY_DATA_GROUPS)
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
@@ -125,16 +123,10 @@ public class ParticipantServiceTest {
     private SubpopulationService subpopService;
     
     @Mock
-    private HealthCodeService healthCodeService;
-    
-    @Mock
     private ConsentService consentService;
     
     @Mock
     private Account account;
-    
-    @Mock
-    private HealthId healthId;
     
     @Mock
     private ParticipantOptionsLookup lookup;
@@ -167,20 +159,17 @@ public class ParticipantServiceTest {
         participantService.setAccountDao(accountDao);
         participantService.setParticipantOptionsService(optionsService);
         participantService.setSubpopulationService(subpopService);
-        participantService.setHealthCodeService(healthCodeService);
         participantService.setUserConsent(consentService);
         participantService.setCacheProvider(cacheProvider);
         participantService.setExternalIdService(externalIdService);
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
-        doReturn(HEALTH_ID).when(account).getHealthId();
         doReturn(ID).when(account).getId();
-        doReturn(healthId).when(healthCodeService).getMapping(HEALTH_ID);
-        doReturn(HEALTH_CODE).when(healthId).getCode();
         
-        doReturn(account).when(accountDao).initializeAccount(STUDY, EMAIL, PASSWORD);
+        doReturn(account).when(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         doReturn(account).when(accountDao).getAccount(STUDY, ID);
+        doReturn(HEALTH_CODE).when(account).getHealthCode();
     }
 
     @Test
@@ -194,7 +183,7 @@ public class ParticipantServiceTest {
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         verify(externalIdService).assignExternalId(STUDY, "POWERS", HEALTH_CODE);
         
-        verify(accountDao).initializeAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
@@ -213,6 +202,7 @@ public class ParticipantServiceTest {
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
         verify(account).setAttribute(PHONE, "123456789");
+        verify(account).setRoles(USER_ROLES);
         // Not called on create
         verify(account, never()).setStatus(AccountStatus.DISABLED);
         
@@ -236,7 +226,6 @@ public class ParticipantServiceTest {
         verify(externalIdService).reserveExternalId(STUDY, "POWERS");
         verifyNoMoreInteractions(accountDao);
         verifyNoMoreInteractions(optionsService);
-        verifyNoMoreInteractions(healthCodeService);        
     }
     
     @Test
@@ -266,7 +255,6 @@ public class ParticipantServiceTest {
         verifyNoMoreInteractions(accountDao);
         verifyNoMoreInteractions(optionsService);
         verifyNoMoreInteractions(externalIdService);
-        verifyNoMoreInteractions(healthCodeService);
     }
     
     @Test
@@ -329,7 +317,7 @@ public class ParticipantServiceTest {
     public void getStudyParticipant() {
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
-        when(account.getHealthId()).thenReturn(HEALTH_ID);
+        when(account.getHealthCode()).thenReturn(HEALTH_CODE);
         when(account.getFirstName()).thenReturn(FIRST_NAME);
         when(account.getLastName()).thenReturn(LAST_NAME);
         when(account.getEmail()).thenReturn(EMAIL);
@@ -408,41 +396,6 @@ public class ParticipantServiceTest {
         assertNull(participant.getHealthCode());
     }
     
-    @Test
-    public void getStudyParticipantWithoutHealthCode() {
-        // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
-        DateTime createdOn = DateTime.now();
-        when(account.getHealthId()).thenReturn(null);
-        when(account.getFirstName()).thenReturn(FIRST_NAME);
-        when(account.getLastName()).thenReturn(LAST_NAME);
-        when(account.getEmail()).thenReturn(EMAIL);
-        when(account.getId()).thenReturn(ID);
-        when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
-        when(account.getCreatedOn()).thenReturn(createdOn);
-        when(account.getAttribute("attr2")).thenReturn("anAttribute2");
-        
-        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
-        when(healthId.getCode()).thenReturn(null);
-        
-        StudyParticipant participant = participantService.getParticipant(STUDY, CALLER_ROLES, ID);
-        
-        assertEquals(FIRST_NAME, participant.getFirstName());
-        assertEquals(LAST_NAME, participant.getLastName());
-        assertFalse(participant.isNotifyByEmail());
-        assertTrue(participant.getDataGroups().isEmpty());
-        assertNull(participant.getExternalId());
-        assertNull(participant.getSharingScope());
-        assertNull(participant.getHealthCode());
-        assertEquals(EMAIL, participant.getEmail());
-        assertEquals(ID, participant.getId());
-        assertEquals(AccountStatus.DISABLED, participant.getStatus());
-        assertEquals(createdOn, participant.getCreatedOn());
-        assertTrue(participant.getLanguages().isEmpty());
-        assertNull(participant.getAttributes().get("attr1"));
-        assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
-        assertTrue(participant.getConsentHistories().isEmpty());
-    }
-
     @Test(expected = EntityNotFoundException.class)
     public void signOutUserWhoDoesNotExist() {
         when(accountDao.getAccount(STUDY, ID)).thenReturn(null);
@@ -495,7 +448,7 @@ public class ParticipantServiceTest {
         assertTrue(options.get(LANGUAGES).contains("fr"));
         assertNull(options.get(EXTERNAL_IDENTIFIER));
         
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
@@ -568,8 +521,7 @@ public class ParticipantServiceTest {
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
-        verify(accountDao, never()).updateAccount(eq(STUDY), any());
-        verifyNoMoreInteractions(healthCodeService);
+        verify(accountDao, never()).updateAccount(any());
         verifyNoMoreInteractions(optionsService);
         verifyNoMoreInteractions(externalIdService);
     }
@@ -585,16 +537,6 @@ public class ParticipantServiceTest {
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
         assertEquals("POWERS", options.get(EXTERNAL_IDENTIFIER));
-    }
-    
-    @Test(expected = BridgeServiceException.class)
-    public void updateParticipantWithNoHealthCode() {
-        STUDY.setExternalIdValidationEnabled(true);
-        doReturn(null).when(healthCodeService).getMapping(HEALTH_ID);
-        doReturn(null).when(account).getHealthId();
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
-        
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
     }
     
     @Test
@@ -736,7 +678,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, true);
         
-        verify(accountDao).initializeAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
@@ -753,7 +695,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, roles, ID, participant);
 
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
 
         if (status == null) {
@@ -771,7 +713,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, true);
         
-        verify(accountDao).initializeAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
@@ -790,7 +732,7 @@ public class ParticipantServiceTest {
                 .withRoles(rolesThatAreSet).build();
         participantService.updateParticipant(STUDY, callerRoles, ID, participant);
         
-        verify(accountDao).updateAccount(eq(STUDY), accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
         
         if (expected != null) {
