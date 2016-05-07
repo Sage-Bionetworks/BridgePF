@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @BridgeTypeName("HealthData")
 @JsonDeserialize(as = DynamoHealthDataRecord.class)
 public interface HealthDataRecord extends BridgeEntity {
-    public static final ObjectWriter PUBLIC_RECORD_WRITER = new BridgeObjectMapper().writer(
+    ObjectWriter PUBLIC_RECORD_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
                     SimpleBeanPropertyFilter.serializeAllExcept("healthCode")));
 
@@ -56,6 +56,11 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** ID of the upload this health data record was built from, if applicable. */
     String getUploadId();
+
+    /**
+     * When the data was uploaded to Bridge in epoch milliseconds. Used as an index for hourly and on-demand exports.
+     */
+    Long getUploadedOn();
 
     /** Whether this record should be shared with all researchers, only study researchers, or not at all. */
     ParticipantOption.SharingScope getUserSharingScope();

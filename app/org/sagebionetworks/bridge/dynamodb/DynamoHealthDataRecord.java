@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.fasterxml.jackson.annotation.JsonFilter;
 
 import java.util.Set;
@@ -23,7 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecord}. */
-@DynamoThroughput(readCapacity=50, writeCapacity=50)
+@DynamoThroughput(readCapacity=43, writeCapacity=10)
 @DynamoDBTable(tableName = "HealthDataRecord3")
 @JsonFilter("filter")
 public class DynamoHealthDataRecord implements HealthDataRecord {
@@ -37,6 +38,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private String studyId;
     private LocalDate uploadDate;
     private String uploadId;
+    private Long uploadedOn;
     private ParticipantOption.SharingScope userSharingScope;
     private String userExternalId;
     private Set<String> userDataGroups;
@@ -126,6 +128,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "study-uploadedOn-index")
     @Override
     public String getStudyId() {
         return studyId;
@@ -160,6 +163,20 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     /** @see #getUploadId */
     public void setUploadId(String uploadId) {
         this.uploadId = uploadId;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBIndexRangeKey(attributeName = "uploadedOn", globalSecondaryIndexName = "study-uploadedOn-index")
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @Override
+    public Long getUploadedOn() {
+        return uploadedOn;
+    }
+
+    /** @see #getUploadedOn */
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
+    public void setUploadedOn(Long uploadedOn) {
+        this.uploadedOn = uploadedOn;
     }
 
     /** {@inheritDoc} */
@@ -224,6 +241,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
             record.setStudyId(getStudyId());
             record.setUploadDate(getUploadDate());
             record.setUploadId(getUploadId());
+            record.setUploadedOn(getUploadedOn());
             record.setUserSharingScope(getUserSharingScope());
             record.setUserExternalId(getUserExternalId());
             record.setUserDataGroups(getUserDataGroups());
