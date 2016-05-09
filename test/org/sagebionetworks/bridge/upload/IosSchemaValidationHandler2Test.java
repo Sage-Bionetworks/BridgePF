@@ -14,11 +14,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.joda.time.LocalDate;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -42,6 +43,7 @@ public class IosSchemaValidationHandler2Test {
     private static final String TEST_STUDY_ID = "test-study";
     private static final String TEST_UPLOAD_DATE_STRING = "2015-04-13";
     private static final String TEST_UPLOAD_ID = "test-upload";
+    private static final DateTime MOCK_NOW = DateTime.parse("2016-05-06T16:36:59.747-0700");
 
     private static final Map<String, Map<String, Integer>> DEFAULT_SCHEMA_REV_MAP =
             ImmutableMap.<String, Map<String, Integer>>of(TEST_STUDY_ID,
@@ -52,6 +54,8 @@ public class IosSchemaValidationHandler2Test {
 
     @Before
     public void setup() {
+        DateTimeUtils.setCurrentMillisFixed(MOCK_NOW.getMillis());
+
         // set up common params for test context
         // dummy study, all we need is the ID
         StudyIdentifier study = new StudyIdentifierImpl(TEST_STUDY_ID);
@@ -181,6 +185,11 @@ public class IosSchemaValidationHandler2Test {
 
         // health data dao is only used for getBuilder(), so we can just create one without any depedencies
         handler.setHealthDataDao(new DynamoHealthDataDao());
+    }
+
+    @After
+    public void cleanup() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
@@ -679,15 +688,14 @@ public class IosSchemaValidationHandler2Test {
     }
 
     private static void validateCommonProps(UploadValidationContext ctx) {
-        LocalDate todaysDate = LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE);
-
         assertEquals(TEST_APP_VERSION, ctx.getAppVersion().intValue());
 
         HealthDataRecordBuilder recordBuilder = ctx.getHealthDataRecordBuilder();
         assertEquals(TEST_HEALTHCODE, recordBuilder.getHealthCode());
         assertEquals(TEST_STUDY_ID, recordBuilder.getStudyId());
-        assertEquals(todaysDate, recordBuilder.getUploadDate());
+        assertEquals(MOCK_NOW.toLocalDate(), recordBuilder.getUploadDate());
         assertEquals(TEST_UPLOAD_ID, recordBuilder.getUploadId());
+        assertEquals(MOCK_NOW.getMillis(), recordBuilder.getUploadedOn().longValue());
 
         // Don't parse into the metadata. Just check that it exists and is an object node.
         assertTrue(recordBuilder.getMetadata().isObject());

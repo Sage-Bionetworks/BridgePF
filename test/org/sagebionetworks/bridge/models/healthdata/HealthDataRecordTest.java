@@ -70,6 +70,7 @@ public class HealthDataRecordTest {
         JsonNode data = BridgeObjectMapper.get().readTree("{\"myData\":\"myDataValue\"}");
         JsonNode metadata = BridgeObjectMapper.get().readTree("{\"myMetadata\":\"myMetaValue\"}");
         long arbitraryTimestamp = 1424136378727L;
+        long uploadedOn = 1462575525894L;
 
         // arbitrarily 2015-02-12
         LocalDate uploadDate = new LocalDate(2014, 2, 12);
@@ -78,7 +79,7 @@ public class HealthDataRecordTest {
         HealthDataRecord record = DAO.getRecordBuilder().withData(data).withHealthCode("required healthcode")
                 .withId("optional record ID").withCreatedOn(arbitraryTimestamp).withMetadata(metadata)
                 .withSchemaId("required schema").withSchemaRevision(3).withStudyId("required study")
-                .withUploadDate(uploadDate).withUploadId("optional upload ID")
+                .withUploadDate(uploadDate).withUploadId("optional upload ID").withUploadedOn(uploadedOn)
                 .withUserExternalId("optional external ID")
                 .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
                 .withUserDataGroups(USER_DATA_GROUPS)
@@ -93,6 +94,7 @@ public class HealthDataRecordTest {
         assertEquals("required study", record.getStudyId());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("optional upload ID", record.getUploadId());
+        assertEquals(uploadedOn, record.getUploadedOn().longValue());
         assertEquals("optional external ID", record.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
         assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
@@ -114,6 +116,7 @@ public class HealthDataRecordTest {
         assertEquals("required study", copyRecord.getStudyId());
         assertEquals("2014-02-12", copyRecord.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("optional upload ID", copyRecord.getUploadId());
+        assertEquals(uploadedOn, copyRecord.getUploadedOn().longValue());
         assertEquals("optional external ID", copyRecord.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, copyRecord.getUserSharingScope());
         assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
@@ -293,6 +296,9 @@ public class HealthDataRecordTest {
 
     @Test
     public void testSerialization() throws Exception {
+        String uploadedOnStr = "2016-05-06T16:01:22.307-0700";
+        long uploadedOn = DateTime.parse(uploadedOnStr).getMillis();
+
         // start with JSON
         String jsonText = "{\n" +
                 "   \"createdOn\":\"2014-02-12T13:45-0800\",\n" +
@@ -305,6 +311,7 @@ public class HealthDataRecordTest {
                 "   \"studyId\":\"json study\",\n" +
                 "   \"uploadDate\":\"2014-02-12\",\n" +
                 "   \"uploadId\":\"json upload\",\n" +
+                "   \"uploadedOn\":\"" + uploadedOnStr + "\",\n" +
                 "   \"userSharingScope\":\"all_qualified_researchers\",\n" +
                 "   \"userExternalId\":\"ABC-123-XYZ\",\n" +
                 "   \"version\":42\n" +
@@ -321,6 +328,7 @@ public class HealthDataRecordTest {
         assertEquals("json study", record.getStudyId());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("json upload", record.getUploadId());
+        assertEquals(uploadedOn, record.getUploadedOn().longValue());
         assertEquals(ParticipantOption.SharingScope.ALL_QUALIFIED_RESEARCHERS, record.getUserSharingScope());
         assertEquals("ABC-123-XYZ", record.getUserExternalId());
         assertEquals(42, record.getVersion().longValue());
@@ -336,7 +344,7 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(14, jsonMap.size());
+        assertEquals(15, jsonMap.size());
         assertEquals("json healthcode", jsonMap.get("healthCode"));
         assertEquals("json record ID", jsonMap.get("id"));
         assertEquals("json schema", jsonMap.get("schemaId"));
@@ -344,6 +352,7 @@ public class HealthDataRecordTest {
         assertEquals("json study", jsonMap.get("studyId"));
         assertEquals("2014-02-12", jsonMap.get("uploadDate"));
         assertEquals("json upload", jsonMap.get("uploadId"));
+        assertEquals(uploadedOn, DateTime.parse((String) jsonMap.get("uploadedOn")).getMillis());
         assertEquals("all_qualified_researchers", jsonMap.get("userSharingScope"));
         assertEquals("ABC-123-XYZ", jsonMap.get("userExternalId"));
         assertEquals(42, jsonMap.get("version"));
@@ -365,7 +374,7 @@ public class HealthDataRecordTest {
 
         // Convert back to map again. Only validate a few key fields are present and the filtered fields are absent.
         Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(13, publicJsonMap.size());
+        assertEquals(14, publicJsonMap.size());
         assertFalse(publicJsonMap.containsKey("healthCode"));
         assertEquals("json record ID", publicJsonMap.get("id"));
     }
