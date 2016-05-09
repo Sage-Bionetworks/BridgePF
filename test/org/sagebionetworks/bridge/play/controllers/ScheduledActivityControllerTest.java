@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -100,15 +101,13 @@ public class ScheduledActivityControllerTest {
         String json = BridgeObjectMapper.get().writeValueAsString(list);
         TestUtils.mockPlayContextWithJson(json);
         
-        session = new UserSession();
-        User user = new User();
-        user.setHealthCode("BBB");
-        user.setStudyKey(TestConstants.TEST_STUDY_IDENTIFIER);
-        user.setDataGroups(Sets.newHashSet("group1"));
-        user.setLanguages(TestUtils.newLinkedHashSet("en","fr"));
-        user.setAccountCreatedOn(ACCOUNT_CREATED_ON);
-        user.setId(ID);
-        session.setUser(user);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("BBB")
+                .withDataGroups(Sets.newHashSet("group1"))
+                .withLanguages(TestUtils.newLinkedHashSet("en","fr"))
+                .withCreatedOn(ACCOUNT_CREATED_ON)
+                .withId(ID).build();
+        session = new UserSession(participant);
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
         
         when(scheduledActivityService.getScheduledActivities(any(User.class), any(ScheduleContext.class))).thenReturn(list);

@@ -26,25 +26,23 @@ public class UserSessionTest {
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
         statuses.put(guid, status);
         
-        User user = new User();
-        user.setId("id");
-        user.setFirstName("firstName");
-        user.setLastName("lastName");
-        user.setEmail("email");
-        user.setHealthCode("healthCode");
-        user.setStudyKey("study-key-2");
-        user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
-        user.setRoles(Sets.newHashSet(Roles.ADMIN));
-        user.setDataGroups(Sets.newHashSet("group1", "group2"));
-        user.setConsentStatuses(statuses);
+        StudyParticipant participant = new StudyParticipant.Builder()
+            .withId("id")
+            .withFirstName("firstName")
+            .withLastName("lastName")
+            .withEmail("email")
+            .withHealthCode("healthCode")
+            .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+            .withRoles(Sets.newHashSet(Roles.ADMIN))
+            .withDataGroups(Sets.newHashSet("group1", "group2")).build();
         
-        UserSession session = new UserSession();
+        UserSession session = new UserSession(participant);
         session.setSessionToken("ABC");
         session.setInternalSessionToken("BBB");
         session.setAuthenticated(true);
         session.setEnvironment(Environment.PROD);
         session.setStudyIdentifier(new StudyIdentifierImpl("study-key"));
-        session.setUser(user);
+        session.setConsentStatuses(statuses);
         
         String json = new ObjectMapper().writeValueAsString(session);
         UserSession newSession = new ObjectMapper().readValue(json, UserSession.class);

@@ -163,7 +163,6 @@ public abstract class BaseController extends Controller {
     }
 
     void updateSessionUser(UserSession session, User user) {
-        session.setUser(user);
         cacheProvider.setUserSession(session);
     }
 

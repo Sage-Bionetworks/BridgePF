@@ -507,12 +507,17 @@ public class AuthenticationControllerMockTest {
     }
 
     private static UserSession createSessionWithUser(User user) {
-        UserSession session = new UserSession();
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withId(TEST_USER_STORMPATH_ID)
+                .withRoles(user.getRoles())
+                .build();
+        
+        UserSession session = new UserSession(participant);
         session.setAuthenticated(true);
         session.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
         session.setSessionToken(TEST_SESSION_TOKEN);
         session.setStudyIdentifier(TEST_STUDY_ID);
-        session.setUser(user);
+        session.setConsentStatuses(user.getConsentStatuses());
         return session;
     }
 }

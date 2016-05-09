@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -27,11 +27,9 @@ public class UserDataDownloadControllerTest {
 
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("test-study");
-        User user = new User();
 
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
-        mockSession.setUser(user);
 
         // mock request JSON
         String dateRangeJsonText = "{\n" +
@@ -54,7 +52,7 @@ public class UserDataDownloadControllerTest {
 
         // validate args sent to mock service
         ArgumentCaptor<DateRange> dateRangeCaptor = ArgumentCaptor.forClass(DateRange.class);
-        verify(mockService).requestUserData(eq(studyIdentifier), same(user), dateRangeCaptor.capture());
+        verify(mockService).requestUserData(eq(studyIdentifier), any(User.class), dateRangeCaptor.capture());
 
         DateRange dateRange = dateRangeCaptor.getValue();
         assertEquals("2015-08-15", dateRange.getStartDate().toString());

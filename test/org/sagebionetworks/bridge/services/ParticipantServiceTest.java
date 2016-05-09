@@ -55,7 +55,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -420,17 +419,16 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        User user = new User();
-        user.setHealthCode(HEALTH_CODE);
-        user.setEmail(EMAIL);
-        user.setId(ID);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withEmail(EMAIL)
+                .withId(ID).build();
         
-        UserSession oldSession = new UserSession();
+        UserSession oldSession = new UserSession(participant);
         oldSession.setSessionToken("sessionToken");
         oldSession.setInternalSessionToken("internalSessionToken");
         oldSession.setEnvironment(Environment.DEV);
         oldSession.setAuthenticated(true);
-        oldSession.setUser(user);
         oldSession.setStudyIdentifier(STUDY.getStudyIdentifier());
         doReturn(oldSession).when(cacheProvider).getUserSessionByUserId(ID);
 

@@ -68,7 +68,7 @@ public class AuthenticationController extends BaseController {
             throw new ConsentRequiredException(session);
         }
 
-        return okResult(new UserSessionInfo(session));
+        return okResult(UserSessionInfo.toJSON(session));
     }
 
     public Result resendEmailVerification() throws Exception {
@@ -129,7 +129,7 @@ public class AuthenticationController extends BaseController {
             throw new ConsentRequiredException(session);
         }
 
-        return okResult(new UserSessionInfo(session));
+        return okResult(UserSessionInfo.toJSON(session));
     }
 
     /**

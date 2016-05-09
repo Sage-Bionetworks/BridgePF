@@ -76,7 +76,7 @@ public class ParticipantController extends BaseController {
         session = authenticationService.updateSession(study, context, userId);
         updateSessionUser(session, session.getUser());
         
-        return okResult(new UserSessionInfo(session));
+        return okResult(UserSessionInfo.toJSON(session));
     }
     
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter) {

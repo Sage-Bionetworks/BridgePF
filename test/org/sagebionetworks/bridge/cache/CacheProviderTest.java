@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -59,12 +60,12 @@ public class CacheProviderTest {
 
     @Test
     public void testSetUserSession() throws Exception {
-        User user = new User();
-        user.setEmail("userEmail");
-        user.setId(userId);
-        user.setHealthCode("healthCode");
-        UserSession session = new UserSession();
-        session.setUser(user);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail("userEmail")
+                .withId(userId)
+                .withHealthCode("healthCode").build();
+        
+        UserSession session = new UserSession(participant);
         session.setSessionToken(sessionToken);
         cacheProvider.setUserSession(session);
         String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
@@ -76,12 +77,12 @@ public class CacheProviderTest {
 
     @Test
     public void testSetUserSessionNullSessionToken() throws Exception {
-        User user = new User();
-        user.setEmail("userEmail");
-        user.setId(userId);
-        user.setHealthCode("healthCode");
-        UserSession session = new UserSession();
-        session.setUser(user);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail("userEmail")
+                .withId(userId)
+                .withHealthCode("healthCode").build();
+        
+        UserSession session = new UserSession(participant);
         try {
             cacheProvider.setUserSession(session);
         } catch(NullPointerException e) {
@@ -98,7 +99,7 @@ public class CacheProviderTest {
 
     @Test
     public void testSetUserSessionNullUser() throws Exception {
-        UserSession session = new UserSession();
+        UserSession session = new UserSession(null);
         session.setSessionToken(sessionToken);
         try {
             cacheProvider.setUserSession(session);
@@ -116,11 +117,11 @@ public class CacheProviderTest {
 
     @Test
     public void testSetUserSessionNullUserId() throws Exception {
-        User user = new User();
-        user.setEmail("userEmail");
-        user.setHealthCode("healthCode");
-        UserSession session = new UserSession();
-        session.setUser(user);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail("userEmail")
+                .withHealthCode("healthCode").build();        
+        
+        UserSession session = new UserSession(participant);
         session.setSessionToken(sessionToken);
         try {
             cacheProvider.setUserSession(session);

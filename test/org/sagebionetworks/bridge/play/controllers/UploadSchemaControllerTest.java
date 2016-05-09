@@ -67,7 +67,7 @@ public class UploadSchemaControllerTest {
     public void createSchema() throws Exception {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("create-schema-study");
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock request JSON
@@ -102,7 +102,7 @@ public class UploadSchemaControllerTest {
     public void deleteSchemaByIdAndRevSuccess() {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("delete-schema-study");
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock UploadSchemaService
@@ -123,7 +123,7 @@ public class UploadSchemaControllerTest {
     public void deleteSchemaById() {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("delete-schema-study");
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock UploadSchemaService
@@ -144,7 +144,7 @@ public class UploadSchemaControllerTest {
     public void getSchemaById() throws Exception {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock UploadSchemaService
@@ -170,7 +170,7 @@ public class UploadSchemaControllerTest {
     public void getSchemaByIdAndRev() throws Exception {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock UploadSchemaService
@@ -196,7 +196,7 @@ public class UploadSchemaControllerTest {
     public void getSchemasForStudy() throws Exception {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock UploadSchemaService
@@ -230,7 +230,7 @@ public class UploadSchemaControllerTest {
         
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // Create a couple of revisions
@@ -284,7 +284,7 @@ public class UploadSchemaControllerTest {
     public void invalidSchemaThrowsCompleteValidationException() throws Exception {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("create-schema-study");
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock request JSON; this is pretty bad JSON. We want an error message back 
@@ -310,7 +310,7 @@ public class UploadSchemaControllerTest {
 
     private static UploadSchemaController setupControllerWithService(UploadSchemaService svc) throws Exception {
         // mock session
-        UserSession mockSession = new UserSession();
+        UserSession mockSession = new UserSession(null);
         mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
 
         // mock request JSON

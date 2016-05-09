@@ -344,7 +344,7 @@ public class AuthenticationServiceTest {
     // Consent statuses passed on to sessionInfo
     
     @Test
-    public void consentStatusesPresentInSession() {
+    public void consentStatusesPresentInSession() throws Exception {
         // User is consenting
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
@@ -353,7 +353,7 @@ public class AuthenticationServiceTest {
         // This is the object we pass back to the user, we want to see the statuses copied or present
         // all the way from the user to the sessionInfo. We test elsewhere that these are properly 
         // serialized/deserialized (SubpopulationGuidDeserializer)
-        UserSessionInfo sessionInfo = new UserSessionInfo(testUser.getSession());
+        UserSessionInfo sessionInfo = BridgeObjectMapper.get().treeToValue(UserSessionInfo.toJSON(testUser.getSession()), UserSessionInfo.class);
         
         ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
         assertTrue(status.isConsented());

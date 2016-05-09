@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -53,7 +52,9 @@ public class UserAdminServiceMockTest {
 
     private UserAdminService service;
     
-    private User user; 
+    private User user;
+    
+    private Map<SubpopulationGuid,ConsentStatus> statuses;
     
     @Before
     public void before() {
@@ -64,16 +65,13 @@ public class UserAdminServiceMockTest {
 
         // Make a user with multiple consent statuses, and just verify that we call the 
         // consent service that many times.
-        Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
+        statuses = Maps.newHashMap();
         addConsentStatus(statuses, "subpop1");
         addConsentStatus(statuses, "subpop2");
         addConsentStatus(statuses, "subpop3");
         
-        user = new User();
-        user.setConsentStatuses(statuses);
-        
-        UserSession session = new UserSession();
-        session.setUser(user);
+        UserSession session = new UserSession(null);
+        session.setConsentStatuses(statuses);
         
         when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
     }
@@ -103,7 +101,7 @@ public class UserAdminServiceMockTest {
         assertEquals(participant.getPassword(), signIn.getPassword());
         
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
-            verify(consentService).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
+            verify(consentService).consentToResearch(eq(study), eq(guid), eq(session.getUser()), any(), eq(SharingScope.NO_SHARING), eq(false));
         }
     }
     
@@ -111,14 +109,14 @@ public class UserAdminServiceMockTest {
     public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
-        SubpopulationGuid consentedGuid = Iterables.getFirst(user.getConsentStatuses().keySet(), null);
+        SubpopulationGuid consentedGuid = statuses.keySet().iterator().next();
         
         UserSession session = service.createUser(study, participant, consentedGuid, true, true);
         
         verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
         
         // consented to the indicated subpopulation
-        verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));
+        verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(session.getUser()), any(), eq(SharingScope.NO_SHARING), eq(false));
         // but not to the other two
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             if (guid != consentedGuid) {

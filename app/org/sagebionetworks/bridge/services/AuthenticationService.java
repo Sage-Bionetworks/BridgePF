@@ -32,7 +32,6 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -291,39 +290,42 @@ public class AuthenticationService {
     }
     
     private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
+        ParticipantOptionsLookup lookup = optionsService.getOptions(account.getHealthCode());
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName(account.getFirstName())
+                .withLastName(account.getLastName())
+                .withEmail(account.getEmail())
+                .withId(account.getId())
+                .withCreatedOn(account.getCreatedOn())
+                .withHealthCode(account.getHealthCode())
+                .withSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class))
+                .withDataGroups(lookup.getStringSet(DATA_GROUPS))
+                .withLanguages(lookup.getOrderedStringSet(LANGUAGES)).build();
+        
         final UserSession session = getSession(account);
+        session.setStudyParticipant(participant);
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setStudyIdentifier(study.getStudyIdentifier());
 
-        final User user = new User(account);
-        user.setStudyKey(study.getIdentifier());
-
-        final String healthCode = account.getHealthCode();
-        user.setHealthCode(healthCode);
-        
-        ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-        user.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
-        user.setDataGroups(lookup.getStringSet(DATA_GROUPS));
-        user.setLanguages(lookup.getOrderedStringSet(LANGUAGES));
-
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
         // from the context, add it to the user/session, and persist it.
-        if (user.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
-            user.setLanguages(context.getLanguages());
-            optionsService.setOrderedStringSet(study, healthCode, LANGUAGES, context.getLanguages());
+        if (participant.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
+            participant = new StudyParticipant.Builder().copyOf(participant)
+                    .withLanguages(context.getLanguages()).build();
+            session.setStudyParticipant(participant);
+            optionsService.setOrderedStringSet(study, account.getHealthCode(), LANGUAGES, context.getLanguages());
         }
         
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)
-                .withLanguages(user.getLanguages())
-                .withHealthCode(user.getHealthCode())
-                .withUserDataGroups(user.getDataGroups())
+                .withLanguages(session.getStudyParticipant().getLanguages())
+                .withHealthCode(session.getStudyParticipant().getHealthCode())
+                .withUserDataGroups(session.getStudyParticipant().getDataGroups())
                 .build();
-
-        user.setConsentStatuses(consentService.getConsentStatuses(newContext));
-        session.setUser(user);
         
+        session.setConsentStatuses(consentService.getConsentStatuses(newContext));
         repairConsents(account, session, newContext);
         
         return session;
@@ -334,7 +336,7 @@ public class AuthenticationService {
         if (session != null) {
             return session;
         }
-        final UserSession newSession = new UserSession();
+        final UserSession newSession = new UserSession(null);
         newSession.setSessionToken(BridgeUtils.generateGuid());
         // Internal session token to identify sessions internally (e.g. in metrics)
         newSession.setInternalSessionToken(BridgeUtils.generateGuid());

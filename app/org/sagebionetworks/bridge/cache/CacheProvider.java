@@ -41,7 +41,6 @@ public class CacheProvider {
     }
 
     public void setUserSession(final UserSession session) {
-
         checkNotNull(session);
         final User user = session.getUser();
         checkNotNull(user, "Missing user in session.");

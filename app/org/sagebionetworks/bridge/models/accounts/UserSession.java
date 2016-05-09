@@ -1,7 +1,13 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import java.util.Map;
+
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Maps;
 
 public class UserSession {
 
@@ -9,13 +15,20 @@ public class UserSession {
     private Environment environment;
     private String sessionToken;
     private String internalSessionToken;
-    private User user;
     private StudyIdentifier studyIdentifier;
+    private StudyParticipant participant;
+    private Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
 
-    public UserSession() {
-        this.user = new User();
+    public UserSession(StudyParticipant participant) {
+        this.participant = (participant == null) ? new StudyParticipant.Builder().build() : participant;
     }
 
+    public StudyParticipant getStudyParticipant() {
+        return participant;
+    }
+    public void setStudyParticipant(StudyParticipant participant) {
+        this.participant = participant;
+    }
     public String getSessionToken() {
         return sessionToken;
     }
@@ -46,10 +59,29 @@ public class UserSession {
     public void setStudyIdentifier(StudyIdentifier studyIdentifier) {
         this.studyIdentifier = studyIdentifier;
     }
+    @JsonIgnore
     public User getUser() {
+        User user = new User();
+        user.setId(participant.getId());
+        user.setFirstName(participant.getFirstName());
+        user.setLastName(participant.getLastName());
+        user.setEmail(participant.getEmail());
+        user.setHealthCode(participant.getHealthCode());
+        user.setSharingScope(participant.getSharingScope());
+        user.setAccountCreatedOn(participant.getCreatedOn());
+        user.setRoles(participant.getRoles());
+        user.setDataGroups(participant.getDataGroups());
+        user.setConsentStatuses(consentStatuses);
+        user.setLanguages(participant.getLanguages());
+        if (studyIdentifier != null) {
+            user.setStudyKey(studyIdentifier.getIdentifier());    
+        }
         return user;
     }
-    public void setUser(User user) {
-        this.user = user;
+    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses() {
+        return consentStatuses;
+    }
+    public void setConsentStatuses(Map<SubpopulationGuid,ConsentStatus> consentStatuses) {
+        this.consentStatuses = consentStatuses;
     }
 }

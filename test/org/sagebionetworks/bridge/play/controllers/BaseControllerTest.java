@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
@@ -191,8 +191,10 @@ public class BaseControllerTest {
         
         SchedulePlanController controller = spy(new SchedulePlanController());
         
-        UserSession session = new UserSession();
-        session.getUser().setRoles(Sets.newHashSet(Roles.RESEARCHER));
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+        
+        UserSession session = new UserSession(participant);
 
         doReturn(session).when(controller).getAuthenticatedSession();
 
@@ -280,7 +282,7 @@ public class BaseControllerTest {
     public void canGetLanguagesWhenInSession() {
         BaseController controller = new SchedulePlanController();
         
-        UserSession session = new UserSession();
+        UserSession session = new UserSession(null);
         session.getUser().setLanguages(LANGUAGE_SET);
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
@@ -300,11 +302,11 @@ public class BaseControllerTest {
         CacheProvider cacheProvider = mock(CacheProvider.class);
         controller.setCacheProvider(cacheProvider);
         
-        UserSession session = new UserSession();
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("AAA")
+                .withLanguages(Sets.newLinkedHashSet()).build();
+        UserSession session = new UserSession(participant);
         session.setStudyIdentifier(TEST_STUDY);
-        User user = session.getUser();
-        user.setHealthCode("AAA");
-        user.setLanguages(Sets.newLinkedHashSet());
         
         // Verify as well that the values retrieved from the header have been saved in session and ParticipantOptions table.
         LinkedHashSet<String> languages = controller.getLanguages(session);
@@ -325,7 +327,7 @@ public class BaseControllerTest {
         CacheProvider cacheProvider = mock(CacheProvider.class);
         controller.setCacheProvider(cacheProvider);
         
-        UserSession session = new UserSession();
+        UserSession session = new UserSession(null);
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());

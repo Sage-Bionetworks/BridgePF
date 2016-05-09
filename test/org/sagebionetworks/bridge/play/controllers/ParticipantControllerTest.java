@@ -42,7 +42,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -103,13 +102,12 @@ public class ParticipantControllerTest {
     
     @Before
     public void before() throws Exception {
-        User user = new User();
-        user.setRoles(CALLER_ROLES);
-        user.setId(ID);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withRoles(CALLER_ROLES)
+                .withId(ID).build();
         
-        UserSession session = new UserSession();
+        UserSession session = new UserSession(participant);
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
-        session.setUser(user);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
         doReturn(session).when(controller).getAuthenticatedSession();
