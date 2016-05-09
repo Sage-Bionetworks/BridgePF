@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -51,8 +50,6 @@ public class UserAdminServiceMockTest {
     private ArgumentCaptor<SignIn> signInCaptor;
 
     private UserAdminService service;
-    
-    private User user;
     
     private Map<SubpopulationGuid,ConsentStatus> statuses;
     
@@ -101,7 +98,7 @@ public class UserAdminServiceMockTest {
         assertEquals(participant.getPassword(), signIn.getPassword());
         
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
-            verify(consentService).consentToResearch(eq(study), eq(guid), eq(session.getUser()), any(), eq(SharingScope.NO_SHARING), eq(false));
+            verify(consentService).consentToResearch(eq(study), eq(guid), eq(session), any(), eq(SharingScope.NO_SHARING), eq(false));
         }
     }
     
@@ -116,11 +113,11 @@ public class UserAdminServiceMockTest {
         verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
         
         // consented to the indicated subpopulation
-        verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(session.getUser()), any(), eq(SharingScope.NO_SHARING), eq(false));
+        verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(session), any(), eq(SharingScope.NO_SHARING), eq(false));
         // but not to the other two
         for (SubpopulationGuid guid : session.getUser().getConsentStatuses().keySet()) {
             if (guid != consentedGuid) {
-                verify(consentService, never()).consentToResearch(eq(study), eq(guid), eq(user), any(), eq(SharingScope.NO_SHARING), eq(false));    
+                verify(consentService, never()).consentToResearch(eq(study), eq(guid), eq(session), any(), eq(SharingScope.NO_SHARING), eq(false));    
             }
         }
     }

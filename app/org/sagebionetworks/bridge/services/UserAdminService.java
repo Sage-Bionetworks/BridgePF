@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -133,14 +132,13 @@ public class UserAdminService {
                 ConsentSignature signature = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 
-                User user = newUserSession.getUser();
                 if (subpopGuid != null) {
-                    consentService.consentToResearch(study, subpopGuid, user, signature, NO_SHARING, false);
+                    consentService.consentToResearch(study, subpopGuid, newUserSession, signature, NO_SHARING, false);
                 } else {
-                    for (ConsentStatus consentStatus : user.getConsentStatuses().values()) {
+                    for (ConsentStatus consentStatus : newUserSession.getConsentStatuses().values()) {
                         if (consentStatus.isRequired()) {
                             SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
-                            consentService.consentToResearch(study, guid, user, signature, NO_SHARING, false);
+                            consentService.consentToResearch(study, guid, newUserSession, signature, NO_SHARING, false);
                         }
                     }
                 }

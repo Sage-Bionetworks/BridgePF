@@ -91,7 +91,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session.getUser());
+        ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session);
         return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
     }
     
@@ -105,7 +105,7 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawConsent(study, SubpopulationGuid.create(guid), session.getUser(), withdrawal, withdrewOn);
+        consentService.withdrawConsent(study, SubpopulationGuid.create(guid), session, withdrawal, withdrewOn);
         updateSessionUser(session, session.getUser());
         
         return okResult("User has been withdrawn from the study.");
@@ -115,7 +115,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        consentService.emailConsentAgreement(study, SubpopulationGuid.create(guid), session.getUser());
+        consentService.emailConsentAgreement(study, SubpopulationGuid.create(guid), session);
         return okResult("Emailed consent.");
     }
     
@@ -137,7 +137,7 @@ public class ConsentController extends BaseController {
         final ConsentSignature consent = parseJson(request(), ConsentSignature.class);
         final SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), version);
 
-        final User user = consentService.consentToResearch(study, subpopGuid, session.getUser(), consent,
+        final User user = consentService.consentToResearch(study, subpopGuid, session, consent,
                 sharing.getSharingScope(), true);
         
         user.setSharingScope(sharing.getSharingScope());

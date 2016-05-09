@@ -36,16 +36,12 @@ public final class User implements BridgeEntity {
     private String studyKey;
     private SharingScope sharingScope;
     private DateTime accountCreatedOn;
-    private Set<Roles> roles;
-    private Set<String> dataGroups;
-    private Map<SubpopulationGuid,ConsentStatus> consentStatuses;
-    private LinkedHashSet<String> languages;
+    private Set<Roles> roles = ImmutableSet.of();
+    private Set<String> dataGroups = ImmutableSet.of();
+    private Map<SubpopulationGuid,ConsentStatus> consentStatuses = ImmutableMap.of();
+    private LinkedHashSet<String> languages = new LinkedHashSet<String>();
 
     public User() {
-        setRoles(ImmutableSet.of());
-        setDataGroups(ImmutableSet.of());
-        setConsentStatuses(ImmutableMap.of());
-        setLanguages(new LinkedHashSet<String>());
     }
 
     public User(Account account) {
@@ -169,9 +165,14 @@ public final class User implements BridgeEntity {
     }
     
     public void setConsentStatuses(Map<SubpopulationGuid,ConsentStatus> consentStatuses) {
-        this.consentStatuses = (consentStatuses == null) ? ImmutableMap.of() : ImmutableMap.copyOf(consentStatuses);
+        throw new RuntimeException();
+        //this.consentStatuses = (consentStatuses == null) ? ImmutableMap.of() : ImmutableMap.copyOf(consentStatuses);
     }
 
+    public void setOtherConsentStatuses(Map<SubpopulationGuid,ConsentStatus> consentStatuses) {
+        this.consentStatuses = (consentStatuses == null) ? ImmutableMap.of() : ImmutableMap.copyOf(consentStatuses);
+    }
+    
     /**
      * Has the user consented to all required consents they are eligible for?
      * @return

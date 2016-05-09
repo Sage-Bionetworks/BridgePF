@@ -71,7 +71,7 @@ public class UserSession {
         user.setAccountCreatedOn(participant.getCreatedOn());
         user.setRoles(participant.getRoles());
         user.setDataGroups(participant.getDataGroups());
-        user.setConsentStatuses(consentStatuses);
+        user.setOtherConsentStatuses(consentStatuses);
         user.setLanguages(participant.getLanguages());
         if (studyIdentifier != null) {
             user.setStudyKey(studyIdentifier.getIdentifier());    

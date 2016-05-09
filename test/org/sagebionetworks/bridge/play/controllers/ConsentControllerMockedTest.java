@@ -105,7 +105,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, SubpopulationGuid.create(study.getIdentifier()), user)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, SubpopulationGuid.create(study.getIdentifier()), session)).thenReturn(sig);
 
         Result result = controller.getConsentSignature();
 
@@ -160,7 +160,7 @@ public class ConsentControllerMockedTest {
         assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), user,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), session,
                 new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
@@ -177,7 +177,7 @@ public class ConsentControllerMockedTest {
         Result result = controller.withdrawConsent();
         assertResult(result, 200, "User has been withdrawn from the study.");
         
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), user,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), session,
                 new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -187,7 +187,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, SUBPOP_GUID, user)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, SUBPOP_GUID, session)).thenReturn(sig);
 
         Result result = controller.getConsentSignatureV2(SUBPOP_GUID.getGuid());
 
@@ -239,7 +239,7 @@ public class ConsentControllerMockedTest {
         assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal("Because, reasons."), 20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, session, new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
         DateTimeUtils.setCurrentMillisSystem();
@@ -254,7 +254,7 @@ public class ConsentControllerMockedTest {
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         assertResult(result, 200, "User has been withdrawn from the study.");
         
-        verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal(null), 20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, session, new Withdrawal(null), 20000);
     }
     
     @Test
@@ -263,7 +263,7 @@ public class ConsentControllerMockedTest {
         
         assertResult(result, 200, "Emailed consent.");
         
-        verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, user);
+        verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, session);
     }
     
     @Test
@@ -276,7 +276,7 @@ public class ConsentControllerMockedTest {
         Result result = controller.giveV3("test-subpop");
         assertResult(result, 201, "Consent to research has been recorded.");
         
-        verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("test-subpop")), eq(user),
+        verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("test-subpop")), eq(session),
                 captor.capture(), eq(SharingScope.NO_SHARING), eq(true));
         
         validateSignature(captor.getValue());
@@ -292,7 +292,7 @@ public class ConsentControllerMockedTest {
         assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), user,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), session,
                 new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
@@ -308,7 +308,7 @@ public class ConsentControllerMockedTest {
         Result result = controller.withdrawConsentV2("test-subpop");
         assertResult(result, 200, "User has been withdrawn from the study.");
         
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), user,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), session,
                 new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -317,7 +317,7 @@ public class ConsentControllerMockedTest {
         TestUtils.mockPlayContextWithJson(json);
         
         ArgumentCaptor<ConsentSignature> captor = ArgumentCaptor.forClass(ConsentSignature.class);
-        when(consentService.consentToResearch(any(Study.class), any(SubpopulationGuid.class), any(User.class), captor.capture(),
+        when(consentService.consentToResearch(any(Study.class), any(SubpopulationGuid.class), any(UserSession.class), captor.capture(),
                 any(SharingScope.class), any(Boolean.class))).thenReturn(user);
         return captor;
     }

@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -62,8 +62,8 @@ public class StudyEnrollmentServiceTest {
     
     @Test
     public void enforcesStudyEnrollmentLimit() {
-        User user = new User();
-        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
+        UserSession session = new UserSession(null);
+        session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
@@ -71,22 +71,22 @@ public class StudyEnrollmentServiceTest {
 
         boolean limit = studyEnrollmentService.isStudyAtEnrollmentLimit(study);
         assertFalse("No limit reached", limit);
-        studyEnrollmentService.incrementStudyEnrollment(study, user);
-        studyEnrollmentService.incrementStudyEnrollment(study, user);
+        studyEnrollmentService.incrementStudyEnrollment(study, session);
+        studyEnrollmentService.incrementStudyEnrollment(study, session);
         assertTrue("Limit reached", studyEnrollmentService.isStudyAtEnrollmentLimit(study));
         assertEquals("2", jedisOps.get(numParticipantsKey));
     }
     
     @Test
     public void studyEnrollmentNotIncrementedOnSubsequentConsents() {
-        User user = new User();
-        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
+        UserSession session = new UserSession(null);
+        session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         
-        studyEnrollmentService.incrementStudyEnrollment(study, user);
+        studyEnrollmentService.incrementStudyEnrollment(study, session);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
         
         ConsentStatus consent2 = new ConsentStatus.Builder().withName("Consent")
@@ -95,18 +95,18 @@ public class StudyEnrollmentServiceTest {
         // On subsequent consents, user is not added and enrollment is not increased
         
         Map<SubpopulationGuid, ConsentStatus> map = TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT, consent2);
-        user.setConsentStatuses(map);
-        studyEnrollmentService.incrementStudyEnrollment(study, user);
-        studyEnrollmentService.incrementStudyEnrollment(study, user);
-        studyEnrollmentService.incrementStudyEnrollment(study, user);
+        session.setConsentStatuses(map);
+        studyEnrollmentService.incrementStudyEnrollment(study, session);
+        studyEnrollmentService.incrementStudyEnrollment(study, session);
+        studyEnrollmentService.incrementStudyEnrollment(study, session);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
         assertEquals("1", jedisOps.get(numParticipantsKey));
     }
     
     @Test
     public void decrementingStudyWorks() {
-        User user = new User();
-        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
+        UserSession session = new UserSession(null);
+        session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
         
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
@@ -115,21 +115,21 @@ public class StudyEnrollmentServiceTest {
         jedisOps.del(numParticipantsKey);
         jedisOps.setnx(numParticipantsKey, "2");
 
-        studyEnrollmentService.decrementStudyEnrollment(study, user);
+        studyEnrollmentService.decrementStudyEnrollment(study, session);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
         
-        studyEnrollmentService.decrementStudyEnrollment(study, user);
-        studyEnrollmentService.decrementStudyEnrollment(study, user);
-        studyEnrollmentService.decrementStudyEnrollment(study, user);
-        studyEnrollmentService.decrementStudyEnrollment(study, user);
+        studyEnrollmentService.decrementStudyEnrollment(study, session);
+        studyEnrollmentService.decrementStudyEnrollment(study, session);
+        studyEnrollmentService.decrementStudyEnrollment(study, session);
+        studyEnrollmentService.decrementStudyEnrollment(study, session);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
         assertEquals("0", jedisOps.get(numParticipantsKey));
     }
     
     @Test
     public void studyEnrollmentNotDecrementedUntilLastWithdrawal() {
-        User user = new User();
-        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
+        UserSession session = new UserSession(null);
+        session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
@@ -139,12 +139,12 @@ public class StudyEnrollmentServiceTest {
         jedisOps.setnx(numParticipantsKey, "2");
         
         // With a signed consent, this does not decrement, because user is still in study
-        studyEnrollmentService.decrementStudyEnrollment(study, user);
+        studyEnrollmentService.decrementStudyEnrollment(study, session);
         assertEquals("2", jedisOps.get(numParticipantsKey));
         
         // With no signed consents, this will decrement.
-        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
-        studyEnrollmentService.decrementStudyEnrollment(study, user);
+        session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
+        studyEnrollmentService.decrementStudyEnrollment(study, session);
         assertEquals("1", jedisOps.get(numParticipantsKey));
     }
     
@@ -170,7 +170,7 @@ public class StudyEnrollmentServiceTest {
         TestUser user2 = builder.withGuid(subpop1.getGuid()).build();
         TestUser user3 = builder.withGuid(subpop1.getGuid()).build();
         // and user2 is also in the other subpop2, but will still be counted correctly.
-        userConsentService.consentToResearch(study, subpop2.getGuid(), user2.getUser(), 
+        userConsentService.consentToResearch(study, subpop2.getGuid(), user2.getSession(), 
                 new ConsentSignature.Builder().withBirthdate("1980-01-01").withName("Name").build(), SharingScope.NO_SHARING, false);
         try {
 
