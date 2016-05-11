@@ -249,18 +249,7 @@ public class CacheProviderTest {
         
         String sessionKey = RedisKey.SESSION.getRedisKey("sessionToken");
         doReturn(sessionKey).when(jedisOps).get("sessionToken");
-
-        //String userKey = RedisKey.USER_SESSION.getRedisKey("6gq4jGXLmAxVbLLmVifKN4");
         doReturn(transaction).when(jedisOps).getTransaction(sessionKey);
-        /*
-        String sessionToken = RedisKey.SESSION.getRedisKey("sessionToken");
-        
-        JedisOps jedisOps = mock(JedisOps.class);
-        when(jedisOps.getTransaction()).thenReturn(transaction);
-        
-        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
-        when(jedisOps.get(userKey)).thenReturn(sessionToken);
-        */
         doReturn(json).when(jedisOps).get(sessionKey);
         
         cacheProvider.setJedisOps(jedisOps);
