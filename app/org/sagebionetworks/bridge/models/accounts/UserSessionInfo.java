@@ -10,7 +10,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
@@ -50,9 +49,8 @@ public class UserSessionInfo {
 
     /**
      * Collapse StudyParticipant properties into the UserSessionInfo JSON so that we 
-     * do not need to copy these info the session when we update StudyParticipant. 
-     * Unfortunately this makes for some gross JSON processing. This can be moved 
-     * to a deserializer. 
+     * do not need to copy these info the session when we update StudyParticipant. This does
+     * make for some horky JSON processing.
      */
     public static JsonNode toJSON(UserSession session) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
@@ -72,18 +70,10 @@ public class UserSessionInfo {
         ObjectNode partNode = (ObjectNode)MAPPER.valueToTree(session.getParticipant());
         for (Iterator<String> i = partNode.fieldNames(); i.hasNext();) {
             String fieldName = i.next();
-            JsonNode child = partNode.get(fieldName);
             
-            if (PROHIBITED_FIELD_NAMES.contains(fieldName)) {
-                // do nothing
-            } else if (child.isTextual()) {
-                node.put(fieldName, child.asText());    
-            } else if (child.isBoolean()) {
-                node.put(fieldName, child.asBoolean());
-            } else if (child.isArray()) {
-                node.putArray(fieldName).addAll((ArrayNode)child);
-            } else if (child.isObject()) {
-                node.putPOJO(fieldName, child);
+            if (!PROHIBITED_FIELD_NAMES.contains(fieldName)) {
+                JsonNode child = partNode.get(fieldName);
+                node.set(fieldName, child);
             }
         }
         return node;

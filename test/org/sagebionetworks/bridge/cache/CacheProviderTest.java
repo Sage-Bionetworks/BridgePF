@@ -214,32 +214,66 @@ public class CacheProviderTest {
     
     @Test
     public void oldUserSessionDeserializedToNewUserSession() {
-        String oldJSON = TestUtils.createJson("{'authenticated':true,'environment':'local',"+
-                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b','internalSessionToken':"+
-                "'4f0937a5-6ebf-451b-84bc-fbf649b9e93c','user':{'id':'6gq4jGXLmAxVbLLmVifKN4',"+
-                "'firstName':'Bridge','lastName':'IT','email':'bridgeit@sagebase.org','studyKey':'api',"+
-                "'sharingScope':'no_sharing','accountCreatedOn':'2016-04-21T16:48:22.386Z',"+
-                "'roles':['admin'],'dataGroups':['group1'],'consentStatuses':{'api':{'name':"+
-                "'Default Consent Group','subpopulationGuid':'api','required':true,'consented':false,"+
-                "'signedMostRecentConsent':true,'type':'ConsentStatus'}},'languages':['en','fr'],"+
-                "'encryptedHealthCode':'TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBA"+
-                "VcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=','type':'User'},'studyIdentifier':"+
-                "{'identifier':'api','type':'StudyIdentifier'},'type':'UserSession'}");
+        String oldJSON = TestUtils.createJson("{'authenticated':true,"+
+                "'environment':'local',"+
+                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b',"+
+                "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
+                "'user':{'id':'6gq4jGXLmAxVbLLmVifKN4',"+
+                    "'firstName':'Bridge',"+
+                    "'lastName':'IT',"+
+                    "'email':'bridgeit@sagebase.org',"+
+                    "'studyKey':'api',"+
+                    "'sharingScope':'no_sharing',"+
+                    "'accountCreatedOn':'2016-04-21T16:48:22.386Z',"+
+                    "'roles':['admin'],"+
+                    "'dataGroups':['group1'],"+
+                    "'consentStatuses':{"+
+                        "'api':{'name':'Default Consent Group',"+
+                            "'subpopulationGuid':'api',"+
+                            "'required':true,"+
+                            "'consented':false,"+
+                            "'signedMostRecentConsent':true,"+
+                            "'type':'ConsentStatus'}},"+
+                    "'languages':['en','fr'],"+
+                    "'encryptedHealthCode':'TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=',"+
+                    "'type':'User'},"+
+                "'studyIdentifier':{'identifier':'api',"+
+                    "'type':'StudyIdentifier'},"+
+                "'type':'UserSession'}");
         
         assertSession(oldJSON);
     }
 
     @Test
     public void newUserSessionDeserializes() {
-        String json = TestUtils.createJson("{'authenticated':true,'environment':'local','sessionToken':"+
-                "'ccea2978-f5b9-4377-8194-f887a3e2a19b','internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
-                "'studyIdentifier':{'identifier':'api','type':'StudyIdentifier'},'consentStatuses':{'api':{'name':"+
-                "'Default Consent Group','subpopulationGuid':'api','required':true,'consented':false,"+
-                "'signedMostRecentConsent':true,'type':'ConsentStatus'}},'participant':{'firstName':'Bridge',"+
-                "'lastName':'IT','email':'bridgeit@sagebase.org','sharingScope':'no_sharing','notifyByEmail':false,"+
-                "'dataGroups':['group1'],'healthCode':'7e188a30-fda5-4d1b-9904-a642f96a19b0','attributes':{},"+
-                "'consentHistories':{},'roles':['admin'],'languages':['en','fr'],'createdOn':'2016-04-21T16:48:22.386Z',"+
-                "'id':'6gq4jGXLmAxVbLLmVifKN4','type':'StudyParticipant'},'type':'UserSession'}");
+        String json = TestUtils.createJson("{'authenticated':true,"+
+                "'environment':'local',"+
+                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b',"+
+                "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
+                "'studyIdentifier':{'identifier':'api',"+
+                    "'type':'StudyIdentifier'},"+
+                "'consentStatuses':{"+
+                    "'api':{'name':'Default Consent Group',"+
+                        "'subpopulationGuid':'api',"+
+                        "'required':true,"+
+                        "'consented':false,"+
+                        "'signedMostRecentConsent':true,"+
+                        "'type':'ConsentStatus'}},"+
+                "'participant':{'firstName':'Bridge',"+
+                    "'lastName':'IT',"+
+                    "'email':'bridgeit@sagebase.org',"+
+                    "'sharingScope':'no_sharing',"+
+                    "'notifyByEmail':false,"+
+                    "'dataGroups':['group1'],"+
+                    "'healthCode':'7e188a30-fda5-4d1b-9904-a642f96a19b0',"+
+                    "'attributes':{},"+
+                    "'consentHistories':{},"+
+                    "'roles':['admin'],"+
+                    "'languages':['en','fr'],"+
+                    "'createdOn':'2016-04-21T16:48:22.386Z',"+
+                    "'id':'6gq4jGXLmAxVbLLmVifKN4',"+
+                    "'type':'StudyParticipant'},"+
+                "'type':'UserSession'}");
 
         assertSession(json);
     }
