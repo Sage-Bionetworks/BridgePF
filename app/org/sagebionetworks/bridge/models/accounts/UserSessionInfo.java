@@ -24,9 +24,9 @@ import com.google.common.collect.Sets;
  */
 public class UserSessionInfo {
     
-    private static final String CONSENT_HISTORIES = "consentHistories";
-    private static final String STUDY_PARTICIPANT = "participant";
-    private static final Set<String> PROHIBITED_FIELD_NAMES = Sets.newHashSet("type", "encryptedHealthCode");
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
+    private static final Set<String> PROHIBITED_FIELD_NAMES = Sets.newHashSet("type", "encryptedHealthCode", "consentHistories");
+    private static final String USERNAME = "username";
 
     /**
      * Collapse StudyParticipant properties into the UserSessionInfo JSON so that we 
@@ -35,31 +35,25 @@ public class UserSessionInfo {
      * to a deserializer. 
      */
     public static JsonNode toJSON(UserSession session) {
-        UserSessionInfo info = new UserSessionInfo(session);
-        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(info);
-        if (node.has(STUDY_PARTICIPANT)) {
-            ObjectNode partNode = (ObjectNode)node.get(STUDY_PARTICIPANT);    
-            node.remove(STUDY_PARTICIPANT);
-            for (Iterator<String> i = partNode.fieldNames(); i.hasNext();) {
-                String fieldName = i.next();
-                JsonNode child = partNode.get(fieldName);
-                
-                if (PROHIBITED_FIELD_NAMES.contains(fieldName)) {
-                    // do nothing
-                } else if (child.isTextual()) {
-                    node.put(fieldName, child.asText());    
-                } else if (child.isBoolean()) {
-                    node.put(fieldName, child.asBoolean());
-                } else if (child.isArray()) {
-                    node.putArray(fieldName).addAll((ArrayNode)child);
-                } else if (child.isObject()) {
-                    node.putPOJO(fieldName, child);
-                }
+        ObjectNode node = (ObjectNode)MAPPER.valueToTree(new UserSessionInfo(session));
+        node.put(USERNAME, session.getParticipant().getEmail());
+        
+        ObjectNode partNode = (ObjectNode)MAPPER.valueToTree(session.getParticipant());
+        for (Iterator<String> i = partNode.fieldNames(); i.hasNext();) {
+            String fieldName = i.next();
+            JsonNode child = partNode.get(fieldName);
+            
+            if (PROHIBITED_FIELD_NAMES.contains(fieldName)) {
+                // do nothing
+            } else if (child.isTextual()) {
+                node.put(fieldName, child.asText());    
+            } else if (child.isBoolean()) {
+                node.put(fieldName, child.asBoolean());
+            } else if (child.isArray()) {
+                node.putArray(fieldName).addAll((ArrayNode)child);
+            } else if (child.isObject()) {
+                node.putPOJO(fieldName, child);
             }
-            node.remove(CONSENT_HISTORIES);
-        }
-        if (node.has("email")) {
-            node.put("username", node.get("email").asText());    
         }
         return node;
     }
@@ -75,8 +69,8 @@ public class UserSessionInfo {
     private final boolean authenticated;
     private final String sessionToken;
     private final String environment;
+    private final boolean dataSharing;
     private final Map<SubpopulationGuid,ConsentStatus> consentStatuses;
-    private StudyParticipant studyParticipant;
 
     private UserSessionInfo(UserSession session) {
         checkNotNull(session);
@@ -84,11 +78,7 @@ public class UserSessionInfo {
         this.sessionToken = session.getSessionToken();
         this.environment = ENVIRONMENTS.get(session.getEnvironment());
         this.consentStatuses = session.getConsentStatuses();
-        this.studyParticipant = session.getParticipant();
-    }
-
-    public StudyParticipant getParticipant() {
-        return studyParticipant;
+        this.dataSharing = session.getParticipant().getSharingScope() != SharingScope.NO_SHARING;
     }
     public boolean isAuthenticated() {
         return authenticated;
@@ -109,6 +99,6 @@ public class UserSessionInfo {
         return environment;
     }
     public boolean getDataSharing() {
-        return studyParticipant.getSharingScope() != SharingScope.NO_SHARING;
+        return dataSharing;
     }
 }
