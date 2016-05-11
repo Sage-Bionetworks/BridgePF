@@ -148,6 +148,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
         recordBuilder.withUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
         recordBuilder.withUploadId(uploadId);
+        recordBuilder.withUploadedOn(DateUtils.getCurrentMillisFromEpoch());
 
         // create an empty object node in our record builder, which we'll fill in as we go
         ObjectNode dataMap = BridgeObjectMapper.get().createObjectNode();

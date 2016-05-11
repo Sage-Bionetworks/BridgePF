@@ -28,7 +28,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public static final ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
-    
+
     /**
      * The display name of the study (will be seen by participants in email). This name makes the 
      * most sense when it starts with "The".
@@ -67,7 +67,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public void setVersion(Long version);
     
     /**
-     * User must confirm that they are at least this many years old in order to 
+     * User must confirm that they are at least this many years old in order to
      * participate in the study. 
      * @return
      */
@@ -110,7 +110,17 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     public String getTechnicalEmail();
     public void setTechnicalEmail(String email);
-    
+
+    /**
+     * By default, all studies are exported using the default nightly schedule. Some studies may need custom schedules
+     * for hourly or on-demand exports. To prevent this study from being exported twice (once by the custom schedule,
+     * once by the default schedule), you should set this attribute to true.
+     */
+    boolean getUsesCustomExportSchedule();
+
+    /** @see #getUsesCustomExportSchedule */
+    void setUsesCustomExportSchedule(boolean usesCustomExportSchedule);
+
     /**
      * Copies of all consent agreements, as well as rosters of all participants in a study, or any 
      * other study governance issues, will be emailed to this address. This can be a comma-separated 

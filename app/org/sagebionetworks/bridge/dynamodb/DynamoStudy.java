@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @BridgeTypeName("Study")
 @JsonFilter("filter")
 public final class DynamoStudy implements Study {
-    
     private String name;
     private String sponsorName;
     private String identifier;
@@ -34,6 +33,7 @@ public final class DynamoStudy implements Study {
     private Long synapseDataAccessTeamId;
     private String synapseProjectId;
     private String technicalEmail;
+    private boolean usesCustomExportSchedule;
     private String consentNotificationEmail;
     private int minAgeOfConsent;
     private int maxNumOfParticipants;
@@ -188,6 +188,18 @@ public final class DynamoStudy implements Study {
     @Override
     public void setTechnicalEmail(String technicalEmail) {
         this.technicalEmail = technicalEmail;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean getUsesCustomExportSchedule() {
+        return usesCustomExportSchedule;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setUsesCustomExportSchedule(boolean usesCustomExportSchedule) {
+        this.usesCustomExportSchedule = usesCustomExportSchedule;
     }
 
     /** {@inheritDoc} */
@@ -349,7 +361,8 @@ public final class DynamoStudy implements Study {
                 technicalEmail, consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers,
                 dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
-                externalIdValidationEnabled, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId);
+                externalIdValidationEnabled, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
+                usesCustomExportSchedule);
     }
 
     @Override
@@ -376,6 +389,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(synapseDataAccessTeamId, other.synapseDataAccessTeamId)
                 && Objects.equals(synapseProjectId, other.synapseProjectId)
                 && Objects.equals(technicalEmail, other.technicalEmail)
+                && Objects.equals(usesCustomExportSchedule, other.usesCustomExportSchedule)
                 && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
                 && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
                 && Objects.equals(externalIdValidationEnabled, other.externalIdValidationEnabled)
@@ -392,11 +406,11 @@ public final class DynamoStudy implements Study {
                             + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
                             + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, "
                             + "healthCodeExportEnabled=%s, emailVerificationEnabled=%s, externalIdValidationEnabled=%s, "
-                            + "minSupportedAppVersions=%s]",
+                            + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail,
                 version, profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
-                externalIdValidationEnabled, minSupportedAppVersions);
+                externalIdValidationEnabled, minSupportedAppVersions, usesCustomExportSchedule);
     }
 }

@@ -82,6 +82,7 @@ public class DynamoStudyDaoTest {
         assertEquals("bridge-testing+support@sagebase.org", study.getSupportEmail());
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
         assertEquals(USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
+        assertTrue(study.getUsesCustomExportSchedule());
         assertEquals(TASK_IDENTIFIERS, study.getTaskIdentifiers());
         assertEquals(DATA_GROUPS, study.getDataGroups());
 

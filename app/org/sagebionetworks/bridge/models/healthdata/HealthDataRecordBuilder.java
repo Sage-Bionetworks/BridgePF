@@ -28,6 +28,7 @@ public abstract class HealthDataRecordBuilder {
     private String studyId;
     private LocalDate uploadDate;
     private String uploadId;
+    private Long uploadedOn;
     private String userExternalId;
     private Set<String> userDataGroups;
     private ParticipantOption.SharingScope userSharingScope;
@@ -45,6 +46,7 @@ public abstract class HealthDataRecordBuilder {
         studyId = record.getStudyId();
         uploadDate = record.getUploadDate();
         uploadId = record.getUploadId();
+        uploadedOn = record.getUploadedOn();
         userExternalId = record.getUserExternalId();
         userDataGroups = record.getUserDataGroups();
         userSharingScope = record.getUserSharingScope();
@@ -159,6 +161,17 @@ public abstract class HealthDataRecordBuilder {
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUploadId */
     public HealthDataRecordBuilder withUploadId(String uploadId) {
         this.uploadId = uploadId;
+        return this;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUploadedOn */
+    public Long getUploadedOn() {
+        return uploadedOn;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUploadedOn */
+    public HealthDataRecordBuilder withUploadedOn(Long uploadedOn) {
+        this.uploadedOn = uploadedOn;
         return this;
     }
 

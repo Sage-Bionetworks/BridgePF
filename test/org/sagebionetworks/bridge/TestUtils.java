@@ -288,6 +288,7 @@ public class TestUtils {
         study.setSynapseDataAccessTeamId(1234L);
         study.setSynapseProjectId("test-synapse-project-id");
         study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
+        study.setUsesCustomExportSchedule(true);
         study.setSupportEmail("bridge-testing+support@sagebase.org");
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
         study.setTaskIdentifiers(Sets.newHashSet("task1", "task2"));
