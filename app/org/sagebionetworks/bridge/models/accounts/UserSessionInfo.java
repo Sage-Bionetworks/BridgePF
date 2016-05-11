@@ -31,6 +31,7 @@ public class UserSessionInfo {
     private static final String ENVIRONMENT = "environment";
     private static final String SESSION_TOKEN = "sessionToken";
     private static final String AUTHENTICATED = "authenticated";
+    private static final String USERNAME = "username";
     private static final String USER_SESSION_INFO = "UserSessionInfo";
     private static final String TYPE = "type";
     
@@ -41,7 +42,6 @@ public class UserSessionInfo {
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     private static final Set<String> PROHIBITED_FIELD_NAMES = Sets.newHashSet(TYPE, ENCRYPTED_HEALTH_CODE, CONSENT_HISTORIES);
-    private static final String USERNAME = "username";
     private static final Map<Environment,String> ENVIRONMENTS = new ImmutableMap.Builder<Environment,String>()
             .put(Environment.LOCAL, LOCAL)
             .put(Environment.DEV, DEVELOP)
