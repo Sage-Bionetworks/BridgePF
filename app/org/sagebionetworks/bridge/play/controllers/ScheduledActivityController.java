@@ -110,7 +110,7 @@ public class ScheduledActivityController extends BaseController {
         }
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
-        DateTime accountCreatedOn = session.getStudyParticipant().getCreatedOn();
+        DateTime accountCreatedOn = session.getParticipant().getCreatedOn();
         if (accountCreatedOn == null) {
             Study study = studyService.getStudy(session.getStudyIdentifier());
             // Everyone should have an ID at this point... otherwise sessions are hanging out for over a week.
@@ -122,15 +122,15 @@ public class ScheduledActivityController extends BaseController {
                 accountCreatedOn = account.getCreatedOn();
                 LOG.debug("accountCreatedOn not in session, retrieving it and updating session");
             }
-            StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getStudyParticipant())
+            StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
                     .withCreatedOn(accountCreatedOn).build();
-            session.setStudyParticipant(participant);
+            session.setParticipant(participant);
             updateSession(session);
         }
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withLanguages(getLanguages(session))
-                .withUserDataGroups(session.getStudyParticipant().getDataGroups())
+                .withUserDataGroups(session.getParticipant().getDataGroups())
                 .withHealthCode(session.getHealthCode())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(clientInfo)

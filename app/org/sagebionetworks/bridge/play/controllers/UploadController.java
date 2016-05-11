@@ -29,7 +29,7 @@ public class UploadController extends BaseController {
     public Result getValidationStatus(String uploadId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(
-                session.getStudyParticipant(), uploadId);
+                session.getParticipant(), uploadId);
 
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
         return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
@@ -38,7 +38,7 @@ public class UploadController extends BaseController {
     public Result upload() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
-        UploadSession uploadSession = uploadService.createUpload(session.getStudyIdentifier(), session.getStudyParticipant(),
+        UploadSession uploadSession = uploadService.createUpload(session.getStudyIdentifier(), session.getParticipant(),
                 uploadRequest);
         final Metrics metrics = getMetrics();
         if (metrics != null) {
@@ -62,7 +62,7 @@ public class UploadController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         // mark upload as complete
-        Upload upload = uploadService.getUpload(session.getStudyParticipant(), uploadId);
+        Upload upload = uploadService.getUpload(session.getParticipant(), uploadId);
         uploadService.uploadComplete(session.getStudyIdentifier(), upload);
 
         return okResult("Upload " + uploadId + " complete!");

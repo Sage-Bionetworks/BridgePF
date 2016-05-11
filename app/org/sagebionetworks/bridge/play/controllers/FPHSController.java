@@ -62,11 +62,11 @@ public class FPHSController extends BaseController {
         // The service saves the external identifier and saves this as an option. We also need 
         // to update the user's session, something that should be generalized for other methods
         // that change data groups.
-        Set<String> dataGroups = Sets.newHashSet(session.getStudyParticipant().getDataGroups());
+        Set<String> dataGroups = Sets.newHashSet(session.getParticipant().getDataGroups());
         dataGroups.add("football_player");
         
-        session.setStudyParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getStudyParticipant())
+        session.setParticipant(new StudyParticipant.Builder()
+                .copyOf(session.getParticipant())
                 .withDataGroups(dataGroups).build());
         
         CriteriaContext context = getCriteriaContext(session);

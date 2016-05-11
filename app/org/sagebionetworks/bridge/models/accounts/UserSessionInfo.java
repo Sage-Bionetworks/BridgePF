@@ -25,9 +25,7 @@ import com.google.common.collect.Sets;
 public class UserSessionInfo {
     
     private static final String CONSENT_HISTORIES = "consentHistories";
-    private static final String STUDY_PARTICIPANT = "studyParticipant";
-    private static final String TYPE = "type";
-    
+    private static final String STUDY_PARTICIPANT = "participant";
     private static final Set<String> PROHIBITED_FIELD_NAMES = Sets.newHashSet("type", "encryptedHealthCode");
 
     /**
@@ -86,7 +84,7 @@ public class UserSessionInfo {
         this.sessionToken = session.getSessionToken();
         this.environment = ENVIRONMENTS.get(session.getEnvironment());
         this.consentStatuses = session.getConsentStatuses();
-        this.studyParticipant = session.getStudyParticipant();
+        this.studyParticipant = session.getParticipant();
     }
 
     public StudyParticipant getStudyParticipant() {

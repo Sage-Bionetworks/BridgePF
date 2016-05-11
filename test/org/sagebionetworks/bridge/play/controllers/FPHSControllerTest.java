@@ -155,7 +155,7 @@ public class FPHSControllerTest {
         Result result = controller.registerExternalIdentifier();
         assertResult(result, 200, "External identifier added to user profile.");
 
-        assertEquals(Sets.newHashSet("football_player"), session.getStudyParticipant().getDataGroups());
+        assertEquals(Sets.newHashSet("football_player"), session.getParticipant().getDataGroups());
         verify(consentService).getConsentStatuses(any(CriteriaContext.class));
     }
     
@@ -173,8 +173,8 @@ public class FPHSControllerTest {
         }
         
         // Now when we have an admin user, we get back results
-        session.setStudyParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getStudyParticipant())
+        session.setParticipant(new StudyParticipant.Builder()
+                .copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
         Result result = controller.getExternalIdentifiers();
@@ -211,7 +211,7 @@ public class FPHSControllerTest {
         UserSession session = setUserSession();
         
         // Now when we have an admin user, we get back results
-        session.setStudyParticipant(new StudyParticipant.Builder().copyOf(session.getStudyParticipant())
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         Result result = controller.addExternalIdentifiers();
         

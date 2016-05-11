@@ -165,7 +165,7 @@ public class UserProfileController extends BaseController {
         
         participantService.updateParticipant(study, NO_ROLES, session.getId(), updated);
         
-        session.setStudyParticipant(updated);
+        session.setParticipant(updated);
         
         CriteriaContext context = getCriteriaContext(session);
         

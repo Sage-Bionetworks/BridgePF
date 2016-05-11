@@ -242,7 +242,7 @@ public class ScheduledActivityControllerTest {
         doReturn(account).when(accountDao).getAccount(any(Study.class), eq("AAA"));
         
         StudyParticipant participant = new StudyParticipant.Builder().withId("AAA").build();
-        session.setStudyParticipant(participant);
+        session.setParticipant(participant);
         
         controller.getScheduledActivities(null, "-07:00", "3");
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
@@ -254,7 +254,7 @@ public class ScheduledActivityControllerTest {
     public void oldSessionsWithNoIdAndNoAccountCreatedOn() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
             .withCreatedOn(null).withId(null).build();
-        session.setStudyParticipant(participant);
+        session.setParticipant(participant);
         
         controller.getScheduledActivities(null, "-07:00", "3");
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());

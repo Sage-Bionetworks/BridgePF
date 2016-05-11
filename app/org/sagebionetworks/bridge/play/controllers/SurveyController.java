@@ -302,9 +302,9 @@ public class SurveyController extends BaseController {
         }
         // An imperfect test, but normal users have no other roles, so for them, access 
         // is restricted because they have not consented.
-        Set<Roles> roles = new HashSet<>(session.getStudyParticipant().getRoles());
+        Set<Roles> roles = new HashSet<>(session.getParticipant().getRoles());
         roles.remove(TEST_USERS);
-        if (session.getStudyParticipant().getRoles().isEmpty()) {
+        if (session.getParticipant().getRoles().isEmpty()) {
             throw new ConsentRequiredException(session);
         }
         // Otherwise, for researchers and administrators, the issue is one of authorization.

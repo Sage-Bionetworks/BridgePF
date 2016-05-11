@@ -35,10 +35,10 @@ public class UserSession {
         this.participant = participant;
     }
     
-    public StudyParticipant getStudyParticipant() {
+    public StudyParticipant getParticipant() {
         return participant;
     }
-    public void setStudyParticipant(StudyParticipant participant) {
+    public void setParticipant(StudyParticipant participant) {
         this.participant = participant;
     }
     public String getSessionToken() {

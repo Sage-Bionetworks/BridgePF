@@ -31,7 +31,7 @@ public class UserDataDownloadController extends BaseController {
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
         DateRange dateRange = parseJson(request(), DateRange.class);
 
-        userDataDownloadService.requestUserData(studyIdentifier, session.getStudyParticipant().getEmail(), dateRange);
+        userDataDownloadService.requestUserData(studyIdentifier, session.getParticipant().getEmail(), dateRange);
         return acceptedResult("Request submitted.");
     }
 }

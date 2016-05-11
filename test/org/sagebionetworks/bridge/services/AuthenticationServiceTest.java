@@ -145,7 +145,7 @@ public class AuthenticationServiceTest {
     public void signInCorrectCredentials() throws Exception {
         initTestUser();
         UserSession newSession = authService.getSession(testUser.getSessionToken());
-        assertEquals("Email is for test2 user", newSession.getStudyParticipant().getEmail(), testUser.getEmail());
+        assertEquals("Email is for test2 user", newSession.getParticipant().getEmail(), testUser.getEmail());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(testUser.getSessionToken()));
     }
 
@@ -154,7 +154,7 @@ public class AuthenticationServiceTest {
         initTestUser();
         String sessionToken = testUser.getSessionToken();
         UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getStudyParticipant().getEmail());
+        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getParticipant().getEmail());
         assertEquals("Should update the existing session instead of creating a new one.",
                 sessionToken, newSession.getSessionToken());
     }
@@ -163,7 +163,7 @@ public class AuthenticationServiceTest {
     public void signInSetsSharingScope() {
         initTestUser();
         UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-        assertEquals(SharingScope.NO_SHARING, newSession.getStudyParticipant().getSharingScope()); // this is the default.
+        assertEquals(SharingScope.NO_SHARING, newSession.getParticipant().getSharingScope()); // this is the default.
     }
 
     @Test
@@ -180,7 +180,7 @@ public class AuthenticationServiceTest {
         initTestUser();
         UserSession newSession = authService.getSession(testUser.getSessionToken());
 
-        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getStudyParticipant().getEmail());
+        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getParticipant().getEmail());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
@@ -302,8 +302,8 @@ public class AuthenticationServiceTest {
 
         UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
         // Verify we created a list and the anticipated group was not null
-        assertEquals(numOfGroups, session.getStudyParticipant().getDataGroups().size()); 
-        assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getStudyParticipant().getDataGroups());
+        assertEquals(numOfGroups, session.getParticipant().getDataGroups().size()); 
+        assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getParticipant().getDataGroups());
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -424,7 +424,7 @@ public class AuthenticationServiceTest {
         CriteriaContext context = testUser.getCriteriaContext();
         
         UserSession session = authService.signIn(study, context, testUser.getSignIn());
-        assertEquals(LANGS, session.getStudyParticipant().getLanguages());
+        assertEquals(LANGS, session.getParticipant().getLanguages());
     }
     
     @Test
@@ -436,7 +436,7 @@ public class AuthenticationServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(testUser.getStudyParticipant())
                 .withLanguages(LANGS).build();
         
-        testUser.getSession().setStudyParticipant(participant);
+        testUser.getSession().setParticipant(participant);
         CriteriaContext context = testUser.getCriteriaContext();
         
         authService.signOut(testUser.getSession());
@@ -444,7 +444,7 @@ public class AuthenticationServiceTest {
         Study study = studyService.getStudy(testUser.getStudyIdentifier());
         
         UserSession session = authService.signIn(study, context, testUser.getSignIn());
-        assertEquals(LANGS, session.getStudyParticipant().getLanguages());
+        assertEquals(LANGS, session.getParticipant().getLanguages());
         
         LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getHealthCode()).getOrderedStringSet(LANGUAGES);
         assertEquals(LANGS, persistedLangs);
@@ -491,7 +491,7 @@ public class AuthenticationServiceTest {
         // Now update the session, these changes should be reflected
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
         Set<String> retrievedSessionDataGroups = authService.updateSession(study, context, userId)
-                .getStudyParticipant().getDataGroups();
+                .getParticipant().getDataGroups();
 
         assertEquals(UPDATED_DATA_GROUPS, retrievedSessionDataGroups);
     }

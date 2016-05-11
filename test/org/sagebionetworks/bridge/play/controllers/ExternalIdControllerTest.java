@@ -77,7 +77,7 @@ public class ExternalIdControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("BBB").build();
         
         UserSession session = mock(UserSession.class);
-        when(session.getStudyParticipant()).thenReturn(participant);
+        when(session.getParticipant()).thenReturn(participant);
         when(session.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER);

@@ -126,9 +126,9 @@ public class ConsentController extends BaseController {
         optionsService.setEnum(study, session.getHealthCode(), SHARING_SCOPE, sharingScope);
         
         StudyParticipant participant = new StudyParticipant.Builder()
-                .copyOf(session.getStudyParticipant())
+                .copyOf(session.getParticipant())
                 .withSharingScope(sharingScope).build();
-        session.setStudyParticipant(participant);
+        session.setParticipant(participant);
         updateSession(session);
         return okResult(message);
     }
@@ -143,9 +143,9 @@ public class ConsentController extends BaseController {
         consentService.consentToResearch(study, subpopGuid, session, consent,
                 sharing.getSharingScope(), true);
         
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getStudyParticipant())
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withSharingScope(sharing.getSharingScope()).build();
-        session.setStudyParticipant(participant);
+        session.setParticipant(participant);
         updateSession(session);
         setSessionToken(session.getSessionToken());
         return createdResult("Consent to research has been recorded.");

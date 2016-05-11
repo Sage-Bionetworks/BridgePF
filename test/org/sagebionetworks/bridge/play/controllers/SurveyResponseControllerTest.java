@@ -56,7 +56,7 @@ public class SurveyResponseControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE).build();
         UserSession session = new UserSession(participant);
-        session.setStudyParticipant(participant);
+        session.setParticipant(participant);
         
         service = mock(SurveyResponseService.class);
         

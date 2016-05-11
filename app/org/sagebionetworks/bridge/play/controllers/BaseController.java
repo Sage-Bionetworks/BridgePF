@@ -194,7 +194,7 @@ public abstract class BaseController extends Controller {
      * that effect will need to be included in the application.
      */
     LinkedHashSet<String> getLanguages(UserSession session) {
-        StudyParticipant participant = session.getStudyParticipant();
+        StudyParticipant participant = session.getParticipant();
         if (!participant.getLanguages().isEmpty()) {
             return participant.getLanguages();
         }
@@ -203,7 +203,7 @@ public abstract class BaseController extends Controller {
             optionsService.setOrderedStringSet(
                     session.getStudyIdentifier(), session.getHealthCode(), LANGUAGES, languages);
             
-            session.setStudyParticipant(new StudyParticipant.Builder()
+            session.setParticipant(new StudyParticipant.Builder()
                     .copyOf(participant).withLanguages(languages).build());
             updateSession(session);
         }
@@ -256,7 +256,7 @@ public abstract class BaseController extends Controller {
             .withLanguages(getLanguagesFromAcceptLanguageHeader())
             .withClientInfo(getClientInfoFromUserAgentHeader())
             .withHealthCode(session.getHealthCode())
-            .withUserDataGroups(session.getStudyParticipant().getDataGroups())
+            .withUserDataGroups(session.getParticipant().getDataGroups())
             .withStudyIdentifier(session.getStudyIdentifier())
             .build();
     }

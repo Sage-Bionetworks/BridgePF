@@ -94,7 +94,7 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        IdentifierHolder holder = participantService.createParticipant(study, session.getStudyParticipant().getRoles(),
+        IdentifierHolder holder = participantService.createParticipant(study, session.getParticipant().getRoles(),
                 participant, true);
         return createdResult(holder);
     }
@@ -104,7 +104,7 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         StudyParticipant participant = participantService.getParticipant(study,
-                session.getStudyParticipant().getRoles(), userId);
+                session.getParticipant().getRoles(), userId);
         return okResult(participant);
     }
     
@@ -117,7 +117,7 @@ public class ParticipantController extends BaseController {
         if (participant.getId() != null && !userId.equals(participant.getId())) {
             throw new BadRequestException("ID in JSON does not match email in URL.");
         }
-        participantService.updateParticipant(study, session.getStudyParticipant().getRoles(), userId, participant);
+        participantService.updateParticipant(study, session.getParticipant().getRoles(), userId, participant);
         
         // Push changes to the user's session, including consent statuses.
         CriteriaContext context = new CriteriaContext.Builder()

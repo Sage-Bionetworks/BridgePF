@@ -206,7 +206,7 @@ public class UserProfileControllerTest {
         assertEquals("First", participant.getFirstName());
         
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
-        assertEquals(dataGroupSet, session.getStudyParticipant().getDataGroups());
+        assertEquals(dataGroupSet, session.getParticipant().getDataGroups());
     }
     
     // Validation is no longer done in the controller, but verify that user is not changed
@@ -222,7 +222,7 @@ public class UserProfileControllerTest {
             controller.updateDataGroups();
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
-            assertEquals(Sets.newHashSet(), session.getStudyParticipant().getDataGroups());
+            assertEquals(Sets.newHashSet(), session.getParticipant().getDataGroups());
         }
     }
 

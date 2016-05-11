@@ -60,7 +60,7 @@ public class UserSessionTest {
         assertTrue(newSession.isAuthenticated());
         assertEquals(session.getEnvironment(), newSession.getEnvironment());
         assertEquals(session.getStudyIdentifier(), newSession.getStudyIdentifier());
-        assertEquals(session.getStudyParticipant(), newSession.getStudyParticipant());
+        assertEquals(session.getParticipant(), newSession.getParticipant());
     }
     
     @Test

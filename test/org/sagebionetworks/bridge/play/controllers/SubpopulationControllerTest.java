@@ -202,7 +202,7 @@ public class SubpopulationControllerTest {
     @Test
     public void adminCanSubmitPhysicalDelete() throws Exception {
         participant = new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build();
-        session.setStudyParticipant(participant);
+        session.setParticipant(participant);
         
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
         
@@ -210,7 +210,7 @@ public class SubpopulationControllerTest {
         assertResult(result, 200, "Subpopulation has been permanently deleted.");
 
         participant = new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.DEVELOPER, Roles.ADMIN)).build();
-        session.setStudyParticipant(participant);
+        session.setParticipant(participant);
         result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
         assertResult(result, 200, "Subpopulation has been permanently deleted.");
         
@@ -219,7 +219,7 @@ public class SubpopulationControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void getAllSubpopulationsRequiresDeveloper() throws Exception {
-        session.setStudyParticipant(
+        session.setParticipant(
                 new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
         controller.getAllSubpopulations();
@@ -227,7 +227,7 @@ public class SubpopulationControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void createSubpopulationRequiresDeveloper() throws Exception {
-        session.setStudyParticipant(
+        session.setParticipant(
                 new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
         controller.createSubpopulation();
@@ -235,7 +235,7 @@ public class SubpopulationControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void updateSubpopulationRequiresDeveloper() throws Exception {
-        session.setStudyParticipant(
+        session.setParticipant(
                 new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
         controller.updateSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -243,14 +243,14 @@ public class SubpopulationControllerTest {
 
     @Test(expected = UnauthorizedException.class)
     public void getSubpopulationRequiresDeveloper() throws Exception {
-        session.setStudyParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build());
+        session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build());
         
         controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
     }
     
     @Test(expected = UnauthorizedException.class)
     public void deleteSubpopulationRequiresDeveloper() throws Exception {
-        session.setStudyParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build());
+        session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build());
         
         controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
     }

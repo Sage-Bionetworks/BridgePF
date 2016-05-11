@@ -112,7 +112,7 @@ public class ConsentService {
         // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
         subpopService.getSubpopulation(study, subpopGuid);
         
-        Account account = accountDao.getAccount(study, session.getStudyParticipant().getId());
+        Account account = accountDao.getAccount(study, session.getParticipant().getId());
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
         if (signature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);    
@@ -156,7 +156,7 @@ public class ConsentService {
         Validate.entityThrowingException(validator, consentSignature);
 
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
-        Account account = accountDao.getAccount(study, session.getStudyParticipant().getId());
+        Account account = accountDao.getAccount(study, session.getParticipant().getId());
 
         // Throws exception if we have exceeded enrollment limit.
         if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
@@ -168,7 +168,7 @@ public class ConsentService {
         
         UserConsent userConsent = null;
         try {
-            userConsent = userConsentDao.giveConsent(session.getStudyParticipant().getHealthCode(), subpopGuid,
+            userConsent = userConsentDao.giveConsent(session.getParticipant().getHealthCode(), subpopGuid,
                     studyConsent.getCreatedOn(), consentSignature.getSignedOn());
         } catch (Throwable e) {
             int len = account.getConsentSignatureHistory(subpopGuid).size();
@@ -178,16 +178,16 @@ public class ConsentService {
         }
         // Save supplemental records, fire events, etc.
         if (userConsent != null){
-            activityEventService.publishEnrollmentEvent(session.getStudyParticipant().getHealthCode(), userConsent);
+            activityEventService.publishEnrollmentEvent(session.getParticipant().getHealthCode(), userConsent);
         }
-        optionsService.setEnum(study, session.getStudyParticipant().getHealthCode(), SHARING_SCOPE, sharingScope);
+        optionsService.setEnum(study, session.getParticipant().getHealthCode(), SHARING_SCOPE, sharingScope);
         
         updateSessionConsentStatuses(session, subpopGuid, true);
         studyEnrollmentService.incrementStudyEnrollment(study, session);
         
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
-                    session.getStudyParticipant().getEmail(), consentSignature, sharingScope, studyConsentService,
+                    session.getParticipant().getEmail(), consentSignature, sharingScope, studyConsentService,
                     consentTemplate);
 
             sendMailService.sendEmail(consentEmail);
@@ -235,7 +235,7 @@ public class ConsentService {
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
-        Account account = accountDao.getAccount(study, session.getStudyParticipant().getId());
+        Account account = accountDao.getAccount(study, session.getParticipant().getId());
         
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
         if (active == null) {
@@ -250,7 +250,7 @@ public class ConsentService {
         accountDao.updateAccount(account);
 
         try {
-            userConsentDao.withdrawConsent(session.getStudyParticipant().getHealthCode(), subpopGuid, withdrewOn);    
+            userConsentDao.withdrawConsent(session.getParticipant().getHealthCode(), subpopGuid, withdrewOn);    
         } catch(Exception e) {
             // Could not record the consent, compensate and rethrow the exception
             account.getConsentSignatureHistory(subpopGuid).set(index, active);
@@ -263,18 +263,18 @@ public class ConsentService {
         
         // Only turn of sharing if the upshot of your change in consents is that you are not consented.
         if (!session.doesConsent()) {
-            optionsService.setEnum(study, session.getStudyParticipant().getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
+            optionsService.setEnum(study, session.getParticipant().getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
             
-            StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getStudyParticipant())
+            StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
                     .withSharingScope(SharingScope.NO_SHARING).build();
-            session.setStudyParticipant(participant);
+            session.setParticipant(participant);
         }
         studyEnrollmentService.decrementStudyEnrollment(study, session);
         
-        String externalId = optionsService.getOptions(session.getStudyParticipant().getHealthCode())
+        String externalId = optionsService.getOptions(session.getParticipant().getHealthCode())
                 .getString(EXTERNAL_IDENTIFIER);
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId,
-                session.getStudyParticipant(), withdrawal, withdrewOn);
+                session.getParticipant(), withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
     }
     
@@ -344,11 +344,11 @@ public class ConsentService {
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
-        final SharingScope sharingScope = optionsService.getOptions(session.getStudyParticipant().getHealthCode())
+        final SharingScope sharingScope = optionsService.getOptions(session.getParticipant().getHealthCode())
                 .getEnum(SHARING_SCOPE, SharingScope.class);
         
         MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
-                session.getStudyParticipant().getEmail(), consentSignature, sharingScope, studyConsentService,
+                session.getParticipant().getEmail(), consentSignature, sharingScope, studyConsentService,
                 consentTemplate);
         sendMailService.sendEmail(consentEmail);
     }

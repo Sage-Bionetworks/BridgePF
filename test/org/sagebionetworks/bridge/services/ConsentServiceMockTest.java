@@ -149,11 +149,11 @@ public class ConsentServiceMockTest {
         when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
         
         UserConsent userConsent = mock(UserConsent.class);
-        when(userConsentDao.giveConsent(session.getStudyParticipant().getHealthCode(), SUBPOP_GUID, UNIX_TIMESTAMP, UNIX_TIMESTAMP)).thenReturn(userConsent);
+        when(userConsentDao.giveConsent(session.getParticipant().getHealthCode(), SUBPOP_GUID, UNIX_TIMESTAMP, UNIX_TIMESTAMP)).thenReturn(userConsent);
         
         consentService.consentToResearch(study, SUBPOP_GUID, session, consentSignature, SharingScope.NO_SHARING, false);
         
-        verify(activityEventService).publishEnrollmentEvent(session.getStudyParticipant().getHealthCode(), userConsent);
+        verify(activityEventService).publishEnrollmentEvent(session.getParticipant().getHealthCode(), userConsent);
     }
 
     @Test
@@ -186,7 +186,7 @@ public class ConsentServiceMockTest {
     @Test
     public void noActivityEventIfDaoFails() {
         StudyConsent consent = mock(StudyConsent.class);
-        when(userConsentDao.giveConsent(session.getStudyParticipant().getHealthCode(), SUBPOP_GUID, consent.getCreatedOn(), UNIX_TIMESTAMP)).thenThrow(new RuntimeException());
+        when(userConsentDao.giveConsent(session.getParticipant().getHealthCode(), SUBPOP_GUID, consent.getCreatedOn(), UNIX_TIMESTAMP)).thenThrow(new RuntimeException());
         
         try {
             consentService.consentToResearch(study, SUBPOP_GUID, session, consentSignature, SharingScope.NO_SHARING, false);
@@ -198,7 +198,7 @@ public class ConsentServiceMockTest {
     
     @Test
     public void withdrawConsent() throws Exception {
-        doReturn(new ParticipantOptionsLookup(ImmutableMap.of())).when(optionsService).getOptions(session.getStudyParticipant().getHealthCode());
+        doReturn(new ParticipantOptionsLookup(ImmutableMap.of())).when(optionsService).getOptions(session.getParticipant().getHealthCode());
         
         List<ConsentSignature> history = account.getConsentSignatureHistory(SUBPOP_GUID);
         history.add(consentSignature);
@@ -207,8 +207,8 @@ public class ConsentServiceMockTest {
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         
-        verify(userConsentDao).withdrawConsent(session.getStudyParticipant().getHealthCode(), SUBPOP_GUID, UNIX_TIMESTAMP);
-        verify(accountDao).getAccount(study, session.getStudyParticipant().getId());
+        verify(userConsentDao).withdrawConsent(session.getParticipant().getHealthCode(), SUBPOP_GUID, UNIX_TIMESTAMP);
+        verify(accountDao).getAccount(study, session.getParticipant().getId());
         verify(accountDao).updateAccount(captor.capture());
         // It happens twice because we do it the first time to set up the test properly
         //verify(account, times(2)).getConsentSignatures(setterCaptor.capture());
@@ -233,7 +233,7 @@ public class ConsentServiceMockTest {
                     email.getMessageParts().get(0).getContent());
         
         assertFalse(session.doesConsent());
-        assertEquals(SharingScope.NO_SHARING, session.getStudyParticipant().getSharingScope());
+        assertEquals(SharingScope.NO_SHARING, session.getParticipant().getSharingScope());
     }
     
     @Test
@@ -255,7 +255,7 @@ public class ConsentServiceMockTest {
         List<ConsentSignature> signatures =  acct.getConsentSignatureHistory(SUBPOP_GUID); 
         signatures.add(new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1969-04-05").build());
         
-        when(accountDao.getAccount(study, session.getStudyParticipant().getId())).thenReturn(acct);
+        when(accountDao.getAccount(study, session.getParticipant().getId())).thenReturn(acct);
         doThrow(new BridgeServiceException("Something bad happend", 500)).when(userConsentDao)
             .withdrawConsent("BBB", SUBPOP_GUID, UNIX_TIMESTAMP);
         

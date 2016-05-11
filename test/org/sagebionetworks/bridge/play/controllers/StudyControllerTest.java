@@ -95,7 +95,7 @@ public class StudyControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode")
                 .withRoles(Sets.newHashSet()).build();
-        when(mockSession.getStudyParticipant()).thenReturn(participant);
+        when(mockSession.getParticipant()).thenReturn(participant);
 
         // this should fail, returning a session without the role
         reset(controller);
@@ -109,7 +109,7 @@ public class StudyControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode")
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
-        when(mockSession.getStudyParticipant()).thenReturn(participant);
+        when(mockSession.getParticipant()).thenReturn(participant);
 
         doReturn(mockSession).when(controller).getAuthenticatedSession();
         

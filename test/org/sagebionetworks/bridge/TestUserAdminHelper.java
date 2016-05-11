@@ -46,7 +46,7 @@ public class TestUserAdminHelper {
             this.session = session;
         }
         public StudyParticipant getStudyParticipant() {
-            return session.getStudyParticipant();
+            return session.getParticipant();
         }
         public SignIn getSignIn() {
             return new SignIn(getStudyParticipant().getEmail(), getStudyParticipant().getPassword());
@@ -77,10 +77,10 @@ public class TestUserAdminHelper {
         }
         public CriteriaContext getCriteriaContext() {
             return new CriteriaContext.Builder()
-                .withLanguages(session.getStudyParticipant().getLanguages())
+                .withLanguages(session.getParticipant().getLanguages())
                 .withHealthCode(session.getHealthCode())
                 .withStudyIdentifier(study.getStudyIdentifier())
-                .withUserDataGroups(session.getStudyParticipant().getDataGroups())
+                .withUserDataGroups(session.getParticipant().getDataGroups())
                 .build();            
         }
     }
@@ -186,10 +186,10 @@ public class TestUserAdminHelper {
 
             // fix some stuff. In the admin/test path, we want to refer to the password after-the-fact.
             StudyParticipant newParticipant = new StudyParticipant.Builder()
-                    .copyOf(session.getStudyParticipant())
+                    .copyOf(session.getParticipant())
                     .withPassword(finalParticipant.getPassword())
                     .build();
-            session.setStudyParticipant(newParticipant);
+            session.setParticipant(newParticipant);
             
             return new TestUser(finalStudy, session);
         }

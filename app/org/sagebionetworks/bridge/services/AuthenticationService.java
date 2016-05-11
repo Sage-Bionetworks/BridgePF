@@ -304,7 +304,7 @@ public class AuthenticationService {
                 .withLanguages(lookup.getOrderedStringSet(LANGUAGES)).build();
         
         final UserSession session = getSession(account);
-        session.setStudyParticipant(participant);
+        session.setParticipant(participant);
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setStudyIdentifier(study.getStudyIdentifier());
@@ -314,15 +314,15 @@ public class AuthenticationService {
         if (participant.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
             participant = new StudyParticipant.Builder().copyOf(participant)
                     .withLanguages(context.getLanguages()).build();
-            session.setStudyParticipant(participant);
+            session.setParticipant(participant);
             optionsService.setOrderedStringSet(study, account.getHealthCode(), LANGUAGES, context.getLanguages());
         }
         
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)
-                .withLanguages(session.getStudyParticipant().getLanguages())
-                .withHealthCode(session.getStudyParticipant().getHealthCode())
-                .withUserDataGroups(session.getStudyParticipant().getDataGroups())
+                .withLanguages(session.getParticipant().getLanguages())
+                .withHealthCode(session.getParticipant().getHealthCode())
+                .withUserDataGroups(session.getParticipant().getDataGroups())
                 .build();
         
         session.setConsentStatuses(consentService.getConsentStatuses(newContext));
