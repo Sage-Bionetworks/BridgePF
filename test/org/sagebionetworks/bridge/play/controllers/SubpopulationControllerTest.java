@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -62,28 +62,26 @@ public class SubpopulationControllerTest {
     private StudyService studyService;
     
     @Mock
-    private UserSession session;
-    
-    @Mock
     private Study study;
     
     @Captor
     private ArgumentCaptor<Subpopulation> captor;
     
-    private User user;
+    private UserSession session;
+    
+    private StudyParticipant participant;
     
     @Before
     public void before() throws Exception {
-        user = new User();
-        user.setRoles(Sets.newHashSet(Roles.DEVELOPER));
+        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+        session = new UserSession(participant);
+        session.setStudyIdentifier(STUDY_IDENTIFIER);
         
         controller.setSubpopulationService(subpopService);
         controller.setStudyService(studyService);
         
         when(study.getStudyIdentifier()).thenReturn(STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession();
-        doReturn(user).when(session).getUser();
-        doReturn(STUDY_IDENTIFIER).when(session).getStudyIdentifier();
         when(studyService.getStudy(STUDY_IDENTIFIER)).thenReturn(study);
     }
     
@@ -203,14 +201,16 @@ public class SubpopulationControllerTest {
 
     @Test
     public void adminCanSubmitPhysicalDelete() throws Exception {
-        user.setRoles(Sets.newHashSet(Roles.ADMIN));
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+        session.setStudyParticipant(participant);
         
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
         
         // Message indicates a physical (permanent) delete, true is submitted
         assertResult(result, 200, "Subpopulation has been permanently deleted.");
-        
-        user.setRoles(Sets.newHashSet(Roles.DEVELOPER, Roles.ADMIN));
+
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.DEVELOPER, Roles.ADMIN)).build();
+        session.setStudyParticipant(participant);
         result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
         assertResult(result, 200, "Subpopulation has been permanently deleted.");
         
@@ -219,40 +219,38 @@ public class SubpopulationControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void getAllSubpopulationsRequiresDeveloper() throws Exception {
-        User user = new User();
-        doReturn(user).when(session).getUser(); // no developer role
+        session.setStudyParticipant(
+                new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
         controller.getAllSubpopulations();
     }
     
     @Test(expected = UnauthorizedException.class)
     public void createSubpopulationRequiresDeveloper() throws Exception {
-        User user = new User();
-        doReturn(user).when(session).getUser(); // no developer role
+        session.setStudyParticipant(
+                new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
         controller.createSubpopulation();
     }
     
     @Test(expected = UnauthorizedException.class)
     public void updateSubpopulationRequiresDeveloper() throws Exception {
-        User user = new User();
-        doReturn(user).when(session).getUser(); // no developer role
+        session.setStudyParticipant(
+                new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
         controller.updateSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
     }
-    
+
     @Test(expected = UnauthorizedException.class)
     public void getSubpopulationRequiresDeveloper() throws Exception {
-        User user = new User();
-        doReturn(user).when(session).getUser(); // no developer role
+        session.setStudyParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build());
         
         controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
     }
     
     @Test(expected = UnauthorizedException.class)
     public void deleteSubpopulationRequiresDeveloper() throws Exception {
-        User user = new User();
-        doReturn(user).when(session).getUser(); // no developer role
+        session.setStudyParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build());
         
         controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);
     }

@@ -62,7 +62,7 @@ public class StudyEnrollmentServiceTest {
     
     @Test
     public void enforcesStudyEnrollmentLimit() {
-        UserSession session = new UserSession(null);
+        UserSession session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
@@ -79,7 +79,7 @@ public class StudyEnrollmentServiceTest {
     
     @Test
     public void studyEnrollmentNotIncrementedOnSubsequentConsents() {
-        UserSession session = new UserSession(null);
+        UserSession session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
@@ -105,7 +105,7 @@ public class StudyEnrollmentServiceTest {
     
     @Test
     public void decrementingStudyWorks() {
-        UserSession session = new UserSession(null);
+        UserSession session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
         
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
@@ -128,7 +128,7 @@ public class StudyEnrollmentServiceTest {
     
     @Test
     public void studyEnrollmentNotDecrementedUntilLastWithdrawal() {
-        UserSession session = new UserSession(null);
+        UserSession session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
         
         study = TestUtils.getValidStudy(ConsentServiceTest.class);

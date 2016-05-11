@@ -83,7 +83,6 @@ public class ExceptionInterceptorTest {
         when(invocation.proceed()).thenThrow(exception);
         
         Result result = (Result)interceptor.invoke(invocation);
-        System.out.println(contentAsString(result));
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
 
         assertTrue(node.get("authenticated").asBoolean());

@@ -8,7 +8,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
@@ -42,13 +41,13 @@ public class CacheProvider {
 
     public void setUserSession(final UserSession session) {
         checkNotNull(session);
-        final User user = session.getUser();
-        checkNotNull(user, "Missing user in session.");
-        final String userId = user.getId();
-        checkNotNull(userId, "Missing user ID in session.");
-        final String sessionToken = session.getSessionToken();
-        checkNotNull(sessionToken, "Missing session token for session.");
+        checkNotNull(session.getStudyParticipant(), "Missing participant in session.");
+        checkNotNull(session.getId(), "Missing user ID in session.");
+        checkNotNull(session.getSessionToken(), "Missing session token for session.");
 
+        final String userId = session.getId();
+        final String sessionToken = session.getSessionToken();
+        
         final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
         final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
@@ -80,7 +79,7 @@ public class CacheProvider {
                 return null;
             }
             final UserSession session = bridgeObjectMapper.readValue(ser, UserSession.class);
-            final String userKey = RedisKey.USER_SESSION.getRedisKey(session.getUser().getId());
+            final String userKey = RedisKey.USER_SESSION.getRedisKey(session.getId());
             try (JedisTransaction transaction = jedisOps.getTransaction(sessionKey)) {
                 transaction
                         .expire(userKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS)
@@ -111,9 +110,11 @@ public class CacheProvider {
     }
 
     public void removeSession(final UserSession session) {
+        checkNotNull(session.getSessionToken());
+        checkNotNull(session.getId());
         try {
             final String sessionKey = RedisKey.SESSION.getRedisKey(session.getSessionToken());
-            final String userKey = RedisKey.USER_SESSION.getRedisKey(session.getUser().getId());
+            final String userKey = RedisKey.USER_SESSION.getRedisKey(session.getId());
             try (JedisTransaction transaction = jedisOps.getTransaction()) {
                 transaction.del(sessionKey).del(userKey).exec();
             }

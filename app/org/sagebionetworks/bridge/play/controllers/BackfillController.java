@@ -45,6 +45,6 @@ public class BackfillController extends BaseController implements ApplicationCon
 
     private String checkUser() throws Exception {
         UserSession session = getAuthenticatedSession(ADMIN);
-        return session.getUser().getEmail();
+        return session.getStudyParticipant().getEmail();
     }
 }

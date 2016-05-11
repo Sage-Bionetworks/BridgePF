@@ -54,7 +54,10 @@ public class UserSessionInfoTest {
         assertEquals("foo", node.get("dataGroups").get(0).asText());
         assertEquals("staging", node.get("environment").asText());
         assertEquals(participant.getId(), node.get("id").asText());
+        assertNull(node.get("healthCode"));
+        assertNull(node.get("encryptedHealthCode"));
         assertEquals("UserSessionInfo", node.get("type").asText());
+        
         JsonNode consentMap = node.get("consentStatuses");
         
         JsonNode consentStatus = consentMap.get("AAA");
@@ -68,13 +71,6 @@ public class UserSessionInfoTest {
         
         // ... and no things that shouldn't be there
         assertEquals(19, node.size());
-    }
-    
-    @Test
-    public void studyParticipantCollapsedIntoSession() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().withId("ABC").build();
-        
-        UserSession session = new UserSession(participant);
     }
     
 }

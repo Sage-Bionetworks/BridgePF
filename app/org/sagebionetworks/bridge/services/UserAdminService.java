@@ -126,7 +126,7 @@ public class UserAdminService {
         try {
             SignIn signIn = new SignIn(participant.getEmail(), participant.getPassword());
             newUserSession = authenticationService.signIn(study, context, signIn);
-
+            
             if (consentUser) {
                 String name = String.format("[Signature for %s]", participant.getEmail());
                 ConsentSignature signature = new ConsentSignature.Builder().withName(name)
@@ -152,8 +152,8 @@ public class UserAdminService {
         } catch (RuntimeException ex) {
             // Created the account, but failed to process the account properly. To avoid leaving behind a bunch of test
             // accounts, delete this account.
-            if (newUserSession != null && newUserSession.getUser() != null) {
-                deleteUser(study, newUserSession.getUser().getId());    
+            if (newUserSession != null) {
+                deleteUser(study, newUserSession.getId());    
             }
             throw ex;
         }

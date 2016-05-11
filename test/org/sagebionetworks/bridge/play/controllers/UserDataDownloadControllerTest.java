@@ -14,7 +14,6 @@ import play.mvc.Result;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.DateRange;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -28,7 +27,7 @@ public class UserDataDownloadControllerTest {
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("test-study");
 
-        UserSession mockSession = new UserSession(null);
+        UserSession mockSession = new UserSession();
         mockSession.setStudyIdentifier(studyIdentifier);
 
         // mock request JSON
@@ -52,7 +51,7 @@ public class UserDataDownloadControllerTest {
 
         // validate args sent to mock service
         ArgumentCaptor<DateRange> dateRangeCaptor = ArgumentCaptor.forClass(DateRange.class);
-        verify(mockService).requestUserData(eq(studyIdentifier), any(User.class), dateRangeCaptor.capture());
+        verify(mockService).requestUserData(eq(studyIdentifier), any(String.class), dateRangeCaptor.capture());
 
         DateRange dateRange = dateRangeCaptor.getValue();
         assertEquals("2015-08-15", dateRange.getStartDate().toString());

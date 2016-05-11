@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.DateRange;
-import org.sagebionetworks.bridge.models.accounts.User;
 
 public class UserDataDownloadViaSqsServiceTest {
     @Test
@@ -45,12 +44,10 @@ public class UserDataDownloadViaSqsServiceTest {
         testService.setSqsClient(mockSqsClient);
 
         // test inputs
-        User user = new User();
-        user.setEmail("test-username@email.com");
         DateRange dateRange = new DateRange(LocalDate.parse("2015-08-15"), LocalDate.parse("2015-08-19"));
 
         // execute
-        testService.requestUserData(TEST_STUDY, user, dateRange);
+        testService.requestUserData(TEST_STUDY, "test-username@email.com", dateRange);
 
         // Validate SQS args. It's a JSON struct, but we can convert it into a map.
         String sqsMessageText = sqsMessageCaptor.getValue();

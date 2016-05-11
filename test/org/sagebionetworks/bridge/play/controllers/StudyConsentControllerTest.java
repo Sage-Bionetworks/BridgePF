@@ -75,7 +75,7 @@ public class StudyConsentControllerTest {
         controller.setSubpopulationService(subpopService);
         controller.setStudyService(studyService);
         
-        UserSession session = new UserSession(null);
+        UserSession session = new UserSession();
         session.setStudyIdentifier(STUDY_ID);
         session.setAuthenticated(true);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);

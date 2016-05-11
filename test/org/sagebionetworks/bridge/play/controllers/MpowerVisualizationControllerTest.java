@@ -114,7 +114,7 @@ public class MpowerVisualizationControllerTest {
     public void testWrite() throws Exception {
         // Spy controller. Mock session.
         MpowerVisualizationController controller = spy(new MpowerVisualizationController());
-        doReturn(new UserSession(null)).when(controller).getAuthenticatedSession(Roles.WORKER);
+        doReturn(new UserSession()).when(controller).getAuthenticatedSession(Roles.WORKER);
 
         // Mock service.
         MpowerVisualizationService mockSvc = mock(MpowerVisualizationService.class);

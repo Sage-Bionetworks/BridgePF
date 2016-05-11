@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -113,17 +113,16 @@ public class UploadService {
         this.validator = validator;
     }
 
-    public UploadSession createUpload(StudyIdentifier studyId, User user, UploadRequest uploadRequest) {
+    public UploadSession createUpload(StudyIdentifier studyId, StudyParticipant participant, UploadRequest uploadRequest) {
         Validate.entityThrowingException(validator, uploadRequest);
 
         // Check to see if upload is a dupe, and if it is, get the upload status.
-        String healthCode = user.getHealthCode();
         String uploadMd5 = uploadRequest.getContentMd5();
         DateTime uploadRequestedOn = DateUtils.getCurrentDateTime();
         String originalUploadId = null;
         UploadStatus originalUploadStatus = null;
         try {
-            originalUploadId = uploadDedupeDao.getDuplicate(healthCode, uploadMd5, uploadRequestedOn);
+            originalUploadId = uploadDedupeDao.getDuplicate(participant.getHealthCode(), uploadMd5, uploadRequestedOn);
             if (originalUploadId != null) {
                 Upload originalUpload = uploadDao.getUpload(originalUploadId);
                 originalUploadStatus = originalUpload.getStatus();
@@ -140,7 +139,7 @@ public class UploadService {
             uploadId = originalUploadId;
         } else {
             // This is a new upload.
-            Upload upload = uploadDao.createUpload(uploadRequest, healthCode);
+            Upload upload = uploadDao.createUpload(uploadRequest, participant.getHealthCode());
             uploadId = upload.getUploadId();
 
             if (originalUploadId != null) {
@@ -150,7 +149,7 @@ public class UploadService {
             } else {
                 try {
                     // Not a dupe. Register this dupe so we can detect dupes of this.
-                    uploadDedupeDao.registerUpload(healthCode, uploadMd5, uploadRequestedOn, uploadId);
+                    uploadDedupeDao.registerUpload(participant.getHealthCode(), uploadMd5, uploadRequestedOn, uploadId);
                 } catch (RuntimeException ex) {
                     // Don't want dedupe logic to fail the upload. Log an error and swallow the exception.
                     logger.error("Error registering upload " + uploadId + " in dedupe table: " + ex.getMessage(), ex);
@@ -194,20 +193,20 @@ public class UploadService {
      * validated.
      * </p>
      *
-     * @param user
+     * @param participant
      *         calling user, must be non-null
      * @param uploadId
      *         ID of upload to fetch, must be non-null and non-empty
      * @return upload metadata object
      */
-    public Upload getUpload(@Nonnull User user, @Nonnull String uploadId) {
+    public Upload getUpload(@Nonnull StudyParticipant participant, @Nonnull String uploadId) {
         if (Strings.isNullOrEmpty(uploadId)) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
         }
         Upload upload = uploadDao.getUpload(uploadId);
 
         // check health code
-        if (!user.getHealthCode().equals(upload.getHealthCode())) {
+        if (!participant.getHealthCode().equals(upload.getHealthCode())) {
             throw new UnauthorizedException();
         }
 
@@ -224,15 +223,15 @@ public class UploadService {
      * validated.
      * </p>
      *
-     * @param user
+     * @param participant
      *         calling user, must be non-null
      * @param uploadId
      *         ID of upload to fetch, must be non-null and non-empty
      * @return upload validation status, which includes the health data record if one was created
      */
-    public UploadValidationStatus getUploadValidationStatus(@Nonnull User user, @Nonnull String uploadId) {
+    public UploadValidationStatus getUploadValidationStatus(@Nonnull StudyParticipant participant, @Nonnull String uploadId) {
         // The call to getUpload() also validates inputs and verifies the user matches.
-        Upload upload = getUpload(user, uploadId);
+        Upload upload = getUpload(participant, uploadId);
 
         // get record, if it exists
         HealthDataRecord record = null;

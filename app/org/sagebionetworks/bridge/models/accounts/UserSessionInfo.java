@@ -1,8 +1,11 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -12,17 +15,20 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
 
 /**
  * Greatly trimmed user session object that is embedded in the initial render of the
- * web application.
- *
+ * web application. NOTE: very likely we will just start custom-serializing the session 
+ * directly and delete this object, since we are already doing it here.
  */
 public class UserSessionInfo {
     
     private static final String CONSENT_HISTORIES = "consentHistories";
     private static final String STUDY_PARTICIPANT = "studyParticipant";
     private static final String TYPE = "type";
+    
+    private static final Set<String> PROHIBITED_FIELD_NAMES = Sets.newHashSet("type", "encryptedHealthCode");
 
     /**
      * Collapse StudyParticipant properties into the UserSessionInfo JSON so that we 
@@ -40,7 +46,7 @@ public class UserSessionInfo {
                 String fieldName = i.next();
                 JsonNode child = partNode.get(fieldName);
                 
-                if (TYPE.equals(fieldName)) {
+                if (PROHIBITED_FIELD_NAMES.contains(fieldName)) {
                     // do nothing
                 } else if (child.isTextual()) {
                     node.put(fieldName, child.asText());    
@@ -75,6 +81,7 @@ public class UserSessionInfo {
     private StudyParticipant studyParticipant;
 
     private UserSessionInfo(UserSession session) {
+        checkNotNull(session);
         this.authenticated = session.isAuthenticated();
         this.sessionToken = session.getSessionToken();
         this.environment = ENVIRONMENTS.get(session.getEnvironment());

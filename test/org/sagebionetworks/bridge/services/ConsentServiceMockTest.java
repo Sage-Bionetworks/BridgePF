@@ -221,7 +221,7 @@ public class ConsentServiceMockTest {
         assertNull(account.getActiveConsentSignature(SUBPOP_GUID));
         assertNotNull(account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
         assertEquals(1, account.getConsentSignatureHistory(SUBPOP_GUID).size());
-        assertFalse(session.getUser().doesConsent());
+        assertFalse(session.doesConsent());
         
         MimeTypeEmailProvider provider = emailCaptor.getValue();
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -232,7 +232,7 @@ public class ConsentServiceMockTest {
         assertEquals("<p>User   &lt;bbb@bbb.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>", 
                     email.getMessageParts().get(0).getContent());
         
-        assertFalse(session.getUser().doesConsent());
+        assertFalse(session.doesConsent());
         assertEquals(SharingScope.NO_SHARING, session.getStudyParticipant().getSharingScope());
     }
     

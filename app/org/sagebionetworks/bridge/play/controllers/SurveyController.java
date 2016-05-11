@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -93,7 +92,7 @@ public class SurveyController extends BaseController {
     
     public Result getSurvey(String surveyGuid, String createdOnString) throws Exception {
         UserSession session = getAuthenticatedSession();
-        if (session.getUser().isInRole(Roles.WORKER)) {
+        if (session.isInRole(Roles.WORKER)) {
             // Worker accounts can access surveys across studies. We branch off and call getSurveyForWorker().
             return getSurveyForWorker(surveyGuid, createdOnString);
         } else {
@@ -170,16 +169,15 @@ public class SurveyController extends BaseController {
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         // If not in either of these roles, don't do the work of getting the survey
-        User user = session.getUser();
-        if (!user.isInRole(DEVELOPER) && !user.isInRole(ADMIN)) {
+        if (!session.isInRole(DEVELOPER) && !session.isInRole(ADMIN)) {
             throw new UnauthorizedException();
         }
         
         Survey survey = getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
         
-        if ("true".equals(physical) && user.isInRole(ADMIN)) {
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
             surveyService.deleteSurveyPermanently(survey);
-        } else if (user.isInRole(DEVELOPER)) {
+        } else if (session.isInRole(DEVELOPER)) {
             surveyService.deleteSurvey(survey);    
         } else {
             // An admin calling for a logical delete. That wasn't allowed before so we don't allow it now.
@@ -296,17 +294,17 @@ public class SurveyController extends BaseController {
     }
     
     private void canAccessSurvey(UserSession session) {
-        boolean isDeveloper = session.getUser().isInRole(DEVELOPER);
-        boolean isConsentedUser = session.getUser().doesConsent();
+        boolean isDeveloper = session.isInRole(DEVELOPER);
+        boolean isConsentedUser = session.doesConsent();
 
         if (isDeveloper || isConsentedUser) {
             return;
         }
         // An imperfect test, but normal users have no other roles, so for them, access 
         // is restricted because they have not consented.
-        Set<Roles> roles = new HashSet<>(session.getUser().getRoles());
+        Set<Roles> roles = new HashSet<>(session.getStudyParticipant().getRoles());
         roles.remove(TEST_USERS);
-        if (session.getUser().getRoles().isEmpty()) {
+        if (session.getStudyParticipant().getRoles().isEmpty()) {
             throw new ConsentRequiredException(session);
         }
         // Otherwise, for researchers and administrators, the issue is one of authorization.
@@ -325,7 +323,7 @@ public class SurveyController extends BaseController {
             throw new UnauthorizedException();
         }
         StudyIdentifier studyId = session.getStudyIdentifier();
-        if (!session.getUser().isInRole(ADMIN) && 
+        if (!session.isInRole(ADMIN) && 
             !survey.getStudyIdentifier().equals(studyId.getIdentifier())) {
             throw new UnauthorizedException();
         }

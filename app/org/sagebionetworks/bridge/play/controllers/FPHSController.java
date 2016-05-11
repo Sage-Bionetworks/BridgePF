@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -57,21 +57,22 @@ public class FPHSController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
-        fphsService.registerExternalIdentifier(session.getStudyIdentifier(), session.getUser().getHealthCode(), externalId);
+        fphsService.registerExternalIdentifier(session.getStudyIdentifier(), session.getHealthCode(), externalId);
 
-        User user = session.getUser();
-        
         // The service saves the external identifier and saves this as an option. We also need 
         // to update the user's session, something that should be generalized for other methods
         // that change data groups.
-        Set<String> dataGroups = Sets.newHashSet(user.getDataGroups());
+        Set<String> dataGroups = Sets.newHashSet(session.getStudyParticipant().getDataGroups());
         dataGroups.add("football_player");
-        user.setDataGroups(dataGroups);
+        
+        session.setStudyParticipant(new StudyParticipant.Builder()
+                .copyOf(session.getStudyParticipant())
+                .withDataGroups(dataGroups).build());
         
         CriteriaContext context = getCriteriaContext(session);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        user.setConsentStatuses(statuses);
-        updateSessionUser(session, user);
+        session.setConsentStatuses(statuses);
+        updateSession(session);
         
         return okResult("External identifier added to user profile.");
     }

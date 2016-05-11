@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -72,7 +72,7 @@ public class ScheduledActivityController extends BaseController {
 
         List<ScheduledActivity> scheduledActivities = MAPPER.convertValue(requestToJSON(request()),
                 scheduledActivityTypeRef);
-        scheduledActivityService.updateScheduledActivities(session.getUser().getHealthCode(), scheduledActivities);
+        scheduledActivityService.updateScheduledActivities(session.getHealthCode(), scheduledActivities);
 
         return okResult("Activities updated.");
     }
@@ -110,32 +110,33 @@ public class ScheduledActivityController extends BaseController {
         }
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
         
-        DateTime accountCreatedOn = session.getUser().getAccountCreatedOn();
+        DateTime accountCreatedOn = session.getStudyParticipant().getCreatedOn();
         if (accountCreatedOn == null) {
             Study study = studyService.getStudy(session.getStudyIdentifier());
-            User user = session.getUser();
             // Everyone should have an ID at this point... otherwise sessions are hanging out for over a week.
-            if (user.getId() == null) {
+            if (session.getId() == null) {
                 accountCreatedOn = DateTime.now();
                 LOG.debug("neither accountCreatedOn nor ID exist in session, using current time");
             } else {
-                Account account = accountDao.getAccount(study, user.getId());
+                Account account = accountDao.getAccount(study, session.getId());
                 accountCreatedOn = account.getCreatedOn();
                 LOG.debug("accountCreatedOn not in session, retrieving it and updating session");
             }
-            user.setAccountCreatedOn(accountCreatedOn);
-            updateSessionUser(session, user);
+            StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getStudyParticipant())
+                    .withCreatedOn(accountCreatedOn).build();
+            session.setStudyParticipant(participant);
+            updateSession(session);
         }
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withLanguages(getLanguages(session))
-                .withUserDataGroups(session.getUser().getDataGroups())
-                .withHealthCode(session.getUser().getHealthCode())
+                .withUserDataGroups(session.getStudyParticipant().getDataGroups())
+                .withHealthCode(session.getHealthCode())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(clientInfo)
                 .withTimeZone(zone)
                 .withAccountCreatedOn(accountCreatedOn)
                 .withEndsOn(endsOn).build();
-        return scheduledActivityService.getScheduledActivities(session.getUser(), context);
+        return scheduledActivityService.getScheduledActivities(context);
     }
 }

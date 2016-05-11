@@ -90,14 +90,14 @@ public class UploadServiceTest {
     @Test
     public void test() throws Exception {
         UploadRequest uploadRequest = createUploadRequest();
-        UploadSession uploadSession = uploadService.createUpload(TestConstants.TEST_STUDY, testUser.getUser(),
-                uploadRequest);
+        UploadSession uploadSession = uploadService.createUpload(TestConstants.TEST_STUDY,
+                testUser.getStudyParticipant(), uploadRequest);
         final String uploadId = uploadSession.getId();
         objectsToRemove.add(uploadId);
         int reponseCode = upload(uploadSession.getUrl(), uploadRequest);
         assertEquals(200, reponseCode);
 
-        Upload upload = uploadService.getUpload(testUser.getUser(), uploadId);
+        Upload upload = uploadService.getUpload(testUser.getStudyParticipant(), uploadId);
         uploadService.uploadComplete(TestConstants.TEST_STUDY, upload);
         long expiration = DateTime.now(DateTimeZone.UTC).plusMinutes(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());

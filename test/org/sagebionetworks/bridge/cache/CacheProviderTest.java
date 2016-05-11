@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
@@ -68,6 +67,7 @@ public class CacheProviderTest {
         UserSession session = new UserSession(participant);
         session.setSessionToken(sessionToken);
         cacheProvider.setUserSession(session);
+
         String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
         verify(transaction, times(1)).setex(eq(sessionKey), anyInt(), anyString());
@@ -99,7 +99,7 @@ public class CacheProviderTest {
 
     @Test
     public void testSetUserSessionNullUser() throws Exception {
-        UserSession session = new UserSession(null);
+        UserSession session = new UserSession();
         session.setSessionToken(sessionToken);
         try {
             cacheProvider.setUserSession(session);
@@ -138,19 +138,19 @@ public class CacheProviderTest {
     }
 
     @Test
-    public void testGetUserSession() throws Exception {
+    public void testGetStudyParticipantSession() throws Exception {
         String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         JedisOps jedisOps = mock(JedisOps.class);
         when(jedisOps.getTransaction(sessionKey)).thenReturn(transaction);
         when(jedisOps.get(sessionKey)).thenReturn("userSessionString");
         cacheProvider.setJedisOps(jedisOps);
-        User user = new User();
-        user.setId(userId);
         
-        UserSession mockUserSession = mock(UserSession.class);
-        when(mockUserSession.getUser()).thenReturn(user);
+        StudyParticipant participant = new StudyParticipant.Builder().withId(userId).build();
+        
+        UserSession session = new UserSession(participant);
+        
         BridgeObjectMapper mockObjectMapper = mock(BridgeObjectMapper.class);
-        when(mockObjectMapper.readValue("userSessionString",  UserSession.class)).thenReturn(mockUserSession);
+        when(mockObjectMapper.readValue("userSessionString",  UserSession.class)).thenReturn(session);
         cacheProvider.setBridgeObjectMapper(mockObjectMapper);
         cacheProvider.getUserSession(sessionToken);
         String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
@@ -168,12 +168,12 @@ public class CacheProviderTest {
 
     @Test
     public void testRemoveSession() {
-        User user = new User();
-        user.setId(userId);
-        UserSession mockUserSession = mock(UserSession.class);
-        when(mockUserSession.getUser()).thenReturn(user);
-        when(mockUserSession.getSessionToken()).thenReturn(sessionToken);
-        cacheProvider.removeSession(mockUserSession);
+        StudyParticipant participant = new StudyParticipant.Builder().withId(userId).build();
+
+        UserSession session = new UserSession(participant);
+        session.setSessionToken(sessionToken);
+        
+        cacheProvider.removeSession(session);
         cacheProvider.getUserSession(sessionToken);
         String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         String userKey = RedisKey.USER_SESSION.getRedisKey(userId);

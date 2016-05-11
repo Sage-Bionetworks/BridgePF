@@ -1,28 +1,40 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import java.util.Map;
+import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 
 public class UserSession {
 
+    private static final StudyParticipant EMPTY_PARTICIPANT = new StudyParticipant.Builder().build();
+    
     private boolean authenticated;
     private Environment environment;
     private String sessionToken;
     private String internalSessionToken;
     private StudyIdentifier studyIdentifier;
     private StudyParticipant participant;
-    private Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
+    private Map<SubpopulationGuid,ConsentStatus> consentStatuses = ImmutableMap.of();
 
-    public UserSession(StudyParticipant participant) {
-        this.participant = (participant == null) ? new StudyParticipant.Builder().build() : participant;
+    public UserSession() {
+        this.participant = EMPTY_PARTICIPANT;
     }
-
+    
+    public UserSession(StudyParticipant participant) {
+        checkNotNull(participant);
+        this.participant = participant;
+    }
+    
     public StudyParticipant getStudyParticipant() {
         return participant;
     }
@@ -59,29 +71,31 @@ public class UserSession {
     public void setStudyIdentifier(StudyIdentifier studyIdentifier) {
         this.studyIdentifier = studyIdentifier;
     }
+    public boolean doesConsent() {
+        return ConsentStatus.isUserConsented(consentStatuses);
+    }
+    public boolean hasSignedMostRecentConsent() {
+        return ConsentStatus.isConsentCurrent(consentStatuses);
+    }
+    public boolean isInRole(Roles role) {
+        return (role != null && participant.getRoles().contains(role));
+    }
+    public boolean isInRole(Set<Roles> roleSet) {
+        return roleSet != null && !Collections.disjoint(participant.getRoles(), roleSet);
+    }
+    // These are accessed so frequently it is worth having convenience accessors
     @JsonIgnore
-    public User getUser() {
-        User user = new User();
-        user.setId(participant.getId());
-        user.setFirstName(participant.getFirstName());
-        user.setLastName(participant.getLastName());
-        user.setEmail(participant.getEmail());
-        user.setHealthCode(participant.getHealthCode());
-        user.setSharingScope(participant.getSharingScope());
-        user.setAccountCreatedOn(participant.getCreatedOn());
-        user.setRoles(participant.getRoles());
-        user.setDataGroups(participant.getDataGroups());
-        user.setOtherConsentStatuses(consentStatuses);
-        user.setLanguages(participant.getLanguages());
-        if (studyIdentifier != null) {
-            user.setStudyKey(studyIdentifier.getIdentifier());    
-        }
-        return user;
+    public String getId() {
+        return participant.getId();
+    }
+    @JsonIgnore
+    public String getHealthCode() {
+        return participant.getHealthCode();
     }
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses() {
         return consentStatuses;
     }
     public void setConsentStatuses(Map<SubpopulationGuid,ConsentStatus> consentStatuses) {
-        this.consentStatuses = consentStatuses;
+        this.consentStatuses = ImmutableMap.copyOf(consentStatuses);
     }
 }

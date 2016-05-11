@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -88,12 +87,10 @@ public class SendMailViaAmazonServiceConsentTest {
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-        User user = new User();
-        user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study,
-                SubpopulationGuid.create(study.getIdentifier()), user, consent, SharingScope.SPONSORS_AND_PARTNERS,
-                studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SubpopulationGuid.create(study.getIdentifier()),
+                "test-user@sagebase.org", consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService,
+                consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -112,7 +109,7 @@ public class SendMailViaAmazonServiceConsentTest {
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
         assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
         assertTrue("Name transposed to document", rawMessage.contains("Test 2"));
-        assertTrue("Email transposed to document", rawMessage.contains(user.getEmail()));
+        assertTrue("Email transposed to document", rawMessage.contains("test-user@sagebase.org"));
         assertTrue("Has the PDF consent document", rawMessage.contains("pdf"));
         assertTrue("Has sharing option", rawMessage.contains("Sponsors and Partners"));
     }
@@ -127,12 +124,10 @@ public class SendMailViaAmazonServiceConsentTest {
         ConsentSignature consent = new ConsentSignature.Builder().withName("Eggplant McTester")
                 .withBirthdate("1970-05-01").withImageData(TestConstants.DUMMY_IMAGE_DATA)
                 .withImageMimeType("image/fake").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-        User user = new User();
-        user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study,
-                SubpopulationGuid.create(study.getIdentifier()), user, consent, SharingScope.SPONSORS_AND_PARTNERS,
-                studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SubpopulationGuid.create(study.getIdentifier()),
+                "test-user@sagebase.org", consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService,
+                consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -151,7 +146,7 @@ public class SendMailViaAmazonServiceConsentTest {
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
         assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
         assertTrue("Name transposed to document", rawMessage.contains("Eggplant McTester"));
-        assertTrue("Email transposed to document", rawMessage.contains(user.getEmail()));
+        assertTrue("Email transposed to document", rawMessage.contains("test-user@sagebase.org"));
 
         // Validate message contains signature image. To avoid coupling too closely with MIME implementation, just
         // validate that our content type shows up and that we contain the first few chars of the image data.
@@ -168,12 +163,10 @@ public class SendMailViaAmazonServiceConsentTest {
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-        User user = new User();
-        user.setEmail("test-user@sagebase.org");
 
-        ConsentEmailProvider provider = new ConsentEmailProvider(study,
-                SubpopulationGuid.create(study.getIdentifier()), user, consent, SharingScope.SPONSORS_AND_PARTNERS,
-                studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SubpopulationGuid.create(study.getIdentifier()),
+                "test-user@sagebase.org", consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService,
+                consentBodyTemplate);
 
         // execute
         service.sendEmail(provider);
@@ -191,12 +184,10 @@ public class SendMailViaAmazonServiceConsentTest {
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
-        User user = new User();
-        user.setEmail("test-user@sagebase.org");
 
-        ConsentEmailProvider provider = new ConsentEmailProvider(study,
-                SubpopulationGuid.create(study.getIdentifier()), user, consent, SharingScope.SPONSORS_AND_PARTNERS,
-                studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SubpopulationGuid.create(study.getIdentifier()),
+                "test-user@sagebase.org", consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService,
+                consentBodyTemplate);
 
         // execute
         service.sendEmail(provider);

@@ -152,7 +152,7 @@ public class AuthenticationService {
         Validate.entityThrowingException(signInValidator, signIn);
 
         Account account = accountDao.authenticate(study, signIn);
-        
+
         UserSession session = getSessionFromAccount(study, context, account);
         cacheProvider.setUserSession(session);
         
@@ -258,7 +258,7 @@ public class AuthenticationService {
     private void repairConsents(Account account, UserSession session, CriteriaContext context){
         boolean repaired = false;
         
-        Map<SubpopulationGuid,ConsentStatus> statuses = session.getUser().getConsentStatuses();
+        Map<SubpopulationGuid,ConsentStatus> statuses = session.getConsentStatuses();
         for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : statuses.entrySet()) {
             ConsentSignature activeSignature = account.getActiveConsentSignature(entry.getKey());
             ConsentStatus status = entry.getValue();
@@ -271,7 +271,7 @@ public class AuthenticationService {
         
         // These are incorrect since they are based on looking up DDB records, so re-create them.
         if (repaired) {
-            session.getUser().setConsentStatuses(consentService.getConsentStatuses(context));
+            session.setConsentStatuses(consentService.getConsentStatuses(context));
         }
     }
     
@@ -280,13 +280,13 @@ public class AuthenticationService {
      * DDB. We need to create it.
      */
     private void repairConsent(UserSession session, SubpopulationGuid subpopGuid, ConsentSignature activeSignature) {
-        logger.info("Signature found without a matching user consent record. Adding consent for " + session.getUser().getId());
+        logger.info("Signature found without a matching user consent record. Adding consent for " + session.getId());
         long signedOn = activeSignature.getSignedOn();
         if (signedOn == 0L) {
             signedOn = DateTimeUtils.currentTimeMillis(); // this is so old we did not record a signing date...
         }
         long consentCreatedOn = studyConsentDao.getActiveConsent(subpopGuid).getCreatedOn(); 
-        userConsentDao.giveConsent(session.getUser().getHealthCode(), subpopGuid, consentCreatedOn, signedOn);
+        userConsentDao.giveConsent(session.getHealthCode(), subpopGuid, consentCreatedOn, signedOn);
     }
     
     private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
@@ -336,7 +336,7 @@ public class AuthenticationService {
         if (session != null) {
             return session;
         }
-        final UserSession newSession = new UserSession(null);
+        final UserSession newSession = new UserSession();
         newSession.setSessionToken(BridgeUtils.generateGuid());
         // Internal session token to identify sessions internally (e.g. in metrics)
         newSession.setInternalSessionToken(BridgeUtils.generateGuid());

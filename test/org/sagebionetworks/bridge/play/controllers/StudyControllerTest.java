@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -92,10 +92,10 @@ public class StudyControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void cannotAccessCmsPublicKeyUnlessDeveloper() throws Exception {
-        User user = new User();
-        user.setHealthCode("healthCode");
-        user.setRoles(Sets.newHashSet());
-        when(mockSession.getUser()).thenReturn(user);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("healthCode")
+                .withRoles(Sets.newHashSet()).build();
+        when(mockSession.getStudyParticipant()).thenReturn(participant);
 
         // this should fail, returning a session without the role
         reset(controller);
@@ -106,10 +106,10 @@ public class StudyControllerTest {
     
     @Test
     public void canGetCmsPublicKeyPemFile() throws Exception {
-        User user = new User();
-        user.setHealthCode("healthCode");
-        user.setRoles(Sets.newHashSet(Roles.DEVELOPER));
-        when(mockSession.getUser()).thenReturn(user);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("healthCode")
+                .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+        when(mockSession.getStudyParticipant()).thenReturn(participant);
 
         doReturn(mockSession).when(controller).getAuthenticatedSession();
         

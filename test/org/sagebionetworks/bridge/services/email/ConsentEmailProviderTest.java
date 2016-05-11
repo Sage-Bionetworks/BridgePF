@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -39,7 +39,7 @@ public class ConsentEmailProviderTest {
     private String consentBodyTemplate;
     private Study study;
     private StudyConsentService studyConsentService;
-    private User user;
+    private StudyParticipant participant;
     
     @Before
     public void before() throws Exception {
@@ -51,8 +51,7 @@ public class ConsentEmailProviderTest {
         study.setSupportEmail("sender@default.com");
         study.setConsentNotificationEmail("consent@consent.com");
         
-        user = new User();
-        user.setEmail("user@user.com");
+        participant = new StudyParticipant.Builder().withEmail("user@user.com").build();
         
         studyConsentService = mock(StudyConsentService.class);
     }
@@ -62,7 +61,7 @@ public class ConsentEmailProviderTest {
         // Setup and execute.
         setupStudyConsentServiceWithLegacyDoc();
         ConsentSignature sig = makeSignatureWithoutImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, user, sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
 
         // Validate common elements.
@@ -85,7 +84,7 @@ public class ConsentEmailProviderTest {
         // Setup and execute.
         setupStudyConsentServiceWithNewDoc();
         ConsentSignature sig = makeSignatureWithoutImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, user, sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
 
         // Validate common elements.
@@ -108,7 +107,7 @@ public class ConsentEmailProviderTest {
         // Setup and execute.
         setupStudyConsentServiceWithLegacyDoc();
         ConsentSignature sig = makeSignatureWithImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, user, sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
 
         // Validate common elements.
@@ -136,7 +135,7 @@ public class ConsentEmailProviderTest {
         // Setup and execute.
         setupStudyConsentServiceWithNewDoc();
         ConsentSignature sig = makeSignatureWithImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, user, sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
 
         // Validate common elements.
@@ -163,7 +162,7 @@ public class ConsentEmailProviderTest {
         // Setup and execute.
         setupStudyConsentServiceWithLegacyDoc();
         ConsentSignature sig = makeInvalidSignature();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, user, sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
 
         // Validate common elements.
@@ -186,7 +185,7 @@ public class ConsentEmailProviderTest {
         // Setup and execute.
         setupStudyConsentServiceWithNewDoc();
         ConsentSignature sig = makeInvalidSignature();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, user, sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
 
         // Validate common elements.

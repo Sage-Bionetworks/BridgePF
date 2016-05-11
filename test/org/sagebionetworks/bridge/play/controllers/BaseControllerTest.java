@@ -282,8 +282,8 @@ public class BaseControllerTest {
     public void canGetLanguagesWhenInSession() {
         BaseController controller = new SchedulePlanController();
         
-        UserSession session = new UserSession(null);
-        session.getUser().setLanguages(LANGUAGE_SET);
+        StudyParticipant participant = new StudyParticipant.Builder().withLanguages(LANGUAGE_SET).build();        
+        UserSession session = new UserSession(participant);
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertEquals(LANGUAGE_SET, languages);
@@ -327,7 +327,7 @@ public class BaseControllerTest {
         CacheProvider cacheProvider = mock(CacheProvider.class);
         controller.setCacheProvider(cacheProvider);
         
-        UserSession session = new UserSession(null);
+        UserSession session = new UserSession();
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());

@@ -64,7 +64,7 @@ public class AuthenticationController extends BaseController {
 
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
-        if (!session.getUser().doesConsent()) {
+        if (!session.doesConsent()) {
             throw new ConsentRequiredException(session);
         }
 
@@ -125,7 +125,7 @@ public class AuthenticationController extends BaseController {
 
         // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
         // you've consented to research.
-        if (!session.getUser().doesConsent() && !session.getUser().isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
 

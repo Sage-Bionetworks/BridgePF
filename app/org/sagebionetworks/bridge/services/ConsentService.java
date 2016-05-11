@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -135,7 +134,7 @@ public class ConsentService {
      * @throws StudyLimitExceededException
      *      if enrolling the user would exceed the study enrollment limit
      */
-    public User consentToResearch(Study study, SubpopulationGuid subpopGuid, UserSession session, ConsentSignature consentSignature, 
+    public void consentToResearch(Study study, SubpopulationGuid subpopGuid, UserSession session, ConsentSignature consentSignature, 
             SharingScope sharingScope, boolean sendEmail) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(subpopGuid, Validate.CANNOT_BE_NULL, "subpopulationGuid");
@@ -187,12 +186,12 @@ public class ConsentService {
         studyEnrollmentService.incrementStudyEnrollment(study, session);
         
         if (sendEmail) {
-            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid, session.getUser(), 
-                consentSignature, sharingScope, studyConsentService, consentTemplate);
+            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
+                    session.getStudyParticipant().getEmail(), consentSignature, sharingScope, studyConsentService,
+                    consentTemplate);
 
             sendMailService.sendEmail(consentEmail);
         }
-        return session.getUser();
     }
 
     /**
@@ -263,7 +262,7 @@ public class ConsentService {
         updateSessionConsentStatuses(session, subpopGuid, false);
         
         // Only turn of sharing if the upshot of your change in consents is that you are not consented.
-        if (!session.getUser().doesConsent()) {
+        if (!session.doesConsent()) {
             optionsService.setEnum(study, session.getStudyParticipant().getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
             
             StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getStudyParticipant())
@@ -274,7 +273,8 @@ public class ConsentService {
         
         String externalId = optionsService.getOptions(session.getStudyParticipant().getHealthCode())
                 .getString(EXTERNAL_IDENTIFIER);
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, session.getUser(), withdrawal, withdrewOn);
+        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId,
+                session.getStudyParticipant(), withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
     }
     
@@ -347,8 +347,9 @@ public class ConsentService {
         final SharingScope sharingScope = optionsService.getOptions(session.getStudyParticipant().getHealthCode())
                 .getEnum(SHARING_SCOPE, SharingScope.class);
         
-        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid, session.getUser(),
-                consentSignature, sharingScope, studyConsentService, consentTemplate);
+        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
+                session.getStudyParticipant().getEmail(), consentSignature, sharingScope, studyConsentService,
+                consentTemplate);
         sendMailService.sendEmail(consentEmail);
     }
     

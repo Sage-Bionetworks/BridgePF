@@ -119,7 +119,7 @@ public class StudyEnrollmentService {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        if (!session.getUser().doesConsent()) {
+        if (!session.doesConsent()) {
             String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
             String count = jedisOps.get(key);
             if (count != null && Long.parseLong(count) > 0) {
