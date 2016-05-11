@@ -168,7 +168,7 @@ public class ConsentService {
         
         UserConsent userConsent = null;
         try {
-            userConsent = userConsentDao.giveConsent(session.getParticipant().getHealthCode(), subpopGuid,
+            userConsent = userConsentDao.giveConsent(session.getHealthCode(), subpopGuid,
                     studyConsent.getCreatedOn(), consentSignature.getSignedOn());
         } catch (Throwable e) {
             int len = account.getConsentSignatureHistory(subpopGuid).size();

@@ -2,20 +2,16 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Map;
-import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -32,7 +28,6 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -45,8 +40,6 @@ import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.google.common.collect.Sets;
-
 import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +50,6 @@ import org.springframework.stereotype.Component;
 public class AuthenticationService {
     
     private final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
-
-    private static final Set<Roles> NO_CALLER_ROLES = Sets.newHashSet();
     
     private CacheProvider cacheProvider;
     private BridgeConfig config;
@@ -129,19 +120,41 @@ public class AuthenticationService {
     }
 
     /**
-     * This method returns the cached session for the user. A ScheduleContext object is not provided to the method, 
+     * This method returns the cached session for the user. A CriteriaContext object is not provided to the method, 
      * and the user's consent status is not re-calculated based on participation in one more more subpopulations. 
      * This only happens when calling session-constructing service methods (signIn and verifyEmail, both of which 
      * return newly constructed sessions).
      * @param sessionToken
      * @return session
-     *      the cached user session calculated on sign in or during verify email workflow
+     *      the persisted user session calculated on sign in or during verify email workflow
      */
     public UserSession getSession(String sessionToken) {
         if (sessionToken == null) {
             return null;
         }
         return cacheProvider.getUserSession(sessionToken);
+    }
+    
+    /**
+     * This method re-constructs the session based on potential changes to the user. It is called after a user 
+     * account is updated, and takes the updated CriteriaContext to calculate the current state of the user.
+     * @param study
+     *      the user's study
+     * @param context
+     *      an updated set of criteria for calculating the user's consent status
+     * @param userId
+     *      the ID of the user
+     * @return
+     *      newly created session object (not persisted)
+     */
+    public UserSession updateSession(Study study, CriteriaContext context, String userId) {
+        checkNotNull(study);
+        checkNotNull(context);
+        checkArgument(isNotBlank(userId));
+        
+        Account account = accountDao.getAccount(study, userId);
+        cacheProvider.removeSessionByUserId(userId);
+        return getSessionFromAccount(study, context, account);
     }
 
     public UserSession signIn(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
@@ -237,15 +250,6 @@ public class AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
     
-    public UserSession updateSession(Study study, CriteriaContext context, String userId) {
-        checkNotNull(study);
-        checkNotNull(context);
-        checkArgument(isNotBlank(userId));
-        
-        Account account = accountDao.getAccount(study, userId);
-        return getSessionFromAccount(study, context, account);
-    }
-    
     /**
      * Early in the production lifetime of the application, some accounts were created that have a signature 
      * in Stormpath, but no record in DynamoDB. Some other records had a DynamoDB record in an earlier version 
@@ -290,38 +294,31 @@ public class AuthenticationService {
     }
     
     private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
-        ParticipantOptionsLookup lookup = optionsService.getOptions(account.getHealthCode());
+        UserSession existingSession = cacheProvider.getUserSessionByUserId(account.getId());
+        if (existingSession != null) {
+            return existingSession;
+        }
+        StudyParticipant participant = participantService.getParticipantForSession(study, account);
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withFirstName(account.getFirstName())
-                .withLastName(account.getLastName())
-                .withEmail(account.getEmail())
-                .withId(account.getId())
-                .withCreatedOn(account.getCreatedOn())
-                .withHealthCode(account.getHealthCode())
-                .withSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class))
-                .withDataGroups(lookup.getStringSet(DATA_GROUPS))
-                .withLanguages(lookup.getOrderedStringSet(LANGUAGES)).build();
-        
-        final UserSession session = getSession(account);
-        session.setParticipant(participant);
-        session.setAuthenticated(true);
-        session.setEnvironment(config.getEnvironment());
-        session.setStudyIdentifier(study.getStudyIdentifier());
-
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
         // from the context, add it to the user/session, and persist it.
         if (participant.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
             participant = new StudyParticipant.Builder().copyOf(participant)
                     .withLanguages(context.getLanguages()).build();
-            session.setParticipant(participant);
             optionsService.setOrderedStringSet(study, account.getHealthCode(), LANGUAGES, context.getLanguages());
         }
         
+        UserSession session = new UserSession(participant);
+        session.setSessionToken(BridgeUtils.generateGuid());
+        session.setInternalSessionToken(BridgeUtils.generateGuid());
+        session.setAuthenticated(true);
+        session.setEnvironment(config.getEnvironment());
+        session.setStudyIdentifier(study.getStudyIdentifier());
+        
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)
+                .withHealthCode(session.getHealthCode()) 
                 .withLanguages(session.getParticipant().getLanguages())
-                .withHealthCode(session.getParticipant().getHealthCode())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .build();
         
@@ -329,17 +326,5 @@ public class AuthenticationService {
         repairConsents(account, session, newContext);
         
         return session;
-    }
-
-    private UserSession getSession(final Account account) {
-        final UserSession session = cacheProvider.getUserSessionByUserId(account.getId());
-        if (session != null) {
-            return session;
-        }
-        final UserSession newSession = new UserSession();
-        newSession.setSessionToken(BridgeUtils.generateGuid());
-        // Internal session token to identify sessions internally (e.g. in metrics)
-        newSession.setInternalSessionToken(BridgeUtils.generateGuid());
-        return newSession;
     }
 }

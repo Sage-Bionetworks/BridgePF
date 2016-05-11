@@ -3,20 +3,27 @@ package org.sagebionetworks.bridge.cache;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.redis.RedisKey;
 
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -26,12 +33,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Component
 public class CacheProvider {
 
-    private ObjectMapper bridgeObjectMapper;
+    private static final TypeReference<Map<SubpopulationGuid, ConsentStatus>> CONSENT_MAP_REFERENCE = new TypeReference<Map<SubpopulationGuid, ConsentStatus>>() {};
+    
+    private ObjectMapper mapper;
     private JedisOps jedisOps;
 
     @Autowired
     public void setBridgeObjectMapper(BridgeObjectMapper bridgeObjectMapper) {
-        this.bridgeObjectMapper = bridgeObjectMapper;
+        this.mapper = bridgeObjectMapper;
     }
 
     @Autowired
@@ -51,7 +60,7 @@ public class CacheProvider {
         final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
         final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
-            final String ser = bridgeObjectMapper.writeValueAsString(session);
+            final String ser = mapper.writeValueAsString(session);
             final List<Object> results = transaction
                     .setex(userKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, sessionToken)
                     .setex(sessionKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser)
@@ -78,7 +87,27 @@ public class CacheProvider {
             if (ser == null) {
                 return null;
             }
-            final UserSession session = bridgeObjectMapper.readValue(ser, UserSession.class);
+            JsonNode node = mapper.readTree(ser);
+            UserSession session = mapper.treeToValue(node, UserSession.class);
+            // This is special processing to migrate old versions of the session (that have a user object)
+            // to the newer session structure. Once we're sure we're rotating sessions, and this no longer
+            // exists in any session, it can be removed.
+            if (node.has("user")) {
+                JsonNode userNode = node.get("user");
+                JsonNode consentNode = node.get("user").get("consentStatuses");
+                
+                StudyParticipant participant = mapper.treeToValue(userNode, StudyParticipant.class);
+                if (userNode.has("accountCreatedOn")) {
+                    DateTime createdOn = DateTime.parse(userNode.get("accountCreatedOn").asText());
+                    participant = new StudyParticipant.Builder().copyOf(participant)
+                            .withCreatedOn(createdOn).build();
+                }
+                
+                session.setParticipant(participant);
+                
+                Map<SubpopulationGuid,ConsentStatus> statuses = mapper.convertValue(consentNode, CONSENT_MAP_REFERENCE);
+                session.setConsentStatuses(statuses);
+            }
             final String userKey = RedisKey.USER_SESSION.getRedisKey(session.getId());
             try (JedisTransaction transaction = jedisOps.getTransaction(sessionKey)) {
                 transaction
@@ -88,6 +117,7 @@ public class CacheProvider {
             }
             return session;
         } catch (Throwable e) {
+            e.printStackTrace();
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
@@ -142,7 +172,7 @@ public class CacheProvider {
 
     public void setStudy(Study study) {
         try {
-            String ser = bridgeObjectMapper.writeValueAsString(study);
+            String ser = mapper.writeValueAsString(study);
             String redisKey = RedisKey.STUDY.getRedisKey(study.getIdentifier());
             String result = jedisOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
             if (!"OK".equals(result)) {
@@ -160,7 +190,7 @@ public class CacheProvider {
             String ser = jedisOps.get(redisKey);
             if (ser != null) {
                 jedisOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-                return bridgeObjectMapper.readValue(ser, Study.class);
+                return mapper.readValue(ser, Study.class);
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);

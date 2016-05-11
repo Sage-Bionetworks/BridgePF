@@ -87,7 +87,7 @@ public class UserSessionInfo {
         this.studyParticipant = session.getParticipant();
     }
 
-    public StudyParticipant getStudyParticipant() {
+    public StudyParticipant getParticipant() {
         return studyParticipant;
     }
     public boolean isAuthenticated() {

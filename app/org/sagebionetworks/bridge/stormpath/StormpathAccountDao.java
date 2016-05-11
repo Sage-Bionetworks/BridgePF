@@ -411,7 +411,6 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     private void rethrowResourceException(ResourceException e, Account account) {
-        e.printStackTrace();
         //logger.info(String.format("Stormpath error: %s: %s", e.getCode(), e.getMessage()));
         switch(e.getCode()) {
         case 2001: // must be unique (email isn't unique)

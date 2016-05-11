@@ -108,7 +108,7 @@ public final class StudyParticipant implements BridgeEntity {
         return healthCode;
     }
     public String getEncryptedHealthCode() {
-        return ENCRYPTOR.encrypt(healthCode);
+        return (healthCode == null) ? null : ENCRYPTOR.encrypt(healthCode);
     }
     public Map<String,String> getAttributes() {
         return attributes;
@@ -155,8 +155,6 @@ public final class StudyParticipant implements BridgeEntity {
                 && Objects.equals(password, other.password) && Objects.equals(roles, other.roles)
                 && Objects.equals(sharingScope, other.sharingScope) && Objects.equals(status, other.status);
     }
-
-
 
     public static class Builder {
         private String firstName;

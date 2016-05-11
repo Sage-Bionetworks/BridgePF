@@ -103,6 +103,6 @@ public class ExceptionInterceptorTest {
         assertEquals("group1", array.get(0).asText());
         assertEquals(0, node.get("consentStatuses").size());
         // And no further properties
-        assertEquals(20, node.size());
+        assertEquals(19, node.size());
     }
 }    

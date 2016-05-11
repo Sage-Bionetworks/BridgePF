@@ -10,9 +10,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.BridgeConstants;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -60,8 +61,6 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
 
-    private static final Set<Roles> NO_ROLES = Collections.emptySet();
-    
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
     private static final String ID = "ASDF";
@@ -100,13 +99,15 @@ public class ParticipantControllerTest {
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
     
+    private UserSession session;
+    
     @Before
     public void before() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withRoles(CALLER_ROLES)
                 .withId(ID).build();
         
-        UserSession session = new UserSession(participant);
+        session = new UserSession(participant);
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
@@ -153,7 +154,7 @@ public class ParticipantControllerTest {
         controller.getParticipants("asdf", "qwer", null);
         
         // paging with defaults
-        verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
+        verify(participantService).getPagedAccountSummaries(STUDY, 0, API_DEFAULT_PAGE_SIZE, null);
     }
 
     @Test
@@ -210,7 +211,7 @@ public class ParticipantControllerTest {
         controller.getParticipants(null, null, null);
 
         // paging with defaults
-        verify(participantService).getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
+        verify(participantService).getPagedAccountSummaries(STUDY, 0, API_DEFAULT_PAGE_SIZE, null);
     }
     
     @Test
@@ -256,11 +257,11 @@ public class ParticipantControllerTest {
     public void getSelfParticipant() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
         
-        when(participantService.getParticipant(STUDY, NO_ROLES, ID)).thenReturn(studyParticipant);
+        when(participantService.getParticipant(STUDY, NO_CALLER_ROLES, ID)).thenReturn(studyParticipant);
 
         Result result = controller.getSelfParticipant();
         
-        verify(participantService).getParticipant(STUDY, NO_ROLES, ID);
+        verify(participantService).getParticipant(STUDY, NO_CALLER_ROLES, ID);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), StudyParticipant.class);
@@ -271,26 +272,31 @@ public class ParticipantControllerTest {
     @Test
     public void updateSelfParticipant() throws Exception {
         // All values should be copied over here.
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        doReturn(participant).when(participantService).getParticipant(STUDY, NO_ROLES, ID);
+        StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
+        doReturn(participant).when(participantService).getParticipant(STUDY, NO_CALLER_ROLES, ID);
         
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
-                "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
-                "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
-                "'attributes':{'phone':'123456789'},'languages':['en','fr'],'status':'disabled','roles':['admin']}"));
+        String json = BridgeObjectMapper.get().writeValueAsString(participant);
+        TestUtils.mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals(200, result.status());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
+        verify(controller).updateSession(session);
+        
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());
         verify(authService).updateSession(eq(STUDY), any(), eq(ID));
-        verify(participantService).updateParticipant(eq(STUDY), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
 
+        // Just test the different types and verify they are there.
         StudyParticipant captured = participantCaptor.getValue();
-        assertEquals("firstName", captured.getFirstName());
+        assertEquals("FirstName", captured.getFirstName());
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, captured.getSharingScope());
+        assertTrue(captured.isNotifyByEmail());
+        assertEquals(Sets.newHashSet("group1"), captured.getDataGroups());
+        assertEquals("123-456-7890", captured.getAttributes().get("phone"));
     }
     
     // Some values will be missing in the JSON and should be preserved from this original participant object.
@@ -314,7 +320,7 @@ public class ParticipantControllerTest {
                 .withLanguages(TestUtils.newLinkedHashSet("en"))
                 .withStatus(AccountStatus.DISABLED)
                 .withExternalId("POWERS").build();
-        doReturn(participant).when(participantService).getParticipant(STUDY, NO_ROLES, ID);
+        doReturn(participant).when(participantService).getParticipant(STUDY, NO_CALLER_ROLES, ID);
         
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'externalId':'simpleStringChange',"+
                 "'sharingScope':'no_sharing','notifyByEmail':false,'attributes':{'baz':'belgium'},"+
@@ -326,7 +332,7 @@ public class ParticipantControllerTest {
         assertEquals("UserSessionInfo", node.get("type").asText());
 
         verify(authService).updateSession(eq(STUDY), any(), eq(ID));
-        verify(participantService).updateParticipant(eq(STUDY), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals("firstName", captured.getFirstName());
         assertEquals("lastName", captured.getLastName());

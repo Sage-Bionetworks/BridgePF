@@ -64,7 +64,7 @@ public class UserSessionTest {
     }
     
     @Test
-    public void cannotExposeHealthCode() throws Exception {
+    public void doesNotExposeHealthCodeInRedisSerialization() throws Exception {
         UserSession session = new UserSession(new StudyParticipant.Builder().withHealthCode("123abc").build());
         
         String json = BridgeObjectMapper.get().writeValueAsString(session);
@@ -73,7 +73,6 @@ public class UserSessionTest {
     
     @Test
     public void testHealthCodeEncryption() throws IOException {
-        
         UserSession session = new UserSession(new StudyParticipant.Builder()
                 .withEmail("userEmail")
                 .withId("userId")
@@ -183,5 +182,5 @@ public class UserSessionTest {
         ));
         // Again, we don't count optional consents, only required consents.
         assertTrue(session.hasSignedMostRecentConsent());
-    }    
+    }
 }

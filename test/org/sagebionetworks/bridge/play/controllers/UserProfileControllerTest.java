@@ -122,7 +122,7 @@ public class UserProfileControllerTest {
         controller.setParticipantService(participantService);
         controller.setViewCache(viewCache);
         
-        UserSession session = new UserSession(new StudyParticipant.Builder()
+        session = new UserSession(new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withId(ID)
                 .build());

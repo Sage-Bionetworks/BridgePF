@@ -1,13 +1,12 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -44,7 +43,6 @@ public class UserProfileController extends BaseController {
     private static final String USERNAME_FIELD = "username";
     private static final String TYPE_FIELD = "type";
     private static final String TYPE_VALUE = "UserProfile";
-    private static final Set<Roles> NO_ROLES = Collections.emptySet();
     private static final Set<String> DATA_GROUPS_SET = Sets.newHashSet("dataGroups");
 
     private ParticipantService participantService;
@@ -80,7 +78,7 @@ public class UserProfileController extends BaseController {
         ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<ObjectNode>() {
             @Override public ObjectNode get() {
-                StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, userId);
+                StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, userId);
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(FIRST_NAME_FIELD, participant.getFirstName());
                 node.put(LAST_NAME_FIELD, participant.getLastName());
@@ -109,13 +107,13 @@ public class UserProfileController extends BaseController {
             }
         }
         
-        StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, userId);
+        StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, userId);
         
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withFirstName(JsonUtils.asText(node, "firstName"))
                 .withLastName(JsonUtils.asText(node, "lastName"))
                 .withAttributes(attributes).build();
-        participantService.updateParticipant(study, NO_ROLES, userId, updated);
+        participantService.updateParticipant(study, NO_CALLER_ROLES, userId, updated);
         
         updateSession(session);
         
@@ -156,14 +154,14 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, session.getId());
+        StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
         
         StudyParticipant dataGroups = parseJson(request(), StudyParticipant.class);
         
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .copyFieldsOf(dataGroups, DATA_GROUPS_SET).build();
         
-        participantService.updateParticipant(study, NO_ROLES, session.getId(), updated);
+        participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
         
         session.setParticipant(updated);
         

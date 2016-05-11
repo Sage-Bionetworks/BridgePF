@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge;
 
+import java.util.Set;
+
 import org.joda.time.DateTimeZone;
+
+import com.google.common.collect.ImmutableSet;
 
 public class BridgeConstants {
 
@@ -59,4 +63,6 @@ public class BridgeConstants {
     public static final String STORMPATH_ACCOUNT_BASE_HREF = "https://enterprise.stormpath.io/v1/accounts/";
     
     public static final String STORMPATH_NAME_PLACEHOLDER_STRING = "<EMPTY>";
+    
+    public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();
 }
