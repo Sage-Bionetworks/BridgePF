@@ -115,6 +115,7 @@ public class UserProfileController extends BaseController {
                 .withAttributes(attributes).build();
         participantService.updateParticipant(study, NO_CALLER_ROLES, userId, updated);
         
+        session.setParticipant(updated);
         updateSession(session);
         
         ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
