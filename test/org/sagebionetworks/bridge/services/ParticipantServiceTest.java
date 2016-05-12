@@ -50,7 +50,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -656,10 +655,10 @@ public class ParticipantServiceTest {
         doReturn(HISTORY).when(consentService).getUserConsentHistory(STUDY, SUBPOP_GUID, HEALTH_CODE, ID);
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
         
-        STUDY.setHealthCodeExportEnabled(true); // even though export is enabled...
+        STUDY.setHealthCodeExportEnabled(true);
         StudyParticipant participant = participantService.getParticipant(STUDY, Sets.newHashSet(RESEARCHER), ID);
 
-        // should not have health code. should not contain consent histories
+        // should have health code and history record
         assertEquals(HEALTH_CODE, participant.getHealthCode());
         assertEquals(1, participant.getConsentHistories().keySet().size());
     }
