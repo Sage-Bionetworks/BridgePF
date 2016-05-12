@@ -72,8 +72,8 @@ public class ScheduleController extends BaseController {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withLanguages(getLanguages(session))
                 .withStudyIdentifier(studyId)
-                .withHealthCode(session.getUser()
-                .getHealthCode()).withClientInfo(clientInfo).build();
+                .withHealthCode(session.getHealthCode())
+                .withClientInfo(clientInfo).build();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
 
@@ -83,7 +83,7 @@ public class ScheduleController extends BaseController {
             if (schedule != null) {
                 schedules.add(schedule);
             } else {
-                LOG.warn("Schedule plan "+plan.getLabel()+" has no schedule for user "+session.getUser().getId());
+                LOG.warn("Schedule plan "+plan.getLabel()+" has no schedule for user "+session.getId());
             }
         }
         return schedules;

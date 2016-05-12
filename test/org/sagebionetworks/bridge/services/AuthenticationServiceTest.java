@@ -2,10 +2,10 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -31,7 +32,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.DefaultStudyBootstrapper;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
@@ -63,6 +63,8 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.stormpath.StormpathAccount;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.directory.CustomData;
 
@@ -143,7 +145,7 @@ public class AuthenticationServiceTest {
     public void signInCorrectCredentials() throws Exception {
         initTestUser();
         UserSession newSession = authService.getSession(testUser.getSessionToken());
-        assertEquals("Email is for test2 user", newSession.getUser().getEmail(), testUser.getEmail());
+        assertEquals("Email is for test2 user", newSession.getParticipant().getEmail(), testUser.getEmail());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(testUser.getSessionToken()));
     }
 
@@ -152,7 +154,7 @@ public class AuthenticationServiceTest {
         initTestUser();
         String sessionToken = testUser.getSessionToken();
         UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
+        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getParticipant().getEmail());
         assertEquals("Should update the existing session instead of creating a new one.",
                 sessionToken, newSession.getSessionToken());
     }
@@ -161,7 +163,7 @@ public class AuthenticationServiceTest {
     public void signInSetsSharingScope() {
         initTestUser();
         UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-        assertEquals(SharingScope.NO_SHARING, newSession.getUser().getSharingScope()); // this is the default.
+        assertEquals(SharingScope.NO_SHARING, newSession.getParticipant().getSharingScope()); // this is the default.
     }
 
     @Test
@@ -178,7 +180,7 @@ public class AuthenticationServiceTest {
         initTestUser();
         UserSession newSession = authService.getSession(testUser.getSessionToken());
 
-        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getUser().getEmail());
+        assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getParticipant().getEmail());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
@@ -212,7 +214,7 @@ public class AuthenticationServiceTest {
         // Can no longer delete an account without getting a session, and the assigned ID, first, so there's
         // no way to use finally here if sign in fails for some reason.
         UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-        helper.deleteUser(testUser.getStudy(), session.getUser().getId());
+        helper.deleteUser(testUser.getStudy(), session.getId());
     }
 
     @Test
@@ -220,28 +222,24 @@ public class AuthenticationServiceTest {
         TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.ADMIN).build();
         UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-        helper.deleteUser(testUser.getStudy(), session.getUser().getId());
+        helper.deleteUser(testUser.getStudy(), session.getId());
     }
 
     @Test
     public void testSignOut() {
         initTestUser();
-        try {
-            final String sessionToken = testUser.getSessionToken();
-            final String userId = testUser.getUser().getId();
-            authService.signOut(testUser.getSession());
-            assertNull(cacheProvider.getUserSession(sessionToken));
-            assertNull(cacheProvider.getUserSessionByUserId(userId));
-        } finally {
-            helper.deleteUser(testUser);
-        }
+        final String sessionToken = testUser.getSessionToken();
+        final String userId = testUser.getId();
+        authService.signOut(testUser.getSession());
+        assertNull(cacheProvider.getUserSession(sessionToken));
+        assertNull(cacheProvider.getUserSessionByUserId(userId));
     }
 
     @Test
     public void testSignOutWhenSignedOut() {
         initTestUser();
         final String sessionToken = testUser.getSessionToken();
-        final String userId = testUser.getUser().getId();
+        final String userId = testUser.getId();
         authService.signOut(testUser.getSession());
         authService.signOut(testUser.getSession());
         assertNull(cacheProvider.getUserSession(sessionToken));
@@ -251,23 +249,26 @@ public class AuthenticationServiceTest {
     // This test combines test of dataGroups, languages, and other data that can be set.
     @Test
     public void signUpDataExistsOnSignIn() {
-        StudyParticipant participant = TestConstants.PARTICIPANT;
+        StudyParticipant participant = TestUtils.getStudyParticipant(AuthenticationServiceTest.class);
         IdentifierHolder holder = null;
         try {
             holder = authService.signUp(study, participant);
             
-            StudyParticipant persisted = participantService.getParticipant(study, Sets.newHashSet(), holder.getIdentifier());
-            assertEquals("FirstName", persisted.getFirstName());
-            assertEquals("LastName", persisted.getLastName());
-            assertEquals("bridge-testing+email@sagebase.org", persisted.getEmail());
-            assertEquals("externalId", persisted.getExternalId());
-            assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, persisted.getSharingScope());
+            StudyParticipant persisted = participantService.getParticipant(study, CALLER_ROLES, holder.getIdentifier());
+            assertEquals(participant.getFirstName(), persisted.getFirstName());
+            assertEquals(participant.getLastName(), persisted.getLastName());
+            assertEquals(participant.getEmail(), persisted.getEmail());
+            assertEquals(participant.getExternalId(), persisted.getExternalId());
+            assertEquals(participant.getSharingScope(), persisted.getSharingScope());
             assertTrue(persisted.isNotifyByEmail());
-            assertEquals(Sets.newHashSet("group1"), persisted.getDataGroups());
-            assertEquals("123-456-7890", persisted.getAttributes().get("phone"));
-            assertEquals(TestUtils.newLinkedHashSet("fr"), persisted.getLanguages());
+            assertNotNull(persisted.getId());
+            assertEquals(participant.getDataGroups(), persisted.getDataGroups());
+            assertEquals(participant.getAttributes().get("phone"), persisted.getAttributes().get("phone"));
+            assertEquals(participant.getLanguages(), persisted.getLanguages());
         } finally {
-            userAdminService.deleteUser(study, holder.getIdentifier());
+            if (holder != null) {
+                userAdminService.deleteUser(study, holder.getIdentifier());    
+            }
         }
     }
     
@@ -277,21 +278,18 @@ public class AuthenticationServiceTest {
         String email = "bridge-testing+"+name+"@sagebase.org";
         Set<String> groups = Sets.newHashSet("group1");
         
-        testUser = helper.getBuilder(AuthenticationServiceTest.class).withStudy(study).withConsent(true)
-                .withSignIn(true).withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
-        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
+
         authService = spy(authService);
         optionsService = spy(optionsService);
         authService.setOptionsService(optionsService);
         accountDao = spy(accountDao);
         
-        authService.signUp(study, testUser.getStudyParticipant());
-
-        UserSession session = authService.signIn(study, testUser.getCriteriaContext(), testUser.getSignIn());
-        Account account = accountDao.getAccount(study, session.getUser().getId());
+        IdentifierHolder holder = authService.signUp(study, participant);
         
-        verify(authService).signUp(eq(study), any(StudyParticipant.class));
-        // Verify that data groups were set correctly as an option
+        Account account = accountDao.getAccount(study, holder.getIdentifier());
+        
         Set<String> persistedGroups = optionsService.getOptions(account.getHealthCode()).getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);
     }
@@ -304,8 +302,8 @@ public class AuthenticationServiceTest {
 
         UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
         // Verify we created a list and the anticipated group was not null
-        assertEquals(numOfGroups, session.getUser().getDataGroups().size()); 
-        assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getUser().getDataGroups());
+        assertEquals(numOfGroups, session.getParticipant().getDataGroups().size()); 
+        assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getParticipant().getDataGroups());
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -344,18 +342,17 @@ public class AuthenticationServiceTest {
     // Consent statuses passed on to sessionInfo
     
     @Test
-    public void consentStatusesPresentInSession() {
+    public void consentStatusesPresentInSession() throws Exception {
         // User is consenting
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
-        SubpopulationGuid guid = SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier());
+
+        JsonNode info = UserSessionInfo.toJSON(testUser.getSession());
         
-        // This is the object we pass back to the user, we want to see the statuses copied or present
-        // all the way from the user to the sessionInfo. We test elsewhere that these are properly 
-        // serialized/deserialized (SubpopulationGuidDeserializer)
-        UserSessionInfo sessionInfo = new UserSessionInfo(testUser.getSession());
+        TypeReference<Map<SubpopulationGuid,ConsentStatus>> tRef = new TypeReference<Map<SubpopulationGuid,ConsentStatus>>() {};
+        Map<SubpopulationGuid,ConsentStatus> statuses = BridgeObjectMapper.get().readValue(info.get("consentStatuses").toString(), tRef); 
         
-        ConsentStatus status = sessionInfo.getConsentStatuses().get(guid);
+        ConsentStatus status = statuses.get(SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier()));
         assertTrue(status.isConsented());
         assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
     }
@@ -373,7 +370,7 @@ public class AuthenticationServiceTest {
         List<Subpopulation> subpops = subpopService.getSubpopulations(testUser.getStudyIdentifier());
         for (Subpopulation subpop : subpops) {
             // Delete all DDB records
-            userConsentDao.deleteAllConsents(testUser.getUser().getHealthCode(), subpop.getGuid());
+            userConsentDao.deleteAllConsents(testUser.getHealthCode(), subpop.getGuid());
             
             // zero out the signed on date
             ConsentSignature sig = account.getConsentSignatureHistory(subpop.getGuid()).get(0);
@@ -404,9 +401,9 @@ public class AuthenticationServiceTest {
         UserSession session = authService.signIn(study, context, testUser.getSignIn());
         
         // and this person should be recorded as consented...
-        for (ConsentStatus status : session.getUser().getConsentStatuses().values()) {
+        for (ConsentStatus status : session.getConsentStatuses().values()) {
             assertTrue(!status.isRequired() || status.isConsented());
-            UserConsent consent  = userConsentDao.getActiveUserConsent(session.getUser().getHealthCode(), SubpopulationGuid.create(status.getSubpopulationGuid()));
+            UserConsent consent  = userConsentDao.getActiveUserConsent(session.getHealthCode(), SubpopulationGuid.create(status.getSubpopulationGuid()));
             assertTrue(consent.getSignedOn() > 0L);
         }
     }
@@ -417,7 +414,7 @@ public class AuthenticationServiceTest {
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
         
-        String healthCode = testUser.getUser().getHealthCode();
+        String healthCode = testUser.getHealthCode();
         optionsService.setOrderedStringSet(
                 testUser.getStudyIdentifier(), healthCode, ParticipantOption.LANGUAGES, LANGS);
 
@@ -427,7 +424,7 @@ public class AuthenticationServiceTest {
         CriteriaContext context = testUser.getCriteriaContext();
         
         UserSession session = authService.signIn(study, context, testUser.getSignIn());
-        assertEquals(LANGS, session.getUser().getLanguages());
+        assertEquals(LANGS, session.getParticipant().getLanguages());
     }
     
     @Test
@@ -435,8 +432,11 @@ public class AuthenticationServiceTest {
         LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("fr","es");
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
-            
-        testUser.getUser().setLanguages(LANGS);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(testUser.getStudyParticipant())
+                .withLanguages(LANGS).build();
+        
+        testUser.getSession().setParticipant(participant);
         CriteriaContext context = testUser.getCriteriaContext();
         
         authService.signOut(testUser.getSession());
@@ -444,9 +444,9 @@ public class AuthenticationServiceTest {
         Study study = studyService.getStudy(testUser.getStudyIdentifier());
         
         UserSession session = authService.signIn(study, context, testUser.getSignIn());
-        assertEquals(LANGS, session.getUser().getLanguages());
+        assertEquals(LANGS, session.getParticipant().getLanguages());
         
-        LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getUser().getHealthCode()).getOrderedStringSet(LANGUAGES);
+        LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getHealthCode()).getOrderedStringSet(LANGUAGES);
         assertEquals(LANGS, persistedLangs);
     }
     
@@ -462,14 +462,14 @@ public class AuthenticationServiceTest {
         // We need to mock the client because it will throw an exception when it gets the garbage token "asdf", 
         // and we're only concerned with what happens when this is successful. Tedious to mock the Stormpath client.
         AccountDao accountDaoSpy = mock(AccountDao.class);
-        when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, testUser.getUser().getId()));
+        when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, testUser.getId()));
         authService.setAccountDao(accountDaoSpy);
         
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier()).build();
         
         UserSession session = authService.verifyEmail(study, context, verification);
         // Consents are okay. User hasn't consented.
-        ConsentStatus status = session.getUser().getConsentStatuses().values().iterator().next();
+        ConsentStatus status = session.getConsentStatuses().values().iterator().next();
         assertFalse(status.isConsented());
         
         // This should not have been altered in any way by the lack of consents.
@@ -481,7 +481,7 @@ public class AuthenticationServiceTest {
     public void updateSession() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false)
                 .withDataGroups(ORIGINAL_DATA_GROUPS).withSignIn(false).build();
-        String userId = testUser.getUser().getId();
+        String userId = testUser.getId();
         
         // Update the data groups
         StudyParticipant participant = participantService.getParticipant(study, CALLER_ROLES, userId);
@@ -491,7 +491,7 @@ public class AuthenticationServiceTest {
         // Now update the session, these changes should be reflected
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
         Set<String> retrievedSessionDataGroups = authService.updateSession(study, context, userId)
-                .getUser().getDataGroups();
+                .getParticipant().getDataGroups();
 
         assertEquals(UPDATED_DATA_GROUPS, retrievedSessionDataGroups);
     }
@@ -505,7 +505,7 @@ public class AuthenticationServiceTest {
         
         IdentifierHolder idHolder = authService.signUp(study, participant);
         
-        participant = participantService.getParticipant(study, Sets.newHashSet(), idHolder.getIdentifier());
+        participant = participantService.getParticipant(study, CALLER_ROLES, idHolder.getIdentifier());
         assertTrue(participant.getRoles().isEmpty());
     }
 }

@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRange;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
@@ -49,10 +48,9 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
 
     /** {@inheritDoc} */
     @Override
-    public void requestUserData(@Nonnull StudyIdentifier studyIdentifier, @Nonnull User user,
+    public void requestUserData(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String email,
             @Nonnull DateRange dateRange) throws JsonProcessingException {
         String studyId = studyIdentifier.getIdentifier();
-        String email = user.getEmail();
         String startDateStr = dateRange.getStartDate().toString();
         String endDateStr = dateRange.getEndDate().toString();
 

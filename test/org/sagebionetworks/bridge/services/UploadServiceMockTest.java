@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
@@ -22,12 +22,12 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 public class UploadServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void getNullUploadId() {
-        new UploadService().getUpload(makeUser("nullUploadId"), null);
+        new UploadService().getUpload(makeParticipant("nullUploadId"), null);
     }
 
     @Test(expected = BadRequestException.class)
     public void getEmptyUploadId() {
-        new UploadService().getUpload(makeUser("emptyUploadId"), "");
+        new UploadService().getUpload(makeParticipant("emptyUploadId"), "");
     }
 
     @Test
@@ -45,7 +45,7 @@ public class UploadServiceMockTest {
         svc.setUploadDao(mockDao);
 
         // execute and validate
-        Upload retVal = svc.getUpload(makeUser("getUpload"), "test-upload-id");
+        Upload retVal = svc.getUpload(makeParticipant("getUpload"), "test-upload-id");
         assertSame(mockUpload, retVal);
     }
 
@@ -62,17 +62,17 @@ public class UploadServiceMockTest {
         svc.setUploadDao(mockDao);
 
         // execute
-        svc.getUpload(makeUser("right-health-code"), "mismatched-health-codes");
+        svc.getUpload(makeParticipant("right-health-code"), "mismatched-health-codes");
     }
 
     @Test(expected = BadRequestException.class)
     public void getStatusNullUploadId() {
-        new UploadService().getUploadValidationStatus(makeUser("statusWithNullUploadId"), null);
+        new UploadService().getUploadValidationStatus(makeParticipant("statusWithNullUploadId"), null);
     }
 
     @Test(expected = BadRequestException.class)
     public void getStatusEmptyUploadId() {
-        new UploadService().getUploadValidationStatus(makeUser("statusWithNullUploadId"), "");
+        new UploadService().getUploadValidationStatus(makeParticipant("statusWithNullUploadId"), "");
     }
 
     @Test(expected = UnauthorizedException.class)
@@ -88,7 +88,7 @@ public class UploadServiceMockTest {
         svc.setUploadDao(mockDao);
 
         // execute
-        svc.getUploadValidationStatus(makeUser("right-health-code"), "mismatched-health-codes");
+        svc.getUploadValidationStatus(makeParticipant("right-health-code"), "mismatched-health-codes");
     }
 
     @Test
@@ -108,7 +108,7 @@ public class UploadServiceMockTest {
         svc.setUploadDao(mockDao);
 
         // execute and validate
-        UploadValidationStatus status = svc.getUploadValidationStatus(makeUser("getStatus"), "no-record-id");
+        UploadValidationStatus status = svc.getUploadValidationStatus(makeParticipant("getStatus"), "no-record-id");
         assertEquals("no-record-id", status.getId());
         assertEquals(UploadStatus.VALIDATION_FAILED, status.getStatus());
         assertNull(status.getRecord());
@@ -141,7 +141,7 @@ public class UploadServiceMockTest {
         svc.setUploadDao(mockDao);
 
         // execute and validate
-        UploadValidationStatus status = svc.getUploadValidationStatus(makeUser("getStatusWithRecord"),
+        UploadValidationStatus status = svc.getUploadValidationStatus(makeParticipant("getStatusWithRecord"),
                 "with-record-id");
         assertEquals("with-record-id", status.getId());
         assertEquals(UploadStatus.SUCCEEDED, status.getStatus());
@@ -175,7 +175,7 @@ public class UploadServiceMockTest {
         svc.setUploadDao(mockDao);
 
         // execute and validate
-        UploadValidationStatus status = svc.getUploadValidationStatus(makeUser("getStatusRecordIdWithNoRecord"),
+        UploadValidationStatus status = svc.getUploadValidationStatus(makeParticipant("getStatusRecordIdWithNoRecord"),
                 "with-record-id");
         assertEquals("with-record-id", status.getId());
         assertEquals(UploadStatus.SUCCEEDED, status.getStatus());
@@ -185,10 +185,8 @@ public class UploadServiceMockTest {
         assertEquals("getStatusRecordIdWithNoRecord - message", status.getMessageList().get(0));
     }
 
-    // Helper method for creating users. UploadService only cares about healthCode, so that's the only thing we set.
-    private static User makeUser(String healthCode) {
-        User user = new User();
-        user.setHealthCode(healthCode);
-        return user;
+    // Helper method for creating participant. UploadService only cares about healthCode, so that's the only thing we set.
+    private static StudyParticipant makeParticipant(String healthCode) {
+        return new StudyParticipant.Builder().withHealthCode(healthCode).build();
     }
 }

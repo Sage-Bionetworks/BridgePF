@@ -25,6 +25,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Period;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -33,6 +34,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -175,7 +177,22 @@ public class TestUtils {
     public static String randomName(Class<?> clazz) {
         return "test-" + clazz.getSimpleName().toLowerCase() + "-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
-
+    
+    public static final StudyParticipant getStudyParticipant(Class<?> clazz) {
+        String randomName = TestUtils.randomName(clazz);
+        return new StudyParticipant.Builder()
+                .withFirstName("FirstName")
+                .withLastName("LastName")
+                .withExternalId("externalId")
+                .withEmail("bridge-testing+"+randomName+"@sagebase.org")
+                .withPassword("password")
+                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withNotifyByEmail(true)
+                .withDataGroups(Sets.newHashSet("group1"))
+                .withAttributes(new ImmutableMap.Builder<String,String>().put("phone","123-456-7890").build())
+                .withLanguages(TestUtils.newLinkedHashSet("fr")).build();
+    }
+    
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {

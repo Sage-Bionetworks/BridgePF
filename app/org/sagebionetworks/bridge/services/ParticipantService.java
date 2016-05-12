@@ -6,6 +6,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
@@ -91,50 +92,71 @@ public class ParticipantService {
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
+
+    /**
+     * This StudyParticipant will always include a healthCode and will never include consent histories. 
+     * It is used to initialize a user session and should not be returned directly through the API. 
+     * It avoids calling Stormpath again to initialize the StudyParticipant, since an account is 
+     * returned on authentication. The method getParticipant() enforces permissions on who can see 
+     * consent and healthCode information. 
+     */
+    public StudyParticipant getParticipantForSession(Study study, Account account) {
+        checkNotNull(study);
+        checkNotNull(account);
+        
+        StudyParticipant.Builder builder = getParticipantBuilder(study, NO_CALLER_ROLES, account);
+        builder.withHealthCode(account.getHealthCode());
+        return builder.build();
+    }
     
     public StudyParticipant getParticipant(Study study, Set<Roles> callerRoles, String id) {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkArgument(isNotBlank(id));
         
-        StudyParticipant.Builder participant = new StudyParticipant.Builder();
         Account account = getAccountThrowingException(study, id);
+        return getParticipantBuilder(study, callerRoles, account).build();
+    }
+    
+    private StudyParticipant.Builder getParticipantBuilder(Study study, Set<Roles> callerRoles, Account account) {
+        StudyParticipant.Builder builder = new StudyParticipant.Builder();
 
-        Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
-        for (Subpopulation subpop : subpopulations) {
-            // always returns a list, even if empty
-            List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(),
-                    account.getHealthCode(), id);
-            consentHistories.put(subpop.getGuidString(), history);
-        }
-        participant.withConsentHistories(consentHistories);
-        
         ParticipantOptionsLookup lookup = optionsService.getOptions(account.getHealthCode());
-        participant.withSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
-        participant.withNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
-        participant.withExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
-        participant.withDataGroups(lookup.getStringSet(DATA_GROUPS));
-        participant.withLanguages(lookup.getOrderedStringSet(LANGUAGES));
-        participant.withFirstName(account.getFirstName());
-        participant.withLastName(account.getLastName());
-        participant.withEmail(account.getEmail());
-        participant.withStatus(account.getStatus());
-        participant.withCreatedOn(account.getCreatedOn());
-        participant.withRoles(account.getRoles());
-        participant.withId(account.getId());
+        builder.withSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+        builder.withNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
+        builder.withExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
+        builder.withDataGroups(lookup.getStringSet(DATA_GROUPS));
+        builder.withLanguages(lookup.getOrderedStringSet(LANGUAGES));
+        builder.withFirstName(account.getFirstName());
+        builder.withLastName(account.getLastName());
+        builder.withEmail(account.getEmail());
+        builder.withStatus(account.getStatus());
+        builder.withCreatedOn(account.getCreatedOn());
+        builder.withRoles(account.getRoles());
+        builder.withId(account.getId());
         
         Map<String,String> attributes = Maps.newHashMap();
         for (String attribute : study.getUserProfileAttributes()) {
             String value = account.getAttribute(attribute);
             attributes.put(attribute, value);
         }
-        participant.withAttributes(attributes);
+        builder.withAttributes(attributes);
         
-        if (study.isHealthCodeExportEnabled() && callerRoles.contains(RESEARCHER)) {
-            participant.withHealthCode(account.getHealthCode());
+        if (callerRoles.contains(RESEARCHER)){
+            Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
+            List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
+            for (Subpopulation subpop : subpopulations) {
+                // always returns a list, even if empty
+                List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(),
+                        account.getHealthCode(), account.getId());
+                consentHistories.put(subpop.getGuidString(), history);
+            }
+            builder.withConsentHistories(consentHistories);    
+            if (study.isHealthCodeExportEnabled()) {
+                builder.withHealthCode(account.getHealthCode());
+            }
         }
-        return participant.build();
+        return builder;
     }
     
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter) {

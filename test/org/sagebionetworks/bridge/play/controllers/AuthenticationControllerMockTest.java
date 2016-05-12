@@ -14,7 +14,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 
-import java.util.EnumSet;
 import java.util.HashSet;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,10 +37,10 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -117,7 +116,7 @@ public class AuthenticationControllerMockTest {
         doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
-        UserSession session = createSession();
+        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
         when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
         // execute and validate
@@ -168,7 +167,7 @@ public class AuthenticationControllerMockTest {
         doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
-        UserSession session = createSession();
+        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
         session.setAuthenticated(false);
         when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
@@ -185,7 +184,7 @@ public class AuthenticationControllerMockTest {
         doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
-        UserSession session = createSession();
+        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
         when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
         // execute and validate
@@ -198,7 +197,8 @@ public class AuthenticationControllerMockTest {
     public void signUpWithCompleteUserData() throws Exception {
         // Other fields will be passed along to the PartcipantService, but it will not be utilized
         // These are the fields that *can* be changed. They are all passed along.
-        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(TestConstants.PARTICIPANT);
+        StudyParticipant originalParticipant = TestUtils.getStudyParticipant(AuthenticationControllerMockTest.class);
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(originalParticipant);
         node.put("study", TEST_STUDY_ID_STRING);
         
         TestUtils.mockPlayContextWithJson(node.toString());
@@ -208,7 +208,6 @@ public class AuthenticationControllerMockTest {
         
         verify(authenticationService).signUp(eq(study), participantCaptor.capture());
         
-        StudyParticipant originalParticipant = TestConstants.PARTICIPANT;
         StudyParticipant persistedParticipant = participantCaptor.getValue();
         assertEquals(originalParticipant.getFirstName(), persistedParticipant.getFirstName());
         assertEquals(originalParticipant.getLastName(), persistedParticipant.getLastName());
@@ -230,16 +229,8 @@ public class AuthenticationControllerMockTest {
         doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
-        User user = new User();
-        user.setId(TEST_USER_STORMPATH_ID);
-        if (isConsented) {
-            user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
-        }
-        if (role != null) {
-            user.setRoles(EnumSet.of(role));
-        }
-
-        UserSession session = createSessionWithUser(user);
+        ConsentStatus consentStatus = (isConsented) ? TestConstants.REQUIRED_SIGNED_CURRENT : null;
+        UserSession session = createSession(consentStatus, role);
         when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
         // execute and validate
@@ -310,16 +301,9 @@ public class AuthenticationControllerMockTest {
         TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
-        User user = new User();
-        user.setId(TEST_USER_STORMPATH_ID);
-        if (isConsented) {
-            user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
-        }
-        if (role != null) {
-            user.setRoles(EnumSet.of(role));
-        }
-
-        UserSession session = createSessionWithUser(user);
+        ConsentStatus consentStatus = (isConsented) ? TestConstants.REQUIRED_SIGNED_CURRENT : null;
+        UserSession session = createSession(consentStatus, role);
+        
         ArgumentCaptor<SignIn> signInCaptor = ArgumentCaptor.forClass(SignIn.class);
         when(authenticationService.signIn(same(study), any(), signInCaptor.capture())).thenReturn(session);
 
@@ -387,7 +371,7 @@ public class AuthenticationControllerMockTest {
         doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
-        UserSession session = createSession();
+        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
         when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
         // execute and validate
@@ -428,7 +412,7 @@ public class AuthenticationControllerMockTest {
         TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
-        UserSession session = createSession();
+        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
         ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
         when(authenticationService.verifyEmail(same(study), any(), emailVerifyCaptor.capture())).thenReturn(session);
 
@@ -461,10 +445,7 @@ public class AuthenticationControllerMockTest {
         TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
-        User user = new User();
-        user.setId(TEST_USER_STORMPATH_ID);
-
-        UserSession session = createSessionWithUser(user);
+        UserSession session = createSession(null, null);
         ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
         when(authenticationService.verifyEmail(same(study), any(), emailVerifyCaptor.capture())).thenReturn(session);
 
@@ -499,20 +480,21 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_USER_STORMPATH_ID, metricsJsonNode.get("user_id").textValue());
     }
 
-    private static UserSession createSession() {
-        User user = new User();
-        user.setId(TEST_USER_STORMPATH_ID);
-        user.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
-        return createSessionWithUser(user);
-    }
-
-    private static UserSession createSessionWithUser(User user) {
-        UserSession session = new UserSession();
+    private UserSession createSession(ConsentStatus status, Roles role) {
+        StudyParticipant.Builder builder = new StudyParticipant.Builder();
+        builder.withId(TEST_USER_STORMPATH_ID);
+        if (role != null) {
+            builder.withRoles(Sets.newHashSet(role));
+        }
+        UserSession session = new UserSession(builder.build());
         session.setAuthenticated(true);
         session.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
         session.setSessionToken(TEST_SESSION_TOKEN);
         session.setStudyIdentifier(TEST_STUDY_ID);
-        session.setUser(user);
+        if (status != null){
+            session.setConsentStatuses(TestUtils.toMap(status));    
+        }
         return session;
     }
+    
 }

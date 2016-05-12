@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -53,10 +53,10 @@ public class SurveyResponseControllerTest {
 
     @Before
     public void before() {
-        UserSession session = new UserSession();
-        User user = new User();
-        user.setHealthCode(HEALTH_CODE);
-        session.setUser(user);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode(HEALTH_CODE).build();
+        UserSession session = new UserSession(participant);
+        session.setParticipant(participant);
         
         service = mock(SurveyResponseService.class);
         

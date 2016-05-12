@@ -6,7 +6,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NoStackTraceException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ExceptionMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.slf4j.Logger;
@@ -14,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import play.libs.Json;
 import play.mvc.Http;
@@ -53,10 +53,11 @@ public class ExceptionInterceptor implements MethodInterceptor {
         // but a 412 error status code.
         if (throwable instanceof ConsentRequiredException) {
             ConsentRequiredException cre = (ConsentRequiredException)throwable;
-            UserSessionInfo session = new UserSessionInfo(cre.getUserSession());
+            
+            JsonNode info = UserSessionInfo.toJSON(cre.getUserSession());
             // The session object contains elements like enums that need BridgeObjectMapper's 
             // serialization strategies, to be consistent with the rest of the API.
-            return Results.status(cre.getStatusCode(), BridgeObjectMapper.get().writeValueAsString(session));
+            return Results.status(cre.getStatusCode(), info.toString());
         }
         String message = getMessage(throwable, status);
         final ExceptionMessage exceptionMessage = new ExceptionMessage(throwable, message);

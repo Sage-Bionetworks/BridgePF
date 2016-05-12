@@ -107,9 +107,9 @@ public class ConsentServiceTest {
         testUser = helper.getBuilder(ConsentServiceTest.class).withStudy(study).withConsent(false).build();
         
         context = new CriteriaContext.Builder()
-                .withHealthCode(testUser.getUser().getHealthCode())
+                .withHealthCode(testUser.getHealthCode())
                 .withStudyIdentifier(testUser.getStudyIdentifier())
-                .withUserDataGroups(testUser.getUser().getDataGroups()).build();
+                .withUserDataGroups(testUser.getStudyParticipant().getDataGroups()).build();
     }
 
     @After
@@ -128,11 +128,11 @@ public class ConsentServiceTest {
         assertNotConsented(statuses);
         
         List<UserConsentHistory> histories = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getId());
+                defaultSubpopulation.getGuid(), testUser.getHealthCode(), testUser.getId());
         assertTrue(histories.isEmpty());
         
         try {
-            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser());
+            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession());
             fail("expected exception");
         } catch (EntityNotFoundException e) {
         }
@@ -149,20 +149,21 @@ public class ConsentServiceTest {
         long signedOn = signature.getSignedOn();
         
         // Before consent if you ask, no sharing
-        SharingScope scope = optionsService.getOptions(testUser.getUser().getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
+        SharingScope scope = optionsService.getOptions(testUser.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
         
-        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), signature, SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
+        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(),
+                signature, SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
         
         // Verify we just set the options
-        scope = optionsService.getOptions(testUser.getUser().getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
+        scope = optionsService.getOptions(testUser.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertEquals(1, statuses.size());
         assertTrue(ConsentStatus.isUserConsented(statuses));
 
-        ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser());
+        ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession());
         assertEquals("Eggplant McTester", returnedSig.getName());
         assertEquals("1970-01-01", returnedSig.getBirthdate());
         assertEquals(TestConstants.DUMMY_IMAGE_DATA, returnedSig.getImageData());
@@ -170,19 +171,19 @@ public class ConsentServiceTest {
         assertEquals(signedOn, returnedSig.getSignedOn());
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
         
         // No longer consented.
         statuses = consentService.getConsentStatuses(context);
         assertFalse(ConsentStatus.isUserConsented(statuses));
         
         // No more sharing status
-        scope = optionsService.getOptions(testUser.getUser().getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
+        scope = optionsService.getOptions(testUser.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
         
         // Consent signature is no longer found, it's effectively deleted
         try {
-            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser());
+            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession());
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
         }
@@ -190,7 +191,7 @@ public class ConsentServiceTest {
         // However we have a historical record of the consent, including a revocation date
         // data is exported with the sharing status set at the time it was exported
         List<UserConsentHistory> histories = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getId());
+                defaultSubpopulation.getGuid(), testUser.getHealthCode(), testUser.getId());
         assertEquals(1, histories.size());
         assertNotNull(histories.get(0).getWithdrewOn());
     }
@@ -206,21 +207,21 @@ public class ConsentServiceTest {
         // This will work
         ConsentSignature sig = new ConsentSignature.Builder().withName("Test User")
                 .withBirthdate(DateUtils.getCalendarDateString(today18YearsAgo)).build();
-        consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getUser(), sig, sharingScope, false);
+        consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getSession(), sig, sharingScope, false);
 
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
 
         // Also okay
         sig = new ConsentSignature.Builder().withName("Test User")
                 .withBirthdate(DateUtils.getCalendarDateString(yesterday18YearsAgo)).build();
-        consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getUser(), sig, sharingScope, false);
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getSession(), sig, sharingScope, false);
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
 
         // But this is not, one day to go
         try {
             sig = new ConsentSignature.Builder().withName("Test User")
                     .withBirthdate(DateUtils.getCalendarDateString(tomorrow18YearsAgo)).build();
-            consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getUser(), sig, sharingScope, false);
+            consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getSession(), sig, sharingScope, false);
             fail("This should throw an exception");
         } catch (InvalidEntityException e) {
             assertTrue(e.getMessage().contains("years of age or older"));
@@ -234,40 +235,40 @@ public class ConsentServiceTest {
         ConsentSignature consent = new ConsentSignature.Builder().withName("John Smith")
                 .withBirthdate("1990-11-11").build();
 
-        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), consent,
+        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
 
         // There are two places where you can get statuses, the original service, or the user. Verify both each time
         assertConsented(consentService.getConsentStatuses(context), true);
-        assertConsented(testUser.getUser().getConsentStatuses(), true);
+        assertConsented(testUser.getSession().getConsentStatuses(), true);
 
         // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
         StudyConsent newStudyConsent = studyConsentService.addConsent(defaultSubpopulation.getGuid(), defaultConsentDocument)
                 .getStudyConsent();
 
         assertConsented(consentService.getConsentStatuses(context), true);
-        assertConsented(testUser.getUser().getConsentStatuses(), true);
+        assertConsented(testUser.getSession().getConsentStatuses(), true);
 
         // Public the new study consent. User is consented and but has no longer signed the most recent consent.
         newStudyConsent = studyConsentService
                 .publishConsent(study, defaultSubpopulation.getGuid(), newStudyConsent.getCreatedOn()).getStudyConsent();
 
         // We need to manually update because the users consent status won't change due to changes in consents 
-        // or subpopulations. Not until the session is refreshed. 
-        testUser.getUser().setConsentStatuses(consentService.getConsentStatuses(context));
+        // or subpopulations. Not until the session is refreshed.
+        testUser.getSession().setConsentStatuses(consentService.getConsentStatuses(context));
         
         assertConsented(consentService.getConsentStatuses(context), false);
-        assertConsented(testUser.getUser().getConsentStatuses(), false);
+        assertConsented(testUser.getSession().getConsentStatuses(), false);
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
         
-        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(),
+        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(),
             new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(DateTime.now().getMillis()).build(),
             SharingScope.SPONSORS_AND_PARTNERS, false);
 
         assertConsented(consentService.getConsentStatuses(context), true);
-        assertConsented(testUser.getUser().getConsentStatuses(), true);
+        assertConsented(testUser.getSession().getConsentStatuses(), true);
     }
     
     @Test
@@ -275,22 +276,22 @@ public class ConsentServiceTest {
         long originalSignedOn = DateTime.now().getMillis();
         ConsentSignature consent = makeSignature(originalSignedOn);
 
-        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), consent,
+        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
 
         // Consent exists, user is consented
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertConsented(statuses, true);
-        assertNotNull(consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser()));
+        assertNotNull(consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession()));
         
         // Now withdraw consent
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
         
         // Now user is not consented
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
         try {
-            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser());            
+            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession());            
         } catch(EntityNotFoundException e) {
             assertEquals("ConsentSignature not found.", e.getMessage());
         }
@@ -307,12 +308,12 @@ public class ConsentServiceTest {
         
         long newSignedOn = DateTime.now().getMillis();
         consent = new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(newSignedOn).build();
-        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getUser(), consent,
+        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
         
         // Finally, verify there is a history for this user.
         List<UserConsentHistory> history = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getUser().getHealthCode(), testUser.getId());
+                defaultSubpopulation.getGuid(), testUser.getHealthCode(), testUser.getId());
         assertEquals(2, history.size());
         
         UserConsentHistory withdrawnConsent = history.get(0);
@@ -322,10 +323,10 @@ public class ConsentServiceTest {
         assertNull(activeConsent.getWithdrewOn());
         
         StudyConsent studyConsent = studyConsentService.getActiveConsent(defaultSubpopulation.getGuid()).getStudyConsent();
-        UserConsent userConsent = userConsentDao.getUserConsent(testUser.getUser().getHealthCode(),
+        UserConsent userConsent = userConsentDao.getUserConsent(testUser.getHealthCode(),
                 defaultSubpopulation.getGuid(), originalSignedOn);
 
-        assertEquals(testUser.getUser().getHealthCode(), withdrawnConsent.getHealthCode());
+        assertEquals(testUser.getHealthCode(), withdrawnConsent.getHealthCode());
         assertEquals(defaultSubpopulation.getGuidString(), withdrawnConsent.getSubpopulationGuid());
         assertEquals(studyConsent.getCreatedOn(), withdrawnConsent.getConsentCreatedOn());
         assertEquals(consent.getName(), withdrawnConsent.getName());
@@ -354,29 +355,29 @@ public class ConsentServiceTest {
         // Users don't see consent status updates in their sessions when subpopulations are 
         // added. So we force that here for the tests. In production, sessions will have
         // to time or users will have to reconsent before these updates get picked up.
-        testUser.getUser().setConsentStatuses(consentService.getConsentStatuses(context));
+        testUser.getSession().setConsentStatuses(consentService.getConsentStatuses(context));
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertEquals(3, statuses.size());
         assertNotConsented(statuses);
         
-        consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getUser(),
+        consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getSession(),
                 makeSignature(DateTime.now().getMillis()), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
         
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
         
-        consentService.consentToResearch(study, requiredSubpop.getGuid(), testUser.getUser(),
+        consentService.consentToResearch(study, requiredSubpop.getGuid(), testUser.getSession(),
                 makeSignature(DateTime.now().getMillis()), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);        
         
         statuses = consentService.getConsentStatuses(context);
         assertConsented(statuses, true);
         
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL,
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL,
                 DateTime.now().getMillis());
         
         // your sharing has been turned off because not all required consents are signed
-        SharingScope scope = optionsService.getOptions(testUser.getUser().getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
+        SharingScope scope = optionsService.getOptions(testUser.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
         
         statuses = consentService.getConsentStatuses(context);
@@ -386,12 +387,12 @@ public class ConsentServiceTest {
         assertFalse(statuses.get(optionalSubpop.getGuid()).isConsented());
         // Just verify that it now doesn't appear to exist, so this is an exception
         try {
-            consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
+            consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
         
-        consentService.withdrawConsent(study, requiredSubpop.getGuid(), testUser.getUser(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(study, requiredSubpop.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
         
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
@@ -402,21 +403,21 @@ public class ConsentServiceTest {
     
     private void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses, boolean signedMostRecent) {
         assertTrue(ConsentStatus.isUserConsented(statuses));
-        assertTrue(testUser.getUser().doesConsent());
-        assertTrue(ConsentStatus.isUserConsented(testUser.getUser().getConsentStatuses()));
+        assertTrue(testUser.getSession().doesConsent());
+        assertTrue(ConsentStatus.isUserConsented(testUser.getSession().getConsentStatuses()));
         if (signedMostRecent) {
             assertTrue(ConsentStatus.isConsentCurrent(statuses));
-            assertTrue(testUser.getUser().hasSignedMostRecentConsent());
+            assertTrue(testUser.getSession().hasSignedMostRecentConsent());
         } else {
             assertFalse(ConsentStatus.isConsentCurrent(statuses));
-            assertFalse(testUser.getUser().hasSignedMostRecentConsent());
+            assertFalse(testUser.getSession().hasSignedMostRecentConsent());
         }
     }
     
     private void assertNotConsented(Map<SubpopulationGuid,ConsentStatus> statuses) {
         assertFalse(ConsentStatus.isUserConsented(statuses));
-        assertFalse(testUser.getUser().doesConsent());
-        assertFalse(ConsentStatus.isUserConsented(testUser.getUser().getConsentStatuses()));
+        assertFalse(testUser.getSession().doesConsent());
+        assertFalse(ConsentStatus.isUserConsented(testUser.getSession().getConsentStatuses()));
     }
     
     private ConsentSignature makeSignature(long originalSignedOn) {

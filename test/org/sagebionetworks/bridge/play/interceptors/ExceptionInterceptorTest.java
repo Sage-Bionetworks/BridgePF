@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -60,23 +60,22 @@ public class ExceptionInterceptorTest {
     
     @Test
     public void consentRequiredSessionSerializedCorrectly() throws Throwable {
-        User user = new User();
-        user.setEmail("email@email.com");
-        user.setFirstName("firstName");
-        user.setLastName("lastName");
-        user.setHealthCode("healthCode");
-        user.setId("userId");
-        user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
-        user.setStudyKey("test");
-        user.setDataGroups(Sets.newHashSet("group1"));
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail("email@email.com")
+                .withFirstName("firstName")
+                .withLastName("lastName")
+                .withHealthCode("healthCode")
+                .withId("userId")
+                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withDataGroups(Sets.newHashSet("group1")).build();
         
-        UserSession session = new UserSession();
+        UserSession session = new UserSession(participant);
         session.setAuthenticated(true);
         session.setEnvironment(Environment.DEV);
         session.setInternalSessionToken("internalToken");
         session.setSessionToken("sessionToken");
         session.setStudyIdentifier(new StudyIdentifierImpl("test"));
-        session.setUser(user);
+        session.setConsentStatuses(Maps.newHashMap());
         
         ConsentRequiredException exception = new ConsentRequiredException(session);
         
@@ -104,6 +103,6 @@ public class ExceptionInterceptorTest {
         assertEquals("group1", array.get(0).asText());
         assertEquals(0, node.get("consentStatuses").size());
         // And no further properties
-        assertEquals(14, node.size());
+        assertEquals(19, node.size());
     }
 }    

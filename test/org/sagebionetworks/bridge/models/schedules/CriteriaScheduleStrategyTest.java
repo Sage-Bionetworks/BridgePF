@@ -20,7 +20,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -218,12 +217,10 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithOneRequiredDataGroup();
         setUpStrategyWithProhibitedDataGroups();
         
-        User user = getUser();
-        user.setDataGroups(Sets.newHashSet("group3"));
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/44"))
-                .withHealthCode(user.getHealthCode()).build();
+                .withHealthCode("AAA").build();
         
         // First two ScheduleCriteria don't match; the first because the app version is wrong 
         // and the second because the user does not have a required data group. The last ScheduleCriteria 
@@ -369,13 +366,6 @@ public class CriteriaScheduleStrategyTest {
             set.add(array.get(i).asText());
         }
         return set;
-    }
-    
-    private User getUser() {
-        User user = new User();
-        user.setHealthCode("AAA");
-        user.setStudyKey(TEST_STUDY_IDENTIFIER);
-        return user;
     }
     
     private static Schedule makeValidSchedule(String label) {

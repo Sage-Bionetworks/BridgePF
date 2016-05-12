@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -62,7 +61,7 @@ public class UserAdminServiceTest {
 
     private StudyParticipant participant;
 
-    private User testUser;
+    private UserSession testUser;
 
     @Before
     public void before() {
@@ -71,7 +70,7 @@ public class UserAdminServiceTest {
         participant = new StudyParticipant.Builder().withEmail(email).withPassword("P4ssword!").build();
 
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-        authService.signIn(study, TEST_CONTEXT, signIn).getUser();
+        authService.signIn(study, TEST_CONTEXT, signIn);
     }
 
     @After
@@ -83,7 +82,7 @@ public class UserAdminServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
-        testUser = userAdminService.createUser(study, participant, null, true, true).getUser();
+        testUser = userAdminService.createUser(study, participant, null, true, true);
 
         userAdminService.deleteUser(study, testUser.getId());
 
@@ -98,19 +97,18 @@ public class UserAdminServiceTest {
 
         UserSession session = authService.signIn(study, TEST_CONTEXT, new SignIn(participant.getEmail(),
                 participant.getPassword()));
-        testUser = session.getUser();
-        assertFalse(testUser.doesConsent());
+        assertFalse(session.doesConsent());
     }
 
     // Next two test the same thing in two different ways.
     public void cannotCreateTheSameUserTwice() {
-        testUser = userAdminService.createUser(study, participant, null, true, true).getUser();
-        testUser = userAdminService.createUser(study, participant, null, true, true).getUser();
+        testUser = userAdminService.createUser(study, participant, null, true, true);
+        testUser = userAdminService.createUser(study, participant, null, true, true);
     }
     
     @Test
     public void cannotCreateUserWithSameEmail() {
-        testUser = userAdminService.createUser(study, participant, null, true, false).getUser();
+        testUser = userAdminService.createUser(study, participant, null, true, false);
         try {
             userAdminService.createUser(study, participant, null, false, false);
             fail("Sign up with email already in use should throw an exception");
@@ -125,17 +123,17 @@ public class UserAdminServiceTest {
         authService.signOut(session);
         assertNull(authService.getSession(session.getSessionToken()));
         // Shouldn't crash
-        userAdminService.deleteUser(study, session.getUser().getId());
+        userAdminService.deleteUser(study, session.getId());
         assertNull(authService.getSession(session.getSessionToken()));
     }
 
     @Test
     public void testDeleteUserThatHasBeenDeleted() {
         UserSession session = userAdminService.createUser(study, participant, null, true, true);
-        userAdminService.deleteUser(study, session.getUser().getId());
+        userAdminService.deleteUser(study, session.getId());
         assertNull(authService.getSession(session.getSessionToken()));
         // Delete again shouldn't crash
-        userAdminService.deleteUser(study, session.getUser().getId());
+        userAdminService.deleteUser(study, session.getId());
         assertNull(authService.getSession(session.getSessionToken()));
     }
     
@@ -147,19 +145,19 @@ public class UserAdminServiceTest {
             UserSession session = userAdminService.createUser(study, participant, null, true, true);
             study.setExternalIdValidationEnabled(true);
             
-            externalIdService.assignExternalId(study, "AAA", session.getUser().getHealthCode());
+            externalIdService.assignExternalId(study, "AAA", session.getHealthCode());
 
             DynamoExternalIdentifier identifier = getDynamoExternalIdentifier(session);
-            assertEquals(session.getUser().getHealthCode(), identifier.getHealthCode());
+            assertEquals(session.getHealthCode(), identifier.getHealthCode());
             
             // Now delete the user, and the assignment should then be free;
-            userAdminService.deleteUser(study, session.getUser().getId());
+            userAdminService.deleteUser(study, session.getId());
             
             identifier = getDynamoExternalIdentifier(session);
             assertNull(identifier.getHealthCode());
             
             // Now this works
-            externalIdService.assignExternalId(study, "AAA", session.getUser().getHealthCode());
+            externalIdService.assignExternalId(study, "AAA", session.getHealthCode());
         } finally {
             // this is a cheat, for sure, but allow deletion
             study.setExternalIdValidationEnabled(false);
