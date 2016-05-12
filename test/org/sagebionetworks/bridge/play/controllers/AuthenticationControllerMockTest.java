@@ -197,7 +197,8 @@ public class AuthenticationControllerMockTest {
     public void signUpWithCompleteUserData() throws Exception {
         // Other fields will be passed along to the PartcipantService, but it will not be utilized
         // These are the fields that *can* be changed. They are all passed along.
-        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(TestUtils.getStudyParticipant(AuthenticationControllerMockTest.class));
+        StudyParticipant originalParticipant = TestUtils.getStudyParticipant(AuthenticationControllerMockTest.class);
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(originalParticipant);
         node.put("study", TEST_STUDY_ID_STRING);
         
         TestUtils.mockPlayContextWithJson(node.toString());
@@ -207,10 +208,10 @@ public class AuthenticationControllerMockTest {
         
         verify(authenticationService).signUp(eq(study), participantCaptor.capture());
         
-        StudyParticipant originalParticipant = TestUtils.getStudyParticipant(AuthenticationControllerMockTest.class);
         StudyParticipant persistedParticipant = participantCaptor.getValue();
         assertEquals(originalParticipant.getFirstName(), persistedParticipant.getFirstName());
         assertEquals(originalParticipant.getLastName(), persistedParticipant.getLastName());
+        assertEquals(originalParticipant.getEmail(), persistedParticipant.getEmail());
         assertEquals(originalParticipant.getPassword(), persistedParticipant.getPassword());
         assertEquals(originalParticipant.getSharingScope(), persistedParticipant.getSharingScope());
         assertEquals(originalParticipant.getExternalId(), persistedParticipant.getExternalId());
