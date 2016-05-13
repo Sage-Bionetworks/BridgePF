@@ -168,7 +168,7 @@ public class UserProfileControllerTest {
         Result result = controller.updateUserProfile();
         TestUtils.assertResult(result, 200, "Profile updated.");
 
-        verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), participantCaptor.capture());
         
         StudyParticipant persisted = participantCaptor.getValue();
         assertEquals("First", persisted.getFirstName());
@@ -198,7 +198,7 @@ public class UserProfileControllerTest {
         Result result = controller.updateDataGroups();
         assertResult(result, 200, "Data groups updated.");
         
-        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES),participantCaptor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
@@ -215,7 +215,7 @@ public class UserProfileControllerTest {
     public void invalidDataGroupsRejected() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
-        doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), any());
+        doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study), eq(NO_ROLES), any());
         
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
         try {
@@ -256,7 +256,7 @@ public class UserProfileControllerTest {
         Result result = controller.updateDataGroups();
         assertResult(result, 200, "Data groups updated.");
         
-        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), participantCaptor.capture());
         
         StudyParticipant updated = participantCaptor.getValue();
         assertTrue(updated.getDataGroups().isEmpty());

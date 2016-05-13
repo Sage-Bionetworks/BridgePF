@@ -62,9 +62,11 @@ public class ParticipantController extends BaseController {
         StudyParticipant existing = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
-                .copyFieldsOf(participant, fieldNames).build();
+                .copyFieldsOf(participant, fieldNames)
+                .withId(session.getId()) // but they can't point at someone else's account!
+                .build();
         
-        participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
+        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         // Update this user's session (creates one if it doesn't exist, but this is safe)
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
@@ -110,11 +112,11 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
-        // Just stop right here because something is wrong
-        if (participant.getId() != null && !userId.equals(participant.getId())) {
-            throw new BadRequestException("ID in JSON does not match email in URL.");
-        }
-        participantService.updateParticipant(study, session.getParticipant().getRoles(), userId, participant);
+        
+        participant = new StudyParticipant.Builder()
+                .copyOf(participant)
+                .withId(userId).build();
+        participantService.updateParticipant(study, session.getParticipant().getRoles(), participant);
         
         // Push changes to the user's session, including consent statuses.
         CriteriaContext context = new CriteriaContext.Builder()
