@@ -62,7 +62,9 @@ public class ParticipantController extends BaseController {
         StudyParticipant existing = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
-                .copyFieldsOf(participant, fieldNames).build();
+                .copyFieldsOf(participant, fieldNames)
+                .withId(session.getId()) // but they can't point at someone else's account!
+                .build();
         
         participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
         

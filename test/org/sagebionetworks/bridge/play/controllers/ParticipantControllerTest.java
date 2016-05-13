@@ -311,7 +311,6 @@ public class ParticipantControllerTest {
                 .withFirstName("firstName")
                 .withLastName("lastName")
                 .withEmail("email@email.com")
-                .withId("id")
                 .withPassword("password")
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withNotifyByEmail(true)
@@ -337,7 +336,7 @@ public class ParticipantControllerTest {
         assertEquals("firstName", captured.getFirstName());
         assertEquals("lastName", captured.getLastName());
         assertEquals("email@email.com", captured.getEmail());
-        assertEquals("id", captured.getId());
+        assertEquals(ID, captured.getId());
         assertEquals("password", captured.getPassword());
         assertEquals(SharingScope.NO_SHARING, captured.getSharingScope());
         assertFalse(captured.isNotifyByEmail());
@@ -347,6 +346,33 @@ public class ParticipantControllerTest {
         assertEquals(AccountStatus.ENABLED, captured.getStatus());
         assertEquals(Sets.newHashSet("fr"), captured.getLanguages());
         assertEquals("simpleStringChange", captured.getExternalId());
+    }
+    
+    @Test
+    public void updateSelfCallCannotChangeIdToSomeoneElse() throws Exception {
+        // All values should be copied over here.
+        StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
+        participant = new StudyParticipant.Builder().copyOf(participant).withId(ID).build();
+        doReturn(participant).when(participantService).getParticipant(STUDY, NO_CALLER_ROLES, ID);
+        
+        // Now change to some other ID
+        participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();
+        String json = BridgeObjectMapper.get().writeValueAsString(participant);
+        TestUtils.mockPlayContextWithJson(json);
+
+        Result result = controller.updateSelfParticipant();
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(200, result.status());
+        assertEquals("UserSessionInfo", node.get("type").asText());
+        
+        verify(controller).updateSession(session);
+        
+        // verify the object is passed to service, one field is sufficient
+        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
+
+        // The ID was changed back to the session's participant user ID, not the one provided.
+        StudyParticipant captured = participantCaptor.getValue();
+        assertEquals(ID, captured.getId());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
