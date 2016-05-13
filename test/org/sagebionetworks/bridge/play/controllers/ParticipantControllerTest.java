@@ -185,12 +185,12 @@ public class ParticipantControllerTest {
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
                 "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
                 "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
-                "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
+                "'id':'junkId','attributes':{'phone':'123456789'},'languages':['en','fr']}"));
         
         Result result = controller.updateParticipant(ID);
         assertResult(result, 200, "Participant updated.");
         
-        verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), participantCaptor.capture());
         verify(authService).updateSession(eq(STUDY), any(), eq(ID));
         
         StudyParticipant participant = participantCaptor.getValue();
@@ -204,6 +204,8 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
         assertEquals("123456789", participant.getAttributes().get("phone"));
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
+        // the ID in the URL, not the one in the JSON (which can be wrong or missing, we don't care)
+        assertEquals(ID, participant.getId()); 
     }
     
     @Test
@@ -246,13 +248,6 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
     }
 
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantRequiresIdMatch() throws Exception {
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'id':'id2'}"));
-        
-        controller.updateParticipant("id1");
-    }
-    
     @Test
     public void getSelfParticipant() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
@@ -288,7 +283,7 @@ public class ParticipantControllerTest {
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());
         verify(authService).updateSession(eq(STUDY), any(), eq(ID));
-        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
         StudyParticipant captured = participantCaptor.getValue();
@@ -331,7 +326,7 @@ public class ParticipantControllerTest {
         assertEquals("UserSessionInfo", node.get("type").asText());
 
         verify(authService).updateSession(eq(STUDY), any(), eq(ID));
-        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals("firstName", captured.getFirstName());
         assertEquals("lastName", captured.getLastName());
@@ -368,7 +363,7 @@ public class ParticipantControllerTest {
         verify(controller).updateSession(session);
         
         // verify the object is passed to service, one field is sufficient
-        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), participantCaptor.capture());
 
         // The ID was changed back to the session's participant user ID, not the one provided.
         StudyParticipant captured = participantCaptor.getValue();
