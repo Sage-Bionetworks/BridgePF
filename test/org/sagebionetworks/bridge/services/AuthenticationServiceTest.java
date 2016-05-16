@@ -486,7 +486,7 @@ public class AuthenticationServiceTest {
         // Update the data groups
         StudyParticipant participant = participantService.getParticipant(study, CALLER_ROLES, userId);
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant).withDataGroups(UPDATED_DATA_GROUPS).build();
-        participantService.updateParticipant(study, CALLER_ROLES, updated);
+        participantService.updateParticipant(study, CALLER_ROLES, userId, updated);
         
         // Now update the session, these changes should be reflected
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
