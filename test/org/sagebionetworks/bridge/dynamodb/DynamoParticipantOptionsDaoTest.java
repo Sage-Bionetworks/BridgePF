@@ -3,10 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.*;
 
@@ -32,7 +28,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.springframework.test.context.ContextConfiguration;
@@ -182,28 +177,6 @@ public class DynamoParticipantOptionsDaoTest {
         assertEquals("externalId", lookup.getString(EXTERNAL_IDENTIFIER));
         assertEquals(DATA_GROUPS_SET, lookup.getStringSet(DATA_GROUPS));
         assertEquals(LANGUAGES_ORDERED_SET, lookup.getOrderedStringSet(LANGUAGES));
-    }
-    
-    @Test
-    public void updateNoOptions() {
-        optionsDao.setAllOptions(study, healthCode, PARTICIPANT_OPTIONS);
-        
-        mapper = spy(mapper);
-        optionsDao.setDdbMapper(mapper);
-        
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        optionsDao.setAllOptions(study, healthCode, options);
-        
-        // And the values should be exactly the same, not corrupted by lack of options
-        ParticipantOptionsLookup lookup = optionsDao.getOptions(healthCode);
-        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
-        assertTrue(lookup.getBoolean(EMAIL_NOTIFICATIONS));
-        assertEquals("externalId", lookup.getString(EXTERNAL_IDENTIFIER));
-        assertEquals(DATA_GROUPS_SET, lookup.getStringSet(DATA_GROUPS));
-        assertEquals(LANGUAGES_ORDERED_SET, lookup.getOrderedStringSet(LANGUAGES));
-        
-        // No update done, it didn't change.
-        verify(mapper, never()).save(any());
     }
 
     @Test

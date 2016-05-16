@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -55,15 +56,18 @@ public class StudyServiceTest {
     
     @Resource
     SubpopulationDao subpopDao;
+
+    @Autowired
+    CacheProvider cache;
     
-    private CacheProvider cache;
+    private CacheProvider mockCache;
     
     private Study study;
     
     @Before
     public void before() {
-        cache = mock(CacheProvider.class);
-        studyService.setCacheProvider(cache);
+        mockCache = mock(CacheProvider.class);
+        studyService.setCacheProvider(mockCache);
     }
     
     @After
@@ -72,7 +76,12 @@ public class StudyServiceTest {
             studyService.deleteStudy(study.getIdentifier());
         }
     }
-    
+
+    @After
+    public void resetCache() {
+        studyService.setCacheProvider(cache);
+    }
+
     @Test(expected=InvalidEntityException.class)
     public void studyIsValidated() {
         Study testStudy = new DynamoStudy();
@@ -114,9 +123,9 @@ public class StudyServiceTest {
         assertTrue(study.isStrictUploadValidationEnabled()); // by default set to true
         assertTrue(study.isHealthCodeExportEnabled()); // it was set true in the study
 
-        verify(cache).setStudy(study);
-        verifyNoMoreInteractions(cache);
-        reset(cache);
+        verify(mockCache).setStudy(study);
+        verifyNoMoreInteractions(mockCache);
+        reset(mockCache);
         
         // A default, active consent should be created for the study.
         StudyConsentView view = studyConsentService.getActiveConsent(SubpopulationGuid.create(study.getIdentifier()));
@@ -135,15 +144,15 @@ public class StudyServiceTest {
         assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
-        verify(cache).getStudy(newStudy.getIdentifier());
-        verify(cache).setStudy(newStudy);
-        verifyNoMoreInteractions(cache);
-        reset(cache);
+        verify(mockCache).getStudy(newStudy.getIdentifier());
+        verify(mockCache).setStudy(newStudy);
+        verifyNoMoreInteractions(mockCache);
+        reset(mockCache);
 
         studyService.deleteStudy(study.getIdentifier());
-        verify(cache).getStudy(study.getIdentifier());
-        verify(cache).setStudy(study);
-        verify(cache).removeStudy(study.getIdentifier());
+        verify(mockCache).getStudy(study.getIdentifier());
+        verify(mockCache).setStudy(study);
+        verify(mockCache).removeStudy(study.getIdentifier());
         try {
             studyService.getStudy(study.getIdentifier());
             fail("Should have thrown an exception");
