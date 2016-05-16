@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.visualization.MpowerVisualization;
 import org.sagebionetworks.bridge.services.MpowerVisualizationService;
@@ -85,10 +85,11 @@ public class MpowerVisualizationControllerTest {
     private static void test(String startDateStr, String endDateStr, LocalDate expectedStartDate,
             LocalDate expectedEndDate) throws Exception {
         // Spy controller. Mock session.
-        
-        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(DUMMY_HEALTH_CODE).build();
+        User user = new User();
+        user.setHealthCode(DUMMY_HEALTH_CODE);
 
-        UserSession session = new UserSession(participant);
+        UserSession session = new UserSession();
+        session.setUser(user);
 
         MpowerVisualizationController controller = spy(new MpowerVisualizationController());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();

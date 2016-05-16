@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.LinkedHashSet;
@@ -75,8 +73,7 @@ public class StudyParticipantTest {
         assertEquals("newUserPassword", node.get("password").asText());
         assertEquals("sponsors_and_partners", node.get("sharingScope").asText());
         assertTrue(node.get("notifyByEmail").asBoolean());
-        assertNull(node.get("healthCode"));
-        assertNotNull(node.get("encryptedHealthCode"));
+        assertEquals("healthCode", node.get("healthCode").asText());
         assertEquals("enabled", node.get("status").asText());
         assertEquals(CREATED_ON_UTC.toString(), node.get("createdOn").asText());
         assertEquals(STORMPATH_ID, node.get("id").asText());

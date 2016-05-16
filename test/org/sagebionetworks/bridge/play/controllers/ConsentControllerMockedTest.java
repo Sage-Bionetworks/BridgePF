@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,22 +15,18 @@ import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.play.controllers.ConsentController;
@@ -42,51 +39,52 @@ import com.fasterxml.jackson.databind.JsonNode;
 import play.mvc.Result;
 import play.test.Helpers;
 
-@RunWith(MockitoJUnitRunner.class)
 public class ConsentControllerMockedTest {
 
-    private static final StudyIdentifierImpl STUDY_IDENTIFIER = new StudyIdentifierImpl("study-key");
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
-    
-    private ConsentController controller;
 
     private UserSession session;
-    
-    @Mock
+    private User user;
     private Study study;
-    @Mock
+    private ConsentController controller;
+
     private StudyService studyService;
-    @Mock
     private ConsentService consentService;
-    @Mock
     private ParticipantOptionsService optionsService;
-    @Mock
     private CacheProvider cacheProvider;
-    @Captor
-    private ArgumentCaptor<ConsentSignature> signatureCaptor;
-    
+
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(UNIX_TIMESTAMP);
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode("healthCode").build();
-        session = new UserSession(participant); 
-        session.setStudyIdentifier(STUDY_IDENTIFIER);
+        session = mock(UserSession.class);
+        StudyIdentifier studyId = mock(StudyIdentifier.class);
+        when(studyId.getIdentifier()).thenReturn("study-key");
+        when(session.getStudyIdentifier()).thenReturn(studyId);
+        user = new User();
+        user.setHealthCode("healthCode");
+        when(session.getUser()).thenReturn(user);
 
-        when(study.getIdentifier()).thenReturn(STUDY_IDENTIFIER.getIdentifier());
-        when(study.getStudyIdentifier()).thenReturn(STUDY_IDENTIFIER);
-        when(studyService.getStudy(session.getStudyIdentifier())).thenReturn(study);
-        
         controller = spy(new ConsentController());
-        controller.setStudyService(studyService);
-        controller.setConsentService(consentService);
-        controller.setOptionsService(optionsService);
-        controller.setCacheProvider(cacheProvider);
-        
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession();
+
+        studyService = mock(StudyService.class);
+        study = mock(Study.class);
+        when(study.getIdentifier()).thenReturn("study-key");
+        when(study.getStudyIdentifier()).thenReturn(studyId);
+        when(studyService.getStudy(studyId)).thenReturn(study);
+        controller.setStudyService(studyService);
+
+        consentService = mock(ConsentService.class);
+        controller.setConsentService(consentService);
+
+        optionsService = mock(ParticipantOptionsService.class);
+        controller.setOptionsService(optionsService);
+
+        cacheProvider = mock(CacheProvider.class);
+        controller.setCacheProvider(cacheProvider);
     }
 
     @After
@@ -107,7 +105,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, SubpopulationGuid.create(study.getIdentifier()), session)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, SubpopulationGuid.create(study.getIdentifier()), user)).thenReturn(sig);
 
         Result result = controller.getConsentSignature();
 
@@ -129,14 +127,12 @@ public class ConsentControllerMockedTest {
         // signedOn will be set on the server
         String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         
-        TestUtils.mockPlayContextWithJson(json);
+        ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV2();
         assertResult(result, 201, "Consent to research has been recorded.");
 
-        verify(consentService).consentToResearch(eq(study), any(SubpopulationGuid.class), any(UserSession.class),
-                signatureCaptor.capture(), any(SharingScope.class), eq(true));
-        validateSignature(signatureCaptor.getValue());
+        validateSignature(captor.getValue());
     }
     
     @Test
@@ -145,14 +141,12 @@ public class ConsentControllerMockedTest {
         // This signedOn property should be ignored, it is always set on the server
         String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":0,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         
-        TestUtils.mockPlayContextWithJson(json);
+        ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV2();
         assertResult(result, 201, "Consent to research has been recorded.");
         
-        verify(consentService).consentToResearch(eq(study), any(SubpopulationGuid.class), any(UserSession.class),
-                signatureCaptor.capture(), any(SharingScope.class), eq(true));
-        validateSignature(signatureCaptor.getValue());
+        validateSignature(captor.getValue());
     }
     
     @Test
@@ -166,7 +160,7 @@ public class ConsentControllerMockedTest {
         assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), session,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), user,
                 new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
@@ -183,7 +177,7 @@ public class ConsentControllerMockedTest {
         Result result = controller.withdrawConsent();
         assertResult(result, 200, "User has been withdrawn from the study.");
         
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), session,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), user,
                 new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -193,7 +187,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, SUBPOP_GUID, session)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, SUBPOP_GUID, user)).thenReturn(sig);
 
         Result result = controller.getConsentSignatureV2(SUBPOP_GUID.getGuid());
 
@@ -214,14 +208,12 @@ public class ConsentControllerMockedTest {
         // signedOn will be set on the server
         String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         
-        TestUtils.mockPlayContextWithJson(json);
+        ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         assertResult(result, 201, "Consent to research has been recorded.");
         
-        verify(consentService).consentToResearch(eq(study), any(SubpopulationGuid.class), any(UserSession.class),
-                signatureCaptor.capture(), any(SharingScope.class), eq(true));
-        validateSignature(signatureCaptor.getValue());
+        validateSignature(captor.getValue());
     }
     
     @Test
@@ -229,14 +221,12 @@ public class ConsentControllerMockedTest {
         // This signedOn property should be ignored, it is always set on the server
         String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":0,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         
-        TestUtils.mockPlayContextWithJson(json);
+        ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         assertResult(result, 201, "Consent to research has been recorded.");
         
-        verify(consentService).consentToResearch(eq(study), any(SubpopulationGuid.class), any(UserSession.class),
-                signatureCaptor.capture(), any(SharingScope.class), eq(true));
-        validateSignature(signatureCaptor.getValue());
+        validateSignature(captor.getValue());
     }
     
     @Test
@@ -249,7 +239,7 @@ public class ConsentControllerMockedTest {
         assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, SUBPOP_GUID, session, new Withdrawal("Because, reasons."), 20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
         DateTimeUtils.setCurrentMillisSystem();
@@ -264,7 +254,7 @@ public class ConsentControllerMockedTest {
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         assertResult(result, 200, "User has been withdrawn from the study.");
         
-        verify(consentService).withdrawConsent(study, SUBPOP_GUID, session, new Withdrawal(null), 20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, user, new Withdrawal(null), 20000);
     }
     
     @Test
@@ -273,7 +263,7 @@ public class ConsentControllerMockedTest {
         
         assertResult(result, 200, "Emailed consent.");
         
-        verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, session);
+        verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, user);
     }
     
     @Test
@@ -281,14 +271,15 @@ public class ConsentControllerMockedTest {
         // signedOn will be set on the server
         String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         
-        TestUtils.mockPlayContextWithJson(json);
+        ArgumentCaptor<ConsentSignature> captor = setUpContextWithJson(json);
         
         Result result = controller.giveV3("test-subpop");
         assertResult(result, 201, "Consent to research has been recorded.");
         
-        verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("test-subpop")), eq(session),
-                signatureCaptor.capture(), eq(SharingScope.NO_SHARING), eq(true));
-        validateSignature(signatureCaptor.getValue());
+        verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("test-subpop")), eq(user),
+                captor.capture(), eq(SharingScope.NO_SHARING), eq(true));
+        
+        validateSignature(captor.getValue());
     }
     
     @Test
@@ -301,7 +292,7 @@ public class ConsentControllerMockedTest {
         assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), session,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), user,
                 new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
@@ -317,11 +308,20 @@ public class ConsentControllerMockedTest {
         Result result = controller.withdrawConsentV2("test-subpop");
         assertResult(result, 200, "User has been withdrawn from the study.");
         
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), session,
+        verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), user,
                 new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
-
+    
+    private ArgumentCaptor<ConsentSignature> setUpContextWithJson(String json) throws Exception{
+        TestUtils.mockPlayContextWithJson(json);
+        
+        ArgumentCaptor<ConsentSignature> captor = ArgumentCaptor.forClass(ConsentSignature.class);
+        when(consentService.consentToResearch(any(Study.class), any(SubpopulationGuid.class), any(User.class), captor.capture(),
+                any(SharingScope.class), any(Boolean.class))).thenReturn(user);
+        return captor;
+    }
+    
     private void validateSignature(ConsentSignature signature) {
         assertEquals(UNIX_TIMESTAMP, signature.getSignedOn());
         assertEquals("Jack Aubrey", signature.getName());

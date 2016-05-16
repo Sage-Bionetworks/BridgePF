@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -46,6 +46,7 @@ import play.test.Helpers;
 public class FPHSControllerTest {
 
     private FPHSController controller;
+    private User user;
     private AuthenticationService authenticationService;
     private FPHSService fphsService;
     private ConsentService consentService;
@@ -89,15 +90,17 @@ public class FPHSControllerTest {
         when(fphsService.getExternalIdentifiers()).thenReturn(identifiers);
     }
     
-    private UserSession setUserSession() {
-        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("BBB").build();
+    private User setUserSession() {
+        user = new User();
+        user.setHealthCode("BBB");
         
-        UserSession session = new UserSession(participant);
-        session.setStudyIdentifier(new StudyIdentifierImpl("test-study"));
+        UserSession session = mock(UserSession.class);
+        when(session.getUser()).thenReturn(user);
+        when(session.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("test-study"));
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession();
-        return session;
+        return user;
     }
     
     @Test
@@ -149,13 +152,13 @@ public class FPHSControllerTest {
 
     @Test
     public void registrationOK() throws Exception {
-        UserSession session = setUserSession();
+        User user = setUserSession();
         setExternalIdentifierPost(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo"));
 
         Result result = controller.registerExternalIdentifier();
         assertResult(result, 200, "External identifier added to user profile.");
 
-        assertEquals(Sets.newHashSet("football_player"), session.getParticipant().getDataGroups());
+        assertEquals(Sets.newHashSet("football_player"), user.getDataGroups());
         verify(consentService).getConsentStatuses(any(CriteriaContext.class));
     }
     
@@ -164,7 +167,7 @@ public class FPHSControllerTest {
         setData();
         
         // There's a user, but not an admin user
-        UserSession session = setUserSession();
+        setUserSession();
         try {
             controller.getExternalIdentifiers();
             fail("Should have thrown exception");
@@ -173,9 +176,7 @@ public class FPHSControllerTest {
         }
         
         // Now when we have an admin user, we get back results
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.ADMIN)).build());
+        user.setRoles(Sets.newHashSet(Roles.ADMIN));
         
         Result result = controller.getExternalIdentifiers();
         JsonNode node = resultToJson(result);
@@ -208,11 +209,10 @@ public class FPHSControllerTest {
         FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
         setFPHSExternalIdentifiersPost(Lists.newArrayList(id1, id2));
         
-        UserSession session = setUserSession();
+        setUserSession();
         
         // Now when we have an admin user, we get back results
-        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.ADMIN)).build());
+        user.setRoles(Sets.newHashSet(Roles.ADMIN));
         Result result = controller.addExternalIdentifiers();
         
         ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);

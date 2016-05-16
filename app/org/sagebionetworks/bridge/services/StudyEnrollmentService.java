@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -98,11 +98,11 @@ public class StudyEnrollmentService {
      * @param study
      * @param user
      */
-    public void incrementStudyEnrollment(Study study, UserSession session) {
+    public void incrementStudyEnrollment(Study study, User user) {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        if (ConsentStatus.hasOnlyOneSignedConsent(session.getConsentStatuses())) {
+        if (ConsentStatus.hasOnlyOneSignedConsent(user.getConsentStatuses())) {
             String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
             jedisOps.incr(key);
         }
@@ -115,11 +115,11 @@ public class StudyEnrollmentService {
      * @param study
      * @param user
      */
-    public void decrementStudyEnrollment(Study study, UserSession session) {
+    public void decrementStudyEnrollment(Study study, User user) {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        if (!session.doesConsent()) {
+        if (!user.doesConsent()) {
             String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
             String count = jedisOps.get(key);
             if (count != null && Long.parseLong(count) > 0) {

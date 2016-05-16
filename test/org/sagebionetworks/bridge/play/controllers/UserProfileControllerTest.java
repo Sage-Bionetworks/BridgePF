@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -84,6 +85,9 @@ public class UserProfileControllerTest {
     @Mock
     private ParticipantService participantService;
     
+    @Mock
+    private UserSession session;
+    
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -92,8 +96,6 @@ public class UserProfileControllerTest {
     
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
-    
-    private UserSession session;
     
     private Study study;
     
@@ -122,11 +124,13 @@ public class UserProfileControllerTest {
         controller.setParticipantService(participantService);
         controller.setViewCache(viewCache);
         
-        session = new UserSession(new StudyParticipant.Builder()
-                .withHealthCode(HEALTH_CODE)
-                .withId(ID)
-                .build());
-        session.setStudyIdentifier(TEST_STUDY);
+        User user = new User();
+        user.setStudyKey(TEST_STUDY.getIdentifier());
+        user.setHealthCode(HEALTH_CODE);
+        user.setId(ID);
+        
+        when(session.getUser()).thenReturn(user);
+        when(session.getStudyIdentifier()).thenReturn(TEST_STUDY);
         
         doReturn(session).when(controller).getAuthenticatedSession();
     }
@@ -206,7 +210,7 @@ public class UserProfileControllerTest {
         assertEquals("First", participant.getFirstName());
         
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
-        assertEquals(dataGroupSet, session.getParticipant().getDataGroups());
+        assertEquals(dataGroupSet, session.getUser().getDataGroups());
     }
     
     // Validation is no longer done in the controller, but verify that user is not changed
@@ -222,7 +226,7 @@ public class UserProfileControllerTest {
             controller.updateDataGroups();
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
-            assertEquals(Sets.newHashSet(), session.getParticipant().getDataGroups());
+            assertEquals(Sets.newHashSet(), session.getUser().getDataGroups());
         }
     }
 

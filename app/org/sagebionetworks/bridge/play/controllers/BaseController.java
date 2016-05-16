@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -131,7 +131,7 @@ public abstract class BaseController extends Controller {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());        
         verifySupportedVersionOrThrowException(study);
-        if (!session.doesConsent()) {
+        if (!session.getUser().doesConsent()) {
             throw new ConsentRequiredException(session);
         }
         return session;
@@ -141,7 +141,7 @@ public abstract class BaseController extends Controller {
         checkNotNull(role);
 
         UserSession session = getAuthenticatedSession();
-        if (session.isInRole(role)) {
+        if (session.getUser().isInRole(role)) {
             return session;
         }
         throw new UnauthorizedException();
@@ -152,7 +152,7 @@ public abstract class BaseController extends Controller {
         checkArgument(!roleSet.isEmpty());
 
         UserSession session = getAuthenticatedSession();
-        if (session.isInRole(roleSet)) {
+        if (session.getUser().isInRole(roleSet)) {
             return session;
         }
         throw new UnauthorizedException();
@@ -162,7 +162,8 @@ public abstract class BaseController extends Controller {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
 
-    void updateSession(UserSession session) {
+    void updateSessionUser(UserSession session, User user) {
+        session.setUser(user);
         cacheProvider.setUserSession(session);
     }
 
@@ -194,18 +195,16 @@ public abstract class BaseController extends Controller {
      * that effect will need to be included in the application.
      */
     LinkedHashSet<String> getLanguages(UserSession session) {
-        StudyParticipant participant = session.getParticipant();
-        if (!participant.getLanguages().isEmpty()) {
-            return participant.getLanguages();
+        User user = session.getUser();
+        if (!user.getLanguages().isEmpty()) {
+            return user.getLanguages();
         }
         LinkedHashSet<String> languages = getLanguagesFromAcceptLanguageHeader();
         if (!languages.isEmpty()) {
             optionsService.setOrderedStringSet(
-                    session.getStudyIdentifier(), session.getHealthCode(), LANGUAGES, languages);
-            
-            session.setParticipant(new StudyParticipant.Builder()
-                    .copyOf(participant).withLanguages(languages).build());
-            updateSession(session);
+                    session.getStudyIdentifier(), user.getHealthCode(), LANGUAGES, languages);
+            user.setLanguages(languages);
+            updateSessionUser(session, user);
         }
         return languages;
     }
@@ -250,13 +249,11 @@ public abstract class BaseController extends Controller {
     }
     
     CriteriaContext getCriteriaContext(UserSession session) {
-        checkNotNull(session);
-        
         return new CriteriaContext.Builder()
             .withLanguages(getLanguagesFromAcceptLanguageHeader())
             .withClientInfo(getClientInfoFromUserAgentHeader())
-            .withHealthCode(session.getHealthCode())
-            .withUserDataGroups(session.getParticipant().getDataGroups())
+            .withHealthCode(session.getUser().getHealthCode())
+            .withUserDataGroups(session.getUser().getDataGroups())
             .withStudyIdentifier(session.getStudyIdentifier())
             .build();
     }
@@ -352,7 +349,10 @@ public abstract class BaseController extends Controller {
         Metrics metrics = getMetrics();
         if (metrics != null && session != null) {
             metrics.setSessionId(session.getInternalSessionToken());
-            metrics.setUserId(session.getId());
+            User user = session.getUser();
+            if (user != null) {
+                metrics.setUserId(user.getId());
+            }
             metrics.setStudy(session.getStudyIdentifier().getIdentifier());
         }
     }

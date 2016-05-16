@@ -1,12 +1,13 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -14,6 +15,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -43,6 +45,7 @@ public class UserProfileController extends BaseController {
     private static final String USERNAME_FIELD = "username";
     private static final String TYPE_FIELD = "type";
     private static final String TYPE_VALUE = "UserProfile";
+    private static final Set<Roles> NO_ROLES = Collections.emptySet();
     private static final Set<String> DATA_GROUPS_SET = Sets.newHashSet("dataGroups");
 
     private ParticipantService participantService;
@@ -73,12 +76,12 @@ public class UserProfileController extends BaseController {
     public Result getUserProfile() throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-        final String userId = session.getId();
+        final String userId = session.getUser().getId();
         
         ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<ObjectNode>() {
             @Override public ObjectNode get() {
-                StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, userId);
+                StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, userId);
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(FIRST_NAME_FIELD, participant.getFirstName());
                 node.put(LAST_NAME_FIELD, participant.getLastName());
@@ -97,7 +100,7 @@ public class UserProfileController extends BaseController {
     public Result updateUserProfile() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        String userId = session.getId();
+        String userId = session.getUser().getId();
         
         JsonNode node = requestToJSON(request());
         Map<String,String> attributes = Maps.newHashMap();
@@ -107,16 +110,15 @@ public class UserProfileController extends BaseController {
             }
         }
         
-        StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, userId);
+        StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, userId);
         
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withFirstName(JsonUtils.asText(node, "firstName"))
                 .withLastName(JsonUtils.asText(node, "lastName"))
                 .withAttributes(attributes).build();
-        participantService.updateParticipant(study, NO_CALLER_ROLES, userId, updated);
+        participantService.updateParticipant(study, NO_ROLES, userId, updated);
         
-        session.setParticipant(updated);
-        updateSession(session);
+        updateSessionUser(session, session.getUser());
         
         ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         viewCache.removeView(cacheKey);
@@ -130,7 +132,7 @@ public class UserProfileController extends BaseController {
         
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
 
-        externalIdService.assignExternalId(study, externalId.getIdentifier(), session.getHealthCode());
+        externalIdService.assignExternalId(study, externalId.getIdentifier(), session.getUser().getHealthCode());
         
         return okResult("External identifier added to user profile.");
     }
@@ -139,7 +141,7 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         Set<String> dataGroups = optionsService.getOptions(
-                session.getHealthCode()).getStringSet(DATA_GROUPS);
+                session.getUser().getHealthCode()).getStringSet(DATA_GROUPS);
         
         ArrayNode array = JsonNodeFactory.instance.arrayNode();
         dataGroups.stream().forEach(array::add);
@@ -154,24 +156,24 @@ public class UserProfileController extends BaseController {
     public Result updateDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
-        StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
+        User user = session.getUser();
+        String userId = user.getId();
         
         StudyParticipant dataGroups = parseJson(request(), StudyParticipant.class);
+        
+        StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, userId);
         
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .copyFieldsOf(dataGroups, DATA_GROUPS_SET).build();
         
-        participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
-        
-        session.setParticipant(updated);
+        participantService.updateParticipant(study, NO_ROLES, userId, updated);
+        user.setDataGroups(updated.getDataGroups());
         
         CriteriaContext context = getCriteriaContext(session);
-        
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        session.setConsentStatuses(statuses);
+        user.setConsentStatuses(statuses);
                 
-        updateSession(session);
+        updateSessionUser(session, user);
         return okResult("Data groups updated.");
     }
     

@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -126,19 +127,20 @@ public class UserAdminService {
         try {
             SignIn signIn = new SignIn(participant.getEmail(), participant.getPassword());
             newUserSession = authenticationService.signIn(study, context, signIn);
-            
+
             if (consentUser) {
                 String name = String.format("[Signature for %s]", participant.getEmail());
                 ConsentSignature signature = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 
+                User user = newUserSession.getUser();
                 if (subpopGuid != null) {
-                    consentService.consentToResearch(study, subpopGuid, newUserSession, signature, NO_SHARING, false);
+                    consentService.consentToResearch(study, subpopGuid, user, signature, NO_SHARING, false);
                 } else {
-                    for (ConsentStatus consentStatus : newUserSession.getConsentStatuses().values()) {
+                    for (ConsentStatus consentStatus : user.getConsentStatuses().values()) {
                         if (consentStatus.isRequired()) {
                             SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
-                            consentService.consentToResearch(study, guid, newUserSession, signature, NO_SHARING, false);
+                            consentService.consentToResearch(study, guid, user, signature, NO_SHARING, false);
                         }
                     }
                 }
@@ -152,8 +154,8 @@ public class UserAdminService {
         } catch (RuntimeException ex) {
             // Created the account, but failed to process the account properly. To avoid leaving behind a bunch of test
             // accounts, delete this account.
-            if (newUserSession != null) {
-                deleteUser(study, newUserSession.getId());    
+            if (newUserSession != null && newUserSession.getUser() != null) {
+                deleteUser(study, newUserSession.getUser().getId());    
             }
             throw ex;
         }

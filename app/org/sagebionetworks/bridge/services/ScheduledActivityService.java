@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -53,7 +54,8 @@ public class ScheduledActivityService {
         this.schedulePlanService = schedulePlanService;
     }
     
-    public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {
+    public List<ScheduledActivity> getScheduledActivities(User user, ScheduleContext context) {
+        checkNotNull(user);
         checkNotNull(context);
         
         Validate.nonEntityThrowingException(VALIDATOR, context);

@@ -23,7 +23,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -59,13 +59,13 @@ public class UserManagementControllerTest {
     
     @Before
     public void before() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode("BBB")
-                .withRoles(Sets.newHashSet(ADMIN))
-                .withEmail("email@email.com").build();
-                
-        UserSession session = new UserSession(participant);
-        session.setStudyIdentifier(new StudyIdentifierImpl("api"));
+        UserSession session = new UserSession();
+        User user = new User();
+        user.setHealthCode("BBB");
+        user.setStudyKey("api");
+        user.setRoles(Sets.newHashSet(ADMIN));
+        user.setEmail("email@email.com");
+        session.setUser(user);
         session.setAuthenticated(true);
         session.setStudyIdentifier(TEST_STUDY);
         
