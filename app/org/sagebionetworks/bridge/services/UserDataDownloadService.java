@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.sagebionetworks.bridge.models.DateRange;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
@@ -25,6 +26,6 @@ public interface UserDataDownloadService {
      * @throws JsonProcessingException
      *         if converting the request to JSON fails
      */
-    void requestUserData(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String email, @Nonnull DateRange dateRange)
+    void requestUserData(@Nonnull StudyIdentifier studyIdentifier, @Nonnull User user, @Nonnull DateRange dateRange)
             throws JsonProcessingException;
 }

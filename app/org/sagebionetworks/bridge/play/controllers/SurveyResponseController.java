@@ -34,7 +34,7 @@ public class SurveyResponseController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(res.getSurveyGuid(), res.getSurveyCreatedOn());
         
         SurveyResponseView view = responseService.createSurveyResponse(keys, 
-            session.getHealthCode(), res.getAnswers(), res.getIdentifier());
+            session.getUser().getHealthCode(), res.getAnswers(), res.getIdentifier());
 
         return createdResult(new IdentifierHolder(view.getIdentifier()));
     }
@@ -56,7 +56,7 @@ public class SurveyResponseController extends BaseController {
 
     SurveyResponseView getSurveyResponseIfAuthorized(String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        String healthCode = session.getHealthCode(); 
+        String healthCode = session.getUser().getHealthCode(); 
         return responseService.getSurveyResponse(healthCode, identifier);
     }
     

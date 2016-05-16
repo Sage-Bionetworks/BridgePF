@@ -98,6 +98,8 @@ public class PagedResourceListTest {
         assertEquals("value1", items.get(0).asText());
         assertEquals("value2", items.get(1).asText());
         
+        System.out.println(node.toString());
+        
         // We don't deserialize this, but let's verify for the SDK
         PagedResourceList<String> serPage = BridgeObjectMapper.get().readValue(node.toString(), 
                 new TypeReference<PagedResourceList<String>>() {});

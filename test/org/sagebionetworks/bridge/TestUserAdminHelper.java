@@ -9,6 +9,7 @@ import java.util.Set;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -39,23 +40,25 @@ public class TestUserAdminHelper {
 
     public class TestUser {
         private final Study study;
+        private final StudyParticipant participant;
         private final UserSession session;
 
-        public TestUser(Study study, UserSession session) {
+        public TestUser(Study study, StudyParticipant participant, UserSession session) {
+            this.participant = participant;
             this.study = study;
             this.session = session;
         }
         public StudyParticipant getStudyParticipant() {
-            return session.getParticipant();
+            return participant;
         }
         public SignIn getSignIn() {
-            return new SignIn(getStudyParticipant().getEmail(), getStudyParticipant().getPassword());
+            return new SignIn(participant.getEmail(), participant.getPassword());
         }
         public String getEmail() {
-            return getStudyParticipant().getEmail();
+            return participant.getEmail();
         }
         public String getPassword() {
-            return getStudyParticipant().getPassword();
+            return participant.getPassword();
         }
         public UserSession getSession() {
             return session;
@@ -63,24 +66,24 @@ public class TestUserAdminHelper {
         public String getSessionToken() {
             return (session == null) ? null : session.getSessionToken();
         }
+        public User getUser() {
+            return (session == null) ? null : session.getUser();
+        }
         public Study getStudy() {
             return study;
         }
-        public String getHealthCode() {
-            return (session == null) ? null : session.getHealthCode();
-        }
         public String getId() {
-            return (session == null) ? null : session.getId();
+            return (session == null) ? null : session.getUser().getId();
         }
         public StudyIdentifier getStudyIdentifier() {
             return study.getStudyIdentifier();
         }
         public CriteriaContext getCriteriaContext() {
             return new CriteriaContext.Builder()
-                .withLanguages(session.getParticipant().getLanguages())
-                .withHealthCode(session.getHealthCode())
+                .withLanguages(session.getUser().getLanguages())
+                .withHealthCode(session.getUser().getHealthCode())
                 .withStudyIdentifier(study.getStudyIdentifier())
-                .withUserDataGroups(session.getParticipant().getDataGroups())
+                .withUserDataGroups(session.getUser().getDataGroups())
                 .build();            
         }
     }
@@ -183,15 +186,8 @@ public class TestUserAdminHelper {
             
             UserSession session = userAdminService.createUser(
                     finalStudy, finalParticipant, subpopGuid, signIn, consent);
-
-            // fix some stuff. In the admin/test path, we want to refer to the password after-the-fact.
-            StudyParticipant newParticipant = new StudyParticipant.Builder()
-                    .copyOf(session.getParticipant())
-                    .withPassword(finalParticipant.getPassword())
-                    .build();
-            session.setParticipant(newParticipant);
             
-            return new TestUser(finalStudy, session);
+            return new TestUser(finalStudy, finalParticipant, session);
         }
     }
 

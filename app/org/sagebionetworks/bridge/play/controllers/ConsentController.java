@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -91,7 +91,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session);
+        ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session.getUser());
         return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
     }
     
@@ -105,8 +105,8 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawConsent(study, SubpopulationGuid.create(guid), session, withdrawal, withdrewOn);
-        updateSession(session);
+        consentService.withdrawConsent(study, SubpopulationGuid.create(guid), session.getUser(), withdrawal, withdrewOn);
+        updateSessionUser(session, session.getUser());
         
         return okResult("User has been withdrawn from the study.");
     }
@@ -115,21 +115,18 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        consentService.emailConsentAgreement(study, SubpopulationGuid.create(guid), session);
+        consentService.emailConsentAgreement(study, SubpopulationGuid.create(guid), session.getUser());
         return okResult("Emailed consent.");
     }
     
     Result changeSharingScope(SharingScope sharingScope, String message) {
         final UserSession session = getAuthenticatedAndConsentedSession();
+        final User user = session.getUser();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
+        optionsService.setEnum(study, user.getHealthCode(), SHARING_SCOPE, sharingScope);
         
-        optionsService.setEnum(study, session.getHealthCode(), SHARING_SCOPE, sharingScope);
-        
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .copyOf(session.getParticipant())
-                .withSharingScope(sharingScope).build();
-        session.setParticipant(participant);
-        updateSession(session);
+        user.setSharingScope(sharingScope);
+        updateSessionUser(session, user);
         return okResult(message);
     }
 
@@ -140,13 +137,11 @@ public class ConsentController extends BaseController {
         final ConsentSignature consent = parseJson(request(), ConsentSignature.class);
         final SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), version);
 
-        consentService.consentToResearch(study, subpopGuid, session, consent,
+        final User user = consentService.consentToResearch(study, subpopGuid, session.getUser(), consent,
                 sharing.getSharingScope(), true);
         
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withSharingScope(sharing.getSharingScope()).build();
-        session.setParticipant(participant);
-        updateSession(session);
+        user.setSharingScope(sharing.getSharingScope());
+        updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());
         return createdResult("Consent to research has been recorded.");
     }

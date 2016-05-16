@@ -69,12 +69,12 @@ public class SubpopulationController extends BaseController {
     }
     public Result deleteSubpopulation(String guid, String physicalDeleteString) {
         UserSession session = getAuthenticatedSession();
-        if (!session.isInRole(DELETE_ROLES)) {
+        if (!session.getUser().isInRole(DELETE_ROLES)) {
             throw new UnauthorizedException();
         }
         // Only admins can request a physical delete.
         boolean physicalDelete = ("true".equals(physicalDeleteString));
-        if (physicalDelete && !session.isInRole(ADMIN)) {
+        if (physicalDelete && !session.getUser().isInRole(ADMIN)) {
             throw new UnauthorizedException();
         }
         

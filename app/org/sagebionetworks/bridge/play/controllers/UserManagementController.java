@@ -38,7 +38,7 @@ public class UserManagementController extends BaseController {
         
         UserSession userSession = userAdminService.createUser(study, participant, null, false, consent);
 
-        return createdResult(UserSessionInfo.toJSON(userSession));
+        return createdResult(new UserSessionInfo(userSession));
     }
 
     public Result deleteUser(String userId) throws Exception {

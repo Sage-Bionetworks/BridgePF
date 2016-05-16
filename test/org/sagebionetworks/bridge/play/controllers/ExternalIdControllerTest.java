@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
@@ -74,10 +74,11 @@ public class ExternalIdControllerTest {
         controller.setExternalIdService(externalIdService);
         controller.setStudyService(studyService);
         
-        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("BBB").build();
+        User user = new User();
+        user.setHealthCode("BBB");
         
         UserSession session = mock(UserSession.class);
-        when(session.getParticipant()).thenReturn(participant);
+        when(session.getUser()).thenReturn(user);
         when(session.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER);

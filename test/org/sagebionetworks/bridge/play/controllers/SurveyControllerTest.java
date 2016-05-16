@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +43,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -127,11 +128,13 @@ public class SurveyControllerTest {
     }
     
     private void setUserSession(String studyIdentifier) {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode("BBB")
-                .withRoles(Sets.newHashSet(DEVELOPER)).build();
         // The mock user is initially
-        session = new UserSession(participant);
+        session = new UserSession();
+        User user = new User();
+        user.setHealthCode("BBB");
+        user.setStudyKey(studyIdentifier);
+        user.setRoles(Sets.newHashSet(DEVELOPER));
+        session.setUser(user);
         session.setStudyIdentifier(new StudyIdentifierImpl(studyIdentifier));
         doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -323,10 +326,7 @@ public class SurveyControllerTest {
     public void getSurveyForWorker() throws Exception {
         setContext();
         setUserSession("secondstudy");
-        
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(Roles.WORKER)).build();
-        session.setParticipant(participant);
+        session.getUser().setRoles(ImmutableSet.of(Roles.WORKER));
 
         // set up inputs
         String guid = "BBB";
@@ -450,9 +450,7 @@ public class SurveyControllerTest {
         when(service.getSurvey(eq(keys))).thenReturn(survey);
         setContext();
         
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(ADMIN)).build();
-        session.setParticipant(participant);
+        session.getUser().setRoles(Sets.newHashSet(ADMIN));
         controller.deleteSurvey(guid, date.toString(), "true");
         
         verify(service).getSurvey(eq(keys));
@@ -469,9 +467,7 @@ public class SurveyControllerTest {
         when(service.getSurvey(eq(keys))).thenReturn(survey);
         setContext();
         
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(ADMIN)).build();
-        session.setParticipant(participant);
+        session.getUser().setRoles(Sets.newHashSet(ADMIN));
         try {
             controller.deleteSurvey(guid, date.toString(), "false");
             fail("This should have thrown an exception");
@@ -680,10 +676,7 @@ public class SurveyControllerTest {
         setContext();
         when(service.getSurvey(keys)).thenReturn(survey);
         setUserSession("api");
-        
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(ADMIN)).build();
-        session.setParticipant(participant);
+        session.getUser().setRoles(Sets.newHashSet(ADMIN));
         
         try {
             controller.getSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
@@ -700,10 +693,7 @@ public class SurveyControllerTest {
         setContext();
         when(service.getSurvey(keys)).thenReturn(survey);
         setUserSession("api");
-        
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet()).build();
-        session.setParticipant(participant);
+        session.getUser().setRoles(Collections.emptySet());
         
         try {
             controller.getSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
