@@ -185,18 +185,18 @@ public class ParticipantService {
      */
     public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
             boolean sendVerifyEmail) {
-        return saveParticipant(study, callerRoles, participant, true, sendVerifyEmail);
+        return saveParticipant(study, callerRoles, null, participant, true, sendVerifyEmail);
     }
     
-    public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
-        saveParticipant(study, callerRoles, participant, false, false);
+    public void updateParticipant(Study study, Set<Roles> callerRoles, String id, StudyParticipant participant) {
+        saveParticipant(study, callerRoles, id, participant, false, false);
     }
 
-    private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
-            boolean isNew, boolean sendVerifyEmail) {
+    private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, String id,
+            StudyParticipant participant, boolean isNew, boolean sendVerifyEmail) {
         checkNotNull(study);
         checkNotNull(callerRoles);
-        checkArgument(isNew || isNotBlank(participant.getId()));
+        checkArgument(isNew || isNotBlank(id));
         checkNotNull(participant);
         
         Validate.entityThrowingException(new StudyParticipantValidator(study, isNew), participant);
@@ -209,7 +209,7 @@ public class ParticipantService {
             }
             account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
         } else {
-            account = getAccountThrowingException(study, participant.getId());
+            account = getAccountThrowingException(study, id);
             
             addValidatedExternalId(study, participant, account.getHealthCode());
         }

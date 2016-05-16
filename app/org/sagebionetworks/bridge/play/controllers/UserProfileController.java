@@ -112,9 +112,8 @@ public class UserProfileController extends BaseController {
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withFirstName(JsonUtils.asText(node, "firstName"))
                 .withLastName(JsonUtils.asText(node, "lastName"))
-                .withAttributes(attributes)
-                .withId(session.getId()).build();
-        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
+                .withAttributes(attributes).build();
+        participantService.updateParticipant(study, NO_CALLER_ROLES, userId, updated);
         
         session.setParticipant(updated);
         updateSession(session);
@@ -163,7 +162,7 @@ public class UserProfileController extends BaseController {
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .copyFieldsOf(dataGroups, DATA_GROUPS_SET).build();
         
-        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
+        participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
         
         session.setParticipant(updated);
         
