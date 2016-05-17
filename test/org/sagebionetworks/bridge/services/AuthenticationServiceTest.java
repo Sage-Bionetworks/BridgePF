@@ -280,17 +280,14 @@ public class AuthenticationServiceTest {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withStudy(study).withConsent(true)
                 .withSignIn(true).withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
         
-        authService = spy(authService);
-        optionsService = spy(optionsService);
-        authService.setOptionsService(optionsService);
-        accountDao = spy(accountDao);
-        
-        authService.signUp(study, testUser.getStudyParticipant());
+        AuthenticationService authServiceSpy = spy(authService);
 
-        UserSession session = authService.signIn(study, testUser.getCriteriaContext(), testUser.getSignIn());
+        authServiceSpy.signUp(study, testUser.getStudyParticipant());
+
+        UserSession session = authServiceSpy.signIn(study, testUser.getCriteriaContext(), testUser.getSignIn());
         Account account = accountDao.getAccount(study, session.getUser().getId());
-        
-        verify(authService).signUp(eq(study), any(StudyParticipant.class));
+
+        verify(authServiceSpy).signUp(eq(study), any(StudyParticipant.class));
         // Verify that data groups were set correctly as an option
         Set<String> persistedGroups = optionsService.getOptions(account.getHealthCode()).getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);
@@ -321,12 +318,12 @@ public class AuthenticationServiceTest {
     @Test
     public void secondSignUpTriggersResetPasswordInstead() {
         // Verify that requestResetPassword is called in this case
-        authService = spy(authService);
+        AuthenticationService authServiceSpy = spy(authService);
         
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
-        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant());
-        verify(authService).requestResetPassword(any(Study.class), any(Email.class));
+        authServiceSpy.signUp(testUser.getStudy(), testUser.getStudyParticipant());
+        verify(authServiceSpy).requestResetPassword(any(Study.class), any(Email.class));
     }
     
     @Test
@@ -464,17 +461,20 @@ public class AuthenticationServiceTest {
         AccountDao accountDaoSpy = mock(AccountDao.class);
         when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, testUser.getUser().getId()));
         authService.setAccountDao(accountDaoSpy);
-        
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier()).build();
-        
-        UserSession session = authService.verifyEmail(study, context, verification);
-        // Consents are okay. User hasn't consented.
-        ConsentStatus status = session.getUser().getConsentStatuses().values().iterator().next();
-        assertFalse(status.isConsented());
-        
-        // This should not have been altered in any way by the lack of consents.
-        verify(accountDaoSpy).verifyEmail(study, verification);
-        authService.setAccountDao(accountDao);
+        try {
+            CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier())
+                    .build();
+
+            UserSession session = authService.verifyEmail(study, context, verification);
+            // Consents are okay. User hasn't consented.
+            ConsentStatus status = session.getUser().getConsentStatuses().values().iterator().next();
+            assertFalse(status.isConsented());
+
+            // This should not have been altered in any way by the lack of consents.
+            verify(accountDaoSpy).verifyEmail(study, verification);
+        } finally {
+            authService.setAccountDao(accountDao);
+        }
     }
 
     @Test
