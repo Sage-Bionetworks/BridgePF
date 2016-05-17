@@ -294,10 +294,6 @@ public class AuthenticationService {
     }
     
     private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
-        UserSession existingSession = cacheProvider.getUserSessionByUserId(account.getId());
-        if (existingSession != null) {
-            return existingSession;
-        }
         StudyParticipant participant = participantService.getParticipantForSession(study, account);
         
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
@@ -309,8 +305,17 @@ public class AuthenticationService {
         }
         
         UserSession session = new UserSession(participant);
-        session.setSessionToken(BridgeUtils.generateGuid());
-        session.setInternalSessionToken(BridgeUtils.generateGuid());
+        // The check for an existing session just prevents resetting the session tokens, the rest of the 
+        // session is refreshed. This should probably be changed, but for now, this is emulating earlier 
+        // behavior prior to a refactor.
+        UserSession existingSession = cacheProvider.getUserSessionByUserId(account.getId());
+        if (existingSession != null) {
+            session.setSessionToken(existingSession.getSessionToken());
+            session.setInternalSessionToken(existingSession.getInternalSessionToken());
+        } else {
+            session.setSessionToken(BridgeUtils.generateGuid());
+            session.setInternalSessionToken(BridgeUtils.generateGuid());
+        }
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setStudyIdentifier(study.getStudyIdentifier());

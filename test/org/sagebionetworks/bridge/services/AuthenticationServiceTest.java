@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -507,5 +508,29 @@ public class AuthenticationServiceTest {
         
         participant = participantService.getParticipant(study, CALLER_ROLES, idHolder.getIdentifier());
         assertTrue(participant.getRoles().isEmpty());
+    }
+    
+    @Test
+    public void signInPersistsExistingSessionsTokensOnly() {
+        testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
+        
+        StudyParticipant oldRecord = new StudyParticipant.Builder()
+                .copyOf(TestUtils.getStudyParticipant(AuthenticationServiceTest.class))
+                .withId(testUser.getId()).build();
+        UserSession cachedSession = new UserSession(oldRecord);
+        cachedSession.setSessionToken("cachedSessionToken");
+        cachedSession.setInternalSessionToken("cachedInternalSessionToken");
+        cacheProvider.setUserSession(cachedSession);
+        
+        UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+        
+        assertEquals(cachedSession.getSessionToken(), session.getSessionToken());
+        assertEquals(cachedSession.getInternalSessionToken(), session.getInternalSessionToken());
+        // but the rest is updated.  
+        assertNotEquals(cachedSession.getParticipant().getEmail(), session.getParticipant().getEmail());
+        assertNotEquals(cachedSession.getParticipant().getFirstName(), session.getParticipant().getFirstName());
+        assertNotEquals(cachedSession.getParticipant().getLastName(), session.getParticipant().getLastName());
+        assertNotEquals(cachedSession.getHealthCode(), session.getHealthCode());
+        // etc.
     }
 }
