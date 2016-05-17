@@ -32,7 +32,7 @@ public class MpowerVisualizationController extends BaseController {
     public Result getVisualization(String startDate, String endDate) {
         // get health code from session
         UserSession session = getAuthenticatedAndConsentedSession();
-        String healthCode = session.getHealthCode();
+        String healthCode = session.getUser().getHealthCode();
 
         // parse string dates into Joda dates
         LocalDate startDateObj = parseDateHelper(startDate);

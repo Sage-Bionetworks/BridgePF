@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -47,17 +48,17 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
 
     private Study study;
     private SubpopulationGuid subpopGuid;
-    private String userEmail;
+    private User user;
     private ConsentSignature consentSignature;
     private SharingScope sharingScope;
     private StudyConsentService studyConsentService;
     private String consentTemplate;
 
-    public ConsentEmailProvider(Study study, SubpopulationGuid subpopGuid, String userEmail, ConsentSignature consentSignature, SharingScope sharingScope,
+    public ConsentEmailProvider(Study study, SubpopulationGuid subpopGuid, User user, ConsentSignature consentSignature, SharingScope sharingScope,
         StudyConsentService studyConsentService, String consentTemplate) {
         this.study = study;
         this.subpopGuid = subpopGuid;
-        this.userEmail = userEmail;
+        this.user = user;
         this.consentSignature = consentSignature;
         this.sharingScope = sharingScope;
         this.studyConsentService = studyConsentService;
@@ -77,7 +78,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
         Set<String> recipients = BridgeUtils.commaListToOrderedSet(study.getConsentNotificationEmail());
         builder.withRecipients(recipients);
-        builder.withRecipient(userEmail);
+        builder.withRecipient(user.getEmail());
 
         final String consentDoc = createSignedDocument();
 
@@ -143,7 +144,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
             // proceed as we used to
             String html = consentAgreementHTML.replace("@@name@@", username);
             html = html.replace("@@signing.date@@", signingDate);
-            html = html.replace("@@email@@", userEmail);
+            html = html.replace("@@email@@", user.getEmail());
             html = html.replace("@@sharing@@", sharingLabel);
             return html;
         } else {
@@ -160,7 +161,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
             map.put("consent.body", resolvedConsentAgreementHTML);
             map.put("participant.name", username);
             map.put("participant.signing.date", signingDate);
-            map.put("participant.email", userEmail);
+            map.put("participant.email", user.getEmail());
             map.put("participant.sharing", sharingLabel);
             
             return BridgeUtils.resolveTemplate(consentTemplate, map);

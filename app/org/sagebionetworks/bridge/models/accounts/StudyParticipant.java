@@ -10,13 +10,9 @@ import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
 
@@ -25,9 +21,6 @@ import com.google.common.collect.ImmutableMap;
  */
 @JsonDeserialize(builder=StudyParticipant.Builder.class)
 public final class StudyParticipant implements BridgeEntity {
-
-    private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(
-            BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     
     private final String firstName;
     private final String lastName;
@@ -103,12 +96,8 @@ public final class StudyParticipant implements BridgeEntity {
     public Set<String> getDataGroups() {
         return dataGroups;
     }
-    @JsonIgnore
     public String getHealthCode() {
         return healthCode;
-    }
-    public String getEncryptedHealthCode() {
-        return (healthCode == null) ? null : ENCRYPTOR.encrypt(healthCode);
     }
     public Map<String,String> getAttributes() {
         return attributes;
@@ -155,6 +144,8 @@ public final class StudyParticipant implements BridgeEntity {
                 && Objects.equals(password, other.password) && Objects.equals(roles, other.roles)
                 && Objects.equals(sharingScope, other.sharingScope) && Objects.equals(status, other.status);
     }
+
+
 
     public static class Builder {
         private String firstName;
@@ -280,10 +271,6 @@ public final class StudyParticipant implements BridgeEntity {
         }
         public Builder withHealthCode(String healthCode) {
             this.healthCode = healthCode;
-            return this;
-        }
-        public Builder withEncryptedHealthCode(String encHealthCode) {
-            this.healthCode = ENCRYPTOR.decrypt(encHealthCode);
             return this;
         }
         public Builder withAttributes(Map<String,String> attributes) {

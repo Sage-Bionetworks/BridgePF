@@ -29,9 +29,12 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -45,13 +48,16 @@ public class DynamoScheduledActivityDaoMockTest {
     private static final DateTime NOW = DateTime.parse("2015-04-12T14:20:56.123-07:00");
 
     private static final String HEALTH_CODE = "AAA";
+    private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("mock-study");
     private static final DateTimeZone PACIFIC_TIME_ZONE = DateTimeZone.forOffsetHours(-7);
     
     private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL();
     private static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
     private static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
     private static final String ACTIVITY_3_REF = TestConstants.TEST_3_ACTIVITY.getTask().getIdentifier();
-    
+
+    private User user;
+
     private DynamoDBMapper mapper;
 
     private DynamoScheduledActivityDao activityDao;
@@ -61,6 +67,10 @@ public class DynamoScheduledActivityDaoMockTest {
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
+
+        user = new User();
+        user.setHealthCode(HEALTH_CODE);
+        user.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
 
         testSchActivity = new DynamoScheduledActivity();
         

@@ -1,9 +1,6 @@
 package org.sagebionetworks.bridge.cache;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -11,7 +8,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -21,21 +17,15 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.redis.RedisKey;
@@ -43,7 +33,6 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 import redis.clients.jedis.JedisPool;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class CacheProviderTest {
 
@@ -59,13 +48,10 @@ public class CacheProviderTest {
         when(transaction.expire(any(String.class), anyInt())).thenReturn(transaction);
         when(transaction.del(any(String.class))).thenReturn(transaction);
         when(transaction.exec()).thenReturn(Arrays.asList((Object)"OK", "OK"));
-        
         JedisOps jedisOps = mock(JedisOps.class);
         when(jedisOps.getTransaction()).thenReturn(transaction);
-        
         String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
         when(jedisOps.get(userKey)).thenReturn(sessionToken);
-        
         cacheProvider = new CacheProvider();
         cacheProvider.setJedisOps(jedisOps);
         cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
@@ -73,15 +59,14 @@ public class CacheProviderTest {
 
     @Test
     public void testSetUserSession() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail("userEmail")
-                .withId(userId)
-                .withHealthCode("healthCode").build();
-        
-        UserSession session = new UserSession(participant);
+        User user = new User();
+        user.setEmail("userEmail");
+        user.setId(userId);
+        user.setHealthCode("healthCode");
+        UserSession session = new UserSession();
+        session.setUser(user);
         session.setSessionToken(sessionToken);
         cacheProvider.setUserSession(session);
-
         String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
         verify(transaction, times(1)).setex(eq(sessionKey), anyInt(), anyString());
@@ -91,12 +76,12 @@ public class CacheProviderTest {
 
     @Test
     public void testSetUserSessionNullSessionToken() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail("userEmail")
-                .withId(userId)
-                .withHealthCode("healthCode").build();
-        
-        UserSession session = new UserSession(participant);
+        User user = new User();
+        user.setEmail("userEmail");
+        user.setId(userId);
+        user.setHealthCode("healthCode");
+        UserSession session = new UserSession();
+        session.setUser(user);
         try {
             cacheProvider.setUserSession(session);
         } catch(NullPointerException e) {
@@ -131,11 +116,11 @@ public class CacheProviderTest {
 
     @Test
     public void testSetUserSessionNullUserId() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail("userEmail")
-                .withHealthCode("healthCode").build();        
-        
-        UserSession session = new UserSession(participant);
+        User user = new User();
+        user.setEmail("userEmail");
+        user.setHealthCode("healthCode");
+        UserSession session = new UserSession();
+        session.setUser(user);
         session.setSessionToken(sessionToken);
         try {
             cacheProvider.setUserSession(session);
@@ -152,6 +137,28 @@ public class CacheProviderTest {
     }
 
     @Test
+    public void testGetUserSession() throws Exception {
+        String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
+        JedisOps jedisOps = mock(JedisOps.class);
+        when(jedisOps.getTransaction(sessionKey)).thenReturn(transaction);
+        when(jedisOps.get(sessionKey)).thenReturn("userSessionString");
+        cacheProvider.setJedisOps(jedisOps);
+        User user = new User();
+        user.setId(userId);
+        
+        UserSession mockUserSession = mock(UserSession.class);
+        when(mockUserSession.getUser()).thenReturn(user);
+        BridgeObjectMapper mockObjectMapper = mock(BridgeObjectMapper.class);
+        when(mockObjectMapper.readValue("userSessionString",  UserSession.class)).thenReturn(mockUserSession);
+        cacheProvider.setBridgeObjectMapper(mockObjectMapper);
+        cacheProvider.getUserSession(sessionToken);
+        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+        verify(transaction, times(1)).expire(eq(sessionKey), anyInt());
+        verify(transaction, times(1)).expire(eq(userKey), anyInt());
+        verify(transaction, times(1)).exec();
+    }
+
+    @Test
     public void testGetUserSessionByUserId() throws Exception {
         CacheProvider mockCacheProvider = spy(cacheProvider);
         mockCacheProvider.getUserSessionByUserId(userId);
@@ -160,12 +167,12 @@ public class CacheProviderTest {
 
     @Test
     public void testRemoveSession() {
-        StudyParticipant participant = new StudyParticipant.Builder().withId(userId).build();
-
-        UserSession session = new UserSession(participant);
-        session.setSessionToken(sessionToken);
-        
-        cacheProvider.removeSession(session);
+        User user = new User();
+        user.setId(userId);
+        UserSession mockUserSession = mock(UserSession.class);
+        when(mockUserSession.getUser()).thenReturn(user);
+        when(mockUserSession.getSessionToken()).thenReturn(sessionToken);
+        cacheProvider.removeSession(mockUserSession);
         cacheProvider.getUserSession(sessionToken);
         String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
@@ -186,6 +193,7 @@ public class CacheProviderTest {
 
     @Test
     public void addAndRemoveViewFromCacheProvider() throws Exception {
+
         final CacheProvider simpleCacheProvider = new CacheProvider();
         simpleCacheProvider.setJedisOps(getJedisOps());
         simpleCacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
@@ -211,116 +219,7 @@ public class CacheProviderTest {
         cachedString = simpleCacheProvider.getString(cacheKey);
         assertNull(cachedString);
     }
-    
-    @Test
-    public void oldUserSessionDeserializedToNewUserSession() {
-        String oldJSON = TestUtils.createJson("{'authenticated':true,"+
-                "'environment':'local',"+
-                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b',"+
-                "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
-                "'user':{'id':'6gq4jGXLmAxVbLLmVifKN4',"+
-                    "'firstName':'Bridge',"+
-                    "'lastName':'IT',"+
-                    "'email':'bridgeit@sagebase.org',"+
-                    "'studyKey':'api',"+
-                    "'sharingScope':'no_sharing',"+
-                    "'accountCreatedOn':'2016-04-21T16:48:22.386Z',"+
-                    "'roles':['admin'],"+
-                    "'dataGroups':['group1'],"+
-                    "'consentStatuses':{"+
-                        "'api':{'name':'Default Consent Group',"+
-                            "'subpopulationGuid':'api',"+
-                            "'required':true,"+
-                            "'consented':false,"+
-                            "'signedMostRecentConsent':true,"+
-                            "'type':'ConsentStatus'}},"+
-                    "'languages':['en','fr'],"+
-                    "'encryptedHealthCode':'TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=',"+
-                    "'type':'User'},"+
-                "'studyIdentifier':{'identifier':'api',"+
-                    "'type':'StudyIdentifier'},"+
-                "'type':'UserSession'}");
-        
-        assertSession(oldJSON);
-    }
 
-    @Test
-    public void newUserSessionDeserializes() {
-        String json = TestUtils.createJson("{'authenticated':true,"+
-                "'environment':'local',"+
-                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b',"+
-                "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
-                "'studyIdentifier':{'identifier':'api',"+
-                    "'type':'StudyIdentifier'},"+
-                "'consentStatuses':{"+
-                    "'api':{'name':'Default Consent Group',"+
-                        "'subpopulationGuid':'api',"+
-                        "'required':true,"+
-                        "'consented':false,"+
-                        "'signedMostRecentConsent':true,"+
-                        "'type':'ConsentStatus'}},"+
-                "'participant':{'firstName':'Bridge',"+
-                    "'lastName':'IT',"+
-                    "'email':'bridgeit@sagebase.org',"+
-                    "'sharingScope':'no_sharing',"+
-                    "'notifyByEmail':false,"+
-                    "'dataGroups':['group1'],"+
-                    "'healthCode':'7e188a30-fda5-4d1b-9904-a642f96a19b0',"+
-                    "'attributes':{},"+
-                    "'consentHistories':{},"+
-                    "'roles':['admin'],"+
-                    "'languages':['en','fr'],"+
-                    "'createdOn':'2016-04-21T16:48:22.386Z',"+
-                    "'id':'6gq4jGXLmAxVbLLmVifKN4',"+
-                    "'type':'StudyParticipant'},"+
-                "'type':'UserSession'}");
-
-        assertSession(json);
-    }
-
-    private void assertSession(String json) {
-        JedisOps jedisOps = mock(JedisOps.class);
-        
-        String sessionKey = RedisKey.SESSION.getRedisKey("sessionToken");
-        doReturn(sessionKey).when(jedisOps).get("sessionToken");
-        doReturn(transaction).when(jedisOps).getTransaction(sessionKey);
-        doReturn(json).when(jedisOps).get(sessionKey);
-        
-        cacheProvider.setJedisOps(jedisOps);
-        cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
-        
-        UserSession session = cacheProvider.getUserSession("sessionToken");
-
-        assertTrue(session.isAuthenticated());
-        assertEquals(Environment.LOCAL, session.getEnvironment());
-        assertEquals("ccea2978-f5b9-4377-8194-f887a3e2a19b", session.getSessionToken());
-        assertEquals("4f0937a5-6ebf-451b-84bc-fbf649b9e93c", session.getInternalSessionToken());
-        assertEquals("6gq4jGXLmAxVbLLmVifKN4", session.getId());
-        assertEquals("api", session.getStudyIdentifier().getIdentifier());
-        
-        StudyParticipant participant = session.getParticipant();
-        assertEquals("Bridge", participant.getFirstName());
-        assertEquals("IT", participant.getLastName());
-        assertEquals("bridgeit@sagebase.org", participant.getEmail());
-        assertEquals(SharingScope.NO_SHARING, participant.getSharingScope());
-        assertEquals(DateTime.parse("2016-04-21T16:48:22.386Z"), participant.getCreatedOn());
-        assertEquals(Sets.newHashSet(Roles.ADMIN), participant.getRoles());
-        assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
-        assertNotNull(participant.getHealthCode());
-        assertNotEquals("TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBA"+
-                "VcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=", participant.getHealthCode());
-        
-        SubpopulationGuid apiGuid = SubpopulationGuid.create("api");
-        
-        Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
-        ConsentStatus status = consentStatuses.get(apiGuid);
-        assertEquals("Default Consent Group", status.getName());
-        assertEquals(apiGuid.getGuid(), status.getSubpopulationGuid());
-        assertTrue(status.getSignedMostRecentConsent());
-        assertTrue(status.isRequired());
-        assertFalse(status.isConsented());
-    }
-    
     private JedisOps getJedisOps() {
         return new JedisOps(new JedisPool()) {
             private Map<String,String> map = Maps.newHashMap();

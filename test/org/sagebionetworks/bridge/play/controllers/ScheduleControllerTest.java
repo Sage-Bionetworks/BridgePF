@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -47,7 +48,7 @@ public class ScheduleControllerTest {
     private StudyIdentifier studyId;
     
     @Before
-    public void before() throws Exception {
+    public void before() {
         studyId = new StudyIdentifierImpl(TestUtils.randomName(ScheduleControllerTest.class));
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app name/9");
         
@@ -82,13 +83,15 @@ public class ScheduleControllerTest {
         controller = spy(new ScheduleController());
         controller.setSchedulePlanService(schedulePlanService);
         
-        UserSession session = new UserSession();
-        session.setStudyIdentifier(studyId);
+        User user = new User();
+        user.setStudyKey("study-test");
+        
+        UserSession session = mock(UserSession.class);
+        when(session.getStudyIdentifier()).thenReturn(studyId);
+        when(session.getUser()).thenReturn(user);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(clientInfo).when(controller).getClientInfoFromUserAgentHeader();
-        
-        TestUtils.mockPlayContext();
     }
     
     @Test

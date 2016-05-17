@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -56,6 +57,8 @@ public class ScheduledActivityServiceMockTest {
     
     private SchedulePlanService schedulePlanService;
     
+    private User user;
+    
     private ScheduledActivityDao activityDao;
     
     private ActivityEventService activityEventService;
@@ -65,6 +68,11 @@ public class ScheduledActivityServiceMockTest {
     @SuppressWarnings("unchecked")
     @Before
     public void before() {
+        user = new User();
+        user.setStudyKey(TEST_STUDY.getIdentifier());
+        user.setHealthCode(HEALTH_CODE);
+        user.setAccountCreatedOn(ENROLLMENT.minusHours(3));
+        
         endsOn = DateTime.now().plusDays(2);
         
         service = new ScheduledActivityService();
@@ -96,7 +104,7 @@ public class ScheduledActivityServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
-        service.getScheduledActivities(new ScheduleContext.Builder()
+        service.getScheduledActivities(user, new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withTimeZone(DateTimeZone.UTC).withEndsOn(DateTime.now().minusSeconds(1)).build());
@@ -104,7 +112,7 @@ public class ScheduledActivityServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
-        service.getScheduledActivities(new ScheduleContext.Builder()
+        service.getScheduledActivities(user, new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withTimeZone(DateTimeZone.UTC)
@@ -138,7 +146,7 @@ public class ScheduledActivityServiceMockTest {
                 .withEndsOn(endsOn)
                 .withHealthCode(HEALTH_CODE).build();        
         
-        List<ScheduledActivity> activities = service.getScheduledActivities(context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(user, context);
         assertTrue(activities.size() > 0);
     }
     
@@ -444,10 +452,13 @@ public class ScheduledActivityServiceMockTest {
         List<SchedulePlan> schedulePlans = Lists.newArrayList(voiceActivityPlan);
         when(schedulePlanService.getSchedulePlans(info, new StudyIdentifierImpl("test-study"))).thenReturn(schedulePlans);
         
+        User user = new User();
+        user.setDataGroups(Sets.newHashSet("parkinson","test_user"));
+        
         ScheduleContext context = new ScheduleContext.Builder()
             .withClientInfo(info)
             .withStudyIdentifier("test-study")
-            .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
+            .withUserDataGroups(user.getDataGroups())
             .withEndsOn(DateTime.now().plusDays(1).withTimeAtStartOfDay())
             .withTimeZone(DateTimeZone.UTC)
             .withHealthCode("AAA")
@@ -455,14 +466,14 @@ public class ScheduledActivityServiceMockTest {
             .build();
         
         // Is a parkinson patient, gets 3 tasks
-        List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
+        List<ScheduledActivity> schActivities = service.getScheduledActivities(user, context);
         assertEquals(3, schActivities.size());
         
         // Not a parkinson patient, get 1 task
         context = new ScheduleContext.Builder()
                 .withContext(context)
                 .withUserDataGroups(Sets.newHashSet("test_user")).build();
-        schActivities = service.getScheduledActivities(context);
+        schActivities = service.getScheduledActivities(user, context);
         assertEquals(1, schActivities.size());
     }
     

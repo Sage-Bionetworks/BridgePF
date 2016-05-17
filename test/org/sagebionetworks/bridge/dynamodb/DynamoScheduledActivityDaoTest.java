@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -51,7 +52,7 @@ public class DynamoScheduledActivityDaoTest {
     
     private SchedulePlan plan;
     
-    private String healthCode;
+    private User user;
     
     @Before
     public void before() {
@@ -77,13 +78,17 @@ public class DynamoScheduledActivityDaoTest {
         
         plan = schedulePlanService.createSchedulePlan(study, plan);
 
-        healthCode = BridgeUtils.generateGuid();
+        String healthCode = BridgeUtils.generateGuid();
+
+        user = new User();
+        user.setHealthCode(healthCode);
+        user.setStudyKey(TEST_STUDY_IDENTIFIER);
     }
     
     @After
     public void after() {
         schedulePlanService.deleteSchedulePlan(TEST_STUDY, plan.getGuid());
-        activityDao.deleteActivitiesForUser(healthCode);
+        activityDao.deleteActivitiesForUser(user.getHealthCode());
     }
 
     @Test
@@ -94,7 +99,7 @@ public class DynamoScheduledActivityDaoTest {
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withHealthCode(healthCode)
+            .withHealthCode(user.getHealthCode())
             .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(MSK)
@@ -134,14 +139,14 @@ public class DynamoScheduledActivityDaoTest {
         ScheduledActivity activity = savedActivities.get(1);
         activity.setFinishedOn(context.getNow().getMillis());
         assertEquals("activity deleted", ScheduledActivityStatus.DELETED, activity.getStatus());
-        activityDao.updateActivities(healthCode, Lists.newArrayList(activity));
+        activityDao.updateActivities(user.getHealthCode(), Lists.newArrayList(activity));
         
         // This does not remove it from the database, however.
         List<ScheduledActivity> newActivities = activityDao.getActivities(context.getZone(), savedActivities);
         assertEquals(savedActivities.size(), newActivities.size());
         
         // This is a physical delete, and the activities will be gone.
-        activityDao.deleteActivitiesForUser(healthCode);
+        activityDao.deleteActivitiesForUser(user.getHealthCode());
         savedActivities = activityDao.getActivities(context.getZone(), savedActivities);
         assertEquals("all activities deleted", 0, savedActivities.size());
     }
