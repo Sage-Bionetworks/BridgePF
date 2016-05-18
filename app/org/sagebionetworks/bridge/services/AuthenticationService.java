@@ -294,7 +294,7 @@ public class AuthenticationService {
     }
     
     private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
-        StudyParticipant participant = participantService.getParticipantForSession(study, account);
+        StudyParticipant participant = participantService.getParticipant(study, account, false);
         
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
         // from the context, add it to the user/session, and persist it.

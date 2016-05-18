@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.cache;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -28,7 +26,10 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
+import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -226,6 +227,7 @@ public class CacheProviderTest {
                     "'sharingScope':'no_sharing',"+
                     "'accountCreatedOn':'2016-04-21T16:48:22.386Z',"+
                     "'roles':['admin'],"+
+                    "'externalId':'ABC',"+
                     "'dataGroups':['group1'],"+
                     "'consentStatuses':{"+
                         "'api':{'name':'Default Consent Group',"+
@@ -264,8 +266,9 @@ public class CacheProviderTest {
                     "'email':'bridgeit@sagebase.org',"+
                     "'sharingScope':'no_sharing',"+
                     "'notifyByEmail':false,"+
+                    "'externalId':'ABC',"+
                     "'dataGroups':['group1'],"+
-                    "'healthCode':'7e188a30-fda5-4d1b-9904-a642f96a19b0',"+
+                    "'encryptedHealthCode':'TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=',"+
                     "'attributes':{},"+
                     "'consentHistories':{},"+
                     "'roles':['admin'],"+
@@ -306,12 +309,13 @@ public class CacheProviderTest {
         assertEquals(DateTime.parse("2016-04-21T16:48:22.386Z"), participant.getCreatedOn());
         assertEquals(Sets.newHashSet(Roles.ADMIN), participant.getRoles());
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
-        assertNotNull(participant.getHealthCode());
-        assertNotEquals("TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBA"+
-                "VcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=", participant.getHealthCode());
+        assertEquals("ABC", participant.getExternalId());
+        
+        Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
+        assertEquals(participant.getHealthCode(), ENCRYPTOR.decrypt(
+                "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM="));
         
         SubpopulationGuid apiGuid = SubpopulationGuid.create("api");
-        
         Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
         ConsentStatus status = consentStatuses.get(apiGuid);
         assertEquals("Default Consent Group", status.getName());

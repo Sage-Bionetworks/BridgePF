@@ -159,17 +159,30 @@ public class ParticipantControllerTest {
 
     @Test
     public void getParticipant() throws Exception {
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        
-        when(participantService.getParticipant(STUDY, CALLER_ROLES, ID)).thenReturn(studyParticipant);
+        STUDY.setHealthCodeExportEnabled(true);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").withHealthCode("healthCode").build();
+        when(participantService.getParticipant(STUDY, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
-        String string = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(string, StudyParticipant.class);
-        // Verify that there's a field, full serialization tested in StudyParticipant2Test
-        assertEquals("Test", retrievedParticipant.getFirstName());
+        String json = Helpers.contentAsString(result);
+        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         
-        verify(participantService).getParticipant(STUDY, CALLER_ROLES, ID);
+        assertEquals("Test", retrievedParticipant.getFirstName());
+        assertEquals("healthCode", retrievedParticipant.getHealthCode());
+    }
+    
+    @Test
+    public void getParticipantWithNoHealthCode() throws Exception {
+        STUDY.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").withHealthCode("healthCode").build();
+        when(participantService.getParticipant(STUDY, ID, true)).thenReturn(studyParticipant);
+        
+        Result result = controller.getParticipant(ID);
+        String json = Helpers.contentAsString(result);
+        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
+        
+        assertEquals("Test", retrievedParticipant.getFirstName());
+        assertNull(retrievedParticipant.getHealthCode());
     }
     
     @Test
@@ -191,7 +204,6 @@ public class ParticipantControllerTest {
         assertResult(result, 200, "Participant updated.");
         
         verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
-        verify(authService).updateSession(eq(STUDY), any(), eq(ID));
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -257,11 +269,11 @@ public class ParticipantControllerTest {
     public void getSelfParticipant() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
         
-        when(participantService.getParticipant(STUDY, NO_CALLER_ROLES, ID)).thenReturn(studyParticipant);
+        when(participantService.getParticipant(STUDY, ID, false)).thenReturn(studyParticipant);
 
         Result result = controller.getSelfParticipant();
         
-        verify(participantService).getParticipant(STUDY, NO_CALLER_ROLES, ID);
+        verify(participantService).getParticipant(STUDY, ID, false);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), StudyParticipant.class);
@@ -273,7 +285,7 @@ public class ParticipantControllerTest {
     public void updateSelfParticipant() throws Exception {
         // All values should be copied over here.
         StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
-        doReturn(participant).when(participantService).getParticipant(STUDY, NO_CALLER_ROLES, ID);
+        doReturn(participant).when(participantService).getParticipant(STUDY, ID, false);
         
         String json = BridgeObjectMapper.get().writeValueAsString(participant);
         TestUtils.mockPlayContextWithJson(json);
@@ -320,7 +332,7 @@ public class ParticipantControllerTest {
                 .withLanguages(TestUtils.newLinkedHashSet("en"))
                 .withStatus(AccountStatus.DISABLED)
                 .withExternalId("POWERS").build();
-        doReturn(participant).when(participantService).getParticipant(STUDY, NO_CALLER_ROLES, ID);
+        doReturn(participant).when(participantService).getParticipant(STUDY, ID, false);
         
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'externalId':'simpleStringChange',"+
                 "'sharingScope':'no_sharing','notifyByEmail':false,'attributes':{'baz':'belgium'},"+

@@ -392,9 +392,11 @@ public class StormpathAccountDao implements AccountDao {
         }
         if (healthId == null) {
             healthId = healthCodeService.createMapping(studyId);
+            account.setHealthId(healthId);
             updateAccount(account);
+        } else {
+            account.setHealthId(healthId);    
         }
-        account.setHealthId(healthId);
         return account;
     }
     

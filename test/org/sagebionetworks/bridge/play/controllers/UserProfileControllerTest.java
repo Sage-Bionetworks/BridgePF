@@ -138,14 +138,14 @@ public class UserProfileControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().withLastName("Last")
                 .withFirstName("First").withEmail("email@email.com").withAttributes(attributes).build();
         
-        doReturn(participant).when(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         Result result = controller.getUserProfile();
         assertEquals(200, result.status());
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         
-        verify(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        verify(participantService).getParticipant(study, ID, false);
         
         assertEquals("First", node.get("firstName").asText());
         assertEquals("Last", node.get("lastName").asText());
@@ -158,7 +158,7 @@ public class UserProfileControllerTest {
     @Test
     public void updateUserProfile() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId("originalId").build();
-        doReturn(participant).when(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
         // (externalId)
@@ -190,7 +190,7 @@ public class UserProfileControllerTest {
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
-        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
+        doReturn(existing).when(participantService).getParticipant(study, ID, false);
         
         Set<String> dataGroupSet = Sets.newHashSet("group1");
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
@@ -214,7 +214,7 @@ public class UserProfileControllerTest {
     @Test
     public void invalidDataGroupsRejected() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
-        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
+        doReturn(existing).when(participantService).getParticipant(study, ID, false);
         doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), any());
         
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
@@ -250,7 +250,7 @@ public class UserProfileControllerTest {
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
-        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
+        doReturn(existing).when(participantService).getParticipant(study, ID, false);
         TestUtils.mockPlayContextWithJson("{}");
         
         Result result = controller.updateDataGroups();

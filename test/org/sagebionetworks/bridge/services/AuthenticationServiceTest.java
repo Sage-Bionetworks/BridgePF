@@ -255,7 +255,7 @@ public class AuthenticationServiceTest {
         try {
             holder = authService.signUp(study, participant);
             
-            StudyParticipant persisted = participantService.getParticipant(study, CALLER_ROLES, holder.getIdentifier());
+            StudyParticipant persisted = participantService.getParticipant(study, holder.getIdentifier(), false);
             assertEquals(participant.getFirstName(), persisted.getFirstName());
             assertEquals(participant.getLastName(), persisted.getLastName());
             assertEquals(participant.getEmail(), persisted.getEmail());
@@ -485,7 +485,7 @@ public class AuthenticationServiceTest {
         String userId = testUser.getId();
         
         // Update the data groups
-        StudyParticipant participant = participantService.getParticipant(study, CALLER_ROLES, userId);
+        StudyParticipant participant = participantService.getParticipant(study, userId, false);
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant).withDataGroups(UPDATED_DATA_GROUPS).build();
         participantService.updateParticipant(study, CALLER_ROLES, userId, updated);
         
@@ -506,7 +506,7 @@ public class AuthenticationServiceTest {
         
         IdentifierHolder idHolder = authService.signUp(study, participant);
         
-        participant = participantService.getParticipant(study, CALLER_ROLES, idHolder.getIdentifier());
+        participant = participantService.getParticipant(study, idHolder.getIdentifier(), false);
         assertTrue(participant.getRoles().isEmpty());
     }
     

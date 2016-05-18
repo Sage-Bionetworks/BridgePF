@@ -43,7 +43,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
+        StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
         
         return okResult(participant);
     }
@@ -59,15 +59,14 @@ public class ParticipantController extends BaseController {
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
         
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
-        StudyParticipant existing = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
+        StudyParticipant existing = participantService.getParticipant(study, session.getId(), false);
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames).build();
         
         participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
         
-        // Update this user's session (creates one if it doesn't exist, but this is safe)
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        CriteriaContext context = getCriteriaContext(session);
         session = authenticationService.updateSession(study, context, session.getId());
         updateSession(session);
         
@@ -100,8 +99,14 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study,
-                session.getParticipant().getRoles(), userId);
+        StudyParticipant participant = participantService.getParticipant(study, userId, true);
+        
+        // if not enabled, do not include the health code in data returned from this API. 
+        if (!study.isHealthCodeExportEnabled()) {
+            participant = new StudyParticipant.Builder().copyOf(participant)
+                    .withHealthCode(null).build();
+        }
+        
         return okResult(participant);
     }
     
@@ -115,12 +120,6 @@ public class ParticipantController extends BaseController {
             throw new BadRequestException("ID in JSON does not match email in URL.");
         }
         participantService.updateParticipant(study, session.getParticipant().getRoles(), userId, participant);
-        
-        // Push changes to the user's session, including consent statuses.
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(study.getStudyIdentifier()).build();
-        session = authenticationService.updateSession(study, context, userId);
-        updateSession(session);
 
         return okResult("Participant updated.");
     }

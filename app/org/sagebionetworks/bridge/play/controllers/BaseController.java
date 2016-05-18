@@ -164,6 +164,7 @@ public abstract class BaseController extends Controller {
 
     void updateSession(UserSession session) {
         cacheProvider.setUserSession(session);
+        setSessionToken(session.getSessionToken());
     }
 
     /** Package-scoped to make available in unit tests. */
