@@ -189,6 +189,8 @@ public class UserProfileControllerTest {
 
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
+        // We had a bug where this call lost the health code in the user's session, so verify in particular that
+        // that field (as well as something like firstName) are in the session. 
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").withHealthCode("healthCode").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         
