@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -39,20 +38,15 @@ import nl.jqno.equalsverifier.Warning;
 public class ABTestScheduleStrategyTest {
 
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
-    private ArrayList<User> users;
+    private ArrayList<String> healthCodes;
     private Study study;
 
     @Before
     public void before() {
         study = TestUtils.getValidStudy(ScheduleStrategyTest.class);
-        users = Lists.newArrayList();
+        healthCodes = Lists.newArrayList();
         for (int i = 0; i < 1000; i++) {
-            User user = new User();
-            user.setId(Integer.toString(i));
-            user.setEmail("test" + i + "@sagebridge.org");
-            user.setHealthCode(BridgeUtils.generateGuid());
-            user.setStudyKey(study.getIdentifier());
-            users.add(user);
+            healthCodes.add(BridgeUtils.generateGuid());
         }
     }
     
@@ -97,10 +91,10 @@ public class ABTestScheduleStrategyTest {
         DynamoSchedulePlan plan = createABSchedulePlan();
 
         List<Schedule> schedules = Lists.newArrayList();
-        for (User user : users) {
+        for (String healthCode : healthCodes) {
             ScheduleContext context = new ScheduleContext.Builder()
                     .withStudyIdentifier(study.getStudyIdentifier())
-                    .withHealthCode(user.getHealthCode()).build();
+                    .withHealthCode(healthCode).build();
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             schedules.add(schedule);
         }

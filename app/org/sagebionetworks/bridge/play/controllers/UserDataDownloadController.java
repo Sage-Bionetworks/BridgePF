@@ -6,7 +6,6 @@ import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.models.DateRange;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.UserDataDownloadService;
@@ -30,10 +29,9 @@ public class UserDataDownloadController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
-        User user = session.getUser();
         DateRange dateRange = parseJson(request(), DateRange.class);
 
-        userDataDownloadService.requestUserData(studyIdentifier, user, dateRange);
+        userDataDownloadService.requestUserData(studyIdentifier, session.getParticipant().getEmail(), dateRange);
         return acceptedResult("Request submitted.");
     }
 }

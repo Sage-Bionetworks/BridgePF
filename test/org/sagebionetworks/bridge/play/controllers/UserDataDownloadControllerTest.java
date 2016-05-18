@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -14,7 +13,7 @@ import play.mvc.Result;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.DateRange;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -27,11 +26,10 @@ public class UserDataDownloadControllerTest {
 
         // mock session
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("test-study");
-        User user = new User();
 
         UserSession mockSession = new UserSession();
         mockSession.setStudyIdentifier(studyIdentifier);
-        mockSession.setUser(user);
+        mockSession.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").build());
 
         // mock request JSON
         String dateRangeJsonText = "{\n" +
@@ -54,7 +52,8 @@ public class UserDataDownloadControllerTest {
 
         // validate args sent to mock service
         ArgumentCaptor<DateRange> dateRangeCaptor = ArgumentCaptor.forClass(DateRange.class);
-        verify(mockService).requestUserData(eq(studyIdentifier), same(user), dateRangeCaptor.capture());
+        verify(mockService).requestUserData(eq(studyIdentifier), eq(mockSession.getParticipant().getEmail()),
+                dateRangeCaptor.capture());
 
         DateRange dateRange = dateRangeCaptor.getValue();
         assertEquals("2015-08-15", dateRange.getStartDate().toString());

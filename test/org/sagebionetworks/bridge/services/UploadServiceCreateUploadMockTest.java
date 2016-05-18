@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -62,11 +62,8 @@ public class UploadServiceCreateUploadMockTest {
             "   \"contentType\":\"" + TEST_CONTENT_TYPE + "\"\n" +
             "}";
 
-    private static final User TEST_USER;
-    static {
-        TEST_USER = new User();
-        TEST_USER.setHealthCode(TEST_HEALTH_CODE);
-    }
+    private static final StudyParticipant TEST_USER = new StudyParticipant.Builder()
+            .withHealthCode(TEST_HEALTH_CODE).build();
 
     private UploadDedupeDao mockUploadDedupeDao;
     private UploadDao mockUploadDao;

@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.play.controllers;
 import static java.lang.Integer.parseInt;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
-import java.util.Collections;
 import java.util.Set;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -33,8 +32,6 @@ import play.mvc.Result;
 @Controller
 public class ParticipantController extends BaseController {
     
-    private static final Set<Roles> NO_ROLES = Collections.emptySet();
-    
     private ParticipantService participantService;
     
     @Autowired
@@ -45,9 +42,8 @@ public class ParticipantController extends BaseController {
     public Result getSelfParticipant() {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        String userId = session.getUser().getId();
         
-        StudyParticipant participant = participantService.getParticipant(study, NO_ROLES, userId);
+        StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
         
         return okResult(participant);
     }
@@ -55,7 +51,6 @@ public class ParticipantController extends BaseController {
     public Result updateSelfParticipant() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        String userId = session.getUser().getId();
         
         // By copying only values that were included in the JSON onto the existing StudyParticipant,
         // we allow clients to only send back partial JSON to update the user. This has been the 
@@ -64,19 +59,19 @@ public class ParticipantController extends BaseController {
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
         
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
-        StudyParticipant existing = participantService.getParticipant(study, NO_ROLES, userId);
+        StudyParticipant existing = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames).build();
         
-        participantService.updateParticipant(study, NO_ROLES, userId, updated);
+        participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
         
         // Update this user's session (creates one if it doesn't exist, but this is safe)
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-        session = authenticationService.updateSession(study, context, userId);
-        updateSessionUser(session, session.getUser());
+        session = authenticationService.updateSession(study, context, session.getId());
+        updateSession(session);
         
-        return okResult(new UserSessionInfo(session));
+        return okResult(UserSessionInfo.toJSON(session));
     }
     
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter) {
@@ -96,7 +91,8 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        IdentifierHolder holder = participantService.createParticipant(study, session.getUser().getRoles(), participant, true);
+        IdentifierHolder holder = participantService.createParticipant(study, session.getParticipant().getRoles(),
+                participant, true);
         return createdResult(holder);
     }
     
@@ -104,7 +100,8 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, session.getUser().getRoles(), userId);
+        StudyParticipant participant = participantService.getParticipant(study,
+                session.getParticipant().getRoles(), userId);
         return okResult(participant);
     }
     
@@ -117,13 +114,13 @@ public class ParticipantController extends BaseController {
         if (participant.getId() != null && !userId.equals(participant.getId())) {
             throw new BadRequestException("ID in JSON does not match email in URL.");
         }
-        participantService.updateParticipant(study, session.getUser().getRoles(), userId, participant);
+        participantService.updateParticipant(study, session.getParticipant().getRoles(), userId, participant);
         
         // Push changes to the user's session, including consent statuses.
         CriteriaContext context = new CriteriaContext.Builder()
                 .withStudyIdentifier(study.getStudyIdentifier()).build();
         session = authenticationService.updateSession(study, context, userId);
-        updateSessionUser(session, session.getUser());
+        updateSession(session);
 
         return okResult("Participant updated.");
     }

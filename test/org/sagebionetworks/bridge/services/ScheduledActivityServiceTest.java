@@ -122,7 +122,7 @@ public class ScheduledActivityServiceTest {
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
         // 23rd, 24th and 25th
         ScheduleContext context = getContextWith2DayWindow(MSK);
-        List<ScheduledActivity> activities = service.getScheduledActivities(testUser.getUser(), context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(context);
         assertEquals(4, activities.size());
         assertEquals(msk0+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
@@ -133,7 +133,7 @@ public class ScheduledActivityServiceTest {
         // (yesterday, today in Russia, tomorrow and the next day). One activity was created beyond
         // the window, over in Moscow... that is not returned because although it exists, we 
         // filter it out from the persisted activities retrieved from the db.
-        activities = service.getScheduledActivities(testUser.getUser(), getContextWith2DayWindow(PST));
+        activities = service.getScheduledActivities(getContextWith2DayWindow(PST));
         assertEquals(3, activities.size());
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
@@ -144,7 +144,7 @@ public class ScheduledActivityServiceTest {
         
         // He hasn't finished any activities. The 22nd expires but it's too early in the day 
         // for the 23rd to expire (earlier than 10am), so, 4 activities, but with different dates.
-        activities = service.getScheduledActivities(testUser.getUser(), getContextWith2DayWindow(MSK));
+        activities = service.getScheduledActivities(getContextWith2DayWindow(MSK));
         assertEquals(4, activities.size());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk2+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
@@ -154,10 +154,10 @@ public class ScheduledActivityServiceTest {
         // Dave, please finish some activities... 
         activities.get(0).setFinishedOn(DateTime.now().getMillis());
         activities.get(1).setFinishedOn(DateTime.now().getMillis());
-        service.updateScheduledActivities(testUser.getUser().getHealthCode(), activities);
+        service.updateScheduledActivities(testUser.getHealthCode(), activities);
         
         // This is easy, Dave has the later activities and that's it, at this point.
-        activities = service.getScheduledActivities(testUser.getUser(), getContextWith2DayWindow(MSK));
+        activities = service.getScheduledActivities(getContextWith2DayWindow(MSK));
         
         assertEquals(2, activities.size());
         assertEquals(msk3+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
@@ -171,14 +171,14 @@ public class ScheduledActivityServiceTest {
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/5")).build();
         
         // Ask for version 5, nothing is created
-        List<ScheduledActivity> activities = service.getScheduledActivities(testUser.getUser(), context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(context);
         assertEquals(0, activities.size());
         
         // Ask for version 11, normal activities are created.
         context = new ScheduleContext.Builder()
                 .withContext(context)
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/11")).build();
-        activities = service.getScheduledActivities(testUser.getUser(), context);
+        activities = service.getScheduledActivities(context);
         assertEquals(3, activities.size());
     }
     
@@ -189,12 +189,12 @@ public class ScheduledActivityServiceTest {
         // Four days...
         DateTime endsOn = DateTime.now().plusDays(4);
         ScheduleContext context = getContext(DateTimeZone.UTC, endsOn);
-        List<ScheduledActivity> activities = service.getScheduledActivities(testUser.getUser(), context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(context);
         
         // Zero days... there are fewer activities
         endsOn = DateTime.now().plusDays(0);
         context = getContext(DateTimeZone.UTC, endsOn);
-        List<ScheduledActivity> activities2 = service.getScheduledActivities(testUser.getUser(), context);
+        List<ScheduledActivity> activities2 = service.getScheduledActivities(context);
         
         assertTrue(activities2.size() < activities.size());
     }
@@ -212,6 +212,6 @@ public class ScheduledActivityServiceTest {
             .withAccountCreatedOn(DateTime.now())
             // Setting the endsOn value to the end of the day, as we do in the controller.
             .withEndsOn(endsOn.withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
-            .withHealthCode(testUser.getUser().getHealthCode()).build();
+            .withHealthCode(testUser.getHealthCode()).build();
     }
 }
