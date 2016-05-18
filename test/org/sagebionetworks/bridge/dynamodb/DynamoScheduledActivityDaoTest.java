@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
