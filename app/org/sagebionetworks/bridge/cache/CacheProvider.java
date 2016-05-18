@@ -51,6 +51,7 @@ public class CacheProvider {
     public void setUserSession(final UserSession session) {
         checkNotNull(session);
         checkNotNull(session.getParticipant(), "Missing participant in session.");
+        checkNotNull(session.getHealthCode(), "Missing healthCode in session.");
         checkNotNull(session.getId(), "Missing user ID in session.");
         checkNotNull(session.getSessionToken(), "Missing session token for session.");
 
