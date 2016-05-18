@@ -189,7 +189,7 @@ public class UserProfileControllerTest {
 
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
-        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
+        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").withHealthCode("healthCode").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         
         Set<String> dataGroupSet = Sets.newHashSet("group1");
@@ -207,6 +207,7 @@ public class UserProfileControllerTest {
         
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
         assertEquals(dataGroupSet, session.getParticipant().getDataGroups());
+        assertEquals("healthCode", session.getParticipant().getHealthCode());
     }
     
     // Validation is no longer done in the controller, but verify that user is not changed
