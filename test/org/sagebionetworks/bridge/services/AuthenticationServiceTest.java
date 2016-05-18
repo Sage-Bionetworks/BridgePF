@@ -464,23 +464,7 @@ public class AuthenticationServiceTest {
         AccountDao accountDaoSpy = mock(AccountDao.class);
         when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, testUser.getId()));
         authService.setAccountDao(accountDaoSpy);
-<<<<<<< HEAD
-        try {
-            CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier())
-                    .build();
-
-            UserSession session = authService.verifyEmail(study, context, verification);
-            // Consents are okay. User hasn't consented.
-            ConsentStatus status = session.getUser().getConsentStatuses().values().iterator().next();
-            assertFalse(status.isConsented());
-
-            // This should not have been altered in any way by the lack of consents.
-            verify(accountDaoSpy).verifyEmail(study, verification);
-        } finally {
-            authService.setAccountDao(accountDao);
-        }
-=======
-        
+       
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier()).build();
         
         UserSession session = authService.verifyEmail(study, context, verification);
@@ -491,7 +475,6 @@ public class AuthenticationServiceTest {
         // This should not have been altered in any way by the lack of consents.
         verify(accountDaoSpy).verifyEmail(study, verification);
         authService.setAccountDao(accountDao);
->>>>>>> parent of ed269c3... Revert "Delete user"
     }
 
     @Test
