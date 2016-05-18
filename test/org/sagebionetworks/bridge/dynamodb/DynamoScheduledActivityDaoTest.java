@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -23,7 +21,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -81,10 +78,6 @@ public class DynamoScheduledActivityDaoTest {
         plan = schedulePlanService.createSchedulePlan(study, plan);
 
         healthCode = BridgeUtils.generateGuid();
-        
-        // Mock user consent, we don't care about that, we're just getting an enrollment date from that.
-        UserConsent consent = mock(DynamoUserConsent3.class);
-        when(consent.getSignedOn()).thenReturn(new DateTime().minusDays(2).getMillis()); 
     }
     
     @After

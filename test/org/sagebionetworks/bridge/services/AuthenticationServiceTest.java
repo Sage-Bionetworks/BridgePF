@@ -281,11 +281,6 @@ public class AuthenticationServiceTest {
        StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
 
-        authService = spy(authService);
-        optionsService = spy(optionsService);
-        authService.setOptionsService(optionsService);
-        accountDao = spy(accountDao);
-        
         IdentifierHolder holder = authService.signUp(study, participant);
         
         Account account = accountDao.getAccount(study, holder.getIdentifier());
@@ -464,17 +459,20 @@ public class AuthenticationServiceTest {
         AccountDao accountDaoSpy = mock(AccountDao.class);
         when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, testUser.getId()));
         authService.setAccountDao(accountDaoSpy);
-       
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier()).build();
-        
-        UserSession session = authService.verifyEmail(study, context, verification);
-        // Consents are okay. User hasn't consented.
-        ConsentStatus status = session.getConsentStatuses().values().iterator().next();
-        assertFalse(status.isConsented());
-        
-        // This should not have been altered in any way by the lack of consents.
-        verify(accountDaoSpy).verifyEmail(study, verification);
-        authService.setAccountDao(accountDao);
+        try {
+            CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier())
+                    .build();
+
+            UserSession session = authService.verifyEmail(study, context, verification);
+            // Consents are okay. User hasn't consented.
+            ConsentStatus status = session.getConsentStatuses().values().iterator().next();
+            assertFalse(status.isConsented());
+
+            // This should not have been altered in any way by the lack of consents.
+            verify(accountDaoSpy).verifyEmail(study, verification);
+        } finally {
+            authService.setAccountDao(accountDao);
+        }
     }
 
     @Test
