@@ -399,10 +399,6 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
-        
-        // A non-researcher will not get the healthCode
-        participant = participantService.getParticipant(STUDY, ID, false);
-        assertEquals(HEALTH_CODE, participant.getHealthCode());
     }
     
     @Test(expected = EntityNotFoundException.class)

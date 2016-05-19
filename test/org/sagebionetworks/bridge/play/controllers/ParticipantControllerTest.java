@@ -72,12 +72,6 @@ public class ParticipantControllerTest {
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email", "id",
             DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
     
-    private static final Study STUDY = new DynamoStudy();
-    static {
-        STUDY.setUserProfileAttributes(Sets.newHashSet("foo","baz"));
-        STUDY.setIdentifier("test-study");
-    }
-    
     @Spy
     private ParticipantController controller;
     
@@ -99,10 +93,19 @@ public class ParticipantControllerTest {
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
     
+    @Captor
+    private ArgumentCaptor<UserSession> sessionCaptor;
+    
     private UserSession session;
+    
+    private Study study;
     
     @Before
     public void before() throws Exception {
+        study = new DynamoStudy();
+        study.setUserProfileAttributes(Sets.newHashSet("foo","baz"));
+        study.setIdentifier("test-study");
+        
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withRoles(CALLER_ROLES)
                 .withId(ID).build();
@@ -112,7 +115,7 @@ public class ParticipantControllerTest {
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
         doReturn(session).when(controller).getAuthenticatedSession();
-        when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
+        when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
         
         List<AccountSummary> summaries = Lists.newArrayListWithCapacity(3);
         summaries.add(SUMMARY);
@@ -120,9 +123,9 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
         
-        when(authService.updateSession(eq(STUDY), any(), eq(ID))).thenReturn(session);
+        when(authService.updateSession(eq(study), any(), eq(ID))).thenReturn(session);
         
-        when(participantService.getPagedAccountSummaries(eq(STUDY), anyInt(), anyInt(), any())).thenReturn(page);
+        when(participantService.getPagedAccountSummaries(eq(study), anyInt(), anyInt(), any())).thenReturn(page);
         
         controller.setParticipantService(participantService);
         controller.setStudyService(studyService);
@@ -146,7 +149,7 @@ public class ParticipantControllerTest {
         assertEquals(new Integer(10), page.getOffsetBy());
         assertEquals(20, page.getPageSize());
         assertEquals("foo", page.getFilters().get("emailFilter"));
-        verify(participantService).getPagedAccountSummaries(STUDY, 10, 20, "foo");
+        verify(participantService).getPagedAccountSummaries(study, 10, 20, "foo");
     }
     
     @Test(expected = BadRequestException.class)
@@ -154,14 +157,14 @@ public class ParticipantControllerTest {
         controller.getParticipants("asdf", "qwer", null);
         
         // paging with defaults
-        verify(participantService).getPagedAccountSummaries(STUDY, 0, API_DEFAULT_PAGE_SIZE, null);
+        verify(participantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null);
     }
 
     @Test
     public void getParticipant() throws Exception {
-        STUDY.setHealthCodeExportEnabled(true);
+        study.setHealthCodeExportEnabled(true);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").withHealthCode("healthCode").build();
-        when(participantService.getParticipant(STUDY, ID, true)).thenReturn(studyParticipant);
+        when(participantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
         String json = Helpers.contentAsString(result);
@@ -173,9 +176,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void getParticipantWithNoHealthCode() throws Exception {
-        STUDY.setHealthCodeExportEnabled(false);
+        study.setHealthCodeExportEnabled(false);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").withHealthCode("healthCode").build();
-        when(participantService.getParticipant(STUDY, ID, true)).thenReturn(studyParticipant);
+        when(participantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
         String json = Helpers.contentAsString(result);
@@ -189,12 +192,12 @@ public class ParticipantControllerTest {
     public void signUserOut() throws Exception {
         controller.signOut(ID);
         
-        verify(participantService).signUserOut(STUDY, ID);
+        verify(participantService).signUserOut(study, ID);
     }
 
     @Test
     public void updateParticipant() throws Exception {
-        STUDY.getUserProfileAttributes().add("phone");
+        study.getUserProfileAttributes().add("phone");
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
                 "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
                 "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
@@ -203,7 +206,7 @@ public class ParticipantControllerTest {
         Result result = controller.updateParticipant(ID);
         assertResult(result, 200, "Participant updated.");
         
-        verify(participantService).updateParticipant(eq(STUDY), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -223,15 +226,15 @@ public class ParticipantControllerTest {
         controller.getParticipants(null, null, null);
 
         // paging with defaults
-        verify(participantService).getPagedAccountSummaries(STUDY, 0, API_DEFAULT_PAGE_SIZE, null);
+        verify(participantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null);
     }
     
     @Test
     public void createParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder("ABCD");
-        doReturn(holder).when(participantService).createParticipant(eq(STUDY), any(), any(StudyParticipant.class), eq(true));
+        doReturn(holder).when(participantService).createParticipant(eq(study), any(), any(StudyParticipant.class), eq(true));
         
-        STUDY.getUserProfileAttributes().add("phone");
+        study.getUserProfileAttributes().add("phone");
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
                 "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
                 "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
@@ -243,7 +246,7 @@ public class ParticipantControllerTest {
         String id = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result)).get("identifier").asText();
         assertEquals(holder.getIdentifier(), id);
         
-        verify(participantService).createParticipant(eq(STUDY), eq(CALLER_ROLES), participantCaptor.capture(), eq(true));
+        verify(participantService).createParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture(), eq(true));
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -269,23 +272,27 @@ public class ParticipantControllerTest {
     public void getSelfParticipant() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
         
-        when(participantService.getParticipant(STUDY, ID, false)).thenReturn(studyParticipant);
+        when(participantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
 
         Result result = controller.getSelfParticipant();
         
-        verify(participantService).getParticipant(STUDY, ID, false);
+        verify(participantService).getParticipant(study, ID, false);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), StudyParticipant.class);
 
         assertEquals("Test", deserParticipant.getFirstName());
+        assertNull(deserParticipant.getHealthCode());
     }
     
     @Test
     public void updateSelfParticipant() throws Exception {
-        // All values should be copied over here.
+        // All values should be copied over here, also add a healthCode to verify that is not lost.
         StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
-        doReturn(participant).when(participantService).getParticipant(STUDY, ID, false);
+        participant = new StudyParticipant.Builder().copyOf(participant).withHealthCode("healthCode").build();
+        
+        doReturn(participant).when(participantService).getParticipant(study, ID, false);
+        doReturn(new UserSession(participant)).when(authService).updateSession(eq(study), any(), eq(ID));
         
         String json = BridgeObjectMapper.get().writeValueAsString(participant);
         TestUtils.mockPlayContextWithJson(json);
@@ -295,12 +302,17 @@ public class ParticipantControllerTest {
         assertEquals(200, result.status());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
-        verify(controller).updateSession(session);
+        // The session here is returned from the authenticationService, and that is mocked out, but 
+        // we verify that we are calling updateSession() with that initialized session (with its 
+        // healthCode)
+        verify(controller).updateSession(sessionCaptor.capture());
+        UserSession session = sessionCaptor.getValue();
+        assertEquals("healthCode", session.getHealthCode());
         
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());
-        verify(authService).updateSession(eq(STUDY), any(), eq(ID));
-        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(authService).updateSession(eq(study), any(), eq(ID));
+        verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
         StudyParticipant captured = participantCaptor.getValue();
@@ -332,7 +344,7 @@ public class ParticipantControllerTest {
                 .withLanguages(TestUtils.newLinkedHashSet("en"))
                 .withStatus(AccountStatus.DISABLED)
                 .withExternalId("POWERS").build();
-        doReturn(participant).when(participantService).getParticipant(STUDY, ID, false);
+        doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'externalId':'simpleStringChange',"+
                 "'sharingScope':'no_sharing','notifyByEmail':false,'attributes':{'baz':'belgium'},"+
@@ -343,8 +355,8 @@ public class ParticipantControllerTest {
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("UserSessionInfo", node.get("type").asText());
 
-        verify(authService).updateSession(eq(STUDY), any(), eq(ID));
-        verify(participantService).updateParticipant(eq(STUDY), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(authService).updateSession(eq(study), any(), eq(ID));
+        verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals("firstName", captured.getFirstName());
         assertEquals("lastName", captured.getLastName());

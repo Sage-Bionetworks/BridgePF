@@ -57,13 +57,12 @@ public class ParticipantController extends BaseController {
         // usage pattern in prior APIs and it will make refactoring to use this API easier.
         JsonNode node = requestToJSON(request());
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
-        
+
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
         StudyParticipant existing = participantService.getParticipant(study, session.getId(), false);
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames).build();
-        
         participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
         
         CriteriaContext context = getCriteriaContext(session);

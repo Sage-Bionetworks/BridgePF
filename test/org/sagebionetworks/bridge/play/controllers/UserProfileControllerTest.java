@@ -93,6 +93,9 @@ public class UserProfileControllerTest {
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     
+    @Captor
+    private ArgumentCaptor<UserSession> sessionCaptor;
+    
     private UserSession session;
     
     private Study study;
@@ -157,7 +160,9 @@ public class UserProfileControllerTest {
     
     @Test
     public void updateUserProfile() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().withExternalId("originalId").build();
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("existingHealthCode")
+                .withExternalId("originalId").build();
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
@@ -168,6 +173,11 @@ public class UserProfileControllerTest {
         Result result = controller.updateUserProfile();
         TestUtils.assertResult(result, 200, "Profile updated.");
 
+        // Verify that existing user information (health code) has been retrieved and used when updating session
+        verify(controller).updateSession(sessionCaptor.capture());
+        UserSession session = sessionCaptor.getValue();
+        assertEquals("existingHealthCode", session.getHealthCode());
+        
         verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), eq(ID), participantCaptor.capture());
         
         StudyParticipant persisted = participantCaptor.getValue();

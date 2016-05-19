@@ -6,8 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -19,7 +17,6 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -304,61 +301,6 @@ public class StormpathAccountDaoTest {
             
             Email emailObj = new Email(study.getStudyIdentifier(), participant.getEmail());
             accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), emailObj); // now send email
-        } finally {
-            if (account != null) {
-                accountDao.deleteAccount(study, account.getId());    
-            }
-        }
-    }
-    
-    @Test
-    public void canSetAndRetrieveConsentsForMultipleSubpopulations() {
-        // Need to mock out the retrieval of these two subpopulations for the purpose
-        // of this test
-        Subpopulation subpop1 = Subpopulation.create();
-        subpop1.setGuidString("test1");
-        Subpopulation subpop2 = Subpopulation.create();
-        subpop2.setGuidString("test2");
-        
-        SubpopulationService mockSubpopService = mock(SubpopulationService.class);
-        when(mockSubpopService.getSubpopulations(study)).thenReturn(Lists.newArrayList(subpop1, subpop2));
-        accountDao.setSubpopulationService(mockSubpopService);
-        
-        ConsentSignature sig1 = new ConsentSignature.Builder()
-                .withName("Name 1")
-                .withBirthdate("2000-10-10")
-                .withSignedOn(DateTime.now().getMillis())
-                .build();
-        
-        ConsentSignature sig2 = new ConsentSignature.Builder()
-                .withName("Name 2")
-                .withBirthdate("2000-02-02")
-                .withSignedOn(DateTime.now().getMillis())
-                .build();
-
-        String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail(email).withPassword(PASSWORD).build();
-        Account account = null;
-        try {
-            account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
-            accountDao.createAccount(study, account, false);
-            
-            account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
-            account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);
-            accountDao.updateAccount(account);
-            
-            account = accountDao.getAccount(study, account.getId());
-            
-            List<ConsentSignature> history1 = account.getConsentSignatureHistory(subpop1.getGuid());
-            assertEquals(1, history1.size());
-            assertEquals(sig1, history1.get(0));
-            assertEquals(sig1, account.getActiveConsentSignature(subpop1.getGuid()));
-            
-            List<ConsentSignature> history2 = account.getConsentSignatureHistory(subpop2.getGuid());
-            assertEquals(1, history2.size());
-            assertEquals(sig2, history2.get(0));
-            assertEquals(sig2, account.getActiveConsentSignature(subpop2.getGuid()));
-
         } finally {
             if (account != null) {
                 accountDao.deleteAccount(study, account.getId());    
