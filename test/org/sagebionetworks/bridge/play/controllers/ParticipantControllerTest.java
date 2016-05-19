@@ -287,9 +287,10 @@ public class ParticipantControllerTest {
     
     @Test
     public void updateSelfParticipant() throws Exception {
-        // All values should be copied over here, also add a healthCode to verify that is not lost.
-        StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
-        participant = new StudyParticipant.Builder().copyOf(participant).withHealthCode("healthCode").build();
+        // All values should be copied over here, also add a healthCode to verify it is not unset.
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class))
+                .withHealthCode("healthCode").build();
         
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         doReturn(new UserSession(participant)).when(authService).updateSession(eq(study), any(), eq(ID));
@@ -308,6 +309,8 @@ public class ParticipantControllerTest {
         verify(controller).updateSession(sessionCaptor.capture());
         UserSession session = sessionCaptor.getValue();
         assertEquals("healthCode", session.getHealthCode());
+        assertEquals("FirstName", session.getParticipant().getFirstName());
+        // etc.
         
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());

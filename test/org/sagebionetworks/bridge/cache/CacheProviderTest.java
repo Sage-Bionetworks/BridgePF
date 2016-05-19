@@ -51,6 +51,8 @@ public class CacheProviderTest {
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String USER_ID = "userId";
     private static final String SESSION_TOKEN = "sessionToken";
+    private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
+    private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
     private JedisTransaction transaction;
     private CacheProvider cacheProvider;
 
@@ -218,7 +220,7 @@ public class CacheProviderTest {
     public void oldUserSessionDeserializedToNewUserSession() {
         String oldJSON = TestUtils.createJson("{'authenticated':true,"+
                 "'environment':'local',"+
-                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b',"+
+                "'sessionToken':'"+DECRYPTED_SESSION_TOKEN+"',"+
                 "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
                 "'user':{'id':'6gq4jGXLmAxVbLLmVifKN4',"+
                     "'firstName':'Bridge',"+
@@ -238,7 +240,7 @@ public class CacheProviderTest {
                             "'signedMostRecentConsent':true,"+
                             "'type':'ConsentStatus'}},"+
                     "'languages':['en','fr'],"+
-                    "'encryptedHealthCode':'TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=',"+
+                    "'encryptedHealthCode':'"+ENCRYPTED_SESSION_TOKEN+"',"+
                     "'type':'User'},"+
                 "'studyIdentifier':{'identifier':'api',"+
                     "'type':'StudyIdentifier'},"+
@@ -251,7 +253,7 @@ public class CacheProviderTest {
     public void newUserSessionDeserializes() {
         String json = TestUtils.createJson("{'authenticated':true,"+
                 "'environment':'local',"+
-                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b',"+
+                "'sessionToken':'"+DECRYPTED_SESSION_TOKEN+"',"+
                 "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
                 "'studyIdentifier':{'identifier':'api',"+
                     "'type':'StudyIdentifier'},"+
@@ -269,7 +271,7 @@ public class CacheProviderTest {
                     "'notifyByEmail':false,"+
                     "'externalId':'ABC',"+
                     "'dataGroups':['group1'],"+
-                    "'encryptedHealthCode':'TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=',"+
+                    "'encryptedHealthCode':'"+ENCRYPTED_SESSION_TOKEN+"',"+
                     "'attributes':{},"+
                     "'consentHistories':{},"+
                     "'roles':['admin'],"+
@@ -297,7 +299,7 @@ public class CacheProviderTest {
 
         assertTrue(session.isAuthenticated());
         assertEquals(Environment.LOCAL, session.getEnvironment());
-        assertEquals("ccea2978-f5b9-4377-8194-f887a3e2a19b", session.getSessionToken());
+        assertEquals(DECRYPTED_SESSION_TOKEN, session.getSessionToken());
         assertEquals("4f0937a5-6ebf-451b-84bc-fbf649b9e93c", session.getInternalSessionToken());
         assertEquals("6gq4jGXLmAxVbLLmVifKN4", session.getId());
         assertEquals("api", session.getStudyIdentifier().getIdentifier());
@@ -312,8 +314,7 @@ public class CacheProviderTest {
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
         assertEquals("ABC", participant.getExternalId());
         
-        assertEquals(participant.getHealthCode(), ENCRYPTOR.decrypt(
-                "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM="));
+        assertEquals(participant.getHealthCode(), ENCRYPTOR.decrypt(ENCRYPTED_SESSION_TOKEN));
         
         SubpopulationGuid apiGuid = SubpopulationGuid.create("api");
         Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();

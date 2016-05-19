@@ -45,7 +45,10 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
         
-        return okResult(participant);
+        // Do not return healthCode. This will shortly be handled with Jackson filters.
+        StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
+                .withHealthCode(null).withEncryptedHealthCode(null).build();
+        return okResult(updated);
     }
     
     public Result updateSelfParticipant() throws Exception {
@@ -100,13 +103,11 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = participantService.getParticipant(study, userId, true);
         
-        // if not enabled, do not include the health code in data returned from this API. 
-        if (!study.isHealthCodeExportEnabled()) {
-            participant = new StudyParticipant.Builder().copyOf(participant)
-                    .withHealthCode(null).build();
-        }
-        
-        return okResult(participant);
+        // Do not return healthCode. To correctly return healthCode when warranted, we'll need
+        // to introduce Jackson filters.
+        StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
+                .withHealthCode(null).withEncryptedHealthCode(null).build();
+        return okResult(updated);
     }
     
     public Result updateParticipant(String userId) {

@@ -306,8 +306,8 @@ public class AuthenticationService {
         
         UserSession session = new UserSession(participant);
         // The check for an existing session just prevents resetting the session tokens, the rest of the 
-        // session is refreshed. This should probably be changed, but for now, this is emulating earlier 
-        // behavior prior to a refactor.
+        // session is refreshed. This may change when we expire sessions correctly (currently they are held 
+        // for a long time in memory), but this emulates earlier behavior.
         UserSession existingSession = cacheProvider.getUserSessionByUserId(account.getId());
         if (existingSession != null) {
             session.setSessionToken(existingSession.getSessionToken());

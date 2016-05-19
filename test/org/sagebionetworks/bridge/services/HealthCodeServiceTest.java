@@ -3,22 +3,12 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.dao.HealthIdDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthId;
-import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;

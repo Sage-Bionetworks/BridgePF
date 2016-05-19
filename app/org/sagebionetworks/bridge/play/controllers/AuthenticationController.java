@@ -58,9 +58,9 @@ public class AuthenticationController extends BaseController {
 
         // Note: currently we support mobile applications, that send an email that users open in 
         // a browser to verify their email address. NOT a mobile app using the Bridge SDK. So 
-        // User-Agent is incorrect and the session we are returning can have incorrect consent 
-        // information (if the consents are based on app version, though Accept-Language applies
-        // here too as we look at both headers to build the criteria context object).
+        // User-Agent (and Accept-Language possibly) are incorrect and the session we are 
+        // returning can have incorrect consent information. See BRIDGE-1352 about why session
+        // handling exists here, along with a proposal to remove it.
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
         UserSession session = authenticationService.verifyEmail(study, context, emailVerification);

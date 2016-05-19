@@ -373,7 +373,7 @@ public class ParticipantServiceTest {
         when(lookup.getOrderedStringSet(LANGUAGES)).thenReturn(USER_LANGUAGES);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
-        // Get the participant
+        // Get the fully initialized participant object (including histories)
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
         
         assertEquals(FIRST_NAME, participant.getFirstName());
@@ -625,7 +625,7 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void userDoesNotGetHistory() {
+    public void getParticipantWithoutHistories() {
         mockHealthCodeAndAccountRetrieval();
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
@@ -635,12 +635,11 @@ public class ParticipantServiceTest {
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
 
-        // should not contain consent histories
         assertTrue(participant.getConsentHistories().keySet().isEmpty());
     }
     
     @Test
-    public void canGetConsentHistories() {
+    public void getParticipantWithHistories() {
         mockHealthCodeAndAccountRetrieval();
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();

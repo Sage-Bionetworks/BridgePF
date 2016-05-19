@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +32,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -67,9 +67,9 @@ public class DynamoExternalIdDaoTest {
         for (int i = 0; i < 11; i++) {
             extIdList.add(String.valueOf(i));
         }
-        dao.addExternalIds(studyId, extIdList);        
+        dao.addExternalIds(studyId, extIdList);
     }
-    
+
     @Test
     public void cannotAddExistingIdentifiers() {
         dao.assignExternalId(studyId, "AAA", "healthCode");
@@ -231,13 +231,14 @@ public class DynamoExternalIdDaoTest {
     
     @Test
     public void canRetrieveCurrentAndNextPage() {
+        // Add more external IDs.
         List<String> moreIds1 = ImmutableList.of("DDD", "EEE", "FFF", "GGG", "HHH", "III", "JJJ", "KKK", "LLL", "MMM");
         List<String> moreIds2 = ImmutableList.of("NNN", "OOO", "PPP", "QQQ", "RRR", "SSS", "TTT", "UUU", "VVV", "WWW");
-        List<String> moreIds3 = ImmutableList.of("XXX", "YYY", "ZZZ");        
+        List<String> moreIds3 = ImmutableList.of("XXX", "YYY", "ZZZ");
         try {
             dao.addExternalIds(studyId, moreIds1);
             dao.addExternalIds(studyId, moreIds2);
-            dao.addExternalIds(studyId, moreIds3);            
+            dao.addExternalIds(studyId, moreIds3);
 
             PagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, null);
             assertEquals(5, page.getItems().size());
@@ -273,7 +274,7 @@ public class DynamoExternalIdDaoTest {
                 dao.deleteExternalIds(studyId, moreIds3);
             } catch (Exception ex) {
                 // suppress cleanup exception
-            }            
+            }
         }
     }
     

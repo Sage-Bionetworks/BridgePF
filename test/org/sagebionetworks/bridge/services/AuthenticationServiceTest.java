@@ -509,11 +509,13 @@ public class AuthenticationServiceTest {
     }
     
     @Test
-    public void signInPersistsExistingSessionsTokensOnly() {
+    public void signInRefreshesSessionKeepingTokens() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
         
+        // User's ID ties this record to the newly signed in user, which contains only an ID. So the rest of the 
+        // session should be initialized from scratch.
         StudyParticipant oldRecord = new StudyParticipant.Builder()
-                .copyOf(TestUtils.getStudyParticipant(AuthenticationServiceTest.class))
+                .withHealthCode("oldHealthCode")
                 .withId(testUser.getId()).build();
         UserSession cachedSession = new UserSession(oldRecord);
         cachedSession.setSessionToken("cachedSessionToken");
@@ -525,10 +527,10 @@ public class AuthenticationServiceTest {
         assertEquals(cachedSession.getSessionToken(), session.getSessionToken());
         assertEquals(cachedSession.getInternalSessionToken(), session.getInternalSessionToken());
         // but the rest is updated.  
-        assertNotEquals(cachedSession.getParticipant().getEmail(), session.getParticipant().getEmail());
-        assertNotEquals(cachedSession.getParticipant().getFirstName(), session.getParticipant().getFirstName());
-        assertNotEquals(cachedSession.getParticipant().getLastName(), session.getParticipant().getLastName());
-        assertNotEquals(cachedSession.getHealthCode(), session.getHealthCode());
+        assertEquals(testUser.getStudyParticipant().getEmail(), session.getParticipant().getEmail());
+        assertEquals(testUser.getStudyParticipant().getFirstName(), session.getParticipant().getFirstName());
+        assertEquals(testUser.getStudyParticipant().getLastName(), session.getParticipant().getLastName());
+        assertEquals(testUser.getStudyParticipant().getHealthCode(), session.getHealthCode());
         // etc.
     }
 }

@@ -177,6 +177,7 @@ public class UserProfileControllerTest {
         verify(controller).updateSession(sessionCaptor.capture());
         UserSession session = sessionCaptor.getValue();
         assertEquals("existingHealthCode", session.getHealthCode());
+        assertEquals("originalId", session.getParticipant().getExternalId());
         
         verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), eq(ID), participantCaptor.capture());
         
@@ -199,8 +200,8 @@ public class UserProfileControllerTest {
 
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
-        // We had a bug where this call lost the health code in the user's session, so verify in particular that
-        // that field (as well as something like firstName) are in the session. 
+        // We had a bug where this call lost the health code in the user's session, so verify in particular 
+        // that healthCode (as well as something like firstName) are in the session. 
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").withHealthCode("healthCode").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         
@@ -218,8 +219,11 @@ public class UserProfileControllerTest {
         assertEquals("First", participant.getFirstName());
         
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
+        
+        // Session continues to be initialized
         assertEquals(dataGroupSet, session.getParticipant().getDataGroups());
         assertEquals("healthCode", session.getParticipant().getHealthCode());
+        assertEquals("First", session.getParticipant().getFirstName());
     }
     
     // Validation is no longer done in the controller, but verify that user is not changed
