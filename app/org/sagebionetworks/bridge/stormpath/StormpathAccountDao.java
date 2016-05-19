@@ -8,9 +8,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 
@@ -18,6 +21,8 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -42,6 +47,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
+import com.stormpath.sdk.directory.CustomData;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,10 +82,17 @@ public class StormpathAccountDao implements AccountDao {
 
     private Application application;
     private Client client;
+    private boolean isProd;
     private StudyService studyService;
     private SubpopulationService subpopService;
     private HealthCodeService healthCodeService;
     private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
+
+    /** Grab some config attributes from our config object. */
+    @Autowired
+    final void setConfig(Config config) {
+        isProd = config.getEnvironment() == Environment.PROD;
+    }
 
     @Resource(name = "stormpathApplication")
     final void setStormpathApplication(Application application) {
@@ -343,9 +356,16 @@ public class StormpathAccountDao implements AccountDao {
         if (acct == null) {
             throw new BridgeServiceException("Account has not been initialized correctly (use new account methods)");
         }
+
+        Map<String, Object> customDataAsMap = null;
         try {
             updateGroups(account);
-            acct.getCustomData().save();
+
+            // Save custom data. Get the custom data as a map for our consistency check.
+            CustomData customData = acct.getCustomData();
+            customDataAsMap = customDataToMap(customData);
+            customData.save();
+
             // This will throw an exception if the account object has not changed, which it may not have
             // if this call was made simply to persist a change in the groups. To get around this, we dig 
             // into the implementation internals of the account and check the dirty state of the object. 
@@ -357,8 +377,59 @@ public class StormpathAccountDao implements AccountDao {
         } catch(ResourceException e) {
             rethrowResourceException(e, account);
         }
+
+        // validate custom data
+        validateSavedCustomData(customDataAsMap, account);
     }
-    
+
+    // Helper method to validate saved custom data. Does nothing in Prod. Package-scoped to facilitate unit tests.
+    void validateSavedCustomData(Map<String, Object> expectedCustomDataAsMap, Account account) {
+        // Custom Data consistency check. (Not in Prod.)
+        if (!isProd) {
+            checkNotNull(expectedCustomDataAsMap, "We somehow saved Custom Data even though Custom Data is null");
+            checkNotNull(account);
+            com.stormpath.sdk.account.Account spAccount = ((StormpathAccount) account).getAccount();
+            checkNotNull(spAccount);
+
+            try {
+                // Get the account back from Stormpath and verify that the custom data is the same.
+                com.stormpath.sdk.account.Account savedSpAccount = client.getResource(spAccount.getHref(),
+                        com.stormpath.sdk.account.Account.class, Accounts.options().withCustomData());
+                CustomData savedCustomData = savedSpAccount.getCustomData();
+                Map<String, Object> savedCustomDataAsMap = customDataToMap(savedCustomData);
+
+                // Custom Data includes a key "modifiedAt", which is always different. Remove that from the map, so we
+                // can validate in earnest.
+                expectedCustomDataAsMap.remove("modifiedAt");
+                savedCustomDataAsMap.remove("modifiedAt");
+
+                boolean isValid = Objects.equals(expectedCustomDataAsMap, savedCustomDataAsMap);
+                logCustomDataValidation(isValid, account.getId());
+            } catch(ResourceException e) {
+                logger.error("Error validating Custom Data for account " + account.getId() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    // Helper method to log custom data validation. Exists primarily so we have a side-effect for unit tests to test.
+    void logCustomDataValidation(boolean isValid, String accountId) {
+        if (isValid) {
+            logger.info("Custom Data validated for account " + accountId);
+        } else {
+            logger.error("Custom Data failed to save for account " + accountId);
+        }
+    }
+
+    // Helper method to convert custom data to a Java map. This encapsulates getting the Custom Data's entrySet (from
+    // the Map class), and adding each entry to the map. We do this so that Custom Data is easier to mock.
+    private static Map<String, Object> customDataToMap(CustomData customData) {
+        Map<String, Object> customDataAsMap = new HashMap<>();
+        for (Map.Entry<String, Object> oneCustomDataEntry : customData.entrySet()) {
+            customDataAsMap.put(oneCustomDataEntry.getKey(), oneCustomDataEntry.getValue());
+        }
+        return customDataAsMap;
+    }
+
     /**
      * Factored out so it can be overridden in tests; mocks of the Account cannot be cast to AbstractResource.
      */

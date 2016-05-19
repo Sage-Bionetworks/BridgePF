@@ -4,8 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -19,8 +22,10 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
@@ -36,6 +41,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -64,7 +71,10 @@ import com.stormpath.sdk.tenant.Tenant;
 public class StormpathAccountDaoMockTest {
 
     private static final String PASSWORD = "P4ssword!";
-    
+
+    @Mock
+    private Config config;
+
     @Mock
     SubpopulationService subpopService;
 
@@ -104,6 +114,8 @@ public class StormpathAccountDaoMockTest {
     
     @Before
     public void setUp() {
+        when(config.getEnvironment()).thenReturn(Environment.DEV);
+
         study = new DynamoStudy();
         study.setIdentifier("test-study");
         study.setStormpathHref("http://some/dumb.href");
@@ -118,12 +130,16 @@ public class StormpathAccountDaoMockTest {
         List<BridgeEncryptor> encryptors = Lists.newArrayList();
         encryptors.add(encryptor);
         
-        dao = new StormpathAccountDao();
+        dao = spy(new StormpathAccountDao());
+        dao.setConfig(config);
         dao.setStormpathClient(client);
         dao.setSubpopulationService(subpopService);
         dao.setStormpathApplication(application);
         dao.setHealthCodeService(healthCodeService);
         dao.setEncryptors(encryptors);
+
+        // mock validateSavedCustomData(), otherwise it'll get triggered in lots of places and be cumbersome.
+        doNothing().when(dao).validateSavedCustomData(anyMapOf(String.class, Object.class), any(Account.class));
     }
 
     @Test
@@ -179,7 +195,6 @@ public class StormpathAccountDaoMockTest {
     
     @Test
     public void stormpathAccountCorrectlyInitialized() {
-        dao = spy(dao);
         doReturn(false).when(dao).isAccountDirty(any());
         
         when(stormpathAccount.getCustomData()).thenReturn(customData);
@@ -295,6 +310,45 @@ public class StormpathAccountDaoMockTest {
         verify(mockSpAccount, times(1)).removeGroup(anyString());
     }
 
+    @Test
+    public void validateSavedCustomData() {
+        doCallRealMethod().when(dao).validateSavedCustomData(anyMapOf(String.class, Object.class), any(Account.class));
+
+        // Necessary to override this method where we do a cast that fails on the mock stormpathAccount
+        doReturn(false).when(dao).isAccountDirty(any());
+
+        // Constants.
+        final String accountId = "dummy-id";
+        final Map<String, Object> customDataAsMap = ImmutableMap.of("key", "value");
+        final String spAccountHref = "dummy-href";
+
+        // Mock input accounts.
+        CustomData inputCustomData = mock(CustomData.class);
+        when(inputCustomData.entrySet()).thenReturn(customDataAsMap.entrySet());
+
+        com.stormpath.sdk.account.Account inputSpAccount = mock(com.stormpath.sdk.account.Account.class);
+        when(inputSpAccount.getCustomData()).thenReturn(inputCustomData);
+        when(inputSpAccount.getHref()).thenReturn(spAccountHref);
+
+        StormpathAccount inputAccount = mock(StormpathAccount.class);
+        when(inputAccount.getAccount()).thenReturn(inputSpAccount);
+        when(inputAccount.getId()).thenReturn(accountId);
+
+        // Mock saved accounts.
+        CustomData savedCustomData = mock(CustomData.class);
+        when(savedCustomData.entrySet()).thenReturn(customDataAsMap.entrySet());
+
+        com.stormpath.sdk.account.Account savedSpAccount = mock(com.stormpath.sdk.account.Account.class);
+        when(savedSpAccount.getCustomData()).thenReturn(savedCustomData);
+
+        when(client.getResource(eq(spAccountHref), eq(com.stormpath.sdk.account.Account.class), any())).thenReturn(
+                savedSpAccount);
+
+        // execute and validate
+        dao.updateAccount(inputAccount);
+        verify(dao).logCustomDataValidation(true, accountId);
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsPageSizeTooSmall() {
         dao.getPagedAccountSummaries(study, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE-1, null);
@@ -348,7 +402,6 @@ public class StormpathAccountDaoMockTest {
 
     private void mockAccountWithoutHealthCode() {
         // Necessary to override this method where we do a cast that fails on the mock stormpathAccount
-        dao = org.mockito.Mockito.spy(dao);
         doReturn(false).when(dao).isAccountDirty(any());
         
         doReturn(stormpathAccount).when(client).getResource(any(), eq(com.stormpath.sdk.account.Account.class), any());
