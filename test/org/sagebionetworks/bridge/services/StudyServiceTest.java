@@ -59,7 +59,7 @@ public class StudyServiceTest {
 
     @Autowired
     CacheProvider cache;
-
+    
     private CacheProvider mockCache;
     
     private Study study;
