@@ -171,7 +171,7 @@ public class ParticipantControllerTest {
         StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         
         assertEquals("Test", retrievedParticipant.getFirstName());
-        assertEquals("healthCode", retrievedParticipant.getHealthCode());
+        assertNull("healthCode", retrievedParticipant.getHealthCode()); // for now This will eventually return health code.
     }
     
     @Test

@@ -283,7 +283,7 @@ public final class StudyParticipant implements BridgeEntity {
             return this;
         }
         public Builder withEncryptedHealthCode(String encHealthCode) {
-            this.healthCode = ENCRYPTOR.decrypt(encHealthCode);
+            this.healthCode = (encHealthCode == null) ? null : ENCRYPTOR.decrypt(encHealthCode);
             return this;
         }
         public Builder withAttributes(Map<String,String> attributes) {
