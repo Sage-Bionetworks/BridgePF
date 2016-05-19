@@ -59,7 +59,7 @@ public class StudyServiceTest {
 
     @Autowired
     CacheProvider cache;
-         
+  
     private CacheProvider mockCache;
     
     private Study study;
@@ -147,12 +147,12 @@ public class StudyServiceTest {
         verify(mockCache).getStudy(newStudy.getIdentifier());
         verify(mockCache).setStudy(newStudy);
         verifyNoMoreInteractions(mockCache);
-        reset(mockCache);        
+        reset(mockCache);
 
         studyService.deleteStudy(study.getIdentifier());
         verify(mockCache).getStudy(study.getIdentifier());
         verify(mockCache).setStudy(study);
-        verify(mockCache).removeStudy(study.getIdentifier());        
+        verify(mockCache).removeStudy(study.getIdentifier());
         try {
             studyService.getStudy(study.getIdentifier());
             fail("Should have thrown an exception");

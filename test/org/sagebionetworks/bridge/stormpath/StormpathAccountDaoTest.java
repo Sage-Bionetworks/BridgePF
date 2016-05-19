@@ -307,7 +307,7 @@ public class StormpathAccountDaoTest {
             }
         }
     }
-    
+
     private void assertEqual(long signedOn, Account account, Account newAccount) {
         assertNotNull(newAccount.getEmail());
         assertNull(newAccount.getFirstName());
