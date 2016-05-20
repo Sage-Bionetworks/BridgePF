@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -254,7 +255,7 @@ public class AuthenticationServiceTest {
         try {
             holder = authService.signUp(study, participant);
             
-            StudyParticipant persisted = participantService.getParticipant(study, CALLER_ROLES, holder.getIdentifier());
+            StudyParticipant persisted = participantService.getParticipant(study, holder.getIdentifier(), false);
             assertEquals(participant.getFirstName(), persisted.getFirstName());
             assertEquals(participant.getLastName(), persisted.getLastName());
             assertEquals(participant.getEmail(), persisted.getEmail());
@@ -278,7 +279,7 @@ public class AuthenticationServiceTest {
         String email = "bridge-testing+"+name+"@sagebase.org";
         Set<String> groups = Sets.newHashSet("group1");
         
-       StudyParticipant participant = new StudyParticipant.Builder()
+        StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
 
         IdentifierHolder holder = authService.signUp(study, participant);
@@ -482,7 +483,7 @@ public class AuthenticationServiceTest {
         String userId = testUser.getId();
         
         // Update the data groups
-        StudyParticipant participant = participantService.getParticipant(study, CALLER_ROLES, userId);
+        StudyParticipant participant = participantService.getParticipant(study, userId, false);
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant).withDataGroups(UPDATED_DATA_GROUPS).build();
         participantService.updateParticipant(study, CALLER_ROLES, userId, updated);
         
@@ -503,7 +504,33 @@ public class AuthenticationServiceTest {
         
         IdentifierHolder idHolder = authService.signUp(study, participant);
         
-        participant = participantService.getParticipant(study, CALLER_ROLES, idHolder.getIdentifier());
+        participant = participantService.getParticipant(study, idHolder.getIdentifier(), false);
         assertTrue(participant.getRoles().isEmpty());
+    }
+    
+    @Test
+    public void signInRefreshesSessionKeepingTokens() {
+        testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
+        
+        // User's ID ties this record to the newly signed in user, which contains only an ID. So the rest of the 
+        // session should be initialized from scratch.
+        StudyParticipant oldRecord = new StudyParticipant.Builder()
+                .withHealthCode("oldHealthCode")
+                .withId(testUser.getId()).build();
+        UserSession cachedSession = new UserSession(oldRecord);
+        cachedSession.setSessionToken("cachedSessionToken");
+        cachedSession.setInternalSessionToken("cachedInternalSessionToken");
+        cacheProvider.setUserSession(cachedSession);
+        
+        UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+        
+        assertEquals(cachedSession.getSessionToken(), session.getSessionToken());
+        assertEquals(cachedSession.getInternalSessionToken(), session.getInternalSessionToken());
+        // but the rest is updated.  
+        assertEquals(testUser.getStudyParticipant().getEmail(), session.getParticipant().getEmail());
+        assertEquals(testUser.getStudyParticipant().getFirstName(), session.getParticipant().getFirstName());
+        assertEquals(testUser.getStudyParticipant().getLastName(), session.getParticipant().getLastName());
+        assertEquals(testUser.getStudyParticipant().getHealthCode(), session.getHealthCode());
+        // etc.
     }
 }

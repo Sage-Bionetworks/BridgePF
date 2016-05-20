@@ -36,7 +36,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
@@ -320,7 +319,7 @@ public class ParticipantServiceTest {
     public void getParticipantEmailDoesNotExist() {
         when(accountDao.getAccount(STUDY, ID)).thenReturn(null);
         
-        participantService.getParticipant(STUDY, CALLER_ROLES, ID);
+        participantService.getParticipant(STUDY, ID, false);
     }
     
     @Test
@@ -374,8 +373,8 @@ public class ParticipantServiceTest {
         when(lookup.getOrderedStringSet(LANGUAGES)).thenReturn(USER_LANGUAGES);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
-        // Get the participant
-        StudyParticipant participant = participantService.getParticipant(STUDY, CALLER_ROLES, ID);
+        // Get the fully initialized participant object (including histories)
+        StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
         
         assertEquals(FIRST_NAME, participant.getFirstName());
         assertEquals(LAST_NAME, participant.getLastName());
@@ -400,10 +399,6 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
-        
-        // A non-researcher will not get the healthCode
-        participant = participantService.getParticipant(STUDY, Sets.newHashSet(DEVELOPER), ID);
-        assertNull(participant.getHealthCode());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -630,7 +625,7 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void userDoesNotGetHealthCodeOrHistory() {
+    public void getParticipantWithoutHistories() {
         mockHealthCodeAndAccountRetrieval();
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
@@ -638,16 +633,13 @@ public class ParticipantServiceTest {
         doReturn(HISTORY).when(consentService).getUserConsentHistory(STUDY, SUBPOP_GUID, HEALTH_CODE, ID);
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
         
-        STUDY.setHealthCodeExportEnabled(true); // even though export is enabled...
-        StudyParticipant participant = participantService.getParticipant(STUDY, BridgeConstants.NO_CALLER_ROLES, ID);
+        StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
 
-        // should not have health code. should not contain consent histories
-        assertNull(participant.getHealthCode());
         assertTrue(participant.getConsentHistories().keySet().isEmpty());
     }
     
     @Test
-    public void researcherGetsHealthCodeAndHistory() {
+    public void getParticipantWithHistories() {
         mockHealthCodeAndAccountRetrieval();
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
@@ -655,11 +647,8 @@ public class ParticipantServiceTest {
         doReturn(HISTORY).when(consentService).getUserConsentHistory(STUDY, SUBPOP_GUID, HEALTH_CODE, ID);
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
         
-        STUDY.setHealthCodeExportEnabled(true);
-        StudyParticipant participant = participantService.getParticipant(STUDY, Sets.newHashSet(RESEARCHER), ID);
+        StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
 
-        // should have health code and history record
-        assertEquals(HEALTH_CODE, participant.getHealthCode());
         assertEquals(1, participant.getConsentHistories().keySet().size());
     }
     
@@ -714,13 +703,13 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void getStudyParticipantForSession() throws Exception {
+    public void getStudyParticipantWithAccount() throws Exception {
         mockHealthCodeAndAccountRetrieval();
         doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
         doReturn(EMAIL).when(account).getEmail();
         doReturn(HEALTH_CODE).when(account).getHealthCode();
         
-        StudyParticipant participant = participantService.getParticipantForSession(STUDY, account);
+        StudyParticipant participant = participantService.getParticipant(STUDY, account, false);
         
         // The most important thing here is that participant includes health code
         assertEquals(HEALTH_CODE, participant.getHealthCode());

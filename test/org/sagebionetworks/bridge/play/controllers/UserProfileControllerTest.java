@@ -93,6 +93,9 @@ public class UserProfileControllerTest {
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     
+    @Captor
+    private ArgumentCaptor<UserSession> sessionCaptor;
+    
     private UserSession session;
     
     private Study study;
@@ -138,14 +141,14 @@ public class UserProfileControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().withLastName("Last")
                 .withFirstName("First").withEmail("email@email.com").withAttributes(attributes).build();
         
-        doReturn(participant).when(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         Result result = controller.getUserProfile();
         assertEquals(200, result.status());
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         
-        verify(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        verify(participantService).getParticipant(study, ID, false);
         
         assertEquals("First", node.get("firstName").asText());
         assertEquals("Last", node.get("lastName").asText());
@@ -157,8 +160,10 @@ public class UserProfileControllerTest {
     
     @Test
     public void updateUserProfile() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().withExternalId("originalId").build();
-        doReturn(participant).when(participantService).getParticipant(study, Sets.newHashSet(), ID);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("existingHealthCode")
+                .withExternalId("originalId").build();
+        doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
         // (externalId)
@@ -168,6 +173,12 @@ public class UserProfileControllerTest {
         Result result = controller.updateUserProfile();
         TestUtils.assertResult(result, 200, "Profile updated.");
 
+        // Verify that existing user information (health code) has been retrieved and used when updating session
+        verify(controller).updateSession(sessionCaptor.capture());
+        UserSession session = sessionCaptor.getValue();
+        assertEquals("existingHealthCode", session.getHealthCode());
+        assertEquals("originalId", session.getParticipant().getExternalId());
+        
         verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), eq(ID), participantCaptor.capture());
         
         StudyParticipant persisted = participantCaptor.getValue();
@@ -189,8 +200,10 @@ public class UserProfileControllerTest {
 
     @Test
     public void validDataGroupsCanBeAdded() throws Exception {
-        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
-        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
+        // We had a bug where this call lost the health code in the user's session, so verify in particular 
+        // that healthCode (as well as something like firstName) are in the session. 
+        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").withHealthCode("healthCode").build();
+        doReturn(existing).when(participantService).getParticipant(study, ID, false);
         
         Set<String> dataGroupSet = Sets.newHashSet("group1");
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
@@ -206,7 +219,11 @@ public class UserProfileControllerTest {
         assertEquals("First", participant.getFirstName());
         
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
+        
+        // Session continues to be initialized
         assertEquals(dataGroupSet, session.getParticipant().getDataGroups());
+        assertEquals("healthCode", session.getParticipant().getHealthCode());
+        assertEquals("First", session.getParticipant().getFirstName());
     }
     
     // Validation is no longer done in the controller, but verify that user is not changed
@@ -214,7 +231,7 @@ public class UserProfileControllerTest {
     @Test
     public void invalidDataGroupsRejected() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
-        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
+        doReturn(existing).when(participantService).getParticipant(study, ID, false);
         doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), any());
         
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
@@ -250,7 +267,7 @@ public class UserProfileControllerTest {
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
-        doReturn(existing).when(participantService).getParticipant(study, NO_ROLES, ID);
+        doReturn(existing).when(participantService).getParticipant(study, ID, false);
         TestUtils.mockPlayContextWithJson("{}");
         
         Result result = controller.updateDataGroups();

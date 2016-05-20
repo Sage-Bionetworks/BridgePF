@@ -5,6 +5,8 @@ import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import static org.junit.Assert.assertEquals;
@@ -307,12 +309,20 @@ public class BaseControllerTest {
                 .withLanguages(Sets.newLinkedHashSet()).build();
         UserSession session = new UserSession(participant);
         session.setStudyIdentifier(TEST_STUDY);
+        session.setSessionToken("aSessionToken");
         
         // Verify as well that the values retrieved from the header have been saved in session and ParticipantOptions table.
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertEquals(LANGUAGE_SET, languages);
+        
+        StudyParticipant updatedParticipant = session.getParticipant();
+        assertEquals(LANGUAGE_SET, updatedParticipant.getLanguages());
+        
         verify(optionsService).setOrderedStringSet(TEST_STUDY, "AAA", LANGUAGES, LANGUAGE_SET);
         verify(cacheProvider).setUserSession(session);
+        
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setCookie(SESSION_TOKEN_HEADER, "aSessionToken", BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
     
     @Test

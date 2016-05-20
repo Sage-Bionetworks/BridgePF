@@ -159,6 +159,9 @@ public class TestUtils {
         Http.Context context = mock(Http.Context.class);
         when(context.request()).thenReturn(mockRequest);
 
+        Http.Response mockResponse = mock(Http.Response.class);
+        when(context.response()).thenReturn(mockResponse);
+        
         Http.Context.current.set(context);
     }
     

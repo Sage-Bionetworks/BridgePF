@@ -59,7 +59,7 @@ public class DynamoExternalIdDaoTest {
     public void after() {
         dao.deleteExternalIds(studyId, EXT_IDS);
     }
-
+    
     @Test(expected = BadRequestException.class)
     public void addCannotExceedLimit() {
         // Limit is set to 10. Make a list of 11 external IDs.

@@ -78,7 +78,7 @@ public class UserProfileController extends BaseController {
         ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<ObjectNode>() {
             @Override public ObjectNode get() {
-                StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, userId);
+                StudyParticipant participant = participantService.getParticipant(study, userId, false);
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(FIRST_NAME_FIELD, participant.getFirstName());
                 node.put(LAST_NAME_FIELD, participant.getLastName());
@@ -107,7 +107,7 @@ public class UserProfileController extends BaseController {
             }
         }
         
-        StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, userId);
+        StudyParticipant participant = participantService.getParticipant(study, userId, false);
         
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withFirstName(JsonUtils.asText(node, "firstName"))
@@ -155,7 +155,7 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, NO_CALLER_ROLES, session.getId());
+        StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
         
         StudyParticipant dataGroups = parseJson(request(), StudyParticipant.class);
         

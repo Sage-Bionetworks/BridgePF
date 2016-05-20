@@ -56,6 +56,11 @@ public class AuthenticationController extends BaseController {
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
 
+        // Note: currently we support mobile applications, that send an email that users open in 
+        // a browser to verify their email address. NOT a mobile app using the Bridge SDK. So 
+        // User-Agent (and Accept-Language possibly) are incorrect and the session we are 
+        // returning can have incorrect consent information. See BRIDGE-1352 about why session
+        // handling exists here, along with a proposal to remove it.
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
         UserSession session = authenticationService.verifyEmail(study, context, emailVerification);

@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.cache;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -28,7 +26,10 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
+import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -47,8 +48,11 @@ import com.google.common.collect.Sets;
 
 public class CacheProviderTest {
 
-    private final String userId = "userId";
-    private final String sessionToken = "sessionToken";
+    private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
+    private static final String USER_ID = "userId";
+    private static final String SESSION_TOKEN = "sessionToken";
+    private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
+    private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
     private JedisTransaction transaction;
     private CacheProvider cacheProvider;
 
@@ -63,8 +67,8 @@ public class CacheProviderTest {
         JedisOps jedisOps = mock(JedisOps.class);
         when(jedisOps.getTransaction()).thenReturn(transaction);
         
-        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
-        when(jedisOps.get(userKey)).thenReturn(sessionToken);
+        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
+        when(jedisOps.get(userKey)).thenReturn(SESSION_TOKEN);
         
         cacheProvider = new CacheProvider();
         cacheProvider.setJedisOps(jedisOps);
@@ -75,17 +79,17 @@ public class CacheProviderTest {
     public void testSetUserSession() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail("userEmail")
-                .withId(userId)
+                .withId(USER_ID)
                 .withHealthCode("healthCode").build();
         
         UserSession session = new UserSession(participant);
-        session.setSessionToken(sessionToken);
+        session.setSessionToken(SESSION_TOKEN);
         cacheProvider.setUserSession(session);
 
-        String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
+        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         verify(transaction, times(1)).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, times(1)).setex(eq(userKey), anyInt(), eq(sessionToken));
+        verify(transaction, times(1)).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
         verify(transaction, times(1)).exec();
     }
 
@@ -93,7 +97,7 @@ public class CacheProviderTest {
     public void testSetUserSessionNullSessionToken() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail("userEmail")
-                .withId(userId)
+                .withId(USER_ID)
                 .withHealthCode("healthCode").build();
         
         UserSession session = new UserSession(participant);
@@ -104,17 +108,17 @@ public class CacheProviderTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
+        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         verify(transaction, times(0)).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(sessionToken));
+        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
         verify(transaction, times(0)).exec();
     }
 
     @Test
     public void testSetUserSessionNullUser() throws Exception {
         UserSession session = new UserSession();
-        session.setSessionToken(sessionToken);
+        session.setSessionToken(SESSION_TOKEN);
         try {
             cacheProvider.setUserSession(session);
         } catch(NullPointerException e) {
@@ -122,10 +126,10 @@ public class CacheProviderTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
+        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         verify(transaction, times(0)).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(sessionToken));
+        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
         verify(transaction, times(0)).exec();
     }
 
@@ -136,7 +140,7 @@ public class CacheProviderTest {
                 .withHealthCode("healthCode").build();        
         
         UserSession session = new UserSession(participant);
-        session.setSessionToken(sessionToken);
+        session.setSessionToken(SESSION_TOKEN);
         try {
             cacheProvider.setUserSession(session);
         } catch(NullPointerException e) {
@@ -144,31 +148,31 @@ public class CacheProviderTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
+        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         verify(transaction, times(0)).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(sessionToken));
+        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
         verify(transaction, times(0)).exec();
     }
 
     @Test
     public void testGetUserSessionByUserId() throws Exception {
         CacheProvider mockCacheProvider = spy(cacheProvider);
-        mockCacheProvider.getUserSessionByUserId(userId);
-        verify(mockCacheProvider, times(1)).getUserSession(sessionToken);
+        mockCacheProvider.getUserSessionByUserId(USER_ID);
+        verify(mockCacheProvider, times(1)).getUserSession(SESSION_TOKEN);
     }
 
     @Test
     public void testRemoveSession() {
-        StudyParticipant participant = new StudyParticipant.Builder().withId(userId).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
 
         UserSession session = new UserSession(participant);
-        session.setSessionToken(sessionToken);
+        session.setSessionToken(SESSION_TOKEN);
         
         cacheProvider.removeSession(session);
-        cacheProvider.getUserSession(sessionToken);
-        String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+        cacheProvider.getUserSession(SESSION_TOKEN);
+        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
+        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         verify(transaction, times(1)).del(sessionKey);
         verify(transaction, times(1)).del(userKey);
         verify(transaction, times(1)).exec();
@@ -176,9 +180,9 @@ public class CacheProviderTest {
 
     @Test
     public void testRemoveSessionByUserId() {
-        cacheProvider.removeSessionByUserId(userId);
-        String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+        cacheProvider.removeSessionByUserId(USER_ID);
+        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
+        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         verify(transaction, times(1)).del(sessionKey);
         verify(transaction, times(1)).del(userKey);
         verify(transaction, times(1)).exec();
@@ -216,7 +220,7 @@ public class CacheProviderTest {
     public void oldUserSessionDeserializedToNewUserSession() {
         String oldJSON = TestUtils.createJson("{'authenticated':true,"+
                 "'environment':'local',"+
-                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b',"+
+                "'sessionToken':'"+DECRYPTED_SESSION_TOKEN+"',"+
                 "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
                 "'user':{'id':'6gq4jGXLmAxVbLLmVifKN4',"+
                     "'firstName':'Bridge',"+
@@ -226,6 +230,7 @@ public class CacheProviderTest {
                     "'sharingScope':'no_sharing',"+
                     "'accountCreatedOn':'2016-04-21T16:48:22.386Z',"+
                     "'roles':['admin'],"+
+                    "'externalId':'ABC',"+
                     "'dataGroups':['group1'],"+
                     "'consentStatuses':{"+
                         "'api':{'name':'Default Consent Group',"+
@@ -235,7 +240,7 @@ public class CacheProviderTest {
                             "'signedMostRecentConsent':true,"+
                             "'type':'ConsentStatus'}},"+
                     "'languages':['en','fr'],"+
-                    "'encryptedHealthCode':'TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=',"+
+                    "'encryptedHealthCode':'"+ENCRYPTED_SESSION_TOKEN+"',"+
                     "'type':'User'},"+
                 "'studyIdentifier':{'identifier':'api',"+
                     "'type':'StudyIdentifier'},"+
@@ -248,7 +253,7 @@ public class CacheProviderTest {
     public void newUserSessionDeserializes() {
         String json = TestUtils.createJson("{'authenticated':true,"+
                 "'environment':'local',"+
-                "'sessionToken':'ccea2978-f5b9-4377-8194-f887a3e2a19b',"+
+                "'sessionToken':'"+DECRYPTED_SESSION_TOKEN+"',"+
                 "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
                 "'studyIdentifier':{'identifier':'api',"+
                     "'type':'StudyIdentifier'},"+
@@ -264,8 +269,9 @@ public class CacheProviderTest {
                     "'email':'bridgeit@sagebase.org',"+
                     "'sharingScope':'no_sharing',"+
                     "'notifyByEmail':false,"+
+                    "'externalId':'ABC',"+
                     "'dataGroups':['group1'],"+
-                    "'healthCode':'7e188a30-fda5-4d1b-9904-a642f96a19b0',"+
+                    "'encryptedHealthCode':'"+ENCRYPTED_SESSION_TOKEN+"',"+
                     "'attributes':{},"+
                     "'consentHistories':{},"+
                     "'roles':['admin'],"+
@@ -293,7 +299,7 @@ public class CacheProviderTest {
 
         assertTrue(session.isAuthenticated());
         assertEquals(Environment.LOCAL, session.getEnvironment());
-        assertEquals("ccea2978-f5b9-4377-8194-f887a3e2a19b", session.getSessionToken());
+        assertEquals(DECRYPTED_SESSION_TOKEN, session.getSessionToken());
         assertEquals("4f0937a5-6ebf-451b-84bc-fbf649b9e93c", session.getInternalSessionToken());
         assertEquals("6gq4jGXLmAxVbLLmVifKN4", session.getId());
         assertEquals("api", session.getStudyIdentifier().getIdentifier());
@@ -306,12 +312,11 @@ public class CacheProviderTest {
         assertEquals(DateTime.parse("2016-04-21T16:48:22.386Z"), participant.getCreatedOn());
         assertEquals(Sets.newHashSet(Roles.ADMIN), participant.getRoles());
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
-        assertNotNull(participant.getHealthCode());
-        assertNotEquals("TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBA"+
-                "VcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=", participant.getHealthCode());
+        assertEquals("ABC", participant.getExternalId());
+        
+        assertEquals(participant.getHealthCode(), ENCRYPTOR.decrypt(ENCRYPTED_SESSION_TOKEN));
         
         SubpopulationGuid apiGuid = SubpopulationGuid.create("api");
-        
         Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
         ConsentStatus status = consentStatuses.get(apiGuid);
         assertEquals("Default Consent Group", status.getName());
