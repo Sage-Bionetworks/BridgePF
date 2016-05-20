@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
@@ -61,6 +62,8 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
 
+    private static final String ENCRYPTED_HEALTH_CODE = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
+    
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
     private static final String ID = "ASDF";
@@ -163,7 +166,9 @@ public class ParticipantControllerTest {
     @Test
     public void getParticipant() throws Exception {
         study.setHealthCodeExportEnabled(true);
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").withHealthCode("healthCode").build();
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).build();
+        
         when(participantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
@@ -171,7 +176,8 @@ public class ParticipantControllerTest {
         StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         
         assertEquals("Test", retrievedParticipant.getFirstName());
-        assertNull("healthCode", retrievedParticipant.getHealthCode()); // for now This will eventually return health code.
+        assertNull(retrievedParticipant.getHealthCode()); // for now This will eventually return health code.
+        assertNull(retrievedParticipant.getEncryptedHealthCode()); // for now This will eventually return health code.
     }
     
     @Test
@@ -270,7 +276,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void getSelfParticipant() throws Exception {
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
+        StudyParticipant studyParticipant = new StudyParticipant.Builder()
+                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE)
+                .withFirstName("Test").build();
         
         when(participantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
 
@@ -283,6 +291,7 @@ public class ParticipantControllerTest {
 
         assertEquals("Test", deserParticipant.getFirstName());
         assertNull(deserParticipant.getHealthCode());
+        assertNull(deserParticipant.getEncryptedHealthCode());
     }
     
     @Test

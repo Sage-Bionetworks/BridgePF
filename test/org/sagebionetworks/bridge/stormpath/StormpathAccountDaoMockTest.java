@@ -8,6 +8,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -31,6 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -340,8 +342,13 @@ public class StormpathAccountDaoMockTest {
     @Test
     public void getAccountCreatesHealthCode() {
         mockAccountWithoutHealthCode();
+        doReturn("encryptedHealthId").when(encryptor).encrypt("healthId");
         
         Account account = dao.getAccount(study, "id");
+        
+        InOrder inOrder = inOrder(customData);
+        inOrder.verify(customData).put("test-study_code", "encryptedHealthId");
+        inOrder.verify(customData).save();
         assertEquals("ABC", account.getHealthCode());
         verify(healthCodeService).createMapping(study);
     }
