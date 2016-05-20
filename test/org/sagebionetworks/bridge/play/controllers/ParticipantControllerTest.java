@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
@@ -14,6 +13,9 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
+import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
+import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import java.util.List;
 import java.util.Map;
@@ -135,7 +137,7 @@ public class ParticipantControllerTest {
         controller.setAuthenticationService(authService);
         controller.setCacheProvider(cacheProvider);
         
-        TestUtils.mockPlayContext();
+        mockPlayContext();
     }
     
     @Test
@@ -204,10 +206,16 @@ public class ParticipantControllerTest {
     @Test
     public void updateParticipant() throws Exception {
         study.getUserProfileAttributes().add("phone");
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
-                "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
-                "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
-                "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
+        mockPlayContextWithJson(createJson("{'firstName':'firstName',"+
+                "'lastName':'lastName',"+
+                "'email':'email@email.com',"+
+                "'externalId':'externalId',"+
+                "'password':'newUserPassword',"+
+                "'sharingScope':'sponsors_and_partners',"+
+                "'notifyByEmail':true,"+
+                "'dataGroups':['group2','group1'],"+
+                "'attributes':{'phone':'123456789'},"+
+                "'languages':['en','fr']}"));
         
         Result result = controller.updateParticipant(ID);
         assertResult(result, 200, "Participant updated.");
@@ -241,10 +249,16 @@ public class ParticipantControllerTest {
         doReturn(holder).when(participantService).createParticipant(eq(study), any(), any(StudyParticipant.class), eq(true));
         
         study.getUserProfileAttributes().add("phone");
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'firstName','lastName':'lastName',"+
-                "'email':'email@email.com','externalId':'externalId','password':'newUserPassword',"+
-                "'sharingScope':'sponsors_and_partners','notifyByEmail':true,'dataGroups':['group2','group1'],"+
-                "'attributes':{'phone':'123456789'},'languages':['en','fr']}"));
+        mockPlayContextWithJson(createJson("{'firstName':'firstName',"+
+                "'lastName':'lastName',"+
+                "'email':'email@email.com',"+
+                "'externalId':'externalId',"+
+                "'password':'newUserPassword',"+
+                "'sharingScope':'sponsors_and_partners',"+
+                "'notifyByEmail':true,"+
+                "'dataGroups':['group2','group1'],"+
+                "'attributes':{'phone':'123456789'},"+
+                "'languages':['en','fr']}"));
         
         Result result = controller.createParticipant();
         
@@ -269,7 +283,7 @@ public class ParticipantControllerTest {
 
     @Test(expected = BadRequestException.class)
     public void updateParticipantRequiresIdMatch() throws Exception {
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'id':'id2'}"));
+        mockPlayContextWithJson(createJson("{'id':'id2'}"));
         
         controller.updateParticipant("id1");
     }
@@ -305,7 +319,7 @@ public class ParticipantControllerTest {
         doReturn(new UserSession(participant)).when(authService).updateSession(eq(study), any(), eq(ID));
         
         String json = BridgeObjectMapper.get().writeValueAsString(participant);
-        TestUtils.mockPlayContextWithJson(json);
+        mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
@@ -358,9 +372,13 @@ public class ParticipantControllerTest {
                 .withExternalId("POWERS").build();
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'externalId':'simpleStringChange',"+
-                "'sharingScope':'no_sharing','notifyByEmail':false,'attributes':{'baz':'belgium'},"+
-                "'languages':['fr'],'status':'enabled','roles':['admin']}"));
+        mockPlayContextWithJson(createJson("{'externalId':'simpleStringChange',"+
+                "'sharingScope':'no_sharing',"+
+                "'notifyByEmail':false,"+
+                "'attributes':{'baz':'belgium'},"+
+                "'languages':['fr'],"+
+                "'status':'enabled',"+
+                "'roles':['admin']}"));
         
         Result result = controller.updateSelfParticipant();
         assertEquals(200, result.status());
