@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -48,7 +49,6 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import com.stormpath.sdk.directory.CustomData;
-import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -501,7 +501,7 @@ public class StormpathAccountDao implements AccountDao {
             throw new EntityNotFoundException(Account.class);
         case 7101:
             // Account is disabled for administrative reasons. This throws 423 LOCKED (WebDAV, not pure HTTP)
-            throw new BridgeServiceException("Account disabled, please contact user support", HttpStatus.SC_LOCKED);
+            throw new AccountDisabledException();
         default:
             throw new ServiceUnavailableException(e);
         }
