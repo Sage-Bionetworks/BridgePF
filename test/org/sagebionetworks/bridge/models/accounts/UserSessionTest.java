@@ -20,7 +20,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -52,8 +51,8 @@ public class UserSessionTest {
         session.setStudyIdentifier(new StudyIdentifierImpl("study-key"));
         session.setConsentStatuses(statuses);
         
-        String json = new ObjectMapper().writeValueAsString(session);
-        UserSession newSession = new ObjectMapper().readValue(json, UserSession.class);
+        String json = StudyParticipant.CACHE_WRITER.writeValueAsString(session);
+        UserSession newSession = BridgeObjectMapper.get().readValue(json, UserSession.class);
 
         assertEquals(session.getSessionToken(), newSession.getSessionToken());
         assertEquals(session.getInternalSessionToken(), newSession.getInternalSessionToken());
@@ -67,7 +66,7 @@ public class UserSessionTest {
     public void doesNotExposeHealthCodeInRedisSerialization() throws Exception {
         UserSession session = new UserSession(new StudyParticipant.Builder().withHealthCode("123abc").build());
         
-        String json = BridgeObjectMapper.get().writeValueAsString(session);
+        String json = StudyParticipant.CACHE_WRITER.writeValueAsString(session);
         assertFalse(json.contains("123abc"));
     }
     
@@ -77,7 +76,7 @@ public class UserSessionTest {
                 .withEmail("userEmail")
                 .withId("userId")
                 .withHealthCode("123abc").build());
-        String sessionSer = BridgeObjectMapper.get().writeValueAsString(session);
+        String sessionSer = StudyParticipant.CACHE_WRITER.writeValueAsString(session);
         assertNotNull(sessionSer);
         assertFalse("Health code should have been encrypted in the serialized string.",
                 sessionSer.toLowerCase().contains("123abc"));
