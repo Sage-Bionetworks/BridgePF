@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -484,8 +483,9 @@ public class AuthenticationServiceTest {
         
         // Update the data groups
         StudyParticipant participant = participantService.getParticipant(study, userId, false);
-        StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant).withDataGroups(UPDATED_DATA_GROUPS).build();
-        participantService.updateParticipant(study, CALLER_ROLES, userId, updated);
+        StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
+                .withDataGroups(UPDATED_DATA_GROUPS).withId(userId).build();
+        participantService.updateParticipant(study, CALLER_ROLES, updated);
         
         // Now update the session, these changes should be reflected
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
