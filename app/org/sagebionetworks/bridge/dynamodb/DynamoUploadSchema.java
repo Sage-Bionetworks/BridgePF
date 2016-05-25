@@ -12,6 +12,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -38,6 +39,7 @@ import org.sagebionetworks.bridge.validators.Validate;
  */
 @DynamoThroughput(readCapacity=15, writeCapacity=1)
 @DynamoDBTable(tableName = "UploadSchema")
+@JsonFilter("filter")
 public class DynamoUploadSchema implements UploadSchema {
     private List<UploadFieldDefinition> fieldDefList;
     private String name;
@@ -191,14 +193,12 @@ public class DynamoUploadSchema implements UploadSchema {
      * </p>
      */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-index")
-    @JsonIgnore
     @Override
     public String getStudyId() {
         return studyId;
     }
 
     /** @see #getStudyId */
-    @JsonIgnore
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
