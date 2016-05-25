@@ -148,20 +148,37 @@ public class StudyControllerTest {
     }
     
     @Test
-    public void humanAdminRolesCanGetCurrentStudy() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+    public void developerCanAccessCurrentStudy() throws Exception {
+        testRoleAccessToCurrentStudy(Roles.DEVELOPER);
+    }
+    
+    @Test
+    public void researcherCanAccessCurrentStudy() throws Exception {
+        testRoleAccessToCurrentStudy(Roles.RESEARCHER);
+    }
+    
+    @Test
+    public void adminCanAccessCurrentStudy() throws Exception {
+        testRoleAccessToCurrentStudy(Roles.ADMIN);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void userCannotAccessCurrentStudy() throws Exception {
+        testRoleAccessToCurrentStudy(null);
+    }
+    
+    private void testRoleAccessToCurrentStudy(Roles role) throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(role)).build();
         UserSession session = new UserSession(participant);
         session.setAuthenticated(true);
         session.setStudyIdentifier(studyId);
-        
         doReturn(session).when(controller).getSessionIfItExists();
         
         Result result = controller.getCurrentStudy();
         assertEquals(200, result.status());
         
         Study study = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), Study.class);
-        assertEquals(EMAIL_ADDRESS, study.getSupportEmail());
+        assertEquals(EMAIL_ADDRESS, study.getSupportEmail());        
     }
 
 }

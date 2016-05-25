@@ -96,8 +96,6 @@ public class FPHSControllerTest {
         session.setStudyIdentifier(new StudyIdentifierImpl("test-study"));
         session.setAuthenticated(true);
         
-        //doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        //doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(session).when(controller).getSessionIfItExists();
         return session;
     }
