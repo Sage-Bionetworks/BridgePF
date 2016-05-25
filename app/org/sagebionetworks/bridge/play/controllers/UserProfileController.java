@@ -112,8 +112,9 @@ public class UserProfileController extends BaseController {
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withFirstName(JsonUtils.asText(node, "firstName"))
                 .withLastName(JsonUtils.asText(node, "lastName"))
-                .withAttributes(attributes).build();
-        participantService.updateParticipant(study, NO_CALLER_ROLES, userId, updated);
+                .withAttributes(attributes)
+                .withId(userId).build();
+        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         session.setParticipant(updated);
         updateSession(session);
@@ -160,9 +161,10 @@ public class UserProfileController extends BaseController {
         StudyParticipant dataGroups = parseJson(request(), StudyParticipant.class);
         
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
-                .copyFieldsOf(dataGroups, DATA_GROUPS_SET).build();
+                .copyFieldsOf(dataGroups, DATA_GROUPS_SET)
+                .withId(session.getId()).build();
         
-        participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
+        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         session.setParticipant(updated);
         

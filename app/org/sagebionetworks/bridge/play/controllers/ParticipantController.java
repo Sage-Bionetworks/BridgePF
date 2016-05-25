@@ -66,8 +66,9 @@ public class ParticipantController extends BaseController {
         StudyParticipant existing = participantService.getParticipant(study, session.getId(), false);
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
-                .copyFieldsOf(participant, fieldNames).build();
-        participantService.updateParticipant(study, NO_CALLER_ROLES, session.getId(), updated);
+                .copyFieldsOf(participant, fieldNames)
+                .withId(session.getId()).build();
+        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         CriteriaContext context = getCriteriaContext(session);
         session = authenticationService.updateSession(study, context, session.getId());
@@ -122,11 +123,11 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
-        // Just stop right here because something is wrong
-        if (participant.getId() != null && !userId.equals(participant.getId())) {
-            throw new BadRequestException("ID in JSON does not match email in URL.");
-        }
-        participantService.updateParticipant(study, session.getParticipant().getRoles(), userId, participant);
+        
+        participant = new StudyParticipant.Builder()
+                .copyOf(participant)
+                .withId(userId).build();
+        participantService.updateParticipant(study, session.getParticipant().getRoles(), participant);
 
         return okResult("Participant updated.");
     }

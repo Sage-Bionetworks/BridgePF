@@ -97,6 +97,20 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
+    public void validatesIdForNew() {
+        // not new, this succeeds
+        validator = new StudyParticipantValidator(study, true); 
+        Validate.entityThrowingException(validator, withEmail("email@email.com"));
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void validatesIdForExisting() {
+        // not new, this should fail, as there's no ID in participant.
+        validator = new StudyParticipantValidator(study, false); 
+        Validate.entityThrowingException(validator, withEmail("email@email.com"));
+    }
+    
+    @Test
     public void validPasses() {
         validator = new StudyParticipantValidator(study, true);
         Validate.entityThrowingException(validator, withEmail("email@email.com"));

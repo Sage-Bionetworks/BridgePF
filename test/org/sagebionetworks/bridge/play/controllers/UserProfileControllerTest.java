@@ -162,7 +162,8 @@ public class UserProfileControllerTest {
     public void updateUserProfile() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("existingHealthCode")
-                .withExternalId("originalId").build();
+                .withExternalId("originalId")
+                .withId(ID).build();
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
@@ -179,9 +180,10 @@ public class UserProfileControllerTest {
         assertEquals("existingHealthCode", session.getHealthCode());
         assertEquals("originalId", session.getParticipant().getExternalId());
         
-        verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), participantCaptor.capture());
         
         StudyParticipant persisted = participantCaptor.getValue();
+        assertEquals(ID, persisted.getId());
         assertEquals("First", persisted.getFirstName());
         assertEquals("Last", persisted.getLastName());
         assertEquals("originalId", persisted.getExternalId()); // not changed by the JSON submitted
@@ -211,10 +213,11 @@ public class UserProfileControllerTest {
         Result result = controller.updateDataGroups();
         assertResult(result, 200, "Data groups updated.");
         
-        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), participantCaptor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
+        assertEquals(ID, participant.getId());
         assertEquals(dataGroupSet, participant.getDataGroups());
         assertEquals("First", participant.getFirstName());
         
@@ -232,7 +235,7 @@ public class UserProfileControllerTest {
     public void invalidDataGroupsRejected() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
-        doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), any());
+        doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study), eq(NO_ROLES), any());
         
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
         try {
@@ -273,9 +276,10 @@ public class UserProfileControllerTest {
         Result result = controller.updateDataGroups();
         assertResult(result, 200, "Data groups updated.");
         
-        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), participantCaptor.capture());
         
         StudyParticipant updated = participantCaptor.getValue();
+        assertEquals(ID, updated.getId());
         assertTrue(updated.getDataGroups().isEmpty());
         assertEquals("First", updated.getFirstName());
     }
