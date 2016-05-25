@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -63,8 +62,6 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
-
-    private static final String ENCRYPTED_HEALTH_CODE = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
@@ -169,11 +166,12 @@ public class ParticipantControllerTest {
     public void getParticipant() throws Exception {
         study.setHealthCodeExportEnabled(true);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
-                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).build();
+                .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE).build();
         
         when(participantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
+        assertEquals(result.contentType(), "application/json");
         String json = Helpers.contentAsString(result);
         StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         
@@ -291,12 +289,13 @@ public class ParticipantControllerTest {
     @Test
     public void getSelfParticipant() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder()
-                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE)
+                .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
                 .withFirstName("Test").build();
         
         when(participantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
 
         Result result = controller.getSelfParticipant();
+        assertEquals("application/json", result.contentType());
         
         verify(participantService).getParticipant(study, ID, false);
         

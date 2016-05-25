@@ -23,6 +23,7 @@ public class UserSessionInfo {
     
     private static final String CONSENT_HISTORIES = "consentHistories";
     private static final String ENCRYPTED_HEALTH_CODE = "encryptedHealthCode";
+    private static final String HEALTH_CODE = "healthCode";
     private static final String CONSENT_STATUSES = "consentStatuses";
     private static final String CONSENTED = "consented";
     private static final String SIGNED_MOST_RECENT_CONSENT = "signedMostRecentConsent";
@@ -40,7 +41,7 @@ public class UserSessionInfo {
     private static final String LOCAL = "local";
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
-    private static final Set<String> PROHIBITED_FIELD_NAMES = Sets.newHashSet(TYPE, ENCRYPTED_HEALTH_CODE, CONSENT_HISTORIES);
+    private static final Set<String> PROHIBITED_FIELD_NAMES = Sets.newHashSet(TYPE, HEALTH_CODE, ENCRYPTED_HEALTH_CODE, CONSENT_HISTORIES);
     private static final Map<Environment,String> ENVIRONMENTS = new ImmutableMap.Builder<Environment,String>()
             .put(Environment.LOCAL, LOCAL)
             .put(Environment.DEV, DEVELOP)

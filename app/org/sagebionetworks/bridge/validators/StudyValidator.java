@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,7 +14,6 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 
 import org.springframework.stereotype.Component;
@@ -27,11 +28,19 @@ public class StudyValidator implements Validator {
     private static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     private static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
     /**
-     * Dynamically inspect an instance of StudyParticipant with null fields included in the JSON
-     * to get the field names that are reserved, and cannot be used for user profile attributes.
+     * Inspect StudyParticipant for its field names; these cannot be used as user profile attributes because UserProfile
+     * collapses these values into the top-level JSON it returns (unlike StudyParticipant where these values are a map
+     * under the attribute property).
      */
-    private static final Set<String> RESERVED_ATTR_NAMES = Sets
-            .newHashSet(new ObjectMapper().valueToTree(new StudyParticipant.Builder().build()).fieldNames());
+    private static final Set<String> RESERVED_ATTR_NAMES = Sets.newHashSet();
+    static {
+        Field[] fields = StudyParticipant.class.getDeclaredFields();
+        for (Field field : fields) {
+            if (!Modifier.isStatic(field.getModifiers())) {
+                RESERVED_ATTR_NAMES.add(field.getName());
+            }
+        }
+    }
     
     @Override
     public boolean supports(Class<?> clazz) {
