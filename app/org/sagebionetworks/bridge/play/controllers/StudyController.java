@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -60,7 +61,7 @@ public class StudyController extends BaseController {
     }
 
     public Result getCurrentStudy() throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         return ok(Study.STUDY_WRITER.writeValueAsString(study));

@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,6 +20,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -58,11 +58,11 @@ public class StudyControllerTest {
     @Mock
     private StudyService mockStudyService;
     @Mock
-    private Study study;
-    @Mock
     private EmailVerificationService mockVerificationService;
     @Mock
     private CacheProvider mockCacheProvider;
+    
+    private Study study;
     
     @Before
     public void before() throws Exception {
@@ -71,11 +71,12 @@ public class StudyControllerTest {
         // mock session with study identifier
         studyId = new StudyIdentifierImpl(TestConstants.TEST_STUDY_IDENTIFIER);
         when(mockSession.getStudyIdentifier()).thenReturn(studyId);
+        when(mockSession.isAuthenticated()).thenReturn(true);
         
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        study = new DynamoStudy();
+        study.setSupportEmail(EMAIL_ADDRESS);
         
-        when(mockStudy.getSupportEmail()).thenReturn(EMAIL_ADDRESS);
-        when(mockStudyService.getStudy(studyId)).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(studyId)).thenReturn(study);
         
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
 
@@ -95,23 +96,22 @@ public class StudyControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode")
                 .withRoles(Sets.newHashSet()).build();
-        when(mockSession.getParticipant()).thenReturn(participant);
-
-        // this should fail, returning a session without the role
-        reset(controller);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(); 
+        UserSession session = new UserSession(participant);
+        session.setAuthenticated(true);
+        
+        doReturn(session).when(controller).getSessionIfItExists();
 
         controller.getStudyPublicKeyAsPem();
     }
     
     @Test
     public void canGetCmsPublicKeyPemFile() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode")
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         when(mockSession.getParticipant()).thenReturn(participant);
-
-        doReturn(mockSession).when(controller).getAuthenticatedSession();
         
         Result result = controller.getStudyPublicKeyAsPem();
         String pemFile = Helpers.contentAsString(result);
@@ -123,6 +123,8 @@ public class StudyControllerTest {
     
     @Test
     public void getEmailStatus() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        
         Result result = controller.getEmailStatus();
         
         verify(mockVerificationService).getEmailStatus(EMAIL_ADDRESS);
@@ -133,6 +135,8 @@ public class StudyControllerTest {
     
     @Test
     public void verifyEmail() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        
         when(mockVerificationService.verifyEmailAddress(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
         
         Result result = controller.verifyEmail();
@@ -141,6 +145,23 @@ public class StudyControllerTest {
         EmailVerificationStatusHolder status = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 EmailVerificationStatusHolder.class);
         assertEquals(EmailVerificationStatus.VERIFIED, status.getStatus());
+    }
+    
+    @Test
+    public void humanAdminRolesCanGetCurrentStudy() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+        UserSession session = new UserSession(participant);
+        session.setAuthenticated(true);
+        session.setStudyIdentifier(studyId);
+        
+        doReturn(session).when(controller).getSessionIfItExists();
+        
+        Result result = controller.getCurrentStudy();
+        assertEquals(200, result.status());
+        
+        Study study = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), Study.class);
+        assertEquals(EMAIL_ADDRESS, study.getSupportEmail());
     }
 
 }

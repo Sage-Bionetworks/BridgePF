@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
@@ -11,7 +10,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Locale.LanguageRange;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -55,6 +53,7 @@ import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 
 public abstract class BaseController extends Controller {
 
@@ -112,18 +111,6 @@ public abstract class BaseController extends Controller {
     }
 
     /**
-     * Retrieve a user's session or throw an exception if the user is not authenticated. 
-     * User does not have to give consent. 
-     */
-    UserSession getAuthenticatedSession() throws NotAuthenticatedException {
-        final UserSession session = getSessionIfItExists();
-        if (session == null || !session.isAuthenticated()) {
-            throw new NotAuthenticatedException();
-        }
-        return session;
-    }
-
-    /**
      * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
      * exist (user not authorized), consent has not been given or the client app version is not supported.
      */
@@ -137,22 +124,17 @@ public abstract class BaseController extends Controller {
         return session;
     }
 
-    UserSession getAuthenticatedSession(Roles role) {
-        checkNotNull(role);
-
-        UserSession session = getAuthenticatedSession();
-        if (session.isInRole(role)) {
-            return session;
+    /**
+     * Retrieve a user's session or throw an exception if the user is not authenticated. 
+     * User does not have to give consent. If roles are provided, user must have one of 
+     * the specified roles or an authorization exception will be thrown.
+     */
+    UserSession getAuthenticatedSession(Roles... roles) {
+        final UserSession session = getSessionIfItExists();
+        if (session == null || !session.isAuthenticated()) {
+            throw new NotAuthenticatedException();
         }
-        throw new UnauthorizedException();
-    }
-
-    UserSession getAuthenticatedSession(Set<Roles> roleSet) {
-        checkNotNull(roleSet);
-        checkArgument(!roleSet.isEmpty());
-
-        UserSession session = getAuthenticatedSession();
-        if (session.isInRole(roleSet)) {
+        if (roles == null || roles.length == 0 || session.isInRole(Sets.newHashSet(roles))) {
             return session;
         }
         throw new UnauthorizedException();

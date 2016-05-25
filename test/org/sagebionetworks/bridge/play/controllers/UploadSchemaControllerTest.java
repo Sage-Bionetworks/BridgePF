@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -180,7 +179,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(anySetOf(Roles.class));
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.WORKER);
 
         // execute and validate
         Result result = controller.getUploadSchemaByIdAndRev(TEST_SCHEMA_ID, 1);
