@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -63,7 +62,7 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
-
+    
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
     private static final String ID = "ASDF";
@@ -172,6 +171,7 @@ public class ParticipantControllerTest {
         when(participantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
+        assertEquals(result.contentType(), "application/json");
         String json = Helpers.contentAsString(result);
         StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         
@@ -301,6 +301,7 @@ public class ParticipantControllerTest {
         when(participantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
 
         Result result = controller.getSelfParticipant();
+        assertEquals("application/json", result.contentType());
         
         verify(participantService).getParticipant(study, ID, false);
         

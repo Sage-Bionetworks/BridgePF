@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -25,6 +26,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Sets;
 
 import play.mvc.Result;
@@ -39,16 +41,15 @@ public class ParticipantController extends BaseController {
         this.participantService = participantService;
     }
     
-    public Result getSelfParticipant() {
+    public Result getSelfParticipant() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
         
-        // Do not return healthCode. This will shortly be handled with Jackson filters.
-        StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
-                .withHealthCode(null).withEncryptedHealthCode(null).build();
-        return okResult(updated);
+        String ser = StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
+        
+        return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
     public Result updateSelfParticipant() throws Exception {
@@ -98,7 +99,7 @@ public class ParticipantController extends BaseController {
         return createdResult(holder);
     }
     
-    public Result getParticipant(String userId) {
+    public Result getParticipant(String userId) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -108,7 +109,13 @@ public class ParticipantController extends BaseController {
         // to introduce Jackson filters.
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withHealthCode(null).withEncryptedHealthCode(null).build();
-        return okResult(updated);
+        
+        ObjectWriter writer = (study.isHealthCodeExportEnabled()) ?
+                StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
+                StudyParticipant.API_NO_HEALTH_CODE_WRITER;
+        String ser = writer.writeValueAsString(updated);
+        
+        return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
     public Result updateParticipant(String userId) {

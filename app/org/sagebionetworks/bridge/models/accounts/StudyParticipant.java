@@ -14,18 +14,38 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.google.common.collect.ImmutableMap;
 
 /**
  * This object represents a participant in the system.
  */
 @JsonDeserialize(builder=StudyParticipant.Builder.class)
+@JsonFilter("filter")
 public final class StudyParticipant implements BridgeEntity {
 
+    /** Serialize study participant to include the encryptedHealthCode but not healthCode. */
+    public static final ObjectWriter CACHE_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter", 
+            SimpleBeanPropertyFilter.serializeAllExcept("healthCode")));
+
+    /** Serialize the study participant including healthCode and excluding encryptedHealthCode. */
+    public static final ObjectWriter API_WITH_HEALTH_CODE_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter",
+            SimpleBeanPropertyFilter.serializeAllExcept("encryptedHealthCode")));
+    
+    /** Serialize the study participant with neither healthCode nor encryptedHealthCode. */
+    public static final ObjectWriter API_NO_HEALTH_CODE_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter",
+            SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "encryptedHealthCode")));
+    
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(
             BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     
@@ -103,7 +123,6 @@ public final class StudyParticipant implements BridgeEntity {
     public Set<String> getDataGroups() {
         return dataGroups;
     }
-    @JsonIgnore
     public String getHealthCode() {
         return healthCode;
     }
