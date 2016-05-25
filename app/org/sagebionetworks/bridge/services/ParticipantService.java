@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -166,6 +167,16 @@ public class ParticipantService {
     
     public void updateParticipant(Study study, Set<Roles> callerRoles, String id, StudyParticipant participant) {
         saveParticipant(study, callerRoles, id, participant, false, false);
+    }
+    
+    public void requestResetPassword(Study study, String userId) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(userId));
+        
+        StudyParticipant participant = getParticipant(study, userId, false);
+        
+        Email email = new Email(study.getIdentifier(), participant.getEmail());
+        accountDao.requestResetPassword(study, email);
     }
 
     private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, String id,

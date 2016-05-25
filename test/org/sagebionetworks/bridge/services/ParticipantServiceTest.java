@@ -51,6 +51,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -160,6 +161,9 @@ public class ParticipantServiceTest {
     @Captor
     ArgumentCaptor<UserSession> sessionCaptor;
     
+    @Captor
+    ArgumentCaptor<Email> emailCaptor;
+    
     @Before
     public void before() {
         STUDY.setExternalIdValidationEnabled(false);
@@ -177,6 +181,7 @@ public class ParticipantServiceTest {
         doReturn(account).when(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         doReturn(account).when(accountDao).getAccount(STUDY, ID);
         doReturn(HEALTH_CODE).when(account).getHealthCode();
+        doReturn(EMAIL).when(account).getEmail();
         doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
     }
     
@@ -716,6 +721,28 @@ public class ParticipantServiceTest {
         // Other fields exist too, but getParticipant() is tested in its entirety earlier in this test.
         assertEquals(EMAIL, participant.getEmail());
         assertEquals(ID, participant.getId());
+    }
+    
+    @Test
+    public void requestResetPassword() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.requestResetPassword(STUDY, ID);
+        
+        verify(accountDao).requestResetPassword(eq(STUDY), emailCaptor.capture());
+        
+        Email email = emailCaptor.getValue();
+        assertEquals(STUDY.getStudyIdentifier(), email.getStudyIdentifier());
+        assertEquals(EMAIL, email.getEmail());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void noParticipantThrowsException() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(STUDY, ID);
+        
+        participantService.requestResetPassword(STUDY, ID);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

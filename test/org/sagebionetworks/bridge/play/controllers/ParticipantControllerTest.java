@@ -403,6 +403,14 @@ public class ParticipantControllerTest {
         assertEquals("simpleStringChange", captured.getExternalId());
     }
     
+    @Test
+    public void requestResetEmail() throws Exception {
+        Result result = controller.requestResetPassword(ID);
+        assertResult(result, 200, "Request to reset password sent to user.");
+        
+        verify(participantService).requestResetPassword(study, ID);
+    }
+    
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);
         return BridgeObjectMapper.get().readValue(string, ACCOUNT_SUMMARY_PAGE);
