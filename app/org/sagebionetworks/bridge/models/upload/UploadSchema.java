@@ -2,9 +2,13 @@ package org.sagebionetworks.bridge.models.upload;
 
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.schema.UploadSchemaKey;
@@ -16,6 +20,9 @@ import org.sagebionetworks.bridge.schema.UploadSchemaKey;
 @BridgeTypeName("UploadSchema")
 @JsonDeserialize(as = DynamoUploadSchema.class)
 public interface UploadSchema extends BridgeEntity {
+    ObjectWriter PUBLIC_SCHEMA_WRITER = BridgeObjectMapper.get().writer(new SimpleFilterProvider().addFilter("filter",
+                    SimpleBeanPropertyFilter.serializeAllExcept("studyId")));
+
     /** A list of fields defined in the schema. This can be changed across different schema revisions. */
     List<UploadFieldDefinition> getFieldDefinitions();
 
