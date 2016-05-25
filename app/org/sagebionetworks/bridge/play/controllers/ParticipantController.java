@@ -105,15 +105,10 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = participantService.getParticipant(study, userId, true);
         
-        // Do not return healthCode. To correctly return healthCode when warranted, we'll need
-        // to introduce Jackson filters.
-        StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
-                .withHealthCode(null).withEncryptedHealthCode(null).build();
-        
         ObjectWriter writer = (study.isHealthCodeExportEnabled()) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
-        String ser = writer.writeValueAsString(updated);
+        String ser = writer.writeValueAsString(participant);
         
         return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
     }

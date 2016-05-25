@@ -173,11 +173,13 @@ public class ParticipantControllerTest {
         Result result = controller.getParticipant(ID);
         assertEquals(result.contentType(), "application/json");
         String json = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         
-        assertEquals("Test", retrievedParticipant.getFirstName());
-        assertNull(retrievedParticipant.getHealthCode()); // for now This will eventually return health code.
-        assertNull(retrievedParticipant.getEncryptedHealthCode()); // for now This will eventually return health code.
+        // StudyParticipant will encrypt the healthCode when you ask for it, so validate the
+        // JSON itself.
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        assertTrue(node.has("firstName"));
+        assertTrue(node.has("healthCode"));
+        assertFalse(node.has("encryptedHealthCode"));
     }
     
     @Test
