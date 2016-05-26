@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
@@ -152,6 +153,31 @@ public class UserProfileControllerTest {
         
         assertEquals("First", node.get("firstName").asText());
         assertEquals("Last", node.get("lastName").asText());
+        assertEquals("email@email.com", node.get("email").asText());
+        assertEquals("email@email.com", node.get("username").asText());
+        assertEquals("baz", node.get("bar").asText());
+        assertEquals("UserProfile", node.get("type").asText());
+    }
+    
+    
+    @Test
+    public void getUserProfileWithNoName() throws Exception {
+        Map<String,String> attributes = Maps.newHashMap();
+        attributes.put("bar","baz");
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
+                .withAttributes(attributes).build();
+        
+        doReturn(participant).when(participantService).getParticipant(study, ID, false);
+        
+        Result result = controller.getUserProfile();
+        assertEquals(200, result.status());
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        System.out.println(node.toString());
+        verify(participantService).getParticipant(study, ID, false);
+        
+        assertFalse(node.has("firstName"));
+        assertFalse(node.has("lastName"));
         assertEquals("email@email.com", node.get("email").asText());
         assertEquals("email@email.com", node.get("username").asText());
         assertEquals("baz", node.get("bar").asText());

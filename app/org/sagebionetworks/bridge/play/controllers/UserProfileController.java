@@ -9,6 +9,7 @@ import java.util.Set;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -80,8 +81,12 @@ public class UserProfileController extends BaseController {
             @Override public ObjectNode get() {
                 StudyParticipant participant = participantService.getParticipant(study, userId, false);
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(FIRST_NAME_FIELD, participant.getFirstName());
-                node.put(LAST_NAME_FIELD, participant.getLastName());
+                if (participant.getFirstName() != null) {
+                    node.put(FIRST_NAME_FIELD, participant.getFirstName());    
+                }
+                if (participant.getLastName() != null) {
+                    node.put(LAST_NAME_FIELD, participant.getLastName());    
+                }
                 node.put(EMAIL_FIELD, participant.getEmail());
                 node.put(USERNAME_FIELD, participant.getEmail());
                 node.put(TYPE_FIELD, TYPE_VALUE);
