@@ -136,6 +136,15 @@ public class ParticipantController extends BaseController {
         return okResult("User signed out.");
     }
 
+    public Result requestResetPassword(String userId) throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        participantService.requestResetPassword(study, userId);
+        
+        return okResult("Request to reset password sent to user.");
+    }
+    
     private int getIntOrDefault(String value, int defaultValue) {
         if (isBlank(value)) {
             return defaultValue;
