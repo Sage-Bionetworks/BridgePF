@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -24,7 +25,7 @@ public class UserSessionInfoTest {
                 .withEmail("test@test.com")
                 .withFirstName("first name")
                 .withLastName("last name")
-                .withHealthCode("healthCode")
+                .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
                 .withId("user-identifier")
                 .withRoles(Sets.newHashSet(RESEARCHER))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)

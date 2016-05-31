@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -63,8 +62,6 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
-
-    private static final String ENCRYPTED_HEALTH_CODE = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
@@ -169,17 +166,20 @@ public class ParticipantControllerTest {
     public void getParticipant() throws Exception {
         study.setHealthCodeExportEnabled(true);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
-                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).build();
+                .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE).build();
         
         when(participantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
+        assertEquals(result.contentType(), "application/json");
         String json = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         
-        assertEquals("Test", retrievedParticipant.getFirstName());
-        assertNull(retrievedParticipant.getHealthCode()); // for now This will eventually return health code.
-        assertNull(retrievedParticipant.getEncryptedHealthCode()); // for now This will eventually return health code.
+        // StudyParticipant will encrypt the healthCode when you ask for it, so validate the
+        // JSON itself.
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        assertTrue(node.has("firstName"));
+        assertTrue(node.has("healthCode"));
+        assertFalse(node.has("encryptedHealthCode"));
     }
     
     @Test
@@ -220,9 +220,10 @@ public class ParticipantControllerTest {
         Result result = controller.updateParticipant(ID);
         assertResult(result, 200, "Participant updated.");
         
-        verify(participantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
+        assertEquals(ID, participant.getId());
         assertEquals("firstName", participant.getFirstName());
         assertEquals("lastName", participant.getLastName());
         assertEquals(EMAIL, participant.getEmail());
@@ -281,22 +282,28 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
     }
 
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantRequiresIdMatch() throws Exception {
+    @Test
+    public void updateParticipantWithMismatchedIdsUsesURL() throws Exception {
         mockPlayContextWithJson(createJson("{'id':'id2'}"));
         
         controller.updateParticipant("id1");
+        
+        verify(participantService).updateParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture());
+        
+        StudyParticipant persisted = participantCaptor.getValue();
+        assertEquals("id1", persisted.getId());
     }
     
     @Test
     public void getSelfParticipant() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder()
-                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE)
+                .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
                 .withFirstName("Test").build();
         
         when(participantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
 
         Result result = controller.getSelfParticipant();
+        assertEquals("application/json", result.contentType());
         
         verify(participantService).getParticipant(study, ID, false);
         
@@ -338,10 +345,11 @@ public class ParticipantControllerTest {
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());
         verify(authService).updateSession(eq(study), any(), eq(ID));
-        verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
         StudyParticipant captured = participantCaptor.getValue();
+        assertEquals(ID, captured.getId());
         assertEquals("FirstName", captured.getFirstName());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, captured.getSharingScope());
         assertTrue(captured.isNotifyByEmail());
@@ -386,12 +394,12 @@ public class ParticipantControllerTest {
         assertEquals("UserSessionInfo", node.get("type").asText());
 
         verify(authService).updateSession(eq(study), any(), eq(ID));
-        verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), eq(ID), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
+        assertEquals(ID, captured.getId());
         assertEquals("firstName", captured.getFirstName());
         assertEquals("lastName", captured.getLastName());
         assertEquals("email@email.com", captured.getEmail());
-        assertEquals("id", captured.getId());
         assertEquals("password", captured.getPassword());
         assertEquals(SharingScope.NO_SHARING, captured.getSharingScope());
         assertFalse(captured.isNotifyByEmail());
@@ -402,6 +410,33 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("fr"), captured.getLanguages());
         assertEquals("simpleStringChange", captured.getExternalId());
     }
+    
+    @Test
+    public void updateSelfCallCannotChangeIdToSomeoneElse() throws Exception {
+        // All values should be copied over here.
+        StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
+        participant = new StudyParticipant.Builder().copyOf(participant).withId(ID).build();
+        doReturn(participant).when(participantService).getParticipant(study, ID, false);
+        
+        // Now change to some other ID
+        participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();
+        String json = BridgeObjectMapper.get().writeValueAsString(participant);
+        TestUtils.mockPlayContextWithJson(json);
+
+        Result result = controller.updateSelfParticipant();
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(200, result.status());
+        assertEquals("UserSessionInfo", node.get("type").asText());
+        
+        verify(controller).updateSession(session);
+        
+        // verify the object is passed to service, one field is sufficient
+        verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
+
+        // The ID was changed back to the session's participant user ID, not the one provided.
+        StudyParticipant captured = participantCaptor.getValue();
+        assertEquals(ID, captured.getId());
+    } 
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);

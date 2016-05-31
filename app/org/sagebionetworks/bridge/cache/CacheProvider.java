@@ -61,7 +61,7 @@ public class CacheProvider {
         final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
         final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
-            final String ser = bridgeObjectMapper.writeValueAsString(session);
+            final String ser = StudyParticipant.CACHE_WRITER.writeValueAsString(session);
             final List<Object> results = transaction
                     .setex(userKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, sessionToken)
                     .setex(sessionKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser)

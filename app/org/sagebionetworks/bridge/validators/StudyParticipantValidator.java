@@ -38,6 +38,10 @@ public class StudyParticipantValidator implements Validator {
             } else if (!emailValidator.isValid(participant.getEmail())){
                 errors.rejectValue("email", "must be a valid email address");
             }
+        } else {
+            if (StringUtils.isBlank(participant.getId())) {
+                errors.rejectValue("id", "is required");
+            }
         }
         if (study.isExternalIdValidationEnabled() && isNew) {
             if (StringUtils.isBlank(participant.getExternalId())) {
