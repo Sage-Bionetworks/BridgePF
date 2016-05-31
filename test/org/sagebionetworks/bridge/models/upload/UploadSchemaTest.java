@@ -130,6 +130,7 @@ public class UploadSchemaTest {
                 "   \"revision\":3,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
                 "   \"schemaType\":\"ios_survey\",\n" +
+                "   \"studyId\":\"test-study\",\n" +
                 "   \"surveyGuid\":\"survey-guid\",\n" +
                 "   \"surveyCreatedOn\":\"" + surveyCreatedOnStr + "\",\n" +
                 "   \"version\":6,\n" +
@@ -153,6 +154,7 @@ public class UploadSchemaTest {
         assertEquals(3, uploadSchema.getRevision());
         assertEquals("test-schema", uploadSchema.getSchemaId());
         assertEquals(UploadSchemaType.IOS_SURVEY, uploadSchema.getSchemaType());
+        assertEquals("test-study", uploadSchema.getStudyId());
         assertEquals("survey-guid", uploadSchema.getSurveyGuid());
         assertEquals(surveyCreatedOnMillis, uploadSchema.getSurveyCreatedOn().longValue());
         assertEquals(6, uploadSchema.getVersion().longValue());
@@ -175,11 +177,12 @@ public class UploadSchemaTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(9, jsonMap.size());
+        assertEquals(10, jsonMap.size());
         assertEquals("Test Schema", jsonMap.get("name"));
         assertEquals(3, jsonMap.get("revision"));
         assertEquals("test-schema", jsonMap.get("schemaId"));
         assertEquals("ios_survey", jsonMap.get("schemaType"));
+        assertEquals("test-study", jsonMap.get("studyId"));
         assertEquals("survey-guid", jsonMap.get("surveyGuid"));
         assertEquals("UploadSchema", jsonMap.get("type"));
         assertEquals(6,  jsonMap.get("version"));
@@ -201,6 +204,15 @@ public class UploadSchemaTest {
         assertEquals("bar", barJsonMap.get("name"));
         assertFalse((boolean) barJsonMap.get("required"));
         assertEquals("string", barJsonMap.get("type"));
+
+        // Serialize it again using the public writer, which includes all fields except studyId.
+        String publicJson = UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(uploadSchema);
+        Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
+
+        // Public JSON is missing studyId, but is otherwise identical to the non-public (internal worker) JSON.
+        assertFalse(publicJsonMap.containsKey("studyId"));
+        publicJsonMap.put("studyId", "test-study");
+        assertEquals(jsonMap, publicJsonMap);
     }
 
     @Test

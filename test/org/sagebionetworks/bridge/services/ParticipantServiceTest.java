@@ -445,7 +445,7 @@ public class ParticipantServiceTest {
         doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
         
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
@@ -473,7 +473,7 @@ public class ParticipantServiceTest {
         doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
         doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
         
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
     }
 
     @Test(expected = BadRequestException.class)
@@ -484,7 +484,7 @@ public class ParticipantServiceTest {
         doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
         doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
         
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, NO_ID_PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
     }
     
     @Test
@@ -496,7 +496,7 @@ public class ParticipantServiceTest {
         doReturn(USERS_HEALTH_CODE).when(lookup).getString(EXTERNAL_IDENTIFIER);
         
         // This just succeeds because the IDs are the same, and we'll verify no attempt was made to update it.
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
         verifyNoMoreInteractions(externalIdService);
     }
@@ -509,7 +509,7 @@ public class ParticipantServiceTest {
         doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
         doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
         
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, NO_ID_PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -519,14 +519,14 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withDataGroups(Sets.newHashSet("bogusGroup"))
                 .build();
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, participant);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
     }
     
     @Test
     public void updateParticipantWithNoAccount() {
         doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(STUDY, ID);
         try {
-            participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
+            participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
@@ -540,7 +540,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(false);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.updateParticipant(STUDY, CALLER_ROLES, ID, PARTICIPANT);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
         verifyNoMoreInteractions(externalIdService);
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
@@ -768,7 +768,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStatus(status).build();
         
-        participantService.updateParticipant(STUDY, roles, ID, participant);
+        participantService.updateParticipant(STUDY, roles, participant);
 
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
@@ -805,7 +805,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withRoles(rolesThatAreSet).build();
-        participantService.updateParticipant(STUDY, callerRoles, ID, participant);
+        participantService.updateParticipant(STUDY, callerRoles, participant);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();

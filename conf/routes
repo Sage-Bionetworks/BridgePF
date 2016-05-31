@@ -138,6 +138,7 @@ DELETE /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalI
 
 # APIs for getting entities across studies
 GET /v3/studies/:studyId/surveys/published @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)
+GET /v3/studies/:studyId/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByStudyAndSchemaAndRev(studyId: String, schemaId: String, revision: Int)
 
 # Backfills
 GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.BackfillController.backfill(name: String)

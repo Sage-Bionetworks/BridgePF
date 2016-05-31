@@ -15,6 +15,7 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -47,26 +48,11 @@ public class StudyParticipantTest {
     }
     
     @Test
-    public void canSerialize() throws Exception {
-        StudyParticipant.Builder builder = makeParticipant();
-        
-        Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
-        
-        List<UserConsentHistory> histories = Lists.newArrayList();
-        UserConsentHistory history = new UserConsentHistory.Builder()
-                .withBirthdate("2002-02-02")
-                .withConsentCreatedOn(1000000L)
-                .withSignedOn(2000000L)
-                .withName("Test User")
-                .withSubpopulationGuid(SubpopulationGuid.create("AAA"))
-                .withWithdrewOn(3000000L).build();
-        histories.add(history);
-        historiesMap.put("AAA", histories);
-        builder.withConsentHistories(historiesMap);
-        
-        StudyParticipant participant = builder.build();
+    public void canSerializeForCache() throws Exception {
+        StudyParticipant participant = createParticipantWithHealthCodes();
 
-        JsonNode node = BridgeObjectMapper.get().valueToTree(participant);
+        String json = StudyParticipant.CACHE_WRITER.writeValueAsString(participant);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("firstName", node.get("firstName").asText());
         assertEquals("lastName", node.get("lastName").asText());
@@ -110,7 +96,9 @@ public class StudyParticipantTest {
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, deserParticipant.getSharingScope());
         assertTrue(deserParticipant.isNotifyByEmail());
         assertEquals(DATA_GROUPS, deserParticipant.getDataGroups());
-        assertEquals("healthCode", deserParticipant.getHealthCode());
+        assertEquals(TestConstants.UNENCRYPTED_HEALTH_CODE, deserParticipant.getHealthCode());
+        // This is encrypted with different series of characters each time, so just verify it is there.
+        assertNotNull(deserParticipant.getEncryptedHealthCode());
         assertEquals(ATTRIBUTES, deserParticipant.getAttributes());
         assertEquals(CREATED_ON_UTC, deserParticipant.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, deserParticipant.getStatus());
@@ -123,6 +111,28 @@ public class StudyParticipantTest {
         assertEquals("Test User", deserHistory.getName());
         assertEquals("AAA", deserHistory.getSubpopulationGuid());
         assertEquals(new Long(3000000L), deserHistory.getWithdrewOn());
+    }
+    
+    @Test
+    public void canSerializeForAPIWithNoHealthCode() throws Exception {
+        StudyParticipant participant = createParticipantWithHealthCodes();
+
+        String json = StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        assertNull(node.get("healthCode"));
+        assertNull(node.get("encryptedHealthCode"));
+    }
+    
+    @Test
+    public void canSerializeForAPIWithHealthCode() throws Exception {
+        StudyParticipant participant = createParticipantWithHealthCodes();
+
+        String json = StudyParticipant.API_WITH_HEALTH_CODE_WRITER.writeValueAsString(participant);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        assertEquals(TestConstants.UNENCRYPTED_HEALTH_CODE, node.get("healthCode").asText());
+        assertNull(node.get("encryptedHealthCode"));
     }
 
     @Test
@@ -182,6 +192,12 @@ public class StudyParticipantTest {
         assertEquals("password", participant.getPassword());
     }    
 
+    private StudyParticipant createParticipantWithHealthCodes() {
+        StudyParticipant.Builder builder = makeParticipant();
+        builder.withHealthCode(null).withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE);
+        return builder.build();
+    }
+
     private StudyParticipant.Builder makeParticipant() {
         StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .withFirstName("firstName")
@@ -199,6 +215,21 @@ public class StudyParticipantTest {
                 .withCreatedOn(CREATED_ON)
                 .withId(STORMPATH_ID)
                 .withStatus(AccountStatus.ENABLED);
+        
+        Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
+        
+        List<UserConsentHistory> histories = Lists.newArrayList();
+        UserConsentHistory history = new UserConsentHistory.Builder()
+                .withBirthdate("2002-02-02")
+                .withConsentCreatedOn(1000000L)
+                .withSignedOn(2000000L)
+                .withName("Test User")
+                .withSubpopulationGuid(SubpopulationGuid.create("AAA"))
+                .withWithdrewOn(3000000L).build();
+        histories.add(history);
+        historiesMap.put("AAA", histories);
+        builder.withConsentHistories(historiesMap);
+        
         return builder;
     }
 }

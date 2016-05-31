@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -53,7 +54,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         ArgumentCaptor<UploadSchema> createdSchemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
         when(mockSvc.createSchemaRevisionV4(eq(TestConstants.TEST_STUDY), createdSchemaCaptor.capture())).thenReturn(
-                makeUploadSchema());
+                makeUploadSchemaForOutput());
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
@@ -65,150 +66,101 @@ public class UploadSchemaControllerTest {
 
     @Test
     public void createSchema() throws Exception {
-        // mock session
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("create-schema-study");
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(studyIdentifier);
-
-        // mock request JSON
-        TestUtils.mockPlayContextWithJson(TEST_SCHEMA_JSON);
-
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         ArgumentCaptor<UploadSchema> createdSchemaArgCaptor = ArgumentCaptor.forClass(UploadSchema.class);
-        when(mockSvc.createOrUpdateUploadSchema(eq(studyIdentifier), createdSchemaArgCaptor.capture())).thenReturn(
-                        makeUploadSchema());
+        when(mockSvc.createOrUpdateUploadSchema(eq(TestConstants.TEST_STUDY), createdSchemaArgCaptor.capture()))
+                .thenReturn(makeUploadSchemaForOutput());
 
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
-
-        // execute and validate
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.createOrUpdateUploadSchema();
         assertEquals(200, result.status());
-
-        // JSON validation is already tested, so just check obvious things like schema
-        String resultJson = Helpers.contentAsString(result);
-        UploadSchema resultSchema = BridgeObjectMapper.get().readValue(resultJson, UploadSchema.class);
-        assertEquals(TEST_SCHEMA_ID, resultSchema.getSchemaId());
-
-        // validate intermediate args
-        UploadSchema createdSchemaArg = createdSchemaArgCaptor.getValue();
-        assertEquals(TEST_SCHEMA_ID, createdSchemaArg.getSchemaId());
+        assertSchemaInResult(result);
+        assertSchemaInArgCaptor(createdSchemaArgCaptor);
     }
 
     @Test
-    public void deleteSchemaByIdAndRevSuccess() {
-        // mock session
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("delete-schema-study");
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(studyIdentifier);
-
+    public void deleteSchemaByIdAndRevSuccess() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
-
-        // execute and validate
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.deleteUploadSchemaByIdAndRev("delete-schema", 1);
         assertEquals(200, result.status());
-        verify(mockSvc).deleteUploadSchemaByIdAndRev(studyIdentifier, "delete-schema", 1);
+        verify(mockSvc).deleteUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "delete-schema", 1);
     }
 
     @Test
-    public void deleteSchemaById() {
-        // mock session
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("delete-schema-study");
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(studyIdentifier);
-
+    public void deleteSchemaById() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
-
-        // execute and validate
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.deleteUploadSchemaById("delete-schema");
         assertEquals(200, result.status());
-        verify(mockSvc).deleteUploadSchemaById(studyIdentifier, "delete-schema");
+        verify(mockSvc).deleteUploadSchemaById(TestConstants.TEST_STUDY, "delete-schema");
     }
 
     @Test
     public void getSchemaById() throws Exception {
-        // mock session
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(studyIdentifier);
-
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchema(studyIdentifier, TEST_SCHEMA_ID)).thenReturn(makeUploadSchema());
+        when(mockSvc.getUploadSchema(TestConstants.TEST_STUDY, TEST_SCHEMA_ID)).thenReturn(
+                makeUploadSchemaForOutput());
 
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
-
-        // execute and validate
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchema(TEST_SCHEMA_ID);
         assertEquals(200, result.status());
-
-        // JSON validation is already tested, so just check obvious things like schema
-        String resultJson = Helpers.contentAsString(result);
-        UploadSchema resultSchema = BridgeObjectMapper.get().readValue(resultJson, UploadSchema.class);
-        assertEquals(TEST_SCHEMA_ID, resultSchema.getSchemaId());
+        assertSchemaInResult(result);
     }
 
     @Test
     public void getSchemaByIdAndRev() throws Exception {
-        // mock session
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(studyIdentifier);
-
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemaByIdAndRev(studyIdentifier, TEST_SCHEMA_ID, 1)).thenReturn(makeUploadSchema());
+        when(mockSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, TEST_SCHEMA_ID, 1)).thenReturn(
+                makeUploadSchemaForOutput());
 
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(anySetOf(Roles.class));
-
-        // execute and validate
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaByIdAndRev(TEST_SCHEMA_ID, 1);
         assertEquals(200, result.status());
+        assertSchemaInResult(result);
+    }
 
-        // JSON validation is already tested, so just check obvious things like schema
+    @Test
+    public void getByStudyAndSchemaAndRev() throws Exception {
+        // mock UploadSchemaService
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+        when(mockSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, TEST_SCHEMA_ID, 1)).thenReturn(
+                makeUploadSchemaForOutput());
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
+        Result result = controller.getUploadSchemaByStudyAndSchemaAndRev(TestConstants.TEST_STUDY_IDENTIFIER,
+                TEST_SCHEMA_ID, 1);
+        assertEquals(200, result.status());
+
+        // Unlike the other methods, this also returns study ID
         String resultJson = Helpers.contentAsString(result);
         UploadSchema resultSchema = BridgeObjectMapper.get().readValue(resultJson, UploadSchema.class);
         assertEquals(TEST_SCHEMA_ID, resultSchema.getSchemaId());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, resultSchema.getStudyId());
     }
 
     @Test
     public void getSchemasForStudy() throws Exception {
-        // mock session
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(studyIdentifier);
-
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemasForStudy(studyIdentifier)).thenReturn(ImmutableList.of(makeUploadSchema()));
+        when(mockSvc.getUploadSchemasForStudy(TestConstants.TEST_STUDY)).thenReturn(ImmutableList.of(
+                makeUploadSchemaForOutput()));
 
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
-
-        // execute and validate
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemasForStudy();
         assertEquals(200, result.status());
 
@@ -222,32 +174,25 @@ public class UploadSchemaControllerTest {
 
         UploadSchema resultSchema = BridgeObjectMapper.get().treeToValue(itemListNode.get(0), UploadSchema.class);
         assertEquals(TEST_SCHEMA_ID, resultSchema.getSchemaId());
+        assertNull(resultSchema.getStudyId());
     }
-    
+
     @Test
     public void getAllRevisionsOfASchema() throws Exception {
         String schemaId = "controller-test-schema";
-        
-        // mock session
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(studyIdentifier);
 
         // Create a couple of revisions
-        UploadSchema schema1 = makeUploadSchema(1);
-        UploadSchema schema2 = makeUploadSchema(2);
-        UploadSchema schema3 = makeUploadSchema(3);
-        
+        UploadSchema schema1 = makeUploadSchemaForOutput(1);
+        UploadSchema schema2 = makeUploadSchemaForOutput(2);
+        UploadSchema schema3 = makeUploadSchemaForOutput(3);
+
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemaAllRevisions(studyIdentifier, schemaId)).thenReturn(ImmutableList.of(schema3, schema2, schema1));
+        when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId)).thenReturn(ImmutableList.of(
+                schema3, schema2, schema1));
 
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
-
-        // execute and validate
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaAllRevisions(schemaId);
         assertEquals(200, result.status());
 
@@ -259,9 +204,21 @@ public class UploadSchemaControllerTest {
         JsonNode itemsNode = resultNode.get("items");
         assertEquals(3, itemsNode.size());
 
-        assertEquals(3, itemsNode.get(0).get("revision").asInt());
-        assertEquals(2, itemsNode.get(1).get("revision").asInt());
-        assertEquals(1, itemsNode.get(2).get("revision").asInt());
+        // Schemas are returned in reverse order.
+        UploadSchema returnedSchema3 = BridgeObjectMapper.get().treeToValue(itemsNode.get(0), UploadSchema.class);
+        assertEquals(3, returnedSchema3.getRevision());
+        assertEquals(TEST_SCHEMA_ID, returnedSchema3.getSchemaId());
+        assertNull(returnedSchema3.getStudyId());
+
+        UploadSchema returnedSchema2 = BridgeObjectMapper.get().treeToValue(itemsNode.get(1), UploadSchema.class);
+        assertEquals(2, returnedSchema2.getRevision());
+        assertEquals(TEST_SCHEMA_ID, returnedSchema2.getSchemaId());
+        assertNull(returnedSchema2.getStudyId());
+
+        UploadSchema returnedSchema1 = BridgeObjectMapper.get().treeToValue(itemsNode.get(2), UploadSchema.class);
+        assertEquals(1, returnedSchema1.getRevision());
+        assertEquals(TEST_SCHEMA_ID, returnedSchema1.getSchemaId());
+        assertNull(returnedSchema1.getStudyId());
     }
 
     @Test
@@ -270,7 +227,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         ArgumentCaptor<UploadSchema> updatedSchemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
         when(mockSvc.updateSchemaRevisionV4(eq(TestConstants.TEST_STUDY), eq(TEST_SCHEMA_ID), eq(1),
-                updatedSchemaCaptor.capture())).thenReturn(makeUploadSchema());
+                updatedSchemaCaptor.capture())).thenReturn(makeUploadSchemaForOutput());
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
@@ -320,24 +277,31 @@ public class UploadSchemaControllerTest {
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(svc);
         doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
+        doReturn(mockSession).when(controller).getAuthenticatedSession(anySetOf(Roles.class));
         return controller;
     }
 
-    private static UploadSchema makeUploadSchema() throws Exception {
-        return makeUploadSchema(3);
+    private static UploadSchema makeUploadSchemaForOutput() throws Exception {
+        return makeUploadSchemaForOutput(3);
     }
     
-    private static UploadSchema makeUploadSchema(int revision) throws Exception {
+    private static UploadSchema makeUploadSchemaForOutput(int revision) throws Exception {
         ObjectNode node = (ObjectNode)BridgeObjectMapper.get().readTree(TEST_SCHEMA_JSON);
         node.put("revision", revision);
+
+        // Server returns schemas with study IDs (which are filtered out selectively in some methods).
+        node.put("studyId", TestConstants.TEST_STUDY_IDENTIFIER);
+
         return BridgeObjectMapper.get().convertValue(node, UploadSchema.class);
     }
 
     private static void assertSchemaInResult(Result result) throws Exception {
         // JSON validation is already tested, so just check obvious things like schema ID
+        // Also, (most) method results don't include study ID
         String jsonText = Helpers.contentAsString(result);
         UploadSchema schema = BridgeObjectMapper.get().readValue(jsonText, UploadSchema.class);
         assertEquals(TEST_SCHEMA_ID, schema.getSchemaId());
+        assertNull(schema.getStudyId());
     }
 
     private static void assertSchemaInArgCaptor(ArgumentCaptor<UploadSchema> argCaptor) {
