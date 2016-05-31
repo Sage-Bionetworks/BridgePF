@@ -24,6 +24,7 @@ setup.sh
 verify.rb
 .dpl
 /logs
+npm-debug.log
 
 # IntelliJ project files
 *.iml
