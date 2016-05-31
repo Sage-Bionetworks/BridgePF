@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -116,10 +117,10 @@ public class ParticipantControllerTest {
                 .withId(ID).build();
         
         session = new UserSession(participant);
+        session.setAuthenticated(true);
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
-        
-        doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
-        doReturn(session).when(controller).getAuthenticatedSession();
+
+        doReturn(session).when(controller).getSessionIfItExists();
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
         
         List<AccountSummary> summaries = Lists.newArrayListWithCapacity(3);
@@ -404,12 +405,23 @@ public class ParticipantControllerTest {
     }
     
     @Test
-    public void requestResetEmail() throws Exception {
+    public void requestResetPasswordk() throws Exception {
         Result result = controller.requestResetPassword(ID);
         assertResult(result, 200, "Request to reset password sent to user.");
         
         verify(participantService).requestResetPassword(study, ID);
     }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void cannotResetPasswordIfNotResearcher() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+        session.setParticipant(participant);
+        
+        controller.requestResetPassword(ID);
+    }
+    
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);
