@@ -76,12 +76,13 @@ public class SubpopulationControllerTest {
         participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         session = new UserSession(participant);
         session.setStudyIdentifier(STUDY_IDENTIFIER);
+        session.setAuthenticated(true);
         
         controller.setSubpopulationService(subpopService);
         controller.setStudyService(studyService);
         
         when(study.getStudyIdentifier()).thenReturn(STUDY_IDENTIFIER);
-        doReturn(session).when(controller).getAuthenticatedSession();
+        doReturn(session).when(controller).getSessionIfItExists();
         when(studyService.getStudy(STUDY_IDENTIFIER)).thenReturn(study);
     }
     

@@ -94,9 +94,9 @@ public class FPHSControllerTest {
         
         UserSession session = new UserSession(participant);
         session.setStudyIdentifier(new StudyIdentifierImpl("test-study"));
+        session.setAuthenticated(true);
         
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(session).when(controller).getAuthenticatedSession();
+        doReturn(session).when(controller).getSessionIfItExists();
         return session;
     }
     
@@ -209,7 +209,6 @@ public class FPHSControllerTest {
         setFPHSExternalIdentifiersPost(Lists.newArrayList(id1, id2));
         
         UserSession session = setUserSession();
-        
         // Now when we have an admin user, we get back results
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.ADMIN)).build());

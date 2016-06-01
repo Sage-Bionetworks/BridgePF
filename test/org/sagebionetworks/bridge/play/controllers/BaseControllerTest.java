@@ -21,7 +21,6 @@ import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 import static org.sagebionetworks.bridge.TestUtils.newLinkedHashSet;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -197,8 +196,8 @@ public class BaseControllerTest {
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         
         UserSession session = new UserSession(participant);
-
-        doReturn(session).when(controller).getAuthenticatedSession();
+        session.setAuthenticated(true);
+        doReturn(session).when(controller).getSessionIfItExists();
 
         // Single arg success.
         assertNotNull(controller.getAuthenticatedSession(Roles.RESEARCHER));
@@ -213,13 +212,13 @@ public class BaseControllerTest {
         }
 
         // Success with sets.
-        assertNotNull(controller.getAuthenticatedSession(EnumSet.of(Roles.RESEARCHER)));
-        assertNotNull(controller.getAuthenticatedSession(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER)));
-        assertNotNull(controller.getAuthenticatedSession(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER)));
+        assertNotNull(controller.getAuthenticatedSession(Roles.RESEARCHER));
+        assertNotNull(controller.getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER));
+        assertNotNull(controller.getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER, Roles.WORKER));
 
         // Unauthorized with sets
         try {
-            controller.getAuthenticatedSession(EnumSet.of(Roles.ADMIN, Roles.DEVELOPER, Roles.WORKER));
+            controller.getAuthenticatedSession(Roles.ADMIN, Roles.DEVELOPER, Roles.WORKER);
             fail("expected exception");
         } catch (UnauthorizedException ex) {
             // expected exception

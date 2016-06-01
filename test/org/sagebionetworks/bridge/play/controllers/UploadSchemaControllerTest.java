@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyVararg;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -26,6 +27,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -276,8 +278,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(svc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
-        doReturn(mockSession).when(controller).getAuthenticatedSession(anySetOf(Roles.class));
+        doReturn(mockSession).when(controller).getAuthenticatedSession(anyVararg());
         return controller;
     }
 
