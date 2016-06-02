@@ -8,6 +8,15 @@ import com.google.common.collect.ImmutableSet;
 
 public class BridgeConstants {
 
+    /** A common string constraint we place on model identifiers. */
+    public static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
+    
+    /** A common string constraint Synapse places on model identifiers. */
+    public static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
+    
+    /** The pattern of a valid JavaScript variable/object property name. */
+    public  static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
+    
     public static final String BRIDGE_API_STATUS_HEADER = "Bridge-Api-Status";
 
     public static final String BRIDGE_DEPRECATED_STATUS = "deprecated";

@@ -8,6 +8,8 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -24,9 +26,6 @@ import org.springframework.validation.Validator;
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
     private static final int MAX_SYNAPSE_LENGTH = 100;
-    private static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
-    private static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
-    private static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
     /**
      * Inspect StudyParticipant for its field names; these cannot be used as user profile attributes because UserProfile
      * collapses these values into the top-level JSON it returns (unlike StudyParticipant where these values are a map
@@ -53,7 +52,7 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getIdentifier())) {
             errors.rejectValue("identifier", "is required");
         } else {
-            if (!study.getIdentifier().matches(BRIDGE_IDENTIFIER_PATTERN)) {
+            if (!study.getIdentifier().matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN)) {
                 errors.rejectValue("identifier", "must contain only lower-case letters and/or numbers with optional dashes");
             }
             if (study.getIdentifier().length() < 2) {
@@ -103,7 +102,7 @@ public class StudyValidator implements Validator {
             // Stormpath requires this to be a valid JavaScript identifier, despite the fact that it
             // is using JSON to store the data (where properties are string escaped). So don't allow invalid 
             // identifiers to be saved in study metadata.
-            if (!userProfileAttribute.matches(JS_IDENTIFIER_PATTERN)) {
+            if (!userProfileAttribute.matches(BridgeConstants.JS_IDENTIFIER_PATTERN)) {
                 String msg = String.format("'%s' must contain only digits, letters, underscores and dashes, and cannot start with a dash", userProfileAttribute);
                 errors.rejectValue("userProfileAttributes", msg);
             }
@@ -149,7 +148,7 @@ public class StudyValidator implements Validator {
     private void validateDataGroupNamesAndFitForSynapseExport(Errors errors, Set<String> dataGroups) {
         if (dataGroups != null) {
             for (String group : dataGroups) {
-                if (!group.matches(SYNAPSE_IDENTIFIER_PATTERN)) {
+                if (!group.matches(BridgeConstants.SYNAPSE_IDENTIFIER_PATTERN)) {
                     errors.rejectValue("dataGroups", "contains invalid tag '"+group+"' (only letters, numbers, underscore and dash allowed)");
                 }
             }
