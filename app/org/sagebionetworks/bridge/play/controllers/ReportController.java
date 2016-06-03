@@ -3,12 +3,15 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
+import java.util.LinkedHashSet;
+
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -23,6 +26,8 @@ import play.mvc.Result;
 
 public class ReportController extends BaseController {
 
+    private static final String NO_HEADERS_ERROR = "This request requires valid User-Agent and Accept-Language headers.";
+    
     @Autowired
     ReportService reportService;
     
@@ -42,6 +47,7 @@ public class ReportController extends BaseController {
      */
     public Result getParticipantReport(String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedAndConsentedSession();
+        checkHeaders();
         
         LocalDate startDate = parseDateHelper(startDateString);
         LocalDate endDate = parseDateHelper(endDateString);
@@ -85,13 +91,14 @@ public class ReportController extends BaseController {
         
         return ok("Report deleted.");
     }
-
+    
     /**
      * Any authenticated user can get study reports, as some might be internal/administrative and some might 
      * be intended for end users, and these do not expose user-specific information.
      */
     public Result getStudyReport(String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedSession();
+        checkHeaders();
         
         LocalDate startDate = parseDateHelper(startDateString);
         LocalDate endDate = parseDateHelper(endDateString);
@@ -126,6 +133,19 @@ public class ReportController extends BaseController {
         reportService.deleteStudyReport(session.getStudyIdentifier(), identifier);
         
         return ok("Report deleted.");
+    }
+
+    /**
+     * Non-app clients are being created to display reports (specifically, web pages embedded in the apps). These 
+     * have not passed along the headers needed to properly verify that the user is consented to view the reports. 
+     * So in an exception to other endpoints, we <em>require</em> these headers for the GET calls for the reports.
+     */
+    private void checkHeaders() {
+        ClientInfo info = getClientInfoFromUserAgentHeader();
+        LinkedHashSet<String> languages = getLanguagesFromAcceptLanguageHeader();
+        if (ClientInfo.UNKNOWN_CLIENT.equals(info) || languages.isEmpty()) {
+            throw new BadRequestException(NO_HEADERS_ERROR);
+        }
     }
     
     private static LocalDate parseDateHelper(String dateStr) {

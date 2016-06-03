@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.LocalDate;
 import org.junit.Before;
@@ -22,6 +23,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -35,6 +37,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import play.mvc.Result;
@@ -70,7 +73,7 @@ public class ReportControllerTest {
     UserSession session;
     
     @Before
-    public void before() {
+    public void before() throws Exception {
         DynamoStudy study = new DynamoStudy();
         
         controller = spy(new ReportController());
@@ -95,8 +98,21 @@ public class ReportControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession();
     }
     
+    private void setupContext() throws Exception {
+        setupContext("Unknown Client/14 BridgeJavaSDK/10", "en-US");
+    }
+    
+    private void setupContext(String userAgent, String languages) throws Exception {
+        Map<String,String[]> headers = Maps.newHashMap();
+        headers.put("User-Agent", new String[] {userAgent});
+        headers.put("Accept-Language", new String[] {languages});
+
+        TestUtils.mockPlayContextWithJson("{}", headers);
+    }
+    
     @Test
     public void getParticipantReportData() throws Exception {
+        setupContext();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 "foo", HEALTH_CODE, START_DATE, END_DATE);
         
@@ -107,6 +123,7 @@ public class ReportControllerTest {
 
     @Test
     public void getParticipantReportDataNoDates() throws Exception {
+        setupContext();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 "foo", HEALTH_CODE, null, null);
         
@@ -115,8 +132,16 @@ public class ReportControllerTest {
         assertResult(result);
     }
     
+    @Test(expected = BadRequestException.class)
+    public void getParticipantReportNoUserAgent() throws Exception {
+        setupContext("Bad Request", "en-US");
+
+        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+    }
+    
     @Test
     public void getStudyReportData() throws Exception {
+        setupContext();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
                 "foo", START_DATE, END_DATE);
         
@@ -127,6 +152,7 @@ public class ReportControllerTest {
     
     @Test
     public void getStudyReportDataWithNoDates() throws Exception {
+        setupContext();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
                 "foo", null, null);
         
@@ -135,9 +161,17 @@ public class ReportControllerTest {
         assertResult(result);
     }
     
+    @Test(expected = BadRequestException.class)
+    public void getStudyReportDataWithNoUserAgent() throws Exception {
+        setupContext("", "en-US");
+        
+        controller.getStudyReport("foo", null, null);
+    }    
+    
     @Test
     public void saveParticipantReportData() throws Exception {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
+        
         TestUtils.mockPlayContextWithJson(json);
                 
         Result result = controller.saveParticipantReport("foo", OTHER_PARTICIPANT_ID);
