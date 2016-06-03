@@ -10,8 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,14 +26,21 @@ public class ReportController extends BaseController {
     @Autowired
     ReportService reportService;
     
+    @Autowired
+    ParticipantService participantService;
+    
     final void setReportService(ReportService reportService) {
         this.reportService = reportService;
+    }
+    
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
     }
     
     /**
      * Reports for specific individuals accessible only to consented study participants.
      */
-    public Result getParticipantReportData(String identifier, String startDateString, String endDateString) {
+    public Result getParticipantReport(String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         LocalDate startDate = parseDateHelper(startDateString);
@@ -41,12 +51,49 @@ public class ReportController extends BaseController {
         
         return ok((JsonNode)MAPPER.valueToTree(results));
     }
+    
+    /**
+     * Report participant data can be saved by developers or by worker processes. The JSON for these must 
+     * include a healthCode field. This is validated when constructing the DataReportKey.
+     */
+    public Result saveParticipantReport(String identifier, String userId) throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        
+        ReportData reportData = parseJson(request(), ReportData.class);
+        reportData.setKey(null); // set in service, but just so no future use depends on it
+        
+        reportService.saveParticipantReport(session.getStudyIdentifier(), identifier, 
+                participant.getHealthCode(), reportData);
+        
+        return createdResult("Report data saved.");
+    }
+    
+    /**
+     * Developers and workers can delete participant report data. This deletes all reports for all users. 
+     * This is not performant for large data sets and should only be done during testing. 
+     */
+    public Result deleteParticipantReport(String identifier, String userId) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        
+        ReportData reportData = parseJson(request(), ReportData.class);
+        reportData.setKey(null); // set in service, but just so no future use depends on it
+        
+        reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, participant.getHealthCode());
+        
+        return ok("Report deleted.");
+    }
 
     /**
      * Any authenticated user can get study reports, as some might be internal/administrative and some might 
      * be intended for end users, and these do not expose user-specific information.
      */
-    public Result getStudyReportData(String identifier, String startDateString, String endDateString) {
+    public Result getStudyReport(String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedSession();
         
         LocalDate startDate = parseDateHelper(startDateString);
@@ -59,28 +106,9 @@ public class ReportController extends BaseController {
     }
     
     /**
-     * Report participant data can be saved by developers or by worker processes. The JSON for these must 
-     * include a healthCode field. This is validated when constructing the DataReportKey.
-     */
-    public Result saveParticipantReportData(String identifier) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        
-        JsonNode node = requestToJSON(request());
-        String healthCode = node.get("healthCode").asText();
-        
-        ReportData reportData = MAPPER.treeToValue(node, ReportData.class);
-        reportData.setKey(null); // set in service, but just so no future use depends on it
-        
-        reportService.saveParticipantReport(session.getStudyIdentifier(), identifier, 
-                healthCode, reportData);
-        
-        return createdResult("Report data saved.");
-    }
-    
-    /**
      * Report study data can be saved by developers or by worker processes.
      */
-    public Result saveStudyReportData(String identifier) throws Exception {
+    public Result saveStudyReport(String identifier) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
      
         ReportData reportData = parseJson(request(), ReportData.class);
@@ -92,22 +120,10 @@ public class ReportController extends BaseController {
     }
     
     /**
-     * Developers and workers can delete participant report data. This is not performant for large data sets and 
-     * should only be done during testing.
-     */
-    public Result deleteParticipantReportData(String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        
-        reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, session.getHealthCode());
-        
-        return ok("Report deleted.");
-    }
-    
-    /**
      * Developers and workers can delete study report data. This is not performant for large data sets and 
      * should only be done during testing.
      */
-    public Result deleteStudyReportData(String identifier) {
+    public Result deleteStudyReport(String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         
         reportService.deleteStudyReport(session.getStudyIdentifier(), identifier);

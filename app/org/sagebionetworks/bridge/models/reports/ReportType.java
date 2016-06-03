@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.reports;
 
-public enum ReportDataType {
+public enum ReportType {
     PARTICIPANT,
     STUDY;
 }

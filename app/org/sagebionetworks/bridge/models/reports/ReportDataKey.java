@@ -12,7 +12,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 /**
  * A key object for reports, which come in two types: participant and study. Participant 
  * reports can include reports for every participant in a study, while study reports will
- * produce one report for an entire study (each at one or more LocalDates).
+ * produce one report for an entire study (each at one or more LocalDates). All values are 
+ * required except healthCode, which is only required if the report type is PARTICIPANT.
  */
 public final class ReportDataKey implements BridgeEntity {
     
@@ -21,13 +22,13 @@ public final class ReportDataKey implements BridgeEntity {
     private final String studyId;
     private final String identifier;
     private final String healthCode;
-    private final ReportDataType reportType;
+    private final ReportType reportType;
     
-    private ReportDataKey(String healthCode, String identifier, StudyIdentifier studyId, ReportDataType type) {
+    private ReportDataKey(String healthCode, String identifier, StudyIdentifier studyId, ReportType reportType) {
         this.studyId = (studyId == null) ? null : studyId.getIdentifier();
         this.identifier = identifier;
         this.healthCode = healthCode;
-        this.reportType = type;
+        this.reportType = reportType;
     }
     
     @JsonIgnore
@@ -44,10 +45,11 @@ public final class ReportDataKey implements BridgeEntity {
         return healthCode;
     }
 
-    public ReportDataType getReportType() {
+    public ReportType getReportType() {
         return reportType;
     }
     
+    @JsonIgnore
     public String getKeyString() {
         return (healthCode != null) ?
                 String.format("%s:%s:%s", healthCode, identifier, studyId) :
@@ -80,7 +82,7 @@ public final class ReportDataKey implements BridgeEntity {
         private StudyIdentifier studyId;
         private String identifier;
         private String healthCode;
-        private ReportDataType reportType;
+        private ReportType reportType;
         
         public Builder withStudyIdentifier(StudyIdentifier studyId) {
             this.studyId = studyId;
@@ -94,7 +96,7 @@ public final class ReportDataKey implements BridgeEntity {
             this.healthCode = healthCode;
             return this;
         }
-        public Builder withReportType(ReportDataType reportType) {
+        public Builder withReportType(ReportType reportType) {
             this.reportType = reportType;
             return this;
         }

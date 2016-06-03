@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
+import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -38,12 +39,15 @@ public class DynamoReportDataDaoTest {
     @Before
     public void before() {
         reportId = TestUtils.randomName(DynamoReportDataDaoTest.class);
-        reportDataKey = new ReportDataKey.Builder().withIdentifier(reportId).withStudyIdentifier(TEST_STUDY).build();
+        reportDataKey = new ReportDataKey.Builder().withReportType(ReportType.STUDY).withIdentifier(reportId)
+                .withStudyIdentifier(TEST_STUDY).build();
     }
     
     @After
     public void after() {
-        dao.deleteReport(reportDataKey);
+        if (reportDataKey != null) {
+            dao.deleteReportData(reportDataKey);    
+        }
     }
     
     @Test
@@ -62,7 +66,7 @@ public class DynamoReportDataDaoTest {
         assertReportDataEqual(report1, results.getItems().get(0));
         assertReportDataEqual(report2, results.getItems().get(1));
         
-        dao.deleteReport(reportDataKey);
+        dao.deleteReportData(reportDataKey);
         
         results = dao.getReportData(reportDataKey, START_DATE, END_DATE);
         assertResourceList(results, 0);
@@ -73,7 +77,7 @@ public class DynamoReportDataDaoTest {
         node.put("field1", fieldValue1);
         node.put("field2", fieldValue2);
         ReportData report = ReportData.create();
-        report.setKey(reportDataKey.toString());
+        report.setKey(reportDataKey.getKeyString());
         report.setData(node);
         report.setDate(date);
         return report;
@@ -81,7 +85,7 @@ public class DynamoReportDataDaoTest {
     
     private void assertReportDataEqual(ReportData original, ReportData retrieved) {
         assertEquals(original.getDate(), retrieved.getDate());
-        assertEquals(reportDataKey.toString(), retrieved.getKey());
+        assertEquals(reportDataKey.getKeyString(), retrieved.getKey());
         assertEquals(original.getData().get("field1").asText(), 
                 retrieved.getData().get("field1").asText());
         assertEquals(original.getData().get("field2").asText(), 

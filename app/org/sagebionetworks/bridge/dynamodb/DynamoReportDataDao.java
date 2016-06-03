@@ -63,7 +63,7 @@ public class DynamoReportDataDao implements ReportDataDao {
     }
 
     @Override
-    public void deleteReport(ReportDataKey key) {
+    public void deleteReportData(ReportDataKey key) {
         checkNotNull(key);
         
         DynamoDBScanExpression scan = new DynamoDBScanExpression()
@@ -77,5 +77,4 @@ public class DynamoReportDataDao implements ReportDataDao {
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }
-    
 }

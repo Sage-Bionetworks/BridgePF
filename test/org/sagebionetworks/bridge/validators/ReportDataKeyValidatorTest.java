@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
-import org.sagebionetworks.bridge.models.reports.ReportDataType;
+import org.sagebionetworks.bridge.models.reports.ReportType;
 
 public class ReportDataKeyValidatorTest {
     
@@ -16,7 +16,7 @@ public class ReportDataKeyValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withIdentifier("foo")
-                .withReportType(ReportDataType.STUDY).build();
+                .withReportType(ReportType.STUDY).build();
         
         assertEquals("foo:api", key.getKeyString());
     }
@@ -27,7 +27,7 @@ public class ReportDataKeyValidatorTest {
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withHealthCode("ABC")
                 .withIdentifier("foo")
-                .withReportType(ReportDataType.PARTICIPANT).build();
+                .withReportType(ReportType.PARTICIPANT).build();
 
         assertEquals("ABC:foo:api", key.getKeyString());
     }
@@ -45,7 +45,7 @@ public class ReportDataKeyValidatorTest {
     public void healthCodeMissing() {
         test(() -> {
             new ReportDataKey.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).withIdentifier("foo")
-                    .withReportType(ReportDataType.PARTICIPANT).build();
+                    .withReportType(ReportType.PARTICIPANT).build();
         }, "healthCode", "is required for participant reports");
     }
     
@@ -53,7 +53,7 @@ public class ReportDataKeyValidatorTest {
     public void identifierMissing() {
         test(() -> {
             new ReportDataKey.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
-                    .withReportType(ReportDataType.STUDY).build();
+                    .withReportType(ReportType.STUDY).build();
         }, "identifier", "cannot be missing or blank");
     }
     
@@ -61,7 +61,7 @@ public class ReportDataKeyValidatorTest {
     public void identifierInvalid() {
         test(() -> {
             new ReportDataKey.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).withIdentifier("My Report")
-                    .withReportType(ReportDataType.STUDY).build();
+                    .withReportType(ReportType.STUDY).build();
         }, "identifier", "can only contain letters, numbers, underscore and dash");
     }
     
@@ -70,7 +70,7 @@ public class ReportDataKeyValidatorTest {
         test(() -> {
             new ReportDataKey.Builder()
                     .withIdentifier("foo")
-                    .withReportType(ReportDataType.STUDY).build();
+                    .withReportType(ReportType.STUDY).build();
         }, "studyId", "is required");
     }
     

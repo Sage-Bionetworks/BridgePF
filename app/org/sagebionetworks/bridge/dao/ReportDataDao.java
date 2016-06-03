@@ -16,7 +16,7 @@ public interface ReportDataDao {
      *         start date for report
      * @param endDate
      *         end date for report
-     * @return list of report data records.
+     * @return list of report data records in a resource list that includes original query values.
      */
     DateRangeResourceList<? extends ReportData> getReportData(ReportDataKey key, LocalDate startDate, LocalDate endDate);
 
@@ -35,6 +35,5 @@ public interface ReportDataDao {
      * @param key
      *      report to delete
      */
-    void deleteReport(ReportDataKey key);
-
+    void deleteReportData(ReportDataKey key);
 }

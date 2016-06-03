@@ -7,7 +7,7 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
-import org.sagebionetworks.bridge.models.reports.ReportDataType;
+import org.sagebionetworks.bridge.models.reports.ReportType;
 
 public class ReportDataKeyValidator implements Validator {
 
@@ -26,7 +26,7 @@ public class ReportDataKeyValidator implements Validator {
         if (key.getReportType() == null) {
             errors.rejectValue("reportType", "is required");
         }
-        if (isBlank(key.getHealthCode()) && key.getReportType() == ReportDataType.PARTICIPANT) {
+        if (isBlank(key.getHealthCode()) && key.getReportType() == ReportType.PARTICIPANT) {
             errors.rejectValue("healthCode", "is required for participant reports");
         }
         if (isBlank(key.getIdentifier())) {

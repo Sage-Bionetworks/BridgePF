@@ -26,7 +26,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
-import org.sagebionetworks.bridge.models.reports.ReportDataType;
+import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -44,16 +44,16 @@ public class ReportServiceTest {
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
     
     private static final ReportDataKey STUDY_REPORT_DATA_KEY = new ReportDataKey.Builder()
-            .withReportType(ReportDataType.STUDY).withStudyIdentifier(TEST_STUDY).withIdentifier(IDENTIFIER).build();
+            .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_STUDY).withIdentifier(IDENTIFIER).build();
     
     private static final ReportDataKey PARTICIPANT_REPORT_DATA_KEY = new ReportDataKey.Builder()
-            .withReportType(ReportDataType.PARTICIPANT).withStudyIdentifier(TEST_STUDY).withHealthCode(HEALTH_CODE)
+            .withReportType(ReportType.PARTICIPANT).withStudyIdentifier(TEST_STUDY).withHealthCode(HEALTH_CODE)
             .withIdentifier(IDENTIFIER).build();
     
     private static final ReportData CANNED_REPORT = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
     
     @Mock
-    ReportDataDao reportDataDao;
+    ReportDataDao mockReportDataDao;
     
     @Captor
     ArgumentCaptor<ReportData> reportDataCaptor;
@@ -65,7 +65,7 @@ public class ReportServiceTest {
     @Before
     public void before() throws Exception {
         service = new ReportService();
-        service.setReportDataDao(reportDataDao);
+        service.setReportDataDao(mockReportDataDao);
 
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
@@ -86,23 +86,23 @@ public class ReportServiceTest {
     
     @Test
     public void getStudyReportData() {
-        doReturn(results).when(reportDataDao).getReportData(STUDY_REPORT_DATA_KEY, START_DATE, END_DATE);
+        doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData> retrieved = service.getStudyReport(
                 TEST_STUDY, IDENTIFIER, START_DATE, END_DATE);
         
-        verify(reportDataDao).getReportData(STUDY_REPORT_DATA_KEY, START_DATE, END_DATE);
+        verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, START_DATE, END_DATE);
         assertEquals(results, retrieved);
     }
     
     @Test
     public void getParticipantReportData() {
-        doReturn(results).when(reportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, START_DATE, END_DATE);
+        doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData> retrieved = service.getParticipantReport(
                 TEST_STUDY, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE);
 
-        verify(reportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, START_DATE, END_DATE);
+        verify(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, START_DATE, END_DATE);
         assertEquals(results, retrieved);
     }
 
@@ -112,10 +112,10 @@ public class ReportServiceTest {
         
         service.saveStudyReport(TEST_STUDY, IDENTIFIER, someData);
         
-        verify(reportDataDao).saveReportData(reportDataCaptor.capture());
+        verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
-        assertEquals(STUDY_REPORT_DATA_KEY.toString(), retrieved.getKey());
+        assertEquals(STUDY_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
         assertEquals(LocalDate.parse("2015-02-10"), retrieved.getDate());
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
@@ -127,10 +127,10 @@ public class ReportServiceTest {
         
         service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, someData);
         
-        verify(reportDataDao).saveReportData(reportDataCaptor.capture());
+        verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
-        assertEquals(PARTICIPANT_REPORT_DATA_KEY.toString(), retrieved.getKey());
+        assertEquals(PARTICIPANT_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
         assertEquals(LocalDate.parse("2015-02-10"), retrieved.getDate());
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
@@ -140,14 +140,14 @@ public class ReportServiceTest {
     public void deleteStudyReport() {
         service.deleteStudyReport(TEST_STUDY, IDENTIFIER);
         
-        verify(reportDataDao).deleteReport(STUDY_REPORT_DATA_KEY);
+        verify(mockReportDataDao).deleteReportData(STUDY_REPORT_DATA_KEY);
     }
     
     @Test
     public void deleteParticipantReport() {
         service.deleteParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE);
         
-        verify(reportDataDao).deleteReport(PARTICIPANT_REPORT_DATA_KEY);
+        verify(mockReportDataDao).deleteReportData(PARTICIPANT_REPORT_DATA_KEY);
     }
     
     // The following are date range tests from MPowerVisualizationService, they should work with this service too
@@ -159,7 +159,7 @@ public class ReportServiceTest {
         try {
             service.getParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, null, null);
             
-            verify(reportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, LocalDate.parse("2016-02-07"), LocalDate.parse("2016-02-07"));
+            verify(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, LocalDate.parse("2016-02-07"), LocalDate.parse("2016-02-07"));
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }
@@ -183,129 +183,128 @@ public class ReportServiceTest {
     
     @Test
     public void getStudyReportBadIdentifier() {
-        invalidId(() -> service.getStudyReport(TEST_STUDY, "bad identifier", START_DATE, END_DATE),
-                "can only contain letters, numbers, underscore and dash");
+        invalid(() -> service.getStudyReport(TEST_STUDY, "bad identifier", START_DATE, END_DATE),
+                "identifier", "can only contain letters, numbers, underscore and dash");
     }
     
     @Test
     public void getStudyReportDataNoStudy() {
-        noAction(() -> service.getStudyReport(null, IDENTIFIER, START_DATE, END_DATE));
+        invalid(() -> service.getStudyReport(null, IDENTIFIER, START_DATE, END_DATE),
+                "studyId", "is required");
     }
     
     @Test
     public void getStudyReportDataNoIdentifier() {
-        invalidId(() -> service.getStudyReport(TEST_STUDY, null, START_DATE, END_DATE),
-                "cannot be null or blank");
+        invalid(() -> service.getStudyReport(TEST_STUDY, null, START_DATE, END_DATE),
+                "identifier", "cannot be missing or blank");
     }
     
     @Test
     public void getParticipantReportDataNoStudy() {
-        noAction(() -> service.getParticipantReport(null, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE));
+        invalid(() -> service.getParticipantReport(null, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE),
+                "studyId", "is required");
     }
 
     @Test
     public void getParticipantReportDataNoIdentifier() {
-        invalidId(() -> service.getParticipantReport(TEST_STUDY, null, HEALTH_CODE, START_DATE, END_DATE),
-                "cannot be null or blank");
+        invalid(() -> service.getParticipantReport(TEST_STUDY, null, HEALTH_CODE, START_DATE, END_DATE),
+                "identifier", "cannot be missing or blank");
     }
     
     @Test
     public void getParticipantReportDataNoHealthCode() {
-        noAction(() -> service.getParticipantReport(TEST_STUDY, IDENTIFIER, null, START_DATE, END_DATE));
+        invalid(() -> service.getParticipantReport(TEST_STUDY, IDENTIFIER, null, START_DATE, END_DATE),
+                "healthCode", "is required for participant reports");
     }
     
     @Test
     public void saveStudyReportDataNoStudy() {
-        noAction(() -> service.saveStudyReport(null, IDENTIFIER, CANNED_REPORT));
+        invalid(() -> service.saveStudyReport(null, IDENTIFIER, CANNED_REPORT),
+                "studyId", "is required");
     }
     
     @Test
     public void saveStudyReportDataNoIdentifier() {
-        invalidId(() -> service.saveStudyReport(TEST_STUDY, null, CANNED_REPORT), "cannot be null or blank");
+        invalid(() -> service.saveStudyReport(TEST_STUDY, null, CANNED_REPORT), 
+                "identifier", "cannot be missing or blank");
     }
 
     @Test
     public void saveStudyReportDataNoData() {
-        noAction(() -> service.saveStudyReport(TEST_STUDY, IDENTIFIER, null));
+        checkNull(() -> service.saveStudyReport(TEST_STUDY, IDENTIFIER, null));
     }
 
     @Test
     public void saveParticipantReportDataNoStudy() {
-        noAction(() -> service.saveParticipantReport(null, IDENTIFIER, HEALTH_CODE, CANNED_REPORT));
+        invalid(() -> service.saveParticipantReport(null, IDENTIFIER, HEALTH_CODE, CANNED_REPORT),
+                "studyId", "is required");
     }
     
     @Test
     public void saveParticipantReportDataNoIdentifier() {
-        invalidId(() -> service.saveParticipantReport(TEST_STUDY, null, HEALTH_CODE, CANNED_REPORT),
-                "cannot be null or blank");
+        invalid(() -> service.saveParticipantReport(TEST_STUDY, null, HEALTH_CODE, CANNED_REPORT),
+                "identifier", "cannot be missing or blank");
     }
     
     @Test
     public void saveParticipantReportDataNoHealthCode() {
-        invalidHealthCode(() -> service.saveParticipantReport(TEST_STUDY, IDENTIFIER, null, CANNED_REPORT),
-                "is required for participant reports");
+        invalid(() -> service.saveParticipantReport(TEST_STUDY, IDENTIFIER, null, CANNED_REPORT),
+                "healthCode", "is required for participant reports");
     }
 
     @Test
     public void saveParticipantReportDataNoData() {
-        noAction(() -> service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, null));
+        checkNull(() -> service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, null));
     }
     
     @Test
     public void deleteStudyReportNoStudy() {
-        noAction(() -> service.deleteStudyReport(null, IDENTIFIER));
+        invalid(() -> service.deleteStudyReport(null, IDENTIFIER),
+                "studyId", "is required");
     }
     
     @Test
     public void deleteStudyReportNoIdentifier() {
-        invalidId(() -> service.deleteStudyReport(TEST_STUDY, null), "cannot be null or blank");
+        invalid(() -> service.deleteStudyReport(TEST_STUDY, null), 
+                "identifier", "cannot be missing or blank");
     }
     
     @Test
     public void deleteParticipantReportNoStudy() {
-        noAction(() -> service.deleteParticipantReport(null, IDENTIFIER, HEALTH_CODE));
+        invalid(() -> service.deleteParticipantReport(null, IDENTIFIER, HEALTH_CODE), 
+                "studyId", "is required");
     }
     
     @Test
     public void deleteParticipantReportNoIdentifier() {
-        invalidId(() -> service.deleteParticipantReport(TEST_STUDY, null, HEALTH_CODE), "cannot be null or blank");
+        invalid(() -> service.deleteParticipantReport(TEST_STUDY, null, HEALTH_CODE), 
+                "identifier", "cannot be missing or blank");
     }
 
     @Test
     public void deleteParticipantReportNoHealthCode() {
-        noAction(() -> service.deleteParticipantReport(TEST_STUDY, IDENTIFIER, null));
+        invalid(() -> service.deleteParticipantReport(TEST_STUDY, IDENTIFIER, null),
+                "healthCode", "is required for participant reports");
     }
     
-    private void invalidHealthCode(Runnable runnable, String message) {
+    private void invalid(Runnable runnable, String fieldName, String message) {
         try {
             runnable.run();
         } catch(InvalidEntityException e) {
-            verifyNoMoreInteractions(reportDataDao);
-            String errorMsg = e.getErrors().get("healthCode").get(0);
-            assertEquals("healthCode " + message, errorMsg);
+            verifyNoMoreInteractions(mockReportDataDao);
+            String errorMsg = e.getErrors().get(fieldName).get(0);
+            assertEquals(fieldName + " " + message, errorMsg);
             // Also verify that we didn't call the DAO
-            verifyNoMoreInteractions(reportDataDao);
-        }
-    }
-
-    private void invalidId(Runnable runnable, String message) {
-        try {
-            runnable.run();
-        } catch(InvalidEntityException e) {
-            verifyNoMoreInteractions(reportDataDao);
-            String errorMsg = e.getErrors().get("identifier").get(0);
-            assertEquals("identifier " + message, errorMsg);
-            // Also verify that we didn't call the DAO
-            verifyNoMoreInteractions(reportDataDao);
+            verifyNoMoreInteractions(mockReportDataDao);
         }
     }
     
-    private void noAction(Runnable runnable) {
+    private void checkNull(Runnable runnable) {
         try {
             runnable.run();
-        } catch(IllegalArgumentException | NullPointerException e) {
+        } catch(NullPointerException e) {
             // verify that we did no work in this case.
-            verifyNoMoreInteractions(reportDataDao);
+            verifyNoMoreInteractions(mockReportDataDao);
         }
     }
 }

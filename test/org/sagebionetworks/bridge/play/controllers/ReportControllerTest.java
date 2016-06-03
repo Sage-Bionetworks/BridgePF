@@ -21,12 +21,15 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -40,6 +43,10 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class ReportControllerTest {
 
+    private static final String OTHER_PARTICIPANT_HEALTH_CODE = "ABC";
+
+    private static final String OTHER_PARTICIPANT_ID = "userId";
+
     private static final String HEALTH_CODE = "healthCode";
     
     private static final LocalDate START_DATE = LocalDate.parse("2015-01-02");
@@ -47,7 +54,13 @@ public class ReportControllerTest {
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
 
     @Mock
-    ReportService service;
+    ReportService mockReportService;
+    
+    @Mock
+    StudyService mockStudyService;
+    
+    @Mock
+    ParticipantService mockParticipantService;
     
     @Captor
     ArgumentCaptor<ReportData> reportDataCaptor;
@@ -58,49 +71,59 @@ public class ReportControllerTest {
     
     @Before
     public void before() {
+        DynamoStudy study = new DynamoStudy();
+        
         controller = spy(new ReportController());
-        controller.setReportService(service);
+        controller.setReportService(mockReportService);
+        controller.setStudyService(mockStudyService);
+        controller.setParticipantService(mockParticipantService);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+        
+        StudyParticipant otherParticipant = new StudyParticipant.Builder().withHealthCode(OTHER_PARTICIPANT_HEALTH_CODE)
+                .build();
         
         session = new UserSession(participant);
         session.setStudyIdentifier(TEST_STUDY);
         session.setAuthenticated(true);
         
+        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
+        doReturn(otherParticipant).when(mockParticipantService).getParticipant(study, OTHER_PARTICIPANT_ID, false);
         doReturn(session).when(controller).getSessionIfItExists();
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(session).when(controller).getAuthenticatedSession();
     }
     
     @Test
     public void getParticipantReportData() throws Exception {
-        doReturn(makeResults(START_DATE, END_DATE)).when(service).getParticipantReport(session.getStudyIdentifier(),
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 "foo", HEALTH_CODE, START_DATE, END_DATE);
         
-        Result result = controller.getParticipantReportData("foo", START_DATE.toString(), END_DATE.toString());
+        Result result = controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
         assertEquals(200, result.status());
         assertResult(result);
     }
 
     @Test
     public void getStudyReportData() throws Exception {
-        doReturn(makeResults(START_DATE, END_DATE)).when(service).getStudyReport(session.getStudyIdentifier(),
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
                 "foo", START_DATE, END_DATE);
         
-        Result result = controller.getStudyReportData("foo", START_DATE.toString(), END_DATE.toString());
+        Result result = controller.getStudyReport("foo", START_DATE.toString(), END_DATE.toString());
         assertEquals(200, result.status());
         assertResult(result);
     }
     
     @Test
     public void saveParticipantReportData() throws Exception {
-        String json = TestUtils.createJson("{'healthCode':'ABC','date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
+        String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
         TestUtils.mockPlayContextWithJson(json);
                 
-        Result result = controller.saveParticipantReportData("foo");
+        Result result = controller.saveParticipantReport("foo", OTHER_PARTICIPANT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
 
-        verify(service).saveParticipantReport(eq(TEST_STUDY), eq("foo"), eq("ABC"), reportDataCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq("foo"), eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
         assertNull(reportData.getKey());
@@ -113,10 +136,10 @@ public class ReportControllerTest {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
         TestUtils.mockPlayContextWithJson(json);
                 
-        Result result = controller.saveStudyReportData("foo");
+        Result result = controller.saveStudyReport("foo");
         TestUtils.assertResult(result, 201, "Report data saved.");
         
-        verify(service).saveStudyReport(eq(TEST_STUDY), eq("foo"), reportDataCaptor.capture());
+        verify(mockReportService).saveStudyReport(eq(TEST_STUDY), eq("foo"), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
         assertNull(reportData.getKey());
@@ -126,16 +149,16 @@ public class ReportControllerTest {
     
     @Test
     public void deleteParticipantReportData() throws Exception {
-        controller.deleteParticipantReportData("foo");
+        controller.deleteParticipantReport("foo", OTHER_PARTICIPANT_ID);
         
-        verify(service).deleteParticipantReport(session.getStudyIdentifier(), "foo", session.getHealthCode());
+        verify(mockReportService).deleteParticipantReport(session.getStudyIdentifier(), "foo", OTHER_PARTICIPANT_HEALTH_CODE);
     }
     
     @Test
     public void deleteStudyReportData() throws Exception {
-        controller.deleteStudyReportData("foo");
+        controller.deleteStudyReport("foo");
         
-        verify(service).deleteStudyReport(session.getStudyIdentifier(), "foo");
+        verify(mockReportService).deleteStudyReport(session.getStudyIdentifier(), "foo");
     }
     
     private void assertResult(Result result) throws Exception {

@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.joda.time.LocalDate;
@@ -15,7 +13,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
-import org.sagebionetworks.bridge.models.reports.ReportDataType;
+import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public class ReportService {
@@ -30,69 +28,69 @@ public class ReportService {
     
     public DateRangeResourceList<? extends ReportData> getStudyReport(StudyIdentifier studyId, String identifier,
             LocalDate startDate, LocalDate endDate) {
-        checkNotNull(studyId);
+        // ReportDataKey validates all parameters to this method
         
         startDate = defaultValueToYesterday(startDate);
         endDate = defaultValueToYesterday(endDate);
         validateDateRange(startDate, endDate);
 
-        ReportDataKey key = makeKey(null, identifier, studyId, ReportDataType.STUDY);
+        ReportDataKey key = makeKey(null, identifier, studyId, ReportType.STUDY);
         return reportDataDao.getReportData(key, startDate, endDate);
     }
     
     public DateRangeResourceList<? extends ReportData> getParticipantReport(StudyIdentifier studyId, String identifier, String healthCode, LocalDate startDate, LocalDate endDate) {
-        checkNotNull(studyId);
-        checkArgument(isNotBlank(healthCode));
+        // ReportDataKey validates all parameters to this method
         
         startDate = defaultValueToYesterday(startDate);
         endDate = defaultValueToYesterday(endDate);
         validateDateRange(startDate, endDate);
 
-        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportDataType.PARTICIPANT);
+        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportType.PARTICIPANT);
         return reportDataDao.getReportData(key, startDate, endDate);
     }
 
     public void saveStudyReport(StudyIdentifier studyId, String identifier, ReportData reportData) {
-        checkNotNull(studyId);
         checkNotNull(reportData);
+        // ReportDataKey validates all other parameters to this method
 
-        ReportDataKey key = makeKey(null, identifier, studyId, ReportDataType.STUDY);
+        ReportDataKey key = makeKey(null, identifier, studyId, ReportType.STUDY);
         reportData.setKey(key.getKeyString());
         
         reportDataDao.saveReportData(reportData);
     }
     
     public void saveParticipantReport(StudyIdentifier studyId, String identifier, String healthCode, ReportData reportData) {
-        checkNotNull(studyId);
         checkNotNull(reportData);
-        // ignore healthCode, it's supplied through API and validated by ReportDataKeyValidator
+        // ReportDataKey validates all other parameters to this method
         
-        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportDataType.PARTICIPANT);
+        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportType.PARTICIPANT);
         reportData.setKey(key.getKeyString());
         
         reportDataDao.saveReportData(reportData);
     }
     
     public void deleteStudyReport(StudyIdentifier studyId, String identifier) {
-        checkNotNull(studyId);
+        // ReportDataKey validates all parameters to this method
 
-        ReportDataKey key = makeKey(null, identifier, studyId, ReportDataType.STUDY);
+        ReportDataKey key = makeKey(null, identifier, studyId, ReportType.STUDY);
         
-        reportDataDao.deleteReport(key);
+        reportDataDao.deleteReportData(key);
     }
     
     public void deleteParticipantReport(StudyIdentifier studyId, String identifier, String healthCode) {
-        checkNotNull(studyId);
-        checkArgument(isNotBlank(healthCode));
+        // ReportDataKey validates all parameters to this method
         
-        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportDataType.PARTICIPANT);
+        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportType.PARTICIPANT);
         
-        reportDataDao.deleteReport(key);
+        reportDataDao.deleteReportData(key);
     }
     
-    private ReportDataKey makeKey(String healthCode, String identifier, StudyIdentifier studyId, ReportDataType reportType) {
-        return new ReportDataKey.Builder().withHealthCode(healthCode).withReportType(reportType)
-                .withIdentifier(identifier).withStudyIdentifier(studyId).build();
+    private ReportDataKey makeKey(String healthCode, String identifier, StudyIdentifier studyId, ReportType reportType) {
+        return new ReportDataKey.Builder()
+                .withHealthCode(healthCode)
+                .withReportType(reportType)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
     }
     
     private LocalDate defaultValueToYesterday(LocalDate submittedValue) {

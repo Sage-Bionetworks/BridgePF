@@ -117,4 +117,6 @@ public interface AccountDao {
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
      */
     public String getHealthCodeForEmail(Study study, String email);
+    
+    
 }
