@@ -81,9 +81,6 @@ public class ReportController extends BaseController {
         
         StudyParticipant participant = participantService.getParticipant(study, userId, false);
         
-        ReportData reportData = parseJson(request(), ReportData.class);
-        reportData.setKey(null); // set in service, but just so no future use depends on it
-        
         reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, participant.getHealthCode());
         
         return ok("Report deleted.");

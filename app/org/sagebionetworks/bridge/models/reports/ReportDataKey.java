@@ -19,20 +19,20 @@ public final class ReportDataKey implements BridgeEntity {
     
     private static final ReportDataKeyValidator VALIDATOR = new ReportDataKeyValidator();
     
-    private final String studyId;
+    private final StudyIdentifier studyId;
     private final String identifier;
     private final String healthCode;
     private final ReportType reportType;
     
     private ReportDataKey(String healthCode, String identifier, StudyIdentifier studyId, ReportType reportType) {
-        this.studyId = (studyId == null) ? null : studyId.getIdentifier();
+        this.studyId = studyId;
         this.identifier = identifier;
         this.healthCode = healthCode;
         this.reportType = reportType;
     }
     
     @JsonIgnore
-    public String getStudyId() {
+    public StudyIdentifier getStudyId() {
         return studyId;
     }
 
@@ -52,8 +52,8 @@ public final class ReportDataKey implements BridgeEntity {
     @JsonIgnore
     public String getKeyString() {
         return (healthCode != null) ?
-                String.format("%s:%s:%s", healthCode, identifier, studyId) :
-                String.format("%s:%s", identifier, studyId);
+                String.format("%s:%s:%s", healthCode, identifier, studyId.getIdentifier()) :
+                String.format("%s:%s", identifier, studyId.getIdentifier());
     }
 
     @Override
