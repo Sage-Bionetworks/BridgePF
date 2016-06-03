@@ -175,11 +175,7 @@ public class ReportServiceTest {
         service.getParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, START_DATE, START_DATE.plusDays(46));
     }
     
-    // Most of these values, if they're missing, are a programmer error (study and health code are 
-    // retrieved from the caller's session, and the ReportData object will exist, even if the JSON 
-    // itself holds no data or incorrect data). But identifier is provided from the UI and could in 
-    // theory be missing depending on how it is mapped in the routes (as we map it, it must exist for 
-    // the route to be matched), or an invalid string. So those cases throw a BadRequestException.
+    // Verify that validation errors occur in the service and that nothing is changed in persistence.
     
     @Test
     public void getStudyReportBadIdentifier() {
