@@ -6,8 +6,10 @@ import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @BridgeTypeName("ReportData")
+@JsonDeserialize(as=DynamoReportData.class)
 public interface ReportData {
 
     public static ReportData create() {

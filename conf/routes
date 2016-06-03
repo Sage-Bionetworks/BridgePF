@@ -56,17 +56,26 @@ GET    /v3/consents/:timestamp           @org.sagebionetworks.bridge.play.contro
 POST   /v3/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.controllers.StudyConsentController.publishConsent(timestamp: String)
 
 # Users
-POST   /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
-DELETE /v3/users/:userId                @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(userId: String)
-GET    /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
-POST   /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
-POST   /v3/users/self/externalId        @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier
-POST   /v3/users/self/emailData         @org.sagebionetworks.bridge.play.controllers.UserDataDownloadController.requestUserData
-GET    /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
-POST   /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
-POST   /v3/users/self/dataSharing       @org.sagebionetworks.bridge.play.controllers.ConsentController.changeSharingScope
-GET    /v3/users/self/dataGroups        @org.sagebionetworks.bridge.play.controllers.UserProfileController.getDataGroups
-POST   /v3/users/self/dataGroups        @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateDataGroups
+POST   /v3/users                          @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
+DELETE /v3/users/:userId                  @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(userId: String)
+GET    /v3/users/self                     @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
+POST   /v3/users/self                     @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
+POST   /v3/users/self/externalId          @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier
+POST   /v3/users/self/emailData           @org.sagebionetworks.bridge.play.controllers.UserDataDownloadController.requestUserData
+GET    /v3/users/self/unsubscribeEmail    @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
+POST   /v3/users/self/unsubscribeEmail    @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
+POST   /v3/users/self/dataSharing         @org.sagebionetworks.bridge.play.controllers.ConsentController.changeSharingScope
+GET    /v3/users/self/dataGroups          @org.sagebionetworks.bridge.play.controllers.UserProfileController.getDataGroups
+POST   /v3/users/self/dataGroups          @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateDataGroups
+GET    /v3/users/self/reports/:identifier @org.sagebionetworks.bridge.play.controllers.ReportController.getParticipantReportData(identifier: String, startDate: String ?= null, endDate: String ?= null)
+POST   /v3/users/self/reports/:identifier @org.sagebionetworks.bridge.play.controllers.ReportController.saveParticipantReportData(identifier: String)
+DELETE /v3/users/self/reports/:identifier @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReportData(identifier: String)
+
+# Study-wide reports
+GET    /v3/reports/:identifier @org.sagebionetworks.bridge.play.controllers.ReportController.getStudyReportData(identifier: String, startDate: String ?= null, endDate: String ?= null)
+POST   /v3/reports/:identifier @org.sagebionetworks.bridge.play.controllers.ReportController.saveStudyReportData(identifier: String)
+DELETE /v3/reports/:identifier @org.sagebionetworks.bridge.play.controllers.ReportController.deleteStudyReportData(identifier: String)
+
 
 # Surveys
 GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion

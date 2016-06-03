@@ -1,11 +1,6 @@
 package org.sagebionetworks.bridge.models.reports;
 
-import static org.sagebionetworks.bridge.models.reports.ReportDataType.PARTICIPANT;
-import static org.sagebionetworks.bridge.models.reports.ReportDataType.STUDY;
-
 import java.util.Objects;
-
-import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -29,9 +24,9 @@ public final class ReportDataKey implements BridgeEntity {
     private final ReportDataType reportType;
     
     private ReportDataKey(String healthCode, String identifier, StudyIdentifier studyId, ReportDataType type) {
-        this.healthCode = healthCode;
+        this.studyId = (studyId == null) ? null : studyId.getIdentifier();
         this.identifier = identifier;
-        this.studyId = studyId.getIdentifier();
+        this.healthCode = healthCode;
         this.reportType = type;
     }
     
@@ -53,11 +48,16 @@ public final class ReportDataKey implements BridgeEntity {
         return reportType;
     }
     
-    @Override
-    public String toString() {
+    public String getKeyString() {
         return (healthCode != null) ?
                 String.format("%s:%s:%s", healthCode, identifier, studyId) :
                 String.format("%s:%s", identifier, studyId);
+    }
+
+    @Override
+    public String toString() {
+        return "ReportDataKey [studyId=" + studyId + ", identifier=" + identifier
+                + ", healthCode=[REDACTED], reportType=" + reportType + "]";
     }
 
     @Override
@@ -80,6 +80,7 @@ public final class ReportDataKey implements BridgeEntity {
         private StudyIdentifier studyId;
         private String identifier;
         private String healthCode;
+        private ReportDataType reportType;
         
         public Builder withStudyIdentifier(StudyIdentifier studyId) {
             this.studyId = studyId;
@@ -93,9 +94,12 @@ public final class ReportDataKey implements BridgeEntity {
             this.healthCode = healthCode;
             return this;
         }
+        public Builder withReportType(ReportDataType reportType) {
+            this.reportType = reportType;
+            return this;
+        }
         public ReportDataKey build() {
-            ReportDataType type = (StringUtils.isBlank(healthCode)) ? STUDY : PARTICIPANT;
-            ReportDataKey key = new ReportDataKey(healthCode, identifier, studyId, type);
+            ReportDataKey key = new ReportDataKey(healthCode, identifier, studyId, reportType);
             Validate.entityThrowingException(VALIDATOR, key);
             return key;
         }

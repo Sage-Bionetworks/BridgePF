@@ -20,13 +20,17 @@ public class ReportDataKeyValidator implements Validator {
     public void validate(Object object, Errors errors) {
         ReportDataKey key = (ReportDataKey)object;
         
+        if (key.getStudyId() == null) {
+            errors.rejectValue("studyId", "is required");
+        }
         if (key.getReportType() == null) {
-            errors.rejectValue("reportType", "cannot be null");
-        } else if (isBlank(key.getHealthCode()) && key.getReportType() == ReportDataType.PARTICIPANT) {
+            errors.rejectValue("reportType", "is required");
+        }
+        if (isBlank(key.getHealthCode()) && key.getReportType() == ReportDataType.PARTICIPANT) {
             errors.rejectValue("healthCode", "is required for participant reports");
         }
         if (isBlank(key.getIdentifier())) {
-            errors.rejectValue("identifier", "cannot be null or blank");
+            errors.rejectValue("identifier", "cannot be missing or blank");
         } else if (!key.getIdentifier().matches(BridgeConstants.SYNAPSE_IDENTIFIER_PATTERN)) {
             errors.rejectValue("identifier", "can only contain letters, numbers, underscore and dash");
         }

@@ -40,7 +40,7 @@ public class DynamoReportDataDao implements ReportDataDao {
         checkNotNull(endDate);
         
         DynamoReportData hashKey = new DynamoReportData();
-        hashKey.setKey(key.toString());
+        hashKey.setKey(key.getKeyString());
         
         // range key is between start date and end date
         Condition dateCondition = new Condition().withComparisonOperator(ComparisonOperator.BETWEEN)
@@ -69,7 +69,7 @@ public class DynamoReportDataDao implements ReportDataDao {
         DynamoDBScanExpression scan = new DynamoDBScanExpression()
                 .withFilterConditionEntry("key", new Condition()
                         .withComparisonOperator(ComparisonOperator.EQ)
-                        .withAttributeValueList(new AttributeValue(key.toString())));
+                        .withAttributeValueList(new AttributeValue(key.getKeyString())));
 
         List<DynamoReportData> objectsToDelete = mapper.scan(DynamoReportData.class, scan);
         if (!objectsToDelete.isEmpty()) {
