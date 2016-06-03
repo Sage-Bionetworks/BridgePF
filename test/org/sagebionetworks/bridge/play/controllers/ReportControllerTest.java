@@ -106,11 +106,31 @@ public class ReportControllerTest {
     }
 
     @Test
+    public void getParticipantReportDataNoDates() throws Exception {
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
+                "foo", HEALTH_CODE, null, null);
+        
+        Result result = controller.getParticipantReport("foo", null, null);
+        assertEquals(200, result.status());
+        assertResult(result);
+    }
+    
+    @Test
     public void getStudyReportData() throws Exception {
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
                 "foo", START_DATE, END_DATE);
         
         Result result = controller.getStudyReport("foo", START_DATE.toString(), END_DATE.toString());
+        assertEquals(200, result.status());
+        assertResult(result);
+    }
+    
+    @Test
+    public void getStudyReportDataWithNoDates() throws Exception {
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
+                "foo", null, null);
+        
+        Result result = controller.getStudyReport("foo", null, null);
         assertEquals(200, result.status());
         assertResult(result);
     }
@@ -169,7 +189,6 @@ public class ReportControllerTest {
         assertEquals("DateRangeResourceList", node.get("type").asText());
         
         JsonNode child1 = node.get("items").get(0);
-        assertEquals("foo:api", child1.get("key").asText());
         assertEquals("2015-02-10", child1.get("date").asText());
         assertEquals("ReportData", child1.get("type").asText());
         JsonNode child1Data = child1.get("data");
@@ -177,7 +196,6 @@ public class ReportControllerTest {
         assertEquals("Name", child1Data.get("field2").asText());
         
         JsonNode child2 = node.get("items").get(1);
-        assertEquals("foo:api", child2.get("key").asText());
         assertEquals("2015-02-12", child2.get("date").asText());
         assertEquals("ReportData", child2.get("type").asText());
         JsonNode child2Data = child2.get("data");

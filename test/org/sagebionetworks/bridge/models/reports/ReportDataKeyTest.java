@@ -10,8 +10,15 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class ReportDataKeyTest {
 
+    @Test
+    public void hashCodeEquals() {
+        EqualsVerifier.forClass(ReportDataKey.class).allFieldsShouldBeUsed().verify();
+    }    
+    
     @Test
     public void constructParticipantKey() {
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("healthCode").withStudyIdentifier(TEST_STUDY)

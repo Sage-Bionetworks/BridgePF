@@ -34,7 +34,11 @@ public class ReportService {
         endDate = defaultValueToYesterday(endDate);
         validateDateRange(startDate, endDate);
 
-        ReportDataKey key = makeKey(null, identifier, studyId, ReportType.STUDY);
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withReportType(ReportType.STUDY)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
+        
         return reportDataDao.getReportData(key, startDate, endDate);
     }
     
@@ -45,7 +49,11 @@ public class ReportService {
         endDate = defaultValueToYesterday(endDate);
         validateDateRange(startDate, endDate);
 
-        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportType.PARTICIPANT);
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode(healthCode)
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
         return reportDataDao.getReportData(key, startDate, endDate);
     }
 
@@ -53,7 +61,10 @@ public class ReportService {
         checkNotNull(reportData);
         // ReportDataKey validates all other parameters to this method
 
-        ReportDataKey key = makeKey(null, identifier, studyId, ReportType.STUDY);
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withReportType(ReportType.STUDY)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
         reportData.setKey(key.getKeyString());
         
         reportDataDao.saveReportData(reportData);
@@ -63,7 +74,11 @@ public class ReportService {
         checkNotNull(reportData);
         // ReportDataKey validates all other parameters to this method
         
-        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportType.PARTICIPANT);
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode(healthCode)
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
         reportData.setKey(key.getKeyString());
         
         reportDataDao.saveReportData(reportData);
@@ -72,7 +87,10 @@ public class ReportService {
     public void deleteStudyReport(StudyIdentifier studyId, String identifier) {
         // ReportDataKey validates all parameters to this method
 
-        ReportDataKey key = makeKey(null, identifier, studyId, ReportType.STUDY);
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withReportType(ReportType.STUDY)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
         
         reportDataDao.deleteReportData(key);
     }
@@ -80,17 +98,13 @@ public class ReportService {
     public void deleteParticipantReport(StudyIdentifier studyId, String identifier, String healthCode) {
         // ReportDataKey validates all parameters to this method
         
-        ReportDataKey key = makeKey(healthCode, identifier, studyId, ReportType.PARTICIPANT);
-        
-        reportDataDao.deleteReportData(key);
-    }
-    
-    private ReportDataKey makeKey(String healthCode, String identifier, StudyIdentifier studyId, ReportType reportType) {
-        return new ReportDataKey.Builder()
+        ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
-                .withReportType(reportType)
+                .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
+        
+        reportDataDao.deleteReportData(key);
     }
     
     private LocalDate defaultValueToYesterday(LocalDate submittedValue) {

@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -65,13 +64,14 @@ public class DynamoReportDataDao implements ReportDataDao {
     @Override
     public void deleteReportData(ReportDataKey key) {
         checkNotNull(key);
-        
-        DynamoDBScanExpression scan = new DynamoDBScanExpression()
-                .withFilterConditionEntry("key", new Condition()
-                        .withComparisonOperator(ComparisonOperator.EQ)
-                        .withAttributeValueList(new AttributeValue(key.getKeyString())));
 
-        List<DynamoReportData> objectsToDelete = mapper.scan(DynamoReportData.class, scan);
+        DynamoReportData hashKey = new DynamoReportData();
+        hashKey.setKey(key.getKeyString());
+
+        DynamoDBQueryExpression<DynamoReportData> query =
+                new DynamoDBQueryExpression<DynamoReportData>().withHashKeyValues(hashKey);
+        List<DynamoReportData> objectsToDelete = mapper.query(DynamoReportData.class, query);
+        
         if (!objectsToDelete.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(objectsToDelete);
             BridgeUtils.ifFailuresThrowException(failures);

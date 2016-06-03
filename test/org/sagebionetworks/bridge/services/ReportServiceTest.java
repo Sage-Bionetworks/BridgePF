@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -94,6 +95,30 @@ public class ReportServiceTest {
         verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, START_DATE, END_DATE);
         assertEquals(results, retrieved);
     }
+
+    @Captor
+    private ArgumentCaptor<LocalDate> localDateCaptor;
+    
+    @Test
+    public void getStudyReportDataNoDates() {
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05T12:00:00.000Z").getMillis());
+        try {
+            LocalDate yesterday = LocalDate.parse("2015-05-04");
+            
+            doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, yesterday, yesterday);
+            
+            DateRangeResourceList<? extends ReportData> retrieved = service.getStudyReport(
+                    TEST_STUDY, IDENTIFIER, null, null);
+            
+            verify(mockReportDataDao).getReportData(eq(STUDY_REPORT_DATA_KEY), localDateCaptor.capture(),
+                    localDateCaptor.capture());
+            assertEquals(yesterday, localDateCaptor.getAllValues().get(0));
+            assertEquals(yesterday, localDateCaptor.getAllValues().get(1));
+            assertEquals(results, retrieved);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
+    }
     
     @Test
     public void getParticipantReportData() {
@@ -106,6 +131,27 @@ public class ReportServiceTest {
         assertEquals(results, retrieved);
     }
 
+    @Test
+    public void getParticipantReportDataNoDates() {
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05T12:00:00.000Z").getMillis());
+        try {
+            LocalDate yesterday = LocalDate.parse("2015-05-04");
+            
+            doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, yesterday, yesterday);
+            
+            DateRangeResourceList<? extends ReportData> retrieved = service.getParticipantReport(
+                    TEST_STUDY, IDENTIFIER, HEALTH_CODE, null, null);
+            
+            verify(mockReportDataDao).getReportData(eq(PARTICIPANT_REPORT_DATA_KEY), localDateCaptor.capture(),
+                    localDateCaptor.capture());
+            assertEquals(yesterday, localDateCaptor.getAllValues().get(0));
+            assertEquals(yesterday, localDateCaptor.getAllValues().get(1));
+            assertEquals(results, retrieved);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
+    }
+    
     @Test
     public void saveStudyReportData() {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
@@ -166,13 +212,23 @@ public class ReportServiceTest {
     }
 
     @Test(expected = BadRequestException.class)
-    public void startDateAfterEndDate() {
+    public void startDateAfterEndDateParticipant() {
         service.getParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, END_DATE, START_DATE);
     }
 
     @Test(expected = BadRequestException.class)
-    public void dateRangeTooWide() {
+    public void dateRangeTooWideParticipant() {
         service.getParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, START_DATE, START_DATE.plusDays(46));
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void startDateAfterEndDateStudy() {
+        service.getStudyReport(TEST_STUDY, IDENTIFIER, END_DATE, START_DATE);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void dateRangeTooWideStudy() {
+        service.getStudyReport(TEST_STUDY, IDENTIFIER, START_DATE, START_DATE.plusDays(46));
     }
     
     // Verify that validation errors occur in the service and that nothing is changed in persistence.

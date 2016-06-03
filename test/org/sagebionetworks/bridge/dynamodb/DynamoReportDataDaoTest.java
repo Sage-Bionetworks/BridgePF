@@ -36,6 +36,8 @@ public class DynamoReportDataDaoTest {
     
     private ReportDataKey reportDataKey;
     
+    private ReportDataKey differentReportDataKey;
+    
     @Before
     public void before() {
         reportId = TestUtils.randomName(DynamoReportDataDaoTest.class);
@@ -48,16 +50,31 @@ public class DynamoReportDataDaoTest {
         if (reportDataKey != null) {
             dao.deleteReportData(reportDataKey);    
         }
+        if (differentReportDataKey != null) {
+            dao.deleteReportData(differentReportDataKey);;
+        }
     }
     
     @Test
     public void canCrud() {
+        String reportId = TestUtils.randomName(DynamoReportDataDaoTest.class);
+        differentReportDataKey = new ReportDataKey.Builder().withReportType(ReportType.STUDY).withIdentifier(reportId)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        // A report clearly outside the date range
+        ReportData report0 = createReport(LocalDate.parse("2016-02-14"), "g", "h");
+        // Two reports that are in the date range, with the right key, that should be returned.
         ReportData report1 = createReport(LocalDate.parse("2016-03-30"), "a", "b");
         ReportData report2 = createReport(LocalDate.parse("2016-03-31"), "c", "d");
+        // And this is in the date range, but has a different key.
+        ReportData report3 = createReport(LocalDate.parse("2016-03-30"), "e", "f");
+        report3.setKey(differentReportDataKey.getKeyString());
         
         // These are not in date order. They should come back in date order.
+        dao.saveReportData(report3);
         dao.saveReportData(report2);
         dao.saveReportData(report1);
+        dao.saveReportData(report0);
         
         DateRangeResourceList<? extends ReportData> results = dao.getReportData(
                 reportDataKey, START_DATE, END_DATE);
