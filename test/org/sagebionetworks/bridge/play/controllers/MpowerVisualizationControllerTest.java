@@ -91,7 +91,7 @@ public class MpowerVisualizationControllerTest {
         UserSession session = new UserSession(participant);
 
         MpowerVisualizationController controller = spy(new MpowerVisualizationController());
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(session).when(controller).getAuthenticatedSession();
 
         // mock service - For rapid development and to avoid unnecessary coupling, just mock the visualization with a
         // dummy string. Check if that dummy string is propagated through the controller.
