@@ -68,21 +68,18 @@ public class DateUtilsTest {
 
     @Test
     public void parseISODateTime() {
-        // Arbitrarily 2014-02-17T23:00Z.
-        long expectedMillis = new DateTime(2014, 2, 17, 23, 0, DateTimeZone.UTC).getMillis();
+        // { expected, input }
+        Object[][] testCaseArray = {
+                { new DateTime(2014, 2, 17, 23, 0, DateTimeZone.UTC), "2014-02-17T23:00Z" },
+                { new DateTime(2014, 2, 17, 23, 0, DateTimeZone.forOffsetHours(-8)), "2014-02-17T23:00-0800" },
+                { new DateTime(2014, 2, 17, 23, 0, DateTimeZone.forOffsetHours(+9)), "2014-02-17T23:00+0900" },
+        };
 
-        DateTime dateTime = DateUtils.parseISODateTime("2014-02-17T23:00Z");
-        assertEquals(expectedMillis, dateTime.getMillis());
-    }
-
-    @Test
-    public void parseISODateTimeNonUtc() {
-        // Arbitrarily 2014-02-17T23:00-0800. We want to use a timezone other than UTC to make sure we can handle
-        // non-UTC timezones.
-        long expectedMillis = new DateTime(2014, 2, 17, 23, 0, BridgeConstants.LOCAL_TIME_ZONE).getMillis();
-
-        DateTime dateTime = DateUtils.parseISODateTime("2014-02-17T23:00-0800");
-        assertEquals(expectedMillis, dateTime.getMillis());
+        for (Object[] oneTestCase : testCaseArray) {
+            String input = (String) oneTestCase[1];
+            DateTime actual = DateUtils.parseISODateTime(input);
+            assertEquals("Input: " + input, oneTestCase[0], actual);
+        }
     }
 
     @Test(expected = IllegalArgumentException.class)
