@@ -8,14 +8,13 @@ import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Joiner;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -33,7 +32,11 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
  * incoming data.
  * </p>
  * <p>
- * This handler won't make any changes to the UploadValidationContext, but it will throw an UploadValidationException
+ * This handler also canonicalizes the values in {@link UploadValidationContext#getHealthDataRecordBuilder} in
+ * {@link HealthDataRecordBuilder#getData()} and writes them back to the data map.
+ * </p>
+ * <p>
+ * This handler won't make any other changes to the UploadValidationContext, but it will throw an UploadValidationException
  * if the record data fails validation. Specifically, it will read data from
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecordBuilder} and
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getAttachmentsByFieldName}.
@@ -174,10 +177,15 @@ public class StrictValidationHandler implements UploadValidationHandler {
                 JsonNode fieldValueNode = recordDataNode.get(fieldName);
 
                 if (fieldValueNode != null && !fieldValueNode.isNull()) {
-                    boolean isValid = validateJsonField(fieldType, fieldValueNode);
-                    if (!isValid) {
-                        errorList.add("Expected field " + fieldName + " to be " + fieldType.name() +
-                                ", but was instead JSON type " + fieldValueNode.getNodeType().name());
+                    // Canonicalize the field.
+                    CanonicalizationResult canonicalizationResult = UploadUtil.canonicalize(fieldValueNode, fieldType);
+                    if (canonicalizationResult.isValid()) {
+                        // Write the canonicalization back into the field data map.
+                        ((ObjectNode)recordDataNode).set(fieldName,
+                                canonicalizationResult.getCanonicalizedValueNode());
+                    } else {
+                        errorList.add("Canonicalization failed for field " + fieldName + ": " +
+                                canonicalizationResult.getErrorMessage());
                     }
                 } else if (isRequired) {
                     errorList.add("Required field " + fieldName + " missing");
@@ -220,63 +228,5 @@ public class StrictValidationHandler implements UploadValidationHandler {
         Integer maxAppVersion = fieldDef.getMaxAppVersion();
         return (minAppVersion == null || minAppVersion <= appVersion) &&
                 (maxAppVersion == null || appVersion <= maxAppVersion);
-    }
-
-    /**
-     * Given the expected field type and the field value JSON node, this validates the we have the correct type,
-     * returning true of the value is valid and false otherwise. Note that because attachment fields live in the
-     * attachments map and not in JSON, this will always return false for attachment types.
-     *
-     * @param fieldType
-     *         expected field type
-     * @param fieldValueNode
-     *         field value JSON node to validate
-     * @return true if valid, false otherwise
-     */
-    private static boolean validateJsonField(@Nonnull UploadFieldType fieldType, @Nonnull JsonNode fieldValueNode) {
-        switch (fieldType) {
-            case BOOLEAN:
-                return fieldValueNode.isBoolean();
-            case CALENDAR_DATE:
-                // We expect a string. Also, the string should be parseable by Joda LocalDate.
-                if (!fieldValueNode.isTextual()) {
-                    return false;
-                }
-
-                try {
-                    // DateUtils calls through to Joda parseLocalDate(), which is documented as
-                    // never returning null. So we don't need to null check here.
-                    DateUtils.parseCalendarDate(fieldValueNode.textValue());
-                    return true;
-                } catch (RuntimeException ex) {
-                    return false;
-                }
-            case FLOAT:
-            case INT:
-                // Research Kit doesn't distinguish between floats and ints, so neither should we. Just
-                // accept any number type.
-                return fieldValueNode.isNumber();
-            case INLINE_JSON_BLOB:
-                // JSON blobs are always JSON blobs. We don't need to do any special validation.
-                return true;
-            case STRING:
-                return fieldValueNode.isTextual();
-            case TIMESTAMP:
-                // either it's a string in ISO format, or it's a long in epoch milliseconds
-                if (fieldValueNode.isTextual()) {
-                    DateTime dateTime = UploadUtil.parseIosTimestamp(fieldValueNode.textValue());
-                    return dateTime != null;
-                } else if (fieldValueNode.isIntegralNumber()) {
-                    // any integral value can be converted to an epoch milliseconds, so this is good no
-                    // matter what
-                    return true;
-                } else {
-                    return false;
-                }
-            default:
-                // This should never happen, but just in case we add a new field to UploadFieldType
-                // but forget to upload this switch.
-                return false;
-        }
     }
 }
