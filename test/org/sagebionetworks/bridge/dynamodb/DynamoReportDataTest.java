@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -39,8 +40,15 @@ public class DynamoReportDataTest {
         reportData.setData(objNode);
         
         String json = MAPPER.writeValueAsString(reportData);
-        ReportData deser = MAPPER.readValue(json, ReportData.class);
         
+        JsonNode node = MAPPER.readTree(json);
+        assertNull(node.get("key"));
+        assertEquals(DATE.toString(), node.get("date").asText());
+        assertTrue(node.get("data").get("a").asBoolean());
+        assertEquals("string", node.get("data").get("b").asText());
+        assertEquals(10, node.get("data").get("c").asInt());
+        
+        ReportData deser = MAPPER.readValue(json, ReportData.class);
         assertNull(deser.getKey());
         assertEquals(DATE, deser.getDate());
         assertTrue(deser.getData().get("a").asBoolean());

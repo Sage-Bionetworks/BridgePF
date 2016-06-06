@@ -6,6 +6,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
@@ -22,14 +23,15 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
-import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -63,7 +65,13 @@ public class ReportControllerTest {
     StudyService mockStudyService;
     
     @Mock
-    ParticipantService mockParticipantService;
+    AccountDao mockAccountDao;
+    
+    @Mock
+    Account mockAccount;
+    
+    @Mock
+    Account mockOtherAccount;
     
     @Captor
     ArgumentCaptor<ReportData> reportDataCaptor;
@@ -79,23 +87,24 @@ public class ReportControllerTest {
         controller = spy(new ReportController());
         controller.setReportService(mockReportService);
         controller.setStudyService(mockStudyService);
-        controller.setParticipantService(mockParticipantService);
+        controller.setAccountDao(mockAccountDao);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         
-        StudyParticipant otherParticipant = new StudyParticipant.Builder().withHealthCode(OTHER_PARTICIPANT_HEALTH_CODE)
-                .build();
+        doReturn(mockOtherAccount).when(mockAccountDao).getAccount(study, OTHER_PARTICIPANT_ID);
         
         session = new UserSession(participant);
         session.setStudyIdentifier(TEST_STUDY);
         session.setAuthenticated(true);
         
         doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
-        doReturn(otherParticipant).when(mockParticipantService).getParticipant(study, OTHER_PARTICIPANT_ID, false);
+        doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
+        doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(session).when(controller).getSessionIfItExists();
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession();
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.WORKER);
     }
     
     private void setupContext() throws Exception {
@@ -173,7 +182,7 @@ public class ReportControllerTest {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
         
         TestUtils.mockPlayContextWithJson(json);
-                
+
         Result result = controller.saveParticipantReport("foo", OTHER_PARTICIPANT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
 
@@ -183,6 +192,37 @@ public class ReportControllerTest {
         assertNull(reportData.getKey());
         assertEquals("Last", reportData.getData().get("field1").asText());
         assertEquals("Name", reportData.getData().get("field2").asText());
+    }
+    
+    @Test
+    public void saveParticipantReportForWorker() throws Exception {
+        String json = TestUtils.createJson("{'healthCode': '"+OTHER_PARTICIPANT_HEALTH_CODE+"', 'date':'2015-02-12','data':['A','B','C']}");
+        
+        TestUtils.mockPlayContextWithJson(json);
+
+        Result result = controller.saveParticipantReportForWorker("foo");
+        TestUtils.assertResult(result, 201, "Report data saved.");
+        
+        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq("foo"), eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
+        ReportData reportData = reportDataCaptor.getValue();
+        assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
+        assertNull(reportData.getKey());
+        assertEquals("A", reportData.getData().get(0).asText());
+        assertEquals("B", reportData.getData().get(1).asText());
+        assertEquals("C", reportData.getData().get(2).asText());
+    }
+    
+    @Test
+    public void saveParticipantReportForWorkerRequiresHealthCode() throws Exception {
+        String json = TestUtils.createJson("{'date':'2015-02-12','data':['A','B','C']}");
+        
+        TestUtils.mockPlayContextWithJson(json);
+        try {
+            controller.saveParticipantReportForWorker("foo");    
+        } catch(BadRequestException e) {
+            assertEquals("A health code is required to save report data.", e.getMessage());
+            verifyNoMoreInteractions(mockReportService);
+        }
     }
     
     @Test

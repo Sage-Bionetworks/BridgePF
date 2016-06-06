@@ -2,22 +2,22 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.LinkedHashSet;
 
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,14 +32,14 @@ public class ReportController extends BaseController {
     ReportService reportService;
     
     @Autowired
-    ParticipantService participantService;
+    AccountDao accountDao;
     
     final void setReportService(ReportService reportService) {
         this.reportService = reportService;
     }
     
-    final void setParticipantService(ParticipantService participantService) {
-        this.participantService = participantService;
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
     
     /**
@@ -63,16 +63,34 @@ public class ReportController extends BaseController {
      * include a healthCode field. This is validated when constructing the DataReportKey.
      */
     public Result saveParticipantReport(String identifier, String userId) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        Account account = accountDao.getAccount(study, userId);
         
         ReportData reportData = parseJson(request(), ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
         reportService.saveParticipantReport(session.getStudyIdentifier(), identifier, 
-                participant.getHealthCode(), reportData);
+                account.getHealthCode(), reportData);
+        
+        return createdResult("Report data saved.");
+    }
+    
+    public Result saveParticipantReportForWorker(String identifier) throws Exception {
+        UserSession session = getAuthenticatedSession(WORKER);
+        
+        JsonNode node = requestToJSON(request());
+        if (!node.has("healthCode")) {
+            throw new BadRequestException("A health code is required to save report data.");
+        }
+        String healthCode = node.get("healthCode").asText();
+        
+        ReportData reportData = MAPPER.treeToValue(node, ReportData.class);
+        reportData.setKey(null); // set in service, but just so no future use depends on it
+        
+        reportService.saveParticipantReport(session.getStudyIdentifier(), identifier, 
+                healthCode, reportData);
         
         return createdResult("Report data saved.");
     }
@@ -82,12 +100,12 @@ public class ReportController extends BaseController {
      * This is not performant for large data sets and should only be done during testing. 
      */
     public Result deleteParticipantReport(String identifier, String userId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        Account account = accountDao.getAccount(study, userId);
         
-        reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, participant.getHealthCode());
+        reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, account.getHealthCode());
         
         return ok("Report deleted.");
     }
@@ -128,7 +146,7 @@ public class ReportController extends BaseController {
      * should only be done during testing.
      */
     public Result deleteStudyReport(String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         
         reportService.deleteStudyReport(session.getStudyIdentifier(), identifier);
         
@@ -149,7 +167,7 @@ public class ReportController extends BaseController {
     }
     
     private static LocalDate parseDateHelper(String dateStr) {
-        if (StringUtils.isBlank(dateStr)) {
+        if (isBlank(dateStr)) {
             return null;
         } else {
             try {
