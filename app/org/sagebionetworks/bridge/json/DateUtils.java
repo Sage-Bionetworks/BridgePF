@@ -92,7 +92,8 @@ public final class DateUtils {
         }
 
         // We use dateTimeParser() instead of dateTimeFmt because we want to be able to handle non-UTC timezones.
-        return ISODateTimeFormat.dateTimeParser().parseDateTime(dateTimeStr);
+        // withOffsetParsed() is needed, otherwise Joda converts everything to the local timezone.
+        return ISODateTimeFormat.dateTimeParser().withOffsetParsed().parseDateTime(dateTimeStr);
     }
 
     /**

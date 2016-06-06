@@ -16,7 +16,7 @@ public enum UploadFieldType {
 
     /**
      * Health Data Attachment as a CSV file. The value of this field is a foreign key into the Health Data Attachments
-     * table. Data stored in this format will be used to construct de-normalized tables during data export.
+     * table. We originally planned to de-normalize this data, but that feature was punted.
      */
     ATTACHMENT_CSV,
 
@@ -29,17 +29,22 @@ public enum UploadFieldType {
 
     /**
      * Health Data Attachment as a JSON blob of a specific "table" format. The value of this field is a foreign key
-     * into the Health Data Attachments table. Data stored in this format will be used to construct de-normalizeds
-     * tables during data export.
+     * into the Health Data Attachments table. We originally planned to de-normalize this data, but that feature was
+     * punted.
      */
-    // TODO: document ATTACHMENT_JSON_TABLE data format
     ATTACHMENT_JSON_TABLE,
+
+    /** Upload V2 version of attachments. Fields of this type can be associated with any file extension or MIME type */
+    ATTACHMENT_V2,
 
     /** A boolean, expected values match Boolean.parse() */
     BOOLEAN,
 
     /** A calendar date in YYYY-MM-DD format */
     CALENDAR_DATE,
+
+    /** Duration (how long something took). Used by Upload v2. */
+    DURATION_V2,
 
     /** A floating point number, generally represented as a double in Java */
     FLOAT,
@@ -53,14 +58,22 @@ public enum UploadFieldType {
     /** An integer value, generally represented as a long in Java (64-bit signed integer) */
     INT,
 
+    /** Multiple choice question with multiple answers. */
+    MULTI_CHOICE,
+
+    /** Multiple choice question with only a single answer. */
+    SINGLE_CHOICE,
+
     /** A string value */
     STRING,
+
+    /** Time without date or timezone. Used in Upload v2. */
+    TIME_V2,
 
     /** A timestamp in ISO 8601 format (YYYY-MM-DDThhhh:mm:ss+/-zz:zz) */
     TIMESTAMP;
 
     /** A set of upload field types that are considered attachment types. */
-    public static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(UploadFieldType.ATTACHMENT_BLOB,
-            UploadFieldType.ATTACHMENT_CSV, UploadFieldType.ATTACHMENT_JSON_BLOB,
-            UploadFieldType.ATTACHMENT_JSON_TABLE);
+    public static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(ATTACHMENT_BLOB, ATTACHMENT_CSV,
+            ATTACHMENT_JSON_BLOB, ATTACHMENT_JSON_TABLE, ATTACHMENT_V2);
 }

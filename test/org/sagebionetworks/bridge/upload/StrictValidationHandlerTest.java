@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -201,6 +202,49 @@ public class StrictValidationHandlerTest {
     }
 
     @Test
+    public void canonicalizedValue() throws Exception {
+        // additional field defs
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new DynamoUploadFieldDefinition.Builder().withName("canonicalized int").withType(UploadFieldType.INT)
+                        .build());
+
+        // additional JSON data
+        String additionalJsonText = "{\n" +
+                "   \"canonicalized int\":\"23\"\n" +
+                "}";
+        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
+
+        // execute and validate
+        test(additionalFieldDefList, null, additionalJsonNode, null, false);
+
+        // verify canonicalized value
+        JsonNode dataNode = context.getHealthDataRecordBuilder().getData();
+        JsonNode intNode = dataNode.get("canonicalized int");
+        assertTrue(intNode.isIntegralNumber());
+        assertEquals(23, intNode.intValue());
+    }
+
+    @Test
+    public void invalidValue() throws Exception {
+        // additional field defs
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new DynamoUploadFieldDefinition.Builder().withName("invalid int").withType(UploadFieldType.INT)
+                        .build());
+
+        // additional JSON data
+        String additionalJsonText = "{\n" +
+                "   \"invalid int\":\"ninety-nine\"\n" +
+                "}";
+        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
+
+        // expected errors
+        List<String> expectedErrorList = ImmutableList.of("invalid int");
+
+        // execute and validate
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
+    }
+
+    @Test
     public void missingRequiredAttachment() throws Exception {
         // additional field defs
         List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
@@ -232,17 +276,17 @@ public class StrictValidationHandlerTest {
     public void optionalFieldStillGetsValidated() throws Exception {
         // additional field defs
         List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("optional string")
-                        .withType(UploadFieldType.STRING).withRequired(false).build());
+                new DynamoUploadFieldDefinition.Builder().withName("optional int")
+                        .withType(UploadFieldType.INT).withRequired(false).build());
 
         // additional JSON data
         String additionalJsonText = "{\n" +
-                "   \"optional string\":false\n" +
+                "   \"optional int\":false\n" +
                 "}";
         JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
 
         // expected errors
-        List<String> expectedErrorList = ImmutableList.of("optional string");
+        List<String> expectedErrorList = ImmutableList.of("optional int");
 
         // execute and validate
         test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
@@ -263,166 +307,6 @@ public class StrictValidationHandlerTest {
 
         // expected errors
         List<String> expectedErrorList = ImmutableList.of("null required field");
-
-        // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
-    }
-
-    @Test
-    public void invalidBoolean() throws Exception {
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("invalid boolean")
-                        .withType(UploadFieldType.BOOLEAN).build());
-
-        // additional JSON data
-        String additionalJsonText = "{\n" +
-                "   \"invalid boolean\":1\n" +
-                "}";
-        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("invalid boolean");
-
-        // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
-    }
-
-    @Test
-    public void nonStringCalendarDate() throws Exception {
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("non-string calendar date")
-                        .withType(UploadFieldType.CALENDAR_DATE).build());
-
-        // additional JSON data
-        String additionalJsonText = "{\n" +
-                "   \"non-string calendar date\":20150826\n" +
-                "}";
-        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("non-string calendar date");
-
-        // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
-    }
-
-    @Test
-    public void malformattedCalendarDate() throws Exception {
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("malformatted calendar date")
-                        .withType(UploadFieldType.CALENDAR_DATE).build());
-
-        // additional JSON data
-        String additionalJsonText = "{\n" +
-                "   \"malformatted\":\"August 26, 2015\"\n" +
-                "}";
-        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("malformatted calendar date");
-
-        // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
-    }
-
-    @Test
-    public void invalidFloat() throws Exception {
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("invalid float")
-                        .withType(UploadFieldType.FLOAT).build());
-
-        // additional JSON data
-        String additionalJsonText = "{\n" +
-                "   \"invalid float\":\"3.14\"\n" +
-                "}";
-        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("invalid float");
-
-        // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
-    }
-
-    @Test
-    public void invalidInt() throws Exception {
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("invalid int")
-                        .withType(UploadFieldType.INT).build());
-
-        // additional JSON data
-        String additionalJsonText = "{\n" +
-                "   \"invalid int\":\"1337\"\n" +
-                "}";
-        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("invalid int");
-
-        // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
-    }
-
-    @Test
-    public void invalidString() throws Exception {
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("invalid string")
-                        .withType(UploadFieldType.STRING).build());
-
-        // additional JSON data
-        String additionalJsonText = "{\n" +
-                "   \"invalid string\":[\"SingleChoice answer\"]\n" +
-                "}";
-        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("invalid string");
-
-        // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
-    }
-
-    @Test
-    public void malformattedTimestamp() throws Exception {
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("malformatted timestamp")
-                        .withType(UploadFieldType.TIMESTAMP).build());
-
-        // additional JSON data
-        String additionalJsonText = "{\n" +
-                "   \"malformatted timestamp\":\"today 3pm\"\n" +
-                "}";
-        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("malformatted timestamp");
-
-        // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
-    }
-
-    @Test
-    public void wrongTypeTimestamp() throws Exception {
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("wrong type timestamp")
-                        .withType(UploadFieldType.TIMESTAMP).build());
-
-        // additional JSON data
-        String additionalJsonText = "{\n" +
-                "   \"wrong type timestamp\":true\n" +
-                "}";
-        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("wrong type timestamp");
 
         // execute and validate
         test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
