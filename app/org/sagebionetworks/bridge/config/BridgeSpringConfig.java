@@ -46,6 +46,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoMpowerVisualization;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptions;
+import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
@@ -254,6 +255,12 @@ public class BridgeSpringConfig {
         return dynamoUtils.getMapper(DynamoHealthDataAttachment.class);
     }
 
+    @Bean(name = "reportDataMapper")
+    @Autowired
+    public DynamoDBMapper reportDataMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoReportData.class);
+    }
+    
     @Bean(name = "healthDataDdbMapper")
     @Autowired
     public DynamoDBMapper healthDataDdbMapper(DynamoUtils dynamoUtils) {

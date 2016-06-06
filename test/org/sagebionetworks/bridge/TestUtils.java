@@ -123,17 +123,11 @@ public class TestUtils {
         return builder.build();
     }
     
-    /**
-     * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
-     */
-    public static void mockPlayContextWithJson(String json) throws Exception {
+    public static void mockPlayContextWithJson(String json, Map<String,String[]> headers) throws Exception {
         JsonNode node = new ObjectMapper().readTree(json);
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(node);
 
-        Map<String,String[]> headers = Maps.newHashMap();
-        headers.put(CONTENT_TYPE, new String[] {"text/json; charset=UTF-8"});
-        headers.put(USER_AGENT, new String[] {"app/10"});
         Http.Request request = mock(Http.Request.class);
         Http.Response response = mock(Http.Response.class);
 
@@ -149,7 +143,14 @@ public class TestUtils {
         when(context.request()).thenReturn(request);
         when(context.response()).thenReturn(response);
 
-        Http.Context.current.set(context);
+        Http.Context.current.set(context);        
+    }
+    
+    /**
+     * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
+     */
+    public static void mockPlayContextWithJson(String json) throws Exception {
+        mockPlayContextWithJson(json, Maps.newHashMap());
     }
     
     /**
