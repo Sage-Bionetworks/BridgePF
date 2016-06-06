@@ -48,6 +48,10 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class ReportControllerTest {
 
+    private static final String VALID_LANGUAGE_HEADER = "en-US";
+
+    private static final String VALID_USER_AGENT_HEADER = "Unknown Client/14 BridgeJavaSDK/10";
+
     private static final String OTHER_PARTICIPANT_HEALTH_CODE = "ABC";
 
     private static final String OTHER_PARTICIPANT_ID = "userId";
@@ -108,7 +112,7 @@ public class ReportControllerTest {
     }
     
     private void setupContext() throws Exception {
-        setupContext("Unknown Client/14 BridgeJavaSDK/10", "en-US");
+        setupContext(VALID_USER_AGENT_HEADER, VALID_LANGUAGE_HEADER);
     }
     
     private void setupContext(String userAgent, String languages) throws Exception {
@@ -143,7 +147,21 @@ public class ReportControllerTest {
     
     @Test(expected = BadRequestException.class)
     public void getParticipantReportNoUserAgent() throws Exception {
-        setupContext("Bad Request", "en-US");
+        setupContext("Bad Request", VALID_LANGUAGE_HEADER);
+
+        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getParticipantReportNoLanguageHeader() throws Exception {
+        setupContext(VALID_USER_AGENT_HEADER, null);
+
+        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getParticipantReportBadLanguageHeader() throws Exception {
+        setupContext(VALID_USER_AGENT_HEADER, "bad language header");
 
         controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
     }
@@ -172,7 +190,7 @@ public class ReportControllerTest {
     
     @Test(expected = BadRequestException.class)
     public void getStudyReportDataWithNoUserAgent() throws Exception {
-        setupContext("", "en-US");
+        setupContext("", VALID_LANGUAGE_HEADER);
         
         controller.getStudyReport("foo", null, null);
     }    
