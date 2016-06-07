@@ -212,6 +212,17 @@ public class ReportControllerTest {
         assertEquals("Name", reportData.getData().get("field2").asText());
     }
     
+    // This should be legal
+    @Test
+    public void saveParticipantEmptyReportData() throws Exception {
+        String json = TestUtils.createJson("{'date':'2015-02-12','data':{}}");
+        
+        TestUtils.mockPlayContextWithJson(json);
+
+        Result result = controller.saveParticipantReport("foo", OTHER_PARTICIPANT_ID);
+        TestUtils.assertResult(result, 201, "Report data saved.");
+    }
+    
     @Test
     public void saveParticipantReportForWorker() throws Exception {
         String json = TestUtils.createJson("{'healthCode': '"+OTHER_PARTICIPANT_HEALTH_CODE+"', 'date':'2015-02-12','data':['A','B','C']}");

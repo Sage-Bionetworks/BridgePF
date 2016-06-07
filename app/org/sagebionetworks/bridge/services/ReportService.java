@@ -6,6 +6,7 @@ import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -16,6 +17,7 @@ import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
+@Component
 public class ReportService {
     private static final int MAX_RANGE_DAYS = 45;
     
@@ -116,7 +118,7 @@ public class ReportService {
     
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate.isAfter(endDate)) {
-            throw new BadRequestException("start date " + startDate + " can't be after end date " + endDate);
+            throw new BadRequestException("Start date " + startDate + " can't be after end date " + endDate);
         }
         Period dateRange = new Period(startDate, endDate, PeriodType.days());
         if (dateRange.getDays() > MAX_RANGE_DAYS) {

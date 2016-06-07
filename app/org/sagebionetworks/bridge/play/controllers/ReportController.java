@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import play.mvc.Result;
 
+@Controller
 public class ReportController extends BaseController {
 
     private static final String NO_HEADERS_ERROR = "This request requires valid User-Agent and Accept-Language headers.";
