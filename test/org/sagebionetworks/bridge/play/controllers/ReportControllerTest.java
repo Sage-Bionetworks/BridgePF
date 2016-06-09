@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
@@ -24,17 +25,24 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
+import org.sagebionetworks.bridge.models.reports.ReportType;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -98,9 +106,15 @@ public class ReportControllerTest {
         
         doReturn(mockOtherAccount).when(mockAccountDao).getAccount(study, OTHER_PARTICIPANT_ID);
         
+        ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
+                .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
+        Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
+        statuses.put(SubpopulationGuid.create(status.getSubpopulationGuid()), status);
+        
         session = new UserSession(participant);
         session.setStudyIdentifier(TEST_STUDY);
         session.setAuthenticated(true);
+        session.setConsentStatuses(statuses);
         
         doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
         doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
@@ -109,6 +123,12 @@ public class ReportControllerTest {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(session).when(controller).getAuthenticatedSession(Roles.WORKER);
+        
+        ReportIndex index = new DynamoReportIndex();
+        index.setIdentifier("fofo");
+        List<? extends ReportIndex> list = Lists.newArrayList(index);
+        
+        doReturn(list).when(mockReportService).getReportIndices(eq(TEST_STUDY), any());
     }
     
     private void setupContext() throws Exception {
@@ -126,6 +146,7 @@ public class ReportControllerTest {
     @Test
     public void getParticipantReportData() throws Exception {
         setupContext();
+        
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 "foo", HEALTH_CODE, START_DATE, END_DATE);
         
@@ -135,8 +156,25 @@ public class ReportControllerTest {
     }
 
     @Test
+    public void getParticipantReportDataAsResearcher() throws Exception {
+        // No consents, not consented, but is a researcher... can see these reports, too
+        session.setConsentStatuses(Maps.newHashMap());
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
+                .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+        session.setParticipant(participant);
+        
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
+                "foo", HEALTH_CODE, START_DATE, END_DATE);
+        
+        Result result = controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+        assertEquals(200, result.status());
+        assertResult(result);
+    }
+    
+    @Test
     public void getParticipantReportDataNoDates() throws Exception {
         setupContext();
+        
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 "foo", HEALTH_CODE, null, null);
         
@@ -155,7 +193,7 @@ public class ReportControllerTest {
     @Test(expected = BadRequestException.class)
     public void getParticipantReportNoLanguageHeader() throws Exception {
         setupContext(VALID_USER_AGENT_HEADER, null);
-
+        
         controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
     }
     
@@ -271,15 +309,47 @@ public class ReportControllerTest {
     }
     
     @Test
+    public void getStudyReportIndices() throws Exception {
+        Result result = controller.getStudyReportIndices();
+        assertEquals(200, result.status());
+        
+        ResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
+                Helpers.contentAsString(result),
+                new TypeReference<ResourceList<ReportIndex>>() {});
+        assertEquals(1, results.getTotal());
+        assertEquals(1, results.getItems().size());
+        assertEquals("fofo", results.getItems().get(0).getIdentifier());
+        
+        verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
+    }
+    
+    @Test
+    public void getParticipantReportIndices() throws Exception {
+        Result result = controller.getParticipantReportIndices();
+        assertEquals(200, result.status());
+        
+        ResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
+                Helpers.contentAsString(result),
+                new TypeReference<ResourceList<ReportIndex>>() {});
+        assertEquals(1, results.getTotal());
+        assertEquals(1, results.getItems().size());
+        assertEquals("fofo", results.getItems().get(0).getIdentifier());
+        
+        verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
+    }
+    
+    @Test
     public void deleteParticipantReportData() throws Exception {
-        controller.deleteParticipantReport("foo", OTHER_PARTICIPANT_ID);
+        Result result = controller.deleteParticipantReport("foo", OTHER_PARTICIPANT_ID);
+        TestUtils.assertResult(result, 200, "Report deleted.");
         
         verify(mockReportService).deleteParticipantReport(session.getStudyIdentifier(), "foo", OTHER_PARTICIPANT_HEALTH_CODE);
     }
     
     @Test
     public void deleteStudyReportData() throws Exception {
-        controller.deleteStudyReport("foo");
+        Result result = controller.deleteStudyReport("foo");
+        TestUtils.assertResult(result, 200, "Report deleted.");
         
         verify(mockReportService).deleteStudyReport(session.getStudyIdentifier(), "foo");
     }

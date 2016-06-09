@@ -55,7 +55,12 @@ public final class ReportDataKey implements BridgeEntity {
                 String.format("%s:%s:%s", healthCode, identifier, studyId.getIdentifier()) :
                 String.format("%s:%s", identifier, studyId.getIdentifier());
     }
-
+    
+    @JsonIgnore
+    public String getIndexKeyString() {
+        return String.format("%s:%s",studyId.getIdentifier(), reportType.name());
+    }
+    
     @Override
     public String toString() {
         return "ReportDataKey [studyId=" + studyId + ", identifier=" + identifier

@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.List;
+
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
@@ -9,11 +11,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ReportDataDao;
+import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -22,10 +26,15 @@ public class ReportService {
     private static final int MAX_RANGE_DAYS = 45;
     
     private ReportDataDao reportDataDao;
+    private ReportIndexDao reportIndexDao;
     
     @Autowired
     final void setReportDataDao(ReportDataDao reportDataDao) {
         this.reportDataDao =reportDataDao;
+    }
+    
+    final void setReportIndexDao(ReportIndexDao reportIndexDao) {
+        this.reportIndexDao = reportIndexDao;
     }
     
     public DateRangeResourceList<? extends ReportData> getStudyReport(StudyIdentifier studyId, String identifier,
@@ -70,6 +79,7 @@ public class ReportService {
         reportData.setKey(key.getKeyString());
         
         reportDataDao.saveReportData(reportData);
+        reportIndexDao.addIndex(key);
     }
     
     public void saveParticipantReport(StudyIdentifier studyId, String identifier, String healthCode, ReportData reportData) {
@@ -84,6 +94,7 @@ public class ReportService {
         reportData.setKey(key.getKeyString());
         
         reportDataDao.saveReportData(reportData);
+        reportIndexDao.addIndex(key);
     }
     
     public void deleteStudyReport(StudyIdentifier studyId, String identifier) {
@@ -95,6 +106,14 @@ public class ReportService {
                 .withStudyIdentifier(studyId).build();
         
         reportDataDao.deleteReportData(key);
+        reportIndexDao.removeIndex(key);
+    }
+    
+    public List<? extends ReportIndex> getReportIndices(StudyIdentifier studyId, ReportType reportType) {
+        checkNotNull(studyId);
+        checkNotNull(reportType);
+        
+        return reportIndexDao.getIndices(studyId, reportType);
     }
     
     public void deleteParticipantReport(StudyIdentifier studyId, String identifier, String healthCode) {

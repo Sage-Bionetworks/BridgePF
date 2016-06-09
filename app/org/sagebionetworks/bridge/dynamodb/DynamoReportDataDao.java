@@ -28,8 +28,8 @@ public class DynamoReportDataDao implements ReportDataDao {
     private DynamoDBMapper mapper;
 
     @Resource(name = "reportDataMapper")
-    final void setReportDataMapper(DynamoDBMapper schedulePlanMapper) {
-        this.mapper = schedulePlanMapper;
+    final void setReportDataMapper(DynamoDBMapper reportDataMapper) {
+        this.mapper = reportDataMapper;
     }
     
     @Override

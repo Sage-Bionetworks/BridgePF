@@ -25,6 +25,7 @@ public class ReportDataKeyTest {
                 .withReportType(ReportType.PARTICIPANT).withIdentifier("report").build();
 
         assertEquals("healthCode:report:api", key.getKeyString());
+        assertEquals("api:PARTICIPANT", key.getIndexKeyString());
         assertEquals("healthCode", key.getHealthCode());
         assertEquals("report", key.getIdentifier());
         assertEquals(ReportType.PARTICIPANT, key.getReportType());
@@ -36,6 +37,7 @@ public class ReportDataKeyTest {
                 .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_STUDY).withIdentifier("report").build();
         
         assertEquals("report:api", key.getKeyString());
+        assertEquals("api:STUDY", key.getIndexKeyString());
         assertNull(key.getHealthCode());
         assertEquals("report", key.getIdentifier());
         assertEquals(ReportType.STUDY, key.getReportType());

@@ -57,6 +57,7 @@ POST   /v3/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.contro
 
 # Users
 POST   /v3/users                          @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
+GET    /v3/users/reports                  @org.sagebionetworks.bridge.play.controllers.ReportController.getParticipantReportIndices
 DELETE /v3/users/:userId                  @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(userId: String)
 GET    /v3/users/self                     @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
 POST   /v3/users/self                     @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
@@ -70,6 +71,7 @@ POST   /v3/users/self/dataGroups          @org.sagebionetworks.bridge.play.contr
 GET    /v3/users/self/reports/:identifier @org.sagebionetworks.bridge.play.controllers.ReportController.getParticipantReport(identifier: String, startDate: String ?= null, endDate: String ?= null)
 
 # Study-wide reports
+GET    /v3/reports                           @org.sagebionetworks.bridge.play.controllers.ReportController.getStudyReportIndices
 GET    /v3/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.getStudyReport(identifier: String, startDate: String ?= null, endDate: String ?= null)
 POST   /v3/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.saveStudyReport(identifier: String)
 DELETE /v3/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.deleteStudyReport(identifier: String)
