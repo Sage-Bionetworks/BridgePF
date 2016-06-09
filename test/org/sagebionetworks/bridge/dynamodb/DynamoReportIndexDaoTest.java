@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -21,11 +22,7 @@ import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -102,8 +99,11 @@ public class DynamoReportIndexDaoTest {
         
         List<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         assertEquals(count+2, indices.size());
-        assertEquals(participantReportKey1.getIdentifier(), indices.get(0).getIdentifier());
-        assertEquals(participantReportKey2.getIdentifier(), indices.get(1).getIdentifier());
+        
+        Set<String> identifiers = Sets.newHashSet(indices.get(0).getIdentifier(), indices.get(1).getIdentifier());
+        Set<String> originalIdentifiers = Sets.newHashSet(participantReportKey1.getIdentifier(),
+                participantReportKey2.getIdentifier());
+        assertEquals(originalIdentifiers, identifiers);
         
         // wrong type returns no records
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
@@ -120,19 +120,9 @@ public class DynamoReportIndexDaoTest {
     private void deleteParticipantReport(ReportDataKey key) {
         DynamoReportIndex hashKey = new DynamoReportIndex();
         hashKey.setKey(key.getIndexKeyString());
+        hashKey.setIdentifier(key.getIdentifier());
         
-        Condition idCondition = new Condition().withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withS(key.getIdentifier()));
-        
-        DynamoDBQueryExpression<DynamoReportIndex> query =
-                new DynamoDBQueryExpression<DynamoReportIndex>().withHashKeyValues(hashKey)
-                        .withRangeKeyCondition("identifier", idCondition);
-        List<DynamoReportIndex> objectsToDelete = mapper.query(DynamoReportIndex.class, query);
-        
-        if (!objectsToDelete.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(objectsToDelete);
-            BridgeUtils.ifFailuresThrowException(failures);
-        }
-        
+        DynamoReportIndex index = mapper.load(hashKey);
+        mapper.delete(index);
     }
 }

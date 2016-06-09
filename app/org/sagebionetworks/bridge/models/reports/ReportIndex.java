@@ -7,9 +7,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * <p>An index entry of an identifier used for a report in a study. You can have a "default" study report and a 
- * "default" participant report, and both would co-exist in the data table. This is maintained by ReportIndex 
- * table by using a compound key that includes the study and the report type. </p>
+ * <p>An index entry of an identifier used for a report in a study. It's possible to have the same identifier 
+ * used for a study and a participant report, so the ReportIndex tables support this by including the type 
+ * as well as the study in the record's hash key. </p>
  *
  * <p>Study index records can be deleted when study reports are deleted, but we can't do the same for 
  * participants because we don't know (without scanning) when the last participant is removed from a report 

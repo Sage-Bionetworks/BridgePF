@@ -51,18 +51,11 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         
         DynamoReportIndex hashKey = new DynamoReportIndex();
         hashKey.setKey(key.getIndexKeyString());
+        hashKey.setIdentifier(key.getIdentifier());
         
-        Condition idCondition = new Condition().withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withS(key.getIdentifier()));
-        
-        DynamoDBQueryExpression<DynamoReportIndex> query =
-                new DynamoDBQueryExpression<DynamoReportIndex>().withHashKeyValues(hashKey)
-                        .withRangeKeyCondition("identifier", idCondition);
-        List<DynamoReportIndex> objectsToDelete = mapper.query(DynamoReportIndex.class, query);
-        
-        if (!objectsToDelete.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(objectsToDelete);
-            BridgeUtils.ifFailuresThrowException(failures);
+        DynamoReportIndex index = mapper.load(hashKey);
+        if (index != null) {
+            mapper.delete(index);
         }
     }
 
@@ -71,6 +64,7 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         checkNotNull(studyId);
         checkNotNull(reportType);
         
+        // Don't use ReportDataKey because it enforces present of healthCode for ReportType.PARTICIPANT.
         String key = String.format("%s:%s", studyId.getIdentifier(), reportType.name());
         
         DynamoReportIndex hashKey = new DynamoReportIndex();

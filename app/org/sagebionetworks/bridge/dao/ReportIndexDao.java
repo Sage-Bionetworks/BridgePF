@@ -16,7 +16,8 @@ public interface ReportIndexDao {
     
     /**
      * Remove an index item for a report identifier. This can only be done for study reports, since we have no
-     * performant way to determine if an identifier for a participant report is no longer in use by any participant.
+     * performant way to determine if an identifier for a participant report is no longer in use by any participant. 
+     * Still it is better than no cleanup.
      */
     void removeIndex(ReportDataKey key);
     

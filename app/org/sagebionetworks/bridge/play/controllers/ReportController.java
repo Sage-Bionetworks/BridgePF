@@ -61,7 +61,7 @@ public class ReportController extends BaseController {
     }
 
     /**
-     * Reports for specific individuals accessible only to consented study participants.
+     * Reports for specific individuals accessible to either consented study participants, or to researchers.
      */
     public Result getParticipantReport(String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedSession();

@@ -157,7 +157,7 @@ public class ReportControllerTest {
 
     @Test
     public void getParticipantReportDataAsResearcher() throws Exception {
-        // No consents, not consented, but is a researcher... can see these reports, too
+        // No consents so user is not consented, but is a researcher and can also see these reports
         session.setConsentStatuses(Maps.newHashMap());
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
@@ -193,7 +193,7 @@ public class ReportControllerTest {
     @Test(expected = BadRequestException.class)
     public void getParticipantReportNoLanguageHeader() throws Exception {
         setupContext(VALID_USER_AGENT_HEADER, null);
-        
+
         controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
     }
     
