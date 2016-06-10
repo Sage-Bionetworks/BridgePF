@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import org.joda.time.LocalDate;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -40,7 +41,7 @@ public class ReportDataKeyTest {
             new ReportDataKey.Builder().validateWithDate(null).build();
         } catch(InvalidEntityException e) {
             assertEquals("date is required", e.getErrors().get("date").get(0));
-            // integrated alongside validator errors
+            // integrated alongside Validator errors
             assertEquals("identifier cannot be missing or blank", e.getErrors().get("identifier").get(0));
         }
     }
@@ -48,8 +49,11 @@ public class ReportDataKeyTest {
     @Test
     public void constructStudyKey() {
         ReportDataKey key = new ReportDataKey.Builder()
-                .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_STUDY).withIdentifier("report").build();
+                .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_STUDY)
+                .withIdentifier("report").validateWithDate(LocalDate.parse("2012-02-02")).build();
         
+        // This was constructed, the date is valid. It's not part of the key, it's validated in the builder
+        // so validation errors are combined with key validation errors.
         assertEquals("report:api", key.getKeyString());
         assertEquals("api:STUDY", key.getIndexKeyString());
         assertNull(key.getHealthCode());
