@@ -53,21 +53,18 @@ public class ReportController extends BaseController {
      * Get a list of the identifiers used for participant reports in this study.
      */
     public Result getParticipantReportIndices() throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedAndConsentedOrResearcherSession();
         
         List<? extends ReportIndex> indices = reportService.getReportIndices(
                 session.getStudyIdentifier(), ReportType.PARTICIPANT);
         return okResult(indices);
     }
-
+    
     /**
      * Reports for specific individuals accessible to either consented study participants, or to researchers.
      */
     public Result getParticipantReport(String identifier, String startDateString, String endDateString) {
-        UserSession session = getAuthenticatedSession();
-        if (!session.isInRole(RESEARCHER) && !session.doesConsent()) {
-            throw new UnauthorizedException();
-        }
+        UserSession session = getAuthenticatedAndConsentedOrResearcherSession();
         checkHeaders();
         
         LocalDate startDate = parseDateHelper(startDateString);
@@ -135,7 +132,7 @@ public class ReportController extends BaseController {
      * Get a list of the identifiers used for participant reports in this study.
      */
     public Result getStudyReportIndices() throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession();
         
         List<? extends ReportIndex> indices = reportService.getReportIndices(
                 session.getStudyIdentifier(), ReportType.STUDY);
@@ -185,6 +182,18 @@ public class ReportController extends BaseController {
         return okResult("Report deleted.");
     }
 
+    /**
+     * For viewing participant reports or an index of the reports that exist, you must either be a consented user
+     * (looking at yourself) or a researcher.
+     */
+    private UserSession getAuthenticatedAndConsentedOrResearcherSession() {
+        UserSession session = getAuthenticatedSession();
+        if (!session.isInRole(RESEARCHER) && !session.doesConsent()) {
+            throw new UnauthorizedException();
+        }
+        return session;
+    }
+    
     /**
      * Non-app clients are being created to display reports (specifically, web pages embedded in the apps). These 
      * have not passed along the headers needed to properly verify that the user is consented to view the reports. 
