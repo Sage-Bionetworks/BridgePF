@@ -4,10 +4,12 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -172,39 +174,47 @@ public class ReportServiceTest {
     public void saveStudyReportData() {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
         
+        // Calling twice, the report DAO will be called twice, but the index DAO will be 
+        // called once (it caches for a minute)
+        service.saveStudyReport(TEST_STUDY, IDENTIFIER, someData);
         service.saveStudyReport(TEST_STUDY, IDENTIFIER, someData);
         
-        verify(mockReportIndexDao).addIndex(new ReportDataKey.Builder()
-                .withStudyIdentifier(TEST_STUDY)
-                .withReportType(ReportType.STUDY)
-                .withIdentifier(IDENTIFIER).build());
-        verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
+        verify(mockReportDataDao, times(2)).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
         assertEquals(STUDY_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
         assertEquals(LocalDate.parse("2015-02-10"), retrieved.getDate());
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
+        
+        verify(mockReportIndexDao, times(1)).addIndex(new ReportDataKey.Builder()
+                .withStudyIdentifier(TEST_STUDY)
+                .withReportType(ReportType.STUDY)
+                .withIdentifier(IDENTIFIER).build());
     }
     
     @Test
-    public void saveParticipantReportData() {
+    public void saveParticipantReportData() throws Exception {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
         
+        // Calling twice, the report DAO will be called twice, but the index DAO will be 
+        // called once (it caches for a minute)
         service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, someData);
-        
-        verify(mockReportIndexDao).addIndex(new ReportDataKey.Builder()
-                .withHealthCode(HEALTH_CODE)
-                .withStudyIdentifier(TEST_STUDY)
-                .withReportType(ReportType.PARTICIPANT)
-                .withIdentifier(IDENTIFIER).build());
-        verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
+        service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, someData);
+
+        verify(mockReportDataDao, times(2)).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
         assertEquals(PARTICIPANT_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
         assertEquals(LocalDate.parse("2015-02-10"), retrieved.getDate());
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
+        
+        verify(mockReportIndexDao, times(1)).addIndex(new ReportDataKey.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withStudyIdentifier(TEST_STUDY)
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(IDENTIFIER).build());
     }
     
     @Test

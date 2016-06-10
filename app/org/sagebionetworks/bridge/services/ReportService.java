@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
@@ -21,9 +24,18 @@ import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 @Component
 public class ReportService {
     private static final int MAX_RANGE_DAYS = 45;
+    
+    // A short-lived cache to prevent repeatedly writing an index on batch jobs
+    private static final Cache<String,String> REPORT_INDEX_CACHE = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .build();
     
     private ReportDataDao reportDataDao;
     private ReportIndexDao reportIndexDao;
@@ -76,14 +88,16 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withStudyIdentifier(studyId)
+                .validateWithDate(reportData.getDate()).build();
         reportData.setKey(key.getKeyString());
         
         reportDataDao.saveReportData(reportData);
-        reportIndexDao.addIndex(key);
+        addToIndex(key);
     }
     
-    public void saveParticipantReport(StudyIdentifier studyId, String identifier, String healthCode, ReportData reportData) {
+    public void saveParticipantReport(StudyIdentifier studyId, String identifier, String healthCode,
+            ReportData reportData) {
         checkNotNull(reportData);
         // ReportDataKey validates all other parameters to this method
         
@@ -91,11 +105,12 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withStudyIdentifier(studyId)
+                .validateWithDate(reportData.getDate()).build();
         reportData.setKey(key.getKeyString());
         
         reportDataDao.saveReportData(reportData);
-        reportIndexDao.addIndex(key);
+        addToIndex(key);        
     }
     
     public void deleteStudyReport(StudyIdentifier studyId, String identifier) {
@@ -107,6 +122,7 @@ public class ReportService {
                 .withStudyIdentifier(studyId).build();
         
         reportDataDao.deleteReportData(key);
+        REPORT_INDEX_CACHE.invalidate(key.getIndexKeyString());
         reportIndexDao.removeIndex(key);
     }
     
@@ -127,6 +143,17 @@ public class ReportService {
                 .withStudyIdentifier(studyId).build();
         
         reportDataDao.deleteReportData(key);
+    }
+
+    private void addToIndex(ReportDataKey key) {
+        try {
+            REPORT_INDEX_CACHE.get(key.getIndexKeyString(), () -> {
+                reportIndexDao.addIndex(key);
+                return key.getIndexKeyString();
+            });
+        } catch(ExecutionException e) {
+            throw new BridgeServiceException(e);
+        }
     }
     
     private LocalDate defaultValueToYesterday(LocalDate submittedValue) {

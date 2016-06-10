@@ -53,7 +53,7 @@ public class ReportController extends BaseController {
      * Get a list of the identifiers used for participant reports in this study.
      */
     public Result getParticipantReportIndices() throws Exception {
-        UserSession session = getAuthenticatedAndConsentedOrResearcherSession();
+        UserSession session = getAuthenticatedSession();
         
         List<? extends ReportIndex> indices = reportService.getReportIndices(
                 session.getStudyIdentifier(), ReportType.PARTICIPANT);
@@ -65,7 +65,6 @@ public class ReportController extends BaseController {
      */
     public Result getParticipantReport(String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedAndConsentedOrResearcherSession();
-        checkHeaders();
         
         LocalDate startDate = parseDateHelper(startDateString);
         LocalDate endDate = parseDateHelper(endDateString);
@@ -145,7 +144,6 @@ public class ReportController extends BaseController {
      */
     public Result getStudyReport(String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedSession();
-        checkHeaders();
         
         LocalDate startDate = parseDateHelper(startDateString);
         LocalDate endDate = parseDateHelper(endDateString);
@@ -182,16 +180,16 @@ public class ReportController extends BaseController {
         return okResult("Report deleted.");
     }
 
-    /**
-     * For viewing participant reports or an index of the reports that exist, you must either be a consented user
-     * (looking at yourself) or a researcher.
-     */
     private UserSession getAuthenticatedAndConsentedOrResearcherSession() {
         UserSession session = getAuthenticatedSession();
-        if (!session.isInRole(RESEARCHER) && !session.doesConsent()) {
-            throw new UnauthorizedException();
+        if (session.isInRole(RESEARCHER)) {
+            return session;
         }
-        return session;
+        if (session.doesConsent()) {
+            checkHeaders();
+            return session;
+        }
+        throw new UnauthorizedException();
     }
     
     /**

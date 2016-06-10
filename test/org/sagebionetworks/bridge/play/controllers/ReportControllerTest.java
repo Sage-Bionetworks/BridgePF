@@ -226,12 +226,40 @@ public class ReportControllerTest {
         assertResult(result);
     }
     
+    @Test
+    public void getStudyReportDataWithNoUserAgentAsResearcherOK() throws Exception {
+        setupContext("", VALID_LANGUAGE_HEADER);
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
+                "foo", START_DATE, END_DATE);
+        
+        controller.getStudyReport("foo", START_DATE.toString(), END_DATE.toString());
+    }    
+    
     @Test(expected = BadRequestException.class)
-    public void getStudyReportDataWithNoUserAgent() throws Exception {
+    public void getParticipantReportDataWithNoUserAgent() throws Exception {
         setupContext("", VALID_LANGUAGE_HEADER);
         
-        controller.getStudyReport("foo", null, null);
-    }    
+        SubpopulationGuid guid = SubpopulationGuid.create("foo");
+        Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
+        consentStatuses.put(guid, new ConsentStatus.Builder().withName("FullName").withConsented(true).withRequired(true).withGuid(guid).build());
+        
+        session.setConsentStatuses(consentStatuses);
+        
+        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getParticipantReportDataWithNoAcceptLanguage() throws Exception {
+        setupContext(VALID_USER_AGENT_HEADER, null);
+        
+        SubpopulationGuid guid = SubpopulationGuid.create("foo");
+        Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
+        consentStatuses.put(guid, new ConsentStatus.Builder().withName("FullName").withConsented(true).withRequired(true).withGuid(guid).build());
+        
+        session.setConsentStatuses(consentStatuses);
+        
+        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+    }
     
     @Test
     public void saveParticipantReportData() throws Exception {
