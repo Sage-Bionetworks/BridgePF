@@ -62,6 +62,22 @@ public class ReportDataKeyTest {
     }
     
     @Test
+    public void canConstructKeyWithoutValidatingDate() {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withReportType(ReportType.PARTICIPANT).withStudyIdentifier(TEST_STUDY)
+                .withHealthCode("AAA")
+                .withIdentifier("report").build();
+        
+        // This was constructed, the date is valid. It's not part of the key, it's validated in the builder
+        // so validation errors are combined with key validation errors.
+        assertEquals("AAA:report:api", key.getKeyString());
+        assertEquals("api:PARTICIPANT", key.getIndexKeyString());
+        assertEquals("AAA", key.getHealthCode());
+        assertEquals("report", key.getIdentifier());
+        assertEquals(ReportType.PARTICIPANT, key.getReportType());
+    }
+    
+    @Test
     public void canSerialize() throws Exception {
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("healthCode").withStudyIdentifier(TEST_STUDY)
                 .withReportType(ReportType.PARTICIPANT).withIdentifier("report").build();
