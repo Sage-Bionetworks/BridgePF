@@ -33,6 +33,7 @@ public class ReportService {
         this.reportDataDao =reportDataDao;
     }
     
+    @Autowired
     final void setReportIndexDao(ReportIndexDao reportIndexDao) {
         this.reportIndexDao = reportIndexDao;
     }
