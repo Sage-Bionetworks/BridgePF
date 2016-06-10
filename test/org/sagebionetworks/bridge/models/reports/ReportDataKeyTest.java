@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,6 +30,19 @@ public class ReportDataKeyTest {
         assertEquals("healthCode", key.getHealthCode());
         assertEquals("report", key.getIdentifier());
         assertEquals(ReportType.PARTICIPANT, key.getReportType());
+    }
+    
+    @Test
+    public void canIncludeDateValidation() {
+        try {
+            // This is tested in tests for the validator, but date is actually validated in the 
+            // build method.
+            new ReportDataKey.Builder().validateWithDate(null).build();
+        } catch(InvalidEntityException e) {
+            assertEquals("date is required", e.getErrors().get("date").get(0));
+            // integrated alongside validator errors
+            assertEquals("identifier cannot be missing or blank", e.getErrors().get("identifier").get(0));
+        }
     }
     
     @Test
