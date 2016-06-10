@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -222,6 +221,7 @@ public class ReportServiceTest {
         service.deleteStudyReport(TEST_STUDY, IDENTIFIER);
         
         verify(mockReportDataDao).deleteReportData(STUDY_REPORT_DATA_KEY);
+        verify(mockReportIndexDao).removeIndex(STUDY_REPORT_DATA_KEY);
     }
     
     @Test
@@ -229,6 +229,7 @@ public class ReportServiceTest {
         service.deleteParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE);
         
         verify(mockReportDataDao).deleteReportData(PARTICIPANT_REPORT_DATA_KEY);
+        verifyNoMoreInteractions(mockReportIndexDao);
     }
     
     // The following are date range tests from MPowerVisualizationService, they should work with this service too
