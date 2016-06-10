@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +14,15 @@ import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
+import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ReportService;
 
@@ -45,11 +50,21 @@ public class ReportController extends BaseController {
     }
     
     /**
-     * Reports for specific individuals accessible only to consented study participants.
+     * Get a list of the identifiers used for participant reports in this study.
+     */
+    public Result getParticipantReportIndices() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        
+        List<? extends ReportIndex> indices = reportService.getReportIndices(
+                session.getStudyIdentifier(), ReportType.PARTICIPANT);
+        return okResult(indices);
+    }
+    
+    /**
+     * Reports for specific individuals accessible to either consented study participants, or to researchers.
      */
     public Result getParticipantReport(String identifier, String startDateString, String endDateString) {
-        UserSession session = getAuthenticatedAndConsentedSession();
-        checkHeaders();
+        UserSession session = getAuthenticatedAndConsentedOrResearcherSession();
         
         LocalDate startDate = parseDateHelper(startDateString);
         LocalDate endDate = parseDateHelper(endDateString);
@@ -109,7 +124,18 @@ public class ReportController extends BaseController {
         
         reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, account.getHealthCode());
         
-        return ok("Report deleted.");
+        return okResult("Report deleted.");
+    }
+    
+    /**
+     * Get a list of the identifiers used for participant reports in this study.
+     */
+    public Result getStudyReportIndices() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        
+        List<? extends ReportIndex> indices = reportService.getReportIndices(
+                session.getStudyIdentifier(), ReportType.STUDY);
+        return okResult(indices);
     }
     
     /**
@@ -118,7 +144,6 @@ public class ReportController extends BaseController {
      */
     public Result getStudyReport(String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedSession();
-        checkHeaders();
         
         LocalDate startDate = parseDateHelper(startDateString);
         LocalDate endDate = parseDateHelper(endDateString);
@@ -152,9 +177,21 @@ public class ReportController extends BaseController {
         
         reportService.deleteStudyReport(session.getStudyIdentifier(), identifier);
         
-        return ok("Report deleted.");
+        return okResult("Report deleted.");
     }
 
+    private UserSession getAuthenticatedAndConsentedOrResearcherSession() {
+        UserSession session = getAuthenticatedSession();
+        if (session.isInRole(RESEARCHER)) {
+            return session;
+        }
+        if (session.doesConsent()) {
+            checkHeaders();
+            return session;
+        }
+        throw new UnauthorizedException();
+    }
+    
     /**
      * Non-app clients are being created to display reports (specifically, web pages embedded in the apps). These 
      * have not passed along the headers needed to properly verify that the user is consented to view the reports. 

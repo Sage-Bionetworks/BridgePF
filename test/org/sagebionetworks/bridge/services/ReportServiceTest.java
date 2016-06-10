@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -22,11 +23,14 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.dao.ReportDataDao;
+import org.sagebionetworks.bridge.dao.ReportIndexDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -56,22 +60,35 @@ public class ReportServiceTest {
     @Mock
     ReportDataDao mockReportDataDao;
     
+    @Mock
+    ReportIndexDao mockReportIndexDao;
+    
     @Captor
     ArgumentCaptor<ReportData> reportDataCaptor;
+    
+    @Captor
+    ArgumentCaptor<ReportIndex> reportIndexCaptor;
     
     ReportService service;
     
     DateRangeResourceList<? extends ReportData> results;
     
+    List<? extends ReportIndex> indices;
+    
     @Before
     public void before() throws Exception {
         service = new ReportService();
         service.setReportDataDao(mockReportDataDao);
+        service.setReportIndexDao(mockReportIndexDao);
 
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
         results = new DateRangeResourceList<ReportData>(list, START_DATE, END_DATE);
+        
+        DynamoReportIndex index = new DynamoReportIndex();
+        index.setIdentifier(IDENTIFIER);
+        indices = Lists.newArrayList(index);
     }
     
     private static ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
@@ -156,30 +173,47 @@ public class ReportServiceTest {
     public void saveStudyReportData() {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
         
+        // Calling twice, the report DAO will be called twice, but the index DAO will be 
+        // called once (it caches for a minute)
+        service.saveStudyReport(TEST_STUDY, IDENTIFIER, someData);
         service.saveStudyReport(TEST_STUDY, IDENTIFIER, someData);
         
-        verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
+        verify(mockReportDataDao, times(2)).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
         assertEquals(STUDY_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
         assertEquals(LocalDate.parse("2015-02-10"), retrieved.getDate());
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
+        
+        verify(mockReportIndexDao, times(1)).addIndex(new ReportDataKey.Builder()
+                .withStudyIdentifier(TEST_STUDY)
+                .withReportType(ReportType.STUDY)
+                .withIdentifier(IDENTIFIER).build());
     }
     
     @Test
-    public void saveParticipantReportData() {
+    public void saveParticipantReportData() throws Exception {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
         
+        // Calling twice, the report DAO will be called twice, but the index DAO will be 
+        // called once (it caches for a minute)
         service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, someData);
-        
-        verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
+        service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, someData);
+
+        verify(mockReportDataDao, times(2)).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
         assertEquals(PARTICIPANT_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
         assertEquals(LocalDate.parse("2015-02-10"), retrieved.getDate());
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
+        
+        verify(mockReportIndexDao, times(1)).addIndex(new ReportDataKey.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withStudyIdentifier(TEST_STUDY)
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(IDENTIFIER).build());
     }
     
     @Test
@@ -187,6 +221,7 @@ public class ReportServiceTest {
         service.deleteStudyReport(TEST_STUDY, IDENTIFIER);
         
         verify(mockReportDataDao).deleteReportData(STUDY_REPORT_DATA_KEY);
+        verify(mockReportIndexDao).removeIndex(STUDY_REPORT_DATA_KEY);
     }
     
     @Test
@@ -194,6 +229,7 @@ public class ReportServiceTest {
         service.deleteParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE);
         
         verify(mockReportDataDao).deleteReportData(PARTICIPANT_REPORT_DATA_KEY);
+        verifyNoMoreInteractions(mockReportIndexDao);
     }
     
     // The following are date range tests from MPowerVisualizationService, they should work with this service too
@@ -337,6 +373,26 @@ public class ReportServiceTest {
     public void deleteParticipantReportNoHealthCode() {
         invalid(() -> service.deleteParticipantReport(TEST_STUDY, IDENTIFIER, null),
                 "healthCode", "is required for participant reports");
+    }
+    
+    @Test
+    public void getStudyIndices() {
+        doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
+
+        List<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.STUDY);
+        
+        assertEquals(IDENTIFIER, indices.get(0).getIdentifier());
+        verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
+    }
+    
+    @Test
+    public void getParticipantIndices() {
+        doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
+
+        List<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        
+        assertEquals(IDENTIFIER, indices.get(0).getIdentifier());
+        verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     
     private void invalid(Runnable runnable, String fieldName, String message) {
