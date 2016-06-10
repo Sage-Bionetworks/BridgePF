@@ -121,7 +121,7 @@ public final class ReportDataKey implements BridgeEntity {
             Errors errors = Validate.getErrorsFor(key);
             Validate.entity(VALIDATOR, errors, key);
             if (validateDate && date == null) {
-                errors.rejectValue("date", "date is required");
+                errors.rejectValue("date", "is required");
             }
             if (errors.hasErrors()) {
                 Validate.throwException(errors, key);
