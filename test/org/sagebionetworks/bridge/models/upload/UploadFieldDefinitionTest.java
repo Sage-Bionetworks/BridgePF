@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +43,31 @@ public class UploadFieldDefinitionTest {
         assertEquals("test-field", fieldDef.getName());
         assertFalse(fieldDef.isRequired());
         assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDef.getType());
+    }
+
+    @Test
+    public void testMultiChoiceAnswerList() {
+        // set up original list
+        List<String> originalAnswerList = new ArrayList<>();
+        originalAnswerList.add("first");
+        originalAnswerList.add("second");
+
+        // build and validate
+        List<String> expectedAnswerList = ImmutableList.of("first", "second");
+        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("multi-choice-field")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList(originalAnswerList).build();
+        assertEquals(expectedAnswerList, fieldDef.getMultiChoiceAnswerList());
+
+        // modify original list, verify that field def stays the same
+        originalAnswerList.add("third");
+        assertEquals(expectedAnswerList, fieldDef.getMultiChoiceAnswerList());
+    }
+
+    @Test
+    public void testMultiChoiceAnswerVarargs() {
+        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("multi-choice-field")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("aa", "bb", "cc").build();
+        assertEquals(ImmutableList.of("aa", "bb", "cc"), fieldDef.getMultiChoiceAnswerList());
     }
 
     @Test

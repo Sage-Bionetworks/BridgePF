@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
@@ -115,8 +114,7 @@ public class UploadSchemaValidatorTest {
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("bar-field")
                 .withType(UploadFieldType.STRING).build());
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("baz-field")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList(ImmutableList.of("asdf", "jkl;"))
-                .build());
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("asdf", "jkl;").build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -373,7 +371,7 @@ public class UploadSchemaValidatorTest {
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("multi-choice-null")
                 .withType(UploadFieldType.MULTI_CHOICE).build());
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("multi-choice-empty")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList(ImmutableList.of()).build());
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList().build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate

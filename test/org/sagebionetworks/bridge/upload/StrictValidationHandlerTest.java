@@ -163,8 +163,7 @@ public class StrictValidationHandlerTest {
                 new DynamoUploadFieldDefinition.Builder().withName("int with float value")
                         .withType(UploadFieldType.INT).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("multi-choice")
-                        .withType(UploadFieldType.MULTI_CHOICE)
-                        .withMultiChoiceAnswerList(ImmutableList.of("foo", "bar", "baz")).build(),
+                        .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("foo", "bar", "baz").build(),
                 new DynamoUploadFieldDefinition.Builder().withName("string timestamp")
                         .withType(UploadFieldType.TIMESTAMP).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("long timestamp")
@@ -253,8 +252,7 @@ public class StrictValidationHandlerTest {
         // additional field defs
         List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
                 new DynamoUploadFieldDefinition.Builder().withName("invalid multi-choice")
-                        .withType(UploadFieldType.MULTI_CHOICE)
-                        .withMultiChoiceAnswerList(ImmutableList.of("good1", "good2")).build());
+                        .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("good1", "good2").build());
 
         // additional JSON data
         String additionalJsonText = "{\n" +

@@ -5,7 +5,9 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -182,8 +184,15 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         }
 
         /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMultiChoiceAnswerList */
+        @JsonSetter
         public Builder withMultiChoiceAnswerList(List<String> multiChoiceAnswerList) {
             this.multiChoiceAnswerList = multiChoiceAnswerList;
+            return this;
+        }
+
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMultiChoiceAnswerList */
+        public Builder withMultiChoiceAnswerList(String... multiChoiceAnswerList) {
+            this.multiChoiceAnswerList = ImmutableList.copyOf(multiChoiceAnswerList);
             return this;
         }
 
@@ -218,8 +227,15 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             if (required == null) {
                 required = true;
             }
+
+            // If the answer list was specified, make an immutable copy.
+            List<String> multiChoiceAnswerListCopy = null;
+            if (multiChoiceAnswerList != null) {
+                 multiChoiceAnswerListCopy = ImmutableList.copyOf(multiChoiceAnswerList);
+            }
+
             return new DynamoUploadFieldDefinition(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength,
-                    multiChoiceAnswerList, name, required, type);
+                    multiChoiceAnswerListCopy, name, required, type);
         }
     }
 }
