@@ -162,6 +162,9 @@ public class StrictValidationHandlerTest {
                         .withType(UploadFieldType.INT).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("int with float value")
                         .withType(UploadFieldType.INT).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("multi-choice")
+                        .withType(UploadFieldType.MULTI_CHOICE)
+                        .withMultiChoiceAnswerList(ImmutableList.of("foo", "bar", "baz")).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("string timestamp")
                         .withType(UploadFieldType.TIMESTAMP).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("long timestamp")
@@ -191,6 +194,7 @@ public class StrictValidationHandlerTest {
                 "   \"inline json blob\":[\"inline\", \"json\", \"blob\"],\n" +
                 "   \"int\":42,\n" +
                 "   \"int with float value\":2.78,\n" +
+                "   \"multi-choice\":[\"foo\", \"bar\", \"baz\"],\n" +
                 "   \"string timestamp\":\"2015-07-24T18:49:54-07:00\",\n" +
                 "   \"long timestamp\":1437787098066,\n" +
                 "   \"present optional json\":\"optional, but present\"\n" +
@@ -239,6 +243,29 @@ public class StrictValidationHandlerTest {
 
         // expected errors
         List<String> expectedErrorList = ImmutableList.of("invalid int");
+
+        // execute and validate
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
+    }
+
+    @Test
+    public void invalidMultiChoice() throws Exception {
+        // additional field defs
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new DynamoUploadFieldDefinition.Builder().withName("invalid multi-choice")
+                        .withType(UploadFieldType.MULTI_CHOICE)
+                        .withMultiChoiceAnswerList(ImmutableList.of("good1", "good2")).build());
+
+        // additional JSON data
+        String additionalJsonText = "{\n" +
+                "   \"invalid multi-choice\":[\"bad1\", \"good2\", \"bad2\"]\n" +
+                "}";
+        JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
+
+        // expected errors
+        List<String> expectedErrorList = ImmutableList.of(
+                "Multi-Choice field invalid multi-choice contains invalid answer bad1",
+                "Multi-Choice field invalid multi-choice contains invalid answer bad2");
 
         // execute and validate
         test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);

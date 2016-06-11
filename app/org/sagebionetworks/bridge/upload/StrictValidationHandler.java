@@ -4,6 +4,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -180,9 +181,24 @@ public class StrictValidationHandler implements UploadValidationHandler {
                     // Canonicalize the field.
                     CanonicalizationResult canonicalizationResult = UploadUtil.canonicalize(fieldValueNode, fieldType);
                     if (canonicalizationResult.isValid()) {
+                        JsonNode canonicalizedValueNode = canonicalizationResult.getCanonicalizedValueNode();
+
+                        // Special case: MULTI_CHOICE value validation
+                        if (fieldType == UploadFieldType.MULTI_CHOICE) {
+                            //noinspection ConstantConditions
+                            Set<String> validAnswerSet = new HashSet<>(oneFieldDef.getMultiChoiceAnswerList());
+                            int numAnswers = canonicalizedValueNode.size();
+                            for (int i = 0; i < numAnswers; i++) {
+                                String answer = canonicalizedValueNode.get(i).textValue();
+                                if (!validAnswerSet.contains(answer)) {
+                                    errorList.add("Multi-Choice field " + fieldName + " contains invalid answer " +
+                                            answer);
+                                }
+                            }
+                        }
+
                         // Write the canonicalization back into the field data map.
-                        ((ObjectNode)recordDataNode).set(fieldName,
-                                canonicalizationResult.getCanonicalizedValueNode());
+                        ((ObjectNode)recordDataNode).set(fieldName, canonicalizedValueNode);
                     } else {
                         errorList.add("Canonicalization failed for field " + fieldName + ": " +
                                 canonicalizationResult.getErrorMessage());

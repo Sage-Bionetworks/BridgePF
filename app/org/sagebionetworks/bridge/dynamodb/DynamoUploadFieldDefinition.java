@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -21,6 +22,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     private final @Nullable Integer minAppVersion;
     private final @Nullable Integer maxAppVersion;
     private final @Nullable Integer maxLength;
+    private final @Nullable List<String> multiChoiceAnswerList;
     private final @Nonnull String name;
     private final boolean required;
     private final @Nonnull UploadFieldType type;
@@ -28,12 +30,14 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     /** Private constructor. Construction of a DynamoUploadFieldDefinition should go through the Builder. */
     private DynamoUploadFieldDefinition(@Nullable String fileExtension, @Nullable String mimeType,
             @Nullable Integer minAppVersion, @Nullable Integer maxAppVersion, @Nullable Integer maxLength,
-            @Nonnull String name, boolean required, @Nonnull UploadFieldType type) {
+            @Nullable List<String> multiChoiceAnswerList, @Nonnull String name, boolean required,
+            @Nonnull UploadFieldType type) {
         this.fileExtension = fileExtension;
         this.mimeType = mimeType;
         this.minAppVersion = minAppVersion;
         this.maxAppVersion = maxAppVersion;
         this.maxLength = maxLength;
+        this.multiChoiceAnswerList = multiChoiceAnswerList;
         this.name = name;
         this.required = required;
         this.type = type;
@@ -71,6 +75,12 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
 
     /** {@inheritDoc} */
     @Override
+    public @Nullable List<String> getMultiChoiceAnswerList() {
+        return multiChoiceAnswerList;
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public @Nonnull String getName() {
         return name;
     }
@@ -103,6 +113,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
                 Objects.equals(minAppVersion, that.minAppVersion) &&
                 Objects.equals(maxAppVersion, that.maxAppVersion) &&
                 Objects.equals(maxLength, that.maxLength) &&
+                Objects.equals(multiChoiceAnswerList, that.multiChoiceAnswerList) &&
                 Objects.equals(name, that.name) &&
                 type == that.type;
     }
@@ -110,7 +121,8 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        return Objects.hash(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength, name, required, type);
+        return Objects.hash(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength, multiChoiceAnswerList,
+                name, required, type);
     }
 
     /** Builder for DynamoUploadFieldDefinition */
@@ -120,6 +132,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         private Integer minAppVersion;
         private Integer maxAppVersion;
         private Integer maxLength;
+        private List<String> multiChoiceAnswerList;
         private String name;
         private Boolean required;
         private UploadFieldType type;
@@ -131,6 +144,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             this.minAppVersion = other.getMinAppVersion();
             this.maxAppVersion = other.getMaxAppVersion();
             this.maxLength = other.getMaxLength();
+            this.multiChoiceAnswerList = other.getMultiChoiceAnswerList();
             this.name = other.getName();
             this.required = other.isRequired();
             this.type = other.getType();
@@ -167,6 +181,12 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             return this;
         }
 
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMultiChoiceAnswerList */
+        public Builder withMultiChoiceAnswerList(List<String> multiChoiceAnswerList) {
+            this.multiChoiceAnswerList = multiChoiceAnswerList;
+            return this;
+        }
+
         /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getName */
         public Builder withName(String name) {
             this.name = name;
@@ -199,7 +219,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
                 required = true;
             }
             return new DynamoUploadFieldDefinition(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength,
-                    name, required, type);
+                    multiChoiceAnswerList, name, required, type);
         }
     }
 }
