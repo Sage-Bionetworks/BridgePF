@@ -89,6 +89,22 @@ public class DynamoReportDataDaoTest {
         assertResourceList(results, 0);
     }
 
+    @Test
+    public void canDeleteSingleStudyRecords() {
+        ReportData report1 = createReport(LocalDate.parse("2016-03-30"), "a", "b");
+        ReportData report2 = createReport(LocalDate.parse("2016-03-31"), "c", "d");
+        
+        dao.saveReportData(report1);
+        dao.saveReportData(report2);
+        assertEquals(2, dao.getReportData(reportDataKey, START_DATE, END_DATE).getTotal());
+        
+        dao.deleteReportDataRecord(reportDataKey, LocalDate.parse("2016-03-30"));
+        assertEquals(1, dao.getReportData(reportDataKey, START_DATE, END_DATE).getTotal());
+        
+        dao.deleteReportDataRecord(reportDataKey, LocalDate.parse("2016-03-31"));
+        assertEquals(0, dao.getReportData(reportDataKey, START_DATE, END_DATE).getTotal());
+    }
+    
     private ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("field1", fieldValue1);

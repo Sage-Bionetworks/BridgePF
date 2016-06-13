@@ -126,6 +126,25 @@ public class ReportService {
         reportIndexDao.removeIndex(key);
     }
     
+    public void deleteStudyReportRecord(StudyIdentifier studyId, String identifier, LocalDate date) {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withReportType(ReportType.STUDY)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId)
+                .validateWithDate(date).build();
+        
+        reportDataDao.deleteReportDataRecord(key, date);
+        
+        // If this is the last key visible in the window, you can delete the index because this is a study record
+        LocalDate startDate = LocalDate.now().minusDays(MAX_RANGE_DAYS);
+        LocalDate endDate = LocalDate.now();
+        DateRangeResourceList<? extends ReportData> results = getStudyReport(studyId, identifier, startDate, endDate);
+        if (results.getItems().isEmpty()) {
+            REPORT_INDEX_CACHE.invalidate(key.getIndexKeyString());
+            reportIndexDao.removeIndex(key);
+        }
+    }
+    
     public List<? extends ReportIndex> getReportIndices(StudyIdentifier studyId, ReportType reportType) {
         checkNotNull(studyId);
         checkNotNull(reportType);
@@ -143,6 +162,17 @@ public class ReportService {
                 .withStudyIdentifier(studyId).build();
         
         reportDataDao.deleteReportData(key);
+    }
+    
+    public void deleteParticipantReportRecord(StudyIdentifier studyId, String identifier, LocalDate date, String healthCode) {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode(healthCode)
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId)
+                .validateWithDate(date).build();
+        
+        reportDataDao.deleteReportDataRecord(key, date);
     }
 
     private void addToIndex(ReportDataKey key) {

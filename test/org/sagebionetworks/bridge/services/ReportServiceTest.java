@@ -48,6 +48,8 @@ public class ReportServiceTest {
     
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
     
+    private static final LocalDate DATE = LocalDate.parse("2015-02-01");
+    
     private static final ReportDataKey STUDY_REPORT_DATA_KEY = new ReportDataKey.Builder()
             .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_STUDY).withIdentifier(IDENTIFIER).build();
     
@@ -230,6 +232,59 @@ public class ReportServiceTest {
         
         verify(mockReportDataDao).deleteReportData(PARTICIPANT_REPORT_DATA_KEY);
         verifyNoMoreInteractions(mockReportIndexDao);
+    }
+    
+    @Test
+    public void deleteStudyReportRecordNoIndexCleanup() {
+        LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
+        LocalDate endDate = LocalDate.parse("2015-05-05");
+        doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
+        
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
+        try {
+            service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, DATE);
+            
+            verify(mockReportDataDao).deleteReportDataRecord(STUDY_REPORT_DATA_KEY, DATE);
+            verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
+            verifyNoMoreInteractions(mockReportIndexDao);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
+    }
+    
+    @Test
+    public void deleteStudyReportRecord() {
+        LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
+        LocalDate endDate = LocalDate.parse("2015-05-05");
+        DateRangeResourceList<ReportData> emptyResults = new DateRangeResourceList<ReportData>(Lists.newArrayList(), START_DATE, END_DATE);
+        doReturn(emptyResults).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
+        
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
+        try {
+            service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, DATE);
+            
+            verify(mockReportDataDao).deleteReportDataRecord(STUDY_REPORT_DATA_KEY, DATE);
+            verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
+            verify(mockReportIndexDao).removeIndex(STUDY_REPORT_DATA_KEY);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
+    }
+    
+    @Test
+    public void deleteParticipantReportRecord() {
+        LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
+        LocalDate endDate = LocalDate.parse("2015-05-05");
+        doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, startDate, endDate);
+        
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
+        try {
+            service.deleteParticipantReportRecord(TEST_STUDY, IDENTIFIER, DATE, HEALTH_CODE);
+
+            verify(mockReportDataDao).deleteReportDataRecord(PARTICIPANT_REPORT_DATA_KEY, DATE);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
     }
     
     // The following are date range tests from MPowerVisualizationService, they should work with this service too

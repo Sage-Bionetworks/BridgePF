@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -338,7 +339,7 @@ public class ReportControllerTest {
     
     @Test
     public void getStudyReportIndices() throws Exception {
-        Result result = controller.getStudyReportIndices();
+        Result result = controller.getReportIndices("study");
         assertEquals(200, result.status());
         
         ResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
@@ -353,7 +354,7 @@ public class ReportControllerTest {
     
     @Test
     public void getParticipantReportIndices() throws Exception {
-        Result result = controller.getParticipantReportIndices();
+        Result result = controller.getReportIndices("participant");
         assertEquals(200, result.status());
         
         ResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
@@ -380,6 +381,42 @@ public class ReportControllerTest {
         TestUtils.assertResult(result, 200, "Report deleted.");
         
         verify(mockReportService).deleteStudyReport(session.getStudyIdentifier(), "foo");
+    }
+    
+    @Test
+    public void deleteParticipantReportDataRecord() throws Exception {
+        Result result = controller.deleteParticipantReportRecord("foo", OTHER_PARTICIPANT_ID, "2014-05-10");
+        TestUtils.assertResult(result, 200, "Report record deleted.");
+        
+        verify(mockReportService).deleteParticipantReportRecord(session.getStudyIdentifier(), "foo",
+                LocalDate.parse("2014-05-10"), OTHER_PARTICIPANT_HEALTH_CODE);
+    }
+    
+    @Test
+    public void deleteStudyReportDataRecord() throws Exception {
+        Result result = controller.deleteStudyReportRecord("foo", "2014-05-10");
+        TestUtils.assertResult(result, 200, "Report record deleted.");
+        
+        verify(mockReportService).deleteStudyReportRecord(session.getStudyIdentifier(), "foo",
+                LocalDate.parse("2014-05-10"));
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void deleteStudyRecordDataRecordDeveloper() {
+        StudyParticipant regularUser = new StudyParticipant.Builder().copyOf(session.getParticipant())
+            .withRoles(Sets.newHashSet()).build();
+        session.setParticipant(regularUser);
+        
+        controller.deleteStudyReportRecord("foo", "2014-05-10");
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void deleteParticipantRecordDataRecordDeveloper() {
+        StudyParticipant regularUser = new StudyParticipant.Builder().copyOf(session.getParticipant())
+            .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+        session.setParticipant(regularUser);
+        
+        controller.deleteParticipantReportRecord("foo", "bar", "2014-05-10");
     }
     
     private void assertResult(Result result) throws Exception {
