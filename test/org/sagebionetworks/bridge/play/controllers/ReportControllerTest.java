@@ -268,7 +268,7 @@ public class ReportControllerTest {
         
         TestUtils.mockPlayContextWithJson(json);
 
-        Result result = controller.saveParticipantReport("foo", OTHER_PARTICIPANT_ID);
+        Result result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, "foo");
         TestUtils.assertResult(result, 201, "Report data saved.");
 
         verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq("foo"), eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
@@ -286,7 +286,7 @@ public class ReportControllerTest {
         
         TestUtils.mockPlayContextWithJson(json);
 
-        Result result = controller.saveParticipantReport("foo", OTHER_PARTICIPANT_ID);
+        Result result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, "foo");
         TestUtils.assertResult(result, 201, "Report data saved.");
     }
     
@@ -369,7 +369,7 @@ public class ReportControllerTest {
     
     @Test
     public void deleteParticipantReportData() throws Exception {
-        Result result = controller.deleteParticipantReport("foo", OTHER_PARTICIPANT_ID);
+        Result result = controller.deleteParticipantReport(OTHER_PARTICIPANT_ID, "foo");
         TestUtils.assertResult(result, 200, "Report deleted.");
         
         verify(mockReportService).deleteParticipantReport(session.getStudyIdentifier(), "foo", OTHER_PARTICIPANT_HEALTH_CODE);
@@ -385,7 +385,7 @@ public class ReportControllerTest {
     
     @Test
     public void deleteParticipantReportDataRecord() throws Exception {
-        Result result = controller.deleteParticipantReportRecord("foo", OTHER_PARTICIPANT_ID, "2014-05-10");
+        Result result = controller.deleteParticipantReportRecord(OTHER_PARTICIPANT_ID, "foo", "2014-05-10");
         TestUtils.assertResult(result, 200, "Report record deleted.");
         
         verify(mockReportService).deleteParticipantReportRecord(session.getStudyIdentifier(), "foo",

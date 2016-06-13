@@ -65,7 +65,8 @@ public class ReportController extends BaseController {
     }
     
     /**
-     * Get a list of the identifiers used for participant reports in this study.
+     * Get a list of the identifiers used for reports in this study. If the value is missing or invalid, 
+     * defaults to list of study identifiers.
      */
     public Result getReportIndices(String type) throws Exception {
         UserSession session = getAuthenticatedSession();
@@ -93,9 +94,8 @@ public class ReportController extends BaseController {
         return ok((JsonNode)MAPPER.valueToTree(results));
     }
     
-    public Result getParticipantReportForResearcher(String identifier, String userId, String startDateString,
+    public Result getParticipantReportForResearcher(String userId, String identifier, String startDateString,
             String endDateString) {
-        
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -114,7 +114,7 @@ public class ReportController extends BaseController {
      * Report participant data can be saved by developers or by worker processes. The JSON for these must 
      * include a healthCode field. This is validated when constructing the DataReportKey.
      */
-    public Result saveParticipantReport(String identifier, String userId) throws Exception {
+    public Result saveParticipantReport(String userId, String identifier) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -156,7 +156,7 @@ public class ReportController extends BaseController {
      * to know the user ID for records). This deletes all reports for all users. This is not 
      * performant for large data sets and should only be done during testing. 
      */
-    public Result deleteParticipantReport(String identifier, String userId) {
+    public Result deleteParticipantReport(String userId, String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -170,7 +170,7 @@ public class ReportController extends BaseController {
     /**
      * Delete an individual participant report record
      */
-    public Result deleteParticipantReportRecord(String identifier, String userId, String dateString) {
+    public Result deleteParticipantReportRecord(String userId, String identifier, String dateString) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         LocalDate date = parseDateHelper(dateString);
@@ -224,6 +224,9 @@ public class ReportController extends BaseController {
         return okResult("Report deleted.");
     }
     
+    /**
+     * Delete an individual study report record. 
+     */
     public Result deleteStudyReportRecord(String identifier, String dateString) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         LocalDate date = parseDateHelper(dateString);
