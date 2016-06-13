@@ -113,6 +113,8 @@ public class UploadSchemaValidatorTest {
                 .withType(UploadFieldType.INT).build());
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("bar-field")
                 .withType(UploadFieldType.STRING).build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("baz-field")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("asdf", "jkl;").build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -353,5 +355,34 @@ public class UploadSchemaValidatorTest {
             thrownEx = ex;
         }
         assertTrue(thrownEx.getMessage().contains("cannot use foo-field (used by another field)"));
+    }
+
+    @Test
+    public void multiChoiceWithNoAnswerList() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("Multi-Choice Schema");
+        schema.setSchemaId("multi-choice-schema");
+        schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("multi-choice-null")
+                .withType(UploadFieldType.MULTI_CHOICE).build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("multi-choice-empty")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList().build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Exception thrownEx = null;
+        try {
+            Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+            fail("expected exception");
+        } catch (InvalidEntityException ex) {
+            thrownEx = ex;
+        }
+        assertTrue(thrownEx.getMessage().contains("must be specified for MULTI_CHOICE field multi-choice-null"));
+        assertTrue(thrownEx.getMessage().contains("must be specified for MULTI_CHOICE field multi-choice-empty"));
     }
 }

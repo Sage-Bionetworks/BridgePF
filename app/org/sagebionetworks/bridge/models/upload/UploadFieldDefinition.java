@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.upload;
 
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -45,6 +46,19 @@ public interface UploadFieldDefinition extends BridgeEntity {
      * column with the right width.
      */
     @Nullable Integer getMaxLength();
+
+    /**
+     * <p>
+     * Used for MULTI_CHOICE types. This lists all valid answers for this field. It is used by BridgeEX to create the
+     * Synapse table columns for MULTI_CHOICE fields. This is a list because order matters, in terms of Synapse
+     * column order. Must be specified if the field type is a MULTI_CHOICE.
+     * </p>
+     * <p>
+     * For schemas generated from surveys, this list will be the "value" in the survey question option, or the "label"
+     * if value is not specified.
+     * </p>
+     */
+    @Nullable List<String> getMultiChoiceAnswerList();
 
     /** The field name. */
     @Nonnull String getName();

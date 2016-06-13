@@ -9,6 +9,7 @@ import com.google.common.base.Strings;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /** Validator for {@link org.sagebionetworks.bridge.models.upload.UploadSchema} */
@@ -94,14 +95,21 @@ public class UploadSchemaValidator implements Validator {
                             fieldNameSet.add(fieldName);
                         }
 
+                        UploadFieldType fieldType = fieldDef.getType();
                         //noinspection ConstantConditions
-                        if (fieldDef.getType() == null) {
+                        if (fieldType == null) {
                             errors.rejectValue("type", "is required");
+                        }
+
+                        List<String> multiChoiceAnswerList = fieldDef.getMultiChoiceAnswerList();
+                        if (fieldType == UploadFieldType.MULTI_CHOICE && (multiChoiceAnswerList == null ||
+                                multiChoiceAnswerList.isEmpty())) {
+                            errors.rejectValue("multiChoiceAnswerList", "must be specified for MULTI_CHOICE field "
+                                    + fieldName);
                         }
 
                         errors.popNestedPath();
                     }
-                    
                 }
             }
         }

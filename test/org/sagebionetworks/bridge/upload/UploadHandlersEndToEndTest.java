@@ -257,7 +257,7 @@ public class UploadHandlersEndToEndTest {
                 new DynamoUploadFieldDefinition.Builder().withName("AAA").withType(UploadFieldType.SINGLE_CHOICE)
                         .build(),
                 new DynamoUploadFieldDefinition.Builder().withName("BBB").withType(UploadFieldType.MULTI_CHOICE)
-                        .build());
+                        .withMultiChoiceAnswerList("fencing", "football", "running", "swimming", "3").build());
 
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setFieldDefinitions(fieldDefList);
