@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +14,10 @@ import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
@@ -30,6 +30,22 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import play.mvc.Result;
 
+/**
+ * <p>Permissions for reports are more complicated than other controllers:</p>
+ * <p><b>Study Reports</b></p>
+ * <ul>
+ *   <li>any authenticated user can get the study identifiers (indices)</li>
+ *   <li>any authenticated user can see a study report</li>  
+ *   <li>developers/workers can add/delete</li>
+ * </ul>
+ * 
+ * <p><b>Participant Reports</b></p>
+ * <ul>
+ *   <li>any authenticated user can get the participant identifiers (indices)</li>
+ *   <li>user or researcher can see reports (for user, only self report)</li>
+ *   <li>developers/workers can add/delete</li>
+ * </ul>
+ */
 @Controller
 public class ReportController extends BaseController {
 
@@ -50,21 +66,25 @@ public class ReportController extends BaseController {
     }
     
     /**
-     * Get a list of the identifiers used for participant reports in this study.
+     * Get a list of the identifiers used for reports in this study. If the value is missing or invalid, 
+     * defaults to list of study identifiers.
      */
-    public Result getParticipantReportIndices() throws Exception {
+    public Result getReportIndices(String type) throws Exception {
         UserSession session = getAuthenticatedSession();
+        ReportType reportType = ("participant".equals(type)) ? ReportType.PARTICIPANT : ReportType.STUDY;
         
-        List<? extends ReportIndex> indices = reportService.getReportIndices(
-                session.getStudyIdentifier(), ReportType.PARTICIPANT);
+        ReportTypeResourceList<? extends ReportIndex> indices = reportService.getReportIndices(session.getStudyIdentifier(), reportType);
         return okResult(indices);
     }
     
     /**
-     * Reports for specific individuals accessible to either consented study participants, or to researchers.
+     * Individuals can get their own participant reports. For this request, because we are checking consent, 
+     * we also verify the consent-related headers are being sent (this report has been retrieved by embedded web 
+     * components that haven't sent the correct headers in the past).
      */
     public Result getParticipantReport(String identifier, String startDateString, String endDateString) {
-        UserSession session = getAuthenticatedAndConsentedOrResearcherSession();
+        UserSession session = getAuthenticatedAndConsentedSession();
+        checkHeaders();
         
         LocalDate startDate = parseDateHelper(startDateString);
         LocalDate endDate = parseDateHelper(endDateString);
@@ -75,11 +95,27 @@ public class ReportController extends BaseController {
         return ok((JsonNode)MAPPER.valueToTree(results));
     }
     
+    public Result getParticipantReportForResearcher(String userId, String identifier, String startDateString,
+            String endDateString) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        LocalDate startDate = parseDateHelper(startDateString);
+        LocalDate endDate = parseDateHelper(endDateString);
+        
+        Account account = accountDao.getAccount(study, userId);
+        
+        DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(
+                session.getStudyIdentifier(), identifier, account.getHealthCode(), startDate, endDate);
+        
+        return ok((JsonNode)MAPPER.valueToTree(results));
+    }
+    
     /**
      * Report participant data can be saved by developers or by worker processes. The JSON for these must 
      * include a healthCode field. This is validated when constructing the DataReportKey.
      */
-    public Result saveParticipantReport(String identifier, String userId) throws Exception {
+    public Result saveParticipantReport(String userId, String identifier) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -94,6 +130,10 @@ public class ReportController extends BaseController {
         return createdResult("Report data saved.");
     }
     
+    /**
+     * When saving, worker accounts do not know the userId of the account, only the healthCode, so a 
+     * special method is needed.
+     */
     public Result saveParticipantReportForWorker(String identifier) throws Exception {
         UserSession session = getAuthenticatedSession(WORKER);
         
@@ -113,11 +153,12 @@ public class ReportController extends BaseController {
     }
     
     /**
-     * Developers and workers can delete participant report data. This deletes all reports for all users. 
-     * This is not performant for large data sets and should only be done during testing. 
+     * Developers and workers can delete participant report data (though worker accounts are unlikely 
+     * to know the user ID for records). This deletes all reports for all users. This is not 
+     * performant for large data sets and should only be done during testing. 
      */
-    public Result deleteParticipantReport(String identifier, String userId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+    public Result deleteParticipantReport(String userId, String identifier) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         Account account = accountDao.getAccount(study, userId);
@@ -128,14 +169,26 @@ public class ReportController extends BaseController {
     }
     
     /**
-     * Get a list of the identifiers used for participant reports in this study.
+     * Delete an individual participant report record
      */
-    public Result getStudyReportIndices() throws Exception {
-        UserSession session = getAuthenticatedSession();
+    public Result deleteParticipantReportRecord(String userId, String identifier, String dateString) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        LocalDate date = parseDateHelper(dateString);
         
-        List<? extends ReportIndex> indices = reportService.getReportIndices(
-                session.getStudyIdentifier(), ReportType.STUDY);
-        return okResult(indices);
+        Account account = accountDao.getAccount(study, userId);
+        
+        reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, date, account.getHealthCode());
+        
+        return okResult("Report record deleted.");
+    }
+    
+    public Result deleteParticipantReportIndex(String identifier) {
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        reportService.deleteParticipantReportIndex(session.getStudyIdentifier(), identifier);
+        
+        return okResult("Report index deleted.");
     }
     
     /**
@@ -173,23 +226,23 @@ public class ReportController extends BaseController {
      * should only be done during testing.
      */
     public Result deleteStudyReport(String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         
         reportService.deleteStudyReport(session.getStudyIdentifier(), identifier);
         
         return okResult("Report deleted.");
     }
-
-    private UserSession getAuthenticatedAndConsentedOrResearcherSession() {
-        UserSession session = getAuthenticatedSession();
-        if (session.isInRole(RESEARCHER)) {
-            return session;
-        }
-        if (session.doesConsent()) {
-            checkHeaders();
-            return session;
-        }
-        throw new UnauthorizedException();
+    
+    /**
+     * Delete an individual study report record. 
+     */
+    public Result deleteStudyReportRecord(String identifier, String dateString) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        LocalDate date = parseDateHelper(dateString);
+        
+        reportService.deleteStudyReportRecord(session.getStudyIdentifier(), identifier, date);
+        
+        return okResult("Report record deleted.");
     }
     
     /**

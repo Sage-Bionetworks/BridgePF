@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
-import java.util.List;
 
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
@@ -15,15 +15,15 @@ public interface ReportIndexDao {
     void addIndex(ReportDataKey key);
     
     /**
-     * Remove an index item for a report identifier. This can only be done for study reports, since we have no
-     * performant way to determine if an identifier for a participant report is no longer in use by any participant. 
-     * Still it is better than no cleanup.
+     * Remove an index item for a report identifier. This is only done automatically for study reports, because we 
+     * can't calculate if an identifier is still in use for a participant test in a performant way. But an endpoint 
+     * is exposed so that admins can delete these index records as a part of test clean-up.
      */
     void removeIndex(ReportDataKey key);
     
     /**
      * Get all the identifiers for a study, for either study or participant reports.
      */
-    List<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType type);
+    ReportTypeResourceList<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType type);
     
 }

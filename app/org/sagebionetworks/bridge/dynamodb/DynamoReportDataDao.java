@@ -77,4 +77,19 @@ public class DynamoReportDataDao implements ReportDataDao {
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }
+    
+    @Override
+    public void deleteReportDataRecord(ReportDataKey key, LocalDate date) {
+        checkNotNull(key);
+        checkNotNull(date);
+
+        DynamoReportData hashKey = new DynamoReportData();
+        hashKey.setKey(key.getKeyString());
+        hashKey.setDate(date);
+        
+        DynamoReportData reportDataRecord = mapper.load(hashKey);
+        if (reportDataRecord != null) {
+            mapper.delete(reportDataRecord);
+        }
+    }
 }

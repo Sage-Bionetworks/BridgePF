@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -18,6 +17,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -126,7 +126,26 @@ public class ReportService {
         reportIndexDao.removeIndex(key);
     }
     
-    public List<? extends ReportIndex> getReportIndices(StudyIdentifier studyId, ReportType reportType) {
+    public void deleteStudyReportRecord(StudyIdentifier studyId, String identifier, LocalDate date) {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withReportType(ReportType.STUDY)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId)
+                .validateWithDate(date).build();
+        
+        reportDataDao.deleteReportDataRecord(key, date);
+        
+        // If this is the last key visible in the window, you can delete the index because this is a study record
+        LocalDate startDate = LocalDate.now().minusDays(MAX_RANGE_DAYS);
+        LocalDate endDate = LocalDate.now();
+        DateRangeResourceList<? extends ReportData> results = getStudyReport(studyId, identifier, startDate, endDate);
+        if (results.getItems().isEmpty()) {
+            REPORT_INDEX_CACHE.invalidate(key.getIndexKeyString());
+            reportIndexDao.removeIndex(key);
+        }
+    }
+    
+    public ReportTypeResourceList<? extends ReportIndex> getReportIndices(StudyIdentifier studyId, ReportType reportType) {
         checkNotNull(studyId);
         checkNotNull(reportType);
         
@@ -143,6 +162,27 @@ public class ReportService {
                 .withStudyIdentifier(studyId).build();
         
         reportDataDao.deleteReportData(key);
+    }
+    
+    public void deleteParticipantReportRecord(StudyIdentifier studyId, String identifier, LocalDate date, String healthCode) {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode(healthCode)
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId)
+                .validateWithDate(date).build();
+        
+        reportDataDao.deleteReportDataRecord(key, date);
+    }
+    
+    public void deleteParticipantReportIndex(StudyIdentifier studyId, String identifier) {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode("dummy-value")
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
+        
+        reportIndexDao.removeIndex(key);
     }
 
     private void addToIndex(ReportDataKey key) {

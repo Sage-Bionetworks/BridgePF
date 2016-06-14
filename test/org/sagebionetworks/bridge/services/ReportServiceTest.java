@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -47,6 +48,8 @@ public class ReportServiceTest {
     private static final LocalDate START_DATE = LocalDate.parse("2015-01-02");
     
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
+    
+    private static final LocalDate DATE = LocalDate.parse("2015-02-01");
     
     private static final ReportDataKey STUDY_REPORT_DATA_KEY = new ReportDataKey.Builder()
             .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_STUDY).withIdentifier(IDENTIFIER).build();
@@ -69,11 +72,14 @@ public class ReportServiceTest {
     @Captor
     ArgumentCaptor<ReportIndex> reportIndexCaptor;
     
+    @Captor
+    ArgumentCaptor<ReportDataKey> reportDataKeyCaptor;
+    
     ReportService service;
     
     DateRangeResourceList<? extends ReportData> results;
     
-    List<? extends ReportIndex> indices;
+    ReportTypeResourceList<? extends ReportIndex> indices;
     
     @Before
     public void before() throws Exception {
@@ -88,7 +94,7 @@ public class ReportServiceTest {
         
         DynamoReportIndex index = new DynamoReportIndex();
         index.setIdentifier(IDENTIFIER);
-        indices = Lists.newArrayList(index);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
     }
     
     private static ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
@@ -230,6 +236,72 @@ public class ReportServiceTest {
         
         verify(mockReportDataDao).deleteReportData(PARTICIPANT_REPORT_DATA_KEY);
         verifyNoMoreInteractions(mockReportIndexDao);
+    }
+    
+    
+    @Test
+    public void deleteParticipantIndex() {
+        service.deleteParticipantReportIndex(TEST_STUDY, IDENTIFIER);
+        
+        verify(mockReportIndexDao).removeIndex(reportDataKeyCaptor.capture());
+        verifyNoMoreInteractions(mockReportDataDao);
+        
+        ReportDataKey key = reportDataKeyCaptor.getValue();
+        assertEquals(TEST_STUDY, key.getStudyId());
+        assertEquals(IDENTIFIER, key.getIdentifier());
+    }
+    
+    @Test
+    public void deleteStudyReportRecordNoIndexCleanup() {
+        LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
+        LocalDate endDate = LocalDate.parse("2015-05-05");
+        doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
+        
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
+        try {
+            service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, DATE);
+            
+            verify(mockReportDataDao).deleteReportDataRecord(STUDY_REPORT_DATA_KEY, DATE);
+            verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
+            verifyNoMoreInteractions(mockReportIndexDao);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
+    }
+    
+    @Test
+    public void deleteStudyReportRecord() {
+        LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
+        LocalDate endDate = LocalDate.parse("2015-05-05");
+        DateRangeResourceList<ReportData> emptyResults = new DateRangeResourceList<ReportData>(Lists.newArrayList(), START_DATE, END_DATE);
+        doReturn(emptyResults).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
+        
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
+        try {
+            service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, DATE);
+            
+            verify(mockReportDataDao).deleteReportDataRecord(STUDY_REPORT_DATA_KEY, DATE);
+            verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
+            verify(mockReportIndexDao).removeIndex(STUDY_REPORT_DATA_KEY);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
+    }
+    
+    @Test
+    public void deleteParticipantReportRecord() {
+        LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
+        LocalDate endDate = LocalDate.parse("2015-05-05");
+        doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, startDate, endDate);
+        
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
+        try {
+            service.deleteParticipantReportRecord(TEST_STUDY, IDENTIFIER, DATE, HEALTH_CODE);
+
+            verify(mockReportDataDao).deleteReportDataRecord(PARTICIPANT_REPORT_DATA_KEY, DATE);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
     }
     
     // The following are date range tests from MPowerVisualizationService, they should work with this service too
@@ -379,19 +451,26 @@ public class ReportServiceTest {
     public void getStudyIndices() {
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
 
-        List<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.STUDY);
+        ReportTypeResourceList<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.STUDY);
         
-        assertEquals(IDENTIFIER, indices.get(0).getIdentifier());
+        assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
+        assertEquals(ReportType.STUDY, indices.getReportType());
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
     }
     
     @Test
     public void getParticipantIndices() {
+        // Need to create an index list with ReportType.PARTICIPANT for this test
+        DynamoReportIndex index = new DynamoReportIndex();
+        index.setIdentifier(IDENTIFIER);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
 
-        List<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        ReportTypeResourceList<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
-        assertEquals(IDENTIFIER, indices.get(0).getIdentifier());
+        assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
+        assertEquals(ReportType.PARTICIPANT, indices.getReportType());
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     

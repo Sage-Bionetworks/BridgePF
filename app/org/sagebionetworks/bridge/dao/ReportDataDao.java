@@ -36,4 +36,14 @@ public interface ReportDataDao {
      *      report to delete
      */
     void deleteReportData(ReportDataKey key);
+    
+    /**
+     * Delete a single record in a report. 
+     * 
+     * @param key
+     *         the key for this report
+     * @param date
+     *         the date of the report
+     */
+    void deleteReportDataRecord(ReportDataKey key, LocalDate date);
 }

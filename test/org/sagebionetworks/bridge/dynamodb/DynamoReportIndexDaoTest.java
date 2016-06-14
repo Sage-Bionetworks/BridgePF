@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -17,6 +16,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
@@ -61,60 +61,56 @@ public class DynamoReportIndexDaoTest {
     
     @Test
     public void canCRUDReportIndex() {
-        int count = dao.getIndices(TEST_STUDY, ReportType.STUDY).size();
+        int count = dao.getIndices(TEST_STUDY, ReportType.STUDY).getItems().size();
         // adding twice is fine
         dao.addIndex(studyReportKey1);
         dao.addIndex(studyReportKey1);
         dao.addIndex(studyReportKey2);
 
-        List<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(count+2, indices.size());
+        ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
+        assertEquals(count+2, indices.getItems().size());
         
         // Wrong type returns zero records
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(0, indices.size());
+        assertEquals(0, indices.getItems().size());
         
         dao.removeIndex(studyReportKey1);
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(count+1, indices.size());
+        assertEquals(count+1, indices.getItems().size());
         
         dao.removeIndex(studyReportKey2);
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(count, indices.size());
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void cannotCreateIndexForParticipantReport() {
-        dao.removeIndex(participantReportKey1);
+        assertEquals(count, indices.getItems().size());
     }
     
     @Test
     public void canCreateAndReadParticipantIndex() {
-        int count = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).size();
+        int count = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
         
         // adding twice is fine
         dao.addIndex(participantReportKey1);
         dao.addIndex(participantReportKey1);
         dao.addIndex(participantReportKey2);
         
-        List<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(count+2, indices.size());
+        ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        assertEquals(count+2, indices.getItems().size());
         
-        Set<String> identifiers = Sets.newHashSet(indices.get(0).getIdentifier(), indices.get(1).getIdentifier());
+        Set<String> identifiers = Sets.newHashSet(indices.getItems().get(0).getIdentifier(),
+                indices.getItems().get(1).getIdentifier());
         Set<String> originalIdentifiers = Sets.newHashSet(participantReportKey1.getIdentifier(),
                 participantReportKey2.getIdentifier());
         assertEquals(originalIdentifiers, identifiers);
         
         // wrong type returns no records
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(0, indices.size());
+        assertEquals(0, indices.getItems().size());
         
         // Use mapper directly to clean up, as we don't allow deletion of participant reports.
         deleteParticipantReport(participantReportKey1);
         deleteParticipantReport(participantReportKey2);
         
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(count, indices.size());
+        assertEquals(count, indices.getItems().size());
     }
     
     private void deleteParticipantReport(ReportDataKey key) {
