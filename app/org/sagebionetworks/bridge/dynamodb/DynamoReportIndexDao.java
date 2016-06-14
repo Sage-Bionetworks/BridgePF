@@ -3,13 +3,12 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.List;
-
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
@@ -55,7 +54,7 @@ public class DynamoReportIndexDao implements ReportIndexDao {
     }
 
     @Override
-    public List<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType reportType) {
+    public ReportTypeResourceList<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType reportType) {
         checkNotNull(studyId);
         checkNotNull(reportType);
         
@@ -68,7 +67,7 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         DynamoDBQueryExpression<DynamoReportIndex> query =
                 new DynamoDBQueryExpression<DynamoReportIndex>().withHashKeyValues(hashKey);
 
-        return mapper.query(DynamoReportIndex.class, query);
+        return new ReportTypeResourceList<>(mapper.query(DynamoReportIndex.class, query), reportType);
     }
 
 }

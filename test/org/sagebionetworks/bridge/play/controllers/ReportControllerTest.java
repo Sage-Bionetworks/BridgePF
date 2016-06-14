@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
@@ -31,7 +30,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
-import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -127,9 +126,14 @@ public class ReportControllerTest {
         
         ReportIndex index = new DynamoReportIndex();
         index.setIdentifier("fofo");
-        List<? extends ReportIndex> list = Lists.newArrayList(index);
+        ReportTypeResourceList<? extends ReportIndex> list = new ReportTypeResourceList<>(
+                Lists.newArrayList(index), ReportType.STUDY);
+        doReturn(list).when(mockReportService).getReportIndices(eq(TEST_STUDY), eq(ReportType.STUDY));
         
-        doReturn(list).when(mockReportService).getReportIndices(eq(TEST_STUDY), any());
+        index = new DynamoReportIndex();
+        index.setIdentifier("fofo");
+        list = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        doReturn(list).when(mockReportService).getReportIndices(eq(TEST_STUDY), eq(ReportType.PARTICIPANT));
     }
     
     private void setupContext() throws Exception {
@@ -342,11 +346,12 @@ public class ReportControllerTest {
         Result result = controller.getReportIndices("study");
         assertEquals(200, result.status());
         
-        ResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
+        ReportTypeResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
                 Helpers.contentAsString(result),
-                new TypeReference<ResourceList<ReportIndex>>() {});
+                new TypeReference<ReportTypeResourceList<ReportIndex>>() {});
         assertEquals(1, results.getTotal());
         assertEquals(1, results.getItems().size());
+        assertEquals(ReportType.STUDY, results.getReportType());
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
         
         verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
@@ -357,11 +362,12 @@ public class ReportControllerTest {
         Result result = controller.getReportIndices("participant");
         assertEquals(200, result.status());
         
-        ResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
+        ReportTypeResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
                 Helpers.contentAsString(result),
-                new TypeReference<ResourceList<ReportIndex>>() {});
+                new TypeReference<ReportTypeResourceList<ReportIndex>>() {});
         assertEquals(1, results.getTotal());
         assertEquals(1, results.getItems().size());
+        assertEquals(ReportType.PARTICIPANT, results.getReportType());
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
         
         verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);

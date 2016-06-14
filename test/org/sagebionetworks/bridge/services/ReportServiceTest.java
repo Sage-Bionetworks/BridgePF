@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -75,7 +76,7 @@ public class ReportServiceTest {
     
     DateRangeResourceList<? extends ReportData> results;
     
-    List<? extends ReportIndex> indices;
+    ReportTypeResourceList<? extends ReportIndex> indices;
     
     @Before
     public void before() throws Exception {
@@ -90,7 +91,7 @@ public class ReportServiceTest {
         
         DynamoReportIndex index = new DynamoReportIndex();
         index.setIdentifier(IDENTIFIER);
-        indices = Lists.newArrayList(index);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
     }
     
     private static ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
@@ -434,19 +435,26 @@ public class ReportServiceTest {
     public void getStudyIndices() {
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
 
-        List<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.STUDY);
+        ReportTypeResourceList<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.STUDY);
         
-        assertEquals(IDENTIFIER, indices.get(0).getIdentifier());
+        assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
+        assertEquals(ReportType.STUDY, indices.getReportType());
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
     }
     
     @Test
     public void getParticipantIndices() {
+        // Need to create an index list with ReportType.PARTICIPANT for this test
+        DynamoReportIndex index = new DynamoReportIndex();
+        index.setIdentifier(IDENTIFIER);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
 
-        List<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        ReportTypeResourceList<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
-        assertEquals(IDENTIFIER, indices.get(0).getIdentifier());
+        assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
+        assertEquals(ReportType.PARTICIPANT, indices.getReportType());
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     

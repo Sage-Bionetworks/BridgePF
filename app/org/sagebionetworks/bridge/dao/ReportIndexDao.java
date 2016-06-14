@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
-import java.util.List;
 
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
@@ -24,6 +24,6 @@ public interface ReportIndexDao {
     /**
      * Get all the identifiers for a study, for either study or participant reports.
      */
-    List<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType type);
+    ReportTypeResourceList<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType type);
     
 }

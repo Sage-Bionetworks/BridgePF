@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +16,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
@@ -72,7 +72,7 @@ public class ReportController extends BaseController {
         UserSession session = getAuthenticatedSession();
         ReportType reportType = ("participant".equals(type)) ? ReportType.PARTICIPANT : ReportType.STUDY;
         
-        List<? extends ReportIndex> indices = reportService.getReportIndices(session.getStudyIdentifier(), reportType);
+        ReportTypeResourceList<? extends ReportIndex> indices = reportService.getReportIndices(session.getStudyIdentifier(), reportType);
         return okResult(indices);
     }
     
