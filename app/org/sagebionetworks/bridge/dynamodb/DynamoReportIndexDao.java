@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.annotation.Resource;
@@ -41,7 +40,6 @@ public class DynamoReportIndexDao implements ReportIndexDao {
     @Override
     public void removeIndex(ReportDataKey key) {
         checkNotNull(key);
-        checkArgument(key.getReportType() != ReportType.PARTICIPANT, "cannot remove participant report indices");
         
         DynamoReportIndex hashKey = new DynamoReportIndex();
         hashKey.setKey(key.getIndexKeyString());

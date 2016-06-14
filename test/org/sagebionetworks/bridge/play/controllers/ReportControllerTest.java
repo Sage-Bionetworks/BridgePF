@@ -56,6 +56,8 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class ReportControllerTest {
 
+    private static final String REPORT_ID = "foo";
+
     private static final String VALID_LANGUAGE_HEADER = "en-US";
 
     private static final String VALID_USER_AGENT_HEADER = "Unknown Client/14 BridgeJavaSDK/10";
@@ -153,9 +155,9 @@ public class ReportControllerTest {
         setupContext();
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
-                "foo", HEALTH_CODE, START_DATE, END_DATE);
+                REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
         
-        Result result = controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+        Result result = controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
         assertEquals(200, result.status());
         assertResult(result);
     }
@@ -169,9 +171,9 @@ public class ReportControllerTest {
         session.setParticipant(participant);
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
-                "foo", HEALTH_CODE, START_DATE, END_DATE);
+                REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
         
-        Result result = controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+        Result result = controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
         assertEquals(200, result.status());
         assertResult(result);
     }
@@ -181,9 +183,9 @@ public class ReportControllerTest {
         setupContext();
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
-                "foo", HEALTH_CODE, null, null);
+                REPORT_ID, HEALTH_CODE, null, null);
         
-        Result result = controller.getParticipantReport("foo", null, null);
+        Result result = controller.getParticipantReport(REPORT_ID, null, null);
         assertEquals(200, result.status());
         assertResult(result);
     }
@@ -192,30 +194,30 @@ public class ReportControllerTest {
     public void getParticipantReportNoUserAgent() throws Exception {
         setupContext("Bad Request", VALID_LANGUAGE_HEADER);
 
-        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
     @Test(expected = BadRequestException.class)
     public void getParticipantReportNoLanguageHeader() throws Exception {
         setupContext(VALID_USER_AGENT_HEADER, null);
 
-        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
     @Test(expected = BadRequestException.class)
     public void getParticipantReportBadLanguageHeader() throws Exception {
         setupContext(VALID_USER_AGENT_HEADER, "bad language header");
 
-        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
     @Test
     public void getStudyReportData() throws Exception {
         setupContext();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
-                "foo", START_DATE, END_DATE);
+                REPORT_ID, START_DATE, END_DATE);
         
-        Result result = controller.getStudyReport("foo", START_DATE.toString(), END_DATE.toString());
+        Result result = controller.getStudyReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
         assertEquals(200, result.status());
         assertResult(result);
     }
@@ -224,9 +226,9 @@ public class ReportControllerTest {
     public void getStudyReportDataWithNoDates() throws Exception {
         setupContext();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
-                "foo", null, null);
+                REPORT_ID, null, null);
         
-        Result result = controller.getStudyReport("foo", null, null);
+        Result result = controller.getStudyReport(REPORT_ID, null, null);
         assertEquals(200, result.status());
         assertResult(result);
     }
@@ -235,35 +237,35 @@ public class ReportControllerTest {
     public void getStudyReportDataWithNoUserAgentAsResearcherOK() throws Exception {
         setupContext("", VALID_LANGUAGE_HEADER);
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
-                "foo", START_DATE, END_DATE);
+                REPORT_ID, START_DATE, END_DATE);
         
-        controller.getStudyReport("foo", START_DATE.toString(), END_DATE.toString());
+        controller.getStudyReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }    
     
     @Test(expected = BadRequestException.class)
     public void getParticipantReportDataWithNoUserAgent() throws Exception {
         setupContext("", VALID_LANGUAGE_HEADER);
         
-        SubpopulationGuid guid = SubpopulationGuid.create("foo");
+        SubpopulationGuid guid = SubpopulationGuid.create(REPORT_ID);
         Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
         consentStatuses.put(guid, new ConsentStatus.Builder().withName("FullName").withConsented(true).withRequired(true).withGuid(guid).build());
         
         session.setConsentStatuses(consentStatuses);
         
-        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
     @Test(expected = BadRequestException.class)
     public void getParticipantReportDataWithNoAcceptLanguage() throws Exception {
         setupContext(VALID_USER_AGENT_HEADER, null);
         
-        SubpopulationGuid guid = SubpopulationGuid.create("foo");
+        SubpopulationGuid guid = SubpopulationGuid.create(REPORT_ID);
         Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
         consentStatuses.put(guid, new ConsentStatus.Builder().withName("FullName").withConsented(true).withRequired(true).withGuid(guid).build());
         
         session.setConsentStatuses(consentStatuses);
         
-        controller.getParticipantReport("foo", START_DATE.toString(), END_DATE.toString());
+        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
     @Test
@@ -272,10 +274,10 @@ public class ReportControllerTest {
         
         TestUtils.mockPlayContextWithJson(json);
 
-        Result result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, "foo");
+        Result result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
 
-        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq("foo"), eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq(REPORT_ID), eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
         assertNull(reportData.getKey());
@@ -290,7 +292,7 @@ public class ReportControllerTest {
         
         TestUtils.mockPlayContextWithJson(json);
 
-        Result result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, "foo");
+        Result result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
     }
     
@@ -300,10 +302,10 @@ public class ReportControllerTest {
         
         TestUtils.mockPlayContextWithJson(json);
 
-        Result result = controller.saveParticipantReportForWorker("foo");
+        Result result = controller.saveParticipantReportForWorker(REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
         
-        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq("foo"), eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq(REPORT_ID), eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
         assertNull(reportData.getKey());
@@ -318,7 +320,7 @@ public class ReportControllerTest {
         
         TestUtils.mockPlayContextWithJson(json);
         try {
-            controller.saveParticipantReportForWorker("foo");    
+            controller.saveParticipantReportForWorker(REPORT_ID);    
         } catch(BadRequestException e) {
             assertEquals("A health code is required to save report data.", e.getMessage());
             verifyNoMoreInteractions(mockReportService);
@@ -330,10 +332,10 @@ public class ReportControllerTest {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
         TestUtils.mockPlayContextWithJson(json);
                 
-        Result result = controller.saveStudyReport("foo");
+        Result result = controller.saveStudyReport(REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
         
-        verify(mockReportService).saveStudyReport(eq(TEST_STUDY), eq("foo"), reportDataCaptor.capture());
+        verify(mockReportService).saveStudyReport(eq(TEST_STUDY), eq(REPORT_ID), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
         assertNull(reportData.getKey());
@@ -375,35 +377,35 @@ public class ReportControllerTest {
     
     @Test
     public void deleteParticipantReportData() throws Exception {
-        Result result = controller.deleteParticipantReport(OTHER_PARTICIPANT_ID, "foo");
+        Result result = controller.deleteParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         TestUtils.assertResult(result, 200, "Report deleted.");
         
-        verify(mockReportService).deleteParticipantReport(session.getStudyIdentifier(), "foo", OTHER_PARTICIPANT_HEALTH_CODE);
+        verify(mockReportService).deleteParticipantReport(session.getStudyIdentifier(), REPORT_ID, OTHER_PARTICIPANT_HEALTH_CODE);
     }
     
     @Test
     public void deleteStudyReportData() throws Exception {
-        Result result = controller.deleteStudyReport("foo");
+        Result result = controller.deleteStudyReport(REPORT_ID);
         TestUtils.assertResult(result, 200, "Report deleted.");
         
-        verify(mockReportService).deleteStudyReport(session.getStudyIdentifier(), "foo");
+        verify(mockReportService).deleteStudyReport(session.getStudyIdentifier(), REPORT_ID);
     }
     
     @Test
     public void deleteParticipantReportDataRecord() throws Exception {
-        Result result = controller.deleteParticipantReportRecord(OTHER_PARTICIPANT_ID, "foo", "2014-05-10");
+        Result result = controller.deleteParticipantReportRecord(OTHER_PARTICIPANT_ID, REPORT_ID, "2014-05-10");
         TestUtils.assertResult(result, 200, "Report record deleted.");
         
-        verify(mockReportService).deleteParticipantReportRecord(session.getStudyIdentifier(), "foo",
+        verify(mockReportService).deleteParticipantReportRecord(session.getStudyIdentifier(), REPORT_ID,
                 LocalDate.parse("2014-05-10"), OTHER_PARTICIPANT_HEALTH_CODE);
     }
     
     @Test
     public void deleteStudyReportDataRecord() throws Exception {
-        Result result = controller.deleteStudyReportRecord("foo", "2014-05-10");
+        Result result = controller.deleteStudyReportRecord(REPORT_ID, "2014-05-10");
         TestUtils.assertResult(result, 200, "Report record deleted.");
         
-        verify(mockReportService).deleteStudyReportRecord(session.getStudyIdentifier(), "foo",
+        verify(mockReportService).deleteStudyReportRecord(session.getStudyIdentifier(), REPORT_ID,
                 LocalDate.parse("2014-05-10"));
     }
     
@@ -413,7 +415,7 @@ public class ReportControllerTest {
             .withRoles(Sets.newHashSet()).build();
         session.setParticipant(regularUser);
         
-        controller.deleteStudyReportRecord("foo", "2014-05-10");
+        controller.deleteStudyReportRecord(REPORT_ID, "2014-05-10");
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -422,7 +424,21 @@ public class ReportControllerTest {
             .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
         session.setParticipant(regularUser);
         
-        controller.deleteParticipantReportRecord("foo", "bar", "2014-05-10");
+        controller.deleteParticipantReportRecord(REPORT_ID, "bar", "2014-05-10");
+    }
+    
+    public void adminCanDeleteParticipantIndex() {
+        StudyParticipant regularUser = new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+            session.setParticipant(regularUser);
+        
+        controller.deleteParticipantReportIndex(REPORT_ID);
+        verify(mockReportService).deleteParticipantReportIndex(TEST_STUDY, REPORT_ID);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void nonAdminCannotDeleteParticipantIndex() {
+        controller.deleteParticipantReportIndex(REPORT_ID);
     }
     
     private void assertResult(Result result) throws Exception {

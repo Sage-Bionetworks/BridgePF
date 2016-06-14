@@ -82,11 +82,6 @@ public class DynamoReportIndexDaoTest {
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
         assertEquals(count, indices.getItems().size());
     }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void cannotCreateIndexForParticipantReport() {
-        dao.removeIndex(participantReportKey1);
-    }
     
     @Test
     public void canCreateAndReadParticipantIndex() {

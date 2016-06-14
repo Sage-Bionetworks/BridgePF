@@ -174,6 +174,16 @@ public class ReportService {
         
         reportDataDao.deleteReportDataRecord(key, date);
     }
+    
+    public void deleteParticipantReportIndex(StudyIdentifier studyId, String identifier) {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode("dummy-value")
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
+        
+        reportIndexDao.removeIndex(key);
+    }
 
     private void addToIndex(ReportDataKey key) {
         try {

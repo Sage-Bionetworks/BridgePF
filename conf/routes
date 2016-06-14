@@ -80,7 +80,7 @@ POST   /v3/participants/:userId/reports/:identifier       @org.sagebionetworks.b
 DELETE /v3/participants/:userId/reports/:identifier       @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReport(userId: String, identifier: String)
 DELETE /v3/participants/:userId/reports/:identifier/:date @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReportRecord(userId: String, identifier: String, date: String)
 POST   /v3/participants/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.saveParticipantReportForWorker(identifier: String)
-
+DELETE /v3/participants/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReportIndex(identifier: String)
 
 # Surveys
 GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion

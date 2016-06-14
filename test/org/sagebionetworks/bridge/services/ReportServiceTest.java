@@ -72,6 +72,9 @@ public class ReportServiceTest {
     @Captor
     ArgumentCaptor<ReportIndex> reportIndexCaptor;
     
+    @Captor
+    ArgumentCaptor<ReportDataKey> reportDataKeyCaptor;
+    
     ReportService service;
     
     DateRangeResourceList<? extends ReportData> results;
@@ -233,6 +236,19 @@ public class ReportServiceTest {
         
         verify(mockReportDataDao).deleteReportData(PARTICIPANT_REPORT_DATA_KEY);
         verifyNoMoreInteractions(mockReportIndexDao);
+    }
+    
+    
+    @Test
+    public void deleteParticipantIndex() {
+        service.deleteParticipantReportIndex(TEST_STUDY, IDENTIFIER);
+        
+        verify(mockReportIndexDao).removeIndex(reportDataKeyCaptor.capture());
+        verifyNoMoreInteractions(mockReportDataDao);
+        
+        ReportDataKey key = reportDataKeyCaptor.getValue();
+        assertEquals(TEST_STUDY, key.getStudyId());
+        assertEquals(IDENTIFIER, key.getIdentifier());
     }
     
     @Test

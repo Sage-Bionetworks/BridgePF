@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -180,6 +181,14 @@ public class ReportController extends BaseController {
         reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, date, account.getHealthCode());
         
         return okResult("Report record deleted.");
+    }
+    
+    public Result deleteParticipantReportIndex(String identifier) {
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        reportService.deleteParticipantReportIndex(session.getStudyIdentifier(), identifier);
+        
+        return okResult("Report index deleted.");
     }
     
     /**
