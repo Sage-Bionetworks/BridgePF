@@ -72,4 +72,11 @@ public interface UploadFieldDefinition extends BridgeEntity {
      * @see org.sagebionetworks.bridge.models.upload.UploadFieldType
      */
     @Nonnull UploadFieldType getType();
+
+    /**
+     * True if this field is a text-field with unbounded length. (Only applies to fields that are serialized as text,
+     * such as INLINE_JSON_BLOB, SINGLE_CHOICE, or STRING. Can be null, so that the number of field parameters doesn't
+     * explode.
+     */
+    @Nullable Boolean isUnboundedText();
 }
