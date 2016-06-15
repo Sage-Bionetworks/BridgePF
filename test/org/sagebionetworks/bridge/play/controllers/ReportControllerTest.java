@@ -190,27 +190,6 @@ public class ReportControllerTest {
         assertResult(result);
     }
     
-    @Test(expected = BadRequestException.class)
-    public void getParticipantReportNoUserAgent() throws Exception {
-        setupContext("Bad Request", VALID_LANGUAGE_HEADER);
-
-        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void getParticipantReportNoLanguageHeader() throws Exception {
-        setupContext(VALID_USER_AGENT_HEADER, null);
-
-        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void getParticipantReportBadLanguageHeader() throws Exception {
-        setupContext(VALID_USER_AGENT_HEADER, "bad language header");
-
-        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
-    }
-    
     @Test
     public void getStudyReportData() throws Exception {
         setupContext();
@@ -241,32 +220,6 @@ public class ReportControllerTest {
         
         controller.getStudyReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }    
-    
-    @Test(expected = BadRequestException.class)
-    public void getParticipantReportDataWithNoUserAgent() throws Exception {
-        setupContext("", VALID_LANGUAGE_HEADER);
-        
-        SubpopulationGuid guid = SubpopulationGuid.create(REPORT_ID);
-        Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
-        consentStatuses.put(guid, new ConsentStatus.Builder().withName("FullName").withConsented(true).withRequired(true).withGuid(guid).build());
-        
-        session.setConsentStatuses(consentStatuses);
-        
-        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void getParticipantReportDataWithNoAcceptLanguage() throws Exception {
-        setupContext(VALID_USER_AGENT_HEADER, null);
-        
-        SubpopulationGuid guid = SubpopulationGuid.create(REPORT_ID);
-        Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
-        consentStatuses.put(guid, new ConsentStatus.Builder().withName("FullName").withConsented(true).withRequired(true).withGuid(guid).build());
-        
-        session.setConsentStatuses(consentStatuses);
-        
-        controller.getParticipantReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
-    }
     
     @Test
     public void saveParticipantReportData() throws Exception {
