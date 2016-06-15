@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.config;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.MissingResourceException;
 
 import javax.annotation.Resource;
 
@@ -12,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -38,19 +36,16 @@ public class BridgeProductionSpringConfig {
         // Configure pool
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
+        poolConfig.setMinIdle(config.getPropertyAsInt("redis.min.idle"));
+        poolConfig.setMaxIdle(config.getPropertyAsInt("redis.max.idle"));
+        poolConfig.setTestOnCreate(true); // test threads when we create them (only)
+        poolConfig.setTestOnBorrow(false);
+        poolConfig.setTestOnReturn(false);
+        poolConfig.setTestWhileIdle(false);
 
         // Create pool.
         final String url = getRedisURL(config);
         final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
-
-        // Test pool
-        try (Jedis jedis = jedisPool.getResource()) {
-            final String result = jedis.ping();
-            if (result == null || !"PONG".equalsIgnoreCase(result.trim())) {
-                throw new MissingResourceException("No PONG from PINGing Redis" + result + ".",
-                        JedisPool.class.getName(), jedis.getClient().getHost() + ":" + jedis.getClient().getPort());
-            }
-        }
 
         // Shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(jedisPool::destroy));
