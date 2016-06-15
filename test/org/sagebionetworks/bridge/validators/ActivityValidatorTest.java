@@ -81,9 +81,4 @@ public class ActivityValidatorTest {
         Activity activity = new Activity.Builder().withLabel("Label").withTask("foo").build();
         Validate.entityThrowingException(new ActivityValidator(Sets.newHashSet("foo")), activity);
     }
-    
-    @Test
-    public void surveyResponseWithoutIdentifierIsOK() {
-        new Activity.Builder().withLabel("Label").withPublishedSurvey("identifier", "guid").build();
-    }
 }

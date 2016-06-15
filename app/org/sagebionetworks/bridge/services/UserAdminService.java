@@ -39,7 +39,6 @@ public class UserAdminService {
     private AccountDao accountDao;
     private ConsentService consentService;
     private HealthDataService healthDataService;
-    private SurveyResponseService surveyResponseService;
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
     private CacheProvider cacheProvider;
@@ -73,10 +72,6 @@ public class UserAdminService {
     @Autowired
     final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
-    }
-    @Autowired
-    final void setSurveyResponseService(SurveyResponseService surveyResponseService) {
-        this.surveyResponseService = surveyResponseService;
     }
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -182,7 +177,6 @@ public class UserAdminService {
             healthDataService.deleteRecordsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);
-            surveyResponseService.deleteSurveyResponses(healthCode);
             
             // Remove the externalId from the table even if validation is not enabled. If the study
             // turns it off/back on again, we want to track what has changed

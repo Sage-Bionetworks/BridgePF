@@ -50,7 +50,7 @@ public class DynamoInitializerIntegrationTest {
 
     @Test
     public void testInitCreatesObjectsForTables() {
-        List<TableDescription> tables = annotationBasedTableCreator.getTables(DynamoSurvey.class, DynamoSurveyResponse.class);
+        List<TableDescription> tables = annotationBasedTableCreator.getTables(DynamoSurvey.class, DynamoExternalIdentifier.class);
 
         initializer.init(tables);
 

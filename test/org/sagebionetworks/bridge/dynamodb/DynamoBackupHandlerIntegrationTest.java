@@ -84,12 +84,12 @@ public class DynamoBackupHandlerIntegrationTest {
 
     @Test
     public void testInitCreatesObjectsForTables() {
-        List<TableDescription> tables = annotationBasedTableCreator.getTables(DynamoSurvey.class, DynamoSurveyResponse.class);
+        List<TableDescription> tables = annotationBasedTableCreator.getTables(DynamoSurvey.class, DynamoExternalIdentifier.class);
 
         assertTrue(dynamoBackupHandler.backupPipelineForTables(tables));
 
         String table1Name = dynamoNamingHelper.getFullyQualifiedTableName(DynamoSurvey.class);
-        String table2Name = dynamoNamingHelper.getFullyQualifiedTableName(DynamoSurveyResponse.class);
+        String table2Name = dynamoNamingHelper.getFullyQualifiedTableName(DynamoExternalIdentifier.class);
 
         ArgumentCaptor<PutPipelineDefinitionRequest> putPipelineDefinitionRequestArgumentCaptor =
                 ArgumentCaptor.forClass(PutPipelineDefinitionRequest.class);
