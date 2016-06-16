@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -455,7 +456,21 @@ public class ParticipantControllerTest {
         // The ID was changed back to the session's participant user ID, not the one provided.
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(ID, captured.getId());
-    } 
+    }
+    
+    @Test
+    public void resendEmailVerification() throws Exception {
+        controller.resendEmailVerification(ID);
+        
+        verify(participantService).resendEmailVerification(study, ID);
+    }
+    
+    @Test
+    public void resendConsentAgreement() throws Exception {
+        controller.resendConsentAgreement(ID, "subpopGuid");
+        
+        verify(participantService).resendConsentAgreement(study, SubpopulationGuid.create("subpopGuid"), ID);
+    }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);

@@ -97,6 +97,7 @@ public class ConsentServiceMockTest {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("BBB")
+                .withId("user-id")
                 .withEmail("bbb@bbb.com").build();
         session = new UserSession(participant);
         
@@ -120,7 +121,7 @@ public class ConsentServiceMockTest {
         
         when(subpopService.getSubpopulation(study, badGuid)).thenThrow(new EntityNotFoundException(Subpopulation.class));
         try {
-            consentService.getConsentSignature(study, SubpopulationGuid.create("not-correct"), session);
+            consentService.getConsentSignature(study, SubpopulationGuid.create("not-correct"), session.getId());
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
             assertEquals("Subpopulation not found.", e.getMessage());

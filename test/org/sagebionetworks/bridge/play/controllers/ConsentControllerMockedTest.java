@@ -107,7 +107,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, SubpopulationGuid.create(study.getIdentifier()), session)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, SubpopulationGuid.create(study.getIdentifier()), session.getId())).thenReturn(sig);
 
         Result result = controller.getConsentSignature();
 
@@ -193,7 +193,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, SUBPOP_GUID, session)).thenReturn(sig);
+        when(consentService.getConsentSignature(study, SUBPOP_GUID, session.getId())).thenReturn(sig);
 
         Result result = controller.getConsentSignatureV2(SUBPOP_GUID.getGuid());
 
@@ -273,7 +273,7 @@ public class ConsentControllerMockedTest {
         
         assertResult(result, 200, "Emailed consent.");
         
-        verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, session);
+        verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, session.getParticipant());
     }
     
     @Test
