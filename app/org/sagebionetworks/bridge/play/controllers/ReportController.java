@@ -6,8 +6,6 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import java.util.LinkedHashSet;
-
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -15,7 +13,6 @@ import org.springframework.stereotype.Controller;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -48,8 +45,6 @@ import play.mvc.Result;
  */
 @Controller
 public class ReportController extends BaseController {
-
-    private static final String NO_HEADERS_ERROR = "This request requires valid User-Agent and Accept-Language headers.";
     
     @Autowired
     ReportService reportService;
@@ -83,9 +78,8 @@ public class ReportController extends BaseController {
      * components that haven't sent the correct headers in the past).
      */
     public Result getParticipantReport(String identifier, String startDateString, String endDateString) {
-        UserSession session = getAuthenticatedAndConsentedSession();
-        checkHeaders();
-        
+        UserSession session = getAuthenticatedSession();
+
         LocalDate startDate = parseDateHelper(startDateString);
         LocalDate endDate = parseDateHelper(endDateString);
         
@@ -243,19 +237,6 @@ public class ReportController extends BaseController {
         reportService.deleteStudyReportRecord(session.getStudyIdentifier(), identifier, date);
         
         return okResult("Report record deleted.");
-    }
-    
-    /**
-     * Non-app clients are being created to display reports (specifically, web pages embedded in the apps). These 
-     * have not passed along the headers needed to properly verify that the user is consented to view the reports. 
-     * So in an exception to other endpoints, we <em>require</em> these headers for the GET calls for the reports.
-     */
-    private void checkHeaders() {
-        ClientInfo info = getClientInfoFromUserAgentHeader();
-        LinkedHashSet<String> languages = getLanguagesFromAcceptLanguageHeader();
-        if (ClientInfo.UNKNOWN_CLIENT.equals(info) || languages.isEmpty()) {
-            throw new BadRequestException(NO_HEADERS_ERROR);
-        }
     }
     
     private static LocalDate parseDateHelper(String dateStr) {

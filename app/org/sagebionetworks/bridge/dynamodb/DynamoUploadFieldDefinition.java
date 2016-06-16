@@ -28,12 +28,13 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     private final @Nonnull String name;
     private final boolean required;
     private final @Nonnull UploadFieldType type;
+    private final @Nonnull Boolean unboundedText;
 
     /** Private constructor. Construction of a DynamoUploadFieldDefinition should go through the Builder. */
     private DynamoUploadFieldDefinition(@Nullable String fileExtension, @Nullable String mimeType,
             @Nullable Integer minAppVersion, @Nullable Integer maxAppVersion, @Nullable Integer maxLength,
             @Nullable List<String> multiChoiceAnswerList, @Nonnull String name, boolean required,
-            @Nonnull UploadFieldType type) {
+            @Nonnull UploadFieldType type, @Nonnull Boolean unboundedText) {
         this.fileExtension = fileExtension;
         this.mimeType = mimeType;
         this.minAppVersion = minAppVersion;
@@ -43,6 +44,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         this.name = name;
         this.required = required;
         this.type = type;
+        this.unboundedText = unboundedText;
     }
 
     /** {@inheritDoc} */
@@ -100,6 +102,12 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     }
 
     /** {@inheritDoc} */
+    @Nonnull
+    public Boolean isUnboundedText() {
+        return unboundedText;
+    }
+
+    /** {@inheritDoc} */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -117,14 +125,15 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
                 Objects.equals(maxLength, that.maxLength) &&
                 Objects.equals(multiChoiceAnswerList, that.multiChoiceAnswerList) &&
                 Objects.equals(name, that.name) &&
-                type == that.type;
+                type == that.type &&
+                Objects.equals(unboundedText, that.unboundedText);
     }
 
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return Objects.hash(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength, multiChoiceAnswerList,
-                name, required, type);
+                name, required, type, unboundedText);
     }
 
     /** Builder for DynamoUploadFieldDefinition */
@@ -138,6 +147,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         private String name;
         private Boolean required;
         private UploadFieldType type;
+        private Boolean unboundedText;
 
         /** Copies attributes from the given field definition. */
         public Builder copyOf(UploadFieldDefinition other) {
@@ -150,6 +160,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             this.name = other.getName();
             this.required = other.isRequired();
             this.type = other.getType();
+            this.unboundedText = other.isUnboundedText();
             return this;
         }
 
@@ -214,6 +225,12 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             return this;
         }
 
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#isUnboundedText */
+        public Builder withUnboundedText(Boolean unboundedText) {
+            this.unboundedText = unboundedText;
+            return this;
+        }
+
         /**
          * Builds and validates a DynamoUploadFieldDefinition. name must be non-null and non-empty. type must be
          * non-null. required may be null and defaults to true. If this is called with invalid fields, it will throw an
@@ -235,7 +252,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             }
 
             return new DynamoUploadFieldDefinition(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength,
-                    multiChoiceAnswerListCopy, name, required, type);
+                    multiChoiceAnswerListCopy, name, required, type, unboundedText);
         }
     }
 }
