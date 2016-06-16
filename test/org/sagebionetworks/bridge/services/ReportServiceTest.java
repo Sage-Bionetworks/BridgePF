@@ -304,7 +304,8 @@ public class ReportServiceTest {
         }
     }
     
-    // The following are date range tests from MPowerVisualizationService, they should work with this service too
+    // The following are date range tests from the original MPowerVisualizationService, they should work with this
+    // service too
     
     @Test
     public void defaultStartAndEndDates() {

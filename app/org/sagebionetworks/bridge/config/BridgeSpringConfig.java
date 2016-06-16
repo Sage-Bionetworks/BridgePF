@@ -44,7 +44,6 @@ import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
-import org.sagebionetworks.bridge.dynamodb.DynamoMpowerVisualization;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptions;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
@@ -52,7 +51,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
@@ -111,11 +109,6 @@ public class BridgeSpringConfig {
         BridgeConfig bridgeConfig = bridgeConfig();
         return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key"),
                 bridgeConfig.getProperty("aws.secret.key"));
-    }
-
-    @Bean(name = "mpowerVisualizationDdbMapper")
-    public DynamoDBMapper mpowerVisualizationDdbMapper(DynamoUtils dynamoUtils) {
-        return dynamoUtils.getMapper(DynamoMpowerVisualization.class);
     }
 
     @Bean(name = "s3UploadCredentials")
@@ -400,12 +393,6 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper activityDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoScheduledActivity.class);
-    }
-
-    @Bean(name = "surveyResponseDdbMapper")
-    @Autowired
-    public DynamoDBMapper surveyResponseDdbMapper(DynamoUtils dynamoUtils) {
-        return dynamoUtils.getMapper(DynamoSurveyResponse.class);
     }
     
     @Bean(name = "userConsentDdbMapper")

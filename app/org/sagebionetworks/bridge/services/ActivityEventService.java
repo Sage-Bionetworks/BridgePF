@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -52,19 +51,6 @@ public class ActivityEventService {
         activityEventDao.publishEvent(event);
     }
     
-    public void publishSurveyFinishedEvent(SurveyResponse response) {
-        checkNotNull(response);
-        
-        ActivityEvent event = new DynamoActivityEvent.Builder()
-            .withHealthCode(response.getHealthCode())
-            .withTimestamp(response.getCompletedOn())
-            .withObjectType(ActivityEventObjectType.SURVEY)
-            .withObjectId(response.getSurveyGuid())
-            .withEventType(ActivityEventType.FINISHED)
-            .build();
-        activityEventDao.publishEvent(event);
-    }
-    
     public void publishActivityFinishedEvent(ScheduledActivity schActivity) {
         checkNotNull(schActivity);
         
@@ -89,7 +75,7 @@ public class ActivityEventService {
      * ActivityEvents can be published directly, although all supported events have a more 
      * specific service method that should be preferred. This method can be used for 
      * edge cases (like answering a question or finishing a survey through the bulk import 
-     * system, which does not generate SurveyResponse objects).
+     * system).
      * 
      * @param event
      */

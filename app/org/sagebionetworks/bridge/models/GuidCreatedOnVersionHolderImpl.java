@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -31,13 +30,6 @@ public final class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersio
         this.guid = survey.getGuid();
         this.createdOn = survey.getCreatedOn();
         this.version = survey.getVersion();
-    }
-    
-    public GuidCreatedOnVersionHolderImpl(SurveyResponse response) {
-        checkNotNull(response);
-        this.guid = response.getSurveyGuid();
-        this.createdOn = response.getSurveyCreatedOn();
-        this.version = null;
     }
 
     public GuidCreatedOnVersionHolderImpl(SurveyReference reference) {

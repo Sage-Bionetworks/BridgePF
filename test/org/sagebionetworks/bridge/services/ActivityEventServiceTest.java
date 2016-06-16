@@ -16,7 +16,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
@@ -139,25 +138,6 @@ public class ActivityEventServiceTest {
         verify(activityEventDao).publishEvent(argument.capture());
         
         assertEquals("question:BBB-CCC-DDD:answered", argument.getValue().getEventId());
-        assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
-        assertEquals("healthCode", argument.getValue().getHealthCode());
-    }
-
-    @Test
-    public void canPublishSurveyResponse() {
-        DateTime now = DateTime.now();
-        
-        DynamoSurveyResponse response = new DynamoSurveyResponse();
-        response.setCompletedOn(now.getMillis());
-        response.setHealthCode("healthCode");
-        response.setSurveyKey("BBB-CCC-DDD:123123123");
-        
-        service.publishSurveyFinishedEvent(response);
-        
-        ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
-        verify(activityEventDao).publishEvent(argument.capture());
-        
-        assertEquals("survey:BBB-CCC-DDD:finished", argument.getValue().getEventId());
         assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
         assertEquals("healthCode", argument.getValue().getHealthCode());
     }
