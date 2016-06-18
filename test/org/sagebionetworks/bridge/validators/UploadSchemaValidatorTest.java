@@ -114,7 +114,7 @@ public class UploadSchemaValidatorTest {
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("bar-field")
                 .withType(UploadFieldType.STRING).build());
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("baz-field")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("asdf", "jkl;").build());
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("asdf", "jkl").build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -344,6 +344,15 @@ public class UploadSchemaValidatorTest {
                 .withType(UploadFieldType.STRING).build());
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("foo-field")
                 .withType(UploadFieldType.INT).build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("bar")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("bar", "other")
+                .withAllowOtherChoices(true).build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("bar.bar").withType(UploadFieldType.STRING)
+                .build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("baz").withType(UploadFieldType.TIMESTAMP)
+                .build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("baz.timezone")
+                .withType(UploadFieldType.STRING).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -354,7 +363,8 @@ public class UploadSchemaValidatorTest {
         } catch (InvalidEntityException ex) {
             thrownEx = ex;
         }
-        assertTrue(thrownEx.getMessage().contains("cannot use foo-field (used by another field)"));
+        assertTrue(thrownEx.getMessage().contains("conflict in field names or sub-field names: bar.bar, bar.other, " +
+                "baz.timezone, foo-field"));
     }
 
     @Test

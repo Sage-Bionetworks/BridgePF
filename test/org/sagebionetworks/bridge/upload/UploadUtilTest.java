@@ -128,7 +128,10 @@ public class UploadUtilTest {
                 { new TextNode("[3, 5, 7]"), UploadFieldType.MULTI_CHOICE, null, false },
                 // multi-choice valid (some elements aren't strings)
                 { BridgeObjectMapper.get().readTree("[true, false, \"Don't Know\"]"), UploadFieldType.MULTI_CHOICE,
-                        BridgeObjectMapper.get().readTree("[\"true\", \"false\", \"Don't Know\"]"), true },
+                        BridgeObjectMapper.get().readTree("[\"true\", \"false\", \"Don_t Know\"]"), true },
+                // multi-choice with sanitizing answers
+                { BridgeObjectMapper.get().readTree("[\".foo..bar\", \"$baz\"]"), UploadFieldType.MULTI_CHOICE,
+                        BridgeObjectMapper.get().readTree("[\"_foo.bar\", \"_baz\"]"), true },
                 // single-choice array
                 { BridgeObjectMapper.get().readTree("[\"football\"]"), UploadFieldType.SINGLE_CHOICE,
                         new TextNode("football"), true },
@@ -223,6 +226,54 @@ public class UploadUtilTest {
             JsonNode result = UploadUtil.convertToStringNode(inputNode);
             assertTrue("Test case: " + inputNodeStr, result.isTextual());
             assertEquals("Test case: " + inputNodeStr, oneTestCase[1], result.textValue());
+        }
+
+        // arbitrary JSON object
+        {
+            JsonNode inputNode = BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
+            JsonNode result = UploadUtil.convertToStringNode(inputNode);
+            assertTrue(result.isTextual());
+
+            // We don't want to couple to a specific way of JSON formatting. So instead of string checking, convert the
+            // string back into JSON and compare JSON directly.
+            JsonNode resultNestedJson = BridgeObjectMapper.get().readTree(result.textValue());
+            assertEquals(inputNode, resultNestedJson);
+        }
+    }
+
+    @Test
+    public void getJsonNodeAsString() throws Exception {
+        // { inputNode, expectedOutputString }
+        Object[][] testCaseArray = {
+                // java null
+                { null, null },
+                // json null
+                { NullNode.instance, null },
+                // not a string
+                { BooleanNode.FALSE, "false" },
+                // empty string
+                { new TextNode(""), "" },
+                // is a string
+                { new TextNode("my string"), "my string" },
+        };
+
+        for (Object[] oneTestCase : testCaseArray) {
+            JsonNode inputNode = (JsonNode) oneTestCase[0];
+            String inputNodeStr = BridgeObjectMapper.get().writeValueAsString(inputNode);
+
+            String retVal = UploadUtil.getAsString(inputNode);
+            assertEquals("Test case: " + inputNodeStr, oneTestCase[1], retVal);
+        }
+
+        // arbitrary JSON object
+        {
+            JsonNode inputNode = BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
+            String retVal = UploadUtil.getAsString(inputNode);
+
+            // We don't want to couple to a specific way of JSON formatting. So instead of string checking, convert the
+            // string back into JSON and compare JSON directly.
+            JsonNode resultNestedJson = BridgeObjectMapper.get().readTree(retVal);
+            assertEquals(inputNode, resultNestedJson);
         }
     }
 

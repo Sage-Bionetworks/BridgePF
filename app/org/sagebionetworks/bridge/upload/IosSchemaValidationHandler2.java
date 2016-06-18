@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
+import org.sagebionetworks.bridge.schema.SchemaUtils;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -473,22 +474,20 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             ObjectNode dataMap, Map<String, byte[]> attachmentMap) {
         // Get flattened JSON data map (key is filename.fieldname), because schemas can reference fields either by
         // filename.fieldname or wholly by filename.
+        // Note that this includes both the flattened map (filename.fieldname) and the whole file (filename).
         Map<String, JsonNode> flattenedJsonDataMap = flattenJsonDataMap(jsonDataMap);
 
-        Set<String> nonJsonFilenameSet = unzippedDataMap.keySet();
-        Set<String> jsonFilenameSet = jsonDataMap.keySet();
-        Set<String> jsonFieldnameSet = flattenedJsonDataMap.keySet();
+        Map<String, JsonNode> sanitizedFlattenedJsonDataMap = sanitizeFieldNames(flattenedJsonDataMap);
+        Map<String, byte[]> sanitizedUnzippedDataMap = sanitizeFieldNames(unzippedDataMap);
 
         // Using schema, copy fields over to data map. Or if it's an attachment, add it to the attachment map.
         for (UploadFieldDefinition oneFieldDef : schema.getFieldDefinitions()) {
             String fieldName = oneFieldDef.getName();
 
-            if (nonJsonFilenameSet.contains(fieldName)) {
-                attachmentMap.put(fieldName, unzippedDataMap.get(fieldName));
-            } else if (jsonFilenameSet.contains(fieldName)) {
-                copyJsonField(context, uploadId, jsonDataMap.get(fieldName), oneFieldDef, dataMap, attachmentMap);
-            } else if (jsonFieldnameSet.contains(fieldName)) {
-                copyJsonField(context, uploadId, flattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
+            if (sanitizedUnzippedDataMap.containsKey(fieldName)) {
+                attachmentMap.put(fieldName, sanitizedUnzippedDataMap.get(fieldName));
+            } else if (sanitizedFlattenedJsonDataMap.containsKey(fieldName)) {
+                copyJsonField(context, uploadId, sanitizedFlattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
                         attachmentMap);
             }
         }
@@ -510,9 +509,25 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
                 String oneFieldName = fieldNameIter.next();
                 dataFieldMap.put(filename + "." + oneFieldName, oneJsonFileNode.get(oneFieldName));
             }
+
+            // Add the whole JSON file into the flattened map. This allows us to simplify some codepaths further down
+            // the chain.
+            dataFieldMap.put(filename, oneJsonFileNode);
         }
 
         return dataFieldMap;
+    }
+
+    // Sanitize the field names from the upload to match the rules for sanitizing field names in schemas. (This hasn't
+    // yet become a problem in Prod, but we're adding the safeguards to ensure it never becomes a problem.)
+    private static <T> Map<String, T> sanitizeFieldNames(Map<String, T> rawFieldMap) {
+        Map<String, T> sanitizedFieldMap = new HashMap<>();
+        for (Map.Entry<String, T> oneRawFieldEntry : rawFieldMap.entrySet()) {
+            String rawFieldName = oneRawFieldEntry.getKey();
+            String sanitizedFieldName = SchemaUtils.sanitizeFieldName(rawFieldName);
+            sanitizedFieldMap.put(sanitizedFieldName, oneRawFieldEntry.getValue());
+        }
+        return sanitizedFieldMap;
     }
 
     private static void copyJsonField(UploadValidationContext context, String uploadId, JsonNode fieldValue,

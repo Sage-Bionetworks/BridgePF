@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.schema.SchemaUtils;
 
 /**
  * Dynamo DB implementation of UploadFieldDefinition. While there is nothing specific to Dynamo DB in this class, this
@@ -19,6 +20,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
  */
 @JsonDeserialize(builder = DynamoUploadFieldDefinition.Builder.class)
 public final class DynamoUploadFieldDefinition implements UploadFieldDefinition {
+    private final @Nullable Boolean allowOtherChoices;
     private final @Nullable String fileExtension;
     private final @Nullable String mimeType;
     private final @Nullable Integer minAppVersion;
@@ -31,10 +33,11 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     private final @Nonnull Boolean unboundedText;
 
     /** Private constructor. Construction of a DynamoUploadFieldDefinition should go through the Builder. */
-    private DynamoUploadFieldDefinition(@Nullable String fileExtension, @Nullable String mimeType,
-            @Nullable Integer minAppVersion, @Nullable Integer maxAppVersion, @Nullable Integer maxLength,
-            @Nullable List<String> multiChoiceAnswerList, @Nonnull String name, boolean required,
-            @Nonnull UploadFieldType type, @Nonnull Boolean unboundedText) {
+    private DynamoUploadFieldDefinition(@Nullable Boolean allowOtherChoices, @Nullable String fileExtension,
+            @Nullable String mimeType, @Nullable Integer minAppVersion, @Nullable Integer maxAppVersion,
+            @Nullable Integer maxLength, @Nullable List<String> multiChoiceAnswerList, @Nonnull String name,
+            boolean required, @Nonnull UploadFieldType type, @Nonnull Boolean unboundedText) {
+        this.allowOtherChoices = allowOtherChoices;
         this.fileExtension = fileExtension;
         this.mimeType = mimeType;
         this.minAppVersion = minAppVersion;
@@ -45,6 +48,12 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         this.required = required;
         this.type = type;
         this.unboundedText = unboundedText;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable Boolean getAllowOtherChoices() {
+        return allowOtherChoices;
     }
 
     /** {@inheritDoc} */
@@ -102,8 +111,8 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     }
 
     /** {@inheritDoc} */
-    @Nonnull
-    public Boolean isUnboundedText() {
+    @Override
+    public @Nonnull Boolean isUnboundedText() {
         return unboundedText;
     }
 
@@ -118,6 +127,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         }
         DynamoUploadFieldDefinition that = (DynamoUploadFieldDefinition) o;
         return required == that.required &&
+                Objects.equals(allowOtherChoices, that.allowOtherChoices) &&
                 Objects.equals(fileExtension, that.fileExtension) &&
                 Objects.equals(mimeType, that.mimeType) &&
                 Objects.equals(minAppVersion, that.minAppVersion) &&
@@ -132,12 +142,13 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        return Objects.hash(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength, multiChoiceAnswerList,
-                name, required, type, unboundedText);
+        return Objects.hash(allowOtherChoices, fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength,
+                multiChoiceAnswerList, name, required, type, unboundedText);
     }
 
     /** Builder for DynamoUploadFieldDefinition */
     public static class Builder {
+        private Boolean allowOtherChoices;
         private String fileExtension;
         private String mimeType;
         private Integer minAppVersion;
@@ -151,6 +162,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
 
         /** Copies attributes from the given field definition. */
         public Builder copyOf(UploadFieldDefinition other) {
+            this.allowOtherChoices = other.getAllowOtherChoices();
             this.fileExtension = other.getFileExtension();
             this.mimeType = other.getMimeType();
             this.minAppVersion = other.getMinAppVersion();
@@ -161,6 +173,12 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             this.required = other.isRequired();
             this.type = other.getType();
             this.unboundedText = other.isUnboundedText();
+            return this;
+        }
+
+        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getAllowOtherChoices */
+        public Builder withAllowOtherChoices(Boolean allowOtherChoices) {
+            this.allowOtherChoices = allowOtherChoices;
             return this;
         }
 
@@ -245,14 +263,23 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
                 required = true;
             }
 
+            // Sanitize the field name.
+            String sanitizedName = SchemaUtils.sanitizeFieldName(name);
+
             // If the answer list was specified, make an immutable copy.
             List<String> multiChoiceAnswerListCopy = null;
             if (multiChoiceAnswerList != null) {
-                 multiChoiceAnswerListCopy = ImmutableList.copyOf(multiChoiceAnswerList);
+                ImmutableList.Builder<String> answerListBuilder = ImmutableList.builder();
+                for (String oneAnswer : multiChoiceAnswerList) {
+                    // Since multi-choice answers become part of Synapse column names, we should sanitize those too.
+                    answerListBuilder.add(SchemaUtils.sanitizeFieldName(oneAnswer));
+                }
+
+                multiChoiceAnswerListCopy = answerListBuilder.build();
             }
 
-            return new DynamoUploadFieldDefinition(fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength,
-                    multiChoiceAnswerListCopy, name, required, type, unboundedText);
+            return new DynamoUploadFieldDefinition(allowOtherChoices, fileExtension, mimeType, minAppVersion,
+                    maxAppVersion, maxLength, multiChoiceAnswerListCopy, sanitizedName, required, type, unboundedText);
         }
     }
 }
