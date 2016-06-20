@@ -353,6 +353,10 @@ public class UploadSchemaValidatorTest {
                 .build());
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("baz.timezone")
                 .withType(UploadFieldType.STRING).build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("#underscore")
+                .withType(UploadFieldType.STRING).build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("!underscore")
+                .withType(UploadFieldType.STRING).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -363,8 +367,8 @@ public class UploadSchemaValidatorTest {
         } catch (InvalidEntityException ex) {
             thrownEx = ex;
         }
-        assertTrue(thrownEx.getMessage().contains("conflict in field names or sub-field names: bar.bar, bar.other, " +
-                "baz.timezone, foo-field"));
+        assertTrue(thrownEx.getMessage().contains("conflict in field names or sub-field names: _underscore, bar.bar, "
+                + "bar.other, baz.timezone, foo-field"));
     }
 
     @Test
