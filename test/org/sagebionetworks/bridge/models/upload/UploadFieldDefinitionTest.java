@@ -74,10 +74,11 @@ public class UploadFieldDefinitionTest {
     public void testOptionalFields() {
         List<String> multiChoiceAnswerList = ImmutableList.of("foo", "bar", "baz");
 
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withFileExtension(".test")
-                .withMimeType("text/plain").withMinAppVersion(10).withMaxAppVersion(13).withMaxLength(128)
-                .withMultiChoiceAnswerList(multiChoiceAnswerList).withName("optional-stuff").withRequired(false)
-                .withType(UploadFieldType.STRING).withUnboundedText(true).build();
+        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withAllowOtherChoices(true)
+                .withFileExtension(".test").withMimeType("text/plain").withMinAppVersion(10).withMaxAppVersion(13)
+                .withMaxLength(128).withMultiChoiceAnswerList(multiChoiceAnswerList).withName("optional-stuff")
+                .withRequired(false).withType(UploadFieldType.STRING).withUnboundedText(true).build();
+        assertTrue(fieldDef.getAllowOtherChoices());
         assertEquals(".test", fieldDef.getFileExtension());
         assertEquals("text/plain", fieldDef.getMimeType());
         assertEquals(10, fieldDef.getMinAppVersion().intValue());
@@ -95,15 +96,32 @@ public class UploadFieldDefinitionTest {
     }
 
     @Test
+    public void fieldNameSanitization() {
+        // Don't need to exhaustively test all sanitizations, just that sanitization happens.
+        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName(".foo..bar")
+                .withType(UploadFieldType.STRING).build();
+        assertEquals("_foo.bar", fieldDef.getName());
+    }
+
+    @Test
+    public void choiceNameSanitization() {
+        // Similarly
+        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("saniTest")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("-bar", "!@baz#$").build();
+        assertEquals(ImmutableList.of("_bar", "__baz__"), fieldDef.getMultiChoiceAnswerList());
+    }
+
+    @Test
     public void testSerialization() throws Exception {
         // start with JSON
         String jsonText = "{\n" +
+                "   \"allowOtherChoices\":true,\n" +
                 "   \"fileExtension\":\".json\",\n" +
                 "   \"mimeType\":\"text/json\",\n" +
                 "   \"minAppVersion\":2,\n" +
                 "   \"maxAppVersion\":7,\n" +
                 "   \"maxLength\":24,\n" +
-                "   \"multiChoiceAnswerList\":[\"asdf\", \"jkl;\"],\n" +
+                "   \"multiChoiceAnswerList\":[\"asdf\", \"jkl\"],\n" +
                 "   \"name\":\"test-field\",\n" +
                 "   \"required\":false,\n" +
                 "   \"type\":\"INT\",\n" +
@@ -111,8 +129,9 @@ public class UploadFieldDefinitionTest {
                 "}";
 
         // convert to POJO
-        List<String> expectedMultiChoiceAnswerList = ImmutableList.of("asdf", "jkl;");
+        List<String> expectedMultiChoiceAnswerList = ImmutableList.of("asdf", "jkl");
         UploadFieldDefinition fieldDef = BridgeObjectMapper.get().readValue(jsonText, UploadFieldDefinition.class);
+        assertTrue(fieldDef.getAllowOtherChoices());
         assertEquals(".json", fieldDef.getFileExtension());
         assertEquals("text/json", fieldDef.getMimeType());
         assertEquals(2, fieldDef.getMinAppVersion().intValue());
@@ -129,7 +148,8 @@ public class UploadFieldDefinitionTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(10, jsonMap.size());
+        assertEquals(11, jsonMap.size());
+        assertTrue((boolean) jsonMap.get("allowOtherChoices"));
         assertEquals(".json", jsonMap.get("fileExtension"));
         assertEquals("text/json", jsonMap.get("mimeType"));
         assertEquals(2, jsonMap.get("minAppVersion"));

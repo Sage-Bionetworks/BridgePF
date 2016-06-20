@@ -1,19 +1,27 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.google.common.base.Strings;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
+
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /** Validator for {@link org.sagebionetworks.bridge.models.upload.UploadSchema} */
 public class UploadSchemaValidator implements Validator {
+    private static final char MULTI_CHOICE_FIELD_SEPARATOR = '.';
+    private static final String OTHER_CHOICE_FIELD_SUFFIX = ".other";
+    private static final String TIME_ZONE_FIELD_SUFFIX = ".timezone";
+
     /** Singleton instance of this validator. */
     public static final UploadSchemaValidator INSTANCE = new UploadSchemaValidator();
 
@@ -75,7 +83,8 @@ public class UploadSchemaValidator implements Validator {
             if (fieldDefList == null || fieldDefList.isEmpty()) {
                 errors.rejectValue("fieldDefinitions", "requires at least one definition");
             } else {
-                Set<String> fieldNameSet = new HashSet<>();
+                // Keep track of field names seen. This list may include duplicates, which we validate in a later step.
+                List<String> fieldNameList = new ArrayList<>();
 
                 for (int i=0; i < fieldDefList.size(); i++) {
                     UploadFieldDefinition fieldDef = fieldDefList.get(i);
@@ -89,10 +98,7 @@ public class UploadSchemaValidator implements Validator {
                         if (Strings.isNullOrEmpty(fieldName)) {
                             errors.rejectValue("name", "is required");
                         } else {
-                            if (fieldNameSet.contains(fieldName)) {
-                                errors.rejectValue("name", "cannot use " + fieldName + " (used by another field)");
-                            }
-                            fieldNameSet.add(fieldName);
+                            fieldNameList.add(fieldName);
                         }
 
                         UploadFieldType fieldType = fieldDef.getType();
@@ -101,15 +107,49 @@ public class UploadSchemaValidator implements Validator {
                             errors.rejectValue("type", "is required");
                         }
 
-                        List<String> multiChoiceAnswerList = fieldDef.getMultiChoiceAnswerList();
-                        if (fieldType == UploadFieldType.MULTI_CHOICE && (multiChoiceAnswerList == null ||
-                                multiChoiceAnswerList.isEmpty())) {
-                            errors.rejectValue("multiChoiceAnswerList", "must be specified for MULTI_CHOICE field "
-                                    + fieldName);
+                        if (fieldType == UploadFieldType.MULTI_CHOICE) {
+                            List<String> multiChoiceAnswerList = fieldDef.getMultiChoiceAnswerList();
+                            if (multiChoiceAnswerList == null || multiChoiceAnswerList.isEmpty()) {
+                                errors.rejectValue("multiChoiceAnswerList", "must be specified for MULTI_CHOICE field "
+                                        + fieldName);
+                            } else {
+                                // Multi-Choice fields create extra "sub-field" columns, and we need to check for
+                                // potential name collisions.
+                                //noinspection Convert2streamapi
+                                for (String oneAnswer : multiChoiceAnswerList) {
+                                    fieldNameList.add(fieldName + MULTI_CHOICE_FIELD_SEPARATOR + oneAnswer);
+                                }
+                            }
+
+                            if (Boolean.TRUE.equals(fieldDef.getAllowOtherChoices())) {
+                                // Similarly, there's an "other" field.
+                                fieldNameList.add(fieldName + OTHER_CHOICE_FIELD_SUFFIX);
+                            }
+                        } else if (fieldType == UploadFieldType.TIMESTAMP) {
+                            // Timestamp fields also generate a second subfield for timezone. Need to check for name
+                            // collisions here too.
+                            fieldNameList.add(fieldName + TIME_ZONE_FIELD_SUFFIX);
                         }
 
                         errors.popNestedPath();
                     }
+                }
+
+                // Check for duplicate field names. Dupe set is a tree set so our error messages are in a predictable
+                // alphabetical order.
+                Set<String> seenFieldNameSet = new HashSet<>();
+                Set<String> dupeFieldNameSet = new TreeSet<>();
+                for (String oneFieldName : fieldNameList) {
+                    if (seenFieldNameSet.contains(oneFieldName)) {
+                        dupeFieldNameSet.add(oneFieldName);
+                    } else {
+                        seenFieldNameSet.add(oneFieldName);
+                    }
+                }
+
+                if (!dupeFieldNameSet.isEmpty()) {
+                    errors.rejectValue("fieldDefinitions", "conflict in field names or sub-field names: " +
+                            BridgeUtils.COMMA_SPACE_JOINER.join(dupeFieldNameSet));
                 }
             }
         }

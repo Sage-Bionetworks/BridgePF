@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.schema.SchemaUtils;
 
 /** Utility class that contains static utility methods for handling uploads. */
 public class UploadUtil {
@@ -142,7 +143,10 @@ public class UploadUtil {
                 ArrayNode convertedValueNode = BridgeObjectMapper.get().createArrayNode();
                 int numValues = valueNode.size();
                 for (int i = 0; i < numValues; i++) {
-                    convertedValueNode.add(convertToStringNode(valueNode.get(i)));
+                    // Sanitize the multi-choice answers so they match up with the field def's multi-choice answer list
+                    String rawAnswer = getAsString(valueNode.get(i));
+                    String sanitizedAnswer = SchemaUtils.sanitizeFieldName(rawAnswer);
+                    convertedValueNode.add(sanitizedAnswer);
                 }
 
                 return CanonicalizationResult.makeResult(convertedValueNode);
@@ -242,6 +246,24 @@ public class UploadUtil {
             return inputNode;
         } else {
             return new TextNode(inputNode.toString());
+        }
+    }
+
+    /**
+     * Helper method to get the value of a JSON node as string. If the JSON node is a string type, it will return the
+     * string value. Otherwise, it'll return the text representation of the JSON.
+     *
+     * @param node
+     *         JSON node to convert to string
+     * @return JSON node as string
+     */
+    public static String getAsString(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        } else if (node.isTextual()) {
+            return node.textValue();
+        } else {
+            return node.toString();
         }
     }
 

@@ -18,6 +18,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @BridgeTypeName("UploadFieldDefinition")
 public interface UploadFieldDefinition extends BridgeEntity {
     /**
+     * Used for MULTI_CHOICE. True if the multi-choice field allows an "other" answer with user freeform text. This
+     * tells BridgeEX to reserve an "other" column for this field. Can be null, so that the number of field parameters
+     * doesn't explode.
+     */
+    @Nullable Boolean getAllowOtherChoices();
+
+    /**
      * Used for ATTACHMENT_V2 types. Used as a hint by BridgeEX to preserve the file extension as a quality-of-life
      * improvement. Optional, defaults to ".tmp".
      * */
