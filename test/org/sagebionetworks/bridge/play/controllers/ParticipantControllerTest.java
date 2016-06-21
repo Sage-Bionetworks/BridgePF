@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -501,6 +502,20 @@ public class ParticipantControllerTest {
         
         verify(participantService).deleteActivities(study, ID);
     }
+
+    @Test
+    public void resendEmailVerification() throws Exception {
+        controller.resendEmailVerification(ID);
+        
+        verify(participantService).resendEmailVerification(study, ID);
+    }
+    
+    @Test
+    public void resendConsentAgreement() throws Exception {
+        controller.resendConsentAgreement(ID, "subpopGuid");
+        
+        verify(participantService).resendConsentAgreement(study, SubpopulationGuid.create("subpopGuid"), ID);
+    }
     
     private PagedResourceList<ScheduledActivity> createActivityResults() {
         List<ScheduledActivity> list = Lists.newArrayList();
@@ -511,7 +526,7 @@ public class ParticipantControllerTest {
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);
         
-        return new PagedResourceList<>(list, null, 25, 100);        
+        return new PagedResourceList<>(list, null, 25, 100);
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {

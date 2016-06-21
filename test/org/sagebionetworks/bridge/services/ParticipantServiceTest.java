@@ -807,6 +807,31 @@ public class ParticipantServiceTest {
         participantService.deleteActivities(STUDY, ID);
     }
     
+    @Test
+    public void resendEmailVerification() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.resendEmailVerification(STUDY, ID);
+        
+        verify(accountDao).resendEmailVerificationToken(eq(STUDY.getStudyIdentifier()), emailCaptor.capture());
+        
+        Email email = emailCaptor.getValue();
+        assertEquals(STUDY.getStudyIdentifier(), email.getStudyIdentifier());
+        assertEquals(EMAIL, email.getEmail());
+    }
+    
+    @Test
+    public void resendConsentAgreement() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.resendConsentAgreement(STUDY, SUBPOP_GUID, ID);
+        
+        verify(consentService).emailConsentAgreement(eq(STUDY), eq(SUBPOP_GUID), participantCaptor.capture());
+        
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals(ID, participant.getId());
+    }
+    
     private void verifyStatusCreate(Set<Roles> callerRoles) {
         mockHealthCodeAndAccountRetrieval();
         

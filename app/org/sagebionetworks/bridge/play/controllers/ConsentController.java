@@ -91,7 +91,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session);
+        ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session.getId());
         return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
     }
     
@@ -115,7 +115,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        consentService.emailConsentAgreement(study, SubpopulationGuid.create(guid), session);
+        consentService.emailConsentAgreement(study, SubpopulationGuid.create(guid), session.getParticipant());
         return okResult("Emailed consent.");
     }
     

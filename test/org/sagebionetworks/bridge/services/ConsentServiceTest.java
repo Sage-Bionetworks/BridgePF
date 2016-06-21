@@ -132,7 +132,7 @@ public class ConsentServiceTest {
         assertTrue(histories.isEmpty());
         
         try {
-            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession());
+            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getId());
             fail("expected exception");
         } catch (EntityNotFoundException e) {
         }
@@ -163,7 +163,7 @@ public class ConsentServiceTest {
         assertEquals(1, statuses.size());
         assertTrue(ConsentStatus.isUserConsented(statuses));
 
-        ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession());
+        ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getId());
         assertEquals("Eggplant McTester", returnedSig.getName());
         assertEquals("1970-01-01", returnedSig.getBirthdate());
         assertEquals(TestConstants.DUMMY_IMAGE_DATA, returnedSig.getImageData());
@@ -183,7 +183,7 @@ public class ConsentServiceTest {
         
         // Consent signature is no longer found, it's effectively deleted
         try {
-            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession());
+            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getId());
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
         }
@@ -282,7 +282,7 @@ public class ConsentServiceTest {
         // Consent exists, user is consented
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertConsented(statuses, true);
-        assertNotNull(consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession()));
+        assertNotNull(consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getId()));
         
         // Now withdraw consent
         consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
@@ -291,7 +291,7 @@ public class ConsentServiceTest {
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
         try {
-            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession());            
+            consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getId());            
         } catch(EntityNotFoundException e) {
             assertEquals("ConsentSignature not found.", e.getMessage());
         }

@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -103,14 +104,14 @@ public class ParticipantController extends BaseController {
     public Result getParticipant(String userId) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+
         StudyParticipant participant = participantService.getParticipant(study, userId, true);
-        
+
         ObjectWriter writer = (study.isHealthCodeExportEnabled()) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         String ser = writer.writeValueAsString(participant);
-        
+
         return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
@@ -119,7 +120,7 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
-        
+ 
         participant = new StudyParticipant.Builder()
                 .copyOf(participant)
                 .withId(userId).build();
@@ -164,6 +165,25 @@ public class ParticipantController extends BaseController {
         participantService.deleteActivities(study, userId);
         
         return okResult("Scheduled activities deleted.");
+    }
+    
+    public Result resendEmailVerification(String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        participantService.resendEmailVerification(study, userId);
+        
+        return okResult("Email verification request has been resent to user.");
+    }
+    
+    public Result resendConsentAgreement(String userId, String guid) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
+        participantService.resendConsentAgreement(study, subpopGuid, userId);
+        
+        return okResult("Consent agreement resent to user.");
     }
     
     private int getIntOrDefault(String value, int defaultValue) {
