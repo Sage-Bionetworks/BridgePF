@@ -94,7 +94,7 @@ public class DynamoScheduledActivityDaoTest {
     public void getScheduledActivityHistory() throws Exception {
         // Let's use an interesting time zone so we can verify it is being used.
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
-        // Make a lot of tasks (40 days worth), enough to create a page
+        // Make a lot of tasks (30 days worth), enough to create a page
         DateTime endsOn = DateTime.now().plus(Period.parse("P30D"));
         
         ScheduleContext context = new ScheduleContext.Builder()
