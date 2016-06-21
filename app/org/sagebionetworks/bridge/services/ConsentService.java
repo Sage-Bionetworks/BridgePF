@@ -100,19 +100,19 @@ public class ConsentService {
      * Get the user's active consent signature (a signature that has not been withdrawn).
      * @param study
      * @param subpopGuid
-     * @param session
+     * @param userId
      * @return
      * @throws EntityNotFoundException if no consent exists
      */
-    public ConsentSignature getConsentSignature(Study study, SubpopulationGuid subpopGuid, UserSession session) {
+    public ConsentSignature getConsentSignature(Study study, SubpopulationGuid subpopGuid, String userId) {
         checkNotNull(study);
         checkNotNull(subpopGuid);
-        checkNotNull(session);
+        checkNotNull(userId);
         
         // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
         subpopService.getSubpopulation(study, subpopGuid);
         
-        Account account = accountDao.getAccount(study, session.getParticipant().getId());
+        Account account = accountDao.getAccount(study, userId);
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
         if (signature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);    
@@ -333,22 +333,22 @@ public class ConsentService {
      * Email the participant's signed consent agreement to the user's email address.
      * @param study
      * @param subpopGuid
-     * @param user
+     * @param participant
      */
-    public void emailConsentAgreement(Study study, SubpopulationGuid subpopGuid, UserSession session) {
+    public void emailConsentAgreement(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant) {
         checkNotNull(study);
         checkNotNull(subpopGuid);
-        checkNotNull(session);
+        checkNotNull(participant);
 
-        final ConsentSignature consentSignature = getConsentSignature(study, subpopGuid, session);
+        final ConsentSignature consentSignature = getConsentSignature(study, subpopGuid, participant.getId());
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
-        final SharingScope sharingScope = optionsService.getOptions(session.getParticipant().getHealthCode())
+        final SharingScope sharingScope = optionsService.getOptions(participant.getHealthCode())
                 .getEnum(SHARING_SCOPE, SharingScope.class);
         
         MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
-                session.getParticipant().getEmail(), consentSignature, sharingScope, studyConsentService,
+                participant.getEmail(), consentSignature, sharingScope, studyConsentService,
                 consentTemplate);
         sendMailService.sendEmail(consentEmail);
     }
