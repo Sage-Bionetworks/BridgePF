@@ -1,12 +1,14 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -21,6 +23,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -86,6 +89,48 @@ public class DynamoScheduledActivityDaoTest {
         activityDao.deleteActivitiesForUser(healthCode);
     }
 
+    @Test
+    public void getScheduledActivityHistory() throws Exception {
+        // Let's use an interesting time zone so we can verify it is being used.
+        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+        // Make a lot of tasks (40 days worth), enough to create a page
+        DateTime endsOn = DateTime.now().plus(Period.parse("P30D"));
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withHealthCode(healthCode)
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+            .withTimeZone(MSK)
+            .withEndsOn(endsOn)
+            .withEvents(eventMap()).build();
+        
+        List<ScheduledActivity> activitiesToSchedule = TestUtils.runSchedulerForActivities(context);
+        activityDao.saveActivities(activitiesToSchedule);
+        
+        PagedResourceList<? extends ScheduledActivity> history = activityDao.getActivityHistory(context.getZone(),
+                context.getCriteriaContext().getHealthCode(), null, 10);
+        
+        assertTrue(history.getTotal() > 30); // More like 70+ give or take time of day
+        assertEquals(10, history.getItems().size());
+        
+        Set<String> allTaskGuids = Sets.newHashSet();
+        for (ScheduledActivity act : history.getItems()) {
+            allTaskGuids.add(act.getGuid());
+            assertEquals(act.getTimeZone(), MSK); // time zone has been set
+        }
+        
+        history = activityDao.getActivityHistory(context.getZone(), context.getCriteriaContext().getHealthCode(), history.getOffsetKey(), 10);
+        assertTrue(history.getTotal() > 30); // More like 70+ give or take time of day
+        assertEquals(10, history.getItems().size());
+
+        for (ScheduledActivity act : history.getItems()) {
+            allTaskGuids.add(act.getGuid());
+        }
+        // Should be 20 (that is, two entirely separate pages of GUIDs)
+        assertEquals(20, allTaskGuids.size());
+        activityDao.deleteActivitiesForUser(healthCode);
+    }
+    
     @Test
     public void createUpdateDeleteActivities() throws Exception {
         // Let's use an interesting time zone so we can verify it is being used.

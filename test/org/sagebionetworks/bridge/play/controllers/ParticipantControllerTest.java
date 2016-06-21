@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -47,6 +48,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -63,6 +65,10 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
+
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
+    
+    private static final TypeReference<PagedResourceList<ScheduledActivity>> PAGED_ACTIVITIES_REF = new TypeReference<PagedResourceList<ScheduledActivity>>() {};
     
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
@@ -177,7 +183,7 @@ public class ParticipantControllerTest {
         
         // StudyParticipant will encrypt the healthCode when you ask for it, so validate the
         // JSON itself.
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        JsonNode node = MAPPER.readTree(json);
         assertTrue(node.has("firstName"));
         assertTrue(node.has("healthCode"));
         assertFalse(node.has("encryptedHealthCode"));
@@ -191,7 +197,7 @@ public class ParticipantControllerTest {
         
         Result result = controller.getParticipant(ID);
         String json = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
         
         assertEquals("Test", retrievedParticipant.getFirstName());
         assertNull(retrievedParticipant.getHealthCode());
@@ -265,7 +271,7 @@ public class ParticipantControllerTest {
         Result result = controller.createParticipant();
         
         assertEquals(201, result.status());
-        String id = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result)).get("identifier").asText();
+        String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
         assertEquals(holder.getIdentifier(), id);
         
         verify(participantService).createParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture(), eq(true));
@@ -308,8 +314,7 @@ public class ParticipantControllerTest {
         
         verify(participantService).getParticipant(study, ID, false);
         
-        StudyParticipant deserParticipant = BridgeObjectMapper.get()
-                .readValue(Helpers.contentAsString(result), StudyParticipant.class);
+        StudyParticipant deserParticipant = MAPPER.readValue(Helpers.contentAsString(result), StudyParticipant.class);
 
         assertEquals("Test", deserParticipant.getFirstName());
         assertNull(deserParticipant.getHealthCode());
@@ -326,11 +331,11 @@ public class ParticipantControllerTest {
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         doReturn(new UserSession(participant)).when(authService).updateSession(eq(study), any(), eq(ID));
         
-        String json = BridgeObjectMapper.get().writeValueAsString(participant);
+        String json = MAPPER.writeValueAsString(participant);
         mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
         assertEquals(200, result.status());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
@@ -391,7 +396,7 @@ public class ParticipantControllerTest {
         
         Result result = controller.updateSelfParticipant();
         assertEquals(200, result.status());
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
         assertEquals("UserSessionInfo", node.get("type").asText());
 
         verify(authService).updateSession(eq(study), any(), eq(ID));
@@ -439,11 +444,11 @@ public class ParticipantControllerTest {
         
         // Now change to some other ID
         participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();
-        String json = BridgeObjectMapper.get().writeValueAsString(participant);
+        String json = MAPPER.writeValueAsString(participant);
         TestUtils.mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
         assertEquals(200, result.status());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
@@ -455,10 +460,62 @@ public class ParticipantControllerTest {
         // The ID was changed back to the session's participant user ID, not the one provided.
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(ID, captured.getId());
-    } 
+    }
+    
+    @Test
+    public void canGetActivityHistory() throws Exception {
+        doReturn(createActivityResults()).when(participantService).getActivityHistory(study, ID, "offsetKey", new Integer(40));
+        
+        Result result = controller.getActivityHistory(ID, "offsetKey", "40");
+        assertEquals(200, result.status());
+        PagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result), PAGED_ACTIVITIES_REF);
+        
+        ScheduledActivity activity = page.getItems().iterator().next();
+        assertEquals("schedulePlanGuid", activity.getSchedulePlanGuid());
+        assertNull(activity.getHealthCode());
+        
+        assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
+        assertEquals(25, page.getPageSize());
+        assertEquals(100, page.getTotal());
+        verify(participantService).getActivityHistory(study, ID, "offsetKey", new Integer(40));
+    }
+    
+    @Test
+    public void canGetActivityWithNullValues() throws Exception {
+        doReturn(createActivityResults()).when(participantService).getActivityHistory(study, ID, null, null);
+        
+        Result result = controller.getActivityHistory(ID, null, null);
+        assertEquals(200, result.status());
+        PagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result), PAGED_ACTIVITIES_REF);
+        
+        assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
+        assertEquals(25, page.getPageSize());
+        assertEquals(100, page.getTotal());
+        verify(participantService).getActivityHistory(study, ID, null, null);
+    }
+    
+    @Test
+    public void deleteActivities() throws Exception {
+        Result result = controller.deleteActivities(ID);
+        assertResult(result, 200, "Scheduled activities deleted.");
+        
+        verify(participantService).deleteActivities(study, ID);
+    }
+    
+    private PagedResourceList<ScheduledActivity> createActivityResults() {
+        List<ScheduledActivity> list = Lists.newArrayList();
+        
+        DynamoScheduledActivity activity = new DynamoScheduledActivity();
+        activity.setActivity(TestConstants.TEST_1_ACTIVITY);
+        activity.setHealthCode("healthCode");
+        activity.setSchedulePlanGuid("schedulePlanGuid");
+        list.add(activity);
+        
+        return new PagedResourceList<>(list, null, 25, 100);        
+    }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);
-        return BridgeObjectMapper.get().readValue(string, ACCOUNT_SUMMARY_PAGE);
+        return MAPPER.readValue(string, ACCOUNT_SUMMARY_PAGE);
     }
 }

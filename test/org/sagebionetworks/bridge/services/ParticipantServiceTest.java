@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,6 +45,7 @@ import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -123,6 +125,9 @@ public class ParticipantServiceTest {
     private AccountDao accountDao;
     
     @Mock
+    private ScheduledActivityDao activityDao;
+    
+    @Mock
     private ParticipantOptionsService optionsService;
     
     @Mock
@@ -174,6 +179,7 @@ public class ParticipantServiceTest {
         participantService.setUserConsent(consentService);
         participantService.setCacheProvider(cacheProvider);
         participantService.setExternalIdService(externalIdService);
+        participantService.setScheduledActivityDao(activityDao);
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
@@ -737,12 +743,69 @@ public class ParticipantServiceTest {
     }
     
     @Test(expected = EntityNotFoundException.class)
-    public void noParticipantThrowsException() {
+    public void requestResetPasswordNoUserThrowsCorrectException() {
+        participantService.requestResetPassword(STUDY, ID);
+    }
+    
+    @Test
+    public void canGetActivityHistoryWithDefaults() {
         mockHealthCodeAndAccountRetrieval();
         
-        doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(STUDY, ID);
+        participantService.getActivityHistory(STUDY, ID, null, null);
         
-        participantService.requestResetPassword(STUDY, ID);
+        verify(activityDao).getActivityHistory(DateTimeZone.UTC, HEALTH_CODE, null, 50);
+    }
+    
+    @Test
+    public void canGetActivityHistoryLimitMinPaging() {
+        mockHealthCodeAndAccountRetrieval();
+        try {
+            participantService.getActivityHistory(STUDY, ID, null, 2);    
+            fail("Should have thrown an exception");
+        } catch(BadRequestException e) {
+            assertEquals("pageSize must be from 5-100 records", e.getMessage());
+        }
+        verifyNoMoreInteractions(activityDao);
+    }
+    
+    @Test
+    public void canGetActivityHistoryLimitMaxPaging() {
+        mockHealthCodeAndAccountRetrieval();
+        try {
+            participantService.getActivityHistory(STUDY, ID, null, 102);    
+            fail("Should have thrown an exception");
+        } catch(BadRequestException e) {
+            assertEquals("pageSize must be from 5-100 records", e.getMessage());
+        }
+        verifyNoMoreInteractions(activityDao);
+    }
+    
+    @Test
+    public void canGetActivityHistory() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.getActivityHistory(STUDY, ID, "key", 30);
+        
+        verify(activityDao).getActivityHistory(DateTimeZone.UTC, HEALTH_CODE, "key", 30);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getActivityHistoryNoUserThrowsCorrectException() {
+        participantService.getActivityHistory(STUDY, ID, null, 40);
+    }
+    
+    @Test
+    public void deleteActivities() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.deleteActivities(STUDY, ID);
+        
+        verify(activityDao).deleteActivitiesForUser(HEALTH_CODE);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteActivitiesNoUserThrowsCorrectException() {
+        participantService.deleteActivities(STUDY, ID);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

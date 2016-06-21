@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
@@ -143,6 +144,26 @@ public class ParticipantController extends BaseController {
         participantService.requestResetPassword(study, userId);
         
         return okResult("Request to reset password sent to user.");
+    }
+    
+    public Result getActivityHistory(String userId, String offsetKey, String pageSizeString) throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        Integer pageSize = (pageSizeString != null) ? Integer.parseInt(pageSizeString,10) : null;
+        
+        PagedResourceList<? extends ScheduledActivity> history = participantService.getActivityHistory(study, userId, offsetKey, pageSize);
+        
+        return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(history));
+    }
+    
+    public Result deleteActivities(String userId) throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        participantService.deleteActivities(study, userId);
+        
+        return okResult("Scheduled activities deleted.");
     }
     
     private int getIntOrDefault(String value, int defaultValue) {
