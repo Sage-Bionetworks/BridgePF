@@ -113,7 +113,7 @@ public class DynamoBackupHandlerIntegrationTest {
 
         // find activities using our data sources as inputs
         Map<String, PipelineObject> tableSourceIdToActivity =
-                typeToObject.get(DynamoDataPipelineHelper.PipelineObjectType.EMR_ACTIVITY).stream()
+                typeToObject.get(DynamoDataPipelineHelper.PipelineObjectType.HADOOP_ACTIVITY).stream()
                         .collect(Collectors.toMap(o -> DynamoDataPipelineHelper.getRefValue(o, "input").orElse(""), Function.identity()));
 
         PipelineObject table1BackupActivity = tableSourceIdToActivity.get(table1Source.getId());
