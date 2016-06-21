@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -201,7 +200,7 @@ public class ParticipantService {
         }
         Account account = getAccountThrowingException(study, userId);
         
-        return activityDao.getActivityHistory(DateTimeZone.UTC, account.getHealthCode(), offsetKey, pageSize);
+        return activityDao.getActivityHistory(account.getHealthCode(), offsetKey, pageSize);
     }
     
     public void deleteActivities(Study study, String userId) {

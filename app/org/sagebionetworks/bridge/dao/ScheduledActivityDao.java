@@ -11,13 +11,12 @@ public interface ScheduledActivityDao {
     
     /**
      * Get paged results of the scheduled activities that have been created for this user. 
-     * @param timeZone
      * @param healthCode
      * @param offsetKey
      * @param pageSize
      * @return
      */
-    PagedResourceList<? extends ScheduledActivity> getActivityHistory(DateTimeZone timeZone, String healthCode, String offsetKey, int pageSize);
+    PagedResourceList<? extends ScheduledActivity> getActivityHistory(String healthCode, String offsetKey, int pageSize);
     
     /**
      * Load an individual activity.

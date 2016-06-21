@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
@@ -107,25 +108,27 @@ public class DynamoScheduledActivityDaoTest {
         List<ScheduledActivity> activitiesToSchedule = TestUtils.runSchedulerForActivities(context);
         activityDao.saveActivities(activitiesToSchedule);
         
-        PagedResourceList<? extends ScheduledActivity> history = activityDao.getActivityHistory(context.getZone(),
-                context.getCriteriaContext().getHealthCode(), null, 10);
+        PagedResourceList<? extends ScheduledActivity> history = activityDao
+                .getActivityHistory(context.getCriteriaContext().getHealthCode(), null, 10);
         
-        assertTrue(history.getTotal() > 30); // More like 70+ give or take time of day
-        assertEquals(10, history.getItems().size());
+        assertTrue(history.getTotal() > 30);
+        assertEquals(10, history.getItems().size()); // one page
         
-        Set<String> allTaskGuids = Sets.newHashSet();
-        for (ScheduledActivity act : history.getItems()) {
-            allTaskGuids.add(act.getGuid());
-            assertEquals(act.getTimeZone(), MSK); // time zone has been set
-        }
+        Set<String> allTaskGuids = history.getItems()
+                .stream()
+                .map(ScheduledActivity::getGuid)
+                .collect(toSet());
         
-        history = activityDao.getActivityHistory(context.getZone(), context.getCriteriaContext().getHealthCode(), history.getOffsetKey(), 10);
-        assertTrue(history.getTotal() > 30); // More like 70+ give or take time of day
+        history = activityDao.getActivityHistory(context.getCriteriaContext().getHealthCode(), history.getOffsetKey(), 10);
+        assertTrue(history.getTotal() > 30);
         assertEquals(10, history.getItems().size());
 
-        for (ScheduledActivity act : history.getItems()) {
-            allTaskGuids.add(act.getGuid());
-        }
+        // Now add the next ten, they should be unique
+        allTaskGuids.addAll(history.getItems()
+                .stream()
+                .map(ScheduledActivity::getGuid)
+                .collect(toSet()));
+
         // Should be 20 (that is, two entirely separate pages of GUIDs)
         assertEquals(20, allTaskGuids.size());
         activityDao.deleteActivitiesForUser(healthCode);

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -753,7 +752,7 @@ public class ParticipantServiceTest {
         
         participantService.getActivityHistory(STUDY, ID, null, null);
         
-        verify(activityDao).getActivityHistory(DateTimeZone.UTC, HEALTH_CODE, null, 50);
+        verify(activityDao).getActivityHistory(HEALTH_CODE, null, 50);
     }
     
     @Test
@@ -786,7 +785,7 @@ public class ParticipantServiceTest {
         
         participantService.getActivityHistory(STUDY, ID, "key", 30);
         
-        verify(activityDao).getActivityHistory(DateTimeZone.UTC, HEALTH_CODE, "key", 30);
+        verify(activityDao).getActivityHistory(HEALTH_CODE, "key", 30);
     }
     
     @Test(expected = EntityNotFoundException.class)

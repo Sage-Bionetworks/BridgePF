@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,9 +48,9 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     }
     
     @Override
-    public PagedResourceList<? extends ScheduledActivity> getActivityHistory(DateTimeZone timeZone, String healthCode, String offsetKey, int pageSize){
+    public PagedResourceList<? extends ScheduledActivity> getActivityHistory(String healthCode, String offsetKey, int pageSize){
         // Just set a sane upper limit on this.
-        if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
+        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         QueryResultPage<DynamoScheduledActivity> page = mapper.queryPage(DynamoScheduledActivity.class,
@@ -63,7 +64,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
                 pageSize, total).withOffsetKey(nextPageOffsetKey);
         
         for (ScheduledActivity activity : resourceList.getItems()) {
-            activity.setTimeZone(timeZone);
+            activity.setTimeZone(DateTimeZone.UTC);
         }
         return resourceList;
     }
