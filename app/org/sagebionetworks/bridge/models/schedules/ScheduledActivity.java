@@ -25,6 +25,13 @@ public interface ScheduledActivity extends BridgeEntity {
         new SimpleFilterProvider().addFilter("filter", 
         SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "schedulePlanGuid")));
 
+    /**
+     * Researchers get the schedule plan GUID. 
+     */
+    public static final ObjectWriter RESEARCHER_SCHEDULED_ACTIVITY_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter", 
+            SimpleBeanPropertyFilter.serializeAllExcept("healthCode")));
+    
     public static ScheduledActivity create() {
         return new DynamoScheduledActivity();
     }

@@ -4,9 +4,19 @@ import java.util.List;
 
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 
 public interface ScheduledActivityDao {
+    
+    /**
+     * Get paged results of the scheduled activities that have been created for this user. 
+     * @param healthCode
+     * @param offsetKey
+     * @param pageSize
+     * @return
+     */
+    PagedResourceList<? extends ScheduledActivity> getActivityHistory(String healthCode, String offsetKey, int pageSize);
     
     /**
      * Load an individual activity.

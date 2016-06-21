@@ -1,12 +1,15 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -21,6 +24,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -86,6 +90,50 @@ public class DynamoScheduledActivityDaoTest {
         activityDao.deleteActivitiesForUser(healthCode);
     }
 
+    @Test
+    public void getScheduledActivityHistory() throws Exception {
+        // Let's use an interesting time zone so we can verify it is being used.
+        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+        // Make a lot of tasks (30 days worth), enough to create a page
+        DateTime endsOn = DateTime.now().plus(Period.parse("P30D"));
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withHealthCode(healthCode)
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+            .withTimeZone(MSK)
+            .withEndsOn(endsOn)
+            .withEvents(eventMap()).build();
+        
+        List<ScheduledActivity> activitiesToSchedule = TestUtils.runSchedulerForActivities(context);
+        activityDao.saveActivities(activitiesToSchedule);
+        
+        PagedResourceList<? extends ScheduledActivity> history = activityDao
+                .getActivityHistory(context.getCriteriaContext().getHealthCode(), null, 10);
+        
+        assertTrue(history.getTotal() > 30);
+        assertEquals(10, history.getItems().size()); // one page
+        
+        Set<String> allTaskGuids = history.getItems()
+                .stream()
+                .map(ScheduledActivity::getGuid)
+                .collect(toSet());
+        
+        history = activityDao.getActivityHistory(context.getCriteriaContext().getHealthCode(), history.getOffsetKey(), 10);
+        assertTrue(history.getTotal() > 30);
+        assertEquals(10, history.getItems().size());
+
+        // Now add the next ten, they should be unique
+        allTaskGuids.addAll(history.getItems()
+                .stream()
+                .map(ScheduledActivity::getGuid)
+                .collect(toSet()));
+
+        // Should be 20 (that is, two entirely separate pages of GUIDs)
+        assertEquals(20, allTaskGuids.size());
+        activityDao.deleteActivitiesForUser(healthCode);
+    }
+    
     @Test
     public void createUpdateDeleteActivities() throws Exception {
         // Let's use an interesting time zone so we can verify it is being used.

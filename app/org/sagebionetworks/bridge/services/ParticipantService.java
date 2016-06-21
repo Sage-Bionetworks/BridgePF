@@ -22,11 +22,13 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -37,6 +39,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -62,6 +65,8 @@ public class ParticipantService {
     private ExternalIdService externalIdService;
     
     private CacheProvider cacheProvider;
+    
+    private ScheduledActivityDao activityDao;
     
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
@@ -91,6 +96,11 @@ public class ParticipantService {
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+    }
+    
+    @Autowired
+    final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
+        this.activityDao = activityDao;
     }
 
     public StudyParticipant getParticipant(Study study, String id, boolean includeHistory) {
@@ -174,10 +184,33 @@ public class ParticipantService {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
         
-        StudyParticipant participant = getParticipant(study, userId, false);
+        Account account = getAccountThrowingException(study, userId);
         
-        Email email = new Email(study.getIdentifier(), participant.getEmail());
+        Email email = new Email(study.getIdentifier(), account.getEmail());
         accountDao.requestResetPassword(study, email);
+    }
+    
+    public PagedResourceList<? extends ScheduledActivity> getActivityHistory(Study study, String userId, String offsetKey, Integer pageSize) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(userId));
+        if (pageSize == null) {
+            pageSize = BridgeConstants.API_DEFAULT_PAGE_SIZE;
+        }
+        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+        Account account = getAccountThrowingException(study, userId);
+        
+        return activityDao.getActivityHistory(account.getHealthCode(), offsetKey, pageSize);
+    }
+    
+    public void deleteActivities(Study study, String userId) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(userId));
+        
+        Account account = getAccountThrowingException(study, userId);
+        
+        activityDao.deleteActivitiesForUser(account.getHealthCode());
     }
     
     public void resendEmailVerification(Study study, String userId) {
