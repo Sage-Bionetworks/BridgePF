@@ -45,7 +45,6 @@ public class DynamoInitializer {
      */
     public void init(Collection<TableDescription> tables) {
         initTables(tables);
-        dynamoBackupHandler.backupPipelineForTables(tables);
     }
 
     void deleteTable(Class<?> table) {
