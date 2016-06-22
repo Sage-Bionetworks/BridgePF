@@ -68,6 +68,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
                 new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false)
+                .withLimit(1)
                 .withQueryFilterEntry("active", new Condition()
                         .withComparisonOperator(ComparisonOperator.EQ)
                         .withAttributeValueList(new AttributeValue().withN("1")));

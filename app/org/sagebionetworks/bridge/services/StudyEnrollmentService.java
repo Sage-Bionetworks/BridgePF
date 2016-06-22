@@ -115,11 +115,11 @@ public class StudyEnrollmentService {
      * @param study
      * @param user
      */
-    public void decrementStudyEnrollment(Study study, UserSession session) {
+    public void decrementStudyEnrollment(Study study, boolean doesConsent) {
         if (study.getMaxNumOfParticipants() == 0) {
             return;
         }
-        if (!session.doesConsent()) {
+        if (!doesConsent) {
             String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
             String count = jedisOps.get(key);
             if (count != null && Long.parseLong(count) > 0) {

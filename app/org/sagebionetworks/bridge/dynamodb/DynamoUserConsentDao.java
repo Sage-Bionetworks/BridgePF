@@ -89,6 +89,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
             .withScanIndexForward(false)
+            .withLimit(1)
             .withQueryFilterEntry("withdrewOn", new Condition().withComparisonOperator(ComparisonOperator.NULL))
             .withHashKeyValues(hashKey);
         
@@ -150,7 +151,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
                         .withAttributeValueList(new AttributeValue(subpopGuid.getGuid())))
                 .withFilterConditionEntry("withdrewOn", new Condition()
                         .withComparisonOperator(ComparisonOperator.NULL));
-
+        
         return mapper.scan(DynamoUserConsent3.class, scan).stream()
             .map(DynamoUserConsent3::getHealthCode)
             .collect(Collectors.toSet());

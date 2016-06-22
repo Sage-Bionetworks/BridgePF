@@ -199,6 +199,8 @@ public class ConsentServiceMockTest {
     
     @Test
     public void withdrawConsent() throws Exception {
+        account.setEmail("bbb@bbb.com");
+        
         doReturn(new ParticipantOptionsLookup(ImmutableMap.of())).when(optionsService).getOptions(session.getParticipant().getHealthCode());
         
         List<ConsentSignature> history = account.getConsentSignatureHistory(SUBPOP_GUID);

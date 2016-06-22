@@ -268,6 +268,18 @@ public class ConsentControllerMockedTest {
     }
     
     @Test
+    public void canWithdrawFromAllConsents() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed(20000);
+        String json = "{\"reason\":\"There's a reason for everything.\"}";
+        TestUtils.mockPlayContextWithJson(json);
+        
+        Result result = controller.withdrawFromAllConsents();
+        assertResult(result, 200, "User has been withdrawn from the study.");
+        
+        verify(consentService).withdrawAllConsents(study, session.getId(), new Withdrawal("There's a reason for everything."), 20000);
+    }
+    
+    @Test
     public void emailCopyV2() throws Exception {
         Result result = controller.emailCopyV2(SUBPOP_GUID.getGuid());
         

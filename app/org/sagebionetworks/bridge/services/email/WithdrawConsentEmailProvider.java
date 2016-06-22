@@ -13,7 +13,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -25,14 +25,14 @@ public class WithdrawConsentEmailProvider implements MimeTypeEmailProvider {
 
     private Study study;
     private String externalId;
-    private StudyParticipant participant;
+    private Account account;
     private Withdrawal withdrawal;
     private long withdrewOn;
     
-    public WithdrawConsentEmailProvider(Study study, String externalId, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
+    public WithdrawConsentEmailProvider(Study study, String externalId, Account account, Withdrawal withdrawal, long withdrewOn) {
         this.study = study;
         this.externalId = externalId;
-        this.participant = participant;
+        this.account = account;
         this.withdrawal = withdrawal;
         this.withdrewOn = withdrewOn;
     }
@@ -68,8 +68,8 @@ public class WithdrawConsentEmailProvider implements MimeTypeEmailProvider {
     }
     
     private String getUserLabel() {
-        String label = String.format("%s %s &lt;%s&gt;", nullSafeCleanHtml(participant.getFirstName()),
-                nullSafeCleanHtml(participant.getLastName()), participant.getEmail());
+        String label = String.format("%s %s &lt;%s&gt;", nullSafeCleanHtml(account.getFirstName()),
+                nullSafeCleanHtml(account.getLastName()), account.getEmail());
         if (externalId != null) {
             label += " (external ID: " + nullSafeCleanHtml(externalId) + ") ";
         }

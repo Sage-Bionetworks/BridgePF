@@ -9,7 +9,7 @@ import java.util.Set;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
-
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -22,9 +22,11 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,9 +40,16 @@ public class ParticipantController extends BaseController {
     
     private ParticipantService participantService;
     
+    private ConsentService consentService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
+    }
+    
+    @Autowired
+    final void setConsentService(ConsentService consentService) {
+        this.consentService = consentService;
     }
     
     public Result getSelfParticipant() throws Exception {
@@ -184,6 +193,18 @@ public class ParticipantController extends BaseController {
         participantService.resendConsentAgreement(study, subpopGuid, userId);
         
         return okResult("Consent agreement resent to user.");
+    }
+    
+    public Result withdrawFromAllConsents(String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
+        long withdrewOn = DateTime.now().getMillis();
+        
+        consentService.withdrawAllConsents(study, userId, withdrawal, withdrewOn);
+        
+        return okResult("User has been withdrawn from the study.");
     }
     
     private int getIntOrDefault(String value, int defaultValue) {

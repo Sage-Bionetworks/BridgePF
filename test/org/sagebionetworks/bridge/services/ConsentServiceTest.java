@@ -401,6 +401,42 @@ public class ConsentServiceTest {
         assertFalse(statuses.get(optionalSubpop.getGuid()).isConsented()); // still false
     }
     
+    @Test
+    public void withdrawAllConsents() {
+        // Create a second required subpopulation
+        Subpopulation requiredSubpop = Subpopulation.create();
+        requiredSubpop.setName("Genetics Contributors");
+        requiredSubpop.setRequired(true);
+        requiredSubpop = subpopService.createSubpopulation(study, requiredSubpop);
+        
+        // Create a third required subpopulation
+        Subpopulation secondRequiredSubpop = Subpopulation.create();
+        secondRequiredSubpop.setName("This time subpopulation #3 has a required consent");
+        secondRequiredSubpop.setRequired(true);
+        secondRequiredSubpop = subpopService.createSubpopulation(study, secondRequiredSubpop);
+        
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        testUser.getSession().setConsentStatuses(statuses);
+        
+        consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getSession(),
+                makeSignature(DateTime.now().getMillis()), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
+        
+        consentService.consentToResearch(study, secondRequiredSubpop.getGuid(), testUser.getSession(),
+                makeSignature(DateTime.now().getMillis()), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
+        
+        // The third we leave alone, but we want to be sure this doesn't break withdrawing from the other consents.
+        long count = consentService.getConsentStatuses(context).values().stream().filter(ConsentStatus::isConsented)
+                .count();
+        assertEquals(2, count);
+
+        consentService.withdrawAllConsents(study, testUser.getId(), WITHDRAWAL, UNIX_TIMESTAMP);
+        count = consentService.getConsentStatuses(context).values().stream().filter(ConsentStatus::isConsented).count();
+        assertEquals(0, count);
+
+        SharingScope scope = optionsService.getOptions(testUser.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
+        assertEquals(SharingScope.NO_SHARING, scope);
+    }
+    
     private void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses, boolean signedMostRecent) {
         assertTrue(ConsentStatus.isUserConsented(statuses));
         assertTrue(testUser.getSession().doesConsent());

@@ -11,9 +11,10 @@ import javax.mail.internet.MimeBodyPart;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.SimpleAccount;
 
 public class WithdrawConsentEmailProviderTest {
 
@@ -23,14 +24,16 @@ public class WithdrawConsentEmailProviderTest {
     
     private WithdrawConsentEmailProvider provider;
     private Study study;
-    private StudyParticipant participant;
+    private Account account;
     
     @Before
     public void before() {
         study = mock(Study.class);
-        participant = new StudyParticipant.Builder().build();
         
-        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, participant, WITHDRAWAL, UNIX_TIMESTAMP);
+        account = new SimpleAccount();
+        account.setEmail("d@d.com");
+        
+        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
     }
     
     @Test
@@ -38,10 +41,8 @@ public class WithdrawConsentEmailProviderTest {
         when(study.getConsentNotificationEmail()).thenReturn("a@a.com");
         when(study.getName()).thenReturn("Study Name");
         when(study.getSupportEmail()).thenReturn("c@c.com");
-        
-        participant = new StudyParticipant.Builder().copyOf(participant).withEmail("d@d.com").build();
 
-        provider = new WithdrawConsentEmailProvider(study, null, participant, new Withdrawal(null), UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(study, null, account, new Withdrawal(null), UNIX_TIMESTAMP);
         MimeTypeEmail email = provider.getMimeTypeEmail();
         
         List<String> recipients = email.getRecipientAddresses();
@@ -62,13 +63,10 @@ public class WithdrawConsentEmailProviderTest {
         when(study.getConsentNotificationEmail()).thenReturn("a@a.com, b@b.com");
         when(study.getName()).thenReturn("Study Name");
         when(study.getSupportEmail()).thenReturn("c@c.com");
-        
-        participant = new StudyParticipant.Builder().copyOf(participant)
-                .withFirstName("<b>Jack<b>")
-                .withLastName("<i>Aubrey</i>")
-                .withEmail("d@d.com").build();
-        
-        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, participant, WITHDRAWAL, UNIX_TIMESTAMP);
+        account.setFirstName("<b>Jack</b>");
+        account.setLastName("<i>Aubrey</i>");
+
+        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
         MimeTypeEmail email = provider.getMimeTypeEmail();
         
         List<String> recipients = email.getRecipientAddresses();
