@@ -164,6 +164,9 @@ public class StrictValidationHandlerTest {
                         .withType(UploadFieldType.INT).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("multi-choice")
                         .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("foo", "bar", "baz").build(),
+                new DynamoUploadFieldDefinition.Builder().withName("delicious")
+                        .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("Yes", "No")
+                        .withAllowOtherChoices(true).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("string timestamp")
                         .withType(UploadFieldType.TIMESTAMP).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("long timestamp")
@@ -194,6 +197,7 @@ public class StrictValidationHandlerTest {
                 "   \"int\":42,\n" +
                 "   \"int with float value\":2.78,\n" +
                 "   \"multi-choice\":[\"foo\", \"bar\", \"baz\"],\n" +
+                "   \"delicious\":[\"Yes\", \"Maybe\"],\n" +
                 "   \"string timestamp\":\"2015-07-24T18:49:54-07:00\",\n" +
                 "   \"long timestamp\":1437787098066,\n" +
                 "   \"present optional json\":\"optional, but present\"\n" +
