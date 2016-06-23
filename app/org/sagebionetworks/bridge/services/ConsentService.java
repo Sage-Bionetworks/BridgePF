@@ -13,6 +13,9 @@ import java.util.Map;
 import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -47,6 +50,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ConsentService {
+
+    private final Logger LOGGER = LoggerFactory.getLogger(ConsentService.class);
 
     private AccountDao accountDao;
     private ParticipantOptionsService optionsService;
@@ -269,12 +274,69 @@ public class ConsentService {
                     .withSharingScope(SharingScope.NO_SHARING).build();
             session.setParticipant(participant);
         }
-        studyEnrollmentService.decrementStudyEnrollment(study, session);
+        studyEnrollmentService.decrementStudyEnrollment(study, session.doesConsent());
         
         String externalId = optionsService.getOptions(session.getParticipant().getHealthCode())
                 .getString(EXTERNAL_IDENTIFIER);
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId,
-                session.getParticipant(), withdrawal, withdrewOn);
+        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
+                withdrewOn);
+        sendMailService.sendEmail(consentEmail);
+    }
+    
+    /**
+     * Withdraw user from any and all consents, and turn off sharing. Because a user's criteria for being included in a 
+     * consent can change over time, this is really the best method for ensuring a user is withdrawn from everything. 
+     * But in cases where there are studies with distinct and separate consents, you must selectively withdraw from 
+     * the consent for a specific subpopulation.
+     * 
+     * @param study
+     * @param userId
+     * @param withdrawal
+     * @param withdrewOn
+     */
+    public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
+        checkNotNull(study);
+        checkNotNull(userId);
+        checkNotNull(withdrawal);
+        checkArgument(withdrewOn > 0);
+        
+        Account account = accountDao.getAccount(study, userId);
+        
+        // Do this first, as it directly impacts the export of data, and if nothing else, we'd like this to succeed.
+        optionsService.setEnum(study.getStudyIdentifier(), account.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
+        
+        boolean accountUpdated = false; 
+        for (Subpopulation subpop : subpopService.getSubpopulations(study.getStudyIdentifier())) {
+            ConsentSignature active = account.getActiveConsentSignature(subpop.getGuid());
+            if (active != null) {
+                ConsentSignature withdrawn = new ConsentSignature.Builder()
+                        .withConsentSignature(active)
+                        .withWithdrewOn(withdrewOn).build();
+                int index = account.getConsentSignatureHistory(subpop.getGuid()).indexOf(active); // should be length-1
+                account.getConsentSignatureHistory(subpop.getGuid()).set(index, withdrawn);
+                try {
+                    userConsentDao.withdrawConsent(account.getHealthCode(), subpop.getGuid(), withdrewOn);    
+                } catch(Exception e) {
+                    // This shouldn't happen, but no matter what, keep withdrawing the user
+                    LOGGER.warn("Error updating DDB consent record for consent withdrawal", e);
+                }
+                accountUpdated = true;
+            }
+        }
+        if (accountUpdated) {
+            try {
+                accountDao.updateAccount(account);
+            } catch(Exception e) {
+                // Keep withdrawing the user, whether this succeeds or fails
+                LOGGER.warn("Error updating user account for consent withdrawal", e);
+            }
+        }
+        studyEnrollmentService.decrementStudyEnrollment(study, false);
+        
+        String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
+        
+        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(
+                study, externalId, account, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
     }
     

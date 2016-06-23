@@ -111,6 +111,17 @@ public class ConsentController extends BaseController {
         return okResult("User has been withdrawn from the study.");
     }
     
+    public Result withdrawFromAllConsents() {
+        final UserSession session = getAuthenticatedAndConsentedSession();
+        final Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+        final long withdrewOn = DateTime.now().getMillis();
+        
+        consentService.withdrawAllConsents(study, session.getId(), withdrawal, withdrewOn);
+        
+        return okResult("User has been withdrawn from the study.");
+    }
+    
     public Result emailCopyV2(String guid) {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());

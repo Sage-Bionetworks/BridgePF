@@ -23,18 +23,15 @@ public class DynamoInitializer {
 
     private final BridgeConfig bridgeConfig;
     private final AmazonDynamoDB dynamoDBClient;
-    private final DynamoBackupHandler dynamoBackupHandler;
     private final DynamoUtils dynamoUtils;
     private final DynamoNamingHelper dynamoNamingHelper;
 
     @Autowired
     public DynamoInitializer(BridgeConfig bridgeConfig,
                              AmazonDynamoDBClient dynamoDBClient,
-                             DynamoBackupHandler dynamoBackupHandler,
                              DynamoUtils dynamoUtils, DynamoNamingHelper dynamoNamingHelper) {
         this.bridgeConfig = bridgeConfig;
         this.dynamoDBClient = dynamoDBClient;
-        this.dynamoBackupHandler = dynamoBackupHandler;
         this.dynamoUtils = dynamoUtils;
         this.dynamoNamingHelper = dynamoNamingHelper;
     }

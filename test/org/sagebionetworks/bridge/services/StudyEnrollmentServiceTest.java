@@ -105,9 +105,6 @@ public class StudyEnrollmentServiceTest {
     
     @Test
     public void decrementingStudyWorks() {
-        UserSession session = new UserSession();
-        session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
-        
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
@@ -115,22 +112,19 @@ public class StudyEnrollmentServiceTest {
         jedisOps.del(numParticipantsKey);
         jedisOps.setnx(numParticipantsKey, "2");
 
-        studyEnrollmentService.decrementStudyEnrollment(study, session);
+        studyEnrollmentService.decrementStudyEnrollment(study, false);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
         
-        studyEnrollmentService.decrementStudyEnrollment(study, session);
-        studyEnrollmentService.decrementStudyEnrollment(study, session);
-        studyEnrollmentService.decrementStudyEnrollment(study, session);
-        studyEnrollmentService.decrementStudyEnrollment(study, session);
+        studyEnrollmentService.decrementStudyEnrollment(study, false);
+        studyEnrollmentService.decrementStudyEnrollment(study, false);
+        studyEnrollmentService.decrementStudyEnrollment(study, false);
+        studyEnrollmentService.decrementStudyEnrollment(study, false);
         assertFalse(studyEnrollmentService.isStudyAtEnrollmentLimit(study));
         assertEquals("0", jedisOps.get(numParticipantsKey));
     }
     
     @Test
     public void studyEnrollmentNotDecrementedUntilLastWithdrawal() {
-        UserSession session = new UserSession();
-        session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_SIGNED_CURRENT));
-        
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setMaxNumOfParticipants(2);
         numParticipantsKey = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
@@ -139,12 +133,11 @@ public class StudyEnrollmentServiceTest {
         jedisOps.setnx(numParticipantsKey, "2");
         
         // With a signed consent, this does not decrement, because user is still in study
-        studyEnrollmentService.decrementStudyEnrollment(study, session);
+        studyEnrollmentService.decrementStudyEnrollment(study, true);
         assertEquals("2", jedisOps.get(numParticipantsKey));
         
         // With no signed consents, this will decrement.
-        session.setConsentStatuses(TestUtils.toMap(TestConstants.REQUIRED_UNSIGNED));
-        studyEnrollmentService.decrementStudyEnrollment(study, session);
+        studyEnrollmentService.decrementStudyEnrollment(study, false);
         assertEquals("1", jedisOps.get(numParticipantsKey));
     }
     

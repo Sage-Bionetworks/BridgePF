@@ -64,12 +64,22 @@ public class DynamoUserConsentDao implements UserConsentDao {
         checkNotNull(subpopGuid);
         checkArgument(withdrewOn > 0L);
         
-        DynamoUserConsent3 activeConsent = (DynamoUserConsent3)getActiveUserConsent(healthCode, subpopGuid);
-        if (activeConsent == null) {
+        // In case a conflict has occurred where two consents are active for a single subpopulation, find 
+        // all of them and withdraw from all of them.
+        DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, subpopGuid);
+        DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
+            .withScanIndexForward(false)
+            .withHashKeyValues(hashKey)
+            .withQueryFilterEntry("withdrewOn", new Condition().withComparisonOperator(ComparisonOperator.NULL));
+        
+        List<DynamoUserConsent3> results = mapper.query(DynamoUserConsent3.class, query);
+        if (results.isEmpty()) {
             throw new EntityNotFoundException(UserConsent.class);
         }
-        activeConsent.setWithdrewOn(withdrewOn);
-        mapper.save(activeConsent);
+        for (DynamoUserConsent3 consent : results) {
+            consent.setWithdrewOn(withdrewOn);
+            mapper.save(consent);
+        }
     }
 
     @Override
@@ -89,6 +99,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
             .withScanIndexForward(false)
+            .withLimit(1)
             .withQueryFilterEntry("withdrewOn", new Condition().withComparisonOperator(ComparisonOperator.NULL))
             .withHashKeyValues(hashKey);
         
@@ -150,7 +161,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
                         .withAttributeValueList(new AttributeValue(subpopGuid.getGuid())))
                 .withFilterConditionEntry("withdrewOn", new Condition()
                         .withComparisonOperator(ComparisonOperator.NULL));
-
+        
         return mapper.scan(DynamoUserConsent3.class, scan).stream()
             .map(DynamoUserConsent3::getHealthCode)
             .collect(Collectors.toSet());

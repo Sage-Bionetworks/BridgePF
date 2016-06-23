@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,10 +49,12 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -97,6 +100,9 @@ public class ParticipantControllerTest {
     @Mock
     private CacheProvider cacheProvider;
     
+    @Mock
+    private ConsentService consentService;
+    
     @Captor
     private ArgumentCaptor<Map<ParticipantOption,String>> optionMapCaptor;
     
@@ -141,6 +147,7 @@ public class ParticipantControllerTest {
         controller.setStudyService(studyService);
         controller.setAuthenticationService(authService);
         controller.setCacheProvider(cacheProvider);
+        controller.setConsentService(consentService);
         
         mockPlayContext();
     }
@@ -515,6 +522,21 @@ public class ParticipantControllerTest {
         controller.resendConsentAgreement(ID, "subpopGuid");
         
         verify(participantService).resendConsentAgreement(study, SubpopulationGuid.create("subpopGuid"), ID);
+    }
+
+    @Test
+    public void withdrawFromAllConsents() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed(20000);
+        try {
+            String json = "{\"reason\":\"Because, reasons.\"}";
+            TestUtils.mockPlayContextWithJson(json);
+            
+            controller.withdrawFromAllConsents(ID);
+            
+            verify(consentService).withdrawAllConsents(study, ID, new Withdrawal("Because, reasons."), 20000);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
     }
     
     private PagedResourceList<ScheduledActivity> createActivityResults() {
