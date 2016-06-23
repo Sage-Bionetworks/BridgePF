@@ -20,6 +20,7 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
@@ -28,7 +29,10 @@ import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -42,8 +46,11 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
@@ -55,6 +62,13 @@ public class ConsentServiceTest {
     
     private static final Long UNIX_TIMESTAMP = DateTime.now().getMillis();
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
+    
+    private DynamoDBMapper userConsentMapper;
+
+    @Resource(name = "userConsentDdbMapper")
+    public final void setDdbMapper(DynamoDBMapper userConsentMapper) {
+        this.userConsentMapper = userConsentMapper;
+    }
     
     @Resource
     private ConsentService consentService;
@@ -435,6 +449,66 @@ public class ConsentServiceTest {
 
         SharingScope scope = optionsService.getOptions(testUser.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
+    }
+    
+    @Test
+    public void twoConsentsToOneSubpopulationAndOneWithdrawalWorks() {
+        SubpopulationGuid subpopGuid = defaultSubpopulation.getGuid();
+        // what has happened? are you unconsented, as expected?
+        
+        // create two consents with different timestamps to a StudyConsent
+        long firstSignatureTimestamp = DateTime.now().getMillis()-1500;
+        long secondSignatureTimestamp = DateTime.now().getMillis();
+        
+        consentService.consentToResearch(study, subpopGuid, testUser.getSession(),
+                makeSignature(firstSignatureTimestamp), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
+
+        // This doesn't work. Correctly, it is stopped
+        try {
+            consentService.consentToResearch(study, subpopGuid, testUser.getSession(),
+                    makeSignature(secondSignatureTimestamp), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
+            fail("Should have thrown exception");
+        } catch(EntityAlreadyExistsException e) {
+            
+        }
+        // So, use the userConsentDao directly
+        StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
+        try {
+            userConsentDao.giveConsent(testUser.getHealthCode(), subpopGuid, studyConsent.getCreatedOn(), secondSignatureTimestamp);
+            fail("Should have thrown exception");
+        } catch(BridgeServiceException e) {
+            // nope
+        }
+        
+        // Use the mapper. This will create a conflict... 
+        DynamoUserConsent3 consent = new DynamoUserConsent3(testUser.getHealthCode(), subpopGuid);
+        consent.setConsentCreatedOn(studyConsent.getCreatedOn());
+        consent.setSignedOn(secondSignatureTimestamp);
+        userConsentMapper.save(consent);
+        
+        // withdraw your consent. This now withdraws all consents that don't have a withdrawnOn timestamp, 
+        // so despite the conflict generated above, the rest of this tests will pass.
+        consentService.withdrawConsent(study, subpopGuid, testUser.getSession(),
+                new Withdrawal("Test user withdrawn."), DateTime.now().getMillis());        
+
+        
+        // You shouldn't be consented.
+        Map<SubpopulationGuid,ConsentStatus> map = consentService.getConsentStatuses(context);
+        assertFalse(ConsentStatus.isUserConsented(map));
+        
+        assertFalse(testUser.getSession().doesConsent());
+        Account account = accountDao.getAccount(study, testUser.getId());
+        assertNull(account.getActiveConsentSignature(subpopGuid));
+        
+        // The specific consents are withdrawn.
+        UserConsent consent1 = userConsentDao.getUserConsent(testUser.getHealthCode(), subpopGuid,
+                firstSignatureTimestamp);
+        assertNotNull(consent1.getWithdrewOn());
+        
+        // The specific consents are withdrawn.
+        UserConsent consent2 = userConsentDao.getUserConsent(testUser.getHealthCode(), subpopGuid,
+                secondSignatureTimestamp);
+        assertNotNull(consent2.getWithdrewOn());
     }
     
     private void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses, boolean signedMostRecent) {
