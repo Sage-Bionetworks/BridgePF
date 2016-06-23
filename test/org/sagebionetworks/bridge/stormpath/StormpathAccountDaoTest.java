@@ -22,13 +22,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
+import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -201,6 +204,16 @@ public class StormpathAccountDaoTest {
         accountDao.authenticate(study, new SignIn("bridge-testing+noone@sagebridge.org", "belgium"));
     }
     
+    @Test
+    public void expiredPasswordResetTokenThrowsCorrectError() {
+        try {
+            accountDao.resetPassword(new PasswordReset("P@ssword`1", "invalid", TestConstants.TEST_STUDY_IDENTIFIER));
+            fail("Should have thrown an exception");
+        } catch(BadRequestException e) {
+            assertEquals("Password reset token has expired (or already been used).", e.getMessage());
+        }
+    }
+
     @Test
     public void crudAccount() {
         String email = TestUtils.makeRandomTestEmail(StormpathAccountDaoTest.class);
