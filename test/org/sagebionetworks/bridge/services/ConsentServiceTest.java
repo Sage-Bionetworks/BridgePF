@@ -452,7 +452,7 @@ public class ConsentServiceTest {
     }
     
     @Test
-    public void twoConsentsToOneSubpopulationAndOneWithdrawalWorks() {
+    public void consentingTwiceToSubpopulationDoesNotPreventWithdrawal() {
         SubpopulationGuid subpopGuid = defaultSubpopulation.getGuid();
         // what has happened? are you unconsented, as expected?
         
@@ -463,7 +463,7 @@ public class ConsentServiceTest {
         consentService.consentToResearch(study, subpopGuid, testUser.getSession(),
                 makeSignature(firstSignatureTimestamp), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
 
-        // This doesn't work. Correctly, it is stopped
+        // This doesn't work, consent is prevented
         try {
             consentService.consentToResearch(study, subpopGuid, testUser.getSession(),
                     makeSignature(secondSignatureTimestamp), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
@@ -471,7 +471,7 @@ public class ConsentServiceTest {
         } catch(EntityAlreadyExistsException e) {
             
         }
-        // So, use the userConsentDao directly
+        // The userConsentDao is also stopped, though we shouldn't be calling it directly.
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
         try {
             userConsentDao.giveConsent(testUser.getHealthCode(), subpopGuid, studyConsent.getCreatedOn(), secondSignatureTimestamp);
@@ -480,7 +480,7 @@ public class ConsentServiceTest {
             // nope
         }
         
-        // Use the mapper. This will create a conflict... 
+        // Use the mapper. This will create a conflict because it's not constrained by the table. 
         DynamoUserConsent3 consent = new DynamoUserConsent3(testUser.getHealthCode(), subpopGuid);
         consent.setConsentCreatedOn(studyConsent.getCreatedOn());
         consent.setSignedOn(secondSignatureTimestamp);
