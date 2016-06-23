@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.google.common.collect.Lists;
 
 public class DynamoUserConsentDaoMockTest {
 
@@ -70,6 +71,7 @@ public class DynamoUserConsentDaoMockTest {
             when(pqList.isEmpty()).thenReturn(false);
             when(pqList.get(0)).thenReturn(consent);
             when(pqList.stream()).thenReturn(Stream.of(consent));
+            when(pqList.iterator()).thenReturn(Lists.newArrayList(consent).iterator());
         }
         doReturn(pqList).when(mapper).query(any(), any());
     }

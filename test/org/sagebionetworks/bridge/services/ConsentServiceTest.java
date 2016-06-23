@@ -20,7 +20,6 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
@@ -469,7 +468,7 @@ public class ConsentServiceTest {
                     makeSignature(secondSignatureTimestamp), SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
-            
+            // nope
         }
         // The userConsentDao is also stopped, though we shouldn't be calling it directly.
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
@@ -487,7 +486,7 @@ public class ConsentServiceTest {
         userConsentMapper.save(consent);
         
         // withdraw your consent. This now withdraws all consents that don't have a withdrawnOn timestamp, 
-        // so despite the conflict generated above, the rest of this tests will pass.
+        // so despite the conflict generated above, the rest of these tests will pass.
         consentService.withdrawConsent(study, subpopGuid, testUser.getSession(),
                 new Withdrawal("Test user withdrawn."), DateTime.now().getMillis());        
 
