@@ -233,6 +233,11 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(passwordReset);
         
         try {
+            application.verifyPasswordResetToken(passwordReset.getSptoken());
+        } catch(ResourceException e) {
+            throw new BadRequestException("Password reset token has expired (or already been used).");
+        }
+        try {
             application.resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
