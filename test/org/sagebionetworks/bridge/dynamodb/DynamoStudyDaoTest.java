@@ -73,12 +73,10 @@ public class DynamoStudyDaoTest {
         assertNotNull("Study has an identifier", study.getIdentifier());
 
         study.setName("This is a test name");
-        study.setMaxNumOfParticipants(10);
         study = studyDao.updateStudy(study);
 
         study = studyDao.getStudy(study.getIdentifier());
         assertEquals("Name was set", "This is a test name", study.getName());
-        assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
         assertEquals("bridge-testing+support@sagebase.org", study.getSupportEmail());
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
         assertEquals(USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());

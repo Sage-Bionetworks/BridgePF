@@ -75,14 +75,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public void setMinAgeOfConsent(int minAge);
     
     /**
-     * A study can be capped at a maximum number of participants. Past this number, attempts to 
-     * sign up for the study will fail. 
-     * @return
-     */
-    public int getMaxNumOfParticipants();
-    public void setMaxNumOfParticipants(int maxParticipants);
-
-    /**
      * The email address that will be given to study participants and other end user for all support 
      * requests and queries (technical, study-related, etc.). This can be a comma-separated list of 
      * email addresses.

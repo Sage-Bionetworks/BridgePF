@@ -164,7 +164,6 @@ public class StudyService {
         // And this cannot be set unless you're an administrator. Regardless of what the 
         // developer set, set these back to the original study.
         if (!isAdminUpdate) {
-            study.setMaxNumOfParticipants(originalStudy.getMaxNumOfParticipants());
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
         }

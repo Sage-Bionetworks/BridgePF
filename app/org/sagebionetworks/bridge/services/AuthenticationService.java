@@ -18,7 +18,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -56,7 +55,6 @@ public class AuthenticationService {
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
-    private StudyEnrollmentService studyEnrollmentService;
     private UserConsentDao userConsentDao;
     private StudyConsentDao studyConsentDao;
     private ParticipantService participantService;
@@ -85,10 +83,6 @@ public class AuthenticationService {
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
-    }
-    @Autowired
-    final void setStudyEnrollmentService(StudyEnrollmentService studyEnrollmentService) {
-        this.studyEnrollmentService = studyEnrollmentService;
     }
     @Autowired
     final void setEmailVerificationValidator(EmailVerificationValidator validator) {
@@ -184,9 +178,6 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
-        if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
-            throw new StudyLimitExceededException(study);
-        }
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
             return participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);

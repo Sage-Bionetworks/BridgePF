@@ -54,7 +54,6 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.isActive(), node.get("active").asBoolean());
         assertEqualsAndNotNull(study.getIdentifier(), node.get("identifier").asText());
         assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
-        assertEqualsAndNotNull(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
         assertEqualsAndNotNull(study.getStormpathHref(), node.get("stormpathHref").asText());
         assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
         assertEqualsAndNotNull(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate",

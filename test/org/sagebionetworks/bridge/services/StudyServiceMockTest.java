@@ -85,7 +85,6 @@ public class StudyServiceMockTest {
         study.setSynapseProjectId("newid");
         study.setConsentNotificationEmail("newemail@newemail.com");
         study.setMinAgeOfConsent(50);
-        study.setMaxNumOfParticipants(100);
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
         study.setTaskIdentifiers(Sets.newHashSet("c", "d"));
         study.setDataGroups(Sets.newHashSet("e", "f"));

@@ -36,7 +36,6 @@ public final class DynamoStudy implements Study {
     private boolean usesCustomExportSchedule;
     private String consentNotificationEmail;
     private int minAgeOfConsent;
-    private int maxNumOfParticipants;
     private Long version;
     private boolean active;
     private Set<String> profileAttributes;
@@ -120,17 +119,6 @@ public final class DynamoStudy implements Study {
     @Override
     public void setMinAgeOfConsent(int minAge) {
         this.minAgeOfConsent = minAge;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public int getMaxNumOfParticipants() {
-        return maxNumOfParticipants;
-    }
-
-    @Override
-    public void setMaxNumOfParticipants(int maxParticipants) {
-        this.maxNumOfParticipants = maxParticipants;
     }
 
     /** {@inheritDoc} */
@@ -357,7 +345,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, maxNumOfParticipants, minAgeOfConsent, name, sponsorName, supportEmail,
+        return Objects.hash(identifier, minAgeOfConsent, name, sponsorName, supportEmail,
                 technicalEmail, consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers,
                 dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
@@ -374,7 +362,6 @@ public final class DynamoStudy implements Study {
         DynamoStudy other = (DynamoStudy) obj;
 
         return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail)
-                && Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants)
                 && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
                 && Objects.equals(stormpathHref, other.stormpathHref)
                 && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
@@ -401,16 +388,15 @@ public final class DynamoStudy implements Study {
     public String toString() {
         return String.format(
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
-                            + "maxNumOfParticipants=%s, supportEmail=%s, synapseDataAccessTeamId=%s, "
-                            + "synapseProjectId=%s, technicalEmail=%s, consentNotificationEmail=%s, "
-                            + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, dataGroups=%s, passwordPolicy=%s, "
-                            + "verifyEmailTemplate=%s, resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, "
-                            + "healthCodeExportEnabled=%s, emailVerificationEnabled=%s, externalIdValidationEnabled=%s, "
-                            + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s]",
-                name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
-                supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail,
-                version, profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate,
-                resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
-                externalIdValidationEnabled, minSupportedAppVersions, usesCustomExportSchedule);
+                            + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
+                            + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
+                            + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
+                            + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
+                            + "externalIdValidationEnabled=%s, minSupportedAppVersions=%s, usesCustomExportSchedule=%s]",
+                name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail, synapseDataAccessTeamId, 
+                synapseProjectId, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
+                dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
+                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, minSupportedAppVersions, 
+                usesCustomExportSchedule);
     }
 }
