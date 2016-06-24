@@ -258,6 +258,8 @@ public class UploadHandlersEndToEndTest {
                         .build(),
                 new DynamoUploadFieldDefinition.Builder().withName("BBB").withType(UploadFieldType.MULTI_CHOICE)
                         .withMultiChoiceAnswerList("fencing", "football", "running", "swimming", "3").build(),
+                new DynamoUploadFieldDefinition.Builder().withName("delicious").withType(UploadFieldType.MULTI_CHOICE)
+                        .withMultiChoiceAnswerList("Yes", "No").withAllowOtherChoices(true).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("$sanitize..me")
                         .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("$dollar", "-dash", " space")
                         .build());
@@ -288,6 +290,9 @@ public class UploadHandlersEndToEndTest {
                 "       \"filename\":\"BBB.json\",\n" +
                 "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
                 "   },{\n" +
+                "       \"filename\":\"delicious.json\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   },{\n" +
                 "       \"filename\":\"$sanitize..me.json\",\n" +
                 "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
                 "   }],\n" +
@@ -315,6 +320,15 @@ public class UploadHandlersEndToEndTest {
                 "   \"endDate\":\"2015-04-02T03:27:09-07:00\"\n" +
                 "}";
 
+        String deliciousJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"choiceAnswers\":[\"Yes\", \"Maybe\"],\n" +
+                "   \"startDate\":\"2015-04-02T03:27:05-07:00\",\n" +
+                "   \"questionTypeName\":\"MultipleChoice\",\n" +
+                "   \"item\":\"delicious\",\n" +
+                "   \"endDate\":\"2015-04-02T03:27:09-07:00\"\n" +
+                "}";
+
         String sanitizeMeJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
                 "   \"choiceAnswers\":[\"$dollar\", \"-dash\", \" space\"],\n" +
@@ -325,7 +339,7 @@ public class UploadHandlersEndToEndTest {
                 "}";
 
         Map<String, String> fileMap = ImmutableMap.<String, String>builder().put("info.json", infoJsonText)
-                .put("AAA.json", aaaJsonText).put("BBB.json", bbbJsonText)
+                .put("AAA.json", aaaJsonText).put("BBB.json", bbbJsonText).put("delicious.json", deliciousJsonText)
                 .put("$sanitize..me.json", sanitizeMeJsonText).build();
 
         // execute
@@ -341,7 +355,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(2, record.getSchemaRevision());
 
         JsonNode dataNode = record.getData();
-        assertEquals(3, dataNode.size());
+        assertEquals(4, dataNode.size());
         assertEquals("Yes", dataNode.get("AAA").textValue());
 
         JsonNode bbbChoiceAnswersNode = dataNode.get("BBB");
@@ -349,6 +363,11 @@ public class UploadHandlersEndToEndTest {
         assertEquals("fencing", bbbChoiceAnswersNode.get(0).textValue());
         assertEquals("running", bbbChoiceAnswersNode.get(1).textValue());
         assertEquals("3", bbbChoiceAnswersNode.get(2).textValue());
+
+        JsonNode deliciousNode = dataNode.get("delicious");
+        assertEquals(2, deliciousNode.size());
+        assertEquals("Yes", deliciousNode.get(0).textValue());
+        assertEquals("Maybe", deliciousNode.get(1).textValue());
 
         JsonNode sanitizeMeChoiceAnswersNode = dataNode.get("_sanitize.me");
         assertEquals(3, sanitizeMeChoiceAnswersNode.size());

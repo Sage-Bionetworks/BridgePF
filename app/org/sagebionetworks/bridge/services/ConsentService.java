@@ -51,7 +51,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConsentService {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(HealthCodeService.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(ConsentService.class);
 
     private AccountDao accountDao;
     private ParticipantOptionsService optionsService;

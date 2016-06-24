@@ -183,8 +183,9 @@ public class StrictValidationHandler implements UploadValidationHandler {
                     if (canonicalizationResult.isValid()) {
                         JsonNode canonicalizedValueNode = canonicalizationResult.getCanonicalizedValueNode();
 
-                        // Special case: MULTI_CHOICE value validation
-                        if (fieldType == UploadFieldType.MULTI_CHOICE) {
+                        // Special case: MULTI_CHOICE value validation (unless it allows other choices)
+                        if (fieldType == UploadFieldType.MULTI_CHOICE &&
+                                !Boolean.TRUE.equals(oneFieldDef.getAllowOtherChoices())) {
                             //noinspection ConstantConditions
                             Set<String> validAnswerSet = new HashSet<>(oneFieldDef.getMultiChoiceAnswerList());
                             int numAnswers = canonicalizedValueNode.size();
