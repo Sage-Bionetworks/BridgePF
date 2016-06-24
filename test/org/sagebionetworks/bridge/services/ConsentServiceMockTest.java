@@ -72,8 +72,6 @@ public class ConsentServiceMockTest {
     @Mock
     private ActivityEventService activityEventService;
     @Mock
-    private StudyEnrollmentService studyEnrollmentService;
-    @Mock
     private SubpopulationService subpopService;
 
     private Study study;
@@ -90,7 +88,6 @@ public class ConsentServiceMockTest {
         consentService.setUserConsentDao(userConsentDao);
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
-        consentService.setStudyEnrollmentService(studyEnrollmentService);
         consentService.setSubpopulationService(subpopService);
         
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);

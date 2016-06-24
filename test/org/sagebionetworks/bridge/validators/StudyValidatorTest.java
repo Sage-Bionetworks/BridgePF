@@ -233,12 +233,6 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void cannotSetMaxNumOfParticipantsLessThanZero() {
-        study.setMaxNumOfParticipants(-100);
-        assertCorrectMessage(study, "maxNumOfParticipants", "maxNumOfParticipants must be zero (no limit on enrollees) or higher");
-    }
-    
-    @Test
     public void shortListOfDataGroupsOK() {
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users", "testers", "internal"));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);

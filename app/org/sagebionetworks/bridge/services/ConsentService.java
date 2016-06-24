@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -57,7 +56,6 @@ public class ConsentService {
     private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
     private StudyConsentService studyConsentService;
-    private StudyEnrollmentService studyEnrollmentService;
     private UserConsentDao userConsentDao;
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
@@ -91,10 +89,6 @@ public class ConsentService {
     @Autowired
     final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
-    }
-    @Autowired
-    final void setStudyEnrollmentService(StudyEnrollmentService studyEnrollmentService) {
-        this.studyEnrollmentService = studyEnrollmentService;
     }
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
@@ -162,11 +156,6 @@ public class ConsentService {
 
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
         Account account = accountDao.getAccount(study, session.getParticipant().getId());
-
-        // Throws exception if we have exceeded enrollment limit.
-        if (studyEnrollmentService.isStudyAtEnrollmentLimit(study)) {
-            throw new StudyLimitExceededException(study);
-        }
         
         account.getConsentSignatureHistory(subpopGuid).add(consentSignature);
         accountDao.updateAccount(account);
@@ -188,7 +177,6 @@ public class ConsentService {
         optionsService.setEnum(study, session.getParticipant().getHealthCode(), SHARING_SCOPE, sharingScope);
         
         updateSessionConsentStatuses(session, subpopGuid, true);
-        studyEnrollmentService.incrementStudyEnrollment(study, session);
         
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
@@ -274,7 +262,6 @@ public class ConsentService {
                     .withSharingScope(SharingScope.NO_SHARING).build();
             session.setParticipant(participant);
         }
-        studyEnrollmentService.decrementStudyEnrollment(study, session.doesConsent());
         
         String externalId = optionsService.getOptions(session.getParticipant().getHealthCode())
                 .getString(EXTERNAL_IDENTIFIER);
@@ -331,7 +318,6 @@ public class ConsentService {
                 LOGGER.warn("Error updating user account for consent withdrawal", e);
             }
         }
-        studyEnrollmentService.decrementStudyEnrollment(study, false);
         
         String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
         

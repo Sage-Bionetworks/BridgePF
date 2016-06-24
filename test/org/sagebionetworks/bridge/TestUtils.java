@@ -284,7 +284,6 @@ public class TestUtils {
         study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
         study.setIdentifier(TestUtils.randomName(clazz));
         study.setMinAgeOfConsent(18);
-        study.setMaxNumOfParticipants(200);
         study.setSponsorName("The Council on Test Studies");
         study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
         study.setSynapseDataAccessTeamId(1234L);

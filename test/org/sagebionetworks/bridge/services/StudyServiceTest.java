@@ -138,7 +138,6 @@ public class StudyServiceTest {
         assertTrue(newStudy.isEmailVerificationEnabled());
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceTest]", newStudy.getName());
-        assertEquals(200, newStudy.getMaxNumOfParticipants());
         assertEquals(18, newStudy.getMinAgeOfConsent());
         assertEquals(Sets.newHashSet("beta_users", "production_users"), newStudy.getDataGroups());
         assertEquals(0, newStudy.getTaskIdentifiers().size());
@@ -252,26 +251,21 @@ public class StudyServiceTest {
     @Test
     public void adminsCanChangeSomeValuesResearchersCannot() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
-        study.setMaxNumOfParticipants(200);
         study.setHealthCodeExportEnabled(false);
         study.setEmailVerificationEnabled(true);
         study = studyService.createStudy(study);
         
         // Okay, now that these are set, researchers cannot change them
-        study.setMaxNumOfParticipants(1000);
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(false);
         study = studyService.updateStudy(study, false); // nope
-        assertEquals(200, study.getMaxNumOfParticipants());
         assertFalse("isHealthCodeExportEnabled should be false", study.isHealthCodeExportEnabled());
         assertTrue("isEmailVerificationEnabled should be true", study.isEmailVerificationEnabled());
         
         // But administrators can
-        study.setMaxNumOfParticipants(1000);
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(false);
         study = studyService.updateStudy(study, true); // yep
-        assertEquals(1000, study.getMaxNumOfParticipants());
         assertTrue(study.isHealthCodeExportEnabled());
         assertFalse(study.isEmailVerificationEnabled());
     }
