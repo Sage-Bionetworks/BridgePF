@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -195,7 +196,7 @@ public class AuthenticationServiceTest {
         authService.requestResetPassword(study, email);
     }
     
-    @Test(expected = EntityNotFoundException.class)
+    @Test(expected = BadRequestException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
         authService.resetPassword(new PasswordReset("newpassword", "resettoken", "api"));
     }
