@@ -205,7 +205,7 @@ public class StormpathAccountDaoTest {
     }
     
     @Test
-    public void expiredPasswordResetTokenThrowsCorrectError() {
+    public void expiredPasswordResetTokenThrowsCorrectException() {
         try {
             accountDao.resetPassword(new PasswordReset("P@ssword`1", "invalid", TestConstants.TEST_STUDY_IDENTIFIER));
             fail("Should have thrown an exception");
