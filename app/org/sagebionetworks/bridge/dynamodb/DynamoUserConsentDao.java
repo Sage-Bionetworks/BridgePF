@@ -63,6 +63,12 @@ public class DynamoUserConsentDao implements UserConsentDao {
         if (activeConsent != null && activeConsent.getSignedOn() == signedOn) {
             LOG.error("ActiveConsent would be recreated, consent: "+consent+", activeConsent: "+activeConsent);
         } else {
+            try {
+                DynamoUserConsent3 existingConsent = mapper.load(consent);
+                LOG.info("Existing consent: " + existingConsent.toString());
+            } catch(Exception e) {
+                LOG.info("Retrieving existing consent threw exception", e);
+            }
             LOG.error("ActiveConsent should be different from consent, saving consent: "+consent+", activeConsent: "+activeConsent);
             mapper.save(consent);
         }
@@ -110,11 +116,16 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
             .withScanIndexForward(false)
-            .withLimit(1)
             .withQueryFilterEntry("withdrewOn", new Condition().withComparisonOperator(ComparisonOperator.NULL))
             .withHashKeyValues(hashKey);
         
         List<DynamoUserConsent3> results = mapper.query(DynamoUserConsent3.class, query);
+        if (results.size() > 1) {
+            LOG.error("There is more than one active consent, which we will enumerate:");
+            for (DynamoUserConsent3 aConsent : results) {
+                LOG.info(aConsent.toString());
+            }
+        }
         return results.isEmpty() ? null : results.get(0);
     }
     
