@@ -200,12 +200,11 @@ public class ConsentService {
         
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
         for (Subpopulation subpop : subpopService.getSubpopulationForUser(context)) {
-            
-            UserConsent consent = userConsentDao.getActiveUserConsent(context.getHealthCode(), subpop.getGuid());
-            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), consent, subpop.getGuid());
+            boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop.getGuid());
+            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop.getGuid());            
             ConsentStatus status = new ConsentStatus.Builder().withName(subpop.getName())
                     .withGuid(subpop.getGuid()).withRequired(subpop.isRequired())
-                    .withConsented(consent != null).withSignedMostRecentConsent(mostRecent)
+                    .withConsented(consented).withSignedMostRecentConsent(mostRecent)
                     .build();
             builder.put(subpop.getGuid(), status);
         }
@@ -343,7 +342,7 @@ public class ConsentService {
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
             UserConsent consent = userConsentDao.getUserConsent(
                     healthCode, subpopGuid, signature.getSignedOn());
-            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(healthCode, consent, subpopGuid);
+            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(healthCode, subpopGuid);
             
             UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
             builder.withName(signature.getName())
@@ -402,16 +401,14 @@ public class ConsentService {
         sendMailService.sendEmail(consentEmail);
     }
     
-    private boolean hasUserSignedActiveConsent(String healthCode, UserConsent userConsent, SubpopulationGuid subpopGuid) {
+    private boolean hasUserSignedActiveConsent(String healthCode, SubpopulationGuid subpopGuid) {
         checkNotNull(healthCode);
         checkNotNull(subpopGuid);
         
-        if (userConsent == null) { // can't sign the most recent consent if you haven't signed at all.
-            return false;
-        }
+        UserConsent userConsent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
         StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(subpopGuid);
         
-        if (mostRecentConsent != null) {
+        if (mostRecentConsent != null && userConsent != null) {
             return userConsent.getConsentCreatedOn() == mostRecentConsent.getCreatedOn();
         } else {
             return false;
