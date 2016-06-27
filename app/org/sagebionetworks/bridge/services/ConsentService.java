@@ -302,8 +302,6 @@ public class ConsentService {
                 int index = account.getConsentSignatureHistory(subpop.getGuid()).indexOf(active); // should be length-1
                 account.getConsentSignatureHistory(subpop.getGuid()).set(index, withdrawn);
                 try {
-                    // REMOVEME
-                    accountDao.updateAccount(account);
                     userConsentDao.withdrawConsent(account.getHealthCode(), subpop.getGuid(), withdrewOn);    
                 } catch(Exception e) {
                     // This shouldn't happen, but no matter what, keep withdrawing the user
@@ -312,7 +310,6 @@ public class ConsentService {
                 accountUpdated = true;
             }
         }
-        /*
         if (accountUpdated) {
             try {
                 accountDao.updateAccount(account);
@@ -320,7 +317,7 @@ public class ConsentService {
                 // Keep withdrawing the user, whether this succeeds or fails
                 LOGGER.warn("Error updating user account for consent withdrawal", e);
             }
-        }*/
+        }
         
         String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
         
