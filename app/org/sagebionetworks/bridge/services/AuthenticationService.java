@@ -254,16 +254,26 @@ public class AuthenticationService {
     private void repairConsents(Account account, UserSession session, CriteriaContext context){
         boolean repaired = false;
         
+        // If there is an active signature, there should be a consent record that has not been withdrawn.
+        // If there is no consent record (entity not found), or it constains a withdrawal timestamp, 
+        // then we need to create a new consent. Note that we are specifically looking for a record with
+        // the signedOn value of the signature (now: this is new).
         Map<SubpopulationGuid,ConsentStatus> statuses = session.getConsentStatuses();
         for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : statuses.entrySet()) {
             ConsentSignature activeSignature = account.getActiveConsentSignature(entry.getKey());
             if (activeSignature != null) {
-                UserConsent consent = userConsentDao.getUserConsent(session.getHealthCode(), entry.getKey(),
-                        activeSignature.getSignedOn());
-                if (consent.getWithdrewOn() != null) {
-                    repairConsent(session, entry.getKey(), activeSignature);
-                    repaired = true;
+                try {
+                    UserConsent consent = userConsentDao.getUserConsent(session.getHealthCode(), entry.getKey(),
+                            activeSignature.getSignedOn());
+                    if (consent.getWithdrewOn() == null) {
+                        // This is what is correct: there's a record and it's not withdrawn.
+                        return;
+                    }
+                } catch(EntityNotFoundException e) {
+                    // there should be a record
                 }
+                repairConsent(session, entry.getKey(), activeSignature);
+                repaired = true;
             }
         }
         
