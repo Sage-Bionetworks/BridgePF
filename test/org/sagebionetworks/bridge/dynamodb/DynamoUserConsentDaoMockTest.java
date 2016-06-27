@@ -92,6 +92,7 @@ public class DynamoUserConsentDaoMockTest {
         ArgumentCaptor<DynamoUserConsent3> argCaptor3 = ArgumentCaptor.forClass(DynamoUserConsent3.class);
         
         verify(mapper).query(any(), any());
+        verify(mapper).load(argCaptor3.capture());
         verify(mapper).save(argCaptor3.capture());
         verifyNoMoreInteractions(mapper);
 
