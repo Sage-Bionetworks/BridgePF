@@ -201,7 +201,7 @@ public class ConsentService {
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
         for (Subpopulation subpop : subpopService.getSubpopulationForUser(context)) {
             boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop.getGuid());
-            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop.getGuid());
+            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop.getGuid());            
             ConsentStatus status = new ConsentStatus.Builder().withName(subpop.getName())
                     .withGuid(subpop.getGuid()).withRequired(subpop.isRequired())
                     .withConsented(consented).withSignedMostRecentConsent(mostRecent)
