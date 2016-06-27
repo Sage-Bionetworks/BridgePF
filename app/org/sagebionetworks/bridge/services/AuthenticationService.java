@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -256,11 +257,13 @@ public class AuthenticationService {
         Map<SubpopulationGuid,ConsentStatus> statuses = session.getConsentStatuses();
         for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : statuses.entrySet()) {
             ConsentSignature activeSignature = account.getActiveConsentSignature(entry.getKey());
-            ConsentStatus status = entry.getValue();
-
-            if (activeSignature != null && !status.isConsented()) {
-                repairConsent(session, entry.getKey(), activeSignature);
-                repaired = true;
+            if (activeSignature != null) {
+                UserConsent consent = userConsentDao.getUserConsent(session.getHealthCode(), entry.getKey(),
+                        activeSignature.getSignedOn());
+                if (consent.getWithdrewOn() != null) {
+                    repairConsent(session, entry.getKey(), activeSignature);
+                    repaired = true;
+                }
             }
         }
         

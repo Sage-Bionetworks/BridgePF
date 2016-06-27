@@ -56,22 +56,15 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, subpopGuid);
         consent.setConsentCreatedOn(consentCreatedOn);
         consent.setSignedOn(signedOn);
-        // 27 Jun 2016: UAT consistently fails because we try and save a user consent when repairing consents, that 
-        // in fact already exists. Is this a timing issue or a flaw of the logic in the code? Not sure, but want
-        // to verify by checking and logging here, and see if exception can be prevented.
-        // (It succeeds sometimes, and fails other times, indicating a potential timing error.)
-        if (activeConsent != null && activeConsent.getSignedOn() == signedOn) {
-            LOG.error("ActiveConsent would be recreated, consent: "+consent+", activeConsent: "+activeConsent);
-        } else {
-            try {
-                DynamoUserConsent3 existingConsent = mapper.load(consent);
-                LOG.info("Existing consent: " + existingConsent.toString());
-            } catch(Exception e) {
-                LOG.info("Retrieving existing consent threw exception", e);
-            }
-            LOG.error("ActiveConsent should be different from consent, saving consent: "+consent+", activeConsent: "+activeConsent);
-            mapper.save(consent);
+        
+        // If for some reason there's a signed user consent at the exact same signedOn value, copy version.
+        // This should not happen, but currently it does while repairing consents.
+        DynamoUserConsent3 existingConsent = mapper.load(consent);
+        if (existingConsent != null) {
+            LOG.error("Found an existing consent, existing: " + existingConsent + ", consent: " + consent);
+            consent.setVersion(existingConsent.getVersion());
         }
+        mapper.save(consent);
         return consent;
     }
 
