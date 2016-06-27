@@ -18,6 +18,8 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -31,6 +33,8 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 @Component
 public class DynamoUserConsentDao implements UserConsentDao {
 
+    private final static Logger LOG = LoggerFactory.getLogger(DynamoUserConsentDao.class);
+    
     private DynamoDBMapper mapper;
 
     @Resource(name = "userConsentDdbMapper")
@@ -49,12 +53,17 @@ public class DynamoUserConsentDao implements UserConsentDao {
             // We don't throw EntityAlreadyExistsException here because UserConsent isn't an object in the API
             throw new BridgeServiceException("UserConsent already exists.", HttpStatus.SC_CONFLICT);
         }
-        
         DynamoUserConsent3 consent = new DynamoUserConsent3(healthCode, subpopGuid);
         consent.setConsentCreatedOn(consentCreatedOn);
         consent.setSignedOn(signedOn);
-        mapper.save(consent);
-
+        // 27 Jun 2016: UAT consistently fails because we try and save a user consent when repairing consents, that 
+        // in fact already exists. Is this a timing issue or a flaw of the logic in the code? Not sure, but want
+        // to verify by checking and logging here, and see if exception can be prevented.
+        if (activeConsent != null && activeConsent.getSignedOn() == signedOn) {
+            LOG.error("ActiveConsent would be recreated, consent: "+consent+", activeConsent: "+activeConsent);
+        } else {
+            mapper.save(consent);    
+        }
         return consent;
     }
 
