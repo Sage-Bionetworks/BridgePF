@@ -231,7 +231,7 @@ public class ConsentService {
         Account account = accountDao.getAccount(study, session.getParticipant().getId());
         
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
-        if (active == nulsl) {
+        if (active == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
         ConsentSignature withdrawn = new ConsentSignature.Builder()
