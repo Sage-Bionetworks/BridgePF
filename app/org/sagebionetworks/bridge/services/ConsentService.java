@@ -292,7 +292,6 @@ public class ConsentService {
         // Do this first, as it directly impacts the export of data, and if nothing else, we'd like this to succeed.
         optionsService.setEnum(study.getStudyIdentifier(), account.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
         
-        boolean accountUpdated = false; 
         for (Subpopulation subpop : subpopService.getSubpopulations(study.getStudyIdentifier())) {
             ConsentSignature active = account.getActiveConsentSignature(subpop.getGuid());
             if (active != null) {
@@ -302,23 +301,19 @@ public class ConsentService {
                 int index = account.getConsentSignatureHistory(subpop.getGuid()).indexOf(active); // should be length-1
                 account.getConsentSignatureHistory(subpop.getGuid()).set(index, withdrawn);
                 try {
+                    accountDao.updateAccount(account);
+                } catch(Exception e) {
+                    // This shouldn't happen, but no matter what, keep withdrawing the user
+                    LOGGER.warn("Error updating Stormpath account during consent withdrawal", e);
+                }
+                try {
                     userConsentDao.withdrawConsent(account.getHealthCode(), subpop.getGuid(), withdrewOn);    
                 } catch(Exception e) {
                     // This shouldn't happen, but no matter what, keep withdrawing the user
                     LOGGER.warn("Error updating DDB consent record for consent withdrawal", e);
                 }
-                accountUpdated = true;
             }
         }
-        if (accountUpdated) {
-            try {
-                accountDao.updateAccount(account);
-            } catch(Exception e) {
-                // Keep withdrawing the user, whether this succeeds or fails
-                LOGGER.warn("Error updating user account for consent withdrawal", e);
-            }
-        }
-        
         String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
         
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(
