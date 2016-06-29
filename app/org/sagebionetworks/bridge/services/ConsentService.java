@@ -316,7 +316,7 @@ public class ConsentService {
             List<ConsentSignature> signatures = account.getConsentSignatureHistory(subpopGuid);
             
             for (ConsentSignature aSignature : signatures) {
-                if (aSignature.getWithdrewOn() == null || aSignature.getWithdrewOn() == 0L) {
+                if (aSignature.getWithdrewOn() == null) {
                     // Withdraw this signature. There should be only one, but I want to be absolutely sure.
                     ConsentSignature withdrawn = new ConsentSignature.Builder()
                             .withConsentSignature(aSignature)
