@@ -7,10 +7,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -249,31 +247,4 @@ public class ConsentServiceMockTest {
         verifyNoMoreInteractions(sendMailService);
     }
 
-    @Test
-    public void dynamoDbFailureConsistent() {
-        SimpleAccount acct = new SimpleAccount();
-        List<ConsentSignature> signatures =  acct.getConsentSignatureHistory(SUBPOP_GUID); 
-        signatures.add(new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1969-04-05").build());
-        
-        when(accountDao.getAccount(study, session.getParticipant().getId())).thenReturn(acct);
-        doThrow(new BridgeServiceException("Something bad happend", 500)).when(userConsentDao)
-            .withdrawConsent("BBB", SUBPOP_GUID, UNIX_TIMESTAMP);
-        
-        ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
-        
-        try {
-            consentService.withdrawConsent(study, SUBPOP_GUID, session, new Withdrawal("For reasons."), UNIX_TIMESTAMP);
-            fail("Should have thrown an exception");
-        } catch(BridgeServiceException e) {
-        }
-        verify(accountDao).getAccount(any(), any());
-        verify(accountDao, times(2)).updateAccount(captor.capture());
-        verifyNoMoreInteractions(sendMailService);
-        
-        Account account = captor.getAllValues().get(1);
-        assertEquals(1, account.getConsentSignatureHistory(SUBPOP_GUID).size());
-        assertNotNull(account.getActiveConsentSignature(SUBPOP_GUID));
-        assertNull(account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
-    }
-    
 }

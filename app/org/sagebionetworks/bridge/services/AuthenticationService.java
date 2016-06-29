@@ -255,9 +255,9 @@ public class AuthenticationService {
         boolean repaired = false;
         
         // If there is an active signature, there should be a consent record that has not been withdrawn.
-        // If there is no consent record (entity not found), or it constains a withdrawal timestamp, 
-        // then we need to create a new consent. Note that we are specifically looking for a record with
-        // the signedOn value of the signature (now: this is new).
+        // If there is no consent record (entity not found), or it contains a withdrawal timestamp, 
+        // then we need to create a new consent. Even if the consent is the same in every way except it 
+        // contains no withdrawal timestamp. 
         Map<SubpopulationGuid,ConsentStatus> statuses = session.getConsentStatuses();
         for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : statuses.entrySet()) {
             ConsentSignature activeSignature = account.getActiveConsentSignature(entry.getKey());
@@ -276,8 +276,7 @@ public class AuthenticationService {
                 repaired = true;
             }
         }
-        
-        // These are incorrect since they are based on looking up DDB records, so re-create them.
+        // Recreate these records because they were created from DDB which we've established does not match the signatures
         if (repaired) {
             session.setConsentStatuses(consentService.getConsentStatuses(context));
         }

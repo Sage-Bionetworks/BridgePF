@@ -57,8 +57,10 @@ public class DynamoUserConsentDao implements UserConsentDao {
         consent.setConsentCreatedOn(consentCreatedOn);
         consent.setSignedOn(signedOn);
         
-        // If for some reason there's a signed user consent at the exact same signedOn value, copy version.
-        // This should not happen, but currently it does while repairing consents.
+        // If for some reason there's a signed user consent at the exact same signedOn value, copy the version. 
+        // It's conceivable that there is an active signature for a UserConsent record that records a withdrawal timestamp, 
+        // we will update that to remove the withdrawal date because there was an error or failre and the signature 
+        // was not rescinded. Getting rid of this table entirely would make all of this a lot more robust.
         DynamoUserConsent3 existingConsent = mapper.load(consent);
         if (existingConsent != null) {
             LOG.error("Found an existing consent, existing: " + existingConsent + ", consent: " + consent);
@@ -78,7 +80,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
         // all of them and withdraw from all of them.
         DynamoUserConsent3 hashKey = new DynamoUserConsent3(healthCode, subpopGuid);
         DynamoDBQueryExpression<DynamoUserConsent3> query = new DynamoDBQueryExpression<DynamoUserConsent3>()
-            .withScanIndexForward(false)
             .withHashKeyValues(hashKey)
             .withQueryFilterEntry("withdrewOn", new Condition().withComparisonOperator(ComparisonOperator.NULL));
         

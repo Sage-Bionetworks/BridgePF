@@ -59,6 +59,7 @@ import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -830,6 +831,18 @@ public class ParticipantServiceTest {
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals(ID, participant.getId());
+    }
+    
+    @Test
+    public void withdrawAllConsents() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        Withdrawal withdrawal = new Withdrawal("Reasons");
+        long withdrewOn = DateTime.now().getMillis();
+        
+        participantService.withdrawAllConsents(STUDY, ID, withdrawal, withdrewOn);
+        
+        verify(consentService).withdrawAllConsents(STUDY, account, withdrawal, withdrewOn);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

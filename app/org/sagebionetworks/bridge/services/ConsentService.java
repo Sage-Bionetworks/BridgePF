@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -42,6 +43,7 @@ import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -230,27 +232,30 @@ public class ConsentService {
         
         Account account = accountDao.getAccount(study, session.getParticipant().getId());
         
-        ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
-        if (active == null) {
+        List<ConsentSignature> signatures = account.getConsentSignatureHistory(subpopGuid);
+
+        boolean noSignedConsent = true;
+        for (ConsentSignature aSignature: signatures) {
+            if (aSignature.getWithdrewOn() == null) {
+                noSignedConsent = false;
+                ConsentSignature withdrawn = new ConsentSignature.Builder()
+                        .withConsentSignature(aSignature)
+                        .withWithdrewOn(withdrewOn).build();
+                    int index = signatures.indexOf(aSignature); // should be length-1
+                    signatures.set(index, withdrawn);
+            }
+        }
+        if(noSignedConsent) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
-        ConsentSignature withdrawn = new ConsentSignature.Builder()
-            .withConsentSignature(active)
-            .withWithdrewOn(withdrewOn).build();
-        int index = account.getConsentSignatureHistory(subpopGuid).indexOf(active); // should be length-1
         
-        account.getConsentSignatureHistory(subpopGuid).set(index, withdrawn);
         accountDao.updateAccount(account);
-
         try {
             userConsentDao.withdrawConsent(session.getParticipant().getHealthCode(), subpopGuid, withdrewOn);    
         } catch(Exception e) {
-            // Could not record the consent, compensate and rethrow the exception
-            account.getConsentSignatureHistory(subpopGuid).set(index, active);
-            accountDao.updateAccount(account);
-            throw e;
+            LOGGER.error("Error updating UserConsent table (repair code will attempt to reconcile this the next time the user authenticates.", e);
         }
-        
+
         // Update the user's consent status
         updateSessionConsentStatuses(session, subpopGuid, false);
         
@@ -263,8 +268,7 @@ public class ConsentService {
             session.setParticipant(participant);
         }
         
-        String externalId = optionsService.getOptions(session.getParticipant().getHealthCode())
-                .getString(EXTERNAL_IDENTIFIER);
+        String externalId = session.getParticipant().getExternalId();
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
                 withdrewOn);
         sendMailService.sendEmail(consentEmail);
@@ -274,7 +278,8 @@ public class ConsentService {
      * Withdraw user from any and all consents, and turn off sharing. Because a user's criteria for being included in a 
      * consent can change over time, this is really the best method for ensuring a user is withdrawn from everything. 
      * But in cases where there are studies with distinct and separate consents, you must selectively withdraw from 
-     * the consent for a specific subpopulation.
+     * the consent for a specific subpopulation. Note that this method assumes it is known that the the userId will 
+     * return an account.
      * 
      * @param study
      * @param userId
@@ -282,35 +287,60 @@ public class ConsentService {
      * @param withdrewOn
      */
     public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
+        Account account = accountDao.getAccount(study, userId);
+        withdrawAllConsents(study, account, withdrawal, withdrewOn);
+    }
+    
+    /**
+     * Withdraw user from any and all consents, and turn off sharing. Because a user's criteria for being included in a 
+     * consent can change over time, this is really the best method for ensuring a user is withdrawn from everything. 
+     * But in cases where there are studies with distinct and separate consents, you must selectively withdraw from 
+     * the consent for a specific subpopulation.
+     * 
+     * @param study
+     * @param account
+     * @param withdrawal
+     * @param withdrewOn
+     */
+    public void withdrawAllConsents(Study study, Account account, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
-        checkNotNull(userId);
+        checkNotNull(account);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
-        
-        Account account = accountDao.getAccount(study, userId);
         
         // Do this first, as it directly impacts the export of data, and if nothing else, we'd like this to succeed.
         optionsService.setEnum(study.getStudyIdentifier(), account.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
         
-        for (Subpopulation subpop : subpopService.getSubpopulations(study.getStudyIdentifier())) {
-            ConsentSignature active = account.getActiveConsentSignature(subpop.getGuid());
-            if (active != null) {
-                ConsentSignature withdrawn = new ConsentSignature.Builder()
-                        .withConsentSignature(active)
-                        .withWithdrewOn(withdrewOn).build();
-                int index = account.getConsentSignatureHistory(subpop.getGuid()).indexOf(active); // should be length-1
-                account.getConsentSignatureHistory(subpop.getGuid()).set(index, withdrawn);
-                try {
-                    accountDao.updateAccount(account);
-                } catch(Exception e) {
-                    // This shouldn't happen, but no matter what, keep withdrawing the user
-                    LOGGER.warn("Error updating Stormpath account during consent withdrawal", e);
+        Set<SubpopulationGuid> updates = Sets.newHashSet();
+        for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
+            List<ConsentSignature> signatures = account.getConsentSignatureHistory(subpopGuid);
+            
+            for (ConsentSignature aSignature : signatures) {
+                if (aSignature.getWithdrewOn() == null || aSignature.getWithdrewOn() == 0L) {
+                    // Withdraw this signature. There should be only one, but I want to be absolutely sure.
+                    ConsentSignature withdrawn = new ConsentSignature.Builder()
+                            .withConsentSignature(aSignature)
+                            .withWithdrewOn(withdrewOn).build();
+                    int index = signatures.indexOf(aSignature);
+                    signatures.set(index, withdrawn);
+                    updates.add(subpopGuid);
                 }
+            }
+        }
+        if (!updates.isEmpty()) {
+            LOGGER.info("After updating consents to withdraw user from study, they are: " + account.getAllConsentSignatureHistories());
+            try {
+                accountDao.updateAccount(account);
+            } catch(Exception e) {
+                // This shouldn't happen, but keep withdrawing the user
+                LOGGER.warn("Error updating Stormpath account during consent withdrawal", e);
+            }
+            for (SubpopulationGuid subpopGuid : updates) {
                 try {
-                    userConsentDao.withdrawConsent(account.getHealthCode(), subpop.getGuid(), withdrewOn);    
+                    userConsentDao.withdrawConsent(account.getHealthCode(), subpopGuid, withdrewOn);    
                 } catch(Exception e) {
-                    // This shouldn't happen, but no matter what, keep withdrawing the user
-                    LOGGER.warn("Error updating DDB consent record for consent withdrawal", e);
+                    // This shouldn't happen, but keep withdrawing the user
+                    LOGGER.warn("Error updating UserConsent tables during consent withdrawal", e);
                 }
             }
         }

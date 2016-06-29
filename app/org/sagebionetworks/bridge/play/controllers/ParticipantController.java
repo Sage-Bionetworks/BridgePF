@@ -26,7 +26,6 @@ import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,16 +39,9 @@ public class ParticipantController extends BaseController {
     
     private ParticipantService participantService;
     
-    private ConsentService consentService;
-    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
-    }
-    
-    @Autowired
-    final void setConsentService(ConsentService consentService) {
-        this.consentService = consentService;
     }
     
     public Result getSelfParticipant() throws Exception {
@@ -202,7 +194,7 @@ public class ParticipantController extends BaseController {
         Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
         long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawAllConsents(study, userId, withdrawal, withdrewOn);
+        participantService.withdrawAllConsents(study, userId, withdrawal, withdrewOn);
         
         return okResult("User has been withdrawn from the study.");
     }
