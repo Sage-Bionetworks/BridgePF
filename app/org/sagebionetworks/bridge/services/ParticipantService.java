@@ -39,6 +39,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -220,6 +221,17 @@ public class ParticipantService {
         StudyParticipant participant = getParticipant(study, userId, false);
         Email email = new Email(study.getIdentifier(), participant.getEmail());
         accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), email);
+    }
+    
+    public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
+        checkNotNull(study);
+        checkNotNull(userId);
+        checkNotNull(withdrawal);
+        checkArgument(withdrewOn > 0);
+        
+        Account account = getAccountThrowingException(study, userId);
+        
+        consentService.withdrawAllConsents(study, account, withdrawal, withdrewOn);
     }
     
     public void resendConsentAgreement(Study study, SubpopulationGuid subpopGuid, String userId) {

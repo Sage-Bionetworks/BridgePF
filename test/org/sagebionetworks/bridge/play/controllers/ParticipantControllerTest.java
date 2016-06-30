@@ -54,7 +54,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -100,9 +99,6 @@ public class ParticipantControllerTest {
     @Mock
     private CacheProvider cacheProvider;
     
-    @Mock
-    private ConsentService consentService;
-    
     @Captor
     private ArgumentCaptor<Map<ParticipantOption,String>> optionMapCaptor;
     
@@ -147,7 +143,6 @@ public class ParticipantControllerTest {
         controller.setStudyService(studyService);
         controller.setAuthenticationService(authService);
         controller.setCacheProvider(cacheProvider);
-        controller.setConsentService(consentService);
         
         mockPlayContext();
     }
@@ -533,7 +528,7 @@ public class ParticipantControllerTest {
             
             controller.withdrawFromAllConsents(ID);
             
-            verify(consentService).withdrawAllConsents(study, ID, new Withdrawal("Because, reasons."), 20000);
+            verify(participantService).withdrawAllConsents(study, ID, new Withdrawal("Because, reasons."), 20000);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }
