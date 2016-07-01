@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -216,7 +217,7 @@ public class ConsentService {
     /**
      * Withdraw consent in this study. The withdrawal date is recorded and the user can no longer 
      * access any APIs that require consent, although the user's account (along with the history of 
-     * the user's participation) will not be delted.
+     * the user's participation) will not be deleted.
      * @param study 
      * @param subpopGuid
      * @param user
@@ -307,7 +308,7 @@ public class ConsentService {
         checkNotNull(account);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
-        
+
         // Do this first, as it directly impacts the export of data, and if nothing else, we'd like this to succeed.
         optionsService.setEnum(study.getStudyIdentifier(), account.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
         
@@ -327,28 +328,32 @@ public class ConsentService {
                 }
             }
         }
-        if (!updates.isEmpty()) {
-            LOGGER.info("After updating consents to withdraw user from study, they are: " + account.getAllConsentSignatureHistories());
-            try {
-                accountDao.updateAccount(account);
-            } catch(Exception e) {
-                // This shouldn't happen, but keep withdrawing the user
-                LOGGER.warn("Error updating Stormpath account during consent withdrawal", e);
-            }
-            for (SubpopulationGuid subpopGuid : updates) {
-                try {
-                    userConsentDao.withdrawConsent(account.getHealthCode(), subpopGuid, withdrewOn);    
-                } catch(Exception e) {
-                    // This shouldn't happen, but keep withdrawing the user
-                    LOGGER.warn("Error updating UserConsent tables during consent withdrawal", e);
-                }
-            }
+        accountDao.updateAccount(account);
+        for (SubpopulationGuid subpopGuid : updates) {
+            userConsentDao.withdrawConsent(account.getHealthCode(), subpopGuid, withdrewOn);    
         }
         String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
         
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(
                 study, externalId, account, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
+        
+        // NOW, verify that the all consents have been withdrawn, because this is failing on staging
+        Account retrievedAccount = accountDao.getAccount(study, account.getId());
+        retrievedAccount.getAllConsentSignatureHistories();
+        for (SubpopulationGuid subpopGuid : retrievedAccount.getAllConsentSignatureHistories().keySet()) {
+            List<ConsentSignature> signatures = retrievedAccount.getConsentSignatureHistory(subpopGuid);
+
+            for (ConsentSignature aSignature : signatures) {
+                if (aSignature.getWithdrewOn() == null) {
+                    throw new BridgeServiceException("Consistency error, " + account.getId() + " has ConsentSignature that was not withdrawn.");
+                }
+                UserConsent consentRecord = userConsentDao.getUserConsent(account.getHealthCode(), subpopGuid, aSignature.getSignedOn());
+                if (consentRecord.getWithdrewOn() == null) {
+                    throw new BridgeServiceException("Consistency error, " + account.getId() + " has UserConsent record that was not withdrawn.");
+                }
+            }
+        }
     }
     
     /**

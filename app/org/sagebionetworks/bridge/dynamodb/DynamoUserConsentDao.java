@@ -57,13 +57,13 @@ public class DynamoUserConsentDao implements UserConsentDao {
         consent.setConsentCreatedOn(consentCreatedOn);
         consent.setSignedOn(signedOn);
         
-        // If for some reason there's a signed user consent at the exact same signedOn value, copy the version. 
-        // It's conceivable that there is an active signature for a UserConsent record that records a withdrawal timestamp, 
-        // we will update that to remove the withdrawal date because there was an error or failre and the signature 
-        // was not rescinded. Getting rid of this table entirely would make all of this a lot more robust.
+        // If for some reason the user is giving consent at the same signedOn timestamp as an existing, withdrawn record, 
+        // then this method would fail. Although we take steps to prevent this (particularly when repairing consents), it is 
+        // still happening. This appears to be a bug or a timing issue. Copying version over provents concurrency exception and 
+        // effectively re-consents the user at the given signedOn time.
         DynamoUserConsent3 existingConsent = mapper.load(consent);
         if (existingConsent != null) {
-            LOG.error("Found an existing consent, existing: " + existingConsent + ", consent: " + consent);
+            LOG.info("Found an existing consent, copying version, existing: " + existingConsent + ", new consent: " + consent);
             consent.setVersion(existingConsent.getVersion());
         }
         mapper.save(consent);
@@ -114,12 +114,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
             .withHashKeyValues(hashKey);
         
         List<DynamoUserConsent3> results = mapper.query(DynamoUserConsent3.class, query);
-        if (results.size() > 1) {
-            LOG.error("There is more than one active consent, which we will enumerate:");
-            for (DynamoUserConsent3 aConsent : results) {
-                LOG.info(aConsent.toString());
-            }
-        }
         return results.isEmpty() ? null : results.get(0);
     }
     
