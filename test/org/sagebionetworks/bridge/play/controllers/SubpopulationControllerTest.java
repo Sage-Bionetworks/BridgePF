@@ -186,6 +186,20 @@ public class SubpopulationControllerTest {
     }
     
     @Test
+    public void getSubpopulationForResearcher() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+        session.setParticipant(participant);
+        TestUtils.mockPlayContext();
+        
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuidString("AAA");
+        doReturn(subpop).when(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
+
+        // Does not throw UnauthorizedException.
+        controller.getSubpopulation(SUBPOP_GUID.getGuid());
+    }
+    
+    @Test
     public void deleteSubpopulation() throws Exception {
         TestUtils.mockPlayContext();
 
