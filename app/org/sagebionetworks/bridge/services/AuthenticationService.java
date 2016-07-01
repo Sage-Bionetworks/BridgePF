@@ -260,18 +260,12 @@ public class AuthenticationService {
         // contains no withdrawal timestamp. 
         Map<SubpopulationGuid,ConsentStatus> statuses = session.getConsentStatuses();
         for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : statuses.entrySet()) {
+            
             ConsentSignature activeSignature = account.getActiveConsentSignature(entry.getKey());
-            if (activeSignature != null) {
-                try {
-                    UserConsent consent = userConsentDao.getUserConsent(session.getHealthCode(), entry.getKey(),
-                            activeSignature.getSignedOn());
-                    if (consent.getWithdrewOn() == null) {
-                        // This is what is correct: there's a record and it's not withdrawn.
-                        return;
-                    }
-                } catch(EntityNotFoundException e) {
-                    // there should be a record
-                }
+            boolean isDynamoRecordMissing = isDynamoRecordMissing(session.getHealthCode(), entry.getKey(), activeSignature);
+            
+            // The issue is that there is a correctly withdrawn DDB record, but there's an active signature with no withdrawal date.
+            if (isDynamoRecordMissing) {
                 repairConsent(session, entry.getKey(), activeSignature);
                 repaired = true;
             }
@@ -280,6 +274,33 @@ public class AuthenticationService {
         if (repaired) {
             session.setConsentStatuses(consentService.getConsentStatuses(context));
         }
+    }
+    
+    /**
+     * If there's a signed consent signature, is there a matching UserConsent record? The record must exist and not be 
+     * withdrawn. 
+     * @param healthCode
+     * @param subpopGuid
+     * @param signature
+     * @return
+     */
+    private boolean isDynamoRecordMissing(String healthCode, SubpopulationGuid subpopGuid, ConsentSignature signature) {
+        // There's no signature, so no missing record.
+        if (signature == null) {
+            return false;
+        }
+        try {
+            UserConsent consent = userConsentDao.getUserConsent(healthCode, subpopGuid, signature.getSignedOn());
+            // The signature should never have a withdrewOn value at this point, but for clarity:
+            if (signature.getWithdrewOn() == null && consent.getWithdrewOn() != null) {
+                return true;
+            }
+            // Both records exist, both are either withdrawn (shouldn't be possible) or not withdrawn, so it's not missing.
+            return false;
+        } catch(EntityNotFoundException e) {
+            // There's no record, that's bad
+        }
+        return true;
     }
     
     /**
