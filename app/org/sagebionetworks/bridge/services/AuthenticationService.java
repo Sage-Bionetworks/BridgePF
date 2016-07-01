@@ -352,7 +352,7 @@ public class AuthenticationService {
                 .build();
         
         session.setConsentStatuses(consentService.getConsentStatuses(newContext));
-        repairConsents(account, session, newContext);
+        //repairConsents(account, session, newContext);
         
         return session;
     }

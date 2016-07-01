@@ -25,6 +25,7 @@ import javax.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -353,7 +354,9 @@ public class AuthenticationServiceTest {
         assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
     }
     
+    // Temporarily disabling this while testing if this path is the source of intermittent failures on staging.
     @Test
+    @Ignore
     public void userWithSignatureAndNoDbRecordIsRepaired() throws Exception {
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
