@@ -158,9 +158,14 @@ public class ConsentService {
         Validate.entityThrowingException(validator, consentSignature);
 
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
-        Account account = accountDao.getAccount(study, session.getParticipant().getId());
         
-        account.getConsentSignatureHistory(subpopGuid).add(consentSignature);
+        ConsentSignature withConsentCreatedOnSignature = new ConsentSignature.Builder()
+                .withConsentSignature(consentSignature)
+                .withConsentCreatedOn(studyConsent.getCreatedOn()).build();
+        
+        // Add signed and complete consent signature to the list of signatures, save account.
+        Account account = accountDao.getAccount(study, session.getParticipant().getId());
+        account.getConsentSignatureHistory(subpopGuid).add(withConsentCreatedOnSignature);
         accountDao.updateAccount(account);
         
         UserConsent userConsent = null;
@@ -183,8 +188,8 @@ public class ConsentService {
         
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
-                    session.getParticipant().getEmail(), consentSignature, sharingScope, studyConsentService,
-                    consentTemplate);
+                    session.getParticipant().getEmail(), withConsentCreatedOnSignature, sharingScope,
+                    studyConsentService, consentTemplate);
 
             sendMailService.sendEmail(consentEmail);
         }
