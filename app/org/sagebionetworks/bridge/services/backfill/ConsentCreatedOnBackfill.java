@@ -73,14 +73,14 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
             Account account = accountDao.getAccount(study, summary.getId());
             if (account == null) {
                 callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " not found."));
-            } else if (processAccount(study, account)) {
+            } else if (processAccount(task, callback, study, account)) {
                 accountDao.updateAccount(account);
                 callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " updated."));
             }
         }
     }
 
-    private boolean processAccount(Study study, Account account) {
+    private boolean processAccount(BackfillTask task, BackfillCallback callback, Study study, Account account) {
         boolean accountUpdated = false;
 
         Map<SubpopulationGuid,List<ConsentSignature>> map = account.getAllConsentSignatureHistories();
@@ -89,8 +89,7 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
             List<ConsentSignature> list = map.get(guid);
             for (int i=0; i < list.size(); i++) {
                 ConsentSignature existingSig = list.get(i);
-                
-                ConsentSignature updatedSig = fixConsentCreatedOn(guid, account, existingSig);
+                ConsentSignature updatedSig = fixConsentCreatedOn(task, callback, guid, account, existingSig);
                 
                 // BTW given the signature constructor, just instantiating a signature means it will gain a signed
                 // on timestamp if it doesn't exist. So that's repaired by this as well.
@@ -103,7 +102,8 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
         return accountUpdated;
     }
     
-    private ConsentSignature fixConsentCreatedOn(SubpopulationGuid guid, Account account, ConsentSignature signature) {
+    private ConsentSignature fixConsentCreatedOn(BackfillTask task, BackfillCallback callback, SubpopulationGuid guid, Account account,
+            ConsentSignature signature) {
         if (signature.getConsentCreatedOn() == 0L) {
             try {
                 UserConsent consent = userConsentDao.getUserConsent(account.getHealthCode(), guid, signature.getSignedOn());
@@ -115,6 +115,8 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
                 if (studyConsent != null) {
                     signature = new ConsentSignature.Builder().withConsentSignature(signature)
                             .withConsentCreatedOn(studyConsent.getCreatedOn()).build();
+                } else {
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "StudyConsent not found for study"));
                 }
             }
         }
