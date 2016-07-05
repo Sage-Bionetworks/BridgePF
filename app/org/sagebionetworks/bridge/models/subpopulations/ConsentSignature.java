@@ -25,7 +25,7 @@ public final class ConsentSignature implements BridgeEntity {
 
     public static final ObjectWriter SIGNATURE_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
-            SimpleBeanPropertyFilter.serializeAllExcept("signedOn")));
+            SimpleBeanPropertyFilter.serializeAllExcept("signedOn", "consentCreatedOn")));
 
     private static final ConsentSignatureValidator VALIDATOR = new ConsentSignatureValidator();
 
@@ -33,15 +33,18 @@ public final class ConsentSignature implements BridgeEntity {
     private final @Nonnull String birthdate;
     private final @Nullable String imageData;
     private final @Nullable String imageMimeType;
+    private final @Nonnull long consentCreatedOn;
     private final @Nonnull long signedOn;
     private final @Nullable Long withdrewOn;
 
     /** Private constructor. Instances should be constructed using factory methods create() or createFromJson(). */
-    private ConsentSignature(String name, String birthdate, String imageData, String imageMimeType, long signedOn, Long withdrewOn) {
+    private ConsentSignature(String name, String birthdate, String imageData, String imageMimeType,
+            long consentCreatedOn, long signedOn, Long withdrewOn) {
         this.name = name;
         this.birthdate = birthdate;
         this.imageData = imageData;
         this.imageMimeType = imageMimeType;
+        this.consentCreatedOn = consentCreatedOn;
         this.signedOn = signedOn;
         this.withdrewOn = withdrewOn;
     }
@@ -66,27 +69,27 @@ public final class ConsentSignature implements BridgeEntity {
         return imageMimeType;
     }
     
+    /**
+     * The timestamp of the consent the user has signed. May not be the timestamp of the currently active version of the
+     * consent.
+     */
+    public @Nonnull long getConsentCreatedOn() {
+        return consentCreatedOn;
+    }
+    
     /** The date and time recorded for this signature. */
-    public long getSignedOn() {
+    public @Nonnull long getSignedOn() {
         return signedOn;
     }
     
     /** The date and time the user withdrew this consent (can be null if active). */
-    public Long getWithdrewOn() {
+    public @Nullable Long getWithdrewOn() {
         return withdrewOn;
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(birthdate);
-        result = prime * result + Objects.hashCode(imageData);
-        result = prime * result + Objects.hashCode(imageMimeType);
-        result = prime * result + Objects.hashCode(name);
-        result = prime * result + Objects.hashCode(signedOn);
-        result = prime * result + Objects.hashCode(withdrewOn);
-        return result;
+        return Objects.hash(birthdate, imageData, imageMimeType, name, consentCreatedOn, signedOn, withdrewOn);
     }
 
     @Override
@@ -98,13 +101,14 @@ public final class ConsentSignature implements BridgeEntity {
         ConsentSignature other = (ConsentSignature) obj;
         return Objects.equals(birthdate, other.birthdate) && Objects.equals(imageData, other.imageData)
                 && Objects.equals(imageMimeType, other.imageMimeType) && Objects.equals(name, other.name) 
-                && Objects.equals(signedOn, other.signedOn) && Objects.equals(withdrewOn, other.withdrewOn);
+                && Objects.equals(consentCreatedOn, other.consentCreatedOn) && Objects.equals(signedOn, other.signedOn) 
+                && Objects.equals(withdrewOn, other.withdrewOn);
     }
 
     @Override
     public String toString() {
-        return String.format("ConsentSignature [name=%s, birthdate=%s, imageData=%s, imageMimeType=%s, signedOn=%s, withdrewOn=%s]", 
-                name, birthdate, imageData, imageMimeType, signedOn, withdrewOn);
+        return String.format("ConsentSignature [name=%s, birthdate=%s, imageData=%s, imageMimeType=%s, consentCreatedOn=%s, signedOn=%s, withdrewOn=%s]", 
+                name, birthdate, imageData, imageMimeType, consentCreatedOn, signedOn, withdrewOn);
     }
     
     public static class Builder {
@@ -112,6 +116,7 @@ public final class ConsentSignature implements BridgeEntity {
         private String birthdate;
         private String imageData;
         private String imageMimeType;
+        private long consentCreatedOn;
         private long signedOn;
         private Long withdrewOn;
         
@@ -121,6 +126,7 @@ public final class ConsentSignature implements BridgeEntity {
             this.birthdate = signature.birthdate;
             this.imageData = signature.imageData;
             this.imageMimeType = signature.imageMimeType;
+            this.consentCreatedOn = signature.consentCreatedOn;
             this.signedOn = signature.signedOn;
             this.withdrewOn = signature.withdrewOn;
             return this;
@@ -141,6 +147,10 @@ public final class ConsentSignature implements BridgeEntity {
             this.imageMimeType = imageMimeType;
             return this;
         }
+        public Builder withConsentCreatedOn(long consentCreatedOn) {
+            this.consentCreatedOn = consentCreatedOn;
+            return this;
+        }
         public Builder withSignedOn(long signedOn) {
             this.signedOn = signedOn;
             return this;
@@ -151,7 +161,8 @@ public final class ConsentSignature implements BridgeEntity {
         }
         public ConsentSignature build() {
             long signatureTime = (signedOn > 0L) ? signedOn : DateTime.now().getMillis();
-            ConsentSignature signature = new ConsentSignature(name, birthdate, imageData, imageMimeType, signatureTime, withdrewOn);
+            ConsentSignature signature = new ConsentSignature(name, birthdate, imageData, imageMimeType,
+                    consentCreatedOn, signatureTime, withdrewOn);
             Validate.entityThrowingException(VALIDATOR, signature);
             return signature;
         }
