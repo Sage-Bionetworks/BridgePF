@@ -74,6 +74,7 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
                     accountDao.updateAccount(account);
                     callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " updated."));
                 } catch(Exception e) {
+                    e.printStackTrace();
                     callback.newRecords(getBackfillRecordFactory().createOnly(task, "Exception saving account " + summary.getId()));
                 }
             }
@@ -97,6 +98,7 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
                         accountUpdated = true;
                     }
                 } catch(Exception e) {
+                    e.printStackTrace();
                     callback.newRecords(getBackfillRecordFactory().createOnly(task, "Exception processing account " + account.getId() + " signature: " + e.getMessage()));
                     return false;
                 }
