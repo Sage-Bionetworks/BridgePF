@@ -53,14 +53,10 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
 
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
-        /*
         List<Study> studies = studyService.getStudies();
         for (Study study : studies) {
             backfillStudy(task, callback, study);
         }
-        */
-        Study study = studyService.getStudy("api");
-        backfillStudy(task, callback, study);
     }
     
     private void backfillStudy(BackfillTask task, BackfillCallback callback, Study study) {
@@ -74,8 +70,12 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
             if (account == null) {
                 callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " not found."));
             } else if (processAccount(task, callback, study, account)) {
-                accountDao.updateAccount(account);
-                callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " updated."));
+                try {
+                    accountDao.updateAccount(account);
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " updated."));
+                } catch(Exception e) {
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Exception saving account " + summary.getId()));
+                }
             }
         }
     }
@@ -88,12 +88,17 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
             
             List<ConsentSignature> list = map.get(guid);
             for (int i=0; i < list.size(); i++) {
-                ConsentSignature existingSig = list.get(i);
-                ConsentSignature updatedSig = fixConsentCreatedOn(task, callback, guid, account, existingSig);
-                
-                if (!existingSig.equals(updatedSig)) {
-                    list.set(i, updatedSig);
-                    accountUpdated = true;
+                try {
+                    ConsentSignature existingSig = list.get(i);
+                    ConsentSignature updatedSig = fixConsentCreatedOn(task, callback, guid, account, existingSig);
+                    
+                    if (!existingSig.equals(updatedSig)) {
+                        list.set(i, updatedSig);
+                        accountUpdated = true;
+                    }
+                } catch(Exception e) {
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Exception processing account " + account.getId() + " signature: " + e.getMessage()));
+                    return false;
                 }
             }
         }
