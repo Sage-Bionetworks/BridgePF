@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.services.backfill;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -138,7 +140,13 @@ public class ConsentCreatedOnBackfillTest {
     private void createUserConsent() {
         doReturn(SIGNED_ON_TIMESTAMP).when(userConsent).getSignedOn();
         doReturn(CONSENT_CREATED_ON_TIMESTAMP).when(userConsent).getConsentCreatedOn();
-        doReturn(userConsent).when(userConsentDao).getActiveUserConsent(HEALTH_CODE, SUBPOP_GUID);
+        when(userConsentDao.getUserConsent(eq(HEALTH_CODE), eq(SUBPOP_GUID), anyLong())).thenAnswer((invocation) -> {
+            Object[] args = invocation.getArguments();
+            if ((long)args[2] == SIGNED_ON_TIMESTAMP) {
+                return userConsent;
+            }
+            throw new EntityNotFoundException(UserConsent.class);
+        });
     }
     
     private void createStudyConsent() {
@@ -166,7 +174,7 @@ public class ConsentCreatedOnBackfillTest {
     
     @Test
     public void updatesSignatureNoTimestamps() {
-        createSignatureWithNoTimestamps();
+        createSignatureWithTimestamps(SIGNED_ON_TIMESTAMP, 0L);
         createUserConsent();
         createStudyConsent();
         
@@ -180,11 +188,22 @@ public class ConsentCreatedOnBackfillTest {
     @Test
     public void updatesSignatureNoTimestampsNoUserConsent() {
         createSignatureWithNoTimestamps();
-        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, SUBPOP_GUID)).thenAnswer((consent) -> {
+        createStudyConsent();
+        doReturn(null).when(userConsentDao).getActiveUserConsent(HEALTH_CODE, SUBPOP_GUID);
+        when(userConsentDao.getUserConsent(HEALTH_CODE, SUBPOP_GUID, NOW)).thenAnswer((invocation) -> {
             throw new EntityNotFoundException(UserConsent.class);
         });
-        // For some reason I couldn't get this to work in the test... ?!
-        // doThrow(new EntityNotFoundException(UserConsent.class)).when(userConsentDao).getActiveUserConsent(HEALTH_CODE, SUBPOP_GUID);
+
+        backfill.doBackfill(task, callback);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        assertSignature(USER_CREATED_ON_TIMESTAMP, CONSENT_CREATED_ON_TIMESTAMP);
+    }
+    
+    @Test
+    public void signatureReferencesMissingStudyConsentButIsFixed() {
+        createSignatureWithTimestamps(NOW, NOW);
+        createUserConsent();
         createStudyConsent();
         
         backfill.doBackfill(task, callback);
@@ -196,12 +215,12 @@ public class ConsentCreatedOnBackfillTest {
     // In this case we do not need the study consent record because the user consent record has everything we need.
     @Test
     public void updatesSignatureNoTimestampsNoStudyConsent() {
-        createSignatureWithNoTimestamps();
+        createSignatureWithTimestamps(SIGNED_ON_TIMESTAMP, 0L);
         createUserConsent();
         doThrow(new EntityNotFoundException(StudyConsent.class)).when(studyConsentDao).getActiveConsent(SUBPOP_GUID);
-        
-        backfill.doBackfill(task, callback);
 
+        backfill.doBackfill(task, callback);
+        
         verify(accountDao).updateAccount(accountCaptor.capture());
         assertSignature(SIGNED_ON_TIMESTAMP, CONSENT_CREATED_ON_TIMESTAMP);
     }

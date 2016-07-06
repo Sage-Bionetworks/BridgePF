@@ -109,16 +109,23 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
     
     private ConsentSignature fixConsentCreatedOn(BackfillTask task, BackfillCallback callback, SubpopulationGuid guid, Account account,
             ConsentSignature signature) {
-        //if (signature.getConsentCreatedOn() == 0L) {
-            try {
-                // Get the user consent, and update the consentCreatedOn and signedOn values from the record. If instantiating
-                // the ConsentSignature added a "now" time to signedOn, this will improve the value.
-                UserConsent userConsent = userConsentDao.getActiveUserConsent(account.getHealthCode(), guid);
+        try {
+            // Get the user consent, and update the consentCreatedOn and signedOn values from the record. If instantiating
+            // the ConsentSignature added a "now" time to signedOn, this will improve the value.
+            UserConsent userConsent = userConsentDao.getUserConsent(account.getHealthCode(), guid, signature.getSignedOn());
+            signature = new ConsentSignature.Builder().withConsentSignature(signature)
+                    .withConsentCreatedOn(userConsent.getConsentCreatedOn())
+                    .withSignedOn(userConsent.getSignedOn())
+                    .build();
+        } catch(EntityNotFoundException e) {
+            UserConsent userConsent = userConsentDao.getActiveUserConsent(account.getHealthCode(), guid);
+            if (userConsent != null) {
                 signature = new ConsentSignature.Builder().withConsentSignature(signature)
                         .withConsentCreatedOn(userConsent.getConsentCreatedOn())
                         .withSignedOn(userConsent.getSignedOn())
                         .build();
-            } catch(EntityNotFoundException e) {
+                
+            } else {
                 // No user consent found, get the active study consent and sign the user up for that consent using the account creation 
                 // date, the closest date to the date they probably signed up (this account is very old).
                 StudyConsent studyConsent = studyConsentDao.getActiveConsent(guid);
@@ -132,7 +139,8 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
                         .withSignedOn(account.getCreatedOn().getMillis())
                         .build();
             }
-        //}
+            
+        }
         return signature;
     }
 }
