@@ -91,8 +91,6 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
                 ConsentSignature existingSig = list.get(i);
                 ConsentSignature updatedSig = fixConsentCreatedOn(task, callback, guid, account, existingSig);
                 
-                // BTW given the signature constructor, just instantiating a signature means it will gain a signed
-                // on timestamp if it doesn't exist. So that's repaired by this as well.
                 if (!existingSig.equals(updatedSig)) {
                     list.set(i, updatedSig);
                     accountUpdated = true;
@@ -104,22 +102,30 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
     
     private ConsentSignature fixConsentCreatedOn(BackfillTask task, BackfillCallback callback, SubpopulationGuid guid, Account account,
             ConsentSignature signature) {
-        if (signature.getConsentCreatedOn() == 0L) {
+        //if (signature.getConsentCreatedOn() == 0L) {
             try {
-                UserConsent consent = userConsentDao.getUserConsent(account.getHealthCode(), guid, signature.getSignedOn());
+                // Get the user consent, and update the consentCreatedOn and signedOn values from the record. If instantiating
+                // the ConsentSignature added a "now" time to signedOn, this will improve the value.
+                UserConsent userConsent = userConsentDao.getActiveUserConsent(account.getHealthCode(), guid);
                 signature = new ConsentSignature.Builder().withConsentSignature(signature)
-                        .withConsentCreatedOn(consent.getConsentCreatedOn()).build();
+                        .withConsentCreatedOn(userConsent.getConsentCreatedOn())
+                        .withSignedOn(userConsent.getSignedOn())
+                        .build();
             } catch(EntityNotFoundException e) {
-                // get what is likely to be the consent, the last saved consent, and use that.
+                // No user consent found, get the active study consent and sign the user up for that consent using the account creation 
+                // date, the closest date to the date they probably signed up (this account is very old).
                 StudyConsent studyConsent = studyConsentDao.getActiveConsent(guid);
-                if (studyConsent != null) {
-                    signature = new ConsentSignature.Builder().withConsentSignature(signature)
-                            .withConsentCreatedOn(studyConsent.getCreatedOn()).build();
-                } else {
-                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "StudyConsent not found for study"));
+                if (studyConsent == null) {
+                    // Pretty much total disaster.
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "StudyConsent not found for study. No update to " + account.getId() + " has been made."));
+                    return signature;
                 }
+                signature = new ConsentSignature.Builder().withConsentSignature(signature)
+                        .withConsentCreatedOn(studyConsent.getCreatedOn())
+                        .withSignedOn(account.getCreatedOn().getMillis())
+                        .build();
             }
-        }
+        //}
         return signature;
     }
 }

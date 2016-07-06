@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services.backfill;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +26,7 @@ import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
@@ -41,9 +43,13 @@ import com.google.common.collect.Maps;
 @RunWith(MockitoJUnitRunner.class)
 public class ConsentCreatedOnBackfillTest {
     
-    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("subpop");
+    private static final String API = "api";
+    private static final String USER_ID = "user-id";
+    private static final String HEALTH_CODE = "health-code";
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("subpop-guid");
     
     private static final long NOW = 1467742872087L;
+    private static final long USER_CREATED_ON_TIMESTAMP = 1467741000000L;
     private static final long CONSENT_CREATED_ON_TIMESTAMP = 1467741848921L;
     private static final long SIGNED_ON_TIMESTAMP = 1467741906474L;
 
@@ -87,6 +93,7 @@ public class ConsentCreatedOnBackfillTest {
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(NOW);
+        
         backfill = new ConsentCreatedOnBackfill();
         backfill.setAccountDao(accountDao);
         backfill.setBackfillDao(backfillDao);
@@ -100,12 +107,12 @@ public class ConsentCreatedOnBackfillTest {
         List<Study> studies = Lists.newArrayList(study);
         doReturn("id").when(study).getIdentifier();
         doReturn(studies).when(studyService).getStudies();
-        doReturn(study).when(studyService).getStudy("api"); // for variant doing one study at a time.
+        doReturn(study).when(studyService).getStudy(API); // for variant doing one study at a time.
         
         // Mock account
-        doReturn("healthCode").when(account).getHealthCode();
-        doReturn("userId").when(account).getId();
-        doReturn(new DateTime(SIGNED_ON_TIMESTAMP)).when(account).getCreatedOn();
+        doReturn(HEALTH_CODE).when(account).getHealthCode();
+        doReturn(USER_ID).when(account).getId();
+        doReturn(new DateTime(USER_CREATED_ON_TIMESTAMP)).when(account).getCreatedOn();
         map = Maps.newHashMap();
         map.put(SUBPOP_GUID, Lists.newArrayList());
         doReturn(map).when(account).getAllConsentSignatureHistories();
@@ -115,20 +122,12 @@ public class ConsentCreatedOnBackfillTest {
         });
         
         // Mock account DAO
-        doReturn(account).when(accountDao).getAccount(study, "userId");
+        doReturn(account).when(accountDao).getAccount(study, USER_ID);
         
         // Mock account summaries
-        summary = new AccountSummary(null, null, null, "userId", null, null, null);
+        summary = new AccountSummary(null, null, null, USER_ID, null, null, null);
         List<AccountSummary> summaries = Lists.newArrayList(summary);
         doReturn(summaries.iterator()).when(accountDao).getStudyAccounts(study);
-        
-        // Mock study consent
-        doReturn(CONSENT_CREATED_ON_TIMESTAMP).when(studyConsent).getCreatedOn();
-        doReturn(studyConsent).when(studyConsentDao).getMostRecentConsent(SUBPOP_GUID);
-
-        // Mock user consent
-        doReturn(NOW).when(userConsent).getSignedOn();
-        doReturn(CONSENT_CREATED_ON_TIMESTAMP).when(userConsent).getConsentCreatedOn();
     }
     
     @After
@@ -136,46 +135,97 @@ public class ConsentCreatedOnBackfillTest {
         DateTimeUtils.setCurrentMillisSystem();
     }
     
-    // This works, but it uses the "now" timestamp which we don't really want, do we? We can at least do better if this 
-    // comes up.
-    @Test
-    public void updatesVeryBrokenSignature() {
+    private void createUserConsent() {
+        doReturn(SIGNED_ON_TIMESTAMP).when(userConsent).getSignedOn();
+        doReturn(CONSENT_CREATED_ON_TIMESTAMP).when(userConsent).getConsentCreatedOn();
+        doReturn(userConsent).when(userConsentDao).getActiveUserConsent(HEALTH_CODE, SUBPOP_GUID);
+    }
+    
+    private void createStudyConsent() {
+        doReturn(CONSENT_CREATED_ON_TIMESTAMP).when(studyConsent).getCreatedOn();
+        doReturn(studyConsent).when(studyConsentDao).getActiveConsent(SUBPOP_GUID);
+        doReturn(studyConsent).when(studyConsentDao).getConsent(SUBPOP_GUID, CONSENT_CREATED_ON_TIMESTAMP);
+    }
+    
+    private void createSignatureWithNoTimestamps() {
         map.get(SUBPOP_GUID).add(new ConsentSignature.Builder().withBirthdate("2010-10-10").withName("Test User").build());
-        doReturn(userConsent).when(userConsentDao).getUserConsent("healthCode", SUBPOP_GUID, NOW);
-
-        backfill.doBackfill(task, callback);
-
-        verify(accountDao).updateAccount(accountCaptor.capture());
+    }
+    
+    private void createSignatureWithTimestamps(long signedOn, long consentCreatedOn) {
+        map.get(SUBPOP_GUID).add(new ConsentSignature.Builder().withSignedOn(signedOn)
+                .withConsentCreatedOn(consentCreatedOn).withBirthdate("2010-10-10").withName("Test User").build());
+    }
+    
+    private void assertSignature(long signedOn, long consentCreatedOn) {
         Account account = accountCaptor.getValue();
-        
         ConsentSignature signature = account.getActiveConsentSignature(SUBPOP_GUID);
-        assertEquals(CONSENT_CREATED_ON_TIMESTAMP, signature.getConsentCreatedOn());
-        assertEquals(NOW, signature.getSignedOn());
+        
+        assertEquals(signedOn, signature.getSignedOn());
+        assertEquals(consentCreatedOn, signature.getConsentCreatedOn());
     }
     
     @Test
-    public void updatePreservesSignedOnValue() {
-        map.get(SUBPOP_GUID).add(new ConsentSignature.Builder().withBirthdate("2010-10-10")
-                .withSignedOn(SIGNED_ON_TIMESTAMP).withName("Test User").build());
-        doReturn(userConsent).when(userConsentDao).getUserConsent("healthCode", SUBPOP_GUID, SIGNED_ON_TIMESTAMP);
+    public void updatesSignatureNoTimestamps() {
+        createSignatureWithNoTimestamps();
+        createUserConsent();
+        createStudyConsent();
         
         backfill.doBackfill(task, callback);
 
         verify(accountDao).updateAccount(accountCaptor.capture());
-        Account account = accountCaptor.getValue();
+        assertSignature(SIGNED_ON_TIMESTAMP, CONSENT_CREATED_ON_TIMESTAMP);
+    }
+    
+    // If there's no user consent, fall back to the active study consent and the time the account was created
+    @Test
+    public void updatesSignatureNoTimestampsNoUserConsent() {
+        createSignatureWithNoTimestamps();
+        when(userConsentDao.getActiveUserConsent(HEALTH_CODE, SUBPOP_GUID)).thenAnswer((consent) -> {
+            throw new EntityNotFoundException(UserConsent.class);
+        });
+        // For some reason I couldn't get this to work in the test... ?!
+        // doThrow(new EntityNotFoundException(UserConsent.class)).when(userConsentDao).getActiveUserConsent(HEALTH_CODE, SUBPOP_GUID);
+        createStudyConsent();
         
-        ConsentSignature signature = account.getActiveConsentSignature(SUBPOP_GUID);
-        assertEquals(CONSENT_CREATED_ON_TIMESTAMP, signature.getConsentCreatedOn());
-        assertEquals(SIGNED_ON_TIMESTAMP, signature.getSignedOn());
+        backfill.doBackfill(task, callback);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        assertSignature(USER_CREATED_ON_TIMESTAMP, CONSENT_CREATED_ON_TIMESTAMP);
+    }
+    
+    // In this case we do not need the study consent record because the user consent record has everything we need.
+    @Test
+    public void updatesSignatureNoTimestampsNoStudyConsent() {
+        createSignatureWithNoTimestamps();
+        createUserConsent();
+        doThrow(new EntityNotFoundException(StudyConsent.class)).when(studyConsentDao).getActiveConsent(SUBPOP_GUID);
+        
+        backfill.doBackfill(task, callback);
+
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        assertSignature(SIGNED_ON_TIMESTAMP, CONSENT_CREATED_ON_TIMESTAMP);
+    }
+    
+    @Test
+    public void updatesConsentCreatedOnWhilePreservingSignedOnValue() {
+        createSignatureWithTimestamps(SIGNED_ON_TIMESTAMP, 0);
+        createUserConsent();
+        createStudyConsent();
+        
+        backfill.doBackfill(task, callback);
+
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        assertSignature(SIGNED_ON_TIMESTAMP, CONSENT_CREATED_ON_TIMESTAMP);
     }
     
     @Test
     public void leavesValidSignaturesAlone() {
-        map.get(SUBPOP_GUID).add(new ConsentSignature.Builder().withBirthdate("2010-10-10")
-                .withConsentCreatedOn(CONSENT_CREATED_ON_TIMESTAMP)
-                .withSignedOn(SIGNED_ON_TIMESTAMP).withName("Test User").build());
+        createSignatureWithTimestamps(SIGNED_ON_TIMESTAMP, CONSENT_CREATED_ON_TIMESTAMP);
+        createUserConsent();
+        createStudyConsent();
         
         backfill.doBackfill(task, callback);
+        
         verify(accountDao, never()).updateAccount(accountCaptor.capture());
     }
     
