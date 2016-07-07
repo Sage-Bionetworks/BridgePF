@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -54,8 +55,6 @@ public class ConsentCreatedOnBackfillTest {
     private static final long USER_CREATED_ON_TIMESTAMP = 1467741000000L;
     private static final long CONSENT_CREATED_ON_TIMESTAMP = 1467741848921L;
     private static final long SIGNED_ON_TIMESTAMP = 1467741906474L;
-
-    private ConsentCreatedOnBackfill backfill;
 
     @Mock
     private AccountDao accountDao;
@@ -91,12 +90,15 @@ public class ConsentCreatedOnBackfillTest {
     private Map<SubpopulationGuid,List<ConsentSignature>> map;
 
     private AccountSummary summary;
+    
+    @Spy
+    ConsentCreatedOnBackfill backfill;
 
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(NOW);
         
-        backfill = new ConsentCreatedOnBackfill();
+        doReturn(Lists.newArrayList("api")).when(backfill).getStudies();
         backfill.setAccountDao(accountDao);
         backfill.setBackfillDao(backfillDao);
         backfill.setBackfillRecordFactory(backfillRecordFactory);

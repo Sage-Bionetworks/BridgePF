@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services.backfill;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,8 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
+
+import com.google.common.collect.Lists;
 
 @Component("consentCreatedOnBackfill")
 public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
@@ -53,16 +56,17 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
 
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
-        // I don't want to do all studies in production. Do TWO to start.
-        Study study = studyService.getStudy("breastcancer");
-        backfillStudy(task, callback, study);
-        
-        study = studyService.getStudy("api");
-        backfillStudy(task, callback, study);
-        /* List<Study> studies = studyService.getStudies();
+        List<Study> studies = getStudies()
+                .stream()
+                .map(studyId -> studyService.getStudy(studyId))
+                .collect(Collectors.toList());
         for (Study study : studies) {
             backfillStudy(task, callback, study);
-        }*/
+        }
+    }
+    
+    public List<String> getStudies() {
+        return Lists.newArrayList("breastcancer", "api");
     }
     
     private void backfillStudy(BackfillTask task, BackfillCallback callback, Study study) {
