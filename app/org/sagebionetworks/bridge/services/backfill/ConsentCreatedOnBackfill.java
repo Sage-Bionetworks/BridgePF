@@ -53,10 +53,16 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
 
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
-        List<Study> studies = studyService.getStudies();
+        // I don't want to do all studies in production. Do TWO to start.
+        Study study = studyService.getStudy("breastcancer");
+        backfillStudy(task, callback, study);
+        
+        study = studyService.getStudy("api");
+        backfillStudy(task, callback, study);
+        /* List<Study> studies = studyService.getStudies();
         for (Study study : studies) {
             backfillStudy(task, callback, study);
-        }
+        }*/
     }
     
     private void backfillStudy(BackfillTask task, BackfillCallback callback, Study study) {
