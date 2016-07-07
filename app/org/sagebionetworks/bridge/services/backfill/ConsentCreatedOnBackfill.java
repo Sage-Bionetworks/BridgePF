@@ -66,7 +66,12 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
     }
     
     public List<String> getStudies() {
-        return Lists.newArrayList("breastcancer", "api");
+        return studyService.getStudies().stream().filter(study -> {
+            return !study.getIdentifier().equals("api") && 
+                   !study.getIdentifier().equals("breastcancer");
+        }).map(study -> {
+            return study.getIdentifier();
+        }).collect(Collectors.toList());
     }
     
     private void backfillStudy(BackfillTask task, BackfillCallback callback, Study study) {
