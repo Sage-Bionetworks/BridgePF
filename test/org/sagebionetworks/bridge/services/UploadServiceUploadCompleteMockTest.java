@@ -85,6 +85,20 @@ public class UploadServiceUploadCompleteMockTest {
     }
 
     @Test
+    public void uploadSuceeded() {
+        // set up input
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(TEST_UPLOAD_ID);
+        upload.setStatus(UploadStatus.SUCCEEDED);
+
+        // execute
+        svc.uploadComplete(TestConstants.TEST_STUDY, upload);
+
+        // Verify S3, upload DAO and validation aren't called.
+        verifyZeroInteractions(mockUploadDao, mockUploadValidationService, mockS3Client);
+    }
+
+    @Test
     public void normalCase() {
         // set up input
         DynamoUpload2 upload = new DynamoUpload2();
