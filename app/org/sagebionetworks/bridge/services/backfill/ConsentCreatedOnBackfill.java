@@ -22,8 +22,6 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
 
-import com.google.common.collect.Lists;
-
 @Component("consentCreatedOnBackfill")
 public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
 
@@ -66,7 +64,10 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
     }
     
     public List<String> getStudies() {
-        return Lists.newArrayList("asthma","caspir-ics","lilly","parkinson-lux","cardiovascular");
+        return studyService.getStudies()
+                .stream()
+                .map(Study::getIdentifier)
+                .collect(Collectors.toList());
     }
     
     private void backfillStudy(BackfillTask task, BackfillCallback callback, Study study) {
