@@ -215,7 +215,6 @@ public class UploadService {
      * @return upload validation status, which includes the health data record if one was created
      */
     public UploadValidationStatus getUploadValidationStatus(@Nonnull String uploadId) {
-        // The call to getUpload() also validates inputs and verifies the user matches.
         Upload upload = getUpload(uploadId);
 
         // get record, if it exists
