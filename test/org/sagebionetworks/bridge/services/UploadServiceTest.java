@@ -97,7 +97,7 @@ public class UploadServiceTest {
         int reponseCode = upload(uploadSession.getUrl(), uploadRequest);
         assertEquals(200, reponseCode);
 
-        Upload upload = uploadService.getUpload(testUser.getStudyParticipant(), uploadId);
+        Upload upload = uploadService.getUpload(uploadId);
         uploadService.uploadComplete(TestConstants.TEST_STUDY, upload);
         long expiration = DateTime.now(DateTimeZone.UTC).plusDays(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());
