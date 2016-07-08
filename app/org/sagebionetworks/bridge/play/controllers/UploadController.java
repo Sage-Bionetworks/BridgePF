@@ -1,8 +1,12 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.dao.HealthCodeDao;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
@@ -19,18 +23,29 @@ import play.mvc.Result;
 public class UploadController extends BaseController {
 
     private UploadService uploadService;
+    
+    private HealthCodeDao healthCodeDao;
 
     @Autowired
-    public void setUploadService(UploadService uploadService) {
+    final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
+    }
+    
+    @Autowired
+    final void setHealthCodeDao(HealthCodeDao healthCodeDao) {
+        this.healthCodeDao = healthCodeDao;
     }
 
     /** Gets validation status and messages for the given upload ID. */
     public Result getValidationStatus(String uploadId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
-        UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(
-                session.getParticipant(), uploadId);
+        UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(uploadId);
 
+        // Validate that this user owns the upload
+        if (!session.getHealthCode().equals(validationStatus.getRecord().getHealthCode())) {
+            throw new UnauthorizedException();
+        }
+        
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
         return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
     }
@@ -59,10 +74,25 @@ public class UploadController extends BaseController {
             metrics.setUploadId(uploadId);
         }
 
-        UserSession session = getAuthenticatedAndConsentedSession();
-
-        // mark upload as complete
-        Upload upload = uploadService.getUpload(session.getParticipant(), uploadId);
+        // User can be a worker account (get study and health code from the upload itself)...
+        UserSession session = getAuthenticatedSession();
+        if (session.isInRole(Roles.WORKER)) {
+            
+            Upload upload = uploadService.getUpload(uploadId);
+            String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
+            uploadService.uploadComplete(new StudyIdentifierImpl(studyId), upload);
+            
+            return okResult("Upload " + uploadId + " complete!");
+        }
+        
+        // Or, the consented user that originally made the upload request. Check that health codes match.
+        // Do not need to look up the study.
+        session = getAuthenticatedAndConsentedSession();
+        
+        Upload upload = uploadService.getUpload(uploadId);
+        if (!session.getHealthCode().equals(upload.getHealthCode())) {
+            throw new UnauthorizedException();
+        }
         uploadService.uploadComplete(session.getStudyIdentifier(), upload);
 
         return okResult("Upload " + uploadId + " complete!");

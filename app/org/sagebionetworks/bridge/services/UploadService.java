@@ -20,7 +20,6 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -186,52 +185,37 @@ public class UploadService {
      * controller class to call both uploadComplete() and upload validation APIs.
      * </p>
      * <p>
-     * This method also validates to ensure that only the user who created the upload can access this upload.
-     * </p>
-     * <p>
      * user comes from the controller, and is guaranteed to be present. However, uploadId is user input and must be
      * validated.
      * </p>
      *
-     * @param participant
-     *         calling user, must be non-null
      * @param uploadId
      *         ID of upload to fetch, must be non-null and non-empty
      * @return upload metadata object
      */
-    public Upload getUpload(@Nonnull StudyParticipant participant, @Nonnull String uploadId) {
+    public Upload getUpload(@Nonnull String uploadId) {
         if (Strings.isNullOrEmpty(uploadId)) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
         }
-        Upload upload = uploadDao.getUpload(uploadId);
-
-        // check health code
-        if (!participant.getHealthCode().equals(upload.getHealthCode())) {
-            throw new UnauthorizedException();
-        }
-
-        return upload;
+        return uploadDao.getUpload(uploadId);
     }
 
     /**
      * <p>
      * Gets validation status and messages for the given upload ID. This includes the health data record, if one was
-     * created for the upload. The logged in user is passed in to verify that the logged in user owns the given upload.
+     * created for the upload.
      * </p>
      * <p>
      * user comes from the controller, and is guaranteed to be present. However, uploadId is user input and must be
      * validated.
      * </p>
      *
-     * @param participant
-     *         calling user, must be non-null
      * @param uploadId
      *         ID of upload to fetch, must be non-null and non-empty
      * @return upload validation status, which includes the health data record if one was created
      */
-    public UploadValidationStatus getUploadValidationStatus(@Nonnull StudyParticipant participant, @Nonnull String uploadId) {
-        // The call to getUpload() also validates inputs and verifies the user matches.
-        Upload upload = getUpload(participant, uploadId);
+    public UploadValidationStatus getUploadValidationStatus(@Nonnull String uploadId) {
+        Upload upload = getUpload(uploadId);
 
         // get record, if it exists
         HealthDataRecord record = null;
