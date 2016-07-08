@@ -66,12 +66,7 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
     }
     
     public List<String> getStudies() {
-        return studyService.getStudies().stream().filter(study -> {
-            return !study.getIdentifier().equals("api") && 
-                   !study.getIdentifier().equals("breastcancer");
-        }).map(study -> {
-            return study.getIdentifier();
-        }).collect(Collectors.toList());
+        return Lists.newArrayList("asthma","caspir-ics","lilly","parkinson-lux","cardiovascular");
     }
     
     private void backfillStudy(BackfillTask task, BackfillCallback callback, Study study) {
@@ -92,6 +87,8 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
                     e.printStackTrace();
                     callback.newRecords(getBackfillRecordFactory().createOnly(task, "Exception saving account " + summary.getId()));
                 }
+            } else {
+                callback.newRecords(getBackfillRecordFactory().createOnly(task, "."));
             }
         }
     }
