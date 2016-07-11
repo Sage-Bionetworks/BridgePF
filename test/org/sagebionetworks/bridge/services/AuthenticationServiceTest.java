@@ -16,7 +16,6 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,7 +24,6 @@ import javax.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -40,13 +38,11 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -56,19 +52,14 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.stormpath.StormpathAccount;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
-import com.stormpath.sdk.directory.CustomData;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -95,9 +86,6 @@ public class AuthenticationServiceTest {
 
     @Resource
     private TestUserAdminHelper helper;
-    
-    @Resource
-    private UserConsentDao userConsentDao;
     
     @Resource
     private SubpopulationService subpopService;
@@ -352,59 +340,6 @@ public class AuthenticationServiceTest {
         ConsentStatus status = statuses.get(SubpopulationGuid.create(testUser.getStudyIdentifier().getIdentifier()));
         assertTrue(status.isConsented());
         assertEquals(testUser.getStudyIdentifier().getIdentifier(), status.getSubpopulationGuid());
-    }
-    
-    // Temporarily disabling this while testing if this path is the source of intermittent failures on staging.
-    @Test
-    @Ignore
-    public void userWithSignatureAndNoDbRecordIsRepaired() throws Exception {
-        testUser = helper.getBuilder(AuthenticationServiceTest.class)
-                .withConsent(true).withSignIn(true).build();
-        authService.signOut(testUser.getSession());
-        
-        // now delete any and all consent records, and zero out the signed on dates
-        
-        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
-        
-        List<Subpopulation> subpops = subpopService.getSubpopulations(testUser.getStudyIdentifier());
-        for (Subpopulation subpop : subpops) {
-            // Delete all DDB records
-            userConsentDao.deleteAllConsents(testUser.getHealthCode(), subpop.getGuid());
-            
-            // zero out the signed on date
-            ConsentSignature sig = account.getConsentSignatureHistory(subpop.getGuid()).get(0);
-            sig = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(0L).build();
-            
-            // alter the customData object so it stores the one signature and no history, as 
-            // was stored in the past when this problem was present
-            com.stormpath.sdk.account.Account stormpathAcct = ((StormpathAccount)account).getAccount();
-            CustomData data = stormpathAcct.getCustomData();
-            data.put(subpop.getGuidString()+"_signature", BridgeObjectMapper.get().writeValueAsString(sig));
-            data.put(subpop.getGuidString()+"_signature_version", 2);
-            data.remove(subpop.getGuidString()+"_signatures");
-            data.remove(subpop.getGuidString()+"_signatures_version");                
-        }
-        accountDao.updateAccount(account);
-        
-        // Signing in should still work to create a consented user.
-        Study study = studyService.getStudy(testUser.getStudyIdentifier());
-        
-        // Create the context you would get for an unauthenticated user, don't use the now 
-        // fully-initialized testUser.getCriteriaContext()
-        CriteriaContext context =  new CriteriaContext.Builder()
-                .withStudyIdentifier(study.getStudyIdentifier())
-                .withLanguages(TestUtils.newLinkedHashSet("en"))
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .build();
-        
-        UserSession session = authService.signIn(study, context, testUser.getSignIn());
-        
-        // and this person should be recorded as consented...
-        for (ConsentStatus status : session.getConsentStatuses().values()) {
-            assertTrue(!status.isRequired() || status.isConsented());
-            UserConsent consent  = userConsentDao.getActiveUserConsent(session.getHealthCode(), SubpopulationGuid.create(status.getSubpopulationGuid()));
-            assertTrue(consent.getSignedOn() > 0L);
-        }
     }
     
     @Test

@@ -132,6 +132,7 @@ public class ScheduledActivityController extends BaseController {
                 .withLanguages(getLanguages(session))
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(clientInfo)
                 .withTimeZone(zone)

@@ -14,15 +14,17 @@ public final class CriteriaContext {
     
     private final StudyIdentifier studyId;
     private final String healthCode;
+    private final String userId;
     private final ClientInfo clientInfo;
     private final Set<String> userDataGroups;
     // This set has ordered keys (most to least preferential)
     private final LinkedHashSet<String> languages;
     
-    private CriteriaContext(StudyIdentifier studyId, String healthCode, ClientInfo clientInfo,
+    private CriteriaContext(StudyIdentifier studyId, String healthCode, String userId, ClientInfo clientInfo,
             Set<String> userDataGroups, LinkedHashSet<String> languages) {
         this.studyId = studyId;
         this.healthCode = healthCode;
+        this.userId = userId;
         this.clientInfo = clientInfo;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
         this.languages = (languages == null) ? new LinkedHashSet<>() : languages;
@@ -48,6 +50,10 @@ public final class CriteriaContext {
         return healthCode;
     }
     
+    public String getUserId() {
+        return userId;
+    }
+    
     /**
      * Languages are sorted in order of descending preference of the LanguageRange objects 
      * submitted by the request via the Accept-Language HTTP header. That is to say, the 
@@ -61,7 +67,7 @@ public final class CriteriaContext {
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, healthCode, clientInfo, userDataGroups, languages);
+        return Objects.hash(studyId, healthCode, userId, clientInfo, userDataGroups, languages);
     }
 
     @Override
@@ -75,18 +81,21 @@ public final class CriteriaContext {
                 Objects.equals(userDataGroups, other.userDataGroups) && 
                 Objects.equals(studyId, other.studyId) && 
                 Objects.equals(healthCode, other.healthCode) && 
+                Objects.equals(userId, other.userId) &&
                 Objects.equals(languages, other.languages));
     }
 
     @Override
     public String toString() {
-        return "CriteriaContext [studyId=" + studyId + ", healthCode=" + healthCode + ", clientInfo=" + clientInfo
-                + ", userDataGroups=" + userDataGroups + ", languages=" + languages + "]";
+        return "CriteriaContext [studyId=" + studyId + ", healthCode=" + healthCode + ", userId=" + userId 
+                + ", clientInfo=" + clientInfo + ", userDataGroups=" + userDataGroups + ", languages=" 
+                + languages + "]";
     }
 
     public static class Builder {
         private StudyIdentifier studyId;
         private String healthCode;
+        private String userId;
         private ClientInfo clientInfo;
         private Set<String> userDataGroups;
         private LinkedHashSet<String> languages;
@@ -97,6 +106,10 @@ public final class CriteriaContext {
         }
         public Builder withHealthCode(String healthCode) {
             this.healthCode = healthCode;
+            return this;
+        }
+        public Builder withUserId(String userId) {
+            this.userId = userId;
             return this;
         }
         public Builder withClientInfo(ClientInfo clientInfo) {
@@ -114,6 +127,7 @@ public final class CriteriaContext {
         public Builder withContext(CriteriaContext context) {
             this.studyId = context.studyId;
             this.healthCode = context.healthCode;
+            this.userId = context.userId;
             this.clientInfo = context.clientInfo;
             this.userDataGroups = context.userDataGroups;
             this.languages = context.languages;
@@ -125,7 +139,7 @@ public final class CriteriaContext {
             if (clientInfo == null) {
                 clientInfo = ClientInfo.UNKNOWN_CLIENT;
             }
-            return new CriteriaContext(studyId, healthCode, clientInfo, userDataGroups, languages);
+            return new CriteriaContext(studyId, healthCode, userId, clientInfo, userDataGroups, languages);
         }
     }
 }

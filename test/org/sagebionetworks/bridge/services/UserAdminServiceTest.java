@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
@@ -21,6 +22,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -90,6 +92,16 @@ public class UserAdminServiceTest {
         authService.signIn(study, TEST_CONTEXT, new SignIn(participant.getEmail(), participant.getPassword()));
     }
 
+    @Test
+    public void canCreateConsentedAndSignedInUser() {
+        UserSession session = userAdminService.createUser(study, participant, null, true, true);
+        assertTrue(session.isAuthenticated());
+        assertTrue(session.doesConsent());
+        for(ConsentStatus status : session.getConsentStatuses().values()) {
+            assertTrue(status.isConsented());
+        }
+    }
+    
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
         UserSession session1 = userAdminService.createUser(study, participant, null, false, false);

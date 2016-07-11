@@ -374,8 +374,8 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> histories2 = Lists.newArrayList();
         
-        when(consentService.getUserConsentHistory(STUDY, subpop1.getGuid(), HEALTH_CODE, ID)).thenReturn(histories1);
-        when(consentService.getUserConsentHistory(STUDY, subpop2.getGuid(), HEALTH_CODE, ID)).thenReturn(histories2);
+        when(consentService.getUserConsentHistory(account, subpop1.getGuid())).thenReturn(histories1);
+        when(consentService.getUserConsentHistory(account, subpop2.getGuid())).thenReturn(histories2);
         
         when(lookup.getEnum(SHARING_SCOPE, SharingScope.class)).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         when(lookup.getBoolean(EMAIL_NOTIFICATIONS)).thenReturn(true);
@@ -641,7 +641,7 @@ public class ParticipantServiceTest {
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(HISTORY).when(consentService).getUserConsentHistory(STUDY, SUBPOP_GUID, HEALTH_CODE, ID);
+        doReturn(HISTORY).when(consentService).getUserConsentHistory(account, SUBPOP_GUID);
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
@@ -655,7 +655,7 @@ public class ParticipantServiceTest {
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(HISTORY).when(consentService).getUserConsentHistory(STUDY, SUBPOP_GUID, HEALTH_CODE, ID);
+        doReturn(HISTORY).when(consentService).getUserConsentHistory(account, SUBPOP_GUID);
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);

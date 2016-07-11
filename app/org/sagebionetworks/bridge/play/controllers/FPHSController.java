@@ -65,9 +65,10 @@ public class FPHSController extends BaseController {
         Set<String> dataGroups = Sets.newHashSet(session.getParticipant().getDataGroups());
         dataGroups.add("football_player");
         
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getParticipant())
-                .withDataGroups(dataGroups).build());
+        StudyParticipant updated = new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withDataGroups(dataGroups).build();
+        
+        session.setParticipant(updated);
         
         CriteriaContext context = getCriteriaContext(session);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);

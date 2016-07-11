@@ -28,9 +28,6 @@ import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -38,18 +35,14 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
-import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
@@ -59,16 +52,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentServiceTest {
     
-    private static final Long UNIX_TIMESTAMP = DateTime.now().getMillis();
+    private static final Long WITHDRAWAL_TIMESTAMP = DateTime.now().getMillis();
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
-    
-    private DynamoDBMapper userConsentMapper;
 
-    @Resource(name = "userConsentDdbMapper")
-    public final void setDdbMapper(DynamoDBMapper userConsentMapper) {
-        this.userConsentMapper = userConsentMapper;
-    }
-    
     @Resource
     private ConsentService consentService;
     
@@ -77,9 +63,6 @@ public class ConsentServiceTest {
     
     @Resource
     private AccountDao accountDao;
-
-    @Resource
-    private UserConsentDao userConsentDao;
 
     @Resource
     private StudyService studyService;
@@ -121,6 +104,7 @@ public class ConsentServiceTest {
         
         context = new CriteriaContext.Builder()
                 .withHealthCode(testUser.getHealthCode())
+                .withUserId(testUser.getId())
                 .withStudyIdentifier(testUser.getStudyIdentifier())
                 .withUserDataGroups(testUser.getStudyParticipant().getDataGroups()).build();
     }
@@ -140,8 +124,9 @@ public class ConsentServiceTest {
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
         
-        List<UserConsentHistory> histories = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getHealthCode(), testUser.getId());
+        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
+        List<UserConsentHistory> histories = consentService.getUserConsentHistory(account,
+                defaultSubpopulation.getGuid());
         assertTrue(histories.isEmpty());
         
         try {
@@ -184,7 +169,7 @@ public class ConsentServiceTest {
         assertEquals(signedOn, returnedSig.getSignedOn());
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         
         // No longer consented.
         statuses = consentService.getConsentStatuses(context);
@@ -203,8 +188,9 @@ public class ConsentServiceTest {
         
         // However we have a historical record of the consent, including a revocation date
         // data is exported with the sharing status set at the time it was exported
-        List<UserConsentHistory> histories = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getHealthCode(), testUser.getId());
+        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
+        List<UserConsentHistory> histories = consentService.getUserConsentHistory(account,
+                defaultSubpopulation.getGuid());
         assertEquals(1, histories.size());
         assertNotNull(histories.get(0).getWithdrewOn());
     }
@@ -222,13 +208,13 @@ public class ConsentServiceTest {
                 .withBirthdate(DateUtils.getCalendarDateString(today18YearsAgo)).build();
         consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getSession(), sig, sharingScope, false);
 
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
 
         // Also okay
         sig = new ConsentSignature.Builder().withName("Test User")
                 .withBirthdate(DateUtils.getCalendarDateString(yesterday18YearsAgo)).build();
         consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getSession(), sig, sharingScope, false);
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
 
         // But this is not, one day to go
         try {
@@ -274,7 +260,7 @@ public class ConsentServiceTest {
         assertConsented(testUser.getSession().getConsentStatuses(), false);
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(),
             new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(DateTime.now().getMillis()).build(),
@@ -298,7 +284,7 @@ public class ConsentServiceTest {
         assertNotNull(consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getId()));
         
         // Now withdraw consent
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         
         // Now user is not consented
         statuses = consentService.getConsentStatuses(context);
@@ -323,10 +309,12 @@ public class ConsentServiceTest {
         consent = new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(newSignedOn).build();
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getSession(), consent,
                 SharingScope.SPONSORS_AND_PARTNERS, false);
+
+        assertConsented(testUser.getSession().getConsentStatuses(), true);
         
-        // Finally, verify there is a history for this user.
-        List<UserConsentHistory> history = consentService.getUserConsentHistory(testUser.getStudy(),
-                defaultSubpopulation.getGuid(), testUser.getHealthCode(), testUser.getId());
+        // The account object is not updated at this point. Actually the session isn't either.
+        account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
+        List<UserConsentHistory> history = consentService.getUserConsentHistory(account, defaultSubpopulation.getGuid());
         assertEquals(2, history.size());
         
         UserConsentHistory withdrawnConsent = history.get(0);
@@ -336,8 +324,6 @@ public class ConsentServiceTest {
         assertNull(activeConsent.getWithdrewOn());
         
         StudyConsent studyConsent = studyConsentService.getActiveConsent(defaultSubpopulation.getGuid()).getStudyConsent();
-        UserConsent userConsent = userConsentDao.getUserConsent(testUser.getHealthCode(),
-                defaultSubpopulation.getGuid(), originalSignedOn);
 
         assertEquals(testUser.getHealthCode(), withdrawnConsent.getHealthCode());
         assertEquals(defaultSubpopulation.getGuidString(), withdrawnConsent.getSubpopulationGuid());
@@ -347,7 +333,7 @@ public class ConsentServiceTest {
         assertEquals(consent.getImageData(), withdrawnConsent.getImageData());
         assertEquals(consent.getImageMimeType(), withdrawnConsent.getImageMimeType());
         assertEquals(originalSignedOn, withdrawnConsent.getSignedOn());
-        assertEquals(userConsent.getWithdrewOn(), withdrawnConsent.getWithdrewOn());
+        assertEquals(WITHDRAWAL_TIMESTAMP, withdrawnConsent.getWithdrewOn());
         assertEquals(true, withdrawnConsent.isHasSignedActiveConsent());
     }
     
@@ -400,12 +386,12 @@ public class ConsentServiceTest {
         assertFalse(statuses.get(optionalSubpop.getGuid()).isConsented());
         // Just verify that it now doesn't appear to exist, so this is an exception
         try {
-            consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
+            consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getSession(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
         
-        consentService.withdrawConsent(study, requiredSubpop.getGuid(), testUser.getSession(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawConsent(study, requiredSubpop.getGuid(), testUser.getSession(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         
         statuses = consentService.getConsentStatuses(context);
         assertNotConsented(statuses);
@@ -442,7 +428,7 @@ public class ConsentServiceTest {
                 .count();
         assertEquals(2, count);
 
-        consentService.withdrawAllConsents(study, testUser.getId(), WITHDRAWAL, UNIX_TIMESTAMP);
+        consentService.withdrawAllConsents(study, testUser.getId(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         count = consentService.getConsentStatuses(context).values().stream().filter(ConsentStatus::isConsented).count();
         assertEquals(0, count);
 
@@ -470,26 +456,11 @@ public class ConsentServiceTest {
         } catch(EntityAlreadyExistsException e) {
             // nope
         }
-        // The userConsentDao is also stopped, though we shouldn't be calling it directly.
-        StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
-        try {
-            userConsentDao.giveConsent(testUser.getHealthCode(), subpopGuid, studyConsent.getCreatedOn(), secondSignatureTimestamp);
-            fail("Should have thrown exception");
-        } catch(BridgeServiceException e) {
-            // nope
-        }
-        
-        // Use the mapper. This will create a conflict because it's not constrained by the table. 
-        DynamoUserConsent3 consent = new DynamoUserConsent3(testUser.getHealthCode(), subpopGuid);
-        consent.setConsentCreatedOn(studyConsent.getCreatedOn());
-        consent.setSignedOn(secondSignatureTimestamp);
-        userConsentMapper.save(consent);
         
         // withdraw your consent. This now withdraws all consents that don't have a withdrawnOn timestamp, 
         // so despite the conflict generated above, the rest of these tests will pass.
         consentService.withdrawConsent(study, subpopGuid, testUser.getSession(),
                 new Withdrawal("Test user withdrawn."), DateTime.now().getMillis());        
-
         
         // You shouldn't be consented.
         Map<SubpopulationGuid,ConsentStatus> map = consentService.getConsentStatuses(context);
@@ -498,16 +469,6 @@ public class ConsentServiceTest {
         assertFalse(testUser.getSession().doesConsent());
         Account account = accountDao.getAccount(study, testUser.getId());
         assertNull(account.getActiveConsentSignature(subpopGuid));
-        
-        // The specific consents are withdrawn.
-        UserConsent consent1 = userConsentDao.getUserConsent(testUser.getHealthCode(), subpopGuid,
-                firstSignatureTimestamp);
-        assertNotNull(consent1.getWithdrewOn());
-        
-        // The specific consents are withdrawn.
-        UserConsent consent2 = userConsentDao.getUserConsent(testUser.getHealthCode(), subpopGuid,
-                secondSignatureTimestamp);
-        assertNotNull(consent2.getWithdrewOn());
     }
     
     private void assertConsented(Map<SubpopulationGuid,ConsentStatus> statuses, boolean signedMostRecent) {

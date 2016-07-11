@@ -6,33 +6,25 @@ import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.util.Map;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -40,7 +32,6 @@ import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,8 +47,6 @@ public class AuthenticationService {
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
-    private UserConsentDao userConsentDao;
-    private StudyConsentDao studyConsentDao;
     private ParticipantService participantService;
     
     private EmailVerificationValidator verificationValidator;
@@ -100,14 +89,6 @@ public class AuthenticationService {
     @Autowired
     final void setEmailValidator(EmailValidator validator) {
         this.emailValidator = validator;
-    }
-    @Autowired
-    final void setUserConsentService(UserConsentDao userConsentDao) {
-        this.userConsentDao = userConsentDao;
-    }
-    @Autowired
-    final void setStudyConsentService(StudyConsentDao studyConsentDao) {
-        this.studyConsentDao = studyConsentDao;
     }
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -242,81 +223,6 @@ public class AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
     
-    /**
-     * Early in the production lifetime of the application, some accounts were created that have a signature 
-     * in Stormpath, but no record in DynamoDB. Some other records had a DynamoDB record in an earlier version 
-     * of the table that were not successfully migrated to a later version of the table. These folks should 
-     * be in the study but are getting 412s (not consented) from the server. We examine their records on sign 
-     * in, and if there is a signature and the consent status does not record the user as consented, we 
-     * create the DynamoDB record. (The signatures are from Stormpath and the consent status records are 
-     * constructed from DynamoDB).
-     */
-    private void repairConsents(Account account, UserSession session, CriteriaContext context){
-        boolean repaired = false;
-        
-        // If there is an active signature, there should be a consent record that has not been withdrawn.
-        // If there is no consent record (entity not found), or it contains a withdrawal timestamp, 
-        // then we need to create a new consent. Even if the consent is the same in every way except it 
-        // contains no withdrawal timestamp. 
-        Map<SubpopulationGuid,ConsentStatus> statuses = session.getConsentStatuses();
-        for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : statuses.entrySet()) {
-            
-            ConsentSignature activeSignature = account.getActiveConsentSignature(entry.getKey());
-            boolean isDynamoRecordMissing = isDynamoRecordMissing(session.getHealthCode(), entry.getKey(), activeSignature);
-            
-            // The issue is that there is a correctly withdrawn DDB record, but there's an active signature with no withdrawal date.
-            if (isDynamoRecordMissing) {
-                repairConsent(session, entry.getKey(), activeSignature);
-                repaired = true;
-            }
-        }
-        // Recreate these records because they were created from DDB which we've established does not match the signatures
-        if (repaired) {
-            session.setConsentStatuses(consentService.getConsentStatuses(context));
-        }
-    }
-    
-    /**
-     * If there's a signed consent signature, is there a matching UserConsent record? The record must exist and not be 
-     * withdrawn. 
-     * @param healthCode
-     * @param subpopGuid
-     * @param signature
-     * @return
-     */
-    private boolean isDynamoRecordMissing(String healthCode, SubpopulationGuid subpopGuid, ConsentSignature signature) {
-        // There's no signature, so no missing record.
-        if (signature == null) {
-            return false;
-        }
-        try {
-            UserConsent consent = userConsentDao.getUserConsent(healthCode, subpopGuid, signature.getSignedOn());
-            // The signature should never have a withdrewOn value at this point, but for clarity:
-            if (signature.getWithdrewOn() == null && consent.getWithdrewOn() != null) {
-                return true;
-            }
-            // Both records exist, both are either withdrawn (shouldn't be possible) or not withdrawn, so it's not missing.
-            return false;
-        } catch(EntityNotFoundException e) {
-            // There's no record, that's bad
-        }
-        return true;
-    }
-    
-    /**
-     * If the signature exists but consentStatus says the user is not consented, then the record is missing in
-     * DDB. We need to create it.
-     */
-    private void repairConsent(UserSession session, SubpopulationGuid subpopGuid, ConsentSignature activeSignature) {
-        logger.info("Signature found without a matching user consent record. Adding consent for " + session.getId());
-        long signedOn = activeSignature.getSignedOn();
-        if (signedOn == 0L) {
-            signedOn = DateTimeUtils.currentTimeMillis(); // this is so old we did not record a signing date...
-        }
-        long consentCreatedOn = studyConsentDao.getActiveConsent(subpopGuid).getCreatedOn(); 
-        userConsentDao.giveConsent(session.getHealthCode(), subpopGuid, consentCreatedOn, signedOn);
-    }
-    
     private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
         StudyParticipant participant = participantService.getParticipant(study, account, false);
         
@@ -346,13 +252,13 @@ public class AuthenticationService {
         
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)
-                .withHealthCode(session.getHealthCode()) 
+                .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
                 .withLanguages(session.getParticipant().getLanguages())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .build();
         
         session.setConsentStatuses(consentService.getConsentStatuses(newContext));
-        //repairConsents(account, session, newContext);
         
         return session;
     }

@@ -64,6 +64,7 @@ public class AuthenticationController extends BaseController {
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
         UserSession session = authenticationService.verifyEmail(study, context, emailVerification);
+        
         writeSessionInfoToMetrics(session);
         setSessionToken(session.getSessionToken());
 

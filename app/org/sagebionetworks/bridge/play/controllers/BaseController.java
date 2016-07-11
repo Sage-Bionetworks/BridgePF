@@ -239,6 +239,7 @@ public abstract class BaseController extends Controller {
             .withLanguages(getLanguagesFromAcceptLanguageHeader())
             .withClientInfo(getClientInfoFromUserAgentHeader())
             .withHealthCode(session.getHealthCode())
+            .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
             .withStudyIdentifier(session.getStudyIdentifier())
             .build();

@@ -139,8 +139,7 @@ public class ParticipantService {
             List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
             for (Subpopulation subpop : subpopulations) {
                 // always returns a list, even if empty
-                List<UserConsentHistory> history = consentService.getUserConsentHistory(study, subpop.getGuid(),
-                        account.getHealthCode(), account.getId());
+                List<UserConsentHistory> history = consentService.getUserConsentHistory(account, subpop.getGuid());
                 consentHistories.put(subpop.getGuidString(), history);
             }
             builder.withConsentHistories(consentHistories);    

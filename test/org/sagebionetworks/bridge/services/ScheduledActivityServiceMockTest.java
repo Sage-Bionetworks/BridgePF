@@ -52,6 +52,8 @@ public class ScheduledActivityServiceMockTest {
     
     private static final String HEALTH_CODE = "BBB";
     
+    private static final String USER_ID = "CCC";
+    
     private ScheduledActivityService service;
     
     private SchedulePlanService schedulePlanService;
@@ -136,7 +138,8 @@ public class ScheduledActivityServiceMockTest {
                 .withTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(endsOn)
-                .withHealthCode(HEALTH_CODE).build();        
+                .withHealthCode(HEALTH_CODE)
+                .withUserId(USER_ID).build();        
         
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         assertTrue(activities.size() > 0);
@@ -451,6 +454,7 @@ public class ScheduledActivityServiceMockTest {
             .withEndsOn(DateTime.now().plusDays(1).withTimeAtStartOfDay())
             .withTimeZone(DateTimeZone.UTC)
             .withHealthCode("AAA")
+            .withUserId(USER_ID)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .build();
         
@@ -503,7 +507,7 @@ public class ScheduledActivityServiceMockTest {
         
         return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn).withHealthCode(HEALTH_CODE)
-                .withEvents(events).build();
+                .withUserId(USER_ID).withEvents(events).build();
     }
     
 }

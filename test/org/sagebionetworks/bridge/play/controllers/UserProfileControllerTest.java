@@ -173,7 +173,6 @@ public class UserProfileControllerTest {
         assertEquals(200, result.status());
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        System.out.println(node.toString());
         verify(participantService).getParticipant(study, ID, false);
         
         assertFalse(node.has("firstName"));

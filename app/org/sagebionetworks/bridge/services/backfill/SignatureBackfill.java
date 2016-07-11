@@ -10,11 +10,8 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -22,13 +19,12 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
 
-@Component("consentCreatedOnBackfill")
-public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
-
+@Component("signatureBackfill")
+public class SignatureBackfill extends AsyncBackfillTemplate {
+    
     private StudyService studyService;
     private AccountDao accountDao;
     private StudyConsentDao studyConsentDao;
-    private UserConsentDao userConsentDao;
     
     @Autowired
     public void setStudyService(StudyService studyService) {
@@ -42,18 +38,14 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
     public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
-    @Autowired
-    public void setUserConsentDao(UserConsentDao userConsentDao) {
-        this.userConsentDao = userConsentDao;
-    }
 
     @Override
     int getLockExpireInSeconds() {
-        return 60*60*5; 
+        return 30 * 60;
     }
-
+    
     @Override
-    void doBackfill(BackfillTask task, BackfillCallback callback) {
+    void doBackfill(final BackfillTask task, BackfillCallback callback) {
         List<Study> studies = getStudies()
                 .stream()
                 .map(studyId -> studyService.getStudy(studyId))
@@ -63,11 +55,8 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
         }
     }
     
-    public List<String> getStudies() {
-        return studyService.getStudies()
-                .stream()
-                .map(Study::getIdentifier)
-                .collect(Collectors.toList());
+    private List<Study> getStudies() {
+        return studyService.getStudies();
     }
     
     private void backfillStudy(BackfillTask task, BackfillCallback callback, Study study) {
@@ -76,7 +65,7 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
         Iterator<AccountSummary> summaries = accountDao.getStudyAccounts(study);
         while(summaries.hasNext()) {
             AccountSummary summary = summaries.next();
-
+            
             Account account = accountDao.getAccount(study, summary.getId());
             if (account == null) {
                 callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " not found."));
@@ -93,7 +82,7 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
             }
         }
     }
-
+    
     private boolean processAccount(BackfillTask task, BackfillCallback callback, Study study, Account account) {
         boolean accountUpdated = false;
 
@@ -122,38 +111,18 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
     
     private ConsentSignature fixConsentCreatedOn(BackfillTask task, BackfillCallback callback, SubpopulationGuid guid, Account account,
             ConsentSignature signature) {
-        try {
-            // Get the user consent, and update the consentCreatedOn and signedOn values from the record. If instantiating
-            // the ConsentSignature added a "now" time to signedOn, this will improve the value.
-            UserConsent userConsent = userConsentDao.getUserConsent(account.getHealthCode(), guid, signature.getSignedOn());
-            signature = new ConsentSignature.Builder().withConsentSignature(signature)
-                    .withConsentCreatedOn(userConsent.getConsentCreatedOn())
-                    .withSignedOn(userConsent.getSignedOn())
-                    .build();
-        } catch(EntityNotFoundException e) {
-            UserConsent userConsent = userConsentDao.getActiveUserConsent(account.getHealthCode(), guid);
-            if (userConsent != null) {
-                signature = new ConsentSignature.Builder().withConsentSignature(signature)
-                        .withConsentCreatedOn(userConsent.getConsentCreatedOn())
-                        .withSignedOn(userConsent.getSignedOn())
-                        .build();
-                
-            } else {
-                // No user consent found, get the active study consent and sign the user up for that consent using the account creation 
-                // date, the closest date to the date they probably signed up (this account is very old).
-                StudyConsent studyConsent = studyConsentDao.getActiveConsent(guid);
-                if (studyConsent == null) {
-                    // Pretty much total disaster.
-                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "StudyConsent not found for study. No update to " + account.getId() + " has been made."));
-                    return signature;
-                }
-                signature = new ConsentSignature.Builder().withConsentSignature(signature)
-                        .withConsentCreatedOn(studyConsent.getCreatedOn())
-                        .withSignedOn(account.getCreatedOn().getMillis())
-                        .build();
+        if (signature.getConsentCreatedOn() == 0L) {
+            StudyConsent studyConsent = studyConsentDao.getActiveConsent(guid);
+            if (studyConsent == null) {
+                // Pretty much total disaster.
+                callback.newRecords(getBackfillRecordFactory().createOnly(task, "StudyConsent not found for study. No update to " + account.getId() + " has been made."));
+                return signature;
             }
-            
+            signature = new ConsentSignature.Builder().withConsentSignature(signature)
+                    .withConsentCreatedOn(studyConsent.getCreatedOn())
+                    .withSignedOn(account.getCreatedOn().getMillis())
+                    .build();
         }
         return signature;
-    }
+    }    
 }

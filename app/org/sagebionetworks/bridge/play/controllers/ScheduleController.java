@@ -73,6 +73,7 @@ public class ScheduleController extends BaseController {
                 .withLanguages(getLanguages(session))
                 .withStudyIdentifier(studyId)
                 .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
                 .withClientInfo(clientInfo).build();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);

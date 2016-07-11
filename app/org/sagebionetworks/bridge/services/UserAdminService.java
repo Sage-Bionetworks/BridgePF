@@ -173,7 +173,6 @@ public class UserAdminService {
             cacheProvider.removeSessionByUserId(account.getId());
             
             String healthCode = account.getHealthCode();
-            consentService.deleteAllConsentsForUser(study, healthCode);
             healthDataService.deleteRecordsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);

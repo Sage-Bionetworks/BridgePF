@@ -24,6 +24,7 @@ public class ScheduleContextValidatorTest {
             .withTimeZone(DateTimeZone.forOffsetHours(-3))
             .withAccountCreatedOn(DateTime.now())
             .withHealthCode("AAA")
+            .withUserId("BBB")
             .build();
         
         Validate.nonEntityThrowingException(validator, context);
@@ -38,6 +39,7 @@ public class ScheduleContextValidatorTest {
         } catch(BadRequestException e) {
             assertTrue(e.getMessage().contains("offset must set a time zone offset"));
             assertTrue(e.getMessage().contains("healthCode is required"));
+            assertTrue(e.getMessage().contains("userId is required"));
             assertTrue(e.getMessage().contains("endsOn is required"));
             assertTrue(e.getMessage().contains("accountCreatedOn is required"));
         }
