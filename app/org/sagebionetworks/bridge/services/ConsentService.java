@@ -9,17 +9,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -27,7 +23,6 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -44,7 +39,6 @@ import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,15 +47,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConsentService {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(ConsentService.class);
-
     private AccountDao accountDao;
     private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
     private StudyConsentService studyConsentService;
-    private UserConsentDao userConsentDao;
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
+    private StudyService studyService;
     
     private String consentTemplate;
     
@@ -86,10 +78,6 @@ public class ConsentService {
         this.studyConsentService = studyConsentService;
     }
     @Autowired
-    final void setUserConsentDao(UserConsentDao userConsentDao) {
-        this.userConsentDao = userConsentDao;
-    }
-    @Autowired
     final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
@@ -97,6 +85,10 @@ public class ConsentService {
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     };
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
     
     /**
      * Get the user's active consent signature (a signature that has not been withdrawn).
@@ -159,8 +151,11 @@ public class ConsentService {
 
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
         
+        // Also clear the withdrewOn timestamp. Some tests and possibly the user could set a withdrewOn property, 
+        // we don't want that here. Note that as in all builders, order of with* method calls is significant here.
         ConsentSignature withConsentCreatedOnSignature = new ConsentSignature.Builder()
                 .withConsentSignature(consentSignature)
+                .withWithdrewOn(null)
                 .withConsentCreatedOn(studyConsent.getCreatedOn()).build();
         
         // Add signed and complete consent signature to the list of signatures, save account.
@@ -168,20 +163,8 @@ public class ConsentService {
         account.getConsentSignatureHistory(subpopGuid).add(withConsentCreatedOnSignature);
         accountDao.updateAccount(account);
         
-        UserConsent userConsent = null;
-        try {
-            userConsent = userConsentDao.giveConsent(session.getHealthCode(), subpopGuid,
-                    studyConsent.getCreatedOn(), consentSignature.getSignedOn());
-        } catch (Throwable e) {
-            int len = account.getConsentSignatureHistory(subpopGuid).size();
-            account.getConsentSignatureHistory(subpopGuid).remove(len-1);
-            accountDao.updateAccount(account);
-            throw e;
-        }
-        // Save supplemental records, fire events, etc.
-        if (userConsent != null){
-            activityEventService.publishEnrollmentEvent(session.getParticipant().getHealthCode(), userConsent);
-        }
+        activityEventService.publishEnrollmentEvent(session.getParticipant().getHealthCode(),
+                withConsentCreatedOnSignature);
         optionsService.setEnum(study, session.getParticipant().getHealthCode(), SHARING_SCOPE, sharingScope);
         
         updateSessionConsentStatuses(session, subpopGuid, true);
@@ -204,15 +187,24 @@ public class ConsentService {
      */
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context) {
         checkNotNull(context);
-        checkNotNull(context.getHealthCode());
+        checkNotNull(context.getUserId());
+        checkNotNull(context.getStudyIdentifier());
+        
+        Study study = studyService.getStudy(context.getStudyIdentifier());
+        Account account = accountDao.getAccount(study, context.getUserId());
         
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
         for (Subpopulation subpop : subpopService.getSubpopulationForUser(context)) {
-            boolean consented = userConsentDao.hasConsented(context.getHealthCode(), subpop.getGuid());
-            boolean mostRecent = hasUserSignedActiveConsent(context.getHealthCode(), subpop.getGuid());            
+
+            List<ConsentSignature> signatures = account.getConsentSignatureHistory(subpop.getGuid());
+            ConsentSignature last = (signatures.isEmpty()) ? null : signatures.get(signatures.size()-1);
+            
+            boolean hasConsented = (last != null && last.getWithdrewOn() == null);
+            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(last, subpop.getGuid());
+            
             ConsentStatus status = new ConsentStatus.Builder().withName(subpop.getName())
                     .withGuid(subpop.getGuid()).withRequired(subpop.isRequired())
-                    .withConsented(consented).withSignedMostRecentConsent(mostRecent)
+                    .withConsented(hasConsented).withSignedMostRecentConsent(hasSignedActiveConsent)
                     .build();
             builder.put(subpop.getGuid(), status);
         }
@@ -256,11 +248,6 @@ public class ConsentService {
         }
         
         accountDao.updateAccount(account);
-        try {
-            userConsentDao.withdrawConsent(session.getParticipant().getHealthCode(), subpopGuid, withdrewOn);    
-        } catch(Exception e) {
-            LOGGER.error("Error updating UserConsent table (repair code will attempt to reconcile this the next time the user authenticates.", e);
-        }
 
         // Update the user's consent status
         updateSessionConsentStatuses(session, subpopGuid, false);
@@ -317,26 +304,21 @@ public class ConsentService {
         // Do this first, as it directly impacts the export of data, and if nothing else, we'd like this to succeed.
         optionsService.setEnum(study.getStudyIdentifier(), account.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
         
-        Set<SubpopulationGuid> updates = Sets.newHashSet();
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             List<ConsentSignature> signatures = account.getConsentSignatureHistory(subpopGuid);
             
+            // Withdraw every signature to this subpopulation that has not been withdrawn.
             for (ConsentSignature aSignature : signatures) {
                 if (aSignature.getWithdrewOn() == null) {
-                    // Withdraw this signature. There should be only one, but I want to be absolutely sure.
                     ConsentSignature withdrawn = new ConsentSignature.Builder()
                             .withConsentSignature(aSignature)
                             .withWithdrewOn(withdrewOn).build();
                     int index = signatures.indexOf(aSignature);
                     signatures.set(index, withdrawn);
-                    updates.add(subpopGuid);
                 }
             }
         }
         accountDao.updateAccount(account);
-        for (SubpopulationGuid subpopGuid : updates) {
-            userConsentDao.withdrawConsent(account.getHealthCode(), subpopGuid, withdrewOn);    
-        }
         String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
         
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(
@@ -353,10 +335,6 @@ public class ConsentService {
                 if (aSignature.getWithdrewOn() == null) {
                     throw new BridgeServiceException("Consistency error, " + account.getId() + " has ConsentSignature that was not withdrawn.");
                 }
-                UserConsent consentRecord = userConsentDao.getUserConsent(account.getHealthCode(), subpopGuid, aSignature.getSignedOn());
-                if (consentRecord.getWithdrewOn() == null) {
-                    throw new BridgeServiceException("Consistency error, " + account.getId() + " has UserConsent record that was not withdrawn.");
-                }
             }
         }
     }
@@ -366,50 +344,27 @@ public class ConsentService {
      * consent signature and user consent records. The information is sufficient to identify the 
      * consent that exists for a healthCode, and to retrieve the version of the consent the participant 
      * signed to join the study.
-     * @param study
+     * @param account
      * @param subpopGuid
-     * @param healthCode
-     * @param email
+     * @param userId
      */
-    public List<UserConsentHistory> getUserConsentHistory(Study study, SubpopulationGuid subpopGuid, String healthCode, String id) {
-        Account account = accountDao.getAccount(study, id);
-        
+    public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
-            UserConsent consent = userConsentDao.getUserConsent(
-                    healthCode, subpopGuid, signature.getSignedOn());
-            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(healthCode, subpopGuid);
+            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(signature, subpopGuid);
             
             UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
             builder.withName(signature.getName())
-                .withSubpopulationGuid(SubpopulationGuid.create(consent.getSubpopulationGuid()))
+                .withSubpopulationGuid(subpopGuid)
                 .withBirthdate(signature.getBirthdate())
                 .withImageData(signature.getImageData())
                 .withImageMimeType(signature.getImageMimeType())
                 .withSignedOn(signature.getSignedOn())
-                .withHealthCode(healthCode)
-                .withWithdrewOn(consent.getWithdrewOn())
-                .withConsentCreatedOn(consent.getConsentCreatedOn())
+                .withHealthCode(account.getHealthCode())
+                .withWithdrewOn(signature.getWithdrewOn())
+                .withConsentCreatedOn(signature.getConsentCreatedOn())
                 .withHasSignedActiveConsent(hasSignedActiveConsent);
             return builder.build();
         }).collect(BridgeCollectors.toImmutableList());
-    }
-    
-    /**
-     * Delete all consent records, withdrawn or active, in the process of deleting a user account. This is 
-     * used for tests, do not call this method to withdraw a user from a study, or we will not have auditable 
-     * records about their participation.
-     * @param study
-     * @param healthCode
-     */
-    public void deleteAllConsentsForUser(Study study, String healthCode) {
-        checkNotNull(study);
-        checkNotNull(healthCode);
-        
-        // May exceed the subpopulations the user matches, but that's okay
-        List<Subpopulation> subpopGuids = subpopService.getSubpopulations(study);
-        for (Subpopulation subpop : subpopGuids) {
-            userConsentDao.deleteAllConsents(healthCode, subpop.getGuid());    
-        }
     }
     
     /**
@@ -436,18 +391,15 @@ public class ConsentService {
         sendMailService.sendEmail(consentEmail);
     }
     
-    private boolean hasUserSignedActiveConsent(String healthCode, SubpopulationGuid subpopGuid) {
-        checkNotNull(healthCode);
+    private boolean hasUserSignedActiveConsent(ConsentSignature signature, SubpopulationGuid subpopGuid) {
         checkNotNull(subpopGuid);
         
-        UserConsent userConsent = userConsentDao.getActiveUserConsent(healthCode, subpopGuid);
         StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(subpopGuid);
         
-        if (mostRecentConsent != null && userConsent != null) {
-            return userConsent.getConsentCreatedOn() == mostRecentConsent.getCreatedOn();
-        } else {
-            return false;
+        if (mostRecentConsent != null && signature != null) {
+            return signature.getConsentCreatedOn() == mostRecentConsent.getCreatedOn();
         }
+        return false;
     }
     
     private void updateSessionConsentStatuses(UserSession session, SubpopulationGuid subpopGuid, boolean consented) {

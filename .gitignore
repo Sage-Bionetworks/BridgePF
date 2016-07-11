@@ -25,6 +25,7 @@ verify.rb
 .dpl
 /logs
 npm-debug.log
+production.txt
 
 # IntelliJ project files
 *.iml

@@ -79,6 +79,7 @@ public class TestUserAdminHelper {
             return new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())
                 .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .build();            

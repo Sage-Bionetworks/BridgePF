@@ -60,7 +60,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
@@ -393,12 +392,6 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper activityDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoScheduledActivity.class);
-    }
-    
-    @Bean(name = "userConsentDdbMapper")
-    @Autowired
-    public DynamoDBMapper userConsentDdbMapper(DynamoUtils dynamoUtils) {
-        return dynamoUtils.getMapper(DynamoUserConsent3.class);
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.

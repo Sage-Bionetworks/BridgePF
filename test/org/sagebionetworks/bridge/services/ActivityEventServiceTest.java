@@ -17,12 +17,10 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent3;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
 import com.google.common.collect.Lists;
@@ -108,11 +106,13 @@ public class ActivityEventServiceTest {
     public void canPublishConsent() {
         DateTime now = DateTime.now();
         
-        DynamoUserConsent3 consent = new DynamoUserConsent3("AAA-BBB-CCC", SubpopulationGuid.create("test-study"));
-        consent.setConsentCreatedOn(now.minusDays(10).getMillis());
-        consent.setSignedOn(now.getMillis());
+        ConsentSignature signature = new ConsentSignature.Builder()
+                .withBirthdate("1980-01-01")
+                .withName("A Name")
+                .withConsentCreatedOn(now.minusDays(10).getMillis())
+                .withSignedOn(now.getMillis()).build();
         
-        service.publishEnrollmentEvent(consent.getHealthCode(), (UserConsent)consent);
+        service.publishEnrollmentEvent("AAA-BBB-CCC", signature);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());

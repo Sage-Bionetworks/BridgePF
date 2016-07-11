@@ -8,11 +8,11 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -27,12 +27,12 @@ public class ActivityEventService {
         this.activityEventDao = activityEventDao;
     }
     
-    public void publishEnrollmentEvent(String healthCode, UserConsent consent) {
-        checkNotNull(consent);
+    public void publishEnrollmentEvent(String healthCode, ConsentSignature signature) {
+        checkNotNull(signature);
         
         ActivityEvent event = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
-            .withTimestamp(consent.getSignedOn())
+            .withTimestamp(signature.getSignedOn())
             .withObjectType(ActivityEventObjectType.ENROLLMENT).build();
         activityEventDao.publishEvent(event);    
     }

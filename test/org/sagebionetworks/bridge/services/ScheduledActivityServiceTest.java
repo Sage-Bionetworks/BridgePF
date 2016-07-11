@@ -212,6 +212,7 @@ public class ScheduledActivityServiceTest {
             .withAccountCreatedOn(DateTime.now())
             // Setting the endsOn value to the end of the day, as we do in the controller.
             .withEndsOn(endsOn.withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
-            .withHealthCode(testUser.getHealthCode()).build();
+            .withHealthCode(testUser.getHealthCode())
+            .withUserId(testUser.getId()).build();
     }
 }

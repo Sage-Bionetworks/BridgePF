@@ -138,6 +138,10 @@ public final class ScheduleContext {
             contextBuilder.withHealthCode(healthCode);
             return this;
         }
+        public Builder withUserId(String userId) {
+            contextBuilder.withUserId(userId);
+            return this;
+        }
         public Builder withClientInfo(ClientInfo clientInfo) {
             contextBuilder.withClientInfo(clientInfo);
             return this;
