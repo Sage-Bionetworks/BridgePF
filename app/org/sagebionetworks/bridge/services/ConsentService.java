@@ -16,7 +16,6 @@ import org.apache.commons.io.IOUtils;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -143,7 +142,7 @@ public class ConsentService {
         if (status == null) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
-        if (status != null && status.isConsented()) {
+        if (status.isConsented()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
         ConsentAgeValidator validator = new ConsentAgeValidator(study);
@@ -324,19 +323,6 @@ public class ConsentService {
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(
                 study, externalId, account, withdrawal, withdrewOn);
         sendMailService.sendEmail(consentEmail);
-        
-        // NOW, verify that the all consents have been withdrawn, because this is failing on staging
-        Account retrievedAccount = accountDao.getAccount(study, account.getId());
-        retrievedAccount.getAllConsentSignatureHistories();
-        for (SubpopulationGuid subpopGuid : retrievedAccount.getAllConsentSignatureHistories().keySet()) {
-            List<ConsentSignature> signatures = retrievedAccount.getConsentSignatureHistory(subpopGuid);
-
-            for (ConsentSignature aSignature : signatures) {
-                if (aSignature.getWithdrewOn() == null) {
-                    throw new BridgeServiceException("Consistency error, " + account.getId() + " has ConsentSignature that was not withdrawn.");
-                }
-            }
-        }
     }
     
     /**
