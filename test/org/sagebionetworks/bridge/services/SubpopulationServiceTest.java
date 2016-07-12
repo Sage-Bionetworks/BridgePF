@@ -122,7 +122,7 @@ public class SubpopulationServiceTest {
         
         verify(dao).createSubpopulation(subpop);
         verify(studyConsentService).addConsent(eq(result.getGuid()), any());
-        verify(studyConsentService).publishConsent(study, result.getGuid(), CONSENT_CREATED_ON);
+        verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
     }
     
     @Test
@@ -133,6 +133,7 @@ public class SubpopulationServiceTest {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "");
         Subpopulation subpop = Subpopulation.create();
         SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
+        subpop.setGuid(defaultGuid);
         
         ArgumentCaptor<StudyConsentForm> captor = ArgumentCaptor.forClass(StudyConsentForm.class);
         
@@ -143,7 +144,7 @@ public class SubpopulationServiceTest {
         // No consents, so we add and publish one.
         Subpopulation returnValue = service.createDefaultSubpopulation(study);
         verify(studyConsentService).addConsent(any(), captor.capture());
-        verify(studyConsentService).publishConsent(eq(study), eq(defaultGuid), any(Long.class));
+        verify(studyConsentService).publishConsent(eq(study), eq(subpop), any(Long.class));
         assertEquals(subpop, returnValue);
         
         // This used the default document.

@@ -33,9 +33,11 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.validators.StudyConsentValidator;
@@ -59,6 +61,7 @@ public class StudyConsentService {
     
     private Validator validator;
     private StudyConsentDao studyConsentDao;
+    private SubpopulationService subpopService;
     private AmazonS3Client s3Client;
     private S3Helper s3Helper;
     private static final String CONSENTS_BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
@@ -77,7 +80,10 @@ public class StudyConsentService {
     final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
-
+    @Autowired
+    final void setSubpopulationService(SubpopulationService subpopService) {
+        this.subpopService = subpopService;
+    }
     /**
      * S3 client. We need to use the S3 client to call writeBytesToPublicS3(), which wasn't migrated to bridge-base
      * because it references BridgePF-specific classes.
@@ -124,14 +130,25 @@ public class StudyConsentService {
     /**
      * Gets the currently active consent document for the study.
      *
-     * @param subpopGuid
+     * @param studyIdentifier
+     *          the study this subpopulation is found in.
+     * @param subpop
      *          the subpopulation associated with this consent
      * @return the currently active StudyConsent along with its document content
      */
-    public StudyConsentView getActiveConsent(SubpopulationGuid subpopGuid) {
-        checkNotNull(subpopGuid);
+    // NOTE: After migrating publication consent timestamp to the subpopulation, this method can
+    // go away, as it's just a variant of getConsent() with a special timestamp.
+    public StudyConsentView getActiveConsent(StudyIdentifier studyIdentifier, Subpopulation subpop) {
+        checkNotNull(studyIdentifier);
+        checkNotNull(subpop);
         
-        StudyConsent consent = studyConsentDao.getActiveConsent(subpopGuid);
+        StudyConsent consent = null;
+        if (subpop.getActiveConsentCreatedOn() > 0L) {
+            consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getActiveConsentCreatedOn());
+        }
+        if (consent == null) {
+            consent = studyConsentDao.getActiveConsent(subpop.getGuid());    
+        }
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -198,25 +215,29 @@ public class StudyConsentService {
      *
      * @param study
      *            study for this consent
-     * @param subpopGuid
+     * @param subpop
      *            the subpopulation associated with this consent
      * @param timestamp
      *            time the consent document was added to the database.
      * @return the activated consent document along with its document content
      */
-    public StudyConsentView publishConsent(Study study, SubpopulationGuid subpopGuid, long timestamp) {
+    public StudyConsentView publishConsent(Study study, Subpopulation subpop, long timestamp) {
         checkNotNull(study);
-        checkNotNull(subpopGuid);
+        checkNotNull(subpop);
         checkArgument(timestamp > 0, "Timestamp is 0");
         
-        StudyConsent consent = studyConsentDao.getConsent(subpopGuid, timestamp);
+        StudyConsent consent = studyConsentDao.getConsent(subpop.getGuid(), timestamp);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
         // Only if we can publish the document, do we mark it as published in the database.
         String documentContent = loadDocumentContent(consent);
         try {
-            publishFormatsToS3(study, subpopGuid, documentContent);
+            publishFormatsToS3(study, subpop.getGuid(), documentContent);
+            
+            subpop.setActiveConsentCreatedOn(timestamp);
+            subpopService.updateSubpopulation(study, subpop);
+
             consent = studyConsentDao.publish(consent);
         } catch(IOException | DocumentException e) {
             throw new BridgeServiceException(e.getMessage());

@@ -68,6 +68,8 @@ public class ConsentServiceMockTest {
     private ActivityEventService activityEventService;
     @Mock
     private SubpopulationService subpopService;
+    @Mock
+    private Subpopulation subpopulation;
 
     private Study study;
     private UserSession session;
@@ -103,7 +105,7 @@ public class ConsentServiceMockTest {
         
         StudyConsentView studyConsentView = mock(StudyConsentView.class);
         when(studyConsentView.getCreatedOn()).thenReturn(1000L);
-        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(studyConsentView);
+        when(studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation)).thenReturn(studyConsentView);
     }
     
     @Test
@@ -139,7 +141,7 @@ public class ConsentServiceMockTest {
         StudyConsentView view = mock(StudyConsentView.class);
         when(view.getStudyConsent()).thenReturn(consent);
         when(view.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
-        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
+        when(studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation)).thenReturn(view);
         
         ConsentSignature sigWithStudyCreatedOn = new ConsentSignature.Builder()
                 .withConsentSignature(consentSignature)

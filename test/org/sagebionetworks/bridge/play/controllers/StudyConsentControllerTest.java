@@ -98,7 +98,7 @@ public class StudyConsentControllerTest {
     @Test
     public void getActiveConsentV2() throws Exception {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
-        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
+        when(studyConsentService.getActiveConsent(eq(STUDY_ID), any())).thenReturn(view);
         
         Result result = controller.getActiveConsentV2(GUID);
         
@@ -150,7 +150,7 @@ public class StudyConsentControllerTest {
         
         assertResult(result, 200, "Consent document set as active.");
 
-        verify(studyConsentService).publishConsent(STUDY, SUBPOP_GUID, DateTime.parse(DATETIME_STRING).getMillis());
+        verify(studyConsentService).publishConsent(STUDY, subpopulation, DateTime.parse(DATETIME_STRING).getMillis());
     }
     
 }

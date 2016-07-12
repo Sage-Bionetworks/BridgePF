@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -148,7 +149,8 @@ public class ConsentService {
         ConsentAgeValidator validator = new ConsentAgeValidator(study);
         Validate.entityThrowingException(validator, consentSignature);
 
-        StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+        StudyConsentView studyConsent = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpop);
         
         // Also clear the withdrewOn timestamp. Some tests and possibly the user could set a withdrewOn property, 
         // we don't want that here. Note that as in all builders, order of with* method calls is significant here.
@@ -169,9 +171,8 @@ public class ConsentService {
         updateSessionConsentStatuses(session, subpopGuid, true);
         
         if (sendEmail) {
-            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
-                    session.getParticipant().getEmail(), withConsentCreatedOnSignature, sharingScope,
-                    studyConsentService, consentTemplate);
+            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, session.getParticipant().getEmail(),
+                    withConsentCreatedOnSignature, sharingScope, studyConsent.getDocumentContent(), consentTemplate);
 
             sendMailService.sendEmail(consentEmail);
         }
@@ -199,7 +200,7 @@ public class ConsentService {
             ConsentSignature last = (signatures.isEmpty()) ? null : signatures.get(signatures.size()-1);
             
             boolean hasConsented = (last != null && last.getWithdrewOn() == null);
-            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(last, subpop.getGuid());
+            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(study.getStudyIdentifier(), last, subpop.getGuid());
             
             ConsentStatus status = new ConsentStatus.Builder().withName(subpop.getName())
                     .withGuid(subpop.getGuid()).withRequired(subpop.isRequired())
@@ -336,7 +337,7 @@ public class ConsentService {
      */
     public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
-            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(signature, subpopGuid);
+            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(account.getStudyIdentifier(), signature, subpopGuid);
             
             UserConsentHistory.Builder builder = new UserConsentHistory.Builder();
             builder.withName(signature.getName())
@@ -371,16 +372,22 @@ public class ConsentService {
         final SharingScope sharingScope = optionsService.getOptions(participant.getHealthCode())
                 .getEnum(SHARING_SCOPE, SharingScope.class);
         
-        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, subpopGuid,
-                participant.getEmail(), consentSignature, sharingScope, studyConsentService,
-                consentTemplate);
+        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+        String htmlTemplate = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpop)
+                .getDocumentContent();
+        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getEmail(), consentSignature,
+                sharingScope, htmlTemplate, consentTemplate);
         sendMailService.sendEmail(consentEmail);
     }
     
-    private boolean hasUserSignedActiveConsent(ConsentSignature signature, SubpopulationGuid subpopGuid) {
+    // This will go away when we're don migrating active consent to subpopulation, as the answer will come from
+    // the subpopulation table
+    private boolean hasUserSignedActiveConsent(StudyIdentifier studyIdentifier, ConsentSignature signature, SubpopulationGuid subpopGuid) {
         checkNotNull(subpopGuid);
         
-        StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(subpopGuid);
+        // NOTE: This will go away once migration is completed.
+        Subpopulation subpop = subpopService.getSubpopulation(studyIdentifier, subpopGuid);
+        StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(studyIdentifier, subpop);
         
         if (mostRecentConsent != null && signature != null) {
             return signature.getConsentCreatedOn() == mostRecentConsent.getCreatedOn();

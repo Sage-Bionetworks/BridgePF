@@ -250,7 +250,7 @@ public class ConsentServiceTest {
 
         // Public the new study consent. User is consented and but has no longer signed the most recent consent.
         newStudyConsent = studyConsentService
-                .publishConsent(study, defaultSubpopulation.getGuid(), newStudyConsent.getCreatedOn()).getStudyConsent();
+                .publishConsent(study, defaultSubpopulation, newStudyConsent.getCreatedOn()).getStudyConsent();
 
         // We need to manually update because the users consent status won't change due to changes in consents 
         // or subpopulations. Not until the session is refreshed.
@@ -323,7 +323,8 @@ public class ConsentServiceTest {
         assertNotNull(withdrawnConsent.getWithdrewOn());
         assertNull(activeConsent.getWithdrewOn());
         
-        StudyConsent studyConsent = studyConsentService.getActiveConsent(defaultSubpopulation.getGuid()).getStudyConsent();
+        StudyConsent studyConsent = studyConsentService
+                .getActiveConsent(testUser.getStudyIdentifier(), defaultSubpopulation).getStudyConsent();
 
         assertEquals(testUser.getHealthCode(), withdrawnConsent.getHealthCode());
         assertEquals(defaultSubpopulation.getGuidString(), withdrawnConsent.getSubpopulationGuid());
