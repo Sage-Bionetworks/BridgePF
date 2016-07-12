@@ -368,17 +368,6 @@ public class StormpathAccountDaoMockTest {
     }
     
     @Test
-    public void verifyEmailCreatesHealthCode() {
-        mockAccountWithoutHealthCode();
-        
-        doReturn(stormpathAccount).when(client).verifyAccountEmail("spToken");
-        EmailVerification emailVerification = new EmailVerification("spToken");
-        
-        dao.verifyEmail(emailVerification);
-        verify(healthCodeService).createMapping(study);
-    }
-    
-    @Test
     public void authenticatedCreatesHealthCode() {
         mockAccountWithoutHealthCode();
         
