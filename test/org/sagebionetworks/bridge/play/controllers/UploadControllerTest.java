@@ -23,13 +23,20 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
+
 import play.mvc.Result;
+import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UploadControllerTest {
@@ -79,6 +86,8 @@ public class UploadControllerTest {
         doReturn("consented-user-health-code").when(consentedUserSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(consentedUserSession).getStudyIdentifier();
         doReturn(false).when(consentedUserSession).isInRole(Roles.WORKER);
+        
+        doReturn("other-user-health-code").when(otherUserSession).getHealthCode();
         
         doReturn("worker-study-id").when(healthCodeDao).getStudyIdentifier("worker-health-code");
         doReturn("consented-user-study-id").when(healthCodeDao).getStudyIdentifier("consented-user-health-code");
@@ -130,5 +139,41 @@ public class UploadControllerTest {
             
         }
         verify(uploadService, never()).uploadComplete(any(), any());
+    }
+    
+    @Test
+    public void getValidationStatusWorks() throws Exception {
+        doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        
+        UploadValidationStatus status = new UploadValidationStatus.Builder()
+                .withId(UPLOAD_ID)
+                .withMessageList(Lists.newArrayList("There was a valdation error"))
+                .withStatus(UploadStatus.VALIDATION_FAILED).build();
+        
+        doReturn(status).when(uploadService).getUploadValidationStatus(UPLOAD_ID);
+        
+        Result result = controller.getValidationStatus(UPLOAD_ID);
+        assertEquals(200, result.status());
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals("upload-id", node.get("id").asText());
+        assertEquals("validation_failed", node.get("status").asText());
+        assertEquals("UploadValidationStatus", node.get("type").asText());
+        JsonNode errors = node.get("messageList");
+        assertEquals("There was a valdation error", errors.get(0).asText());
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getValidationStatusEnforcesHealthCodeMatch() throws Exception {
+        doReturn(otherUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        
+        UploadValidationStatus status = new UploadValidationStatus.Builder()
+                .withId(UPLOAD_ID)
+                .withMessageList(Lists.newArrayList("There was a valdation error"))
+                .withStatus(UploadStatus.VALIDATION_FAILED).build();
+        
+        doReturn(status).when(uploadService).getUploadValidationStatus(UPLOAD_ID);
+        
+        controller.getValidationStatus(UPLOAD_ID);
     }
 }

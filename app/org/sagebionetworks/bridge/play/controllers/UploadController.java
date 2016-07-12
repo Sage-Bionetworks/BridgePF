@@ -39,12 +39,14 @@ public class UploadController extends BaseController {
     /** Gets validation status and messages for the given upload ID. */
     public Result getValidationStatus(String uploadId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
-        UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(uploadId);
-
+        
         // Validate that this user owns the upload
-        if (!session.getHealthCode().equals(validationStatus.getRecord().getHealthCode())) {
+        Upload upload = uploadService.getUpload(uploadId);
+        if (!session.getHealthCode().equals(upload.getHealthCode())) {
             throw new UnauthorizedException();
         }
+        
+        UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(uploadId);
         
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
         return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
