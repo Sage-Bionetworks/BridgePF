@@ -24,7 +24,7 @@ public interface AccountDao {
      * Verify an email address using a supplied, one-time token for verification.
      * @return
      */
-    public Account verifyEmail(StudyIdentifier study, EmailVerification verification);
+    public void verifyEmail(EmailVerification verification);
     
     /**
      * Sign up sends an email address with a link that includes a one-time token for verification. That email

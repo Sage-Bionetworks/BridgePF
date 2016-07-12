@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -176,17 +175,11 @@ public class AuthenticationService {
         return null;
     }
 
-    public UserSession verifyEmail(Study study, CriteriaContext context, EmailVerification verification) throws ConsentRequiredException {
-        checkNotNull(study);
-        checkNotNull(context);
+    public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
         Validate.entityThrowingException(verificationValidator, verification);
-        
-        Account account = accountDao.verifyEmail(study, verification);
-        UserSession session = getSessionFromAccount(study, context, account);
-        cacheProvider.setUserSession(session);
-        return session;
+        accountDao.verifyEmail(verification);
     }
     
     public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email) {

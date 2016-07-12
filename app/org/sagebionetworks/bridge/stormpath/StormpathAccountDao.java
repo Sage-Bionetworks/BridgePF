@@ -182,17 +182,14 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override
-    public Account verifyEmail(StudyIdentifier study, EmailVerification verification) {
-        checkNotNull(study);
+    public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
         
         try {
-            com.stormpath.sdk.account.Account acct = client.verifyAccountEmail(verification.getSptoken());
-            return (acct == null) ? null : constructAccount(study, acct);
+            client.verifyAccountEmail(verification.getSptoken());
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
         }
-        return null;
     }
     
     @Override
