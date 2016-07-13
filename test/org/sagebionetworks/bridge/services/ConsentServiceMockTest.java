@@ -98,7 +98,7 @@ public class ConsentServiceMockTest {
         when(accountDao.getAccount(any(Study.class), any(String.class))).thenReturn(account);
         
         StudyConsentView studyConsentView = mock(StudyConsentView.class);
-        when(studyConsentView.getCreatedOn()).thenReturn(1000L);
+        when(studyConsentView.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
         when(studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation)).thenReturn(studyConsentView);
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
     }
@@ -165,7 +165,7 @@ public class ConsentServiceMockTest {
     @Test
     public void noActivityEventIfAlreadyConsented() {
         account.getConsentSignatureHistory(SUBPOP_GUID)
-                .add(new ConsentSignature.Builder().withConsentCreatedOn(DateTime.now().getMillis())
+                .add(new ConsentSignature.Builder().withConsentCreatedOn(CONSENT_CREATED_ON)
                         .withSignedOn(DateTime.now().getMillis()).withName("A Name").withBirthdate("1960-10-10")
                         .build());
         try {

@@ -145,17 +145,19 @@ public class ConsentService {
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
-        Account account = accountDao.getAccount(study, participant.getId());
-        ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
-        if (active != null) {
-            throw new EntityAlreadyExistsException(consentSignature);
-        }
-
         ConsentAgeValidator validator = new ConsentAgeValidator(study);
         Validate.entityThrowingException(validator, consentSignature);
 
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpop);
+        
+        // If there's a signature to the current and active consent, user cannot consent again. They can sign
+        // any other consent, including more recent consents.
+        Account account = accountDao.getAccount(study, participant.getId());
+        ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
+        if (active != null && active.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
+            throw new EntityAlreadyExistsException(consentSignature);
+        }
 
         // Add the consent creation timestamp and clear the withdrewOn timestamp, as some tests copy signatures
         // that contain this. As with all builders, order of with* calls matters here.
