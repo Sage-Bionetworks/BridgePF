@@ -119,7 +119,7 @@ public class AuthenticationService {
      * @return
      *      newly created session object (not persisted)
      */
-    public UserSession updateSession(Study study, CriteriaContext context) {
+    public UserSession getSession(Study study, CriteriaContext context) {
         checkNotNull(study);
         checkNotNull(context);
         

@@ -111,7 +111,7 @@ public class ConsentController extends BaseController {
         consentService.withdrawConsent(study, SubpopulationGuid.create(guid), session.getParticipant(), withdrawal,
                 withdrewOn);
         
-        UserSession updatedSession = authenticationService.updateSession(study, getCriteriaContext(session));
+        UserSession updatedSession = authenticationService.getSession(study, getCriteriaContext(session));
         if (!updatedSession.doesConsent()) {
             updateSharingStatusAndSession(study, updatedSession, SharingScope.NO_SHARING);
         } else {
@@ -171,7 +171,7 @@ public class ConsentController extends BaseController {
         consentService.consentToResearch(study, subpopGuid, session.getParticipant(), consentSignature,
                 sharing.getSharingScope(), true);
         
-        UserSession updatedSession = authenticationService.updateSession(study, getCriteriaContext(session));
+        UserSession updatedSession = authenticationService.getSession(study, getCriteriaContext(session));
         updateSession(updatedSession);
         return createdResult("Consent to research has been recorded.");
     }

@@ -469,7 +469,7 @@ public class ConsentServiceTest {
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .build();
-        UserSession updatedSession = authenticationService.updateSession(study, context);
+        UserSession updatedSession = authenticationService.getSession(study, context);
 
         assertTrue(ConsentStatus.isUserConsented(updatedSession.getConsentStatuses()));
         assertTrue(updatedSession.doesConsent());
@@ -490,7 +490,7 @@ public class ConsentServiceTest {
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .build();
-        UserSession updatedSession = authenticationService.updateSession(study, context);
+        UserSession updatedSession = authenticationService.getSession(study, context);
         
         assertFalse(ConsentStatus.isUserConsented(updatedSession.getConsentStatuses()));
         assertFalse(updatedSession.doesConsent());

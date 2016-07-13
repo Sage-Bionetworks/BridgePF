@@ -139,7 +139,7 @@ public class UserAdminService {
                         }
                     }
                 }
-                newUserSession = authenticationService.updateSession(study, context);
+                newUserSession = authenticationService.getSession(study, context);
             }
             if (!signUserIn) {
                 authenticationService.signOut(newUserSession);

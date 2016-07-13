@@ -429,7 +429,7 @@ public class AuthenticationServiceTest {
         // Now update the session, these changes should be reflected
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier())
                 .withUserId(userId).build();
-        Set<String> retrievedSessionDataGroups = authService.updateSession(study, context)
+        Set<String> retrievedSessionDataGroups = authService.getSession(study, context)
                 .getParticipant().getDataGroups();
 
         assertEquals(UPDATED_DATA_GROUPS, retrievedSessionDataGroups);

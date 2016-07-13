@@ -108,7 +108,7 @@ public class ConsentControllerMockedTest {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession();
         
-        doReturn(session).when(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        doReturn(session).when(authenticationService).getSession(eq(study), any(CriteriaContext.class));
     }
 
     @After
@@ -242,7 +242,7 @@ public class ConsentControllerMockedTest {
 
     @Test
     public void consentUpdatesSession() throws Exception {
-        doReturn(updatedSession).when(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        doReturn(updatedSession).when(authenticationService).getSession(eq(study), any(CriteriaContext.class));
         
         String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         TestUtils.mockPlayContextWithJson(json);
@@ -253,7 +253,7 @@ public class ConsentControllerMockedTest {
         verify(consentService).consentToResearch(eq(study), any(SubpopulationGuid.class), eq(participant),
                 signatureCaptor.capture(), any(SharingScope.class), eq(true));
         
-        verify(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        verify(authenticationService).getSession(eq(study), any(CriteriaContext.class));
         verify(cacheProvider).setUserSession(updatedSession);
     }
     
@@ -296,14 +296,14 @@ public class ConsentControllerMockedTest {
         // Session that is returned no longer consents
         doReturn(false).when(updatedSession).doesConsent();
         doReturn(participant).when(updatedSession).getParticipant();
-        doReturn(updatedSession).when(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        doReturn(updatedSession).when(authenticationService).getSession(eq(study), any(CriteriaContext.class));
         
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
         verify(consentService).withdrawConsent(study, SUBPOP_GUID, participant, new Withdrawal("Because, reasons."), 20000);
-        verify(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        verify(authenticationService).getSession(eq(study), any(CriteriaContext.class));
         verify(cacheProvider).setUserSession(updatedSession);
         DateTimeUtils.setCurrentMillisSystem();
     }
