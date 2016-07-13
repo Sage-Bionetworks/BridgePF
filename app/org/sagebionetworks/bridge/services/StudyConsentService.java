@@ -146,7 +146,10 @@ public class StudyConsentService {
             consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getActiveConsentCreatedOn());
         }
         if (consent == null) {
-            consent = studyConsentDao.getActiveConsent(subpop.getGuid());    
+            consent = studyConsentDao.getActiveConsent(subpop.getGuid());
+            if (consent != null) {
+                subpop.setActiveConsentCreatedOn(consent.getCreatedOn());
+            }
         }
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);

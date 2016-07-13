@@ -113,7 +113,7 @@ public class ConsentController extends BaseController {
         
         UserSession updatedSession = authenticationService.updateSession(study, getCriteriaContext(session));
         if (!updatedSession.doesConsent()) {
-            updateSharingStatusAndSession(study, session, SharingScope.NO_SHARING);
+            updateSharingStatusAndSession(study, updatedSession, SharingScope.NO_SHARING);
         } else {
             updateSession(updatedSession);    
         }

@@ -26,6 +26,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -74,6 +75,8 @@ public class ConsentControllerMockedTest {
     private CacheProvider cacheProvider;
     @Mock
     private AuthenticationService authenticationService;
+    @Mock
+    private UserSession updatedSession;
     @Captor
     private ArgumentCaptor<ConsentSignature> signatureCaptor;
     
@@ -227,7 +230,33 @@ public class ConsentControllerMockedTest {
         assertEquals("image/png", node.get("imageMimeType").asText());
         // no signedOn value when serializing
     }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void givingConsentToInvalidSubpopulation() throws Exception {
+        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        
+        TestUtils.mockPlayContextWithJson(json);
+        
+        controller.giveV3("bad-guid");
+    }
 
+    @Test
+    public void consentUpdatesSession() throws Exception {
+        doReturn(updatedSession).when(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        
+        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        TestUtils.mockPlayContextWithJson(json);
+        
+        Result result = controller.giveV3(SUBPOP_GUID.getGuid());
+        assertResult(result, 201, "Consent to research has been recorded.");
+        
+        verify(consentService).consentToResearch(eq(study), any(SubpopulationGuid.class), eq(participant),
+                signatureCaptor.capture(), any(SharingScope.class), eq(true));
+        
+        verify(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        verify(cacheProvider).setUserSession(updatedSession);
+    }
+    
     @Test
     public void consentSignatureHasServerSignedOnValue() throws Exception {
         // signedOn will be set on the server
@@ -264,13 +293,18 @@ public class ConsentControllerMockedTest {
         String json = "{\"reason\":\"Because, reasons.\"}";
         TestUtils.mockPlayContextWithJson(json);
         
+        // Session that is returned no longer consents
+        doReturn(false).when(updatedSession).doesConsent();
+        doReturn(participant).when(updatedSession).getParticipant();
+        doReturn(updatedSession).when(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         assertResult(result, 200, "User has been withdrawn from the study.");
         
         // Should call the service and withdraw
         verify(consentService).withdrawConsent(study, SUBPOP_GUID, participant, new Withdrawal("Because, reasons."), 20000);
-        
-        verify(cacheProvider).setUserSession(session);
+        verify(authenticationService).updateSession(eq(study), any(CriteriaContext.class));
+        verify(cacheProvider).setUserSession(updatedSession);
         DateTimeUtils.setCurrentMillisSystem();
     }
 

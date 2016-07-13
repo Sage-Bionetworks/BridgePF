@@ -37,7 +37,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class StudyConsentServiceTest {
     
     private static final String BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
-    //private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
 
     @Resource
     private StudyConsentDao studyConsentDao;
@@ -160,4 +159,39 @@ public class StudyConsentServiceTest {
         assertTrue(retrievedContent.contains(content));
     }
     
+    @Test
+    public void getActiveConsentUsesSubpopulation() {
+        String documentContent = "<p>This is a consent document.</p>";
+        StudyConsentForm form = new StudyConsentForm(documentContent);
+        StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);        
+        studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
+        
+        subpopulation.setActiveConsentCreatedOn(0L);
+        view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
+        assertEquals(subpopulation.getActiveConsentCreatedOn(), view.getCreatedOn());
+    }
+    
+    @Test
+    public void getActiveConsentWorksWithoutSubpopulation() {
+        StudyConsentForm form = new StudyConsentForm("<p>This is a consent document.</p>");
+        StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);        
+        studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
+        
+        assertTrue(subpopulation.getActiveConsentCreatedOn() > 0L);
+        view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
+        assertEquals(subpopulation.getActiveConsentCreatedOn(), view.getCreatedOn());
+    }
+    
+    @Test
+    public void publishConsentUpdatesSubpopulation() {
+        String documentContent = "<p>This is a consent document.</p>";
+        StudyConsentForm form = new StudyConsentForm(documentContent);
+        StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);
+
+        studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
+        assertEquals(subpopulation.getActiveConsentCreatedOn(), view.getCreatedOn());
+    }
+    
+    //- verify the get* methods all continue to work even with a subpopulation that has 0L timestamp
+
 }
