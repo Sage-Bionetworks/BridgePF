@@ -1,16 +1,11 @@
 package org.sagebionetworks.bridge.services.backfill;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -54,11 +49,14 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
             
             List<Subpopulation> subpopulations = subpopulationService.getSubpopulations(study.getStudyIdentifier());
             for (Subpopulation subpopulation : subpopulations) {
-                
                 StudyConsent consent = studyConsentDao.getActiveConsent(subpopulation.getGuid());
-                subpopulation.setActiveConsentCreatedOn(consent.getCreatedOn());
-                
-                subpopulationService.updateSubpopulation(study, subpopulation);
+                if (consent != null) {
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Updating subpopulation " + subpopulation.getGuidString() + "..."));
+                    subpopulation.setActiveConsentCreatedOn(consent.getCreatedOn());
+                    subpopulationService.updateSubpopulation(study, subpopulation);
+                } else {
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Can't update subpopulation " + subpopulation.getGuidString() + "..."));
+                }
             }
         }
     }
