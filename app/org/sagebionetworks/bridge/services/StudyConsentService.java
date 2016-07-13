@@ -99,14 +99,13 @@ public class StudyConsentService {
     }
     
     /**
-     * Adds a new consent document to the study, and sets that consent document
-     * as active.
+     * Adds a new consent document to the study, and sets that consent document as active.
      *
      * @param subpopGuid
      *            the subpopulation associated with this consent
      * @param form
-     *            form filled out by researcher including the path to the
-     *            consent document and the minimum age required to consent.
+     *            form filled out by researcher including the path to the consent document and the minimum age required
+     *            to consent.
      * @return the added consent document of type StudyConsent along with its document content
      */
     public StudyConsentView addConsent(SubpopulationGuid subpopGuid, StudyConsentForm form) {

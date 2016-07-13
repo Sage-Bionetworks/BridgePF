@@ -4,12 +4,15 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
@@ -105,9 +108,15 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawConsent(study, SubpopulationGuid.create(guid), session, withdrawal, withdrewOn);
-        updateSession(session);
+        consentService.withdrawConsent(study, SubpopulationGuid.create(guid), session.getParticipant(), withdrawal,
+                withdrewOn);
         
+        UserSession updatedSession = authenticationService.updateSession(study, getCriteriaContext(session));
+        if (!updatedSession.doesConsent()) {
+            updateSharingStatusAndSession(study, session, SharingScope.NO_SHARING);
+        } else {
+            updateSession(updatedSession);    
+        }
         return okResult("User has been withdrawn from the study.");
     }
     
@@ -134,30 +143,36 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        optionsService.setEnum(study, session.getHealthCode(), SHARING_SCOPE, sharingScope);
-        
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .copyOf(session.getParticipant())
-                .withSharingScope(sharingScope).build();
-        session.setParticipant(participant);
-        updateSession(session);
+        updateSharingStatusAndSession(study, session, sharingScope);
         return okResult(message);
     }
 
+    private void updateSharingStatusAndSession(Study study, UserSession session, SharingScope sharingScope) {
+        optionsService.setEnum(study, session.getHealthCode(), SHARING_SCOPE, sharingScope);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withSharingScope(sharingScope).build();
+        session.setParticipant(participant);
+        updateSession(session);
+    }
+    
     private Result giveConsentForVersion(int version, SubpopulationGuid subpopGuid) throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        final ConsentSignature consent = parseJson(request(), ConsentSignature.class);
+        final ConsentSignature consentSignature = parseJson(request(), ConsentSignature.class);
         final SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), version);
 
-        consentService.consentToResearch(study, subpopGuid, session, consent,
+        ConsentStatus status = session.getConsentStatuses().get(subpopGuid);
+        if (status == null) {
+            throw new EntityNotFoundException(Subpopulation.class);
+        }
+        
+        consentService.consentToResearch(study, subpopGuid, session.getParticipant(), consentSignature,
                 sharing.getSharingScope(), true);
         
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withSharingScope(sharing.getSharingScope()).build();
-        session.setParticipant(participant);
-        updateSession(session);
+        UserSession updatedSession = authenticationService.updateSession(study, getCriteriaContext(session));
+        updateSession(updatedSession);
         return createdResult("Consent to research has been recorded.");
     }
 }

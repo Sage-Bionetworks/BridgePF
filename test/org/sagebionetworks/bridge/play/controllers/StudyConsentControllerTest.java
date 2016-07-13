@@ -54,6 +54,9 @@ public class StudyConsentControllerTest {
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(GUID);
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
     private static final Study STUDY = new DynamoStudy();
+    static {
+        STUDY.setIdentifier("test-study");
+    }
 
     @Mock
     private StudyService studyService;

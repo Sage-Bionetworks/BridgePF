@@ -135,7 +135,7 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
         
-        when(authService.updateSession(eq(study), any(), eq(ID))).thenReturn(session);
+        when(authService.updateSession(eq(study), any())).thenReturn(session);
         
         when(participantService.getPagedAccountSummaries(eq(study), anyInt(), anyInt(), any())).thenReturn(page);
         
@@ -332,7 +332,7 @@ public class ParticipantControllerTest {
                 .withHealthCode("healthCode").build();
         
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
-        doReturn(new UserSession(participant)).when(authService).updateSession(eq(study), any(), eq(ID));
+        doReturn(new UserSession(participant)).when(authService).updateSession(eq(study), any());
         
         String json = MAPPER.writeValueAsString(participant);
         mockPlayContextWithJson(json);
@@ -353,7 +353,7 @@ public class ParticipantControllerTest {
         
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());
-        verify(authService).updateSession(eq(study), any(), eq(ID));
+        verify(authService).updateSession(eq(study), any());
         verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
@@ -402,7 +402,7 @@ public class ParticipantControllerTest {
         JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
         assertEquals("UserSessionInfo", node.get("type").asText());
 
-        verify(authService).updateSession(eq(study), any(), eq(ID));
+        verify(authService).updateSession(eq(study), any());
         verify(participantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(ID, captured.getId());

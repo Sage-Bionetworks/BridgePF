@@ -98,7 +98,7 @@ public class UserAdminServiceMockTest {
         assertEquals(participant.getPassword(), signIn.getPassword());
         
         for (SubpopulationGuid guid : session.getConsentStatuses().keySet()) {
-            verify(consentService).consentToResearch(eq(study), eq(guid), eq(session), any(), eq(SharingScope.NO_SHARING), eq(false));
+            verify(consentService).consentToResearch(eq(study), eq(guid), any(StudyParticipant.class), any(), eq(SharingScope.NO_SHARING), eq(false));
         }
     }
     
@@ -113,11 +113,11 @@ public class UserAdminServiceMockTest {
         verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
         
         // consented to the indicated subpopulation
-        verify(consentService).consentToResearch(eq(study), eq(consentedGuid), eq(session), any(), eq(SharingScope.NO_SHARING), eq(false));
+        verify(consentService).consentToResearch(eq(study), eq(consentedGuid), any(StudyParticipant.class), any(), eq(SharingScope.NO_SHARING), eq(false));
         // but not to the other two
         for (SubpopulationGuid guid : session.getConsentStatuses().keySet()) {
             if (guid != consentedGuid) {
-                verify(consentService, never()).consentToResearch(eq(study), eq(guid), eq(session), any(), eq(SharingScope.NO_SHARING), eq(false));    
+                verify(consentService, never()).consentToResearch(eq(study), eq(guid), eq(participant), any(), eq(SharingScope.NO_SHARING), eq(false));    
             }
         }
     }
