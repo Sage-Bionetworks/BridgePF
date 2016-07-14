@@ -4,8 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,11 +31,13 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -168,7 +173,6 @@ public class SubpopulationServiceTest {
         verify(studyConsentService, never()).addConsent(any(), any());
     }
     
-    
     @Test
     public void updateSubpopulation() {
         Subpopulation subpop = Subpopulation.create();
@@ -188,6 +192,26 @@ public class SubpopulationServiceTest {
         
         verify(dao).updateSubpopulation(subpop);
     }
+    
+    @Test
+    public void updateSubpopulationVerifiesStudyConsent() {
+        when(studyConsentService.getConsent(anyObject(), anyLong())).thenThrow(new EntityNotFoundException(StudyConsent.class));
+        
+        // doesn't even get to validation, so no need to fill this out.
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuidString("test-guid");
+        subpop.setPublishedConsentCreatedOn(DateTime.now().getMillis());
+        
+        when(dao.getSubpopulation(any(), any())).thenReturn(Subpopulation.create());
+        
+        try {
+            service.updateSubpopulation(study, subpop);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            assertEquals("StudyConsent not found.", e.getMessage());
+        }
+    }
+    
     @Test
     public void getSubpopulations() {
         Subpopulation subpop1 = Subpopulation.create();
