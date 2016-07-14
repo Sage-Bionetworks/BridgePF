@@ -104,6 +104,8 @@ public class SubpopulationService {
 
         // Verify this subpopulation is part of the study
         getSubpopulation(study, subpop.getGuid());
+        // Verify that the consent createdOn field points to a real study consent.
+        studyConsentService.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
         
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
