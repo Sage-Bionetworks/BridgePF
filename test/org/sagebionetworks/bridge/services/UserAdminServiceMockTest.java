@@ -58,6 +58,7 @@ public class UserAdminServiceMockTest {
     
     private Map<SubpopulationGuid,ConsentStatus> statuses;
     
+    @SuppressWarnings("unchecked")
     @Before
     public void before() {
         service = new UserAdminService();
