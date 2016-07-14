@@ -142,13 +142,13 @@ public class StudyConsentService {
         checkNotNull(subpop);
         
         StudyConsent consent = null;
-        if (subpop.getActiveConsentCreatedOn() > 0L) {
-            consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getActiveConsentCreatedOn());
+        if (subpop.getPublishedConsentCreatedOn() > 0L) {
+            consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
         }
         if (consent == null) {
             consent = studyConsentDao.getActiveConsent(subpop.getGuid());
             if (consent != null) {
-                subpop.setActiveConsentCreatedOn(consent.getCreatedOn());
+                subpop.setPublishedConsentCreatedOn(consent.getCreatedOn());
             }
         }
         if (consent == null) {
@@ -237,7 +237,7 @@ public class StudyConsentService {
         try {
             publishFormatsToS3(study, subpop.getGuid(), documentContent);
             
-            subpop.setActiveConsentCreatedOn(timestamp);
+            subpop.setPublishedConsentCreatedOn(timestamp);
             subpopService.updateSubpopulation(study, subpop);
 
             consent = studyConsentDao.publish(consent);

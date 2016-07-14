@@ -39,7 +39,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     private boolean deleted;
     private boolean defaultGroup;
     private Long version;
-    private long activeConsentCreatedOn;
+    private long publishedConsentCreatedOn;
     private Criteria criteria;
 
     public DynamoSubpopulation() {
@@ -125,13 +125,13 @@ public final class DynamoSubpopulation implements Subpopulation {
     @DynamoDBAttribute
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
-    public long getActiveConsentCreatedOn() {
-        return activeConsentCreatedOn;
+    public long getPublishedConsentCreatedOn() {
+        return publishedConsentCreatedOn;
     }
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
-    public void setActiveConsentCreatedOn(long consentCreatedOn) {
-        this.activeConsentCreatedOn = consentCreatedOn;
+    public void setPublishedConsentCreatedOn(long consentCreatedOn) {
+        this.publishedConsentCreatedOn = consentCreatedOn;
     }
     @DynamoDBVersionAttribute
     @Override
@@ -168,7 +168,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     @Override
     public int hashCode() {
         return Objects.hash(name, description, required, deleted, defaultGroup, guid, studyIdentifier,
-                activeConsentCreatedOn, version, criteria);
+                publishedConsentCreatedOn, version, criteria);
     }
     @Override
     public boolean equals(Object obj) {
@@ -180,7 +180,7 @@ public final class DynamoSubpopulation implements Subpopulation {
         return Objects.equals(name, other.name) && Objects.equals(description, other.description)
                 && Objects.equals(guid, other.guid) && Objects.equals(required, other.required)
                 && Objects.equals(deleted, other.deleted) && Objects.equals(studyIdentifier, other.studyIdentifier)
-                && Objects.equals(activeConsentCreatedOn, other.activeConsentCreatedOn)
+                && Objects.equals(publishedConsentCreatedOn, other.publishedConsentCreatedOn)
                 && Objects.equals(version, other.version) && Objects.equals(defaultGroup, other.defaultGroup)
                 && Objects.equals(criteria, other.criteria);
     }
@@ -188,7 +188,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     public String toString() {
         return "DynamoSubpopulation [studyIdentifier=" + studyIdentifier + ", guid=" + guid + ", name=" + name
                 + ", description=" + description + ", required=" + required + ", deleted=" + deleted + ", criteria="
-                + criteria + ", activeConsentCreatedOn=" + activeConsentCreatedOn + ", version=" + version + "]";
+                + criteria + ", publishedConsentCreatedOn=" + publishedConsentCreatedOn + ", version=" + version + "]";
     }
 
 }

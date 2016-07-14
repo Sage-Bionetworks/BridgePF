@@ -166,9 +166,9 @@ public class StudyConsentServiceTest {
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);        
         studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
         
-        subpopulation.setActiveConsentCreatedOn(0L);
+        subpopulation.setPublishedConsentCreatedOn(0L);
         view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
-        assertEquals(subpopulation.getActiveConsentCreatedOn(), view.getCreatedOn());
+        assertEquals(subpopulation.getPublishedConsentCreatedOn(), view.getCreatedOn());
     }
     
     @Test
@@ -177,9 +177,9 @@ public class StudyConsentServiceTest {
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);        
         studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
         
-        assertTrue(subpopulation.getActiveConsentCreatedOn() > 0L);
+        assertTrue(subpopulation.getPublishedConsentCreatedOn() > 0L);
         view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
-        assertEquals(subpopulation.getActiveConsentCreatedOn(), view.getCreatedOn());
+        assertEquals(subpopulation.getPublishedConsentCreatedOn(), view.getCreatedOn());
     }
     
     @Test
@@ -189,7 +189,7 @@ public class StudyConsentServiceTest {
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);
 
         studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
-        assertEquals(subpopulation.getActiveConsentCreatedOn(), view.getCreatedOn());
+        assertEquals(subpopulation.getPublishedConsentCreatedOn(), view.getCreatedOn());
     }
     
     //- verify the get* methods all continue to work even with a subpopulation that has 0L timestamp
