@@ -102,8 +102,12 @@ public class SubpopulationService {
         
         subpop.setStudyIdentifier(study.getIdentifier());
 
-        // Verify this subpopulation is part of the study
-        getSubpopulation(study, subpop.getGuid());
+        // Verify this subpopulation is part of the study. Existing code also doesn't submit
+        // this publication timestamp back to the server, so set if it doesn't exist.
+        Subpopulation existingSubpop = getSubpopulation(study, subpop.getGuid());
+        if (subpop.getPublishedConsentCreatedOn() == 0L) {
+            subpop.setPublishedConsentCreatedOn(existingSubpop.getPublishedConsentCreatedOn());
+        }
         // Verify that the consent createdOn field points to a real study consent.
         studyConsentService.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
         
