@@ -10,6 +10,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -210,6 +211,23 @@ public class SubpopulationServiceTest {
         } catch(EntityNotFoundException e) {
             assertEquals("StudyConsent not found.", e.getMessage());
         }
+    }
+    
+    @Test
+    public void updateSubpopulationSetsConsentCreatedOn() {
+        doReturn(1000L).when(view).getCreatedOn();
+        when(studyConsentService.getConsent(anyObject(), anyLong())).thenReturn(view);
+        
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setName("Name");
+        subpop.setGuidString("test-guid");
+        
+        Subpopulation existing = Subpopulation.create();
+        existing.setPublishedConsentCreatedOn(1000L);
+        when(dao.getSubpopulation(any(), any())).thenReturn(existing);
+        
+        Subpopulation updated = service.updateSubpopulation(study, subpop);
+        assertEquals(1000L, updated.getPublishedConsentCreatedOn());
     }
     
     @Test
