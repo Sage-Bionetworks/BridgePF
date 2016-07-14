@@ -18,20 +18,7 @@ public interface StudyConsentDao {
      * @param createdOn
      */
     StudyConsent addConsent(SubpopulationGuid subpopGuid, String storagePath, DateTime createdOn);
-
-    /**
-     * Set this consent to be the one and only activate consent record.
-     * @param studyConsent
-     * @return
-     */
-    StudyConsent publish(StudyConsent studyConsent);
     
-    /**
-     * Gets the active consent.
-     * @param subpopGuid
-     */
-    StudyConsent getActiveConsent(SubpopulationGuid subpopGuid);
-
     /**
      * Gets the most recent consent (active or not).
      * @param subpopGuid

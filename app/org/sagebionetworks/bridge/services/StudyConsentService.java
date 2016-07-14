@@ -135,22 +135,11 @@ public class StudyConsentService {
      *          the subpopulation associated with this consent
      * @return the currently active StudyConsent along with its document content
      */
-    // NOTE: After migrating publication consent timestamp to the subpopulation, this method can
-    // go away, as it's just a variant of getConsent() with a special timestamp.
     public StudyConsentView getActiveConsent(StudyIdentifier studyIdentifier, Subpopulation subpop) {
         checkNotNull(studyIdentifier);
         checkNotNull(subpop);
         
-        StudyConsent consent = null;
-        if (subpop.getPublishedConsentCreatedOn() > 0L) {
-            consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
-        }
-        if (consent == null) {
-            consent = studyConsentDao.getActiveConsent(subpop.getGuid());
-            if (consent != null) {
-                subpop.setPublishedConsentCreatedOn(consent.getCreatedOn());
-            }
-        }
+        StudyConsent consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -240,7 +229,6 @@ public class StudyConsentService {
             subpop.setPublishedConsentCreatedOn(timestamp);
             subpopService.updateSubpopulation(study, subpop);
 
-            consent = studyConsentDao.publish(consent);
         } catch(IOException | DocumentException e) {
             throw new BridgeServiceException(e.getMessage());
         }

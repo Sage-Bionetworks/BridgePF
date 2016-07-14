@@ -14,10 +14,13 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.SubpopulationService;
 
 @Component("signatureBackfill")
 public class SignatureBackfill extends AsyncBackfillTemplate {
@@ -25,6 +28,7 @@ public class SignatureBackfill extends AsyncBackfillTemplate {
     private StudyService studyService;
     private AccountDao accountDao;
     private StudyConsentDao studyConsentDao;
+    private SubpopulationService subpopulationService;
     
     @Autowired
     public void setStudyService(StudyService studyService) {
@@ -37,6 +41,10 @@ public class SignatureBackfill extends AsyncBackfillTemplate {
     @Autowired
     public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
+    }
+    @Autowired
+    public void setSubpopulationService(SubpopulationService subpopulationService) {
+        this.subpopulationService = subpopulationService;
     }
 
     @Override
@@ -93,7 +101,8 @@ public class SignatureBackfill extends AsyncBackfillTemplate {
             for (int i=0; i < list.size(); i++) {
                 try {
                     ConsentSignature existingSig = list.get(i);
-                    ConsentSignature updatedSig = fixConsentCreatedOn(task, callback, guid, account, existingSig);
+                    ConsentSignature updatedSig = fixConsentCreatedOn(task, callback, study.getStudyIdentifier(), guid,
+                            account, existingSig);
                     
                     if (!existingSig.equals(updatedSig)) {
                         list.set(i, updatedSig);
@@ -109,10 +118,11 @@ public class SignatureBackfill extends AsyncBackfillTemplate {
         return accountUpdated;
     }
     
-    private ConsentSignature fixConsentCreatedOn(BackfillTask task, BackfillCallback callback, SubpopulationGuid guid, Account account,
-            ConsentSignature signature) {
+    private ConsentSignature fixConsentCreatedOn(BackfillTask task, BackfillCallback callback, StudyIdentifier studyId,
+            SubpopulationGuid guid, Account account, ConsentSignature signature) {
         if (signature.getConsentCreatedOn() == 0L) {
-            StudyConsent studyConsent = studyConsentDao.getActiveConsent(guid);
+            Subpopulation subpop = subpopulationService.getSubpopulation(studyId, guid);
+            StudyConsent studyConsent = studyConsentDao.getConsent(guid, subpop.getPublishedConsentCreatedOn());
             if (studyConsent == null) {
                 // Pretty much total disaster.
                 callback.newRecords(getBackfillRecordFactory().createOnly(task, "StudyConsent not found for study. No update to " + account.getId() + " has been made."));
