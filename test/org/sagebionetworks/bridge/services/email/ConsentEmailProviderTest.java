@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.FileInputStream;
 import java.util.List;
@@ -15,13 +13,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import com.google.common.collect.Sets;
 
@@ -30,7 +24,6 @@ public class ConsentEmailProviderTest {
             "|@@name@@|@@signing.date@@|@@email@@|@@sharing@@|" +
             "<img src=\"cid:consentSignature\" /></body></html>";
     private static final String NEW_DOCUMENT_FRAGMENT = "<p>This is a consent agreement body</p>";
-    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("subpopGuid");
 
     // This is an actual 2x2 image
     private static final String DUMMY_IMAGE_DATA =
@@ -38,7 +31,6 @@ public class ConsentEmailProviderTest {
 
     private String consentBodyTemplate;
     private Study study;
-    private StudyConsentService studyConsentService;
     private StudyParticipant participant;
     
     @Before
@@ -52,17 +44,13 @@ public class ConsentEmailProviderTest {
         study.setConsentNotificationEmail("consent@consent.com");
         
         participant = new StudyParticipant.Builder().withEmail("user@user.com").build();
-        
-        studyConsentService = mock(StudyConsentService.class);
     }
 
     @Test
     public void legacyDocWithoutSigImage() throws Exception {
-        // Setup and execute.
-        setupStudyConsentServiceWithLegacyDoc();
         ConsentSignature sig = makeSignatureWithoutImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
-                SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, LEGACY_DOCUMENT, consentBodyTemplate);
 
         // Validate common elements.
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -81,11 +69,9 @@ public class ConsentEmailProviderTest {
 
     @Test
     public void newDocWithoutSigImage() throws Exception {
-        // Setup and execute.
-        setupStudyConsentServiceWithNewDoc();
         ConsentSignature sig = makeSignatureWithoutImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
-                SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
 
         // Validate common elements.
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -104,11 +90,9 @@ public class ConsentEmailProviderTest {
 
     @Test
     public void legacyDocWithSigImage() throws Exception {
-        // Setup and execute.
-        setupStudyConsentServiceWithLegacyDoc();
         ConsentSignature sig = makeSignatureWithImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
-                SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, LEGACY_DOCUMENT, consentBodyTemplate);
 
         // Validate common elements.
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -132,11 +116,9 @@ public class ConsentEmailProviderTest {
 
     @Test
     public void newDocWithSigImage() throws Exception {
-        // Setup and execute.
-        setupStudyConsentServiceWithNewDoc();
         ConsentSignature sig = makeSignatureWithImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
-                SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
 
         // Validate common elements.
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -159,11 +141,9 @@ public class ConsentEmailProviderTest {
     }
     @Test
     public void legacyDocWithInvalidSig() throws Exception {
-        // Setup and execute.
-        setupStudyConsentServiceWithLegacyDoc();
         ConsentSignature sig = makeInvalidSignature();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
-                SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, LEGACY_DOCUMENT, consentBodyTemplate);
 
         // Validate common elements.
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -182,11 +162,9 @@ public class ConsentEmailProviderTest {
 
     @Test
     public void newDocWithInvalidSig() throws Exception {
-        // Setup and execute.
-        setupStudyConsentServiceWithNewDoc();
         ConsentSignature sig = makeInvalidSignature();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SUBPOP_GUID, participant.getEmail(), sig,
-                SharingScope.NO_SHARING, studyConsentService, consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
 
         // Validate common elements.
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -216,16 +194,6 @@ public class ConsentEmailProviderTest {
         return new ConsentSignature.Builder().withName("<a href=\"http://sagebase.org/\">Test Person</a>")
                 .withBirthdate("1980-06-06").withImageMimeType("application/octet-stream")
                 .withImageData("\" /><a href=\"http://sagebase.org/\">arbitrary link</a><br name=\"foo").build();
-    }
-
-    private void setupStudyConsentServiceWithLegacyDoc() {
-        StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), LEGACY_DOCUMENT);
-        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
-    }
-
-    private void setupStudyConsentServiceWithNewDoc() {
-        StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), NEW_DOCUMENT_FRAGMENT);
-        when(studyConsentService.getActiveConsent(SUBPOP_GUID)).thenReturn(view);
     }
 
     private static void validateCommonElements(MimeTypeEmail email) {

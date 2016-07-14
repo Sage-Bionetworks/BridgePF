@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -111,10 +112,11 @@ public class UserAdminService {
         checkNotNull(participant, "Participant cannot be null");
         checkNotNull(participant.getEmail(), "Sign up email cannot be null");
         
-        participantService.createParticipant(study, ADMIN_ROLE, participant, false);
+        IdentifierHolder identifier = participantService.createParticipant(study, ADMIN_ROLE, participant, false);
 
         // We don't filter users by any of these filtering criteria in the admin API.
         CriteriaContext context = new CriteriaContext.Builder()
+                .withUserId(identifier.getIdentifier())
                 .withStudyIdentifier(study.getStudyIdentifier()).build();
         
         UserSession newUserSession = null;
@@ -128,17 +130,17 @@ public class UserAdminService {
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 
                 if (subpopGuid != null) {
-                    consentService.consentToResearch(study, subpopGuid, newUserSession, signature, NO_SHARING, false);
+                    consentService.consentToResearch(study, subpopGuid, newUserSession.getParticipant(), signature, NO_SHARING, false);
                 } else {
                     for (ConsentStatus consentStatus : newUserSession.getConsentStatuses().values()) {
                         if (consentStatus.isRequired()) {
                             SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
-                            consentService.consentToResearch(study, guid, newUserSession, signature, NO_SHARING, false);
+                            consentService.consentToResearch(study, guid, newUserSession.getParticipant(), signature, NO_SHARING, false);
                         }
                     }
                 }
+                newUserSession = authenticationService.getSession(study, context);
             }
-
             if (!signUserIn) {
                 authenticationService.signOut(newUserSession);
                 newUserSession.setAuthenticated(false);

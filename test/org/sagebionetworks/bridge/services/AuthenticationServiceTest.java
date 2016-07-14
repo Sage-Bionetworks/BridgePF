@@ -427,8 +427,9 @@ public class AuthenticationServiceTest {
         participantService.updateParticipant(study, CALLER_ROLES, updated);
         
         // Now update the session, these changes should be reflected
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
-        Set<String> retrievedSessionDataGroups = authService.updateSession(study, context, userId)
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier())
+                .withUserId(userId).build();
+        Set<String> retrievedSessionDataGroups = authService.getSession(study, context)
                 .getParticipant().getDataGroups();
 
         assertEquals(UPDATED_DATA_GROUPS, retrievedSessionDataGroups);

@@ -59,6 +59,9 @@ public interface Subpopulation extends BridgeEntity {
     public void setCriteria(Criteria criteria);
     public Criteria getCriteria();
     
+    public void setPublishedConsentCreatedOn(long consentCreatedOn);
+    public long getPublishedConsentCreatedOn();
+    
     /**
      * URL for retrieving the HTML version of the published consent for this study.
      * @return

@@ -74,7 +74,7 @@ public class ParticipantController extends BaseController {
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         CriteriaContext context = getCriteriaContext(session);
-        session = authenticationService.updateSession(study, context, session.getId());
+        session = authenticationService.getSession(study, context);
         updateSession(session);
         
         return okResult(UserSessionInfo.toJSON(session));

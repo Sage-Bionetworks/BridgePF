@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
@@ -27,6 +28,7 @@ public class DynamoSubpopulationTest {
     
     private static final Set<String> ALL_OF_GROUPS = Sets.newHashSet("requiredGroup");
     private static final Set<String> NONE_OF_GROUPS = Sets.newHashSet("prohibitedGroup");
+    private static final DateTime PUBLISHED_CONSENT_TIMESTAMP = DateTime.parse("2016-07-12T19:49:07.415Z");
 
     @Test
     public void hashCodeEquals() {
@@ -43,6 +45,7 @@ public class DynamoSubpopulationTest {
         subpop.setStudyIdentifier("study-key");
         subpop.setRequired(true);
         subpop.setDefaultGroup(true);
+        subpop.setPublishedConsentCreatedOn(PUBLISHED_CONSENT_TIMESTAMP.getMillis());
         subpop.setDeleted(true);
         subpop.setVersion(3L);
         
@@ -57,6 +60,7 @@ public class DynamoSubpopulationTest {
         assertEquals("Name", node.get("name").asText());
         assertEquals("Description", node.get("description").asText());
         assertEquals("guid", node.get("guid").asText());
+        assertEquals(PUBLISHED_CONSENT_TIMESTAMP.toString(), node.get("publishedConsentCreatedOn").asText());
         assertTrue(node.get("required").asBoolean());
         assertTrue(node.get("defaultGroup").asBoolean());
         assertNull(node.get("deleted")); // users do not see this flag, they never get deleted items
