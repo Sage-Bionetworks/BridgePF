@@ -2,6 +2,10 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyObject;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,6 +26,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -71,6 +76,9 @@ public class UserAdminServiceMockTest {
         session.setConsentStatuses(statuses);
         
         when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
+        doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anySet(),
+                anyObject(), anyBoolean());
+        doReturn(session).when(authenticationService).getSession(anyObject(), anyObject());
     }
     
     private void addConsentStatus(Map<SubpopulationGuid,ConsentStatus> statuses, String guid) {
@@ -83,11 +91,10 @@ public class UserAdminServiceMockTest {
     public void creatingUserConsentsToAllRequiredConsents() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
-        
+
         UserSession session = service.createUser(study, participant, null, true, true);
         
         verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
-        
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
