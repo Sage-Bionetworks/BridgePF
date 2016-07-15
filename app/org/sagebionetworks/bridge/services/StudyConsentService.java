@@ -133,7 +133,6 @@ public class StudyConsentService {
      */
     public StudyConsentView getActiveConsent(Subpopulation subpop) {
         checkNotNull(subpop);
-        checkArgument(subpop.getPublishedConsentCreatedOn() > 0L);
         
         return getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
     }
