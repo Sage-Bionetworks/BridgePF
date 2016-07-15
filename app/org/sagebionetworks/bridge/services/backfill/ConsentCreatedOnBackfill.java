@@ -49,7 +49,8 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
             
             List<Subpopulation> subpopulations = subpopulationService.getSubpopulations(study.getStudyIdentifier());
             for (Subpopulation subpopulation : subpopulations) {
-                StudyConsent consent = studyConsentDao.getActiveConsent(subpopulation.getGuid());
+                StudyConsent consent = studyConsentDao.getConsent(subpopulation.getGuid(),
+                        subpopulation.getPublishedConsentCreatedOn());
                 if (consent != null) {
                     callback.newRecords(getBackfillRecordFactory().createOnly(task, "Updating subpopulation " + subpopulation.getGuidString() + "..."));
                     subpopulation.setPublishedConsentCreatedOn(consent.getCreatedOn());

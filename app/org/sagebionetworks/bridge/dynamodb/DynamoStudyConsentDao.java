@@ -5,7 +5,6 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -17,9 +16,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
 
 @Component
 public class DynamoStudyConsentDao implements StudyConsentDao {
@@ -32,51 +28,13 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
     
     @Override
-    public StudyConsent addConsent(SubpopulationGuid subpopGuid, String storagePath, DateTime createdOn) {
+    public StudyConsent addConsent(SubpopulationGuid subpopGuid, String storagePath, long createdOn) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setSubpopulationGuid(subpopGuid.getGuid());
-        consent.setCreatedOn(createdOn.getMillis());
+        consent.setCreatedOn(createdOn);
         consent.setStoragePath(storagePath);
         mapper.save(consent);
         return consent;
-    }
-
-    @Override
-    public StudyConsent publish(StudyConsent studyConsent) {
-        DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
-        hashKey.setSubpopulationGuid(studyConsent.getSubpopulationGuid());
-        hashKey.setCreatedOn(studyConsent.getCreatedOn());
-        DynamoStudyConsent1 consent = mapper.load(hashKey);
-        
-        StudyConsent activeConsent = getActiveConsent(SubpopulationGuid.create(studyConsent.getSubpopulationGuid()));
-        
-        consent.setActive(true);
-        mapper.save(consent);
-        
-        if (activeConsent != null && activeConsent.getCreatedOn() != consent.getCreatedOn()) {
-            ((DynamoStudyConsent1)activeConsent).setActive(false);
-            mapper.save(activeConsent);
-        }
-        return consent;
-    }
-
-    @Override
-    public StudyConsent getActiveConsent(SubpopulationGuid subpopGuid) {
-        DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
-        hashKey.setSubpopulationGuid(subpopGuid.getGuid());
-        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
-                new DynamoDBQueryExpression<DynamoStudyConsent1>()
-                .withHashKeyValues(hashKey)
-                .withScanIndexForward(false)
-                .withLimit(1)
-                .withQueryFilterEntry("active", new Condition()
-                        .withComparisonOperator(ComparisonOperator.EQ)
-                        .withAttributeValueList(new AttributeValue().withN("1")));
-        PaginatedQueryList<DynamoStudyConsent1> page = mapper.query(DynamoStudyConsent1.class, queryExpression);
-        if (page.isEmpty()) {
-            return null;
-        }
-        return page.iterator().next();
     }
 
     @Override
@@ -96,10 +54,10 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
     
     @Override
-    public StudyConsent getConsent(SubpopulationGuid subpopGuid, long timestamp) {
+    public StudyConsent getConsent(SubpopulationGuid subpopGuid, long consentCreatedOn) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setSubpopulationGuid(subpopGuid.getGuid());
-        consent.setCreatedOn(timestamp);
+        consent.setCreatedOn(consentCreatedOn);
         return mapper.load(consent);
     }
 
@@ -128,11 +86,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false);
         
-        PaginatedQueryList<DynamoStudyConsent1> consents = mapper.query(DynamoStudyConsent1.class, queryExpression);
-        List<StudyConsent> consentsToDelete = new ArrayList<StudyConsent>();
-        for (DynamoStudyConsent1 consent : consents) {
-            consentsToDelete.add(consent);
-        }
+        List<? extends StudyConsent> consentsToDelete = mapper.query(DynamoStudyConsent1.class, queryExpression);
         if (!consentsToDelete.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(consentsToDelete);
             BridgeUtils.ifFailuresThrowException(failures);

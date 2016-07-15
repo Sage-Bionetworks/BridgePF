@@ -19,7 +19,6 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.apache.commons.io.IOUtils;
-import org.joda.time.DateTime;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Document.OutputSettings.Syntax;
@@ -33,7 +32,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -115,8 +113,8 @@ public class StudyConsentService {
         String sanitizedContent = sanitizeHTML(form.getDocumentContent());
         Validate.entityThrowingException(validator, new StudyConsentForm(sanitizedContent));
 
-        DateTime createdOn = DateUtils.getCurrentDateTime();
-        String storagePath = subpopGuid.getGuid() + "." + createdOn.getMillis();
+        long createdOn = DateUtils.getCurrentMillisFromEpoch();
+        String storagePath = subpopGuid.getGuid() + "." + createdOn;
         try {
             s3Helper.writeBytesToS3(CONSENTS_BUCKET, storagePath, sanitizedContent.getBytes());
             StudyConsent consent = studyConsentDao.addConsent(subpopGuid, storagePath, createdOn);
@@ -127,35 +125,17 @@ public class StudyConsentService {
     }
 
     /**
-     * Gets the currently active consent document for the study.
+     * Gets the currently active consent document for this subpopulation.
      *
-     * @param studyIdentifier
-     *          the study this subpopulation is found in.
      * @param subpop
      *          the subpopulation associated with this consent
      * @return the currently active StudyConsent along with its document content
      */
-    // NOTE: After migrating publication consent timestamp to the subpopulation, this method can
-    // go away, as it's just a variant of getConsent() with a special timestamp.
-    public StudyConsentView getActiveConsent(StudyIdentifier studyIdentifier, Subpopulation subpop) {
-        checkNotNull(studyIdentifier);
+    public StudyConsentView getActiveConsent(Subpopulation subpop) {
         checkNotNull(subpop);
+        checkArgument(subpop.getPublishedConsentCreatedOn() > 0L);
         
-        StudyConsent consent = null;
-        if (subpop.getPublishedConsentCreatedOn() > 0L) {
-            consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
-        }
-        if (consent == null) {
-            consent = studyConsentDao.getActiveConsent(subpop.getGuid());
-            if (consent != null) {
-                subpop.setPublishedConsentCreatedOn(consent.getCreatedOn());
-            }
-        }
-        if (consent == null) {
-            throw new EntityNotFoundException(StudyConsent.class);
-        }
-        String documentContent = loadDocumentContent(consent);
-        return new StudyConsentView(consent, documentContent);
+        return getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
     }
     
     /**
@@ -240,7 +220,6 @@ public class StudyConsentService {
             subpop.setPublishedConsentCreatedOn(timestamp);
             subpopService.updateSubpopulation(study, subpop);
 
-            consent = studyConsentDao.publish(consent);
         } catch(IOException | DocumentException e) {
             throw new BridgeServiceException(e.getMessage());
         }

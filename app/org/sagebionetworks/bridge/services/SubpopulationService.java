@@ -13,10 +13,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -28,12 +31,17 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class SubpopulationService {
 
     private SubpopulationDao subpopDao;
+    private StudyConsentDao studyConsentDao;
     private StudyConsentService studyConsentService;
     private StudyConsentForm defaultConsentDocument;
     
     @Autowired
     final void setSubpopulationDao(SubpopulationDao subpopDao) {
         this.subpopDao = subpopDao;
+    }
+    @Autowired
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+        this.studyConsentDao = studyConsentDao;
     }
     @Autowired
     final void setStudyConsentService(StudyConsentService studyConsentService) {
@@ -81,8 +89,7 @@ public class SubpopulationService {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(study.getIdentifier());
         Subpopulation created = subpopDao.createDefaultSubpopulation(study.getStudyIdentifier());
         
-        // Migrating, studies will already have consents so don't create and publish a new one
-        // unless this is part of the creation of a new study after the introduction of subpopulations.
+        // It should no longer be necessary to check that there are no consents yet, but not harmful to keep doing it.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
             StudyConsentView view = studyConsentService.addConsent(subpopGuid, defaultConsentDocument);
             studyConsentService.publishConsent(study, created, view.getCreatedOn());
@@ -108,8 +115,12 @@ public class SubpopulationService {
         if (subpop.getPublishedConsentCreatedOn() == 0L) {
             subpop.setPublishedConsentCreatedOn(existingSubpop.getPublishedConsentCreatedOn());
         }
-        // Verify that the consent createdOn field points to a real study consent.
-        studyConsentService.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
+        // Verify that the publishedConsentCreatedOn field points to a real study consent. Don't use the service
+        // because it loads the document from S3.
+        StudyConsent consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class);
+        }
         
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);

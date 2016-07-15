@@ -22,10 +22,8 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -33,7 +31,6 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
-import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -45,7 +42,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Methods to consent a user to one of the subpopulations of a study. After calling most of these methods, the user's
- * session should be updated in part or in whole.
+ * session should be updated.
  */
 @Component
 public class ConsentService {
@@ -149,7 +146,7 @@ public class ConsentService {
         Validate.entityThrowingException(validator, consentSignature);
 
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
-        StudyConsentView studyConsent = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpop);
+        StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpop);
         
         // If there's a signature to the current and active consent, user cannot consent again. They can sign
         // any other consent, including more recent consents.
@@ -197,12 +194,11 @@ public class ConsentService {
         
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
         for (Subpopulation subpop : subpopService.getSubpopulationForUser(context)) {
-
-            List<ConsentSignature> signatures = account.getConsentSignatureHistory(subpop.getGuid());
-            ConsentSignature last = (signatures.isEmpty()) ? null : signatures.get(signatures.size()-1);
             
-            boolean hasConsented = (last != null && last.getWithdrewOn() == null);
-            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(study.getStudyIdentifier(), last, subpop.getGuid());
+            ConsentSignature signature = account.getActiveConsentSignature(subpop.getGuid());
+            boolean hasConsented = (signature != null);
+            boolean hasSignedActiveConsent = (hasConsented && 
+                    signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
             
             ConsentStatus status = new ConsentStatus.Builder().withName(subpop.getName())
                     .withGuid(subpop.getGuid()).withRequired(subpop.isRequired())
@@ -292,30 +288,6 @@ public class ConsentService {
     }
     
     /**
-     * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not. 
-     * 
-     * @param account
-     * @param subpopGuid
-     */
-    public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
-        return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
-            boolean hasSignedActiveConsent = hasUserSignedActiveConsent(account.getStudyIdentifier(), signature, subpopGuid);
-            
-            return new UserConsentHistory.Builder()
-                .withName(signature.getName())
-                .withSubpopulationGuid(subpopGuid)
-                .withBirthdate(signature.getBirthdate())
-                .withImageData(signature.getImageData())
-                .withImageMimeType(signature.getImageMimeType())
-                .withSignedOn(signature.getSignedOn())
-                .withHealthCode(account.getHealthCode())
-                .withWithdrewOn(signature.getWithdrewOn())
-                .withConsentCreatedOn(signature.getConsentCreatedOn())
-                .withHasSignedActiveConsent(hasSignedActiveConsent).build();
-        }).collect(BridgeCollectors.toImmutableList());
-    }
-    
-    /**
      * Email the participant's signed consent agreement to the user's email address.
      * @param study
      * @param subpopGuid
@@ -330,8 +302,7 @@ public class ConsentService {
         SharingScope sharingScope = participant.getSharingScope();
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
         
-        String htmlTemplate = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpop)
-                .getDocumentContent();
+        String htmlTemplate = studyConsentService.getActiveConsent(subpop).getDocumentContent();
         
         MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getEmail(), consentSignature,
                 sharingScope, htmlTemplate, consentTemplate);
@@ -354,27 +325,5 @@ public class ConsentService {
             }
         }
         return withdrewConsent;
-    }
-    
-    /**
-     * Verify the timestamp of the consent the user has signed is the currently active consent for this subpopulation. 
-     * Once storing this timestamp is migrated to the subpopulation, this entire method can be removed. 
-     * @param studyIdentifier
-     * @param signature
-     * @param subpopGuid
-     * @return
-     */
-    private boolean hasUserSignedActiveConsent(StudyIdentifier studyIdentifier, ConsentSignature signature,
-            SubpopulationGuid subpopGuid) {
-        checkNotNull(studyIdentifier);
-        checkNotNull(subpopGuid);
-        
-        Subpopulation subpop = subpopService.getSubpopulation(studyIdentifier, subpopGuid);
-        StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(studyIdentifier, subpop);
-        
-        if (mostRecentConsent != null && signature != null) {
-            return signature.getConsentCreatedOn() == mostRecentConsent.getCreatedOn();
-        }
-        return false;
     }
 }

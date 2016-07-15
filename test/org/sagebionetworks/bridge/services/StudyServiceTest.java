@@ -134,9 +134,8 @@ public class StudyServiceTest {
         // A default, active consent should be created for the study.
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(),
                 SubpopulationGuid.create(study.getIdentifier()));
-        StudyConsentView view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpop);
+        StudyConsentView view = studyConsentService.getActiveConsent(subpop);
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
-        assertTrue(view.getActive());
         
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());

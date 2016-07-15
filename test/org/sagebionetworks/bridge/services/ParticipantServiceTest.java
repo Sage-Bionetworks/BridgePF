@@ -62,6 +62,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -74,6 +75,7 @@ public class ParticipantServiceTest {
 
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
+    private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
     private static final Study STUDY = new DynamoStudy();
     private static final String PHONE = "phone";
     static {
@@ -97,9 +99,6 @@ public class ParticipantServiceTest {
     private static final String ID = "ASDF";
     private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put(PHONE,"123456789").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
-    private static final List<UserConsentHistory> HISTORY = Lists.newArrayList(new UserConsentHistory.Builder()
-            .withName("Consent Name")
-            .withSignedOn(DateTime.now().getMillis()).build());
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName(FIRST_NAME)
             .withLastName(LAST_NAME)
@@ -338,6 +337,7 @@ public class ParticipantServiceTest {
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
+        when(account.getStudyIdentifier()).thenReturn(STUDY.getStudyIdentifier());
         when(account.getFirstName()).thenReturn(FIRST_NAME);
         when(account.getLastName()).thenReturn(LAST_NAME);
         when(account.getEmail()).thenReturn(EMAIL);
@@ -352,30 +352,22 @@ public class ParticipantServiceTest {
         // Two subpopulations for mocking.
         Subpopulation subpop1 = Subpopulation.create();
         subpop1.setGuidString("guid1");
+        subpop1.setPublishedConsentCreatedOn(CONSENT_PUBLICATION_DATE);
         subpopulations.add(subpop1);
         
         Subpopulation subpop2 = Subpopulation.create();
         subpop2.setGuidString("guid2");
+        subpop2.setPublishedConsentCreatedOn(CONSENT_PUBLICATION_DATE);
+        
         subpopulations.add(subpop2);
         when(subpopService.getSubpopulations(STUDY.getStudyIdentifier())).thenReturn(subpopulations);
+
+        List<ConsentSignature> sigs1 = Lists.newArrayList(new ConsentSignature.Builder()
+                .withName("Name 1").withBirthdate("1980-01-01").build());
+        when(account.getConsentSignatureHistory(SubpopulationGuid.create("guid1"))).thenReturn(sigs1);
         
-        List<UserConsentHistory> histories1 = Lists.newArrayList();
-        UserConsentHistory history1 = new UserConsentHistory.Builder()
-                .withBirthdate("2002-02-02")
-                .withConsentCreatedOn(1L)
-                .withName("Test User")
-                .withSubpopulationGuid(subpop1.getGuid())
-                .withWithdrewOn(2L).build();
-        histories1.add(history1);
-        
-        // Add another one, we don't need to test that it is the same.
-        UserConsentHistory history2 = new UserConsentHistory.Builder().build();
-        histories1.add(history2);
-        
-        List<UserConsentHistory> histories2 = Lists.newArrayList();
-        
-        when(consentService.getUserConsentHistory(account, subpop1.getGuid())).thenReturn(histories1);
-        when(consentService.getUserConsentHistory(account, subpop2.getGuid())).thenReturn(histories2);
+        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SubpopulationGuid.create("guid1"))).thenReturn(subpop1);
+        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SubpopulationGuid.create("guid2"))).thenReturn(subpop2);
         
         when(lookup.getEnum(SHARING_SCOPE, SharingScope.class)).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         when(lookup.getBoolean(EMAIL_NOTIFICATIONS)).thenReturn(true);
@@ -404,9 +396,7 @@ public class ParticipantServiceTest {
         assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
         
         List<UserConsentHistory> retrievedHistory1 = participant.getConsentHistories().get(subpop1.getGuidString());
-        assertEquals(2, retrievedHistory1.size());
-        assertEquals(history1, retrievedHistory1.get(0));
-        assertEquals(history2, retrievedHistory1.get(1));
+        assertEquals(1, retrievedHistory1.size());
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
@@ -641,7 +631,6 @@ public class ParticipantServiceTest {
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(HISTORY).when(consentService).getUserConsentHistory(account, SUBPOP_GUID);
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
@@ -655,7 +644,6 @@ public class ParticipantServiceTest {
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(HISTORY).when(consentService).getUserConsentHistory(account, SUBPOP_GUID);
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);

@@ -17,11 +17,6 @@ public interface StudyConsent extends BridgeEntity {
     long getCreatedOn();
 
     /**
-     * Whether the consent is active.
-     */
-    boolean getActive();
-
-    /**
      * Get the path to the storage of the consent document (probably in S3).
      */
     String getStoragePath();

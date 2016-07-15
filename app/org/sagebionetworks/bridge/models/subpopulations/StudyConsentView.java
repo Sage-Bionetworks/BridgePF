@@ -35,10 +35,6 @@ public class StudyConsentView {
         return consent.getCreatedOn();
     }
 
-    public boolean getActive() {
-        return consent.getActive();
-    }
-
     @JsonIgnore
     public StudyConsent getStudyConsent() {
         return consent;
