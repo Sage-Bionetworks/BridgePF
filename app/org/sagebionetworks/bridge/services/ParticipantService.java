@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -139,7 +140,7 @@ public class ParticipantService {
             List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
             for (Subpopulation subpop : subpopulations) {
                 // always returns a list, even if empty
-                List<UserConsentHistory> history = consentService.getUserConsentHistory(account, subpop.getGuid());
+                List<UserConsentHistory> history = getUserConsentHistory(account, subpop.getGuid());
                 consentHistories.put(subpop.getGuidString(), history);
             }
             builder.withConsentHistories(consentHistories);    
@@ -354,6 +355,31 @@ public class ParticipantService {
             throw new EntityNotFoundException(Account.class);
         }
         return account;
+    }
+    
+    /**
+     * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not. 
+     * 
+     * @param account
+     * @param subpopGuid
+     */
+    public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
+        return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
+            Subpopulation subpop = subpopService.getSubpopulation(account.getStudyIdentifier(), subpopGuid);
+            boolean hasSignedActiveConsent = (signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
+            
+            return new UserConsentHistory.Builder()
+                .withName(signature.getName())
+                .withSubpopulationGuid(subpopGuid)
+                .withBirthdate(signature.getBirthdate())
+                .withImageData(signature.getImageData())
+                .withImageMimeType(signature.getImageMimeType())
+                .withSignedOn(signature.getSignedOn())
+                .withHealthCode(account.getHealthCode())
+                .withWithdrewOn(signature.getWithdrewOn())
+                .withConsentCreatedOn(signature.getConsentCreatedOn())
+                .withHasSignedActiveConsent(hasSignedActiveConsent).build();
+        }).collect(BridgeCollectors.toImmutableList());
     }
     
 }

@@ -29,7 +29,6 @@ public class StudyConsentViewTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("<document/>", node.get("documentContent").asText());
-        assertTrue(node.get("active").asBoolean());
         assertEquals("1970-01-01T00:00:00.200Z", node.get("createdOn").asText());
         assertEquals("test", node.get("subpopulationGuid").asText());
         assertEquals("StudyConsent", node.get("type").asText());

@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -70,6 +71,9 @@ public class ConsentServiceTest {
 
     @Resource
     private ParticipantOptionsService optionsService;
+    
+    @Resource
+    private ParticipantService participantService;
     
     @Resource
     private AuthenticationService authenticationService;
@@ -127,9 +131,11 @@ public class ConsentServiceTest {
         // These are all the consents that apply to the user, and none of them are signed
         assertNotConsented();
         
-        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
-        List<UserConsentHistory> histories = consentService.getUserConsentHistory(account,
-                defaultSubpopulation.getGuid());
+        // NOTE: It's not a compilation error to pass SubpopulationGuid to the getConsentHistories() method, but it also
+        // doesn't return the intended list. Probably better if the map was keyed on SubpopulationGuid, but not sure what 
+        // that would do to the API or who would be impacted.
+        StudyParticipant participant = participantService.getParticipant(study, testUser.getId(), true);
+        List<UserConsentHistory> histories = participant.getConsentHistories().get(defaultSubpopulation.getGuidString());
         assertTrue(histories.isEmpty());
         
         try {
@@ -187,9 +193,8 @@ public class ConsentServiceTest {
         
         // However we have a historical record of the consent, including a revocation date
         // data is exported with the sharing status set at the time it was exported
-        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
-        List<UserConsentHistory> histories = consentService.getUserConsentHistory(account,
-                defaultSubpopulation.getGuid());
+        StudyParticipant participant = participantService.getParticipant(study, testUser.getId(), true);
+        List<UserConsentHistory> histories = participant.getConsentHistories().get(defaultSubpopulation.getGuidString());
         assertEquals(1, histories.size());
         assertNotNull(histories.get(0).getWithdrewOn());
     }
@@ -306,8 +311,8 @@ public class ConsentServiceTest {
         assertConsented(true);
         
         // The account object is not updated at this point. Actually the session isn't either.
-        account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
-        List<UserConsentHistory> history = consentService.getUserConsentHistory(account, defaultSubpopulation.getGuid());
+        StudyParticipant participant = participantService.getParticipant(study, testUser.getId(), true);
+        List<UserConsentHistory> history = participant.getConsentHistories().get(defaultSubpopulation.getGuidString());
         assertEquals(2, history.size());
         
         UserConsentHistory withdrawnConsent = history.get(0);
