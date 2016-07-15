@@ -7,7 +7,6 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,17 +35,17 @@ public class DynamoStudyConsentDaoTest {
 
     @Test
     public void crudStudyConsentWithFileBasedContent() {
-        DateTime datetime = DateUtils.getCurrentDateTime();
+        long createdOn = DateUtils.getCurrentMillisFromEpoch();
         
         // Add consent version 1, inactive
-        StudyConsent consent1 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+datetime.getMillis(), datetime);
-        assertEquals(datetime.getMillis(), consent1.getCreatedOn());
+        StudyConsent consent1 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+createdOn, createdOn);
+        assertEquals(createdOn, consent1.getCreatedOn());
         
-        datetime = DateUtils.getCurrentDateTime();
+        createdOn = DateUtils.getCurrentMillisFromEpoch();
         
         // Add version 2
-        StudyConsent consent2 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+datetime.getMillis(), datetime);
-        assertEquals(datetime.getMillis(), consent2.getCreatedOn());
+        StudyConsent consent2 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+createdOn, createdOn);
+        assertEquals(createdOn, consent2.getCreatedOn());
         
         // The most recent consent should be version 2
         StudyConsent consent = studyConsentDao.getMostRecentConsent(SUBPOP_GUID);
@@ -57,8 +56,8 @@ public class DynamoStudyConsentDaoTest {
         assertConsentsEqual(consent1, consent, false);
         
         // Add a third consent to test list of consents
-        datetime = DateUtils.getCurrentDateTime();
-        final StudyConsent consent3 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+datetime.getMillis(), datetime);
+        createdOn = DateUtils.getCurrentMillisFromEpoch();
+        final StudyConsent consent3 = studyConsentDao.addConsent(SUBPOP_GUID, SUBPOP_GUID+"."+createdOn, createdOn);
         
         // Get all consents. Should return in reverse order
         List<? extends StudyConsent> all = studyConsentDao.getConsents(SUBPOP_GUID);
@@ -70,8 +69,8 @@ public class DynamoStudyConsentDaoTest {
     
     @Test
     public void crudStudyConsentWithS3Content() throws Exception {
-        DateTime createdOn = DateTime.now();
-        String key = SUBPOP_GUID + "." + createdOn.getMillis();
+        long createdOn = DateUtils.getCurrentMillisFromEpoch();
+        String key = SUBPOP_GUID + "." + createdOn;
         StudyConsent consent = studyConsentDao.addConsent(SUBPOP_GUID, key, createdOn);
         assertEquals(key, consent.getStoragePath());
     }

@@ -146,7 +146,7 @@ public class ConsentService {
         Validate.entityThrowingException(validator, consentSignature);
 
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
-        StudyConsentView studyConsent = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpop);
+        StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpop);
         
         // If there's a signature to the current and active consent, user cannot consent again. They can sign
         // any other consent, including more recent consents.
@@ -302,8 +302,7 @@ public class ConsentService {
         SharingScope sharingScope = participant.getSharingScope();
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
         
-        String htmlTemplate = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpop)
-                .getDocumentContent();
+        String htmlTemplate = studyConsentService.getActiveConsent(subpop).getDocumentContent();
         
         MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getEmail(), consentSignature,
                 sharingScope, htmlTemplate, consentTemplate);

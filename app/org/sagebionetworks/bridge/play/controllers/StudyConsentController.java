@@ -98,7 +98,7 @@ public class StudyConsentController extends BaseController {
         // Throws 404 exception if this subpopulation is not part of the caller's study
         Subpopulation subpop = subpopService.getSubpopulation(studyId, subpopGuid);
         
-        StudyConsentView consent = studyConsentService.getActiveConsent(studyId, subpop);
+        StudyConsentView consent = studyConsentService.getActiveConsent(subpop);
         return okResult(consent);
     }
     

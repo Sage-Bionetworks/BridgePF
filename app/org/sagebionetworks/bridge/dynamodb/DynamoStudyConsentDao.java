@@ -5,7 +5,6 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -29,10 +28,10 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
     
     @Override
-    public StudyConsent addConsent(SubpopulationGuid subpopGuid, String storagePath, DateTime createdOn) {
+    public StudyConsent addConsent(SubpopulationGuid subpopGuid, String storagePath, long createdOn) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setSubpopulationGuid(subpopGuid.getGuid());
-        consent.setCreatedOn(createdOn.getMillis());
+        consent.setCreatedOn(createdOn);
         consent.setStoragePath(storagePath);
         mapper.save(consent);
         return consent;
@@ -55,10 +54,10 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
     
     @Override
-    public StudyConsent getConsent(SubpopulationGuid subpopGuid, long timestamp) {
+    public StudyConsent getConsent(SubpopulationGuid subpopGuid, long consentCreatedOn) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setSubpopulationGuid(subpopGuid.getGuid());
-        consent.setCreatedOn(timestamp);
+        consent.setCreatedOn(consentCreatedOn);
         return mapper.load(consent);
     }
 

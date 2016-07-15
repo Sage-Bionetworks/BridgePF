@@ -101,7 +101,7 @@ public class StudyConsentControllerTest {
     @Test
     public void getActiveConsentV2() throws Exception {
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
-        when(studyConsentService.getActiveConsent(eq(STUDY_ID), any())).thenReturn(view);
+        when(studyConsentService.getActiveConsent(any())).thenReturn(view);
         
         Result result = controller.getActiveConsentV2(GUID);
         

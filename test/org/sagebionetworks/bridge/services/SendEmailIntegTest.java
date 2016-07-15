@@ -64,8 +64,7 @@ public class SendEmailIntegTest {
         final Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
         Subpopulation subpopulation = subpopService.getSubpopulation(TEST_STUDY, SUBPOP_GUID);
-        String htmlTemplate = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation)
-                .getDocumentContent();
+        String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         sendEmailService.sendEmail(new ConsentEmailProvider(study, "bridge-testing@sagebase.org",
                 signature, SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate));
     }

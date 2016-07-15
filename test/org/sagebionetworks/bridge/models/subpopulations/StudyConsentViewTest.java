@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.subpopulations;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;

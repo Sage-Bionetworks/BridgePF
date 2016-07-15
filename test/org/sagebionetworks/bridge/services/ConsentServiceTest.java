@@ -321,8 +321,7 @@ public class ConsentServiceTest {
         assertNotNull(withdrawnConsent.getWithdrewOn());
         assertNull(activeConsent.getWithdrewOn());
         
-        StudyConsent studyConsent = studyConsentService
-                .getActiveConsent(testUser.getStudyIdentifier(), defaultSubpopulation).getStudyConsent();
+        StudyConsent studyConsent = studyConsentService.getActiveConsent(defaultSubpopulation).getStudyConsent();
 
         assertEquals(testUser.getHealthCode(), withdrawnConsent.getHealthCode());
         assertEquals(defaultSubpopulation.getGuidString(), withdrawnConsent.getSubpopulationGuid());

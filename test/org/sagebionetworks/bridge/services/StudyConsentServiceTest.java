@@ -12,7 +12,6 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
-import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +22,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
@@ -82,14 +82,14 @@ public class StudyConsentServiceTest {
         String documentContent = "<p>This is a consent document.</p><p>This is the second paragraph of same.</p>";
         StudyConsentForm form = new StudyConsentForm(documentContent);
 
-        StudyConsentView view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
+        StudyConsentView view = studyConsentService.getActiveConsent(subpopulation);
         assertEquals("<p>This is a placeholder for your consent document.</p>", view.getDocumentContent());
         
         view = studyConsentService.addConsent(subpopulation.getGuid(), form);
         assertNotNull(view);
         studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
         
-        StudyConsentView getActiveConsent = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
+        StudyConsentView getActiveConsent = studyConsentService.getActiveConsent(subpopulation);
         assertTrue(view.getCreatedOn() == getActiveConsent.getCreatedOn());
         
         // This is "fixed" by the XML and sanitizing parse that happens. It's fine.
@@ -103,14 +103,14 @@ public class StudyConsentServiceTest {
     
     @Test
     public void studyConsentWithFileAndS3ContentTakesS3Content() throws Exception {
-        DateTime createdOn = DateTime.now();
-        String key = subpopulation.getGuidString() + "." + createdOn.getMillis();
+        long createdOn = DateUtils.getCurrentMillisFromEpoch();
+        String key = subpopulation.getGuidString() + "." + createdOn;
         s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
         
         studyConsentDao.addConsent(subpopulation.getGuid(), key, createdOn);
         // The junk path should not prevent the service from getting the S3 content.
         // We actually wouldn't get here if it tried to load from disk with the path we've provided.
-        StudyConsentView view = studyConsentService.getConsent(subpopulation.getGuid(), createdOn.getMillis());
+        StudyConsentView view = studyConsentService.getConsent(subpopulation.getGuid(), createdOn);
         assertEquals("<document/>", view.getDocumentContent());
     }
     
@@ -165,7 +165,7 @@ public class StudyConsentServiceTest {
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);        
         studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
 
-        view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
+        view = studyConsentService.getActiveConsent(subpopulation);
         assertEquals(subpopulation.getPublishedConsentCreatedOn(), view.getCreatedOn());
     }
     
@@ -176,7 +176,7 @@ public class StudyConsentServiceTest {
         studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
         
         assertTrue(subpopulation.getPublishedConsentCreatedOn() > 0L);
-        view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
+        view = studyConsentService.getActiveConsent(subpopulation);
         assertEquals(subpopulation.getPublishedConsentCreatedOn(), view.getCreatedOn());
     }
     
