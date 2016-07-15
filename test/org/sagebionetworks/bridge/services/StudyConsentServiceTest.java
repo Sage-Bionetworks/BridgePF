@@ -35,7 +35,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyConsentServiceTest {
-    
+
     private static final String BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
 
     @Resource
@@ -107,8 +107,7 @@ public class StudyConsentServiceTest {
         String key = subpopulation.getGuidString() + "." + createdOn.getMillis();
         s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
         
-        StudyConsent consent = studyConsentDao.addConsent(subpopulation.getGuid(), key, createdOn);
-        studyConsentDao.publish(consent);
+        studyConsentDao.addConsent(subpopulation.getGuid(), key, createdOn);
         // The junk path should not prevent the service from getting the S3 content.
         // We actually wouldn't get here if it tried to load from disk with the path we've provided.
         StudyConsentView view = studyConsentService.getConsent(subpopulation.getGuid(), createdOn.getMillis());
@@ -165,8 +164,7 @@ public class StudyConsentServiceTest {
         StudyConsentForm form = new StudyConsentForm(documentContent);
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);        
         studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
-        
-        subpopulation.setPublishedConsentCreatedOn(0L);
+
         view = studyConsentService.getActiveConsent(study.getStudyIdentifier(), subpopulation);
         assertEquals(subpopulation.getPublishedConsentCreatedOn(), view.getCreatedOn());
     }

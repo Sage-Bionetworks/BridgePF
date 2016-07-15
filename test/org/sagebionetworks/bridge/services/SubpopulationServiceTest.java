@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
@@ -57,10 +58,13 @@ public class SubpopulationServiceTest {
     SubpopulationService service;
     
     @Mock
-    SubpopulationDao dao;
+    SubpopulationDao subpopDao;
     
     @Mock
     Study study;
+    
+    @Mock
+    StudyConsentDao studyConsentDao;
     
     @Mock
     StudyConsentService studyConsentService;
@@ -71,13 +75,17 @@ public class SubpopulationServiceTest {
     @Mock
     StudyConsentForm form;
     
+    @Mock
+    StudyConsent consent;
+    
     Subpopulation subpop;
     
     @Before
     public void before() throws Exception {
         service = new SubpopulationService();
-        service.setSubpopulationDao(dao);
+        service.setSubpopulationDao(subpopDao);
         service.setStudyConsentService(studyConsentService);
+        service.setStudyConsentDao(studyConsentDao);
         service.setDefaultConsentForm(form);
         
         subpop = Subpopulation.create();
@@ -87,10 +95,11 @@ public class SubpopulationServiceTest {
         when(study.getDataGroups()).thenReturn(dataGroups);
         when(study.getIdentifier()).thenReturn(TEST_STUDY_IDENTIFIER);
         
-        when(dao.createSubpopulation(any())).thenAnswer(returnsFirstArg());
-        when(dao.updateSubpopulation(any())).thenAnswer(returnsFirstArg());
+        when(subpopDao.createSubpopulation(any())).thenAnswer(returnsFirstArg());
+        when(subpopDao.updateSubpopulation(any())).thenAnswer(returnsFirstArg());
         
         when(view.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
+        when(consent.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
         
         when(studyConsentService.addConsent(any(), any())).thenReturn(view);
         when(studyConsentService.publishConsent(any(), any(), eq(CONSENT_CREATED_ON))).thenReturn(view);
@@ -126,7 +135,7 @@ public class SubpopulationServiceTest {
         assertFalse(result.isDeleted());
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
-        verify(dao).createSubpopulation(subpop);
+        verify(subpopDao).createSubpopulation(subpop);
         verify(studyConsentService).addConsent(eq(result.getGuid()), any());
         verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
     }
@@ -145,7 +154,7 @@ public class SubpopulationServiceTest {
         
         when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(Lists.newArrayList());
         when(studyConsentService.addConsent(eq(defaultGuid), any())).thenReturn(view);
-        when(dao.createDefaultSubpopulation(study.getStudyIdentifier())).thenReturn(subpop);
+        when(subpopDao.createDefaultSubpopulation(study.getStudyIdentifier())).thenReturn(subpop);
         
         // No consents, so we add and publish one.
         Subpopulation returnValue = service.createDefaultSubpopulation(study);
@@ -165,7 +174,7 @@ public class SubpopulationServiceTest {
         SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
         Subpopulation subpop = Subpopulation.create();
         when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(Lists.newArrayList(new DynamoStudyConsent1()));
-        when(dao.createDefaultSubpopulation(study.getStudyIdentifier())).thenReturn(subpop);
+        when(subpopDao.createDefaultSubpopulation(study.getStudyIdentifier())).thenReturn(subpop);
         
         Subpopulation returnValue = service.createDefaultSubpopulation(study);
         assertEquals(subpop, returnValue);
@@ -183,15 +192,16 @@ public class SubpopulationServiceTest {
         subpop.setGuidString("guid");
         subpop.setDefaultGroup(false);
         subpop.setDeleted(true);
-        
-        when(dao.getSubpopulation(any(), any())).thenReturn(Subpopulation.create());
+
+        doReturn(consent).when(studyConsentDao).getConsent(any(), anyLong());
+        when(subpopDao.getSubpopulation(any(), any())).thenReturn(Subpopulation.create());
         
         Subpopulation result = service.updateSubpopulation(study, subpop);
         assertEquals("Name", result.getName());
         assertEquals("guid", result.getGuidString());
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
-        verify(dao).updateSubpopulation(subpop);
+        verify(subpopDao).updateSubpopulation(subpop);
     }
     
     @Test
@@ -203,7 +213,7 @@ public class SubpopulationServiceTest {
         subpop.setGuidString("test-guid");
         subpop.setPublishedConsentCreatedOn(DateTime.now().getMillis());
         
-        when(dao.getSubpopulation(any(), any())).thenReturn(Subpopulation.create());
+        when(subpopDao.getSubpopulation(any(), any())).thenReturn(Subpopulation.create());
         
         try {
             service.updateSubpopulation(study, subpop);
@@ -216,7 +226,7 @@ public class SubpopulationServiceTest {
     @Test
     public void updateSubpopulationSetsConsentCreatedOn() {
         doReturn(1000L).when(view).getCreatedOn();
-        when(studyConsentService.getConsent(anyObject(), anyLong())).thenReturn(view);
+        when(studyConsentDao.getConsent(anyObject(), anyLong())).thenReturn(consent);
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
@@ -224,7 +234,7 @@ public class SubpopulationServiceTest {
         
         Subpopulation existing = Subpopulation.create();
         existing.setPublishedConsentCreatedOn(1000L);
-        when(dao.getSubpopulation(any(), any())).thenReturn(existing);
+        when(subpopDao.getSubpopulation(any(), any())).thenReturn(existing);
         
         Subpopulation updated = service.updateSubpopulation(study, subpop);
         assertEquals(1000L, updated.getPublishedConsentCreatedOn());
@@ -238,22 +248,22 @@ public class SubpopulationServiceTest {
         subpop2.setName("Name 2");
 
         List<Subpopulation> list = Lists.newArrayList(subpop1, subpop2); 
-        when(dao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(list);
+        when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(list);
         
         List<Subpopulation> results = service.getSubpopulations(TEST_STUDY);
         assertEquals(2, results.size());
         assertEquals(subpop1, results.get(0));
         assertEquals(subpop2, results.get(1));
-        verify(dao).getSubpopulations(TEST_STUDY, true, false);
+        verify(subpopDao).getSubpopulations(TEST_STUDY, true, false);
     }
     @Test
     public void getSubpopulation() {
         Subpopulation subpop = Subpopulation.create();
-        when(dao.getSubpopulation(TEST_STUDY, SUBPOP_GUID)).thenReturn(subpop);
+        when(subpopDao.getSubpopulation(TEST_STUDY, SUBPOP_GUID)).thenReturn(subpop);
 
         Subpopulation result = service.getSubpopulation(TEST_STUDY, SUBPOP_GUID);
         assertEquals(subpop, result);
-        verify(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        verify(subpopDao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
     }
     @Test
     public void getSubpopulationForUser() {
@@ -264,19 +274,19 @@ public class SubpopulationServiceTest {
                 .withStudyIdentifier(new StudyIdentifierImpl("test-key"))
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/4")).build();
         
-        when(dao.getSubpopulationsForUser(context)).thenReturn(subpops);
+        when(subpopDao.getSubpopulationsForUser(context)).thenReturn(subpops);
         
         List<Subpopulation> results = service.getSubpopulationForUser(context);
         
         assertEquals(subpops, results);
-        verify(dao).getSubpopulationsForUser(context);
+        verify(subpopDao).getSubpopulationsForUser(context);
     }
     
     @Test
     public void deleteSubpopulation() {
         service.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
         
-        verify(dao).deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
+        verify(subpopDao).deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
     }
     
 }

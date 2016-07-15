@@ -18,7 +18,6 @@ public class StudyConsentViewTest {
         long createdOn = 200L;
         
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setActive(true);
         consent.setCreatedOn(createdOn);
         consent.setSubpopulationGuid("test");
         consent.setStoragePath("test."+createdOn);

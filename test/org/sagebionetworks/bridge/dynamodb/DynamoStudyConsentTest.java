@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -25,7 +24,6 @@ public class DynamoStudyConsentTest {
     @Test
     public void canSerialize() throws Exception {
        DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-       consent.setActive(true);
        consent.setCreatedOn(123L);
        consent.setStoragePath("storagePath");
        consent.setSubpopulationGuid("ABC");
@@ -35,7 +33,6 @@ public class DynamoStudyConsentTest {
        JsonNode node = BridgeObjectMapper.get().readTree(json);
        
        assertEquals("1970-01-01T00:00:00.123Z", node.get("createdOn").asText());
-       assertTrue(node.get("active").asBoolean());
        assertEquals("ABC", node.get("subpopulationGuid").asText());
        assertEquals("StudyConsent", node.get("type").asText());
        assertEquals(4, node.size());

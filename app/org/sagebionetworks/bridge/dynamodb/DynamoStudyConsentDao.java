@@ -87,11 +87,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false);
         
-        PaginatedQueryList<DynamoStudyConsent1> consents = mapper.query(DynamoStudyConsent1.class, queryExpression);
-        List<StudyConsent> consentsToDelete = new ArrayList<StudyConsent>();
-        for (DynamoStudyConsent1 consent : consents) {
-            consentsToDelete.add(consent);
-        }
+        List<? extends StudyConsent> consentsToDelete = mapper.query(DynamoStudyConsent1.class, queryExpression);
         if (!consentsToDelete.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(consentsToDelete);
             BridgeUtils.ifFailuresThrowException(failures);
