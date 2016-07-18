@@ -255,7 +255,8 @@ public class StormpathDirectoryDao implements DirectoryDao {
                 return template;
             }
         }
-        throw new IllegalStateException("We could not find a Bridge-specific template");
+        // If it doesn't exist... we need the one that's the default when a directory is first created.
+        return list.iterator().next();
     }
 
     public static com.stormpath.sdk.mail.MimeType getStormpathMimeType(EmailTemplate template) {
