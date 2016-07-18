@@ -177,7 +177,12 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private void adjustPasswordPolicies(Study study, Directory directory) {
         PasswordPolicy passwordPolicy = directory.getPasswordPolicy();
         
-        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().single();
+        // 7/18/2016: Stormpath has inserted extra templates into our directories, causing the 
+        // single() method call to fail (it fails when there are multiple templates). Stick to 
+        // the first template and see if this is a workaround (there's no API to delete these 
+        // unwanted templates). 
+        // ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
+        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().iterator().next();
         updateTemplate(study, template, study.getResetPasswordTemplate(), "resetPassword");
         
         PasswordStrength strength = passwordPolicy.getStrength();
@@ -198,7 +203,12 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private void adjustVerifyEmailPolicies(Study study, Directory directory) {
         AccountCreationPolicy policy = directory.getAccountCreationPolicy();
         
-        ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
+        // 7/18/2016: Stormpath has inserted extra templates into our directories, causing the 
+        // single() method call to fail (it fails when there are multiple templates). Stick to 
+        // the first template and see if this is a workaround (there's no API to delete these 
+        // unwanted templates). 
+        // ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
+        ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().iterator().next();
         updateTemplate(study, template, study.getVerifyEmailTemplate(), "verifyEmail");
 
         EmailStatus verifyEmailStatus = study.isEmailVerificationEnabled() ? EmailStatus.ENABLED : EmailStatus.DISABLED;
