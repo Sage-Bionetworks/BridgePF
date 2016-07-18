@@ -247,7 +247,11 @@ public class StormpathDirectoryDao implements DirectoryDao {
         Iterator<ModeledEmailTemplate> iterator = list.iterator();
         while(iterator.hasNext()) {
             ModeledEmailTemplate template = iterator.next();
-            if (!template.getHtmlBody().contains("Stormpath")) {
+            String body = template.getTextBody();
+            if (body == null) {
+                body = template.getHtmlBody();
+            }
+            if (body != null && !body.contains("Stormpath")) {
                 return template;
             }
         }
