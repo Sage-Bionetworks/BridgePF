@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
@@ -98,7 +99,7 @@ public class UploadServiceTest {
         assertEquals(200, reponseCode);
 
         Upload upload = uploadService.getUpload(uploadId);
-        uploadService.uploadComplete(TestConstants.TEST_STUDY, upload);
+        uploadService.uploadComplete(TestConstants.TEST_STUDY, BridgeConstants.UPLOAD_FINISHED_BY_CLIENT, upload);
         long expiration = DateTime.now(DateTimeZone.UTC).plusDays(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());
         ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, uploadId);

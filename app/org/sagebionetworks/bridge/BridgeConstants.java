@@ -74,4 +74,9 @@ public class BridgeConstants {
     public static final String STORMPATH_NAME_PLACEHOLDER_STRING = "<EMPTY>";
     
     public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();
+    
+    public static final String UPLOAD_FINISHED_BY_WORKER = "s3 listener";
+    
+    public static final String UPLOAD_FINISHED_BY_CLIENT = "client";
+    
 }

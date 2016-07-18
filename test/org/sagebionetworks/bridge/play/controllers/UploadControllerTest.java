@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
@@ -101,7 +102,7 @@ public class UploadControllerTest {
         Result result = controller.uploadComplete(UPLOAD_ID);
         TestUtils.assertResult(result, 200, "Upload upload-id complete!");
         
-        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), uploadCaptor.capture());
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(BridgeConstants.UPLOAD_FINISHED_BY_WORKER), uploadCaptor.capture());
         
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
@@ -116,7 +117,7 @@ public class UploadControllerTest {
         Result result = controller.uploadComplete(UPLOAD_ID);
         TestUtils.assertResult(result, 200, "Upload upload-id complete!");
         
-        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), uploadCaptor.capture());
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(BridgeConstants.UPLOAD_FINISHED_BY_CLIENT), uploadCaptor.capture());
         
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
@@ -138,7 +139,7 @@ public class UploadControllerTest {
         } catch(UnauthorizedException e) {
             
         }
-        verify(uploadService, never()).uploadComplete(any(), any());
+        verify(uploadService, never()).uploadComplete(any(), eq(BridgeConstants.UPLOAD_FINISHED_BY_CLIENT), any());
     }
     
     @Test

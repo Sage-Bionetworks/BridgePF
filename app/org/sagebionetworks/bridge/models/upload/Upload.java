@@ -44,6 +44,28 @@ public interface Upload {
      * <p>
      */
     LocalDate getUploadDate();
+    
+    /**
+     * <p>The UTC timestamp of the time when the server creates the initial REQUESTED upload record.</p>
+     */
+    long getRequestedOn();
+    
+    /**
+     * <p>The UTC timestamp of the time when the upload record is updated based on a completed call by any external 
+     * client (either the S3 event listener or the mobile client). </p>
+     */
+    long getCompletedOn();
+    
+    /**
+     * <p>A string indicating the client that completed the upload. The two current clients are "s3 listener" and 
+     * "mobile client". </p>
+     */
+    String getCompletedBy();
+    
+    /**
+     * <p>The study identifier for this upload.</p>
+     */
+    String getStudyId();
 
     /** Upload ID. This is the key in the Dynamo DB table that uniquely identifies this upload. */
     String getUploadId();

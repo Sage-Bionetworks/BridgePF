@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -73,9 +75,10 @@ public class DynamoUploadDaoTest {
         UploadRequest uploadRequest = UploadRequest.fromJson(uploadRequestJsonNode);
 
         // create upload
-        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_HEALTH_CODE);
+        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TestConstants.TEST_STUDY, TEST_HEALTH_CODE);
         assertUpload(upload);
         assertEquals(UploadStatus.REQUESTED, upload.getStatus());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, upload.getStudyId());
         assertNotNull(upload.getUploadId());
         uploadId = upload.getUploadId();
 
@@ -87,11 +90,11 @@ public class DynamoUploadDaoTest {
         DynamoUpload2 fetchedUpload2 = (DynamoUpload2) dao.getUpload(uploadId);
 
         // upload complete
-        dao.uploadComplete(fetchedUpload);
+        dao.uploadComplete(BridgeConstants.UPLOAD_FINISHED_BY_WORKER, fetchedUpload);
 
         // second call to upload complete throws ConcurrentModificationException
         try {
-            dao.uploadComplete(fetchedUpload2);
+            dao.uploadComplete(BridgeConstants.UPLOAD_FINISHED_BY_WORKER, fetchedUpload2);
             fail("expected exception");
         } catch (ConcurrentModificationException ex) {
             // expected exception

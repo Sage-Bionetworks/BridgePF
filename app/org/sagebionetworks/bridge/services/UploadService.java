@@ -138,7 +138,7 @@ public class UploadService {
             uploadId = originalUploadId;
         } else {
             // This is a new upload.
-            Upload upload = uploadDao.createUpload(uploadRequest, participant.getHealthCode());
+            Upload upload = uploadDao.createUpload(uploadRequest, studyId, participant.getHealthCode());
             uploadId = upload.getUploadId();
 
             if (originalUploadId != null) {
@@ -234,7 +234,7 @@ public class UploadService {
         return validationStatus;
     }
 
-    public void uploadComplete(StudyIdentifier studyId, Upload upload) {
+    public void uploadComplete(StudyIdentifier studyId, String completedBy, Upload upload) {
         String uploadId = upload.getUploadId();
 
         // We don't want to kick off upload validation on an upload that already has upload validation.
@@ -254,7 +254,7 @@ public class UploadService {
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {
             logger.error("Missing S3 server-side encryption (SSE) for presigned upload " + uploadId + ".");
         }
-        uploadDao.uploadComplete(upload);
+        uploadDao.uploadComplete(completedBy, upload);
 
         // kick off upload validation
         uploadValidationService.validateUpload(studyId, upload);
