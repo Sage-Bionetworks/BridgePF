@@ -132,11 +132,20 @@ public class SurveyValidator implements Validator {
             SurveyElement element = elements.get(i);
             if (element instanceof SurveyQuestion) {
                 for (SurveyRule rule : ((SurveyQuestion)element).getConstraints().getRules()) {
-                    if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                        errors.pushNestedPath("elements["+i+"]");
+                    errors.pushNestedPath("elements["+i+"]");
+                    // Validate the rule either has a skipTo target, or an endSurvey = TRUE, but not both.
+                    if (rule.getSkipToTarget() != null && rule.getEndSurvey() != null) {
+                        rejectField(errors, "rule", "cannot have a skipToTarget and endSurvey property");
+                    } 
+                    // Validate the endSurvey value is not false. This never makes sense. It's a flag.
+                    else if (Boolean.FALSE.equals(rule.getEndSurvey())) {
+                        rejectField(errors, "rule", "cannot set endSurvey to false");
+                    } 
+                    // Otherwise we can assume there's a skipToTarget, start checking that by looking for back references.
+                    else if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
                         rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());
-                        errors.popNestedPath();
                     }
+                    errors.popNestedPath();
                 }
             }
             alreadySeenIdentifiers.add(element.getIdentifier());

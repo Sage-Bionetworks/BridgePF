@@ -1,9 +1,12 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class SurveyRule {
+public final class SurveyRule {
 
     public enum Operator {
         EQ, // equal to
@@ -15,75 +18,64 @@ public class SurveyRule {
         DE  // declined to answer
     }
     
-    private Operator operator;
-    private Object value;
-    private String skipToTarget;
+    private final Operator operator;
+    private final Object value;
+    // Rule should either have a skipToTarget, or have endSurvey set to true, but never both.
+    // This is enforced in rules validation.
+    private final String skipToTarget;
+    private final Boolean endSurvey;
     
-    public SurveyRule() {
+    @JsonCreator
+    private SurveyRule(@JsonProperty("operator") Operator operator, @JsonProperty("value") Object value,
+            @JsonProperty("skipToTarget") String skipToTarget, @JsonProperty("endSurvey") Boolean endSurvey) {
+        this.operator = operator;
+        this.value = value;
+        this.skipToTarget = skipToTarget;
+        this.endSurvey = Boolean.TRUE.equals(endSurvey) ? Boolean.TRUE : null;
     }
     public SurveyRule(Operator operator, Object value, String skipToTarget) {
         this.operator = operator;
         this.value = value;
         this.skipToTarget = skipToTarget;
+        this.endSurvey = null;
     }
     public Operator getOperator() {
         return operator;
-    }
-    public void setOperator(Operator operator) {
-        this.operator = operator;
     }
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public Object getValue() {
         return value;
     }
-    public void setValue(Object value) {
-        this.value = value;
-    }
     @JsonProperty("skipTo")
     public String getSkipToTarget() {
         return skipToTarget;
     }
-    public void setSkipToTarget(String skipToTarget) {
-        this.skipToTarget = skipToTarget;
+    public Boolean getEndSurvey() {
+        return endSurvey;
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((skipToTarget == null) ? 0 : skipToTarget.hashCode());
-        result = prime * result + ((operator == null) ? 0 : operator.hashCode());
-        result = prime * result + ((value == null) ? 0 : value.hashCode());
-        return result;
+        return Objects.hash(operator, value, skipToTarget, endSurvey);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
         SurveyRule other = (SurveyRule) obj;
-        if (skipToTarget == null) {
-            if (other.skipToTarget != null)
-                return false;
-        } else if (!skipToTarget.equals(other.skipToTarget))
-            return false;
-        if (operator != other.operator)
-            return false;
-        if (value == null) {
-            if (other.value != null)
-                return false;
-        } else if (!value.equals(other.value))
-            return false;
-        return true;
+        return Objects.equals(skipToTarget, other.skipToTarget) &&
+               Objects.equals(operator, other.operator) &&
+               Objects.equals(value, other.value) &&
+               Objects.equals(endSurvey, other.endSurvey);
     }
 
     @Override
     public String toString() {
-        return "SurveyRule [operator=" + operator + ", value=" + value + ", skipToTarget=" + skipToTarget + "]";
+        return "SurveyRule [operator=" + operator + ", value=" + value + ", skipToTarget=" + skipToTarget
+                + ", endSurvey=" + endSurvey + "]";
     }
     
 }

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import java.util.List;
@@ -11,10 +12,12 @@ import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
@@ -377,6 +380,51 @@ public class SurveyValidatorTest {
         // Anticlimactic, but this used to throw an exception, and it should not have,
         // because the second element is a SurveyInfoScreen
         Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void willVerifyRuleDoesntHaveSkipToAndEndSurvey() throws Exception {
+        Survey survey = new DynamoSurvey();
+        survey.setName("Name");
+        survey.setIdentifier("Identifier");
+        survey.setStudyIdentifier("study-key");
+        survey.setGuid("guid");
+        
+        StringConstraints constraints = new StringConstraints();
+        
+        // This is actually the only way to create an invalid rule (deserializing JSON).
+        String json = TestUtils.createJson("{'operator':'eq','value':'No',"+
+                "'skipToTarget':'theend','endSurvey':true}");
+        SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
+        constraints.getRules().add(rule);
+        
+        SurveyQuestion question = new DynamoSurveyQuestion();
+        question.setIdentifier("start");
+        question.setUiHint(UIHint.TEXTFIELD);
+        question.setPrompt("Prompt");
+        question.setConstraints(constraints);
+        survey.getElements().add(question);
+        
+        SurveyInfoScreen info = new DynamoSurveyInfoScreen();
+        info.setTitle("Title");
+        info.setPrompt("Prompt");
+        info.setIdentifier("theend");
+        survey.getElements().add(info);
+
+        try {
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("rule cannot have a skipToTarget and endSurvey property", errorFor(e, "elements[0].rule"));
+        }
+    }
+    
+    @Test
+    public void cannotSetEndSurveyToFalse() throws Exception {
+        String json = TestUtils.createJson("{'operator':'eq','value':'No',"+
+                "'skipToTarget':'theend','endSurvey':false}");
+        SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
+        assertNull(rule.getEndSurvey());
     }
     
     @Test
