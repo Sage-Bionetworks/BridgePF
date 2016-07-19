@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -100,10 +99,6 @@ public class DynamoUploadDao implements UploadDao {
         upload2.setRecordId(recordId);
 
         // persist
-        try {
-            mapper.save(upload2);
-        } catch (ConditionalCheckFailedException ex) {
-            throw new ConcurrentModificationException("Unable to write validation status for upload " + upload.getUploadId());
-        }
+        mapper.save(upload2);
     }
 }

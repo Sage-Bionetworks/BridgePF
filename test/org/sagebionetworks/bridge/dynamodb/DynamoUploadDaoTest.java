@@ -89,13 +89,8 @@ public class DynamoUploadDaoTest {
         // upload complete
         dao.uploadComplete(fetchedUpload);
 
-        // second call to upload complete throws ConcurrentModificationException
-        try {
-            dao.uploadComplete(fetchedUpload2);
-            fail("expected exception");
-        } catch (ConcurrentModificationException ex) {
-            // expected exception
-        }
+        // subsequent call to upload should succeed
+        dao.uploadComplete(fetchedUpload2);
 
         // fetch completed upload
         DynamoUpload2 completedUpload = (DynamoUpload2) dao.getUpload(uploadId);
