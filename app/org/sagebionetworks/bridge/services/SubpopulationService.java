@@ -13,10 +13,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -28,12 +31,17 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class SubpopulationService {
 
     private SubpopulationDao subpopDao;
+    private StudyConsentDao studyConsentDao;
     private StudyConsentService studyConsentService;
     private StudyConsentForm defaultConsentDocument;
     
     @Autowired
     final void setSubpopulationDao(SubpopulationDao subpopDao) {
         this.subpopDao = subpopDao;
+    }
+    @Autowired
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+        this.studyConsentDao = studyConsentDao;
     }
     @Autowired
     final void setStudyConsentService(StudyConsentService studyConsentService) {
@@ -63,11 +71,13 @@ public class SubpopulationService {
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
         
+        Subpopulation created = subpopDao.createSubpopulation(subpop);
+        
         // Create a default consent for this subpopulation.
         StudyConsentView view = studyConsentService.addConsent(subpop.getGuid(), defaultConsentDocument);
-        studyConsentService.publishConsent(study, subpop.getGuid(), view.getCreatedOn());
+        studyConsentService.publishConsent(study, subpop, view.getCreatedOn());
         
-        return subpopDao.createSubpopulation(subpop);
+        return created;
     }
     
     /**
@@ -77,13 +87,14 @@ public class SubpopulationService {
      */
     public Subpopulation createDefaultSubpopulation(Study study) {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(study.getIdentifier());
-        // Migrating, studies will already have consents so don't create and publish a new one
-        // unless this is part of the creation of a new study after the introduction of subpopulations.
+        Subpopulation created = subpopDao.createDefaultSubpopulation(study.getStudyIdentifier());
+        
+        // It should no longer be necessary to check that there are no consents yet, but not harmful to keep doing it.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
             StudyConsentView view = studyConsentService.addConsent(subpopGuid, defaultConsentDocument);
-            studyConsentService.publishConsent(study, subpopGuid, view.getCreatedOn());
+            studyConsentService.publishConsent(study, created, view.getCreatedOn());
         }
-        return subpopDao.createDefaultSubpopulation(study.getStudyIdentifier());
+        return created;
     }
     
     /**
@@ -98,8 +109,18 @@ public class SubpopulationService {
         
         subpop.setStudyIdentifier(study.getIdentifier());
 
-        // Verify this subpopulation is part of the study
-        getSubpopulation(study, subpop.getGuid());
+        // Verify this subpopulation is part of the study. Existing code also doesn't submit
+        // this publication timestamp back to the server, so set if it doesn't exist.
+        Subpopulation existingSubpop = getSubpopulation(study, subpop.getGuid());
+        if (subpop.getPublishedConsentCreatedOn() == 0L) {
+            subpop.setPublishedConsentCreatedOn(existingSubpop.getPublishedConsentCreatedOn());
+        }
+        // Verify that the publishedConsentCreatedOn field points to a real study consent. Don't use the service
+        // because it loads the document from S3.
+        StudyConsent consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class);
+        }
         
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);

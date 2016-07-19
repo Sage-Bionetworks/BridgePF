@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.subpopulations;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
@@ -18,7 +17,6 @@ public class StudyConsentViewTest {
         long createdOn = 200L;
         
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setActive(true);
         consent.setCreatedOn(createdOn);
         consent.setSubpopulationGuid("test");
         consent.setStoragePath("test."+createdOn);
@@ -30,7 +28,6 @@ public class StudyConsentViewTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("<document/>", node.get("documentContent").asText());
-        assertTrue(node.get("active").asBoolean());
         assertEquals("1970-01-01T00:00:00.200Z", node.get("createdOn").asText());
         assertEquals("test", node.get("subpopulationGuid").asText());
         assertEquals("StudyConsent", node.get("type").asText());

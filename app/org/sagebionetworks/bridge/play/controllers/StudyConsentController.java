@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
@@ -95,9 +96,9 @@ public class StudyConsentController extends BaseController {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        subpopService.getSubpopulation(studyId, subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(studyId, subpopGuid);
         
-        StudyConsentView consent = studyConsentService.getActiveConsent(subpopGuid);
+        StudyConsentView consent = studyConsentService.getActiveConsent(subpop);
         return okResult(consent);
     }
     
@@ -145,10 +146,10 @@ public class StudyConsentController extends BaseController {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
 
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        studyConsentService.publishConsent(study, subpopGuid, timestamp);
+        studyConsentService.publishConsent(study, subpop, timestamp);
         return okResult("Consent document set as active.");
     }
     

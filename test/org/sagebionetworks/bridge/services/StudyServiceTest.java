@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ public class StudyServiceTest {
     
     @Resource
     StudyConsentService studyConsentService;
+    
+    @Resource
+    SubpopulationService subpopService;
     
     @Resource
     DirectoryDao directoryDao;
@@ -128,9 +132,10 @@ public class StudyServiceTest {
         reset(mockCache);
         
         // A default, active consent should be created for the study.
-        StudyConsentView view = studyConsentService.getActiveConsent(SubpopulationGuid.create(study.getIdentifier()));
+        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(),
+                SubpopulationGuid.create(study.getIdentifier()));
+        StudyConsentView view = studyConsentService.getActiveConsent(subpop);
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
-        assertTrue(view.getActive());
         
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());

@@ -19,7 +19,6 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.apache.commons.io.IOUtils;
-import org.joda.time.DateTime;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Document.OutputSettings.Syntax;
@@ -36,6 +35,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.validators.StudyConsentValidator;
@@ -59,6 +59,7 @@ public class StudyConsentService {
     
     private Validator validator;
     private StudyConsentDao studyConsentDao;
+    private SubpopulationService subpopService;
     private AmazonS3Client s3Client;
     private S3Helper s3Helper;
     private static final String CONSENTS_BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
@@ -77,7 +78,10 @@ public class StudyConsentService {
     final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
-
+    @Autowired
+    final void setSubpopulationService(SubpopulationService subpopService) {
+        this.subpopService = subpopService;
+    }
     /**
      * S3 client. We need to use the S3 client to call writeBytesToPublicS3(), which wasn't migrated to bridge-base
      * because it references BridgePF-specific classes.
@@ -93,14 +97,13 @@ public class StudyConsentService {
     }
     
     /**
-     * Adds a new consent document to the study, and sets that consent document
-     * as active.
+     * Adds a new consent document to the study, and sets that consent document as active.
      *
      * @param subpopGuid
      *            the subpopulation associated with this consent
      * @param form
-     *            form filled out by researcher including the path to the
-     *            consent document and the minimum age required to consent.
+     *            form filled out by researcher including the path to the consent document and the minimum age required
+     *            to consent.
      * @return the added consent document of type StudyConsent along with its document content
      */
     public StudyConsentView addConsent(SubpopulationGuid subpopGuid, StudyConsentForm form) {
@@ -110,8 +113,8 @@ public class StudyConsentService {
         String sanitizedContent = sanitizeHTML(form.getDocumentContent());
         Validate.entityThrowingException(validator, new StudyConsentForm(sanitizedContent));
 
-        DateTime createdOn = DateUtils.getCurrentDateTime();
-        String storagePath = subpopGuid.getGuid() + "." + createdOn.getMillis();
+        long createdOn = DateUtils.getCurrentMillisFromEpoch();
+        String storagePath = subpopGuid.getGuid() + "." + createdOn;
         try {
             s3Helper.writeBytesToS3(CONSENTS_BUCKET, storagePath, sanitizedContent.getBytes());
             StudyConsent consent = studyConsentDao.addConsent(subpopGuid, storagePath, createdOn);
@@ -122,21 +125,16 @@ public class StudyConsentService {
     }
 
     /**
-     * Gets the currently active consent document for the study.
+     * Gets the currently active consent document for this subpopulation.
      *
-     * @param subpopGuid
+     * @param subpop
      *          the subpopulation associated with this consent
      * @return the currently active StudyConsent along with its document content
      */
-    public StudyConsentView getActiveConsent(SubpopulationGuid subpopGuid) {
-        checkNotNull(subpopGuid);
+    public StudyConsentView getActiveConsent(Subpopulation subpop) {
+        checkNotNull(subpop);
         
-        StudyConsent consent = studyConsentDao.getActiveConsent(subpopGuid);
-        if (consent == null) {
-            throw new EntityNotFoundException(StudyConsent.class);
-        }
-        String documentContent = loadDocumentContent(consent);
-        return new StudyConsentView(consent, documentContent);
+        return getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
     }
     
     /**
@@ -198,26 +196,29 @@ public class StudyConsentService {
      *
      * @param study
      *            study for this consent
-     * @param subpopGuid
+     * @param subpop
      *            the subpopulation associated with this consent
      * @param timestamp
      *            time the consent document was added to the database.
      * @return the activated consent document along with its document content
      */
-    public StudyConsentView publishConsent(Study study, SubpopulationGuid subpopGuid, long timestamp) {
+    public StudyConsentView publishConsent(Study study, Subpopulation subpop, long timestamp) {
         checkNotNull(study);
-        checkNotNull(subpopGuid);
+        checkNotNull(subpop);
         checkArgument(timestamp > 0, "Timestamp is 0");
         
-        StudyConsent consent = studyConsentDao.getConsent(subpopGuid, timestamp);
+        StudyConsent consent = studyConsentDao.getConsent(subpop.getGuid(), timestamp);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
         // Only if we can publish the document, do we mark it as published in the database.
         String documentContent = loadDocumentContent(consent);
         try {
-            publishFormatsToS3(study, subpopGuid, documentContent);
-            consent = studyConsentDao.publish(consent);
+            publishFormatsToS3(study, subpop.getGuid(), documentContent);
+            
+            subpop.setPublishedConsentCreatedOn(timestamp);
+            subpopService.updateSubpopulation(study, subpop);
+
         } catch(IOException | DocumentException e) {
             throw new BridgeServiceException(e.getMessage());
         }

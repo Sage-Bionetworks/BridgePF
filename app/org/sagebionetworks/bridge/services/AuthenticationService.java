@@ -1,10 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -118,18 +116,14 @@ public class AuthenticationService {
      *      the user's study
      * @param context
      *      an updated set of criteria for calculating the user's consent status
-     * @param userId
-     *      the ID of the user
      * @return
      *      newly created session object (not persisted)
      */
-    public UserSession updateSession(Study study, CriteriaContext context, String userId) {
+    public UserSession getSession(Study study, CriteriaContext context) {
         checkNotNull(study);
         checkNotNull(context);
-        checkArgument(isNotBlank(userId));
         
-        Account account = accountDao.getAccount(study, userId);
-        cacheProvider.removeSessionByUserId(userId);
+        Account account = accountDao.getAccount(study, context.getUserId());
         return getSessionFromAccount(study, context, account);
     }
 

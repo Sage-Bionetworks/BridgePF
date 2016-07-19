@@ -26,7 +26,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 
 import com.amazonaws.regions.Region;
@@ -51,6 +51,7 @@ public class SendMailViaAmazonServiceConsentTest {
     private ArgumentCaptor<SendRawEmailRequest> argument;
     private Study study;
     private String consentBodyTemplate;
+    private Subpopulation subpopulation;
     
     @Before
     public void setUp() throws Exception {
@@ -71,11 +72,14 @@ public class SendMailViaAmazonServiceConsentTest {
         service.setSupportEmail(FROM_DEFAULT_UNFORMATTED);
         service.setEmailClient(emailClient);
         
+        subpopulation = Subpopulation.create();
+        subpopulation.setGuidString("api");
+        
         StudyConsentView view = new StudyConsentView(mock(StudyConsent.class), 
             "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
         
         studyConsentService = mock(StudyConsentService.class);
-        when(studyConsentService.getActiveConsent(SubpopulationGuid.create("api"))).thenReturn(view);
+        when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(view);
     }
 
     @Test
@@ -88,9 +92,10 @@ public class SendMailViaAmazonServiceConsentTest {
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SubpopulationGuid.create(study.getIdentifier()),
-                "test-user@sagebase.org", consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService,
-                consentBodyTemplate);
+        String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
+        
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, "test-user@sagebase.org", consent,
+                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -125,9 +130,10 @@ public class SendMailViaAmazonServiceConsentTest {
                 .withBirthdate("1970-05-01").withImageData(TestConstants.DUMMY_IMAGE_DATA)
                 .withImageMimeType("image/fake").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SubpopulationGuid.create(study.getIdentifier()),
-                "test-user@sagebase.org", consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService,
-                consentBodyTemplate);
+        String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
+        
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, "test-user@sagebase.org", consent,
+                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -163,10 +169,11 @@ public class SendMailViaAmazonServiceConsentTest {
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
+        
+        String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
 
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SubpopulationGuid.create(study.getIdentifier()),
-                "test-user@sagebase.org", consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService,
-                consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, "test-user@sagebase.org", consent,
+                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
 
         // execute
         service.sendEmail(provider);
@@ -184,10 +191,11 @@ public class SendMailViaAmazonServiceConsentTest {
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
+        
+        String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
 
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, SubpopulationGuid.create(study.getIdentifier()),
-                "test-user@sagebase.org", consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService,
-                consentBodyTemplate);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, "test-user@sagebase.org", consent,
+                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
 
         // execute
         service.sendEmail(provider);

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.io.IOException;
@@ -14,6 +15,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +45,9 @@ public class SendEmailIntegTest {
     
     @Resource
     private SendMailService sendEmailService;
+    
+    @Resource
+    private SubpopulationService subpopService;
 
     private String consentBodyTemplate;
     
@@ -58,8 +63,10 @@ public class SendEmailIntegTest {
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         final Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
-        sendEmailService.sendEmail(new ConsentEmailProvider(study, SUBPOP_GUID, "bridge-testing@sagebase.org",
-                signature, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate));
+        Subpopulation subpopulation = subpopService.getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
+        sendEmailService.sendEmail(new ConsentEmailProvider(study, "bridge-testing@sagebase.org",
+                signature, SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate));
     }
     
 }

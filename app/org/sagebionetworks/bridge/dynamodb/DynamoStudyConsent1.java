@@ -20,7 +20,6 @@ public final class DynamoStudyConsent1 implements StudyConsent {
 
     private String subpopGuid;
     private long createdOn;
-    private boolean active;
     private String storagePath;
     private Long version;
 
@@ -42,15 +41,6 @@ public final class DynamoStudyConsent1 implements StudyConsent {
     @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setCreatedOn(long timestamp) {
         this.createdOn = timestamp;
-    }
-    
-    @Override
-    @DynamoDBAttribute
-    public boolean getActive() {
-        return active;
-    }
-    public void setActive(boolean active) {
-        this.active = active;    
     }
 
     @Override
@@ -74,7 +64,7 @@ public final class DynamoStudyConsent1 implements StudyConsent {
     
     @Override
     public int hashCode() {
-        return Objects.hash(active, createdOn, storagePath, subpopGuid, version);
+        return Objects.hash(createdOn, storagePath, subpopGuid, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -83,14 +73,13 @@ public final class DynamoStudyConsent1 implements StudyConsent {
         if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoStudyConsent1 other = (DynamoStudyConsent1) obj;
-        return (Objects.equals(active, other.active) && Objects.equals(createdOn, other.createdOn)
-                && Objects.equals(storagePath, other.storagePath) && Objects.equals(subpopGuid, other.subpopGuid)
-                && Objects.equals(version, other.version));
+        return (Objects.equals(createdOn, other.createdOn) && Objects.equals(storagePath, other.storagePath) 
+                && Objects.equals(subpopGuid, other.subpopGuid) && Objects.equals(version, other.version));
     }
     
     @Override
     public String toString() {
-        return String.format("DynamoStudyConsent1 [subpopGuid=%s, createdOn=%s, active=%s, storagePath=%s, version=%s]",
-            subpopGuid, createdOn, active, storagePath, version);
+        return String.format("DynamoStudyConsent1 [subpopGuid=%s, createdOn=%s, storagePath=%s, version=%s]",
+            subpopGuid, createdOn, storagePath, version);
     }
 }
