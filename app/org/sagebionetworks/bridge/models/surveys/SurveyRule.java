@@ -27,7 +27,7 @@ public final class SurveyRule {
     
     @JsonCreator
     private SurveyRule(@JsonProperty("operator") Operator operator, @JsonProperty("value") Object value,
-            @JsonProperty("skipToTarget") String skipToTarget, @JsonProperty("endSurvey") Boolean endSurvey) {
+            @JsonProperty("skipTo") String skipToTarget, @JsonProperty("endSurvey") Boolean endSurvey) {
         this.operator = operator;
         this.value = value;
         this.skipToTarget = skipToTarget;
