@@ -9,13 +9,15 @@ import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -23,6 +25,8 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 @Component
 public class DynamoUploadDao implements UploadDao {
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoUploadDao.class);
+
     private DynamoDBMapper mapper;
 
     /**
@@ -66,6 +70,7 @@ public class DynamoUploadDao implements UploadDao {
     @Override
     public void uploadComplete(@Nonnull Upload upload) {
         DynamoUpload2 upload2 = (DynamoUpload2) upload;
+
         upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
 
         // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
@@ -73,7 +78,8 @@ public class DynamoUploadDao implements UploadDao {
         try {
             mapper.save(upload2);
         } catch (ConditionalCheckFailedException ex) {
-            throw new ConcurrentModificationException("Upload " + upload.getUploadId() + " is already complete");
+            // the only other modification of upload object is during validation, so this upload must have been already marked complete
+            LOG.info("Concurrent modification of upload " + upload.getUploadId() + " while marking upload complete");
         }
     }
 
