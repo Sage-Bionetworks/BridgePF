@@ -4,10 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,6 +22,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -29,6 +32,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 
 public class DynamoUploadDaoMockTest {
+    
     @Test
     public void createUpload() {
         // mock DDB mapper
@@ -38,7 +42,7 @@ public class DynamoUploadDaoMockTest {
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
         UploadRequest req = createUploadRequest();
-        Upload upload = dao.createUpload(req, "fakeHealthCode");
+        Upload upload = dao.createUpload(req, TEST_STUDY, "fakeHealthCode");
 
         // Validate that our mock DDB mapper was called.
         ArgumentCaptor<DynamoUpload2> arg = ArgumentCaptor.forClass(DynamoUpload2.class);
@@ -46,6 +50,8 @@ public class DynamoUploadDaoMockTest {
 
         // Validate that our DDB upload object matches our upload request, and that the upload ID matches.
         assertEquals(upload.getUploadId(), arg.getValue().getUploadId());
+        assertEquals(TEST_STUDY.getIdentifier(), arg.getValue().getStudyId());
+        assertTrue(arg.getValue().getRequestedOn() > 0);
         assertEquals(req.getContentLength(), arg.getValue().getContentLength());
         assertEquals(req.getContentMd5(), arg.getValue().getContentMd5());
         assertEquals(req.getContentType(), arg.getValue().getContentType());
@@ -102,13 +108,15 @@ public class DynamoUploadDaoMockTest {
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
-        dao.uploadComplete(new DynamoUpload2());
+        dao.uploadComplete(UploadCompletionClient.APP, new DynamoUpload2());
 
         // Verify our mock. We add status=VALIDATION_IN_PROGRESS and uploadDate on save, so only check for those
         // properties.
         ArgumentCaptor<DynamoUpload2> argSave = ArgumentCaptor.forClass(DynamoUpload2.class);
         verify(mockMapper).save(argSave.capture());
         assertEquals(UploadStatus.VALIDATION_IN_PROGRESS, argSave.getValue().getStatus());
+        assertEquals(UploadCompletionClient.APP, argSave.getValue().getCompletedBy());
+        assertTrue(argSave.getValue().getCompletedOn() > 0);
 
         // There is a slim chance that this will fail if it runs just after midnight.
         assertEquals(LocalDate.now(DateTimeZone.forID("America/Los_Angeles")), argSave.getValue().getUploadDate());

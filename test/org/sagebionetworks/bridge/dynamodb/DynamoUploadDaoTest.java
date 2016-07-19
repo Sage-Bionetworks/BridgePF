@@ -2,7 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import javax.annotation.Resource;
 
@@ -18,8 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -73,9 +74,10 @@ public class DynamoUploadDaoTest {
         UploadRequest uploadRequest = UploadRequest.fromJson(uploadRequestJsonNode);
 
         // create upload
-        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_HEALTH_CODE);
+        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE);
         assertUpload(upload);
         assertEquals(UploadStatus.REQUESTED, upload.getStatus());
+        assertEquals(TEST_STUDY_IDENTIFIER, upload.getStudyId());
         assertNotNull(upload.getUploadId());
         uploadId = upload.getUploadId();
 
@@ -87,10 +89,10 @@ public class DynamoUploadDaoTest {
         DynamoUpload2 fetchedUpload2 = (DynamoUpload2) dao.getUpload(uploadId);
 
         // upload complete
-        dao.uploadComplete(fetchedUpload);
+        dao.uploadComplete(UploadCompletionClient.S3_WORKER, fetchedUpload);
 
         // subsequent call to upload should succeed
-        dao.uploadComplete(fetchedUpload2);
+        dao.uploadComplete(UploadCompletionClient.S3_WORKER, fetchedUpload2);
 
         // fetch completed upload
         DynamoUpload2 completedUpload = (DynamoUpload2) dao.getUpload(uploadId);

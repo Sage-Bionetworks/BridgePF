@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
@@ -82,7 +83,7 @@ public class UploadController extends BaseController {
             
             Upload upload = uploadService.getUpload(uploadId);
             String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
-            uploadService.uploadComplete(new StudyIdentifierImpl(studyId), upload);
+            uploadService.uploadComplete(new StudyIdentifierImpl(studyId), UploadCompletionClient.S3_WORKER, upload);
             
             return okResult("Upload " + uploadId + " complete!");
         }
@@ -95,7 +96,7 @@ public class UploadController extends BaseController {
         if (!session.getHealthCode().equals(upload.getHealthCode())) {
             throw new UnauthorizedException();
         }
-        uploadService.uploadComplete(session.getStudyIdentifier(), upload);
+        uploadService.uploadComplete(session.getStudyIdentifier(), UploadCompletionClient.APP, upload);
 
         return okResult("Upload " + uploadId + " complete!");
     }

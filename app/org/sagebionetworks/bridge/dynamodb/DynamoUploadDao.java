@@ -19,7 +19,10 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -40,12 +43,15 @@ public class DynamoUploadDao implements UploadDao {
 
     /** {@inheritDoc} */
     @Override
-    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String healthCode) {
+    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId, @Nonnull String healthCode) {
         checkNotNull(uploadRequest, "Upload request is null");
+        checkNotNull(studyId, "Study identifier is null");
         checkArgument(StringUtils.isNotBlank(healthCode), "Health code is null or blank");        
 
         // Always write new uploads to the new upload table.
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
+        upload.setStudyId(studyId.getIdentifier());
+        upload.setRequestedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(upload);
         return upload;
     }
@@ -68,13 +74,15 @@ public class DynamoUploadDao implements UploadDao {
 
     /** {@inheritDoc} */
     @Override
-    public void uploadComplete(@Nonnull Upload upload) {
+    public void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull Upload upload) {
         DynamoUpload2 upload2 = (DynamoUpload2) upload;
 
         upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
 
         // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
         upload2.setUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
+        upload2.setCompletedOn(DateUtils.getCurrentMillisFromEpoch());
+        upload2.setCompletedBy(completedBy);
         try {
             mapper.save(upload2);
         } catch (ConditionalCheckFailedException ex) {
