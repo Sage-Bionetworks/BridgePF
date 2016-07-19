@@ -18,10 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.upload.UploadClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -90,11 +90,11 @@ public class DynamoUploadDaoTest {
         DynamoUpload2 fetchedUpload2 = (DynamoUpload2) dao.getUpload(uploadId);
 
         // upload complete
-        dao.uploadComplete(BridgeConstants.UPLOAD_FINISHED_BY_WORKER, fetchedUpload);
+        dao.uploadComplete(UploadClient.S3_WORKER, fetchedUpload);
 
         // second call to upload complete throws ConcurrentModificationException
         try {
-            dao.uploadComplete(BridgeConstants.UPLOAD_FINISHED_BY_WORKER, fetchedUpload2);
+            dao.uploadComplete(UploadClient.S3_WORKER, fetchedUpload2);
             fail("expected exception");
         } catch (ConcurrentModificationException ex) {
             // expected exception

@@ -60,7 +60,7 @@ public interface Upload {
      * <p>A string indicating the client that completed the upload. The two current clients are "s3 listener" and 
      * "mobile client". </p>
      */
-    String getCompletedBy();
+    UploadClient getCompletedBy();
     
     /**
      * <p>The study identifier for this upload.</p>

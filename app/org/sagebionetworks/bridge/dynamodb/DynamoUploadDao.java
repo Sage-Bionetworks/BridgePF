@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -69,7 +70,7 @@ public class DynamoUploadDao implements UploadDao {
 
     /** {@inheritDoc} */
     @Override
-    public void uploadComplete(@Nonnull String completedBy, @Nonnull Upload upload) {
+    public void uploadComplete(@Nonnull UploadClient completedBy, @Nonnull Upload upload) {
         DynamoUpload2 upload2 = (DynamoUpload2) upload;
         upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
 

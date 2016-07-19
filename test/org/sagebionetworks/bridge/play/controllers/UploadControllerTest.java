@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
@@ -29,6 +28,7 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadClient;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
@@ -102,7 +102,7 @@ public class UploadControllerTest {
         Result result = controller.uploadComplete(UPLOAD_ID);
         TestUtils.assertResult(result, 200, "Upload upload-id complete!");
         
-        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(BridgeConstants.UPLOAD_FINISHED_BY_WORKER), uploadCaptor.capture());
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(UploadClient.S3_WORKER), uploadCaptor.capture());
         
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
@@ -117,7 +117,7 @@ public class UploadControllerTest {
         Result result = controller.uploadComplete(UPLOAD_ID);
         TestUtils.assertResult(result, 200, "Upload upload-id complete!");
         
-        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(BridgeConstants.UPLOAD_FINISHED_BY_CLIENT), uploadCaptor.capture());
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(UploadClient.APP), uploadCaptor.capture());
         
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
@@ -139,7 +139,7 @@ public class UploadControllerTest {
         } catch(UnauthorizedException e) {
             
         }
-        verify(uploadService, never()).uploadComplete(any(), eq(BridgeConstants.UPLOAD_FINISHED_BY_CLIENT), any());
+        verify(uploadService, never()).uploadComplete(any(), eq(UploadClient.APP), any());
     }
     
     @Test

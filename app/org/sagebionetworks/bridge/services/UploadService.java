@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -234,7 +235,7 @@ public class UploadService {
         return validationStatus;
     }
 
-    public void uploadComplete(StudyIdentifier studyId, String completedBy, Upload upload) {
+    public void uploadComplete(StudyIdentifier studyId, UploadClient completedBy, Upload upload) {
         String uploadId = upload.getUploadId();
 
         // We don't want to kick off upload validation on an upload that already has upload validation.

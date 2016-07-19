@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -39,7 +40,7 @@ public interface UploadDao {
      * @param upload
      *         upload to mark as completed
      */
-    void uploadComplete(@Nonnull String completedBy, @Nonnull Upload upload);
+    void uploadComplete(@Nonnull UploadClient completedBy, @Nonnull Upload upload);
 
     /**
      * Persists the validation status, message list, and health data record ID (if it exists) to the Upload metadata

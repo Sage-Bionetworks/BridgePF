@@ -26,13 +26,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.springframework.test.context.ContextConfiguration;
@@ -99,7 +99,7 @@ public class UploadServiceTest {
         assertEquals(200, reponseCode);
 
         Upload upload = uploadService.getUpload(uploadId);
-        uploadService.uploadComplete(TestConstants.TEST_STUDY, BridgeConstants.UPLOAD_FINISHED_BY_CLIENT, upload);
+        uploadService.uploadComplete(TestConstants.TEST_STUDY, UploadClient.APP, upload);
         long expiration = DateTime.now(DateTimeZone.UTC).plusDays(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());
         ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, uploadId);
