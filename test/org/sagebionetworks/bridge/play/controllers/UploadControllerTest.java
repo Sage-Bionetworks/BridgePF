@@ -139,7 +139,7 @@ public class UploadControllerTest {
         } catch(UnauthorizedException e) {
             
         }
-        verify(uploadService, never()).uploadComplete(any(), eq(UploadCompletionClient.APP), any());
+        verify(uploadService, never()).uploadComplete(any(), any(), any());
     }
     
     @Test
