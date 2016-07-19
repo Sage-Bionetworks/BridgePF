@@ -34,10 +34,10 @@ public final class SurveyRule {
         this.endSurvey = Boolean.TRUE.equals(endSurvey) ? Boolean.TRUE : null;
     }
     public SurveyRule(Operator operator, Object value, String skipToTarget) {
-        this.operator = operator;
-        this.value = value;
-        this.skipToTarget = skipToTarget;
-        this.endSurvey = null;
+        this(operator, value, skipToTarget, null);
+    }
+    public SurveyRule(Operator operator, Object value) {
+        this(operator, value, null, Boolean.TRUE);
     }
     public Operator getOperator() {
         return operator;
