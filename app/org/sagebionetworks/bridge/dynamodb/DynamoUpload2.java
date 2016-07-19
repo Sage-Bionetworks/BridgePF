@@ -12,7 +12,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.upload.Upload;
-import org.sagebionetworks.bridge.models.upload.UploadClient;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -44,7 +44,7 @@ public class DynamoUpload2 implements Upload {
     private String studyId;
     private long requestedOn;
     private long completedOn;
-    private UploadClient completedBy;
+    private UploadCompletionClient completedBy;
     private LocalDate uploadDate;
     private String uploadId;
     private final List<String> validationMessageList = new ArrayList<>();
@@ -193,12 +193,12 @@ public class DynamoUpload2 implements Upload {
     
     @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
     /** {@inheritDoc} */
-    public UploadClient getCompletedBy() {
+    public UploadCompletionClient getCompletedBy() {
         return completedBy;
     }
     
     /** @see #getCompletedBy */
-    public void setCompletedBy(UploadClient completedBy) {
+    public void setCompletedBy(UploadCompletionClient completedBy) {
         this.completedBy = completedBy;
     }
 

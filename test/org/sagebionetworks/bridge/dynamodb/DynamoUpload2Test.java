@@ -18,7 +18,7 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.upload.UploadClient;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 public class DynamoUpload2Test {
@@ -34,7 +34,7 @@ public class DynamoUpload2Test {
         DateTime completedOn = DateTime.now().withZone(DateTimeZone.UTC);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setCompletedBy(UploadClient.S3_WORKER);
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         upload.setRequestedOn(requestedOn.getMillis());
         upload.setCompletedOn(completedOn.getMillis());
         upload.setContentLength(10000L);

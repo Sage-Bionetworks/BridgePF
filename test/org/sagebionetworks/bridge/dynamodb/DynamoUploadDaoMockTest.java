@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
-import org.sagebionetworks.bridge.models.upload.UploadClient;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -108,14 +108,14 @@ public class DynamoUploadDaoMockTest {
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
-        dao.uploadComplete(UploadClient.APP, new DynamoUpload2());
+        dao.uploadComplete(UploadCompletionClient.APP, new DynamoUpload2());
 
         // Verify our mock. We add status=VALIDATION_IN_PROGRESS and uploadDate on save, so only check for those
         // properties.
         ArgumentCaptor<DynamoUpload2> argSave = ArgumentCaptor.forClass(DynamoUpload2.class);
         verify(mockMapper).save(argSave.capture());
         assertEquals(UploadStatus.VALIDATION_IN_PROGRESS, argSave.getValue().getStatus());
-        assertEquals(UploadClient.APP, argSave.getValue().getCompletedBy());
+        assertEquals(UploadCompletionClient.APP, argSave.getValue().getCompletedBy());
         assertTrue(argSave.getValue().getCompletedOn() > 0);
 
         // There is a slim chance that this will fail if it runs just after midnight.
