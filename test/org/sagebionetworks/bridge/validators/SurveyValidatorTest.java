@@ -394,7 +394,7 @@ public class SurveyValidatorTest {
         
         // This is actually the only way to create an invalid rule (deserializing JSON).
         String json = TestUtils.createJson("{'operator':'eq','value':'No',"+
-                "'skipToTarget':'theend','endSurvey':true}");
+                "'skipTo':'theend','endSurvey':true}");
         SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
         constraints.getRules().add(rule);
         
@@ -422,9 +422,12 @@ public class SurveyValidatorTest {
     @Test
     public void cannotSetEndSurveyToFalse() throws Exception {
         String json = TestUtils.createJson("{'operator':'eq','value':'No',"+
-                "'skipToTarget':'theend','endSurvey':false}");
+                "'skipTo':'theend','endSurvey':false}");
         SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
         assertNull(rule.getEndSurvey());
+        assertEquals(Operator.EQ, rule.getOperator());
+        assertEquals("theend", rule.getSkipToTarget());
+        assertEquals("No", rule.getValue());
     }
     
     @Test
