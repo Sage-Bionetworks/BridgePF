@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +37,7 @@ import com.stormpath.sdk.group.GroupList;
 import com.stormpath.sdk.group.Groups;
 import com.stormpath.sdk.mail.EmailStatus;
 import com.stormpath.sdk.mail.ModeledEmailTemplate;
+import com.stormpath.sdk.mail.ModeledEmailTemplateList;
 import com.stormpath.sdk.resource.ResourceException;
 
 @Component
@@ -177,7 +179,12 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private void adjustPasswordPolicies(Study study, Directory directory) {
         PasswordPolicy passwordPolicy = directory.getPasswordPolicy();
         
-        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().single();
+        // 7/18/2016: Stormpath has inserted extra templates into our directories, causing the 
+        // single() method call to fail (it fails when there are multiple templates). Stick to 
+        // the first template and see if this is a workaround (there's no API to delete these 
+        // unwanted templates). 
+        // ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
+        ModeledEmailTemplate template = findBridgeTemplate(passwordPolicy.getResetEmailTemplates());
         updateTemplate(study, template, study.getResetPasswordTemplate(), "resetPassword");
         
         PasswordStrength strength = passwordPolicy.getStrength();
@@ -198,7 +205,12 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private void adjustVerifyEmailPolicies(Study study, Directory directory) {
         AccountCreationPolicy policy = directory.getAccountCreationPolicy();
         
-        ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
+        // 7/18/2016: Stormpath has inserted extra templates into our directories, causing the 
+        // single() method call to fail (it fails when there are multiple templates). Stick to 
+        // the first template and see if this is a workaround (there's no API to delete these 
+        // unwanted templates). 
+        // ModeledEmailTemplate template = policy.getAccountVerificationEmailTemplates().single();
+        ModeledEmailTemplate template = findBridgeTemplate(policy.getAccountVerificationEmailTemplates());
         updateTemplate(study, template, study.getVerifyEmailTemplate(), "verifyEmail");
 
         EmailStatus verifyEmailStatus = study.isEmailVerificationEnabled() ? EmailStatus.ENABLED : EmailStatus.DISABLED;
@@ -229,6 +241,22 @@ public class StormpathDirectoryDao implements DirectoryDao {
         String link = String.format("%s/mobile/%s.html?study=%s", config.getWebservicesURL(), pageName, study.getIdentifier());
         stormpathTemplate.setLinkBaseUrl(link);
         stormpathTemplate.save();
+    }
+    
+    private ModeledEmailTemplate findBridgeTemplate(ModeledEmailTemplateList list) {
+        Iterator<ModeledEmailTemplate> iterator = list.iterator();
+        while(iterator.hasNext()) {
+            ModeledEmailTemplate template = iterator.next();
+            String body = template.getTextBody();
+            if (body == null) {
+                body = template.getHtmlBody();
+            }
+            if (body != null && !body.contains("Stormpath")) {
+                return template;
+            }
+        }
+        // If it doesn't exist... we need the one that's the default when a directory is first created.
+        return list.iterator().next();
     }
 
     public static com.stormpath.sdk.mail.MimeType getStormpathMimeType(EmailTemplate template) {

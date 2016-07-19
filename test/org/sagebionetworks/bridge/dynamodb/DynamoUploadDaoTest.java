@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
@@ -20,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -93,13 +91,8 @@ public class DynamoUploadDaoTest {
         // upload complete
         dao.uploadComplete(UploadCompletionClient.S3_WORKER, fetchedUpload);
 
-        // second call to upload complete throws ConcurrentModificationException
-        try {
-            dao.uploadComplete(UploadCompletionClient.S3_WORKER, fetchedUpload2);
-            fail("expected exception");
-        } catch (ConcurrentModificationException ex) {
-            // expected exception
-        }
+        // subsequent call to upload should succeed
+        dao.uploadComplete(UploadCompletionClient.S3_WORKER, fetchedUpload2);
 
         // fetch completed upload
         DynamoUpload2 completedUpload = (DynamoUpload2) dao.getUpload(uploadId);
