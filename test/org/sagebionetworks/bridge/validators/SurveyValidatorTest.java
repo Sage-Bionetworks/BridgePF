@@ -415,7 +415,37 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("rule cannot have a skipToTarget and endSurvey property", errorFor(e, "elements[0].rule"));
+            assertEquals("rule cannot have a skipTo target and an endSurvey property", errorFor(e, "elements[0].rule"));
+        }
+    }
+    
+    @Test
+    public void willVerifyRuleHasEitherSkipToTargetOrEndSurvey() throws Exception {
+        Survey survey = new DynamoSurvey();
+        survey.setName("Name");
+        survey.setIdentifier("Identifier");
+        survey.setStudyIdentifier("study-key");
+        survey.setGuid("guid");
+        
+        StringConstraints constraints = new StringConstraints();
+        
+        // This is actually the only way to create an invalid rule (deserializing JSON).
+        String json = TestUtils.createJson("{'operator':'eq','value':'No'}");
+        SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
+        constraints.getRules().add(rule);
+        
+        SurveyQuestion question = new DynamoSurveyQuestion();
+        question.setIdentifier("start");
+        question.setUiHint(UIHint.TEXTFIELD);
+        question.setPrompt("Prompt");
+        question.setConstraints(constraints);
+        survey.getElements().add(question);
+
+        try {
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("rule must have a skipTo target or an endSurvey property", errorFor(e, "elements[0].rule"));
         }
     }
     

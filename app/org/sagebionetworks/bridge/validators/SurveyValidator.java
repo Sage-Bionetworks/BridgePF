@@ -135,9 +135,13 @@ public class SurveyValidator implements Validator {
                     errors.pushNestedPath("elements["+i+"]");
                     // Validate the rule either has a skipTo target, or an endSurvey = TRUE, but not both.
                     if (rule.getSkipToTarget() != null && rule.getEndSurvey() != null) {
-                        rejectField(errors, "rule", "cannot have a skipToTarget and endSurvey property");
+                        rejectField(errors, "rule", "cannot have a skipTo target and an endSurvey property");
                     } 
-                    // Validate the endSurvey value is not false. This never makes sense. It's a flag.
+                    // But must have either a skipTo target or an endSurvey property
+                    else if (rule.getSkipToTarget() == null && rule.getEndSurvey() == null) {
+                        rejectField(errors, "rule", "must have a skipTo target or an endSurvey property");
+                    }
+                    // Validate the endSurvey value cannot be false
                     else if (Boolean.FALSE.equals(rule.getEndSurvey())) {
                         rejectField(errors, "rule", "cannot set endSurvey to false");
                     } 
@@ -155,10 +159,13 @@ public class SurveyValidator implements Validator {
             SurveyElement element = elements.get(i);
             if (element instanceof SurveyQuestion) {
                 for (SurveyRule rule : ((SurveyQuestion)element).getConstraints().getRules()) {
-                    if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                        errors.pushNestedPath("elements["+i+"]");
-                        rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
-                        errors.popNestedPath();
+                    // This validation only applies to skipTo target rules.
+                    if (rule.getSkipToTarget() != null) {
+                        if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                            errors.pushNestedPath("elements["+i+"]");
+                            rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
+                            errors.popNestedPath();
+                        }
                     }
                 }
             }
