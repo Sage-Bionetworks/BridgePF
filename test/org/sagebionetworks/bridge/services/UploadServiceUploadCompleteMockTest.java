@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.APP;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
@@ -18,7 +19,6 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
-import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 @SuppressWarnings("unchecked")
@@ -58,7 +58,7 @@ public class UploadServiceUploadCompleteMockTest {
         upload.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
 
         // execute
-        svc.uploadComplete(TEST_STUDY, UploadCompletionClient.APP, upload);
+        svc.uploadComplete(TEST_STUDY, APP, upload);
 
         // Verify upload DAO and validation aren't called. Can skip S3 because we don't want to over-specify our tests.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
@@ -76,7 +76,7 @@ public class UploadServiceUploadCompleteMockTest {
 
         // execute
         try {
-            svc.uploadComplete(TEST_STUDY, UploadCompletionClient.APP, upload);
+            svc.uploadComplete(TEST_STUDY, APP, upload);
             fail("expected exception");
         } catch (NotFoundException ex) {
             // expected exception
@@ -94,7 +94,7 @@ public class UploadServiceUploadCompleteMockTest {
         upload.setStatus(UploadStatus.SUCCEEDED);
 
         // execute
-        svc.uploadComplete(TEST_STUDY, UploadCompletionClient.APP, upload);
+        svc.uploadComplete(TEST_STUDY, APP, upload);
 
         // Verify S3, upload DAO and validation aren't called.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService, mockS3Client);
@@ -113,10 +113,10 @@ public class UploadServiceUploadCompleteMockTest {
         when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
 
         // execute
-        svc.uploadComplete(TestConstants.TEST_STUDY, UploadCompletionClient.APP, upload);
+        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
 
         // Verify upload DAO and validation.
-        verify(mockUploadDao).uploadComplete(UploadCompletionClient.APP, upload);
+        verify(mockUploadDao).uploadComplete(APP, upload);
         verify(mockUploadValidationService).validateUpload(TestConstants.TEST_STUDY, upload);
     }
 }

@@ -24,9 +24,9 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 public class DynamoUpload2Test {
     
     /**
-     * We will be return this object through the API in a later update to the server. For now, 
+     * We will be returning this object through the API in a later update to the server. For now, 
      * we just want to know we are persisting an object that can return the correct JSON. We 
-     * never read this object in *from* JSON.
+     * never read this object in <i>from</i> JSON.
      */
     @Test
     public void canSerialize() throws Exception {
@@ -51,7 +51,7 @@ public class DynamoUpload2Test {
         upload.setVersion(2L);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(upload);
-        assertEquals("s3 listener", node.get("completedBy").asText());
+        assertEquals("s3_worker", node.get("completedBy").asText());
         assertEquals(requestedOn.toString(), node.get("requestedOn").asText());
         assertEquals(completedOn.toString(), node.get("completedOn").asText());
         assertEquals(10000L, node.get("contentLength").asLong());

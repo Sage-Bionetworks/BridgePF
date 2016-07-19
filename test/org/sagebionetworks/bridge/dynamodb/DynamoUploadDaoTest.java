@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import javax.annotation.Resource;
 
@@ -18,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -75,10 +76,10 @@ public class DynamoUploadDaoTest {
         UploadRequest uploadRequest = UploadRequest.fromJson(uploadRequestJsonNode);
 
         // create upload
-        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TestConstants.TEST_STUDY, TEST_HEALTH_CODE);
+        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE);
         assertUpload(upload);
         assertEquals(UploadStatus.REQUESTED, upload.getStatus());
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, upload.getStudyId());
+        assertEquals(TEST_STUDY_IDENTIFIER, upload.getStudyId());
         assertNotNull(upload.getUploadId());
         uploadId = upload.getUploadId();
 
