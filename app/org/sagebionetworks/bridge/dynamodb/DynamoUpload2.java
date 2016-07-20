@@ -84,6 +84,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** The base64-encoded, 128-bit MD5 digest of the object body. */
+    @JsonIgnore
     public String getContentMd5() {
         return contentMd5;
     }
@@ -94,6 +95,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** MIME content type. */
+    @JsonIgnore
     public String getContentType() {
         return contentType;
     }
@@ -105,6 +107,7 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @Override
+    @JsonIgnore
     public String getFilename() {
         return filename;
     }
@@ -129,6 +132,7 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @DynamoDBIgnore
+    @JsonIgnore
     @Override
     public String getObjectId() {
         // In DynamoUpload2, object ID and upload ID are the same.
@@ -137,6 +141,7 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @Override
+    @JsonIgnore
     public String getRecordId() {
         return recordId;
     }
@@ -159,6 +164,7 @@ public class DynamoUpload2 implements Upload {
     }
     
     /** {@inheritDoc} */
+    @JsonIgnore
     public String getStudyId() {
         return studyId;
     }
@@ -270,6 +276,7 @@ public class DynamoUpload2 implements Upload {
 
     /** DynamoDB version, used for optimistic locking */
     @DynamoDBVersionAttribute
+    @JsonIgnore
     public Long getVersion() {
         return version;
     }

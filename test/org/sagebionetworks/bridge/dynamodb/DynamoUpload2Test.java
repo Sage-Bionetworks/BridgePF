@@ -55,16 +55,16 @@ public class DynamoUpload2Test {
         assertEquals(requestedOn.toString(), node.get("requestedOn").asText());
         assertEquals(completedOn.toString(), node.get("completedOn").asText());
         assertEquals(10000L, node.get("contentLength").asLong());
-        assertEquals("abc", node.get("contentMd5").asText());
-        assertEquals("application/json", node.get("contentType").asText());
-        assertEquals("filename.zip", node.get("filename").asText());
-        assertNull(node.get("healthCode"));
-        assertEquals("ABC", node.get("recordId").asText());
         assertEquals("succeeded", node.get("status").asText());
-        assertEquals("api", node.get("studyId").asText());
         assertEquals("2016-10-10", node.get("uploadDate").asText());
         assertEquals("DEF", node.get("uploadId").asText());
-        assertEquals(2L, node.get("version").asLong());
+        assertNull(node.get("contentMd5"));
+        assertNull(node.get("contentType"));
+        assertNull(node.get("filename"));
+        assertNull(node.get("recordId"));
+        assertNull(node.get("studyId"));
+        assertNull(node.get("version"));
+        assertNull(node.get("healthCode"));
         
         ArrayNode messages = (ArrayNode)node.get("validationMessageList");
         assertEquals("message 1", messages.get(0).asText());
