@@ -16,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -26,6 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -199,6 +201,19 @@ public class ParticipantController extends BaseController {
         return okResult("User has been withdrawn from the study.");
     }
     
+    public Result getUploads(String userId, String startTimeString, String endTimeString) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
+        
+        DateTimeRangeResourceList<? extends Upload> uploads = participantService.getUploads(
+                study, userId, startTime, endTime);
+
+        return okResult(uploads);
+    }
+    
     private int getIntOrDefault(String value, int defaultValue) {
         if (isBlank(value)) {
             return defaultValue;
@@ -207,6 +222,17 @@ public class ParticipantController extends BaseController {
             return parseInt(value);
         } catch(NumberFormatException e) {
             throw new BadRequestException(value + " is not an integer");
+        }
+    }
+    
+    private DateTime getDateTimeOrDefault(String value, DateTime defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return DateTime.parse(value);
+        } catch(Exception e) {
+            throw new BadRequestException(value + " is not an ISO timestamp");
         }
     }
 

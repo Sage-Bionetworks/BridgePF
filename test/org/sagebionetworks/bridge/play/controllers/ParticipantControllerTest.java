@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,6 +44,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -53,6 +55,7 @@ import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -72,14 +75,16 @@ public class ParticipantControllerTest {
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     
     private static final TypeReference<PagedResourceList<ScheduledActivity>> PAGED_ACTIVITIES_REF = new TypeReference<PagedResourceList<ScheduledActivity>>() {};
+
+    private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
+    
+    private static final TypeReference<DateTimeRangeResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<DateTimeRangeResourceList<? extends Upload>>(){};
     
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
     private static final String ID = "ASDF";
 
     private static final String EMAIL = "email@email.com";
-
-    private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
 
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email", "id",
             DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
@@ -532,6 +537,39 @@ public class ParticipantControllerTest {
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }
+    }
+    
+    @Test
+    public void getUploads() throws Exception {
+        DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z").withZone(DateTimeZone.UTC);
+        DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z").withZone(DateTimeZone.UTC);
+        
+        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
+                startTime, endTime);
+        doReturn(uploads).when(participantService).getUploads(study, ID, startTime, endTime);
+        
+        Result result = controller.getUploads(ID, startTime.toString(), endTime.toString());
+        assertEquals(200, result.status());
+        
+        verify(participantService).getUploads(study, ID, startTime, endTime);
+        
+        // in other words, it's the object we mocked out from the service, we were returned the value.
+        DateTimeRangeResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), UPLOADS_REF);
+        assertEquals(startTime, retrieved.getStartTime());
+        assertEquals(endTime, retrieved.getEndTime());
+    }
+    
+    @Test
+    public void getUploadsNullsDateRange() throws Exception {
+        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
+                null, null);
+        doReturn(uploads).when(participantService).getUploads(study, ID, null, null);
+        
+        Result result = controller.getUploads(ID, null, null);
+        assertEquals(200, result.status());
+        
+        verify(participantService).getUploads(study, ID, null, null);
     }
     
     private PagedResourceList<ScheduledActivity> createActivityResults() {

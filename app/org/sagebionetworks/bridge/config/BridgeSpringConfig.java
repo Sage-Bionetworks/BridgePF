@@ -308,6 +308,13 @@ public class BridgeSpringConfig {
         return dynamoUtils.getMapper(DynamoSchedulePlan.class);
     }
     
+    @Bean(name = "uploadHealthCodeRequestedOnIndex")
+    @Autowired
+    public DynamoIndexHelper uploadHealthCodeRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoUpload2.class, "healthCode-requestedOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+    }
+    
     @Bean(name = "healthDataHealthCodeIndex")
     @Autowired
     public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDBClient dynamoDBClient,

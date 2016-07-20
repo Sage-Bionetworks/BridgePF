@@ -4,13 +4,17 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +24,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -31,16 +36,25 @@ public class DynamoUploadDao implements UploadDao {
     private static final Logger LOG = LoggerFactory.getLogger(DynamoUploadDao.class);
 
     private DynamoDBMapper mapper;
-
+    private DynamoIndexHelper healthCodeRequestedOnIndex;
+    
     /**
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
      * Spring.
      */
     @Resource(name = "uploadDdbMapper")
-    public void setDdbMapper(DynamoDBMapper mapper) {
+    final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
 
+    /**
+     * DynamoDB Index reference for the healthCode-requestedOn index. 
+     */
+    @Resource(name = "uploadHealthCodeRequestedOnIndex")
+    final void setHealthCodeRequestedOnIndex(DynamoIndexHelper healthCodeRequestedOnIndex) {
+        this.healthCodeRequestedOnIndex = healthCodeRequestedOnIndex;
+    }
+    
     /** {@inheritDoc} */
     @Override
     public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId, @Nonnull String healthCode) {
@@ -70,6 +84,22 @@ public class DynamoUploadDao implements UploadDao {
         }
 
         throw new NotFoundException(String.format("Upload ID %s not found", uploadId));
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public DateTimeRangeResourceList<? extends Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime) {
+        RangeKeyCondition condition = new RangeKeyCondition("requestedOn").between(
+                startTime.getMillis(), endTime.getMillis());
+        
+        List<DynamoUpload2> keysToGet = healthCodeRequestedOnIndex.queryKeys(DynamoUpload2.class, "healthCode", healthCode,
+                condition);
+
+        List<? extends Upload> results = keysToGet.stream().map(key -> {
+            return mapper.load(key);
+        }).collect(Collectors.toList());
+        
+        return new DateTimeRangeResourceList<>(results, startTime, endTime);
     }
 
     /** {@inheritDoc} */
