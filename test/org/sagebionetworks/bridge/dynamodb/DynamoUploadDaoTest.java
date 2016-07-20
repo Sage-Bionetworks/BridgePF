@@ -2,13 +2,18 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+
+import java.util.Set;
 
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
@@ -20,6 +25,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -41,28 +48,29 @@ public class DynamoUploadDaoTest {
     @SuppressWarnings("unused")
     private DynamoDBMapper mapper;
 
-    private String uploadId;
+    private Set<String> uploadIds;
 
     @Before
     public void setup() {
-        DateTimeUtils.setCurrentMillisFixed(MOCK_NOW.getMillis());
-
         // clear state, since JUnit doesn't always do so
-        uploadId = null;
+        uploadIds = Sets.newHashSet();
     }
 
     @After
     public void cleanup() {
         DateTimeUtils.setCurrentMillisSystem();
 
-        if (uploadId != null) {
-            DynamoUpload2 upload = (DynamoUpload2) dao.getUpload(uploadId);
-            mapper.delete(upload);
+        if (!uploadIds.isEmpty()) {
+            for (String uploadId : uploadIds) {
+                DynamoUpload2 upload = (DynamoUpload2) dao.getUpload(uploadId);
+                mapper.delete(upload);
+            }
         }
     }
 
-    @Test
-    public void test() throws Exception {
+    private UploadRequest createRequest() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed(MOCK_NOW.getMillis());
+
         // Create upload request. For some reason, this can only be created through JSON.
         String uploadRequestJsonText = "{\n" +
                 "   \"contentLength\":" + UPLOAD_CONTENT_LENGTH + ",\n" +
@@ -71,7 +79,12 @@ public class DynamoUploadDaoTest {
                 "   \"name\":\"" + UPLOAD_NAME + "\"\n" +
                 "}";
         JsonNode uploadRequestJsonNode = BridgeObjectMapper.get().readTree(uploadRequestJsonText);
-        UploadRequest uploadRequest = UploadRequest.fromJson(uploadRequestJsonNode);
+        return UploadRequest.fromJson(uploadRequestJsonNode);
+    }
+    
+    @Test
+    public void test() throws Exception {
+        UploadRequest uploadRequest = createRequest();
 
         // create upload
         DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE);
@@ -79,14 +92,14 @@ public class DynamoUploadDaoTest {
         assertEquals(UploadStatus.REQUESTED, upload.getStatus());
         assertEquals(TEST_STUDY_IDENTIFIER, upload.getStudyId());
         assertNotNull(upload.getUploadId());
-        uploadId = upload.getUploadId();
+        uploadIds.add(upload.getUploadId());
 
         // get upload back from dao
-        DynamoUpload2 fetchedUpload = (DynamoUpload2) dao.getUpload(uploadId);
+        DynamoUpload2 fetchedUpload = (DynamoUpload2) dao.getUpload(upload.getUploadId());
         assertUpload(fetchedUpload);
 
         // Fetch it again. We'll need a second copy to test concurrent modification exceptions later.
-        DynamoUpload2 fetchedUpload2 = (DynamoUpload2) dao.getUpload(uploadId);
+        DynamoUpload2 fetchedUpload2 = (DynamoUpload2) dao.getUpload(upload.getUploadId());
 
         // upload complete
         dao.uploadComplete(UploadCompletionClient.S3_WORKER, fetchedUpload);
@@ -95,10 +108,42 @@ public class DynamoUploadDaoTest {
         dao.uploadComplete(UploadCompletionClient.S3_WORKER, fetchedUpload2);
 
         // fetch completed upload
-        DynamoUpload2 completedUpload = (DynamoUpload2) dao.getUpload(uploadId);
+        DynamoUpload2 completedUpload = (DynamoUpload2) dao.getUpload(upload.getUploadId());
         assertUpload(completedUpload);
         assertEquals(UploadStatus.VALIDATION_IN_PROGRESS, completedUpload.getStatus());
         assertEquals(MOCK_NOW.toLocalDate(), completedUpload.getUploadDate());
+    }
+    
+    @Test
+    public void canRetrieveUploadRecords() throws Exception {
+        UploadRequest uploadRequest = createRequest();
+        Upload upload1 = dao.createUpload(uploadRequest, TEST_STUDY, "code1");
+        uploadIds.add(upload1.getUploadId());
+        
+        uploadRequest = createRequest();
+        Upload upload2 = dao.createUpload(uploadRequest, TEST_STUDY, "code2");
+        uploadIds.add(upload2.getUploadId());
+        
+        // GSIs are eventually consistent. Try sleeping here.
+        Thread.sleep(2000);
+        
+        DateTimeRangeResourceList<? extends Upload> uploads = dao.getUploads("code1", DateTime.now().minusMinutes(1),
+                DateTime.now());
+        assertEquals(1, uploads.getTotal());
+        assertEquals(1, uploads.getItems().size());
+        assertEquals(upload1.getUploadId(), uploads.getItems().get(0).getUploadId());
+        
+        // This is a range outside of the just created records... should not return anything.
+        uploads = dao.getUploads("code1", DateTime.now().minusMinutes(3), DateTime.now().minusMinutes(2));
+        assertEquals(0, uploads.getItems().size());
+    }
+    
+    @Test
+    public void uploadRecordsEmpty() throws Exception {
+        DateTimeRangeResourceList<? extends Upload> uploads = dao.getUploads("nonexistentCode",
+                DateTime.now().minusMinutes(1), DateTime.now());
+        
+        assertTrue(uploads.getItems().isEmpty());
     }
 
     private static void assertUpload(DynamoUpload2 upload) {

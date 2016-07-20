@@ -148,6 +148,9 @@ public class ParticipantServiceTest {
     private ExternalIdService externalIdService;
     
     @Mock
+    private UploadService uploadService;
+    
+    @Mock
     private Subpopulation subpopulation;
     
     @Captor
@@ -179,6 +182,7 @@ public class ParticipantServiceTest {
         participantService.setCacheProvider(cacheProvider);
         participantService.setExternalIdService(externalIdService);
         participantService.setScheduledActivityDao(activityDao);
+        participantService.setUploadService(uploadService);
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
@@ -831,6 +835,27 @@ public class ParticipantServiceTest {
         participantService.withdrawAllConsents(STUDY, ID, withdrawal, withdrewOn);
         
         verify(consentService).withdrawAllConsents(STUDY, account, withdrawal, withdrewOn);
+    }
+    
+    @Test
+    public void getUploads() {
+        mockHealthCodeAndAccountRetrieval();
+        DateTime startTime = DateTime.parse("2015-11-01T00:00:00.000Z");
+        DateTime endTime = DateTime.parse("2015-11-01T23:59:59.999Z");
+        
+        participantService.getUploads(STUDY, ID, startTime, endTime);
+        
+        verify(uploadService).getUploads(HEALTH_CODE, startTime, endTime);
+    }
+    
+    @Test
+    public void getUploadsWithoutDates() {
+        // Just verify this throws no exceptions
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.getUploads(STUDY, ID, null, null);
+        
+        verify(uploadService).getUploads(HEALTH_CODE, null, null);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

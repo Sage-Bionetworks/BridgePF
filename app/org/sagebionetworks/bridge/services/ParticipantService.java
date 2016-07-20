@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -44,6 +46,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -69,6 +72,8 @@ public class ParticipantService {
     private CacheProvider cacheProvider;
     
     private ScheduledActivityDao activityDao;
+    
+    private UploadService uploadService;
     
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
@@ -103,6 +108,11 @@ public class ParticipantService {
     @Autowired
     final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
         this.activityDao = activityDao;
+    }
+    
+    @Autowired
+    final void setUploadService(UploadService uploadService) {
+        this.uploadService = uploadService;
     }
 
     public StudyParticipant getParticipant(Study study, String id, boolean includeHistory) {
@@ -242,7 +252,41 @@ public class ParticipantService {
         StudyParticipant participant = getParticipant(study, userId, false);
         consentService.emailConsentAgreement(study, subpopGuid, participant);
     }
+    
+    /**
+     * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not. 
+     * 
+     * @param account
+     * @param subpopGuid
+     */
+    public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
+        return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
+            Subpopulation subpop = subpopService.getSubpopulation(account.getStudyIdentifier(), subpopGuid);
+            boolean hasSignedActiveConsent = (signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
+            
+            return new UserConsentHistory.Builder()
+                .withName(signature.getName())
+                .withSubpopulationGuid(subpopGuid)
+                .withBirthdate(signature.getBirthdate())
+                .withImageData(signature.getImageData())
+                .withImageMimeType(signature.getImageMimeType())
+                .withSignedOn(signature.getSignedOn())
+                .withHealthCode(account.getHealthCode())
+                .withWithdrewOn(signature.getWithdrewOn())
+                .withConsentCreatedOn(signature.getConsentCreatedOn())
+                .withHasSignedActiveConsent(hasSignedActiveConsent).build();
+        }).collect(BridgeCollectors.toImmutableList());
+    }
 
+    public DateTimeRangeResourceList<? extends Upload> getUploads(Study study, String userId, DateTime startTime, DateTime endTime) {
+        checkNotNull(study);
+        checkNotNull(userId);
+        
+        Account account = getAccountThrowingException(study, userId);
+        
+        return uploadService.getUploads(account.getHealthCode(), startTime, endTime);
+    }
+    
     private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
             boolean isNew, boolean sendVerifyEmail) {
         checkNotNull(study);
@@ -355,31 +399,6 @@ public class ParticipantService {
             throw new EntityNotFoundException(Account.class);
         }
         return account;
-    }
-    
-    /**
-     * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not. 
-     * 
-     * @param account
-     * @param subpopGuid
-     */
-    public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
-        return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
-            Subpopulation subpop = subpopService.getSubpopulation(account.getStudyIdentifier(), subpopGuid);
-            boolean hasSignedActiveConsent = (signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
-            
-            return new UserConsentHistory.Builder()
-                .withName(signature.getName())
-                .withSubpopulationGuid(subpopGuid)
-                .withBirthdate(signature.getBirthdate())
-                .withImageData(signature.getImageData())
-                .withImageMimeType(signature.getImageMimeType())
-                .withSignedOn(signature.getSignedOn())
-                .withHealthCode(account.getHealthCode())
-                .withWithdrewOn(signature.getWithdrewOn())
-                .withConsentCreatedOn(signature.getConsentCreatedOn())
-                .withHasSignedActiveConsent(hasSignedActiveConsent).build();
-        }).collect(BridgeCollectors.toImmutableList());
     }
     
 }
