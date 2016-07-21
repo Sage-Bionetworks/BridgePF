@@ -23,6 +23,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 
@@ -177,6 +179,7 @@ public class DynamoUpload2 implements Upload {
     /** {@inheritDoc} */
     @DynamoDBIndexRangeKey(attributeName = "requestedOn", globalSecondaryIndexName = "healthCode-requestedOn-index")
     @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @JsonInclude(Include.NON_DEFAULT)
     public long getRequestedOn() {
         return requestedOn;
     }
@@ -188,6 +191,7 @@ public class DynamoUpload2 implements Upload {
     
     /** {@inheritDoc} */
     @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @JsonInclude(Include.NON_DEFAULT)
     public long getCompletedOn() {
         return completedOn;
     }
