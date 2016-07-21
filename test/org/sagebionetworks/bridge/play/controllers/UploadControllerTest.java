@@ -57,6 +57,9 @@ public class UploadControllerTest {
     private UserSession workerSession;
     
     @Mock
+    private UserSession researcherSession;
+    
+    @Mock
     private UserSession consentedUserSession;
     
     @Mock
@@ -89,6 +92,10 @@ public class UploadControllerTest {
         doReturn(false).when(consentedUserSession).isInRole(Roles.WORKER);
         
         doReturn("other-user-health-code").when(otherUserSession).getHealthCode();
+
+        doReturn("researcher-health-code").when(researcherSession).getHealthCode();
+        doReturn(new StudyIdentifierImpl("researcher-study-id")).when(researcherSession).getStudyIdentifier();
+        doReturn(true).when(researcherSession).isInRole(Roles.RESEARCHER);
         
         doReturn("worker-study-id").when(healthCodeDao).getStudyIdentifier("worker-health-code");
         doReturn("consented-user-study-id").when(healthCodeDao).getStudyIdentifier("consented-user-health-code");
@@ -144,7 +151,7 @@ public class UploadControllerTest {
     
     @Test
     public void getValidationStatusWorks() throws Exception {
-        doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(consentedUserSession).when(controller).getConsentedOrInRoleSession(Roles.RESEARCHER);
         
         UploadValidationStatus status = new UploadValidationStatus.Builder()
                 .withId(UPLOAD_ID)
@@ -164,9 +171,24 @@ public class UploadControllerTest {
         assertEquals("There was a valdation error", errors.get(0).asText());
     }
     
+    @Test
+    public void getValidationStatusWorksForResearcher() throws Exception {
+        doReturn(researcherSession).when(controller).getConsentedOrInRoleSession(Roles.RESEARCHER);
+        
+        UploadValidationStatus status = new UploadValidationStatus.Builder()
+                .withId(UPLOAD_ID)
+                .withMessageList(Lists.newArrayList("There was a valdation error"))
+                .withStatus(UploadStatus.VALIDATION_FAILED).build();
+        
+        doReturn(status).when(uploadService).getUploadValidationStatus(UPLOAD_ID);
+        
+        Result result = controller.getValidationStatus(UPLOAD_ID);
+        assertEquals(200, result.status());
+    }
+    
     @Test(expected = UnauthorizedException.class)
     public void getValidationStatusEnforcesHealthCodeMatch() throws Exception {
-        doReturn(otherUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(otherUserSession).when(controller).getConsentedOrInRoleSession(Roles.RESEARCHER);
         
         UploadValidationStatus status = new UploadValidationStatus.Builder()
                 .withId(UPLOAD_ID)

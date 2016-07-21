@@ -77,8 +77,15 @@ public class UserSession {
     public boolean hasSignedMostRecentConsent() {
         return ConsentStatus.isConsentCurrent(consentStatuses);
     }
-    public boolean isInRole(Roles role) {
-        return (role != null && participant.getRoles().contains(role));
+    public boolean isInRole(Roles... roles) {
+        // You should not be calling this variant of the method without at least one role.
+        checkNotNull(roles);
+        for (Roles role : roles) {
+            if (participant.getRoles().contains(role)) {
+                return true;
+            }
+        }
+        return false;
     }
     public boolean isInRole(Set<Roles> roleSet) {
         return roleSet != null && !Collections.disjoint(participant.getRoles(), roleSet);
