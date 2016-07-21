@@ -145,6 +145,9 @@ public abstract class BaseController extends Controller {
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
+        Study study = studyService.getStudy(session.getStudyIdentifier());        
+        verifySupportedVersionOrThrowException(study);
+        
         // If the user has roles, and this call is testing for roles, 
         // it is tested first on authorization under a role.
         boolean hasRoles = !session.getParticipant().getRoles().isEmpty();
