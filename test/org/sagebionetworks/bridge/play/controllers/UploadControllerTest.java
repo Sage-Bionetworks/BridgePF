@@ -93,21 +93,14 @@ public class UploadControllerTest {
         
         doReturn("consented-user-health-code").when(consentedUserSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(consentedUserSession).getStudyIdentifier();
-        doReturn(false).when(consentedUserSession).isInRole(Roles.WORKER);
-        doReturn(true).when(consentedUserSession).isInRole(Roles.TEST_USERS);
         doReturn(true).when(consentedUserSession).isAuthenticated();
         doReturn(true).when(consentedUserSession).doesConsent();
-        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.TEST_USERS)).build();
-        doReturn(participant).when(consentedUserSession).getParticipant();
         
         doReturn("researcher-health-code").when(researcherSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("researcher-study-id")).when(researcherSession).getStudyIdentifier();
         doReturn(true).when(researcherSession).isInRole(Roles.RESEARCHER);
         doReturn(true).when(researcherSession).isAuthenticated();
         doReturn(false).when(researcherSession).doesConsent();
-        // This session requires mocking of the study participant
-        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
-        doReturn(participant).when(researcherSession).getParticipant();
         
         doReturn("other-user-health-code").when(otherUserSession).getHealthCode();
         participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
