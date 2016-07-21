@@ -171,4 +171,13 @@ public class DynamoUpload2Test {
         assertEquals(1, list4.size());
         assertEquals("third message", list4.get(0));
     }
+    
+    @Test
+    public void emptyTimestampsAreNotSerialized() throws Exception {
+        DynamoUpload2 upload = new DynamoUpload2();
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(upload);
+        assertNull(node.get("requestedOn"));
+        assertNull(node.get("completedOn"));
+    }
 }
