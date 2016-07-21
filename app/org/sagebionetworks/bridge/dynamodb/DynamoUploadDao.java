@@ -16,12 +16,11 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -33,8 +32,6 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 @Component
 public class DynamoUploadDao implements UploadDao {
-    private static final Logger LOG = LoggerFactory.getLogger(DynamoUploadDao.class);
-
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeRequestedOnIndex;
     
@@ -116,8 +113,7 @@ public class DynamoUploadDao implements UploadDao {
         try {
             mapper.save(upload2);
         } catch (ConditionalCheckFailedException ex) {
-            // the only other modification of upload object is during validation, so this upload must have been already marked complete
-            LOG.info("Concurrent modification of upload " + upload.getUploadId() + " while marking upload complete");
+            throw new ConcurrentModificationException("Upload " + upload.getUploadId() + " is already complete");
         }
     }
 

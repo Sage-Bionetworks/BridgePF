@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -288,7 +289,19 @@ public class UploadService {
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {
             logger.error("Missing S3 server-side encryption (SSE) for presigned upload " + uploadId + ".");
         }
-        uploadDao.uploadComplete(completedBy, upload);
+
+        try {
+            uploadDao.uploadComplete(completedBy, upload);
+        } catch (ConcurrentModificationException ex) {
+            // The old workflow is the app calls uploadComplete. The new workflow has an S3 trigger to call
+            // uploadComplete. During the transition, it's very likely that this will be called twice, sometimes
+            // concurrently. As such, we should log and squelch the ConcurrentModificationException.
+            logger.info("Concurrent modification of upload " + uploadId + " while marking upload complete");
+
+            // Also short-circuit the call early, so we don't end up validating the upload twice, as this causes errors
+            // and duplicate records.
+            return;
+        }
 
         // kick off upload validation
         uploadValidationService.validateUpload(studyId, upload);
