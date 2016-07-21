@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Locale.LanguageRange;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -148,10 +149,13 @@ public abstract class BaseController extends Controller {
         Study study = studyService.getStudy(session.getStudyIdentifier());        
         verifySupportedVersionOrThrowException(study);
         
-        // If the user has roles, and this call is testing for roles, 
-        // it is tested first on authorization under a role.
-        boolean hasRoles = !session.getParticipant().getRoles().isEmpty();
-        if (hasRoles && roles != null && roles.length > 0) {
+        // If the user has roles, and this call is testing for roles, it is tested first on 
+        // authorization under a role. Test users have a test role which messes this up... 
+        // remove it.
+        Set<Roles> userRoles = Sets.newHashSet(session.getParticipant().getRoles());
+        userRoles.remove(Roles.TEST_USERS);
+        
+        if (!userRoles.isEmpty() && roles != null && roles.length > 0) {
             if (session.isInRole(Sets.newHashSet(roles))) {
                 return session;
             }
