@@ -148,12 +148,9 @@ public abstract class BaseController extends Controller {
         // If the user has roles, and this call is testing for roles, 
         // it is tested first on authorization under a role.
         boolean hasRoles = !session.getParticipant().getRoles().isEmpty();
-
         if (hasRoles && roles != null && roles.length > 0) {
-            for (Roles role : roles) {
-                if (session.isInRole(role)) {
-                    return session;
-                }
+            if (session.isInRole(Sets.newHashSet(roles))) {
+                return session;
             }
             throw new UnauthorizedException();
         }
