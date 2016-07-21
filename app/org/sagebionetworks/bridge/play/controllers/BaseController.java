@@ -139,6 +139,29 @@ public abstract class BaseController extends Controller {
         }
         throw new UnauthorizedException();
     }
+    
+    UserSession getSessionEitherConsentedOrInRole(Roles... roles) {
+        final UserSession session = getSessionIfItExists();
+        if (session == null || !session.isAuthenticated()) {
+            throw new NotAuthenticatedException();
+        }
+        // If the user has roles, and this call is testing for roles, 
+        // it is tested first on authorization under a role.
+        boolean hasRoles = !session.getParticipant().getRoles().isEmpty();
+
+        if (hasRoles && roles != null && roles.length > 0) {
+            for (Roles role : roles) {
+                if (session.isInRole(role)) {
+                    return session;
+                }
+            }
+            throw new UnauthorizedException();
+        }
+        if (!session.doesConsent()) {
+            throw new ConsentRequiredException(session);
+        }
+        return session;
+    }
 
     void setSessionToken(String sessionToken) {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");

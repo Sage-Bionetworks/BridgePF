@@ -39,12 +39,14 @@ public class UploadController extends BaseController {
 
     /** Gets validation status and messages for the given upload ID. */
     public Result getValidationStatus(String uploadId) throws JsonProcessingException {
-        UserSession session = getAuthenticatedAndConsentedSession();
+        UserSession session = getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
         
-        // Validate that this user owns the upload
-        Upload upload = uploadService.getUpload(uploadId);
-        if (!session.getHealthCode().equals(upload.getHealthCode())) {
-            throw new UnauthorizedException();
+        // If not a researcher, validate that this user owns the upload
+        if (!session.isInRole(Roles.RESEARCHER)) {
+            Upload upload = uploadService.getUpload(uploadId);
+            if (!session.getHealthCode().equals(upload.getHealthCode())) {
+                throw new UnauthorizedException();
+            }
         }
         
         UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(uploadId);
@@ -52,7 +54,7 @@ public class UploadController extends BaseController {
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
         return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
     }
-
+    
     public Result upload() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
