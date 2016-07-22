@@ -3,11 +3,21 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.joda.time.DateTime;
+
 import com.google.common.collect.ImmutableList;
+
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -17,15 +27,35 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 
 @SuppressWarnings("unchecked")
+@RunWith(MockitoJUnitRunner.class)
 public class UploadServiceMockTest {
+    
+    private static final DateTime START_TIME = DateTime.parse("2016-04-02T10:00:00.000Z");
+    private static final DateTime END_TIME = DateTime.parse("2016-04-03T10:00:00.000Z");
+    
+    @Mock
+    private UploadDao mockDao;
+    
+    @Mock
+    private HealthDataService mockHealthDataService;
+    
+    private UploadService svc;
+    
+    @Before
+    public void before() {
+        svc = new UploadService();
+        svc.setUploadDao(mockDao);
+        svc.setHealthDataService(mockHealthDataService);
+    }
+    
     @Test(expected = BadRequestException.class)
     public void getNullUploadId() {
-        new UploadService().getUpload(null);
+        svc.getUpload(null);
     }
 
     @Test(expected = BadRequestException.class)
     public void getEmptyUploadId() {
-        new UploadService().getUpload("");
+        svc.getUpload("");
     }
 
     @Test
@@ -33,14 +63,9 @@ public class UploadServiceMockTest {
         // This is a simple call through to the DAO. Test the data flow.
 
         // mock upload dao
-        UploadDao mockDao = mock(UploadDao.class);
         DynamoUpload2 mockUpload = new DynamoUpload2();
         mockUpload.setHealthCode("getUpload");
         when(mockDao.getUpload("test-upload-id")).thenReturn(mockUpload);
-
-        // create test service with mock
-        UploadService svc = new UploadService();
-        svc.setUploadDao(mockDao);
 
         // execute and validate
         Upload retVal = svc.getUpload("test-upload-id");
@@ -49,12 +74,12 @@ public class UploadServiceMockTest {
 
     @Test(expected = BadRequestException.class)
     public void getStatusNullUploadId() {
-        new UploadService().getUploadValidationStatus(null);
+        svc.getUploadValidationStatus(null);
     }
 
     @Test(expected = BadRequestException.class)
     public void getStatusEmptyUploadId() {
-        new UploadService().getUploadValidationStatus("");
+        svc.getUploadValidationStatus("");
     }
 
     @Test
@@ -66,12 +91,7 @@ public class UploadServiceMockTest {
         mockUpload.setUploadId("no-record-id");
         mockUpload.setValidationMessageList(ImmutableList.of("getStatus - message"));
 
-        UploadDao mockDao = mock(UploadDao.class);
         when(mockDao.getUpload("no-record-id")).thenReturn(mockUpload);
-
-        // create test service with mock
-        UploadService svc = new UploadService();
-        svc.setUploadDao(mockDao);
 
         // execute and validate
         UploadValidationStatus status = svc.getUploadValidationStatus("no-record-id");
@@ -93,18 +113,11 @@ public class UploadServiceMockTest {
         mockUpload.setUploadId("with-record-id");
         mockUpload.setValidationMessageList(ImmutableList.of("getStatusWithRecord - message"));
 
-        UploadDao mockDao = mock(UploadDao.class);
         when(mockDao.getUpload("with-record-id")).thenReturn(mockUpload);
 
         // mock health data service
         DynamoHealthDataRecord dummyRecord = new DynamoHealthDataRecord();
-        HealthDataService mockHealthDataService = mock(HealthDataService.class);
         when(mockHealthDataService.getRecordById("test-record-id")).thenReturn(dummyRecord);
-
-        // create test service with mocks
-        UploadService svc = new UploadService();
-        svc.setHealthDataService(mockHealthDataService);
-        svc.setUploadDao(mockDao);
 
         // execute and validate
         UploadValidationStatus status = svc.getUploadValidationStatus("with-record-id");
@@ -127,17 +140,10 @@ public class UploadServiceMockTest {
         mockUpload.setUploadId("with-record-id");
         mockUpload.setValidationMessageList(ImmutableList.of("getStatusRecordIdWithNoRecord - message"));
 
-        UploadDao mockDao = mock(UploadDao.class);
         when(mockDao.getUpload("with-record-id")).thenReturn(mockUpload);
 
         // mock health data service
-        HealthDataService mockHealthDataService = mock(HealthDataService.class);
         when(mockHealthDataService.getRecordById("missing-record-id")).thenThrow(IllegalArgumentException.class);
-
-        // create test service with mocks
-        UploadService svc = new UploadService();
-        svc.setHealthDataService(mockHealthDataService);
-        svc.setUploadDao(mockDao);
 
         // execute and validate
         UploadValidationStatus status = svc.getUploadValidationStatus("with-record-id");
@@ -147,5 +153,47 @@ public class UploadServiceMockTest {
 
         assertEquals(1, status.getMessageList().size());
         assertEquals("getStatusRecordIdWithNoRecord - message", status.getMessageList().get(0));
+    }
+    
+    @Test
+    public void canGetUploads() {
+        svc.getUploads("ABC", START_TIME, END_TIME);
+        verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
+    }
+    
+    @Test
+    public void canPassStartTimeOnly() {
+        svc.getUploads("ABC", START_TIME, null);
+        verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
+    }
+    
+    @Test
+    public void canPassEndTimeOnly() {
+        svc.getUploads("ABC", null, END_TIME);
+        verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
+    }
+    
+    @Test
+    public void canPassNoTimes() {
+        ArgumentCaptor<DateTime> start = ArgumentCaptor.forClass(DateTime.class);
+        ArgumentCaptor<DateTime> end = ArgumentCaptor.forClass(DateTime.class);
+        
+        svc.getUploads("ABC", null, null);
+        
+        verify(mockDao).getUploads(eq("ABC"), start.capture(), end.capture());
+        
+        DateTime actualStart = start.getValue();
+        DateTime actualEnd = end.getValue();
+        assertEquals(actualStart.plusDays(1), actualEnd);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void verifiesEndTimeNotBeforeStartTime() {
+        svc.getUploads("ABC", END_TIME, START_TIME);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifiesTimeRange() {
+        svc.getUploads("ABC", START_TIME.minusDays(1).minusMinutes(1), END_TIME);
     }
 }

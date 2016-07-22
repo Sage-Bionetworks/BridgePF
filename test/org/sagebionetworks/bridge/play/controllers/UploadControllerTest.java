@@ -25,15 +25,18 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import play.mvc.Result;
 import play.test.Helpers;
@@ -61,6 +64,9 @@ public class UploadControllerTest {
     @Mock
     private UserSession otherUserSession;
     
+    @Mock
+    private UserSession researcherSession;
+    
     @Mock 
     private Metrics metrics;
     
@@ -82,12 +88,24 @@ public class UploadControllerTest {
         doReturn("worker-health-code").when(workerSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("worker-study-id")).when(workerSession).getStudyIdentifier();
         doReturn(true).when(workerSession).isInRole(Roles.WORKER);
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.WORKER)).build();
+        doReturn(participant).when(workerSession).getParticipant();
         
         doReturn("consented-user-health-code").when(consentedUserSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(consentedUserSession).getStudyIdentifier();
-        doReturn(false).when(consentedUserSession).isInRole(Roles.WORKER);
+        doReturn(true).when(consentedUserSession).isAuthenticated();
+        doReturn(true).when(consentedUserSession).doesConsent();
+        
+        doReturn("researcher-health-code").when(researcherSession).getHealthCode();
+        doReturn(new StudyIdentifierImpl("researcher-study-id")).when(researcherSession).getStudyIdentifier();
+        doReturn(true).when(researcherSession).isInRole(Roles.RESEARCHER);
+        doReturn(true).when(researcherSession).isAuthenticated();
+        doReturn(false).when(researcherSession).doesConsent();
         
         doReturn("other-user-health-code").when(otherUserSession).getHealthCode();
+        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
+        doReturn(participant).when(otherUserSession).getParticipant();
+        doReturn(true).when(otherUserSession).doesConsent();
         
         doReturn("worker-study-id").when(healthCodeDao).getStudyIdentifier("worker-health-code");
         doReturn("consented-user-study-id").when(healthCodeDao).getStudyIdentifier("consented-user-health-code");
@@ -101,7 +119,7 @@ public class UploadControllerTest {
         Result result = controller.uploadComplete(UPLOAD_ID);
         TestUtils.assertResult(result, 200, "Upload upload-id complete!");
         
-        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), uploadCaptor.capture());
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture());
         
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
@@ -116,7 +134,7 @@ public class UploadControllerTest {
         Result result = controller.uploadComplete(UPLOAD_ID);
         TestUtils.assertResult(result, 200, "Upload upload-id complete!");
         
-        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), uploadCaptor.capture());
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(UploadCompletionClient.APP), uploadCaptor.capture());
         
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
@@ -138,12 +156,12 @@ public class UploadControllerTest {
         } catch(UnauthorizedException e) {
             
         }
-        verify(uploadService, never()).uploadComplete(any(), any());
+        verify(uploadService, never()).uploadComplete(any(), any(), any());
     }
     
     @Test
     public void getValidationStatusWorks() throws Exception {
-        doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(consentedUserSession).when(controller).getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
         
         UploadValidationStatus status = new UploadValidationStatus.Builder()
                 .withId(UPLOAD_ID)
@@ -162,10 +180,25 @@ public class UploadControllerTest {
         JsonNode errors = node.get("messageList");
         assertEquals("There was a valdation error", errors.get(0).asText());
     }
+
+    @Test
+    public void getValidationStatusWorksForResearcher() throws Exception {
+        doReturn(researcherSession).when(controller).getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
+
+        UploadValidationStatus status = new UploadValidationStatus.Builder()
+                .withId(UPLOAD_ID)
+                .withMessageList(Lists.newArrayList("There was a valdation error"))
+                .withStatus(UploadStatus.VALIDATION_FAILED).build();
+
+        doReturn(status).when(uploadService).getUploadValidationStatus(UPLOAD_ID);
+
+        Result result = controller.getValidationStatus(UPLOAD_ID);
+        assertEquals(200, result.status());
+    }    
     
     @Test(expected = UnauthorizedException.class)
     public void getValidationStatusEnforcesHealthCodeMatch() throws Exception {
-        doReturn(otherUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(otherUserSession).when(controller).getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
         
         UploadValidationStatus status = new UploadValidationStatus.Builder()
                 .withId(UPLOAD_ID)

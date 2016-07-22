@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Locale.LanguageRange;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -138,6 +139,32 @@ public abstract class BaseController extends Controller {
             return session;
         }
         throw new UnauthorizedException();
+    }
+    
+    UserSession getSessionEitherConsentedOrInRole(Roles... roles) {
+        final UserSession session = getSessionIfItExists();
+        if (session == null || !session.isAuthenticated()) {
+            throw new NotAuthenticatedException();
+        }
+        Study study = studyService.getStudy(session.getStudyIdentifier());        
+        verifySupportedVersionOrThrowException(study);
+        
+        // If the user has roles, and this call is testing for roles, it is tested first on 
+        // authorization under a role. Test users have a test role which messes this up... 
+        // remove it.
+        Set<Roles> userRoles = Sets.newHashSet(session.getParticipant().getRoles());
+        userRoles.remove(Roles.TEST_USERS);
+        
+        if (!userRoles.isEmpty() && roles != null && roles.length > 0) {
+            if (session.isInRole(Sets.newHashSet(roles))) {
+                return session;
+            }
+            throw new UnauthorizedException();
+        }
+        if (!session.doesConsent()) {
+            throw new ConsentRequiredException(session);
+        }
+        return session;
     }
 
     void setSessionToken(String sessionToken) {

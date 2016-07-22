@@ -141,10 +141,6 @@ public class SurveyValidator implements Validator {
                     else if (rule.getSkipToTarget() == null && rule.getEndSurvey() == null) {
                         rejectField(errors, "rule", "must have a skipTo target or an endSurvey property");
                     }
-                    // Validate the endSurvey value cannot be false
-                    else if (Boolean.FALSE.equals(rule.getEndSurvey())) {
-                        rejectField(errors, "rule", "cannot set endSurvey to false");
-                    } 
                     // Otherwise we can assume there's a skipToTarget, start checking that by looking for back references.
                     else if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
                         rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());

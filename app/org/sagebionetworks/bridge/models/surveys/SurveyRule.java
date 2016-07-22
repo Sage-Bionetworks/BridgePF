@@ -2,10 +2,11 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+@JsonDeserialize(builder=SurveyRule.Builder.class)
 public final class SurveyRule {
 
     public enum Operator {
@@ -20,24 +21,14 @@ public final class SurveyRule {
     
     private final Operator operator;
     private final Object value;
-    // Rule should either have a skipToTarget, or have endSurvey set to true, but never both.
-    // This is enforced in rules validation.
     private final String skipToTarget;
     private final Boolean endSurvey;
     
-    @JsonCreator
-    private SurveyRule(@JsonProperty("operator") Operator operator, @JsonProperty("value") Object value,
-            @JsonProperty("skipTo") String skipToTarget, @JsonProperty("endSurvey") Boolean endSurvey) {
+    private SurveyRule(Operator operator, Object value, String skipToTarget, Boolean endSurvey) {
         this.operator = operator;
         this.value = value;
         this.skipToTarget = skipToTarget;
-        this.endSurvey = Boolean.TRUE.equals(endSurvey) ? Boolean.TRUE : null;
-    }
-    public SurveyRule(Operator operator, Object value, String skipToTarget) {
-        this(operator, value, skipToTarget, null);
-    }
-    public SurveyRule(Operator operator, Object value) {
-        this(operator, value, null, Boolean.TRUE);
+        this.endSurvey = endSurvey;
     }
     public Operator getOperator() {
         return operator;
@@ -76,6 +67,36 @@ public final class SurveyRule {
     public String toString() {
         return "SurveyRule [operator=" + operator + ", value=" + value + ", skipToTarget=" + skipToTarget
                 + ", endSurvey=" + endSurvey + "]";
+    }
+    
+    public static class Builder {
+        private Operator operator;
+        private Object value;
+        private String skipToTarget;
+        private Boolean endSurvey;
+        
+        public Builder withOperator(SurveyRule.Operator operator) {
+            this.operator = operator;
+            return this;
+        }
+        public Builder withValue(Object value) {
+            this.value = value;
+            return this;
+        }
+        @JsonProperty("skipTo")
+        public Builder withSkipToTarget(String skipTo) {
+            this.skipToTarget = skipTo;
+            return this;
+        }
+        public Builder withEndSurvey(Boolean endSurvey) {
+            if (Boolean.TRUE.equals(endSurvey)) {
+                this.endSurvey = endSurvey;    
+            }
+            return this;
+        }
+        public SurveyRule build() {
+            return new SurveyRule(operator, value, skipToTarget, endSurvey);
+        }
     }
     
 }

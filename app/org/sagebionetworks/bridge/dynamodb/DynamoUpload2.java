@@ -9,7 +9,10 @@ import javax.annotation.Nonnull;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -19,6 +22,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -27,6 +34,7 @@ import com.google.common.collect.ImmutableList;
  */
 @DynamoThroughput(readCapacity=40, writeCapacity=20)
 @DynamoDBTable(tableName = "Upload2")
+@BridgeTypeName("Upload")
 public class DynamoUpload2 implements Upload {
     private long contentLength;
     private String contentMd5;
@@ -35,6 +43,10 @@ public class DynamoUpload2 implements Upload {
     private String healthCode;
     private String recordId;
     private UploadStatus status;
+    private String studyId;
+    private long requestedOn;
+    private long completedOn;
+    private UploadCompletionClient completedBy;
     private LocalDate uploadDate;
     private String uploadId;
     private final List<String> validationMessageList = new ArrayList<>();
@@ -74,6 +86,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** The base64-encoded, 128-bit MD5 digest of the object body. */
+    @JsonIgnore
     public String getContentMd5() {
         return contentMd5;
     }
@@ -84,6 +97,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** MIME content type. */
+    @JsonIgnore
     public String getContentType() {
         return contentType;
     }
@@ -95,6 +109,7 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @Override
+    @JsonIgnore
     public String getFilename() {
         return filename;
     }
@@ -105,7 +120,8 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-uploadDate-index")
+    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-requestedOn-index")
+    @JsonIgnore
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -118,6 +134,7 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @DynamoDBIgnore
+    @JsonIgnore
     @Override
     public String getObjectId() {
         // In DynamoUpload2, object ID and upload ID are the same.
@@ -126,6 +143,7 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @Override
+    @JsonIgnore
     public String getRecordId() {
         return recordId;
     }
@@ -146,9 +164,55 @@ public class DynamoUpload2 implements Upload {
     public void setStatus(UploadStatus status) {
         this.status = status;
     }
+    
+    /** {@inheritDoc} */
+    @JsonIgnore
+    public String getStudyId() {
+        return studyId;
+    }
+    
+    /** @see #getStudyId */
+    public void setStudyId(String studyId) {
+        this.studyId = studyId;
+    }
+    
+    /** {@inheritDoc} */
+    @DynamoDBIndexRangeKey(attributeName = "requestedOn", globalSecondaryIndexName = "healthCode-requestedOn-index")
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @JsonInclude(Include.NON_DEFAULT)
+    public long getRequestedOn() {
+        return requestedOn;
+    }
+    
+    /** @see #getRequestedOn */
+    public void setRequestedOn(long requestedOn) {
+        this.requestedOn = requestedOn;
+    }
+    
+    /** {@inheritDoc} */
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @JsonInclude(Include.NON_DEFAULT)
+    public long getCompletedOn() {
+        return completedOn;
+    }
+    
+    /** @see #getCompletedOn */
+    public void setCompletedOn(long completedOn) {
+        this.completedOn = completedOn;
+    }
+    
+    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    /** {@inheritDoc} */
+    public UploadCompletionClient getCompletedBy() {
+        return completedBy;
+    }
+    
+    /** @see #getCompletedBy */
+    public void setCompletedBy(UploadCompletionClient completedBy) {
+        this.completedBy = completedBy;
+    }
 
     /** {@inheritDoc} */
-    @DynamoDBIndexRangeKey(attributeName = "uploadDate", globalSecondaryIndexName = "healthCode-uploadDate-index")
     @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
     @Override
     public LocalDate getUploadDate() {
@@ -216,6 +280,7 @@ public class DynamoUpload2 implements Upload {
 
     /** DynamoDB version, used for optimistic locking */
     @DynamoDBVersionAttribute
+    @JsonIgnore
     public Long getVersion() {
         return version;
     }

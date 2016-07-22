@@ -3,7 +3,12 @@ package org.sagebionetworks.bridge.dao;
 import javax.annotation.Nonnull;
 import java.util.List;
 
+import org.joda.time.DateTime;
+
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -13,11 +18,13 @@ public interface UploadDao {
      *
      * @param uploadRequest
      *         upload request from user
+     * @param studyId
+     *         the study of the user
      * @param healthCode
      *         user's health code
      * @return upload metadata of created upload
      */
-    Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String healthCode);
+    Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId, @Nonnull String healthCode);
 
     /**
      * Gets the upload metadata associated with this upload.
@@ -27,14 +34,22 @@ public interface UploadDao {
      * @return upload metadata
      */
     Upload getUpload(@Nonnull String uploadId);
+    
+    /**
+     * Get the uploads for an indicated time range.
+     */
+    DateTimeRangeResourceList<? extends Upload> getUploads(@Nonnull String healthCode, @Nonnull DateTime startTime,
+            @Nonnull DateTime endTime);
 
     /**
      * Signals to the Bridge server that the file has been uploaded. This also kicks off upload validation.
      *
+     * @param completedBy
+     *         a string description of the client that is completing this upload (client, s3 listener, etc.)
      * @param upload
      *         upload to mark as completed
      */
-    void uploadComplete(@Nonnull Upload upload);
+    void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull Upload upload);
 
     /**
      * Persists the validation status, message list, and health data record ID (if it exists) to the Upload metadata

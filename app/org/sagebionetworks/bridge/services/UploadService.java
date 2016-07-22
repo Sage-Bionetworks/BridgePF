@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.services;
 
 import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
 import java.net.URL;
@@ -19,12 +21,15 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -49,6 +54,8 @@ public class UploadService {
 
     private static final long EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours
 
+    private static final long QUERY_WINDOW = (24*60*60*1000) * 2;
+    
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
 
@@ -138,7 +145,7 @@ public class UploadService {
             uploadId = originalUploadId;
         } else {
             // This is a new upload.
-            Upload upload = uploadDao.createUpload(uploadRequest, participant.getHealthCode());
+            Upload upload = uploadDao.createUpload(uploadRequest, studyId, participant.getHealthCode());
             uploadId = upload.getUploadId();
 
             if (originalUploadId != null) {
@@ -201,6 +208,34 @@ public class UploadService {
     }
 
     /**
+     * <p>Get uploads for a given user in a time window. Start and end time are optional. If neither are provided, they 
+     * default to the last day of uploads. If end time is not provided, the query ends at the time of the request. If the 
+     * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
+     * of uploads (though those days can be any period in time). </p>
+     */
+    public DateTimeRangeResourceList<? extends Upload> getUploads(@Nonnull String healthCode,
+            @Nullable DateTime startTime, @Nullable DateTime endTime) {
+        checkNotNull(healthCode);
+        
+        if (startTime == null && endTime == null) {
+            endTime = DateTime.now();
+            startTime = endTime.minusDays(1);
+        } else if (endTime == null) {
+            endTime = startTime.plusDays(1);
+        } else if (startTime == null) {
+            startTime = endTime.minusDays(1);
+        }
+        if (endTime.isBefore(startTime)) {
+            throw new BadRequestException("Start time cannot be after end time: " + startTime + "-" + endTime);
+        }
+        long period =  endTime.getMillis()-startTime.getMillis();
+        if (period > QUERY_WINDOW) {
+            throw new BadRequestException("Query window cannot be longer than two days: " + startTime + "-" + endTime);
+        }
+        return uploadDao.getUploads(healthCode, startTime, endTime);
+    }
+    
+    /**
      * <p>
      * Gets validation status and messages for the given upload ID. This includes the health data record, if one was
      * created for the upload.
@@ -234,7 +269,7 @@ public class UploadService {
         return validationStatus;
     }
 
-    public void uploadComplete(StudyIdentifier studyId, Upload upload) {
+    public void uploadComplete(StudyIdentifier studyId, UploadCompletionClient completedBy, Upload upload) {
         String uploadId = upload.getUploadId();
 
         // We don't want to kick off upload validation on an upload that already has upload validation.
@@ -254,7 +289,19 @@ public class UploadService {
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {
             logger.error("Missing S3 server-side encryption (SSE) for presigned upload " + uploadId + ".");
         }
-        uploadDao.uploadComplete(upload);
+
+        try {
+            uploadDao.uploadComplete(completedBy, upload);
+        } catch (ConcurrentModificationException ex) {
+            // The old workflow is the app calls uploadComplete. The new workflow has an S3 trigger to call
+            // uploadComplete. During the transition, it's very likely that this will be called twice, sometimes
+            // concurrently. As such, we should log and squelch the ConcurrentModificationException.
+            logger.info("Concurrent modification of upload " + uploadId + " while marking upload complete");
+
+            // Also short-circuit the call early, so we don't end up validating the upload twice, as this causes errors
+            // and duplicate records.
+            return;
+        }
 
         // kick off upload validation
         uploadValidationService.validateUpload(studyId, upload);

@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
@@ -38,12 +39,14 @@ public class UploadController extends BaseController {
 
     /** Gets validation status and messages for the given upload ID. */
     public Result getValidationStatus(String uploadId) throws JsonProcessingException {
-        UserSession session = getAuthenticatedAndConsentedSession();
+        UserSession session = getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
         
-        // Validate that this user owns the upload
-        Upload upload = uploadService.getUpload(uploadId);
-        if (!session.getHealthCode().equals(upload.getHealthCode())) {
-            throw new UnauthorizedException();
+        // If not a researcher, validate that this user owns the upload
+        if (!session.isInRole(Roles.RESEARCHER)) {
+            Upload upload = uploadService.getUpload(uploadId);
+            if (!session.getHealthCode().equals(upload.getHealthCode())) {
+                throw new UnauthorizedException();
+            }
         }
         
         UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(uploadId);
@@ -51,7 +54,7 @@ public class UploadController extends BaseController {
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
         return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
     }
-
+    
     public Result upload() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
@@ -82,7 +85,7 @@ public class UploadController extends BaseController {
             
             Upload upload = uploadService.getUpload(uploadId);
             String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
-            uploadService.uploadComplete(new StudyIdentifierImpl(studyId), upload);
+            uploadService.uploadComplete(new StudyIdentifierImpl(studyId), UploadCompletionClient.S3_WORKER, upload);
             
             return okResult("Upload " + uploadId + " complete!");
         }
@@ -95,7 +98,7 @@ public class UploadController extends BaseController {
         if (!session.getHealthCode().equals(upload.getHealthCode())) {
             throw new UnauthorizedException();
         }
-        uploadService.uploadComplete(session.getStudyIdentifier(), upload);
+        uploadService.uploadComplete(session.getStudyIdentifier(), UploadCompletionClient.APP, upload);
 
         return okResult("Upload " + uploadId + " complete!");
     }
