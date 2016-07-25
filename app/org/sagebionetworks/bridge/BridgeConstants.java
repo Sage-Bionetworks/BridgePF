@@ -42,8 +42,8 @@ public class BridgeConstants {
 
     public static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
 
-    // 12 hrs after last activity
-    public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 12 * 60 * 60;
+    // 24 hrs after last activity
+    public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 24 * 60 * 60;
 
     // 5 minutes
     public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5 * 60;
