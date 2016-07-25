@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -85,18 +84,16 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public DateTimeRangeResourceList<? extends Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime) {
+    public List<? extends Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime) {
         RangeKeyCondition condition = new RangeKeyCondition("requestedOn").between(
                 startTime.getMillis(), endTime.getMillis());
         
         List<DynamoUpload2> keysToGet = healthCodeRequestedOnIndex.queryKeys(DynamoUpload2.class, "healthCode", healthCode,
                 condition);
 
-        List<? extends Upload> results = keysToGet.stream().map(key -> {
+        return keysToGet.stream().map(key -> {
             return mapper.load(key);
         }).collect(Collectors.toList());
-        
-        return new DateTimeRangeResourceList<>(results, startTime, endTime);
     }
 
     /** {@inheritDoc} */

@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -208,7 +208,7 @@ public class ParticipantController extends BaseController {
         DateTime startTime = getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         
-        DateTimeRangeResourceList<? extends Upload> uploads = participantService.getUploads(
+        DateTimeRangeResourceList<? extends UploadView> uploads = participantService.getUploads(
                 study, userId, startTime, endTime);
 
         return okResult(uploads);

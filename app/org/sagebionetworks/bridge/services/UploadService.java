@@ -10,6 +10,8 @@ import javax.annotation.Resource;
 
 import java.net.URL;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.amazonaws.AmazonClientException;
 import com.google.common.base.Strings;
@@ -34,6 +36,7 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
+import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -213,7 +216,7 @@ public class UploadService {
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public DateTimeRangeResourceList<? extends Upload> getUploads(@Nonnull String healthCode,
+    public DateTimeRangeResourceList<? extends UploadView> getUploads(@Nonnull String healthCode,
             @Nullable DateTime startTime, @Nullable DateTime endTime) {
         checkNotNull(healthCode);
         
@@ -232,7 +235,21 @@ public class UploadService {
         if (period > QUERY_WINDOW) {
             throw new BadRequestException("Query window cannot be longer than two days: " + startTime + "-" + endTime);
         }
-        return uploadDao.getUploads(healthCode, startTime, endTime);
+        
+        List<? extends Upload> results = uploadDao.getUploads(healthCode, startTime, endTime);
+        
+        List<UploadView> views = results.stream().map(upload -> {
+            UploadView.Builder builder = new UploadView.Builder();
+            builder.withUpload(upload);
+            if (upload.getStatus() == UploadStatus.SUCCEEDED) {
+                UploadValidationStatus status = getUploadValidationStatus(upload.getUploadId());
+                builder.withSchemaId(status.getRecord().getSchemaId());
+                builder.withSchemaRevision(status.getRecord().getSchemaRevision());
+            }
+            return builder.build();
+        }).collect(Collectors.toList());
+        
+        return new DateTimeRangeResourceList<UploadView>(views, startTime, endTime);
     }
     
     /**

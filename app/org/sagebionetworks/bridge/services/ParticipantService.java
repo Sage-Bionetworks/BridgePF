@@ -46,7 +46,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -278,7 +278,7 @@ public class ParticipantService {
         }).collect(BridgeCollectors.toImmutableList());
     }
 
-    public DateTimeRangeResourceList<? extends Upload> getUploads(Study study, String userId, DateTime startTime, DateTime endTime) {
+    public DateTimeRangeResourceList<? extends UploadView> getUploads(Study study, String userId, DateTime startTime, DateTime endTime) {
         checkNotNull(study);
         checkNotNull(userId);
         

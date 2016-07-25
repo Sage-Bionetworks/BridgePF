@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -27,7 +28,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -134,23 +134,22 @@ public class DynamoUploadDaoTest {
         // GSIs are eventually consistent. Try sleeping here.
         Thread.sleep(2000);
         
-        DateTimeRangeResourceList<? extends Upload> uploads = dao.getUploads("code1", DateTime.now().minusMinutes(1),
+        List<? extends Upload> uploads = dao.getUploads("code1", DateTime.now().minusMinutes(1),
                 DateTime.now());
-        assertEquals(1, uploads.getTotal());
-        assertEquals(1, uploads.getItems().size());
-        assertEquals(upload1.getUploadId(), uploads.getItems().get(0).getUploadId());
+        assertEquals(1, uploads.size());
+        assertEquals(upload1.getUploadId(), uploads.get(0).getUploadId());
         
         // This is a range outside of the just created records... should not return anything.
         uploads = dao.getUploads("code1", DateTime.now().minusMinutes(3), DateTime.now().minusMinutes(2));
-        assertEquals(0, uploads.getItems().size());
+        assertEquals(0, uploads.size());
     }
     
     @Test
     public void uploadRecordsEmpty() throws Exception {
-        DateTimeRangeResourceList<? extends Upload> uploads = dao.getUploads("nonexistentCode",
-                DateTime.now().minusMinutes(1), DateTime.now());
+        List<? extends Upload> uploads = dao.getUploads("nonexistentCode", DateTime.now().minusMinutes(1),
+                DateTime.now());
         
-        assertTrue(uploads.getItems().isEmpty());
+        assertTrue(uploads.isEmpty());
     }
 
     private static void assertUpload(DynamoUpload2 upload) {
