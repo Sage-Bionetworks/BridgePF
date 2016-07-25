@@ -5,7 +5,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -205,6 +207,7 @@ public class UploadServiceMockTest {
         
         verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
         verify(mockHealthDataService).getRecordById("record-id");
+        verifyNoMoreInteractions(mockHealthDataService);
         
         // The two sources of information are combined in the view.
         UploadView view = returned.getItems().get(0);
