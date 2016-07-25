@@ -132,11 +132,20 @@ public class SurveyValidator implements Validator {
             SurveyElement element = elements.get(i);
             if (element instanceof SurveyQuestion) {
                 for (SurveyRule rule : ((SurveyQuestion)element).getConstraints().getRules()) {
-                    if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                        errors.pushNestedPath("elements["+i+"]");
-                        rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());
-                        errors.popNestedPath();
+                    errors.pushNestedPath("elements["+i+"]");
+                    // Validate the rule either has a skipTo target, or an endSurvey = TRUE, but not both.
+                    if (rule.getSkipToTarget() != null && rule.getEndSurvey() != null) {
+                        rejectField(errors, "rule", "cannot have a skipTo target and an endSurvey property");
+                    } 
+                    // But must have either a skipTo target or an endSurvey property
+                    else if (rule.getSkipToTarget() == null && rule.getEndSurvey() == null) {
+                        rejectField(errors, "rule", "must have a skipTo target or an endSurvey property");
                     }
+                    // Otherwise we can assume there's a skipToTarget, start checking that by looking for back references.
+                    else if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                        rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());
+                    }
+                    errors.popNestedPath();
                 }
             }
             alreadySeenIdentifiers.add(element.getIdentifier());
@@ -146,10 +155,13 @@ public class SurveyValidator implements Validator {
             SurveyElement element = elements.get(i);
             if (element instanceof SurveyQuestion) {
                 for (SurveyRule rule : ((SurveyQuestion)element).getConstraints().getRules()) {
-                    if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                        errors.pushNestedPath("elements["+i+"]");
-                        rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
-                        errors.popNestedPath();
+                    // This validation only applies to skipTo target rules.
+                    if (rule.getSkipToTarget() != null) {
+                        if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                            errors.pushNestedPath("elements["+i+"]");
+                            rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
+                            errors.popNestedPath();
+                        }
                     }
                 }
             }

@@ -11,10 +11,12 @@ import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
@@ -31,6 +33,8 @@ import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+
+import com.google.common.collect.Lists;
 
 public class SurveyValidatorTest {
 
@@ -358,7 +362,9 @@ public class SurveyValidatorTest {
         survey.setGuid("guid");
         
         StringConstraints constraints = new StringConstraints();
-        constraints.getRules().add(new SurveyRule(Operator.EQ, "No", "theend"));
+        
+        constraints.getRules().add(
+                new SurveyRule.Builder().withOperator(Operator.EQ).withValue("No").withSkipToTarget("theend").build());
         
         SurveyQuestion question = new DynamoSurveyQuestion();
         question.setIdentifier("start");
@@ -377,6 +383,73 @@ public class SurveyValidatorTest {
         // Anticlimactic, but this used to throw an exception, and it should not have,
         // because the second element is a SurveyInfoScreen
         Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void willVerifyRuleDoesntHaveSkipToAndEndSurvey() throws Exception {
+        Survey survey = new DynamoSurvey();
+        survey.setName("Name");
+        survey.setIdentifier("Identifier");
+        survey.setStudyIdentifier("study-key");
+        survey.setGuid("guid");
+        
+        StringConstraints constraints = new StringConstraints();
+        
+        // This is actually the only way to create an invalid rule (deserializing JSON).
+        String json = TestUtils.createJson("{'operator':'eq','value':'No',"+
+                "'skipTo':'theend','endSurvey':true}");
+        SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
+        constraints.getRules().add(rule);
+        
+        SurveyQuestion question = new DynamoSurveyQuestion();
+        question.setIdentifier("start");
+        question.setUiHint(UIHint.TEXTFIELD);
+        question.setPrompt("Prompt");
+        question.setConstraints(constraints);
+        survey.getElements().add(question);
+        
+        SurveyInfoScreen info = new DynamoSurveyInfoScreen();
+        info.setTitle("Title");
+        info.setPrompt("Prompt");
+        info.setIdentifier("theend");
+        survey.getElements().add(info);
+
+        try {
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("rule cannot have a skipTo target and an endSurvey property", errorFor(e, "elements[0].rule"));
+        }
+    }
+    
+    @Test
+    public void willVerifyRuleHasEitherSkipToTargetOrEndSurvey() throws Exception {
+        Survey survey = new DynamoSurvey();
+        survey.setName("Name");
+        survey.setIdentifier("Identifier");
+        survey.setStudyIdentifier("study-key");
+        survey.setGuid("guid");
+        
+        StringConstraints constraints = new StringConstraints();
+        
+        // This is actually the only way to create an invalid rule (deserializing JSON).
+        String json = TestUtils.createJson("{'operator':'eq','value':'No'}");
+        SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
+        constraints.getRules().add(rule);
+        
+        SurveyQuestion question = new DynamoSurveyQuestion();
+        question.setIdentifier("start");
+        question.setUiHint(UIHint.TEXTFIELD);
+        question.setPrompt("Prompt");
+        question.setConstraints(constraints);
+        survey.getElements().add(question);
+
+        try {
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("rule must have a skipTo target or an endSurvey property", errorFor(e, "elements[0].rule"));
+        }
     }
     
     @Test
@@ -523,6 +596,55 @@ public class SurveyValidatorTest {
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
             assertEquals("earliestValue is after the latest value", errorFor(e, "elements[1].constraints.earliestValue"));
+        }
+    }
+    
+    @Test
+    public void backreferenceSkipToTargetInvalid() throws Exception {
+        try {
+            survey = new TestSurvey(SurveyValidatorTest.class, false);
+            
+            // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it doesn't validate.
+            SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+
+            SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1).withSkipToTarget("high_bp").build();
+            question.getConstraints().setRules(Lists.newArrayList(rule));
+            
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("back references question high_bp", errorFor(e, "elements[4].rule"));
+        }
+    }
+    
+    @Test
+    public void endSurveyRuleValid() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        
+        // This rule is a valid "end the survey" rule, and passes validation.
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1).withEndSurvey(Boolean.TRUE).build();
+        question.getConstraints().setRules(Lists.newArrayList(rule));
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void noSkipToTargetInvalid() {
+        try {
+            survey = new TestSurvey(SurveyValidatorTest.class, false);
+            
+            // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it doesn't validate.
+            SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+
+            SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
+                    .withSkipToTarget("this_does_not_exist").build();
+            question.getConstraints().setRules(Lists.newArrayList(rule));
+            
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("has a skipTo identifier that doesn't exist: this_does_not_exist", errorFor(e, "elements[4].rule"));
         }
     }
 }

@@ -21,8 +21,10 @@ import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
+import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 @SuppressWarnings("unchecked")
@@ -107,6 +109,14 @@ public class DynamoSurveyTest {
         DateTimeConstraints dtc = (DateTimeConstraints) TestSurvey.selectBy(convertedSurvey, DataType.DATETIME).getConstraints();
         assertNotNull("Earliest date exists", dtc.getEarliestValue());
         assertNotNull("Latest date exists", dtc.getLatestValue());
+        
+        IntegerConstraints ic = (IntegerConstraints) TestSurvey.selectBy(convertedSurvey, DataType.INTEGER).getConstraints();
+        assertEquals(SurveyRule.Operator.LE, ic.getRules().get(0).getOperator());
+        assertEquals(2, ic.getRules().get(0).getValue());
+        assertEquals("name", ic.getRules().get(0).getSkipToTarget());
+        
+        assertEquals(SurveyRule.Operator.DE, ic.getRules().get(1).getOperator());
+        assertEquals("name", ic.getRules().get(1).getSkipToTarget());
     }
 
     @Test
