@@ -215,39 +215,6 @@ public class CacheProviderTest {
         cachedString = simpleCacheProvider.getString(cacheKey);
         assertNull(cachedString);
     }
-    
-    @Test
-    public void oldUserSessionDeserializedToNewUserSession() {
-        String oldJSON = TestUtils.createJson("{'authenticated':true,"+
-                "'environment':'local',"+
-                "'sessionToken':'"+DECRYPTED_SESSION_TOKEN+"',"+
-                "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
-                "'user':{'id':'6gq4jGXLmAxVbLLmVifKN4',"+
-                    "'firstName':'Bridge',"+
-                    "'lastName':'IT',"+
-                    "'email':'bridgeit@sagebase.org',"+
-                    "'studyKey':'api',"+
-                    "'sharingScope':'no_sharing',"+
-                    "'accountCreatedOn':'2016-04-21T16:48:22.386Z',"+
-                    "'roles':['admin'],"+
-                    "'externalId':'ABC',"+
-                    "'dataGroups':['group1'],"+
-                    "'consentStatuses':{"+
-                        "'api':{'name':'Default Consent Group',"+
-                            "'subpopulationGuid':'api',"+
-                            "'required':true,"+
-                            "'consented':false,"+
-                            "'signedMostRecentConsent':true,"+
-                            "'type':'ConsentStatus'}},"+
-                    "'languages':['en','fr'],"+
-                    "'encryptedHealthCode':'"+ENCRYPTED_SESSION_TOKEN+"',"+
-                    "'type':'User'},"+
-                "'studyIdentifier':{'identifier':'api',"+
-                    "'type':'StudyIdentifier'},"+
-                "'type':'UserSession'}");
-        
-        assertSession(oldJSON);
-    }
 
     @Test
     public void newUserSessionDeserializes() {
