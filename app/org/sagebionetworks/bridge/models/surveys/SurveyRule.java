@@ -68,13 +68,13 @@ public final class SurveyRule {
         return "SurveyRule [operator=" + operator + ", value=" + value + ", skipToTarget=" + skipToTarget
                 + ", endSurvey=" + endSurvey + "]";
     }
-    
+
     public static class Builder {
         private Operator operator;
         private Object value;
         private String skipToTarget;
         private Boolean endSurvey;
-        
+
         public Builder withOperator(SurveyRule.Operator operator) {
             this.operator = operator;
             return this;
