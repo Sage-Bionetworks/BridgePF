@@ -3,13 +3,18 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import java.util.List;
 
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -22,9 +27,12 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
+import org.sagebionetworks.bridge.models.upload.UploadView;
 
 @SuppressWarnings("unchecked")
 @RunWith(MockitoJUnitRunner.class)
@@ -39,6 +47,18 @@ public class UploadServiceMockTest {
     @Mock
     private HealthDataService mockHealthDataService;
     
+    @Mock
+    private Upload mockUpload;
+    
+    @Mock
+    private UploadValidationStatus mockStatus;
+    
+    @Mock
+    private HealthDataRecord mockRecord;
+    
+    @Mock
+    private Upload mockFailedUpload;
+
     private UploadService svc;
     
     @Before
@@ -155,10 +175,49 @@ public class UploadServiceMockTest {
         assertEquals("getStatusRecordIdWithNoRecord - message", status.getMessageList().get(0));
     }
     
+    // Mock a successful and unsuccessful upload. The successful upload should call to get information 
+    // from the health data record table (schema id/revision). All should be merged correctly in the 
+    // resulting views.
     @Test
-    public void canGetUploads() {
-        svc.getUploads("ABC", START_TIME, END_TIME);
+    public void canGetUploads() throws Exception {
+        // Mock upload
+        doReturn("upload-id").when(mockUpload).getUploadId();
+        doReturn(UploadStatus.SUCCEEDED).when(mockUpload).getStatus();
+        doReturn("record-id").when(mockUpload).getRecordId();
+        
+        // Failed mock upload
+        doReturn("failed-upload-id").when(mockFailedUpload).getUploadId();
+        doReturn(UploadStatus.REQUESTED).when(mockFailedUpload).getStatus();
+        doReturn("failed-record-id").when(mockFailedUpload).getRecordId();
+        
+        // Mock getUploads/getUpload calls
+        List<? extends Upload> results = Lists.newArrayList(mockUpload, mockFailedUpload);
+        doReturn(results).when(mockDao).getUploads("ABC", START_TIME, END_TIME);
+        doReturn(mockUpload).when(mockDao).getUpload("upload-id");
+        doReturn(mockFailedUpload).when(mockDao).getUpload("failed-upload-id");
+        
+        // Mock the record returned from the validation status record
+        doReturn("schema-id").when(mockRecord).getSchemaId();
+        doReturn(10).when(mockRecord).getSchemaRevision();
+        // Mock UploadValidationStatus from health data record;
+        doReturn(mockRecord).when(mockHealthDataService).getRecordById("record-id");
+
+        DateTimeRangeResourceList<? extends UploadView> returned = svc.getUploads("ABC", START_TIME, END_TIME);
+        
         verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
+        verify(mockHealthDataService).getRecordById("record-id");
+        verifyNoMoreInteractions(mockHealthDataService);
+        
+        // The two sources of information are combined in the view.
+        UploadView view = returned.getItems().get(0);
+        assertEquals(UploadStatus.SUCCEEDED, view.getUpload().getStatus());
+        assertEquals("schema-id", view.getSchemaId());
+        assertEquals(new Integer(10), view.getSchemaRevision());
+        
+        UploadView failedView = returned.getItems().get(1);
+        assertEquals(UploadStatus.REQUESTED, failedView.getUpload().getStatus());
+        assertNull(failedView.getSchemaId());
+        assertNull(failedView.getSchemaRevision());
     }
     
     @Test

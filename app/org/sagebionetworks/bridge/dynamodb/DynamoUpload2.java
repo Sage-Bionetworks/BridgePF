@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -34,7 +33,6 @@ import com.google.common.collect.ImmutableList;
  */
 @DynamoThroughput(readCapacity=40, writeCapacity=20)
 @DynamoDBTable(tableName = "Upload2")
-@BridgeTypeName("Upload")
 public class DynamoUpload2 implements Upload {
     private long contentLength;
     private String contentMd5;
