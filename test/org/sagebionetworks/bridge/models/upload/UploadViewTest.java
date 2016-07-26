@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.upload;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -27,6 +28,9 @@ public class UploadViewTest {
         upload.setRequestedOn(REQUESTED_ON.getMillis());
         upload.setCompletedOn(COMPLETED_ON.getMillis());
         upload.setCompletedBy(UploadCompletionClient.APP);
+        // These should be hidden by the @JsonIgnore property
+        upload.setContentMd5("some-content");
+        upload.setHealthCode("health-code");
         
         UploadView view = new UploadView.Builder().withUpload(upload)
                 .withSchemaId("schema-name").withSchemaRevision(10).build();
@@ -40,6 +44,11 @@ public class UploadViewTest {
         assertEquals("schema-name", node.get("schemaId").asText());
         assertEquals(10, node.get("schemaRevision").asInt());
         assertEquals("Upload", node.get("type").asText());
+        
+        // Should not be here. If these are not there, @JsonIgnore is working as intended
+        // and tested in UploadTest
+        assertNull(node.get("contentMd5"));
+        assertNull(node.get("healthCode"));
     }
 
 }
