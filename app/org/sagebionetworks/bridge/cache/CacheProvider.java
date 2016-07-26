@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -29,15 +31,21 @@ public class CacheProvider {
     
     private ObjectMapper bridgeObjectMapper;
     private JedisOps jedisOps;
+    private int sessionExpireInSeconds;
 
     @Autowired
-    public void setBridgeObjectMapper(BridgeObjectMapper bridgeObjectMapper) {
+    final void setBridgeObjectMapper(BridgeObjectMapper bridgeObjectMapper) {
         this.bridgeObjectMapper = bridgeObjectMapper;
     }
 
     @Autowired
-    public void setJedisOps(JedisOps jedisOps) {
+    final void setJedisOps(JedisOps jedisOps) {
         this.jedisOps = jedisOps;
+    }
+    
+    @Resource(name = "sessionExpireInSeconds")
+    final void setSessionExpireInSeconds(int sessionExpireInSeconds) {
+        this.sessionExpireInSeconds = sessionExpireInSeconds;
     }
 
     public void setUserSession(final UserSession session) {
@@ -49,15 +57,23 @@ public class CacheProvider {
 
         final String userId = session.getId();
         final String sessionToken = session.getSessionToken();
-        
         final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+        
         final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
-            final String ser = StudyParticipant.CACHE_WRITER.writeValueAsString(session);
-            final List<Object> results = transaction
-                    .setex(userKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, sessionToken)
-                    .setex(sessionKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser)
-                    .exec();
+            
+            // If the key exists, get the remaining time to expiration. If it doesn't exist
+            // then save with the full expiration period.
+            final Long ttl = jedisOps.ttl(userKey);
+            final int expiration = (ttl != null && ttl > 0L) ? 
+                    ttl.intValue() : sessionExpireInSeconds;
+                   
+            String ser = StudyParticipant.CACHE_WRITER.writeValueAsString(session);
+            
+            List<Object> results = transaction
+                .setex(userKey, expiration, sessionToken)
+                .setex(sessionKey, expiration, ser)
+                .exec();
             if (results == null) {
                 throw new BridgeServiceException("Session storage error.");
             }
