@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Configuration;
 
 import org.springframework.context.annotation.FilterType;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
@@ -419,4 +420,10 @@ public class BridgeSpringConfig {
     public Application getStormpathApplication(BridgeConfig bridgeConfig, Client stormpathClient) {
         return stormpathClient.getResource(bridgeConfig.getStormpathApplicationHref(), Application.class);
     }
+    
+    @Bean(name = "sessionExpireInSeconds")
+    public int getSessionExpireInSeconds() {
+        return BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
+    }
+
 }
