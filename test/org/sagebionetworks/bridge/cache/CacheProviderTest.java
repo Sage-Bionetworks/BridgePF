@@ -5,6 +5,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+
+import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
@@ -16,7 +20,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeProductionSpringConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -43,33 +46,47 @@ public class CacheProviderTest {
     @Autowired
     private JedisOps testJedisOps;
     
+    //@Autowired
+    @Resource(name = "redisProviders")
+    private List<String> redisProviders;
+    
     @After
     public void after() {
+        // restore in the in memory redis implementation
         cacheProvider.setJedisOps(testJedisOps);
     }
     
     @Before
     public void before() throws Exception {
-        final JedisPoolConfig poolConfig = new JedisPoolConfig();
-
-        URI redisURI = new URI(getRedisURL());
-        JedisPool jedisPool = new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(), 10); //10 second timeout
+        JedisPool jedisPool = constructJedisPool();
         JedisOps jedisOps = new JedisOps(jedisPool);
         cacheProvider.setJedisOps(jedisOps);
         cacheProvider.setSessionExpireInSeconds(4);
     }
     
-    // It is necessary to use the redis server in the environment where tests are running, just as in the 
-    // BridgeProductionSpringConfig configuration of the jedisOps class.
+    // These methods are similar to BridgeProductionSpringConfig. It seems like they could be in bridge-base.
+    private JedisPool constructJedisPool() throws URISyntaxException {
+        final JedisPoolConfig poolConfig = new JedisPoolConfig();
+        
+        URI redisURI = new URI(getRedisURL());
+        String password = redisURI.getUserInfo().split(":",2)[1];
+
+        // similar to production but with a 10 second timeout.
+        if (config.isLocal()) {
+            return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(), 10);
+        } else {
+            return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(), 10, password);
+        }
+    }
+    
     private String getRedisURL() {
-        for (String provider : BridgeProductionSpringConfig.REDIS_PROVIDERS) {
+        for (String provider : redisProviders) {
             if (System.getenv(provider) != null) {
                 return System.getenv(provider);
             }
         }
         return config.getProperty("redis.url");
     }
-
     
     @Test
     public void stringCachingWorks() {
