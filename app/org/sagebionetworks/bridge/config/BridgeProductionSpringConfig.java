@@ -6,9 +6,9 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.JedisPool;
@@ -24,6 +24,12 @@ import org.sagebionetworks.bridge.redis.JedisOps;
 public class BridgeProductionSpringConfig {
     private static Logger LOG = LoggerFactory.getLogger(BridgeProductionSpringConfig.class);
 
+    @Autowired
+    BridgeConfig bridgeConfig;
+    
+    @Resource(name = "redisProviders")
+    List<String> redisProviders;
+    
     @Bean(name = "jedisOps")
     @Resource(name = "jedisPool")
     public JedisOps jedisOps(final JedisPool jedisPool) {
@@ -31,21 +37,20 @@ public class BridgeProductionSpringConfig {
     }
 
     @Bean(name = "jedisPool")
-    @Resource(name = "redisProviders")
-    public JedisPool jedisPool(BridgeConfig config, List<String> redisProviders) throws Exception {
+    public JedisPool jedisPool() throws Exception {
         // Configure pool
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
-        poolConfig.setMinIdle(config.getPropertyAsInt("redis.min.idle"));
-        poolConfig.setMaxIdle(config.getPropertyAsInt("redis.max.idle"));
+        poolConfig.setMaxTotal(bridgeConfig.getPropertyAsInt("redis.max.total"));
+        poolConfig.setMinIdle(bridgeConfig.getPropertyAsInt("redis.min.idle"));
+        poolConfig.setMaxIdle(bridgeConfig.getPropertyAsInt("redis.max.idle"));
         poolConfig.setTestOnCreate(true); // test threads when we create them (only)
         poolConfig.setTestOnBorrow(false);
         poolConfig.setTestOnReturn(false);
         poolConfig.setTestWhileIdle(false);
 
         // Create pool.
-        final String url = getRedisURL(config, redisProviders);
-        final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
+        final String url = getRedisURL();
+        final JedisPool jedisPool = constructJedisPool(url, poolConfig);
 
         // Shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(jedisPool::destroy));
@@ -57,7 +62,7 @@ public class BridgeProductionSpringConfig {
      * Try Redis providers to find one that is provisioned. Using this URL in the environment variables
      * is the documented way to interact with these services.
      */
-    private String getRedisURL(final BridgeConfig config, final List<String> redisProviders) {
+    private String getRedisURL() {
         for (String provider : redisProviders) {
             if (System.getenv(provider) != null) {
                 LOG.info("Using Redis Provider: " + provider);
@@ -65,21 +70,21 @@ public class BridgeProductionSpringConfig {
             }
         }
         LOG.info("Using Redis Provider: redis.url");
-        return config.getProperty("redis.url");
+        return bridgeConfig.getProperty("redis.url");
     }
 
-    private JedisPool constructJedisPool(final String url, final JedisPoolConfig poolConfig, final BridgeConfig config)
+    private JedisPool constructJedisPool(final String url, final JedisPoolConfig poolConfig)
             throws URISyntaxException {
         // With changes in Redis provisioning, passwords are now parseable by Java's URI class.
         URI redisURI = new URI(url);
         String password = redisURI.getUserInfo().split(":",2)[1];
 
-        if (config.isLocal()) {
+        if (bridgeConfig.isLocal()) {
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
-                    config.getPropertyAsInt("redis.timeout"));
+                    bridgeConfig.getPropertyAsInt("redis.timeout"));
         } else {
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
-                    config.getPropertyAsInt("redis.timeout"), password);
+                    bridgeConfig.getPropertyAsInt("redis.timeout"), password);
         }
     }
 }
