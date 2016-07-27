@@ -46,7 +46,6 @@ public class CacheProviderTest {
     @Autowired
     private JedisOps testJedisOps;
     
-    //@Autowired
     @Resource(name = "redisProviders")
     private List<String> redisProviders;
     
