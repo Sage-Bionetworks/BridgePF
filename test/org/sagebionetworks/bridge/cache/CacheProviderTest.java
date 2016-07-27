@@ -16,6 +16,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeProductionSpringConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -51,12 +52,24 @@ public class CacheProviderTest {
     public void before() throws Exception {
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
 
-        URI redisURI = new URI(config.getProperty("redis.url"));
+        URI redisURI = new URI(getRedisURL());
         JedisPool jedisPool = new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(), 10); //10 second timeout
         JedisOps jedisOps = new JedisOps(jedisPool);
         cacheProvider.setJedisOps(jedisOps);
         cacheProvider.setSessionExpireInSeconds(4);
     }
+    
+    // It is necessary to use the redis server in the environment where tests are running, just as in the 
+    // BridgeProductionSpringConfig configuration of the jedisOps class.
+    private String getRedisURL() {
+        for (String provider : BridgeProductionSpringConfig.REDIS_PROVIDERS) {
+            if (System.getenv(provider) != null) {
+                return System.getenv(provider);
+            }
+        }
+        return config.getProperty("redis.url");
+    }
+
     
     @Test
     public void stringCachingWorks() {

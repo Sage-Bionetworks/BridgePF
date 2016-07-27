@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.redis.JedisOps;
 @Configuration
 public class BridgeProductionSpringConfig {
     private static Logger LOG = LoggerFactory.getLogger(BridgeProductionSpringConfig.class);
-    private static final List<String> REDIS_PROVIDERS = Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
+    public static final List<String> REDIS_PROVIDERS = Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
 
     @Bean(name = "jedisOps")
     @Resource(name = "jedisPool")
