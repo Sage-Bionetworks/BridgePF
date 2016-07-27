@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.util.Collection;
@@ -15,6 +16,9 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -208,6 +212,17 @@ public class BridgeUtils {
             return href.substring(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF.length());
         }
         return null;
+    }
+    
+    public static DateTime getDateTimeOrDefault(String value, DateTime defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return DateTime.parse(value);
+        } catch(Exception e) {
+            throw new BadRequestException(value + " is not an ISO timestamp");
+        }
     }
 
 }

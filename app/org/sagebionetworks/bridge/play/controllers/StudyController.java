@@ -10,17 +10,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
+import org.sagebionetworks.bridge.services.UploadService;
+
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -42,6 +48,8 @@ public class StudyController extends BaseController {
     private UploadCertificateService uploadCertificateService;
     
     private EmailVerificationService emailVerificationService;
+    
+    private UploadService uploadService;
 
     @Autowired
     final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
@@ -51,6 +59,11 @@ public class StudyController extends BaseController {
     @Autowired
     final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
         this.emailVerificationService = emailVerificationService;
+    }
+    
+    @Autowired
+    final void setUploadService(UploadService uploadService) {
+        this.uploadService = uploadService;
     }
 
     @Deprecated
@@ -143,6 +156,18 @@ public class StudyController extends BaseController {
 
         EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
         return okResult(new EmailVerificationStatusHolder(status));
+    }
+    
+    public Result getUploads(String startTimeString, String endTimeString) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        DateTime startTime = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
+        
+        DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
+                session.getStudyIdentifier(), startTime, endTime);
+
+        return okResult(uploads);
     }
 
 }

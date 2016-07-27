@@ -11,6 +11,7 @@ import javax.annotation.Resource;
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.amazonaws.AmazonClientException;
@@ -220,6 +221,29 @@ public class UploadService {
             @Nullable DateTime startTime, @Nullable DateTime endTime) {
         checkNotNull(healthCode);
         
+        return getUploads(startTime, endTime, true, (start, end)-> {
+            return uploadDao.getUploads(healthCode, start, end);
+        });
+    }
+    
+    /**
+     * <p>Get uploads for an entire study in a time window. Start and end time are optional. If neither are provided, they 
+     * default to the last day of uploads. If end time is not provided, the query ends at the time of the request. If the 
+     * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
+     * of uploads (though those days can be any period in time). </p>
+     */
+    public DateTimeRangeResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
+            @Nullable DateTime startTime, @Nullable DateTime endTime) {
+        checkNotNull(studyId);
+
+        return getUploads(startTime, endTime, false, (start, end)-> {
+            return uploadDao.getStudyUploads(studyId, startTime, endTime);
+        });
+    }
+    
+    private DateTimeRangeResourceList<? extends UploadView> getUploads(DateTime startTime, DateTime endTime, final boolean includeSchemaInfo, UploadSupplier supplier) {
+        checkNotNull(supplier);
+        
         if (startTime == null && endTime == null) {
             endTime = DateTime.now();
             startTime = endTime.minusDays(1);
@@ -236,12 +260,10 @@ public class UploadService {
             throw new BadRequestException("Query window cannot be longer than two days: " + startTime + "-" + endTime);
         }
         
-        List<? extends Upload> results = uploadDao.getUploads(healthCode, startTime, endTime);
-        
-        List<UploadView> views = results.stream().map(upload -> {
+        List<UploadView> views = supplier.get(startTime, endTime).stream().map(upload -> {
             UploadView.Builder builder = new UploadView.Builder();
             builder.withUpload(upload);
-            if (upload.getStatus() == UploadStatus.SUCCEEDED) {
+            if (includeSchemaInfo && upload.getStatus() == UploadStatus.SUCCEEDED) {
                 UploadValidationStatus status = getUploadValidationStatus(upload.getUploadId());
                 builder.withSchemaId(status.getRecord().getSchemaId());
                 builder.withSchemaRevision(status.getRecord().getSchemaRevision());
@@ -322,5 +344,10 @@ public class UploadService {
 
         // kick off upload validation
         uploadValidationService.validateUpload(studyId, upload);
+    }
+    
+    @FunctionalInterface
+    private static interface UploadSupplier {
+        List<? extends Upload> get(DateTime startTime, DateTime endTime);
     }
 }

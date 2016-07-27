@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 public class DynamoUploadDao implements UploadDao {
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeRequestedOnIndex;
+    private DynamoIndexHelper studyIdRequestedOnIndex;
     
     /**
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
@@ -49,6 +50,14 @@ public class DynamoUploadDao implements UploadDao {
     @Resource(name = "uploadHealthCodeRequestedOnIndex")
     final void setHealthCodeRequestedOnIndex(DynamoIndexHelper healthCodeRequestedOnIndex) {
         this.healthCodeRequestedOnIndex = healthCodeRequestedOnIndex;
+    }
+    
+    /**
+     * DynamoDB Index reference for the studyId-requestedOn index. 
+     */
+    @Resource(name = "uploadStudyIdRequestedOnIndex")
+    final void setStudyIdRequestedOnIndex(DynamoIndexHelper studyIdRequestedOnIndex) {
+        this.studyIdRequestedOnIndex = studyIdRequestedOnIndex;
     }
     
     /** {@inheritDoc} */
@@ -96,6 +105,20 @@ public class DynamoUploadDao implements UploadDao {
         }).collect(Collectors.toList());
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public List<? extends Upload> getStudyUploads(StudyIdentifier studyId, DateTime startTime, DateTime endTime) {
+        RangeKeyCondition condition = new RangeKeyCondition("requestedOn").between(
+                startTime.getMillis(), endTime.getMillis());
+        
+        List<DynamoUpload2> keysToGet = studyIdRequestedOnIndex.queryKeys(DynamoUpload2.class, "studyId",
+                studyId.getIdentifier(), condition);
+
+        return keysToGet.stream().map(key -> {
+            return mapper.load(key);
+        }).collect(Collectors.toList());
+    }
+    
     /** {@inheritDoc} */
     @Override
     public void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull Upload upload) {

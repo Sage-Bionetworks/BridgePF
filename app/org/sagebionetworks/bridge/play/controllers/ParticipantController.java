@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -205,8 +206,8 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
-        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
+        DateTime startTime = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
         
         DateTimeRangeResourceList<? extends UploadView> uploads = participantService.getUploads(
                 study, userId, startTime, endTime);
@@ -224,16 +225,4 @@ public class ParticipantController extends BaseController {
             throw new BadRequestException(value + " is not an integer");
         }
     }
-    
-    private DateTime getDateTimeOrDefault(String value, DateTime defaultValue) {
-        if (isBlank(value)) {
-            return defaultValue;
-        }
-        try {
-            return DateTime.parse(value);
-        } catch(Exception e) {
-            throw new BadRequestException(value + " is not an ISO timestamp");
-        }
-    }
-
 }
