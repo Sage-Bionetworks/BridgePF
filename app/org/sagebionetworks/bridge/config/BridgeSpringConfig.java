@@ -20,6 +20,7 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.stormpath.sdk.api.ApiKey;
 import com.stormpath.sdk.api.ApiKeys;
 import com.stormpath.sdk.application.Application;
@@ -83,6 +84,11 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
         type = FilterType.ANNOTATION, value = Configuration.class))
 @Configuration
 public class BridgeSpringConfig {
+    @Bean(name = "redisProviders")
+    public List<String> redisProviders() {
+        return Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
+    }
+    
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
         return BridgeObjectMapper.get();
