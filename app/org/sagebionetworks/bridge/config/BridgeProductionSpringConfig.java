@@ -23,7 +23,11 @@ import org.sagebionetworks.bridge.redis.JedisOps;
 @Configuration
 public class BridgeProductionSpringConfig {
     private static Logger LOG = LoggerFactory.getLogger(BridgeProductionSpringConfig.class);
-    public static final List<String> REDIS_PROVIDERS = Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
+    
+    @Bean(name = "redisProviders")
+    public List<String> redisProviders() {
+        return Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
+    }
 
     @Bean(name = "jedisOps")
     @Resource(name = "jedisPool")
@@ -32,7 +36,8 @@ public class BridgeProductionSpringConfig {
     }
 
     @Bean(name = "jedisPool")
-    public JedisPool jedisPool(BridgeConfig config) throws Exception {
+    @Resource(name = "redisProviders")
+    public JedisPool jedisPool(BridgeConfig config, List<String> redisProviders) throws Exception {
         // Configure pool
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
@@ -44,7 +49,7 @@ public class BridgeProductionSpringConfig {
         poolConfig.setTestWhileIdle(false);
 
         // Create pool.
-        final String url = getRedisURL(config);
+        final String url = getRedisURL(config, redisProviders);
         final JedisPool jedisPool = constructJedisPool(url, poolConfig, config);
 
         // Shutdown hook
@@ -57,8 +62,8 @@ public class BridgeProductionSpringConfig {
      * Try Redis providers to find one that is provisioned. Using this URL in the environment variables
      * is the documented way to interact with these services.
      */
-    private String getRedisURL(final BridgeConfig config) {
-        for (String provider : REDIS_PROVIDERS) {
+    private String getRedisURL(final BridgeConfig config, final List<String> redisProviders) {
+        for (String provider : redisProviders) {
             if (System.getenv(provider) != null) {
                 LOG.info("Using Redis Provider: " + provider);
                 return System.getenv(provider);
