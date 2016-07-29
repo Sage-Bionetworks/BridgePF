@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
@@ -20,6 +21,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
@@ -28,6 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 @Controller
 public class AuthenticationController extends BaseController {
+    private final static Logger LOG = LoggerFactory.getLogger(AuthenticationController.class);
 
     public Result signIn() throws Exception {
         return signInWithRetry(5);
@@ -106,12 +110,14 @@ public class AuthenticationController extends BaseController {
      */
     private Result signInWithRetry(int retryCounter) throws Exception {
         UserSession session = getSessionIfItExists();
+        CriteriaContext context = null;
+
         if (session == null) {
             JsonNode json = requestToJSON(request());
             SignIn signIn = parseJson(request(), SignIn.class);
             Study study = getStudyOrThrowException(json);
 
-            CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+            context = getCriteriaContext(study.getStudyIdentifier());
             
             try {
                 session = authenticationService.signIn(study, context, signIn);
@@ -124,15 +130,23 @@ public class AuthenticationController extends BaseController {
                 throw e;
             }
             writeSessionInfoToMetrics(session);
+
         }
 
         // Set session token. This way, even if we get a ConsentRequiredException, users are still able to sign consent
         setSessionToken(session.getSessionToken());
 
-        // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
-        // you've consented to research.
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
-            throw new ConsentRequiredException(session);
+        // Unless you're some kind of system administrator (developer, researcher)
+        if (!session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+            // You must have consented to research
+            if (!session.doesConsent()) {
+                throw new ConsentRequiredException(session);
+            }
+
+            // You should be using a recognizable client
+            if (context.getClientInfo() == ClientInfo.UNKNOWN_CLIENT) {
+                LOG.warn("Study participant using unrecognized client with User-Agent: '" + request().getHeader(USER_AGENT) + "'");
+            }
         }
 
         return okResult(UserSessionInfo.toJSON(session));

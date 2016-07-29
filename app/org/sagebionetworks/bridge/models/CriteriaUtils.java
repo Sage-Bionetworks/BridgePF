@@ -32,14 +32,18 @@ public class CriteriaUtils {
         checkNotNull(criteria.getNoneOfGroups());
         
         Integer appVersion = context.getClientInfo().getAppVersion();
+        Integer minAppVersion = criteria.getMinAppVersion();
+        Integer maxAppVersion = criteria.getMaxAppVersion();
+
         if (appVersion != null) {
-            Integer minAppVersion = criteria.getMinAppVersion();
-            Integer maxAppVersion = criteria.getMaxAppVersion();
             if ((minAppVersion != null && appVersion < minAppVersion) ||
                 (maxAppVersion != null && appVersion > maxAppVersion)) {
                 return false;
             }
+        } else if (minAppVersion != null || maxAppVersion != null) {
+            return false;
         }
+
         Set<String> dataGroups = context.getUserDataGroups();
         if (dataGroups != null) {
             if (!dataGroups.containsAll(criteria.getAllOfGroups())) {

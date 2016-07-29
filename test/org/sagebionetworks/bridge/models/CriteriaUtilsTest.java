@@ -8,13 +8,14 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.springframework.validation.Errors;
+
+import com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.validators.Validate;
-
-import com.google.common.collect.Sets;
 
 public class CriteriaUtilsTest {
     
@@ -53,6 +54,16 @@ public class CriteriaUtilsTest {
         assertFalse(CriteriaUtils.matchCriteria(context, criteria(KEY, EMPTY_SET, EMPTY_SET, 5, null)));
         assertFalse(CriteriaUtils.matchCriteria(context, criteria(KEY, EMPTY_SET, EMPTY_SET, 6, 11)));
     }
+
+    @Test
+    public void filtersAppRangeForUnknownClient() {
+        CriteriaContext context = getMinimalContext();
+
+        assertTrue(CriteriaUtils.matchCriteria(context, criteria(KEY, EMPTY_SET, EMPTY_SET, null, null)));;
+        assertFalse(CriteriaUtils.matchCriteria(context, criteria(KEY, EMPTY_SET, EMPTY_SET, null, 2)));
+        assertFalse(CriteriaUtils.matchCriteria(context, criteria(KEY, EMPTY_SET, EMPTY_SET, 5, null)));
+        assertFalse(CriteriaUtils.matchCriteria(context, criteria(KEY, EMPTY_SET, EMPTY_SET, 6, 11)));
+    }
     
     @Test
     public void allOfGroupsMatch() {
@@ -79,9 +90,7 @@ public class CriteriaUtilsTest {
     
     @Test
     public void matchingWithMinimalContextDoesNotCrash() {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT).build();
+        CriteriaContext context = getMinimalContext();
         assertTrue(CriteriaUtils.matchCriteria(context, criteria(KEY, EMPTY_SET, EMPTY_SET, null, null)));
         assertFalse(CriteriaUtils.matchCriteria(context, criteria(KEY, Sets.newHashSet("group1"), EMPTY_SET, null, null)));
     }
@@ -200,6 +209,12 @@ public class CriteriaUtilsTest {
         
         context = getContextWithLanguage("EN");
         assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+    }
+
+    private CriteriaContext getMinimalContext() {
+        return new CriteriaContext.Builder()
+                .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT).build();
     }
     
     private CriteriaContext getContextWithLanguage(String lang) {
