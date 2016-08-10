@@ -10,6 +10,7 @@ import org.joda.time.LocalDate;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 
 public class DateUtilsTest {
     
@@ -181,4 +182,34 @@ public class DateUtilsTest {
         DateTimeZone zone = DateUtils.parseZoneFromOffsetString("+00:00");
         assertEquals(DateTimeZone.UTC, zone);
     }
+    
+    @Test
+    public void getDateTimeOrDefaultReturnsValidValue() {
+        String dateTimeString = "2016-07-15T10:10:10.000Z";
+        
+        DateTime parsedValue = DateUtils.getDateTimeOrDefault(dateTimeString, null);
+        assertEquals(DateTime.parse(dateTimeString), parsedValue);
+    }
+    
+    @Test
+    public void getDateTimeOrDefaultReturnsDefaultOnNull() {
+        DateTime timestamp = DateTime.now();
+        
+        DateTime parsedValue = DateUtils.getDateTimeOrDefault(null, timestamp);
+        assertEquals(timestamp, parsedValue);
+    }
+    
+    @Test
+    public void getDateTimeOrDefaultReturnsDefaultOnEmptyString() {
+        DateTime timestamp = DateTime.now();
+        
+        DateTime parsedValue = DateUtils.getDateTimeOrDefault("", timestamp);
+        assertEquals(timestamp, parsedValue);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getDateTimeOrDefaultThrowsException() {
+        DateUtils.getDateTimeOrDefault("6/7/2016", null);
+    }
+    
 }

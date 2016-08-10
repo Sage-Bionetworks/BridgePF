@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
@@ -97,12 +96,7 @@ public class DynamoUploadDao implements UploadDao {
         RangeKeyCondition condition = new RangeKeyCondition("requestedOn").between(
                 startTime.getMillis(), endTime.getMillis());
         
-        List<DynamoUpload2> keysToGet = healthCodeRequestedOnIndex.queryKeys(DynamoUpload2.class, "healthCode", healthCode,
-                condition);
-
-        return keysToGet.stream().map(key -> {
-            return mapper.load(key);
-        }).collect(Collectors.toList());
+        return healthCodeRequestedOnIndex.query(DynamoUpload2.class, "healthCode", healthCode, condition);
     }
 
     /** {@inheritDoc} */
@@ -111,12 +105,7 @@ public class DynamoUploadDao implements UploadDao {
         RangeKeyCondition condition = new RangeKeyCondition("requestedOn").between(
                 startTime.getMillis(), endTime.getMillis());
         
-        List<DynamoUpload2> keysToGet = studyIdRequestedOnIndex.queryKeys(DynamoUpload2.class, "studyId",
-                studyId.getIdentifier(), condition);
-
-        return keysToGet.stream().map(key -> {
-            return mapper.load(key);
-        }).collect(Collectors.toList());
+        return studyIdRequestedOnIndex.query(DynamoUpload2.class, "studyId", studyId.getIdentifier(), condition);
     }
     
     /** {@inheritDoc} */

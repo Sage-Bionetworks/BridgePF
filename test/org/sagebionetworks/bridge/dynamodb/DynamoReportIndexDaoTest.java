@@ -3,10 +3,12 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,6 +24,7 @@ import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -105,15 +108,14 @@ public class DynamoReportIndexDaoTest {
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
         assertEquals(0, indices.getItems().size());
         
-        // Use mapper directly to clean up, as we don't allow deletion of participant reports.
-        deleteParticipantReport(participantReportKey1);
-        deleteParticipantReport(participantReportKey2);
+        deleteReportKey(participantReportKey1);
+        deleteReportKey(participantReportKey2);
         
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         assertEquals(count, indices.getItems().size());
     }
     
-    private void deleteParticipantReport(ReportDataKey key) {
+    private void deleteReportKey(ReportDataKey key) {
         DynamoReportIndex hashKey = new DynamoReportIndex();
         hashKey.setKey(key.getIndexKeyString());
         hashKey.setIdentifier(key.getIdentifier());

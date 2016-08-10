@@ -14,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -206,8 +206,8 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        DateTime startTime = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
-        DateTime endTime = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
+        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
         
         DateTimeRangeResourceList<? extends UploadView> uploads = participantService.getUploads(
                 study, userId, startTime, endTime);

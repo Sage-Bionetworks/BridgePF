@@ -10,8 +10,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -161,8 +161,8 @@ public class StudyController extends BaseController {
     public Result getUploads(String startTimeString, String endTimeString) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        DateTime startTime = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
-        DateTime endTime = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
+        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
         
         DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
                 session.getStudyIdentifier(), startTime, endTime);

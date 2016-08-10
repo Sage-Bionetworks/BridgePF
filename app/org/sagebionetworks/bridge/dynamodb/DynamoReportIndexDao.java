@@ -56,7 +56,7 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         checkNotNull(studyId);
         checkNotNull(reportType);
         
-        // Don't use ReportDataKey because it enforces present of healthCode for ReportType.PARTICIPANT.
+        // Don't use ReportDataKey because it enforces presence of healthCode for ReportType.PARTICIPANT.
         String key = String.format("%s:%s", studyId.getIdentifier(), reportType.name());
         
         DynamoReportIndex hashKey = new DynamoReportIndex();
