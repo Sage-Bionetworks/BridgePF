@@ -57,7 +57,7 @@ public class UploadService {
 
     private static final long EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours
 
-    private static final long QUERY_WINDOW = (24*60*60*1000) * 2;
+    private static final int QUERY_WINDOW_IN_DAYS = 2;
     
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
@@ -220,6 +220,29 @@ public class UploadService {
             @Nullable DateTime startTime, @Nullable DateTime endTime) {
         checkNotNull(healthCode);
         
+        return getUploads(startTime, endTime, (start, end)-> {
+            return uploadDao.getUploads(healthCode, start, end);
+        });
+    }
+    
+    /**
+     * <p>Get uploads for an entire study in a time window. Start and end time are optional. If neither are provided, they 
+     * default to the last day of uploads. If end time is not provided, the query ends at the time of the request. If the 
+     * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
+     * of uploads (though those days can be any period in time). </p>
+     */
+    public DateTimeRangeResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
+            @Nullable DateTime startTime, @Nullable DateTime endTime) {
+        checkNotNull(studyId);
+
+        return getUploads(startTime, endTime, (start, end)-> {
+            return uploadDao.getStudyUploads(studyId, startTime, endTime);
+        });
+    }
+    
+    private DateTimeRangeResourceList<? extends UploadView> getUploads(DateTime startTime, DateTime endTime, UploadSupplier supplier) {
+        checkNotNull(supplier);
+        
         if (startTime == null && endTime == null) {
             endTime = DateTime.now();
             startTime = endTime.minusDays(1);
@@ -231,20 +254,17 @@ public class UploadService {
         if (endTime.isBefore(startTime)) {
             throw new BadRequestException("Start time cannot be after end time: " + startTime + "-" + endTime);
         }
-        long period =  endTime.getMillis()-startTime.getMillis();
-        if (period > QUERY_WINDOW) {
+        if (startTime.plusDays(QUERY_WINDOW_IN_DAYS).isBefore(endTime)) {
             throw new BadRequestException("Query window cannot be longer than two days: " + startTime + "-" + endTime);
         }
         
-        List<? extends Upload> results = uploadDao.getUploads(healthCode, startTime, endTime);
-        
-        List<UploadView> views = results.stream().map(upload -> {
+        List<UploadView> views = supplier.get(startTime, endTime).stream().map(upload -> {
             UploadView.Builder builder = new UploadView.Builder();
             builder.withUpload(upload);
-            if (upload.getStatus() == UploadStatus.SUCCEEDED) {
-                UploadValidationStatus status = getUploadValidationStatus(upload.getUploadId());
-                builder.withSchemaId(status.getRecord().getSchemaId());
-                builder.withSchemaRevision(status.getRecord().getSchemaRevision());
+            if (upload.getRecordId() != null) {
+                HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
+                builder.withSchemaId(record.getSchemaId());
+                builder.withSchemaRevision(record.getSchemaRevision());
             }
             return builder.build();
         }).collect(Collectors.toList());
@@ -322,5 +342,10 @@ public class UploadService {
 
         // kick off upload validation
         uploadValidationService.validateUpload(studyId, upload);
+    }
+    
+    @FunctionalInterface
+    private static interface UploadSupplier {
+        List<? extends Upload> get(DateTime startTime, DateTime endTime);
     }
 }

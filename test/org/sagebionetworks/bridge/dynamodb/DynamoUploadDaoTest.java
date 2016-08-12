@@ -134,13 +134,23 @@ public class DynamoUploadDaoTest {
         // GSIs are eventually consistent. Try sleeping here.
         Thread.sleep(2000);
         
-        List<? extends Upload> uploads = dao.getUploads("code1", DateTime.now().minusMinutes(1),
-                DateTime.now());
+        List<? extends Upload> uploads = dao.getUploads("code1", DateTime.now().minusMinutes(1), DateTime.now());
         assertEquals(1, uploads.size());
         assertEquals(upload1.getUploadId(), uploads.get(0).getUploadId());
         
         // This is a range outside of the just created records... should not return anything.
         uploads = dao.getUploads("code1", DateTime.now().minusMinutes(3), DateTime.now().minusMinutes(2));
+        assertEquals(0, uploads.size());
+        
+        // Now verify you can get this through the study-based call
+        uploads = dao.getStudyUploads(TEST_STUDY, DateTime.now().minusMinutes(1), DateTime.now());
+        assertEquals(2, uploads.size());
+        assertEquals(upload1.getUploadId(), uploads.get(0).getUploadId());
+        assertEquals(upload2.getUploadId(), uploads.get(1).getUploadId());
+        assertEquals("code1", uploads.get(0).getHealthCode());
+        assertEquals("code2", uploads.get(1).getHealthCode());
+
+        uploads = dao.getStudyUploads(TEST_STUDY, DateTime.now().minusMinutes(3), DateTime.now().minusMinutes(2));
         assertEquals(0, uploads.size());
     }
     

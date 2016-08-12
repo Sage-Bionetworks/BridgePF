@@ -178,7 +178,7 @@ public class UserAdminService {
             healthDataService.deleteRecordsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);
-            
+
             // Remove the externalId from the table even if validation is not enabled. If the study
             // turns it off/back on again, we want to track what has changed
             ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);

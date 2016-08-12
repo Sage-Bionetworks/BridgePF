@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.json;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,6 +14,7 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.ISOPeriodFormat;
 import org.joda.time.format.PeriodFormatter;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 
 public final class DateUtils {
     private static final int CALENDAR_DATE_STRLEN = "yyyy-MM-dd".length();
@@ -191,6 +194,24 @@ public final class DateUtils {
             }
         }
         return zone;
+    }
+    
+    /**
+     * If no value is provided, returns the default datetime value. Otherwise, returns the datetime 
+     * of the string if it can be parsed or an exception if it's not a valid ISO 8601 timestamp.
+     * @param value
+     * @param defaultValue
+     * @return
+     */
+    public static DateTime getDateTimeOrDefault(String value, DateTime defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return DateUtils.parseISODateTime(value);
+        } catch(Exception e) {
+            throw new BadRequestException(value + " is not an ISO timestamp");
+        }
     }
     
 }

@@ -105,15 +105,14 @@ public class DynamoReportIndexDaoTest {
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
         assertEquals(0, indices.getItems().size());
         
-        // Use mapper directly to clean up, as we don't allow deletion of participant reports.
-        deleteParticipantReport(participantReportKey1);
-        deleteParticipantReport(participantReportKey2);
+        deleteReportKey(participantReportKey1);
+        deleteReportKey(participantReportKey2);
         
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         assertEquals(count, indices.getItems().size());
     }
     
-    private void deleteParticipantReport(ReportDataKey key) {
+    private void deleteReportKey(ReportDataKey key) {
         DynamoReportIndex hashKey = new DynamoReportIndex();
         hashKey.setKey(key.getIndexKeyString());
         hashKey.setIdentifier(key.getIdentifier());

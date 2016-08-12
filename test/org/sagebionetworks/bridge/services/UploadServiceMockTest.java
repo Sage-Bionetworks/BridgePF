@@ -23,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -175,11 +176,7 @@ public class UploadServiceMockTest {
         assertEquals("getStatusRecordIdWithNoRecord - message", status.getMessageList().get(0));
     }
     
-    // Mock a successful and unsuccessful upload. The successful upload should call to get information 
-    // from the health data record table (schema id/revision). All should be merged correctly in the 
-    // resulting views.
-    @Test
-    public void canGetUploads() throws Exception {
+    private void setupUploadMocks() {
         // Mock upload
         doReturn("upload-id").when(mockUpload).getUploadId();
         doReturn(UploadStatus.SUCCEEDED).when(mockUpload).getStatus();
@@ -188,11 +185,11 @@ public class UploadServiceMockTest {
         // Failed mock upload
         doReturn("failed-upload-id").when(mockFailedUpload).getUploadId();
         doReturn(UploadStatus.REQUESTED).when(mockFailedUpload).getStatus();
-        doReturn("failed-record-id").when(mockFailedUpload).getRecordId();
         
         // Mock getUploads/getUpload calls
         List<? extends Upload> results = Lists.newArrayList(mockUpload, mockFailedUpload);
         doReturn(results).when(mockDao).getUploads("ABC", START_TIME, END_TIME);
+        doReturn(results).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME);
         doReturn(mockUpload).when(mockDao).getUpload("upload-id");
         doReturn(mockFailedUpload).when(mockDao).getUpload("failed-upload-id");
         
@@ -201,7 +198,14 @@ public class UploadServiceMockTest {
         doReturn(10).when(mockRecord).getSchemaRevision();
         // Mock UploadValidationStatus from health data record;
         doReturn(mockRecord).when(mockHealthDataService).getRecordById("record-id");
-
+    }
+    
+    // Mock a successful and unsuccessful upload. The successful upload should call to get information 
+    // from the health data record table (schema id/revision). All should be merged correctly in the 
+    // resulting views.
+    @Test
+    public void canGetUploads() throws Exception {
+        setupUploadMocks();
         DateTimeRangeResourceList<? extends UploadView> returned = svc.getUploads("ABC", START_TIME, END_TIME);
         
         verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
@@ -220,6 +224,31 @@ public class UploadServiceMockTest {
         assertNull(failedView.getSchemaRevision());
     }
     
+    @Test
+    public void canGetStudyUploads() throws Exception {
+        setupUploadMocks();
+        
+        // Now verify the study uploads works
+        DateTimeRangeResourceList<? extends UploadView> returned = svc.getStudyUploads(TestConstants.TEST_STUDY,
+                START_TIME, END_TIME);
+        
+        verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME);
+        verify(mockHealthDataService).getRecordById("record-id");
+        verifyNoMoreInteractions(mockHealthDataService);
+        
+        // The two sources of information are combined in the view.
+        UploadView view = returned.getItems().get(0);
+        assertEquals(UploadStatus.SUCCEEDED, view.getUpload().getStatus());
+        // Does not have schema information for this view of uploads.
+        assertEquals("schema-id", view.getSchemaId());
+        assertEquals(new Integer(10), view.getSchemaRevision());
+        
+        UploadView failedView = returned.getItems().get(1);
+        assertEquals(UploadStatus.REQUESTED, failedView.getUpload().getStatus());
+        assertNull(failedView.getSchemaId());
+        assertNull(failedView.getSchemaRevision());
+    }
+
     @Test
     public void canPassStartTimeOnly() {
         svc.getUploads("ABC", START_TIME, null);

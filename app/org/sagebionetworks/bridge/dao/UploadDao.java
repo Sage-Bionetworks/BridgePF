@@ -40,6 +40,11 @@ public interface UploadDao {
     List<? extends Upload> getUploads(@Nonnull String healthCode, @Nonnull DateTime startTime, @Nonnull DateTime endTime);
 
     /**
+     * Get the uploads for an entire study in the indicated time range.
+     */
+    List<? extends Upload> getStudyUploads(@Nonnull StudyIdentifier studyId, @Nonnull DateTime startTime, @Nonnull DateTime endTime);
+    
+    /**
      * Signals to the Bridge server that the file has been uploaded. This also kicks off upload validation.
      *
      * @param completedBy

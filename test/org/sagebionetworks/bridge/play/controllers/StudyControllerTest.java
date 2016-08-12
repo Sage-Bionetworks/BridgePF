@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,18 +24,23 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
+import org.sagebionetworks.bridge.services.UploadService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import play.mvc.Result;
@@ -44,7 +50,10 @@ import play.test.Helpers;
 public class StudyControllerTest {
 
     private static final String EMAIL_ADDRESS = "foo@foo.com";
+
     private static final String PEM_TEXT = "-----BEGIN CERTIFICATE-----\nMIIExDCCA6ygAwIBAgIGBhCnnOuXMA0GCSqGSIb3DQEBBQUAMIGeMQswCQYDVQQG\nEwJVUzELMAkGA1UECAwCV0ExEDAOBgNVBAcMB1NlYXR0bGUxGTAXBgNVBAoMEFNh\nVlOwuuAxumMyIq5W4Dqk8SBcH9Y4qlk7\nEND CERTIFICATE-----";
+
+    private static final TypeReference<DateTimeRangeResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<DateTimeRangeResourceList<? extends Upload>>(){};
 
     private StudyController controller;
     private StudyIdentifier studyId;
@@ -61,6 +70,8 @@ public class StudyControllerTest {
     private EmailVerificationService mockVerificationService;
     @Mock
     private CacheProvider mockCacheProvider;
+    @Mock
+    private UploadService mockUploadService;
     
     private Study study;
     
@@ -87,6 +98,7 @@ public class StudyControllerTest {
         controller.setCacheProvider(mockCacheProvider);
         controller.setEmailVerificationService(mockVerificationService);
         controller.setUploadCertificateService(mockUploadCertService);
+        controller.setUploadService(mockUploadService);
         
         mockPlayContext();
     }
@@ -165,6 +177,29 @@ public class StudyControllerTest {
     @Test(expected = UnauthorizedException.class)
     public void userCannotAccessCurrentStudy() throws Exception {
         testRoleAccessToCurrentStudy(null);
+    }
+    
+    @Test
+    public void canGetUploadsForStudy() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
+        DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
+        
+        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
+                startTime, endTime);
+        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime);
+        
+        Result result = controller.getUploads(startTime.toString(), endTime.toString());
+        assertEquals(200, result.status());
+        
+        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime);
+        
+        // in other words, it's the object we mocked out from the service, we were returned the value.
+        DateTimeRangeResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), UPLOADS_REF);
+        assertEquals(startTime, retrieved.getStartTime());
+        assertEquals(endTime, retrieved.getEndTime());
     }
     
     private void testRoleAccessToCurrentStudy(Roles role) throws Exception {

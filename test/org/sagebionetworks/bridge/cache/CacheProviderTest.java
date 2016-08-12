@@ -19,6 +19,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -106,27 +107,30 @@ public class CacheProviderTest {
     
     @Test
     public void canSetAndResetSessionWithoutResettingExpiration() throws Exception {
+        String userId = BridgeUtils.generateGuid();
+        String sessionToken = BridgeUtils.generateGuid();
+        
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode("ABC").withId("id")
+                .withHealthCode("ABC").withId(userId)
                 .build(); 
         UserSession session = new UserSession();
         session.setParticipant(participant);
-        session.setSessionToken("cache-test-session-token");
+        session.setSessionToken(sessionToken);
         
         cacheProvider.setUserSession(session);
         
         // get works
-        UserSession retrieved = cacheProvider.getUserSession("cache-test-session-token");
+        UserSession retrieved = cacheProvider.getUserSession(sessionToken);
         assertNotNull(retrieved);
 
         // Sleep for a total of 4 seconds, but set/get in the middle of that.
         Thread.sleep(3000);
-        cacheProvider.getUserSession("cache-test-session-token");
+        cacheProvider.getUserSession(sessionToken);
         cacheProvider.setUserSession(session);
-        Thread.sleep(1000);
+        Thread.sleep(1050);
         
         // still expired after 4 seconds.
-        retrieved = cacheProvider.getUserSession("cache-test-session-token");
+        retrieved = cacheProvider.getUserSession(sessionToken);
         assertNull(retrieved);
     }
     
