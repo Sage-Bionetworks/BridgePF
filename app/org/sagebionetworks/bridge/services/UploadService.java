@@ -236,7 +236,7 @@ public class UploadService {
         checkNotNull(studyId);
 
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getStudyUploads(studyId, startTime, endTime);
+            return uploadDao.getStudyUploads(studyId, start, end);
         });
     }
     
