@@ -460,7 +460,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             // if there's a unit, add it as well
             JsonNode unitNode = oneAnswerNode.get("unit");
             if (unitNode != null && !unitNode.isNull()) {
-                convertedSurveyMap.put(answerItem + "_unit", unitNode);
+                convertedSurveyMap.put(answerItem + UploadUtil.UNIT_FIELD_SUFFIX, unitNode);
             }
         }
 

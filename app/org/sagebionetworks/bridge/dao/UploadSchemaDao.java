@@ -44,10 +44,12 @@ public interface UploadSchemaDao {
      *         study that the schema should be created or updated in, must be non-null and empty
      * @param survey
      *         survey to create the upload schema from
+     * @param newSchemaRev
+     *         true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
      * @return the created upload schema
      */
     @Nonnull UploadSchema createUploadSchemaFromSurvey(@Nonnull StudyIdentifier studyIdentifier,
-            @Nonnull Survey survey);
+            @Nonnull Survey survey, boolean newSchemaRev);
 
     /**
      * DAO method for deleting an upload schema with the specified study, schema ID, and revision. If the schema

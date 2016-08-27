@@ -222,14 +222,14 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys) {
+    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
         Survey survey = getSurvey(keys);
         if (survey.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }
         if (!survey.isPublished()) {
             // make schema from survey
-            UploadSchema schema = uploadSchemaDao.createUploadSchemaFromSurvey(study, survey);
+            UploadSchema schema = uploadSchemaDao.createUploadSchemaFromSurvey(study, survey, newSchemaRev);
 
             // update survey
             survey.setPublished(true);

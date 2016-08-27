@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -629,26 +630,41 @@ public class SurveyControllerTest {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
         setContext();
         when(service.getSurvey(keys)).thenReturn(survey);
-        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class))).thenReturn(survey);
+        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class), anyBoolean())).thenReturn(survey);
 
-        controller.publishSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
+        controller.publishSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString(), null);
         
         verify(service).getSurvey(keys);
-        verify(service).publishSurvey(eq(TEST_STUDY), any(Survey.class));
+        verify(service).publishSurvey(eq(TEST_STUDY), any(Survey.class), eq(false));
         verifyNoMoreInteractions(service);
     }
-    
+
+    @Test
+    public void publishSurveyNewSchemaRev() throws Exception {
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
+        setContext();
+        when(service.getSurvey(keys)).thenReturn(survey);
+        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class), anyBoolean())).thenReturn(survey);
+
+        controller.publishSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString(), "true");
+
+        verify(service).getSurvey(keys);
+        verify(service).publishSurvey(eq(TEST_STUDY), any(Survey.class), eq(true));
+        verifyNoMoreInteractions(service);
+    }
+
     @Test
     public void cannotPublishSurveyInOtherSurvey() throws Exception {
         Survey survey = getSurvey(false);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
         setContext();
         when(service.getSurvey(keys)).thenReturn(survey);
-        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class))).thenReturn(survey);
+        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class), anyBoolean())).thenReturn(survey);
         setUserSession("secondstudy");
         
         try {
-            controller.publishSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
+            controller.publishSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString(), null);
             fail("Exception not thrown.");
         } catch(UnauthorizedException e) {
             verify(service).getSurvey(keys);
@@ -824,7 +840,7 @@ public class SurveyControllerTest {
     
     @Test
     public void publishSurveyInvalidatesCache() throws Exception {
-        assertCacheIsCleared((guid, dateString) -> controller.publishSurvey(guid, dateString));
+        assertCacheIsCleared((guid, dateString) -> controller.publishSurvey(guid, dateString, null));
     }
     
     @FunctionalInterface
@@ -855,7 +871,7 @@ public class SurveyControllerTest {
         // Now mock the service because the *next* call (publish/delete/etc) will require it. The 
         // calls under test do not reference the cache, they clear it.
         when(service.getSurvey(any())).thenReturn(survey);
-        when(service.publishSurvey(any(), any())).thenReturn(survey);
+        when(service.publishSurvey(any(), any(), anyBoolean())).thenReturn(survey);
         when(service.versionSurvey(any())).thenReturn(survey);
         when(service.updateSurvey(any())).thenReturn(survey);
         

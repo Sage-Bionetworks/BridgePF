@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Before;
@@ -29,6 +30,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
@@ -36,6 +38,7 @@ import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.google.common.collect.Lists;
 
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class SurveyValidatorTest {
 
     private Survey survey;
@@ -335,6 +338,65 @@ public class SurveyValidatorTest {
         } catch (InvalidEntityException e) {
             assertEquals("doesn't allow multiples but the 'checkbox' UI hint gathers more than one answer",
                             errorFor(e, "elements[7].constraints.uiHint"));
+        }
+    }
+
+    @Test
+    public void multiValueWithNoEnumeration() {
+        List<SurveyQuestionOption>[] testCases = new List[] { null, ImmutableList.of() };
+
+        for (List<SurveyQuestionOption> oneTestCase : testCases) {
+            try {
+                SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+                ((MultiValueConstraints) question.getConstraints()).setEnumeration(oneTestCase);
+
+                Validate.entityThrowingException(validator, survey);
+                fail("Should have thrown exception");
+            } catch (InvalidEntityException e) {
+                assertEquals("enumeration must have non-null, non-empty choices list",
+                        errorFor(e, "elements[7].constraints.enumeration"));
+            }
+        }
+    }
+
+    @Test
+    public void multiValueWithOptionWithNoLabel() {
+        String[] testCases = { null, "", "   " };
+
+        for (String oneTestCase : testCases) {
+            try {
+                List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption(oneTestCase));
+
+                SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+                ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
+
+                Validate.entityThrowingException(validator, survey);
+                fail("Should have thrown exception");
+            } catch (InvalidEntityException e) {
+                assertEquals("label must be specified", errorFor(e, "elements[7].constraints.enumeration[0].label"));
+            }
+        }
+    }
+
+    @Test
+    public void multiValueWithDupeOptions() {
+        try {
+            List<SurveyQuestionOption> optionList = ImmutableList.of(
+                    new SurveyQuestionOption("a", null, "a", null),
+                    new SurveyQuestionOption("b1", null, "b", null),
+                    new SurveyQuestionOption("b2", null, "b", null),
+                    new SurveyQuestionOption("c", null, "c", null),
+                    new SurveyQuestionOption("d1", null, "d", null),
+                    new SurveyQuestionOption("d2", null, "d", null),
+                    new SurveyQuestionOption("e", null, "e", null));
+
+            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+            ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("enumeration must have unique values", errorFor(e, "elements[7].constraints.enumeration"));
         }
     }
 

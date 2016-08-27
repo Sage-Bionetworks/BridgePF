@@ -4,8 +4,10 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_QUESTION_TYPE;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_INFO_SCREEN_TYPE;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -24,6 +26,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.springframework.stereotype.Component;
@@ -204,6 +207,41 @@ public class SurveyValidator implements Validator {
         } else if (!mcon.getAllowMultiple() && MultiValueConstraints.MANY_ONLY.contains(hint)) {
             rejectField(errors, "uiHint",
                     "doesn't allow multiples but the '%s' UI hint gathers more than one answer", hintName);
+        }
+
+        // must have an enumeration (list of question options)
+        List<SurveyQuestionOption> optionList = mcon.getEnumeration();
+        if (optionList == null || optionList.isEmpty()) {
+            rejectField(errors, "enumeration", "must have non-null, non-empty choices list");
+        } else {
+            // validate each option
+            int numOptions = optionList.size();
+            Set<String> valueSet = new HashSet<>();
+            Set<String> dupeSet = new TreeSet<>();
+            for (int i = 0; i < numOptions; i++) {
+                errors.pushNestedPath("enumeration[" + i + "]");
+
+                // must have a label
+                SurveyQuestionOption oneOption = optionList.get(i);
+                if (StringUtils.isBlank(oneOption.getLabel())) {
+                    rejectField(errors, "label", "must be specified");
+                }
+
+                // record values seen so far
+                String optionValue = oneOption.getValue();
+                if (!valueSet.contains(optionValue)) {
+                    valueSet.add(optionValue);
+                } else {
+                    dupeSet.add(optionValue);
+                }
+
+                errors.popNestedPath();
+            }
+
+            // values must be unique
+            if (!dupeSet.isEmpty()) {
+                rejectField(errors, "enumeration", "must have unique values");
+            }
         }
     }
     

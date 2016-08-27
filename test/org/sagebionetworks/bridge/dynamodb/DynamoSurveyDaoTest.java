@@ -17,6 +17,8 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +33,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
@@ -95,7 +98,7 @@ public class DynamoSurveyDaoTest {
     }
     
     private Survey publishSurvey(StudyIdentifier studyIdentifier, Survey survey) {
-        Survey publishedSurvey = surveyDao.publishSurvey(studyIdentifier, survey);
+        Survey publishedSurvey = surveyDao.publishSurvey(studyIdentifier, survey, false);
         return publishedSurvey;
     }
 
@@ -104,6 +107,14 @@ public class DynamoSurveyDaoTest {
             setName(name);
             setIdentifier(TestUtils.randomName(DynamoSurveyDaoTest.class));
             setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+
+            // need at least one element
+            DynamoSurveyQuestion question = new DynamoSurveyQuestion();
+            question.setIdentifier("test-q");
+            question.setUiHint(UIHint.CHECKBOX);
+            question.setPrompt("Yes or No?");
+            question.setConstraints(new BooleanConstraints());
+            setElements(ImmutableList.of(question));
         }
     }
     
@@ -425,8 +436,8 @@ public class DynamoSurveyDaoTest {
         // This should include firstVersion and nextVersion.
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY);
         assertEquals(initialCount+2, surveys.size());
-        assertTrue(surveys.indexOf(firstSurvey) > -1);
-        assertTrue(surveys.indexOf(secondSurvey) > -1);
+        assertContainsAllKeys(ImmutableSet.of(new GuidCreatedOnVersionHolderImpl(firstSurvey),
+                new GuidCreatedOnVersionHolderImpl(secondSurvey)), surveys);
     }
     
     @Test
@@ -451,8 +462,8 @@ public class DynamoSurveyDaoTest {
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY);
         
         assertEquals(initialCount + 2, surveys.size());
-        assertTrue(surveys.indexOf(firstSurvey) > -1);
-        assertTrue(surveys.indexOf(secondSurvey) > -1);
+        assertContainsAllKeys(ImmutableSet.of(new GuidCreatedOnVersionHolderImpl(firstSurvey),
+                new GuidCreatedOnVersionHolderImpl(secondSurvey)), surveys);
     }
     
     @Test

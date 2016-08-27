@@ -94,13 +94,15 @@ public class SurveyService {
      *            study ID of study to publish the survey to
      * @param keys
      *            survey keys (guid, created on timestamp)
+     * @param newSchemaRev
+     *         true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
      * @return published survey
      */
-    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys) {
+    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.publishSurvey(study, keys);
+        return surveyDao.publishSurvey(study, keys, newSchemaRev);
     }
     
     /**

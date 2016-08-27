@@ -20,7 +20,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -193,82 +192,6 @@ public class DynamoUploadSchemaDaoDdbTest {
         assertSimpleSchema(createdSchema, name, expectedRev, TestConstants.TEST_STUDY_IDENTIFIER, 1L);
         UploadSchema fetchedSchema = dao.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schemaId, expectedRev);
         assertSimpleSchema(fetchedSchema, name, expectedRev, TestConstants.TEST_STUDY_IDENTIFIER, 1L);
-    }
-
-    @Test
-    public void updateFields() {
-        // old field defs
-        UploadFieldDefinition retainThis1 = new DynamoUploadFieldDefinition.Builder().withName("retain-this-1")
-                .withType(UploadFieldType.STRING).build();
-        UploadFieldDefinition retainThis2 = new DynamoUploadFieldDefinition.Builder().withName("retain-this-2")
-                .withType(UploadFieldType.STRING).build();
-        UploadFieldDefinition addThis1 = new DynamoUploadFieldDefinition.Builder().withName("add-this-1")
-                .withType(UploadFieldType.STRING).build();
-        UploadFieldDefinition addThis2 = new DynamoUploadFieldDefinition.Builder().withName("add-this-2")
-                .withType(UploadFieldType.STRING).build();
-        UploadFieldDefinition deleteThis1 = new DynamoUploadFieldDefinition.Builder().withName("delete-this-1")
-                .withType(UploadFieldType.STRING).build();
-        UploadFieldDefinition deleteThis2 = new DynamoUploadFieldDefinition.Builder().withName("delete-this-2")
-                .withType(UploadFieldType.STRING).build();
-        UploadFieldDefinition modifyThis1 = new DynamoUploadFieldDefinition.Builder().withName("modify-this-1")
-                .withType(UploadFieldType.INT).build();
-        UploadFieldDefinition modifyThis2 = new DynamoUploadFieldDefinition.Builder().withName("modify-this-2")
-                .withType(UploadFieldType.STRING).withMaxAppVersion(42).build();
-        UploadFieldDefinition addMaxAppVersion = new DynamoUploadFieldDefinition.Builder()
-                .withName("add-max-app-version").withType(UploadFieldType.STRING).build();
-
-        // modified field defs
-        UploadFieldDefinition modifiedField1 = new DynamoUploadFieldDefinition.Builder().withName("modify-this-1")
-                .withType(UploadFieldType.BOOLEAN).build();
-        UploadFieldDefinition modifiedField2 = new DynamoUploadFieldDefinition.Builder().withName("modify-this-2")
-                .withType(UploadFieldType.STRING).withMaxAppVersion(37).build();
-        UploadFieldDefinition addedMaxAppVersionField = new DynamoUploadFieldDefinition.Builder()
-                .withName("add-max-app-version").withType(UploadFieldType.STRING).withMaxAppVersion(23).build();
-
-        // Create the initial schema rev. Old field def list doesn't have "add-this" (so we can add them), but has
-        // "delete-this" (so we can delete them)
-        List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(retainThis1, retainThis2, deleteThis1,
-                deleteThis2, modifyThis1, modifyThis2, addMaxAppVersion);
-        DynamoUploadSchema schema = new DynamoUploadSchema();
-        schema.setFieldDefinitions(oldFieldDefList);
-        schema.setName("old schema");
-        schema.setRevision(1);
-        schema.setSchemaId(schemaId);
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-        dao.createSchemaRevisionV4(TestConstants.TEST_STUDY, schema);
-
-        // Validate field list.
-        UploadSchema createdSchema = dao.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schemaId, 1);
-        assertEquals(oldFieldDefList, createdSchema.getFieldDefinitions());
-
-        // Update the schema. This is an invalid update because we deleted some fields and modified others.
-        List<UploadFieldDefinition> invalidFieldDefList = ImmutableList.of(retainThis1, retainThis2, addThis1,
-                addThis2, modifiedField1, modifiedField2, addedMaxAppVersionField);
-        schema.setFieldDefinitions(invalidFieldDefList);
-        try {
-            dao.updateSchemaRevisionV4(TestConstants.TEST_STUDY, schemaId, 1, schema);
-            fail("expected exception");
-        } catch (BadRequestException ex) {
-            // check that the error message references *all* of the problematic fields
-            assertEquals("Can't update study " + TestConstants.TEST_STUDY_IDENTIFIER + " schema " + schemaId +
-                    " revision 1: Can't delete fields: delete-this-1, delete-this-2; Can't modify fields: " +
-                    "modify-this-1, modify-this-2", ex.getMessage());
-        }
-
-        // Verify field def list is the same.
-        UploadSchema notUpdatedSchema = dao.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schemaId, 1);
-        assertEquals(oldFieldDefList, notUpdatedSchema.getFieldDefinitions());
-
-        // Update the schema. This is valid because we only added fields and added a maxAppVersion to a field. We also
-        // re-ordered some of the fields, which is also valid.
-        List<UploadFieldDefinition> validFieldDefList = ImmutableList.of(addedMaxAppVersionField, addThis1, addThis2,
-                deleteThis1, deleteThis2, modifyThis1, modifyThis2, retainThis1, retainThis2);
-        schema.setFieldDefinitions(validFieldDefList);
-        dao.updateSchemaRevisionV4(TestConstants.TEST_STUDY, schemaId, 1, schema);
-
-        // Verify field def list is updated
-        UploadSchema updatedSchema = dao.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schemaId, 1);
-        assertEquals(validFieldDefList, updatedSchema.getFieldDefinitions());
     }
 
     private UploadSchema makeSimpleSchema(String name, Integer rev, String studyId, Long version) {
