@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -97,7 +98,7 @@ public class DynamoSubpopulationDaoMockTest {
         Subpopulation subpop = dao.createDefaultSubpopulation(TEST_STUDY);
         
         Criteria criteria = subpop.getCriteria();
-        assertEquals(new Integer(0), criteria.getMinAppVersion());
+        assertEquals(new Integer(0), criteria.getMinAppVersion(OperatingSystem.IOS));
         
         verify(criteriaDao).createOrUpdateCriteria(criteria);
     }

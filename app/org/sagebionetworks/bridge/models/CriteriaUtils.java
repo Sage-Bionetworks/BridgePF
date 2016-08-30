@@ -32,9 +32,10 @@ public class CriteriaUtils {
         checkNotNull(criteria.getNoneOfGroups());
         
         Integer appVersion = context.getClientInfo().getAppVersion();
-        if (appVersion != null) {
-            Integer minAppVersion = criteria.getMinAppVersion();
-            Integer maxAppVersion = criteria.getMaxAppVersion();
+        String appOs = context.getClientInfo().getOsName();
+        if (appVersion != null && appOs != null) {
+            Integer minAppVersion = criteria.getMinAppVersion(appOs);
+            Integer maxAppVersion = criteria.getMaxAppVersion(appOs);
             if ((minAppVersion != null && appVersion < minAppVersion) ||
                 (maxAppVersion != null && appVersion > maxAppVersion)) {
                 return false;
@@ -56,19 +57,29 @@ public class CriteriaUtils {
     }
 
     public static void validate(Criteria criteria, Set<String> dataGroups, Errors errors) {
-        if ((criteria.getMinAppVersion() != null && criteria.getMaxAppVersion() != null) && 
-            (criteria.getMaxAppVersion() < criteria.getMinAppVersion())) {
-                errors.rejectValue("maxAppVersion", "cannot be less than minAppVersion");
-        }
-        if (criteria.getMinAppVersion() != null && criteria.getMinAppVersion() < 0) {
-            errors.rejectValue("minAppVersion", "cannot be negative");
-        }
-        if (criteria.getMaxAppVersion() != null && criteria.getMaxAppVersion() < 0) {
-            errors.rejectValue("maxAppVersion", "cannot be negative");
+        for (String osName : criteria.getAppVersionOperatingSystems()) {
+            Integer minAppVersion = criteria.getMinAppVersion(osName);
+            Integer maxAppVersion = criteria.getMaxAppVersion(osName);
+            
+            if (minAppVersion != null && maxAppVersion != null && maxAppVersion < minAppVersion) {
+                pushSubpathError(errors, "maxAppVersions", osName, "cannot be less than minAppVersion");
+            }
+            if (minAppVersion != null && minAppVersion < 0) {
+                pushSubpathError(errors, "minAppVersions", osName, "cannot be negative");
+            }
+            if (maxAppVersion != null && maxAppVersion < 0) {
+                pushSubpathError(errors, "maxAppVersions", osName, "cannot be negative");
+            }
         }
         validateDataGroups(errors, dataGroups, criteria.getAllOfGroups(), "allOfGroups");
         validateDataGroups(errors, dataGroups, criteria.getNoneOfGroups(), "noneOfGroups");
         validateDataGroupNotRequiredAndProhibited(criteria, errors);
+    }
+    
+    private static void pushSubpathError(Errors errors, String subpath, String osName, String error) {
+        errors.pushNestedPath(subpath);
+        errors.rejectValue(osName.toLowerCase().replaceAll(" ", "_"), error);
+        errors.popNestedPath();
     }
 
     // This is a simple match: if a criteria declares a language, the user must declare the language

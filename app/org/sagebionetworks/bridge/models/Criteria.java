@@ -24,22 +24,6 @@ public interface Criteria extends BridgeEntity {
     void setLanguage(String language);
     
     /**
-     * The object associated with these criteria should be matched only if the application version 
-     * supplied by the client is equal to or greater than the minAppVersion. If null, there is no 
-     * minimum required version.
-     */
-    Integer getMinAppVersion();
-    void setMinAppVersion(Integer minAppVersion);
-    
-    /**
-     * The object associated with these criteria should be matched only if the application version 
-     * supplied by the client is less that or equal to the maxAppVersion. If null, there is no 
-     * maximum required version.
-     */
-    Integer getMaxAppVersion();
-    void setMaxAppVersion(Integer maxAppVersion);
-    
-    /**
      * The object associated with these criteria should be matched only if the user has all of the 
      * groups contained in this set of data groups. If the set is empty, there are no required 
      * data groups. 
@@ -54,4 +38,30 @@ public interface Criteria extends BridgeEntity {
      */
     Set<String> getNoneOfGroups();
     void setNoneOfGroups(Set<String> noneOfGroups);
+    
+    /**
+     * Minimum required app version for this criteria to match, specified for an operating system. If 
+     * the operating system name is specified in the User-Agent string, then the app version must be 
+     * equal to or greater than this value.
+     */
+    Integer getMinAppVersion(String osName);
+    
+    /** @see #getMinAppVersions(); */
+    void setMinAppVersion(String osName, Integer minAppVersion);
+    
+    /**
+     * Maximum required app version for this criteria to match, specified for an operating system. If 
+     * the operating system name is specified in the User-Agent string, then the app version must be 
+     * equal to or less than this value.
+     */
+    Integer getMaxAppVersion(String osName);
+    
+    /** @see #getMaxAppVersions(); */
+    void setMaxAppVersion(String osName, Integer maxAppVersion);
+    
+    /**
+     * Get all the operating system names that are used to declare either minimum or maximum app 
+     * versions (or both).
+     */
+    Set<String> getAppVersionOperatingSystems();
 }

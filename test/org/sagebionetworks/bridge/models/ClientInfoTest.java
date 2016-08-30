@@ -34,12 +34,12 @@ public class ClientInfoTest {
         ClientInfo info = new ClientInfo.Builder()
                 .withAppName("AppName")
                 .withAppVersion(1)
-                .withOsName("OsName")
+                .withOsName(OperatingSystem.IOS)
                 .withOsVersion("Version1")
                 .withSdkVersion(4).build();
         assertEquals("AppName", info.getAppName());
         assertEquals(1, info.getAppVersion().intValue());
-        assertEquals("OsName", info.getOsName());
+        assertEquals(OperatingSystem.IOS, info.getOsName());
         assertEquals("Version1", info.getOsVersion());
         assertEquals(4, info.getSdkVersion().intValue());
     }
@@ -111,7 +111,7 @@ public class ClientInfoTest {
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
         assertEquals("Unknown iPhone", info.getDeviceName());
-        assertEquals("iPhone OS", info.getOsName());
+        assertEquals(OperatingSystem.IOS, info.getOsName());
         assertEquals("9.1", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -120,7 +120,7 @@ public class ClientInfoTest {
         assertEquals("Cardio Health", info.getAppName());
         assertEquals(1, info.getAppVersion().intValue());
         assertEquals("Unknown iPhone", info.getDeviceName());
-        assertEquals("iPhone OS", info.getOsName());
+        assertEquals(OperatingSystem.IOS, info.getOsName());
         assertEquals("9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -129,7 +129,7 @@ public class ClientInfoTest {
         assertEquals("Belgium", info.getAppName());
         assertEquals(2, info.getAppVersion().intValue());
         assertEquals("Motorola Flip-Phone", info.getDeviceName());
-        assertEquals("Android", info.getOsName());
+        assertEquals(OperatingSystem.ANDROID, info.getOsName());
         assertEquals("14", info.getOsVersion());
         assertEquals("BridgeJavaSDK", info.getSdkName());
         assertEquals(10, info.getSdkVersion().intValue());
@@ -140,7 +140,7 @@ public class ClientInfoTest {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1_DEPRECATED);
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
-        assertEquals("iPhone OS", info.getOsName());
+        assertEquals(OperatingSystem.IOS, info.getOsName());
         assertEquals("9.1", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -148,7 +148,7 @@ public class ClientInfoTest {
         info = ClientInfo.parseUserAgentString(VALID_LONG_UA_2_DEPRECATED);
         assertEquals("Cardio Health", info.getAppName());
         assertEquals(1, info.getAppVersion().intValue());
-        assertEquals("iPhone OS", info.getOsName());
+        assertEquals(OperatingSystem.IOS, info.getOsName());
         assertEquals("9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -156,7 +156,7 @@ public class ClientInfoTest {
         info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3_DEPRECATED);
         assertEquals("Belgium", info.getAppName());
         assertEquals(2, info.getAppVersion().intValue());
-        assertEquals("Android", info.getOsName());
+        assertEquals(OperatingSystem.ANDROID, info.getOsName());
         assertEquals("14", info.getOsVersion());
         assertEquals("BridgeJavaSDK", info.getSdkName());
         assertEquals(10, info.getSdkVersion().intValue());
@@ -231,4 +231,21 @@ public class ClientInfoTest {
         assertFalse(info.isSupportedAppVersion(27));
     }
     
+    @Test
+    public void operatingSystemUnknown() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_SHORT_UA_1);
+        assertNull(info.getOsName());
+    }
+    
+    @Test
+    public void operatingSystemParsed() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3);
+        assertEquals(OperatingSystem.ANDROID, info.getOsName());
+    }
+    
+    @Test
+    public void deprecatedOperatingSystemParsed() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3_DEPRECATED);
+        assertEquals(OperatingSystem.ANDROID, info.getOsName());
+    }
  }

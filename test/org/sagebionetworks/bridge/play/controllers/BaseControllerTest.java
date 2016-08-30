@@ -36,6 +36,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -110,7 +111,7 @@ public class BaseControllerTest {
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
-        assertEquals("iPhone OS", info.getOsName());
+        assertEquals(OperatingSystem.IOS, info.getOsName());
         assertEquals("9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -135,7 +136,7 @@ public class BaseControllerTest {
         mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
         HashMap<String, Integer> map =new HashMap<>();
-        map.put("iPhone OS", 28);
+        map.put(OperatingSystem.IOS, 28);
         
         Study study = mock(Study.class);
         when(study.getMinSupportedAppVersions()).thenReturn(map);
@@ -150,7 +151,7 @@ public class BaseControllerTest {
         mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
         
         HashMap<String, Integer> map =new HashMap<>();
-        map.put("iPhone OS", 25);
+        map.put(OperatingSystem.IOS, 25);
         
         Study study = mock(Study.class);
         when(study.getMinSupportedAppVersions()).thenReturn(map);
@@ -177,7 +178,7 @@ public class BaseControllerTest {
         mockHeader(USER_AGENT, "Asthma/26 BridgeSDK/4");
         
         HashMap<String, Integer> map =new HashMap<>();
-        map.put("iPhone OS", 25);
+        map.put(OperatingSystem.IOS, 25);
         
         Study study = mock(Study.class);
         when(study.getMinSupportedAppVersions()).thenReturn(map);

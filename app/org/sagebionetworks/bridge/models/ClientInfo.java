@@ -24,8 +24,9 @@ import com.google.common.cache.LoadingCache;
  * </p>
  * 
  * <p>
- * OS name and version are optional. SDK name and version are also optional, if clients are 
- * built against the REST API directly. Punctuation is removed as appropriate. Some examples:
+ * OS name and version are optional, but filtering of server content by application version requires 
+ * that the OS be specified. SDK name and version are optional, if clients are built against the REST 
+ * API directly. Punctuation is removed as appropriate. Some examples:
  * </p>
  * 
  * <ul>
@@ -78,16 +79,6 @@ public final class ClientInfo {
      * is still logged exactly as it is retrieved from the request.
      */
     public static final ClientInfo UNKNOWN_CLIENT = new ClientInfo.Builder().build();
-    
-    /**
-     * The osName that maps to an iOS client app.
-     */
-    public static final String IOS_OS_NAME = "iPhone OS";
-    
-    /**
-     * The osName that maps to an Android client app.
-     */
-    public static final String ANDROID_OS_NAME = "Android";
 
     /**
      * For example, "App Name/14".
