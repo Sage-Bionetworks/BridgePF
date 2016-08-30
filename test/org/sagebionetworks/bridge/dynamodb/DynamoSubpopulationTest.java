@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -71,8 +70,8 @@ public class DynamoSubpopulationTest {
         JsonNode critNode = node.get("criteria");
         assertEquals(ALL_OF_GROUPS, JsonUtils.asStringSet(critNode, "allOfGroups"));
         assertEquals(NONE_OF_GROUPS, JsonUtils.asStringSet(critNode, "noneOfGroups"));
-        assertEquals(2, critNode.get("minAppVersions").get(OperatingSystem.IOS).asInt());
-        assertEquals(10, critNode.get("maxAppVersions").get(OperatingSystem.IOS).asInt());
+        assertEquals(2, critNode.get("minAppVersions").get(IOS).asInt());
+        assertEquals(10, critNode.get("maxAppVersions").get(IOS).asInt());
         
         Subpopulation newSubpop = BridgeObjectMapper.get().treeToValue(node, Subpopulation.class);
         // Not serialized, these values have to be added back to have equal objects 

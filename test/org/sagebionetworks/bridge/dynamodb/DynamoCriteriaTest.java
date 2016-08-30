@@ -85,6 +85,18 @@ public class DynamoCriteriaTest {
         assertNull(node.get("maxAppVersions").get("android"));
     }
     
+    @Test
+    public void newerPlatformVersionAttributesTakePrecedenceOverLegacyProperties() {
+        DynamoCriteria criteria = new DynamoCriteria();
+        
+        criteria.setMinAppVersion(OperatingSystem.IOS, 8);
+        criteria.setMinAppVersion(4); // this does not reset the value
+        assertEquals(new Integer(8), criteria.getMinAppVersion(OperatingSystem.IOS));
+        
+        criteria.setMinAppVersion(OperatingSystem.IOS, 10); // this does
+        assertEquals(new Integer(10), criteria.getMinAppVersion(OperatingSystem.IOS));
+    }
+    
     private String makeJson(String string) {
         return string.replaceAll("'", "\"");
     }

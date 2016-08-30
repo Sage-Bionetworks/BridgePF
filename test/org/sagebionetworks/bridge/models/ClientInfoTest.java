@@ -1,6 +1,13 @@
 package org.sagebionetworks.bridge.models;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
+import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import org.junit.Test;
 
@@ -34,12 +41,12 @@ public class ClientInfoTest {
         ClientInfo info = new ClientInfo.Builder()
                 .withAppName("AppName")
                 .withAppVersion(1)
-                .withOsName(OperatingSystem.IOS)
+                .withOsName(IOS)
                 .withOsVersion("Version1")
                 .withSdkVersion(4).build();
         assertEquals("AppName", info.getAppName());
         assertEquals(1, info.getAppVersion().intValue());
-        assertEquals(OperatingSystem.IOS, info.getOsName());
+        assertEquals(IOS, info.getOsName());
         assertEquals("Version1", info.getOsVersion());
         assertEquals(4, info.getSdkVersion().intValue());
     }
@@ -111,7 +118,7 @@ public class ClientInfoTest {
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
         assertEquals("Unknown iPhone", info.getDeviceName());
-        assertEquals(OperatingSystem.IOS, info.getOsName());
+        assertEquals(IOS, info.getOsName());
         assertEquals("9.1", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -120,7 +127,7 @@ public class ClientInfoTest {
         assertEquals("Cardio Health", info.getAppName());
         assertEquals(1, info.getAppVersion().intValue());
         assertEquals("Unknown iPhone", info.getDeviceName());
-        assertEquals(OperatingSystem.IOS, info.getOsName());
+        assertEquals(IOS, info.getOsName());
         assertEquals("9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -129,7 +136,7 @@ public class ClientInfoTest {
         assertEquals("Belgium", info.getAppName());
         assertEquals(2, info.getAppVersion().intValue());
         assertEquals("Motorola Flip-Phone", info.getDeviceName());
-        assertEquals(OperatingSystem.ANDROID, info.getOsName());
+        assertEquals(ANDROID, info.getOsName());
         assertEquals("14", info.getOsVersion());
         assertEquals("BridgeJavaSDK", info.getSdkName());
         assertEquals(10, info.getSdkVersion().intValue());
@@ -140,7 +147,7 @@ public class ClientInfoTest {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1_DEPRECATED);
         assertEquals("Asthma", info.getAppName());
         assertEquals(26, info.getAppVersion().intValue());
-        assertEquals(OperatingSystem.IOS, info.getOsName());
+        assertEquals(IOS, info.getOsName());
         assertEquals("9.1", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -148,7 +155,7 @@ public class ClientInfoTest {
         info = ClientInfo.parseUserAgentString(VALID_LONG_UA_2_DEPRECATED);
         assertEquals("Cardio Health", info.getAppName());
         assertEquals(1, info.getAppVersion().intValue());
-        assertEquals(OperatingSystem.IOS, info.getOsName());
+        assertEquals(IOS, info.getOsName());
         assertEquals("9.0.2", info.getOsVersion());
         assertEquals("BridgeSDK", info.getSdkName());
         assertEquals(4, info.getSdkVersion().intValue());
@@ -156,7 +163,7 @@ public class ClientInfoTest {
         info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3_DEPRECATED);
         assertEquals("Belgium", info.getAppName());
         assertEquals(2, info.getAppVersion().intValue());
-        assertEquals(OperatingSystem.ANDROID, info.getOsName());
+        assertEquals(ANDROID, info.getOsName());
         assertEquals("14", info.getOsVersion());
         assertEquals("BridgeJavaSDK", info.getSdkName());
         assertEquals(10, info.getSdkVersion().intValue());
@@ -240,12 +247,12 @@ public class ClientInfoTest {
     @Test
     public void operatingSystemParsed() {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3);
-        assertEquals(OperatingSystem.ANDROID, info.getOsName());
+        assertEquals(ANDROID, info.getOsName());
     }
     
     @Test
     public void deprecatedOperatingSystemParsed() {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3_DEPRECATED);
-        assertEquals(OperatingSystem.ANDROID, info.getOsName());
+        assertEquals(ANDROID, info.getOsName());
     }
  }

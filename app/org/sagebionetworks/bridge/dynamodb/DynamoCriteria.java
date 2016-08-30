@@ -117,17 +117,17 @@ public final class DynamoCriteria implements Criteria {
     }
     @DynamoDBIgnore
     @Override
-    public Integer getMinAppVersion(String os) {
-        return minAppVersions.get(os);
+    public Integer getMinAppVersion(String osName) {
+        return minAppVersions.get(osName);
     }
     @DynamoDBIgnore
     @Override
-    public void setMinAppVersion(String os, Integer minAppVersion) {
-        checkArgument(isNotBlank(os));
+    public void setMinAppVersion(String osName, Integer minAppVersion) {
+        checkArgument(isNotBlank(osName));
         if (minAppVersion != null) {
-            minAppVersions.put(os, minAppVersion);    
+            minAppVersions.put(osName, minAppVersion);    
         } else {
-            minAppVersions.remove(os);
+            minAppVersions.remove(osName);
         }
     }
     
@@ -141,17 +141,17 @@ public final class DynamoCriteria implements Criteria {
     }
     @DynamoDBIgnore
     @Override
-    public Integer getMaxAppVersion(String os) {
-        return maxAppVersions.get(os);
+    public Integer getMaxAppVersion(String osName) {
+        return maxAppVersions.get(osName);
     }
     @DynamoDBIgnore
     @Override
-    public void setMaxAppVersion(String os, Integer maxAppVersion) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(os));
+    public void setMaxAppVersion(String osName, Integer maxAppVersion) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(osName));
         if (maxAppVersion != null) {
-            maxAppVersions.put(os, maxAppVersion);    
+            maxAppVersions.put(osName, maxAppVersion);    
         } else {
-            maxAppVersions.remove(os);
+            maxAppVersions.remove(osName);
         }
     }
     @DynamoDBIgnore

@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
+import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
+import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.List;
 
@@ -19,7 +21,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
-import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -137,7 +138,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         
         Criteria criteria = Criteria.create();
         criteria.setKey(getKey(subpop));
-        criteria.setMinAppVersion(OperatingSystem.IOS, 0);
+        criteria.setMinAppVersion(ANDROID, 0);
+        criteria.setMinAppVersion(IOS, 0);
 
         criteria = criteriaDao.createOrUpdateCriteria(criteria);
         subpop.setCriteria(criteria);

@@ -191,17 +191,16 @@ public class CriteriaUtilsTest {
             public String getKey() { return key; }
             public void setLanguage(String language) { this.language = language; }
             public String getLanguage() { return language; }
-            public void setMinAppVersion(String os, Integer minAppVersion) { this.minAppVersions.put(os, minAppVersion); }
-            public Integer getMinAppVersion(String os) { return minAppVersions.get(os); }
-            public void setMaxAppVersion(String os, Integer maxAppVersion) { this.maxAppVersions.put(os, maxAppVersion); }
-            public Integer getMaxAppVersion(String os) { return maxAppVersions.get(os); }
+            public void setMinAppVersion(String osName, Integer minAppVersion) { this.minAppVersions.put(osName, minAppVersion); }
+            public Integer getMinAppVersion(String osName) { return minAppVersions.get(osName); }
+            public void setMaxAppVersion(String osName, Integer maxAppVersion) { this.maxAppVersions.put(osName, maxAppVersion); }
+            public Integer getMaxAppVersion(String osName) { return maxAppVersions.get(osName); }
             public void setAllOfGroups(Set<String> allOfGroups) { this.allOfGroups = allOfGroups; }
             public Set<String> getAllOfGroups() { return allOfGroups; }
             public void setNoneOfGroups(Set<String> noneOfGroups) { this.noneOfGroups = noneOfGroups; }
             public Set<String> getNoneOfGroups() { return noneOfGroups; }
-            public Set<String> getAppVersionOperatingSystems() {
-                return new ImmutableSet.Builder<String>().addAll(minAppVersions.keySet()).addAll(maxAppVersions.keySet()).build();
-            }
+            public Set<String> getAppVersionOperatingSystems() { return new ImmutableSet.Builder<String>()
+                .addAll(minAppVersions.keySet()).addAll(maxAppVersions.keySet()).build(); }
         };
         
         Errors errors = Validate.getErrorsFor(criteria);

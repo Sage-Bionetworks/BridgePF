@@ -88,7 +88,6 @@ public class CriteriaScheduleStrategyTest {
         assertEquals("ScheduleCriteria", schCriteria1.get("type").asText());
         
         JsonNode criteriaNode = schCriteria1.get("criteria");
-        System.out.println(criteriaNode);
         
         JsonNode minVersionsNode = criteriaNode.get("minAppVersions");
         assertEquals(4, minVersionsNode.get(OperatingSystem.IOS).asInt());

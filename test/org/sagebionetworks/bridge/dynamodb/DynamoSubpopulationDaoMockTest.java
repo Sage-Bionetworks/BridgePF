@@ -99,6 +99,7 @@ public class DynamoSubpopulationDaoMockTest {
         
         Criteria criteria = subpop.getCriteria();
         assertEquals(new Integer(0), criteria.getMinAppVersion(OperatingSystem.IOS));
+        assertEquals(new Integer(0), criteria.getMinAppVersion(OperatingSystem.ANDROID));
         
         verify(criteriaDao).createOrUpdateCriteria(criteria);
     }
