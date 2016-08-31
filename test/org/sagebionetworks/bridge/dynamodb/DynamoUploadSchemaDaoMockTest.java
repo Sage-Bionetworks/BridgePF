@@ -1130,7 +1130,7 @@ public class DynamoUploadSchemaDaoMockTest {
         // This update fails for 4 reasons
         // - deleted fields
         // - modified non-compatible field
-        // - added required fields without minAppVersion
+        // - added required fields
         // - modified schema type
 
         // Make old schema - Only field def list and schema type matter for this test.
@@ -1157,9 +1157,9 @@ public class DynamoUploadSchemaDaoMockTest {
                 new DynamoUploadFieldDefinition.Builder().withName("modify-me-2").withType(UploadFieldType.FLOAT)
                         .withMaxLength(24).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("add-me-1").withType(UploadFieldType.BOOLEAN)
-                        .withRequired(true).withMinAppVersion(null).build(),
+                        .withRequired(true).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("add-me-2").withType(UploadFieldType.BOOLEAN)
-                        .withRequired(true).withMinAppVersion(null).build());
+                        .withRequired(true).build());
 
         DynamoUploadSchema newSchema = new DynamoUploadSchema();
         newSchema.setSchemaType(UploadSchemaType.IOS_SURVEY);
@@ -1183,7 +1183,7 @@ public class DynamoUploadSchemaDaoMockTest {
             errMsg = ex.getMessage();
         }
 
-        assertTrue(errMsg.contains("Required added fields must have minAppVersion set: add-me-1, add-me-2"));
+        assertTrue(errMsg.contains("Added fields must be optional: add-me-1, add-me-2"));
         assertTrue(errMsg.contains("Can't delete fields: delete-me-1, delete-me-2"));
         assertTrue(errMsg.contains("Incompatible changes to fields: modify-me-1, modify-me-2"));
         assertTrue(errMsg.contains("Can't modify schema type, old=IOS_DATA, new=IOS_SURVEY"));
@@ -1202,7 +1202,6 @@ public class DynamoUploadSchemaDaoMockTest {
         // Test update with
         // - unchanged field
         // - modified compatible field
-        // - added required field with minAppVersion
         // - added optional field
 
         // Make old schema - Only field def list and schema type matter for this test.
@@ -1220,8 +1219,6 @@ public class DynamoUploadSchemaDaoMockTest {
                 new DynamoUploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("modify-me").withType(UploadFieldType.MULTI_CHOICE)
                         .withMultiChoiceAnswerList("foo", "bar", "baz").withAllowOtherChoices(true).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("added-required-field")
-                        .withType(UploadFieldType.BOOLEAN).withRequired(true).withMinAppVersion(42).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("added-optional-field")
                         .withType(UploadFieldType.BOOLEAN).withRequired(false).build());
 

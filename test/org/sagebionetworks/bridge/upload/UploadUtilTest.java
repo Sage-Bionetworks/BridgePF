@@ -362,47 +362,23 @@ public class UploadUtilTest {
     }
 
     @Test
-    public void isCompatibleFieldDefIntValueTests() {
-        // { oldValue, newValue, expected (minAppVersion), expected (maxAppVersion), expected (maxLength) }
+    public void isCompatibleFieldDefMaxLengthTests() {
+        // { oldValue, newValue, expected }
         Object[][] testCases = {
-                { null, null, true, true, true },
-                { null, 10, true, true, false },
-                { 10, null, false, false, false },
-                { 10, 10, true, true, true },
-                { 10, 15, true, false, false },
-                { 10, 5, false, true, false },
+                { null, null, true },
+                { null, 10, false },
+                { 10, null, false },
+                { 10, 10, true },
+                { 10, 15,  false },
+                { 10, 5, false },
         };
 
         for (Object[] oneTestCase : testCases) {
-            Integer oldValue = (Integer) oneTestCase[0];
-            Integer newValue = (Integer) oneTestCase[1];
-
-            // minAppVersion
-            {
-                UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
-                        .withType(UploadFieldType.INT).withMinAppVersion(oldValue).build();
-                UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
-                        .withType(UploadFieldType.INT).withMinAppVersion(newValue).build();
-                assertEquals(oneTestCase[2], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
-            }
-
-            // maxAppVersion
-            {
-                UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
-                        .withType(UploadFieldType.INT).withMaxAppVersion(oldValue).build();
-                UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
-                        .withType(UploadFieldType.INT).withMaxAppVersion(newValue).build();
-                assertEquals(oneTestCase[3], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
-            }
-
-            // maxLength
-            {
-                UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
-                        .withType(UploadFieldType.STRING).withMaxLength(oldValue).build();
-                UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
-                        .withType(UploadFieldType.STRING).withMaxLength(newValue).build();
-                assertEquals(oneTestCase[4], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
-            }
+            UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+                    .withType(UploadFieldType.STRING).withMaxLength((Integer) oneTestCase[0]).build();
+            UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+                    .withType(UploadFieldType.STRING).withMaxLength((Integer) oneTestCase[1]).build();
+            assertEquals(oneTestCase[2], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
         }
     }
 
@@ -433,27 +409,20 @@ public class UploadUtilTest {
 
     @Test
     public void isCompatibleFieldDefRequired() {
-        // { oldRequired, newRequired, oldMinAppVersion, newMinAppVersion, expected }
+        // { oldRequired, newRequired, expected }
         Object[][] testCases = {
-                { false, false, null, null, true },
-                { true, true, null, null, true },
-                { true, false, null, null, true },
-                { false, true, null, null, false },
-                { false, true, 10, null, false },
-                { false, true, null, 10, true },
-                { false, true, 10, 10, false },
-                { false, true, 10, 5, false },
-                { false, true, 10, 15, false },
+                { false, false, true },
+                { true, true, true },
+                { true, false, true },
+                { false, true, false },
         };
 
         for (Object[] oneTestCase : testCases) {
             UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
-                    .withType(UploadFieldType.INT).withRequired((boolean) oneTestCase[0])
-                    .withMinAppVersion((Integer) oneTestCase[2]).build();
+                    .withType(UploadFieldType.INT).withRequired((boolean) oneTestCase[0]).build();
             UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
-                    .withType(UploadFieldType.INT).withRequired((boolean) oneTestCase[1])
-                    .withMinAppVersion((Integer) oneTestCase[3]).build();
-            assertEquals(oneTestCase[4], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
+                    .withType(UploadFieldType.INT).withRequired((boolean) oneTestCase[1]).build();
+            assertEquals(oneTestCase[2], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
         }
     }
 

@@ -302,6 +302,7 @@ public class UploadUtil {
         // fileExtension - This is just a hint to BridgeEX for serializing the values. It doesn't affect the columns or
         //   validation.
         // mimeType - Similarly, this is also just a serialization hint.
+        // min/maxAppVersion - These will be dummied out. TODO remove this comment when no longer needed
 
         // Different types are obviously not compatible.
         // This is the most likely reason fields are incompatible. Check this first.
@@ -313,26 +314,6 @@ public class UploadUtil {
         Boolean oldAllowOther = oldFieldDef.getAllowOtherChoices();
         Boolean newAllowOther = newFieldDef.getAllowOtherChoices();
         if (oldAllowOther != null && oldAllowOther && (newAllowOther == null || !newAllowOther)) {
-            return false;
-        }
-
-        Integer oldMinAppVersion = oldFieldDef.getMinAppVersion();
-        Integer newMinAppVersion = newFieldDef.getMinAppVersion();
-        if (oldMinAppVersion != null && newMinAppVersion != null && newMinAppVersion < oldMinAppVersion) {
-            // If minAppVersion decreases, this means there are some appVersions that aren't sending this field that
-            // are suddenly required to send this field, which breaks Strict Validation.
-            return false;
-        } else if (oldMinAppVersion != null && newMinAppVersion == null) {
-            // Similarly, if we remove minAppVersion, old appVersions are suddenly required to pass this field.
-            return false;
-        }
-
-        // Similar but reversed logic for maxAppVersion.
-        Integer oldMaxAppVersion = oldFieldDef.getMaxAppVersion();
-        Integer newMaxAppVersion = newFieldDef.getMaxAppVersion();
-        if (oldMaxAppVersion != null && newMaxAppVersion != null && newMaxAppVersion > oldMaxAppVersion) {
-            return false;
-        } else if (oldMaxAppVersion != null && newMaxAppVersion == null) {
             return false;
         }
 
@@ -370,8 +351,7 @@ public class UploadUtil {
 
         // Going from required to optional is fine. Going from optional to required is okay only if you're adding a
         // minAppVerison.
-        if (!oldFieldDef.isRequired() && newFieldDef.isRequired() && (oldMinAppVersion != null ||
-                newMinAppVersion == null)) {
+        if (!oldFieldDef.isRequired() && newFieldDef.isRequired()) {
             return false;
         }
 

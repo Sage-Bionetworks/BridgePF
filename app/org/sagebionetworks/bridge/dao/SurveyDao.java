@@ -43,7 +43,7 @@ public interface SurveyDao {
      *         true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
      * @return published survey
      */
-    Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys, boolean newSchemaRev);
+    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys, boolean newSchemaRev);
 
     /**
      * Delete this survey. Survey still exists in system and can be retrieved by direct reference

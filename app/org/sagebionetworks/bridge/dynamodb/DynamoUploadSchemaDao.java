@@ -624,12 +624,12 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         Set<String> invalidAddedFieldNameSet = new TreeSet<>();
         for (String oneAddedFieldName : addedFieldNameSet) {
             UploadFieldDefinition addedField = newFieldMap.get(oneAddedFieldName);
-            if (addedField.isRequired() && addedField.getMinAppVersion() == null) {
+            if (addedField.isRequired()) {
                 invalidAddedFieldNameSet.add(oneAddedFieldName);
             }
         }
         if (!invalidAddedFieldNameSet.isEmpty()) {
-            errorMessageList.add("Required added fields must have minAppVersion set: " + BridgeUtils.COMMA_SPACE_JOINER
+            errorMessageList.add("Added fields must be optional: " + BridgeUtils.COMMA_SPACE_JOINER
                     .join(invalidAddedFieldNameSet));
         }
 
