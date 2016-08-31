@@ -9,8 +9,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Criteria;
 
@@ -120,7 +120,7 @@ public final class DynamoCriteria implements Criteria {
         return ImmutableMap.copyOf(minAppVersions);
     }
     public void setMinAppVersions(Map<String, Integer> minAppVersions) {
-        this.minAppVersions = (minAppVersions == null) ? new HashMap<>() : Maps.newHashMap(minAppVersions);
+        this.minAppVersions = (minAppVersions == null) ? new HashMap<>() : withoutNullEntries(minAppVersions);
     }
     @DynamoDBIgnore
     @Override
@@ -144,7 +144,7 @@ public final class DynamoCriteria implements Criteria {
         return ImmutableMap.copyOf(maxAppVersions);
     }
     public void setMaxAppVersions(Map<String, Integer> maxAppVersions) {
-        this.maxAppVersions = (minAppVersions == null) ? new HashMap<>() : Maps.newHashMap(maxAppVersions);
+        this.maxAppVersions = (minAppVersions == null) ? new HashMap<>() : withoutNullEntries(maxAppVersions);
     }
     @DynamoDBIgnore
     @Override
@@ -163,6 +163,13 @@ public final class DynamoCriteria implements Criteria {
         return new ImmutableSet.Builder<String>()
                 .addAll(minAppVersions.keySet())
                 .addAll(maxAppVersions.keySet()).build();
+    }
+    /**
+     * Creates a new copy of the map, removing any entries that have a null value (particularly easy to do this in JSON).
+     */
+    private Map<String,Integer> withoutNullEntries(Map<String, Integer> map) {
+        return map.entrySet().stream().filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
     }
     private void putOrRemove(Map<String,Integer> map, String osName, Integer version) {
         checkArgument(isNotBlank(osName));

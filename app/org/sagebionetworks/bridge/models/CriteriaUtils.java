@@ -65,15 +65,16 @@ public class CriteriaUtils {
         for (String osName : criteria.getAppVersionOperatingSystems()) {
             Integer minAppVersion = criteria.getMinAppVersion(osName);
             Integer maxAppVersion = criteria.getMaxAppVersion(osName);
+            String errorKey = BridgeUtils.textToErrorKey(osName);
             
             if (minAppVersion != null && maxAppVersion != null && maxAppVersion < minAppVersion) {
-                pushSubpathError(errors, "maxAppVersions", osName, "cannot be less than minAppVersion");
+                pushSubpathError(errors, "maxAppVersions", errorKey, "cannot be less than minAppVersions."+errorKey);
             }
             if (minAppVersion != null && minAppVersion < 0) {
-                pushSubpathError(errors, "minAppVersions", osName, "cannot be negative");
+                pushSubpathError(errors, "minAppVersions", errorKey, "cannot be negative");
             }
             if (maxAppVersion != null && maxAppVersion < 0) {
-                pushSubpathError(errors, "maxAppVersions", osName, "cannot be negative");
+                pushSubpathError(errors, "maxAppVersions", errorKey, "cannot be negative");
             }
         }
         validateDataGroups(errors, dataGroups, criteria.getAllOfGroups(), "allOfGroups");
@@ -81,9 +82,9 @@ public class CriteriaUtils {
         validateDataGroupNotRequiredAndProhibited(criteria, errors);
     }
     
-    private static void pushSubpathError(Errors errors, String subpath, String osName, String error) {
+    private static void pushSubpathError(Errors errors, String subpath, String errorKey, String error) {
         errors.pushNestedPath(subpath);
-        errors.rejectValue(BridgeUtils.textToErrorKey(osName), error);
+        errors.rejectValue(errorKey, error);
         errors.popNestedPath();
     }
 

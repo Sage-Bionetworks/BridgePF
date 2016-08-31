@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.HashSet;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -15,6 +17,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.Criteria;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -94,6 +97,28 @@ public class DynamoCriteriaTest {
         // But of course you can update the value in the map
         criteria.setMinAppVersion(IOS, 10);
         assertEquals(new Integer(10), criteria.getMinAppVersion(IOS));
+    }
+    
+    @Test
+    public void cannotSetNullValuesInPlatformVersionMap() {
+        Map<String, Integer> map = Maps.newHashMap();
+        map.put(IOS, null);
+        
+        DynamoCriteria criteria = new DynamoCriteria();
+        criteria.setMinAppVersions(map);
+        criteria.setMaxAppVersions(map);
+        assertFalse(criteria.getMinAppVersions().containsKey(IOS));
+        assertFalse(criteria.getMaxAppVersions().containsKey(IOS));
+        
+        criteria.setMinAppVersion(IOS, null);
+        criteria.setMaxAppVersion(IOS, null);
+        assertFalse(criteria.getMinAppVersions().containsKey(IOS));
+        assertFalse(criteria.getMaxAppVersions().containsKey(IOS));
+        
+        criteria.setMinAppVersion(null);
+        criteria.setMaxAppVersion(null);
+        assertFalse(criteria.getMinAppVersions().containsKey(IOS));
+        assertFalse(criteria.getMaxAppVersions().containsKey(IOS));
     }
     
     private String makeJson(String string) {

@@ -156,7 +156,7 @@ public class CriteriaUtilsTest {
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, errors);
-        assertEquals("cannot be less than minAppVersion", errors.getFieldErrors("maxAppVersions.iphone_os").get(0).getCode());
+        assertEquals("cannot be less than minAppVersions.iphone_os", errors.getFieldErrors("maxAppVersions.iphone_os").get(0).getCode());
     }
     
     @Test
@@ -185,7 +185,7 @@ public class CriteriaUtilsTest {
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, errors);
-        assertEquals("cannot be less than minAppVersion", errors.getFieldErrors("maxAppVersions.android").get(0).getCode());
+        assertEquals("cannot be less than minAppVersions.android", errors.getFieldErrors("maxAppVersions.android").get(0).getCode());
     }
     
     @Test
