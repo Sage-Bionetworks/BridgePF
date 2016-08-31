@@ -14,12 +14,17 @@ public interface Criteria extends BridgeEntity {
     }
 
     /** 
-     * The foreign key to the object filtered with these criteria. It's the model and the model's
+     * The foreign key to the object filtered with these criteria. It's the model type and the model's
      * keys, e.g. "subpopulation:<guid>".
      */
     String getKey();
     void setKey(String key);
     
+    /**
+     * The object associated with these criteria should only be matched if the user has this language 
+     * in their list of desired languages. This should be a two-letter language code, e.g. fr, de, 
+     * es, or en.
+     */
     String getLanguage();
     void setLanguage(String language);
     
@@ -45,8 +50,6 @@ public interface Criteria extends BridgeEntity {
      * equal to or greater than this value.
      */
     Integer getMinAppVersion(String osName);
-    
-    /** @see #getMinAppVersions(); */
     void setMinAppVersion(String osName, Integer minAppVersion);
     
     /**
@@ -55,13 +58,11 @@ public interface Criteria extends BridgeEntity {
      * equal to or less than this value.
      */
     Integer getMaxAppVersion(String osName);
-    
-    /** @see #getMaxAppVersions(); */
     void setMaxAppVersion(String osName, Integer maxAppVersion);
     
     /**
      * Get all the operating system names that are used to declare either minimum or maximum app 
-     * versions (or both).
+     * versions (or both). Used to iterate through these collections.
      */
     Set<String> getAppVersionOperatingSystems();
 }

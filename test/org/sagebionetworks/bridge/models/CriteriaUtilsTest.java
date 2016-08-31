@@ -26,6 +26,9 @@ public class CriteriaUtilsTest {
     
     private static final String KEY = "key";
     private static final Set<String> EMPTY_SET = Sets.newHashSet();
+    
+    // All tests are against v4 of the app.
+    private static ClientInfo IOS_SHORT_INFO = ClientInfo.fromUserAgentCache("Unknown Client/14");
     private static ClientInfo IOS_CLIENT_INFO = ClientInfo.fromUserAgentCache("app/4 (deviceName; iPhone OS/3.9) BridgeJavaSDK/12");
     private static ClientInfo ANDROID_CLIENT_INFO = ClientInfo.fromUserAgentCache("app/4 (deviceName; Android/3.9) BridgeJavaSDK/12");
     
@@ -48,6 +51,7 @@ public class CriteriaUtilsTest {
     public void matchesAppRange() {
         CriteriaContext context = getContext(IOS_CLIENT_INFO);
         
+        // These should all match v4
         assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, 4)));
         assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 1, null)));
         assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 1, 4)));
@@ -56,6 +60,8 @@ public class CriteriaUtilsTest {
     @Test
     public void filtersAppRange() {
         CriteriaContext context = getContext(IOS_CLIENT_INFO);
+        
+        // None of these match v4 of an app
         assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, 2)));
         assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 5, null)));
         assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 6, 11)));
@@ -64,6 +70,18 @@ public class CriteriaUtilsTest {
     @Test
     public void matchesAndroidAppRange() {
         CriteriaContext context = getContext(ANDROID_CLIENT_INFO);
+        
+        // These all match because the os name matches and so matching is used
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, null, 4)));
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 1, null)));
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 1, 4)));
+    }
+    
+    @Test
+    public void filtersAppRangeWithAndroid() {
+        CriteriaContext context = getContext(ANDROID_CLIENT_INFO);
+        
+        // These do not match because the os name matches and so matching is applied
         assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, null, 2)));
         assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 5, null)));
         assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 6, 11)));
@@ -72,6 +90,8 @@ public class CriteriaUtilsTest {
     @Test
     public void doesNotFilterOutIosWithAndroidAppRange() {
         CriteriaContext context = getContext(IOS_CLIENT_INFO);
+        
+        // But although these do not match the version, the client is different so no filtering occurs
         assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, null, 2)));
         assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 5, null)));
         assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 6, 11)));
@@ -80,15 +100,13 @@ public class CriteriaUtilsTest {
     @Test
     public void matchesAppRangeIfNoPlatformDeclared() {
         CriteriaContext context = new CriteriaContext.Builder()
-            .withContext(getContext(IOS_CLIENT_INFO))
+            .withContext(getContext(IOS_SHORT_INFO))
             .withClientInfo(ClientInfo.fromUserAgentCache("app/4")).build();
         
-        // Now without a platform declared, we just don't care about the app version, we return everything.
-        // This is our default behavior: when there's no user agent or missing information, we error towards
-        // returning information.
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, null, 2)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 5, null)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 6, 11)));
+        // When the user agent doesn't include platform information, then filtering is not applied
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, 2)));
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 5, null)));
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 6, 11)));
     }
     
     @Test
@@ -149,6 +167,8 @@ public class CriteriaUtilsTest {
         CriteriaUtils.validate(criteria, EMPTY_SET, errors);
         assertEquals("cannot be negative", errors.getFieldErrors("minAppVersions.iphone_os").get(0).getCode());
     }
+    
+    // Try these again with a different os name. If two different values work, any value should work.
     
     @Test
     public void validateAndroidMinMaxSameVersionOK() {

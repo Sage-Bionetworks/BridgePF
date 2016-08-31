@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.models;
 
 /**
- * Common operating system names. There's nothing special about these, another operating system 
- * could be provided through the API.
+ * Common operating system names. The operating system name is not constrained (any value could be used as long as the
+ * study supports it), so this is not an enumeration.
  */
 public class OperatingSystem {
     public static final String IOS = "iPhone OS";

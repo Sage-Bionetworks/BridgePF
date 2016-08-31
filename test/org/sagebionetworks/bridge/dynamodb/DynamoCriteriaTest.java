@@ -13,7 +13,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.OperatingSystem;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
@@ -46,12 +45,12 @@ public class DynamoCriteriaTest {
         assertEquals(SET_B, JsonUtils.asStringSet(node, "noneOfGroups"));
         
         JsonNode minValues = node.get("minAppVersions");
-        assertEquals(2, minValues.get(OperatingSystem.IOS).asInt());
-        assertEquals(10, minValues.get(OperatingSystem.ANDROID).asInt());
+        assertEquals(2, minValues.get(IOS).asInt());
+        assertEquals(10, minValues.get(ANDROID).asInt());
         
         JsonNode maxValues = node.get("maxAppVersions");
-        assertEquals(8, maxValues.get(OperatingSystem.IOS).asInt());
-        assertEquals(15, maxValues.get(OperatingSystem.ANDROID).asInt());
+        assertEquals(8, maxValues.get(IOS).asInt());
+        assertEquals(15, maxValues.get(ANDROID).asInt());
         
         assertEquals("Criteria", node.get("type").asText());
         assertNull(node.get("key"));
@@ -71,30 +70,30 @@ public class DynamoCriteriaTest {
     
     @Test
     public void canRemoveMinMaxAttributes() {
-        Criteria criteria = TestUtils.createCriteria(2, 8, SET_A, SET_B);
+        Criteria criteria = Criteria.create();
         criteria.setMinAppVersion(ANDROID, 10);
         criteria.setMaxAppVersion(ANDROID, 15);
-        criteria.setKey("subpopulation:AAA");
-        criteria.setLanguage("fr");
 
         criteria.setMinAppVersion(IOS, null);
         criteria.setMaxAppVersion(ANDROID, null);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(criteria);
-        assertNull(node.get("minAppVersions").get("ios"));
-        assertNull(node.get("maxAppVersions").get("android"));
+        assertNull(node.get("minAppVersions").get(IOS));
+        assertNull(node.get("maxAppVersions").get(ANDROID));
     }
     
     @Test
     public void newerPlatformVersionAttributesTakePrecedenceOverLegacyProperties() {
+        // Use DynamoCriteria directly so you can set legacy values
         DynamoCriteria criteria = new DynamoCriteria();
+        criteria.setMinAppVersion(IOS, 8);
+        criteria.setMinAppVersion(4);
+        // Using legacy setter does not set value if it already exists in the map
+        assertEquals(new Integer(8), criteria.getMinAppVersion(IOS));
         
-        criteria.setMinAppVersion(OperatingSystem.IOS, 8);
-        criteria.setMinAppVersion(4); // this does not reset the value
-        assertEquals(new Integer(8), criteria.getMinAppVersion(OperatingSystem.IOS));
-        
-        criteria.setMinAppVersion(OperatingSystem.IOS, 10); // this does
-        assertEquals(new Integer(10), criteria.getMinAppVersion(OperatingSystem.IOS));
+        // But of course you can update the value in the map
+        criteria.setMinAppVersion(IOS, 10);
+        assertEquals(new Integer(10), criteria.getMinAppVersion(IOS));
     }
     
     private String makeJson(String string) {

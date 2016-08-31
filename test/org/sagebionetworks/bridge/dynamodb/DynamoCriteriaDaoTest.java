@@ -93,5 +93,18 @@ public class DynamoCriteriaDaoTest {
         assertEquals(new Integer(12), newCriteria.getMinAppVersion(IOS));
         assertEquals("fr", newCriteria.getLanguage());
     }
-
+    
+    @Test
+    public void originalMinMaxValuesAreMigratedToPlatformMap() {
+        DynamoCriteria dynoCriteria = new DynamoCriteria();
+        dynoCriteria.setKey("key1");
+        dynoCriteria.setMinAppVersion(1);
+        dynoCriteria.setMaxAppVersion(4);
+        
+        criteriaDao.createOrUpdateCriteria(dynoCriteria);
+        
+        Criteria criteria = criteriaDao.getCriteria("key1");
+        assertEquals(new Integer(1), criteria.getMinAppVersion(IOS));
+        assertEquals(new Integer(4), criteria.getMaxAppVersion(IOS));
+    }        
 }

@@ -15,41 +15,45 @@ import com.google.common.cache.LoadingCache;
 
 /**
  * <p>
- * Parsed representation of the User-Agent header provided by the client, when
- * it is in our prescribed format:
+ * Parsed representation of the User-Agent header provided by the client, when it is in one of our prescribed formats:
  * </p>
  * 
  * <p>
+ * appName/appVersion<br>
+ * appName/appVersion sdkName/sdkVersion<br>
  * appName/appVersion (deviceName; osName/osVersion) sdkName/sdkVersion
  * </p>
  * 
  * <p>
- * OS name and version are optional, but filtering of server content by application version requires 
- * that the OS be specified. SDK name and version are optional, if clients are built against the REST 
- * API directly. Punctuation is removed as appropriate. Some examples:
+ * The full User-Agent header must be provided to enable the filtering of content based on the version of the application 
+ * making a request (because versioning information is specific to the name of the OS on which the app is running; we 
+ * currently expect either "iPhone OS" or "Android", but any value can be used and will work as long as it is also set 
+ * in the filtering criteria).
  * </p>
  * 
+ * <p>Some examples:</p>
+ * 
  * <ul>
- *     <li>Melanoma Challenge Application/1</li>
- *     <li>Unknown Client/14 BridgeJavaSDK/10</li>
- *     <li>Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4</li>
- *     <li>CardioHealth/1 (iPhone 6.0; iPhone OS/9.0.2) BridgeSDK/10</li>
+ * <li>Melanoma Challenge Application/1</li>
+ * <li>Unknown Client/14 BridgeJavaSDK/10</li>
+ * <li>Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4</li>
+ * <li>CardioHealth/1 (iPhone 6.0; iPhone OS/9.0.2) BridgeSDK/10</li>
  * </ul>
  * 
  * <p>
- * Other clients with more typical browser user agent strings will be represented by ClientInfo.UNKNOWN_CLIENT. This is a 
- * "null" object with all empty fields. Some examples of these headers, from our logs:
+ * Other clients with more typical browser user agent strings will be represented by ClientInfo.UNKNOWN_CLIENT. This is
+ * a "null" object with all empty fields. Some examples of these headers, from our logs:
  * </p>
  * 
  * <ul>
- *     <li>Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi</li>
- *     <li>Integration Tests (Linux/3.13.0-36-generic) BridgeJavaSDK/3</li>
+ * <li>Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi</li>
+ * <li>Integration Tests (Linux/3.13.0-36-generic) BridgeJavaSDK/3</li>
  * </ul>
  * 
  * <p>
- * ClientInfo is not the end result of a generic user agent string parser. Those are very complicated and we 
- * do not need all this information (we always log the user agent string as we receive it from the client, but only use 
- * these strings in our system when they are in format specified above).
+ * ClientInfo is not the end result of a generic user agent string parser. Those are very complicated and we do not need
+ * all this information (we always log the user agent string as we receive it from the client, but only use these
+ * strings in our system when they are in format specified above).
  * </p>
  *
  */
@@ -73,10 +77,9 @@ public final class ClientInfo {
        });
 
     /**
-     * A User-Agent string that does not follow our format is simply an unknown
-     * client, and no filtering will be done for such a client. It is represented with 
-     * a null object that is the ClientInfo object with all null fields. The User-Agent header 
-     * is still logged exactly as it is retrieved from the request.
+     * A User-Agent string that does not follow our format is simply an unknown client, and no filtering will be done
+     * for such a client. It is represented with a null object that is the ClientInfo object with all null fields. The
+     * User-Agent header is still logged exactly as it is retrieved from the request.
      */
     public static final ClientInfo UNKNOWN_CLIENT = new ClientInfo.Builder().build();
 

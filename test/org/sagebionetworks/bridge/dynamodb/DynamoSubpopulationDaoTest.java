@@ -360,7 +360,7 @@ public class DynamoSubpopulationDaoTest {
     
     private CriteriaContext criteriaContext(int version, String tag) {
         CriteriaContext.Builder builder = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4"))
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
                 .withStudyIdentifier(studyId);
         if (tag != null) {
             builder.withUserDataGroups(Sets.newHashSet(tag));    
