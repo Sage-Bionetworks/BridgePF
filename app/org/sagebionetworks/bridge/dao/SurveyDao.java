@@ -31,13 +31,19 @@ public interface SurveyDao {
     public Survey versionSurvey(GuidCreatedOnVersionHolder keys);
 
     /**
-     * Make this version of this survey available for scheduling. One scheduled for publishing, 
-     * a survey version can no longer be changed (it can still be the source of a new version).  
+     * Make this version of this survey available for scheduling. One scheduled for publishing,
+     * a survey version can no longer be changed (it can still be the source of a new version).
      * There can be more than one published version of a survey.
+     *
+     * @param study
+     *         study that the survey lives in
      * @param keys
-     * @return
+     *         survey ID and created-on timestamp, which identifies the survey you want to publish
+     * @param newSchemaRev
+     *         true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
+     * @return published survey
      */
-    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys);
+    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys, boolean newSchemaRev);
 
     /**
      * Delete this survey. Survey still exists in system and can be retrieved by direct reference

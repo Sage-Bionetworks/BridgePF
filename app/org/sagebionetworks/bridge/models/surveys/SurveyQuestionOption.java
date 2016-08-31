@@ -4,8 +4,9 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.lang3.StringUtils;
 
-public class SurveyQuestionOption {
+public final class SurveyQuestionOption {
 
     private final String label;
     private final String detail;
@@ -13,16 +14,12 @@ public class SurveyQuestionOption {
     private final Image image;
     
     @JsonCreator
-    public SurveyQuestionOption(@JsonProperty("label") String label, @JsonProperty("detail") String detail, 
+    public SurveyQuestionOption(@JsonProperty("label") String label, @JsonProperty("detail") String detail,
         @JsonProperty("value") String value, @JsonProperty("image") Image image) {
         this.label = label;
         this.detail = detail;
         this.value = value;
         this.image = image;
-    }
-    
-    public SurveyQuestionOption(String label, String value) {
-        this(label, null, value, null);
     }
     
     public SurveyQuestionOption(String label) {
@@ -36,7 +33,7 @@ public class SurveyQuestionOption {
         return detail;
     }
     public String getValue() {
-        return value;
+        return StringUtils.isNotBlank(value) ? value : label;
     }
     public Image getImage() {
         return image;

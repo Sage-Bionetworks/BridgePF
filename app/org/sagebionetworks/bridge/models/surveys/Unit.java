@@ -41,6 +41,11 @@ public enum Unit {
     LITERS,
     CUBIC_METERS;
     
-    public static EnumSet<Unit> DURATION_UNITS = EnumSet.of(SECONDS, MINUTES, HOURS, DAYS, WEEKS, MONTHS, YEARS);
-    
+    public static final EnumSet<Unit> DURATION_UNITS = EnumSet.of(SECONDS, MINUTES, HOURS, DAYS, WEEKS, MONTHS, YEARS);
+
+    /*
+     * We need to know what the longest unit is, so we can reserve the proper sized column in our schemas. Currently,
+     * this is cubic_centimeters. If this ever changes, we need to update this.
+     */
+    public static final int MAX_STRING_LENGTH = CUBIC_CENTIMETERS.name().length();
 }

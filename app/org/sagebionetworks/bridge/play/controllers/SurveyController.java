@@ -239,13 +239,13 @@ public class SurveyController extends BaseController {
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
     }
     
-    public Result publishSurvey(String surveyGuid, String createdOnString) throws Exception {
+    public Result publishSurvey(String surveyGuid, String createdOnString, String newSchemaRev) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
          
         Survey survey = getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
-        
-        survey = surveyService.publishSurvey(studyId, survey);
+
+        survey = surveyService.publishSurvey(studyId, survey, Boolean.parseBoolean(newSchemaRev));
         expireCache(surveyGuid, createdOnString, studyId);
         
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));

@@ -131,6 +131,12 @@ public class UploadSchemaValidator implements Validator {
                             fieldNameList.add(fieldName + TIME_ZONE_FIELD_SUFFIX);
                         }
 
+                        //noinspection ConstantConditions
+                        if (fieldDef.isUnboundedText() != null && fieldDef.isUnboundedText() &&
+                                fieldDef.getMaxLength() != null) {
+                            errors.rejectValue("unboundedText", "cannot specify unboundedText=true with a maxLength");
+                        }
+
                         errors.popNestedPath();
                     }
                 }

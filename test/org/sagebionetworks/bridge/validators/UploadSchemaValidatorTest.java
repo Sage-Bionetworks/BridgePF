@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
@@ -258,6 +259,50 @@ public class UploadSchemaValidatorTest {
 
         // validate
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
+    @Test
+    public void validateUnboundedMaxLength() {
+        // valid test cases
+        // { unboundedText, maxLength }
+        Object[][] testCases = {
+                { null, null },
+                { null, 24 },
+                { false, null },
+                { false, 24 },
+                { true, null },
+        };
+
+        // Since schemas are mutable, we can share a schema for all test cases.
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("happy schema");
+        schema.setStudyId("test-study");
+        schema.setSchemaId("happy-schema");
+        schema.setRevision(4);
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+
+        for (Object[] oneTestCase : testCases) {
+            // We need to create a new field def list for every test case though.
+            UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+                    .withType(UploadFieldType.STRING).withUnboundedText((Boolean) oneTestCase[0])
+                    .withMaxLength((Integer) oneTestCase[1]).build();
+            schema.setFieldDefinitions(ImmutableList.of(fieldDef));
+            Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+        }
+
+        // The only invalid test case is when unboundedText=true and maxLength is not null
+        {
+            UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+                    .withType(UploadFieldType.STRING).withUnboundedText(true).withMaxLength(24).build();
+            schema.setFieldDefinitions(ImmutableList.of(fieldDef));
+
+            try {
+                Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+                fail("expected exception");
+            } catch (InvalidEntityException ex) {
+                assertTrue(ex.getMessage().contains("cannot specify unboundedText=true with a maxLength"));
+            }
+        }
     }
 
     // These tests are redundant, but I wrote them specifically to test the messages that are sent
