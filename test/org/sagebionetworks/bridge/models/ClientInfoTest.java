@@ -177,37 +177,6 @@ public class ClientInfoTest {
     }
     
     @Test
-    public void clientWithoutVersionMatchesAnyRange() {
-        ClientInfo info = ClientInfo.parseUserAgentString(INVALID_UA_1);
-        assertTrue(info.isTargetedAppVersion(3, 3));
-    }
-    
-    @Test
-    public void clientWithVersionInRangeSucceeds() {
-        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
-        assertTrue(info.isTargetedAppVersion(24, 26));
-        assertTrue(info.isTargetedAppVersion(26, 27));
-    }
-    
-    @Test
-    public void clientWithVersionFilteredOnLowEnd() {
-        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
-        assertFalse(info.isTargetedAppVersion(27, null));
-    }
-    
-    @Test
-    public void clientWithVersionFilteredOnHighEnd() {
-        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
-        assertFalse(info.isTargetedAppVersion(null, 13));
-    }
-    
-    @Test
-    public void clientWithVersionFilteredWithZeroes() {
-        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
-        assertTrue(info.isTargetedAppVersion(0, 100));
-    }
-    
-    @Test
     public void testIsSupportedAppVersion_GreaterThanSucceeds() {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_1);
         assertTrue(info.isSupportedAppVersion(25));

@@ -47,8 +47,6 @@ public class ActivitySchedulerTest {
     @Before
     public void before() {
         plan.setGuid("BBB");
-        plan.setMinAppVersion(0);
-        plan.setMaxAppVersion(1000);
         
         // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
         DateTimeUtils.setCurrentMillisFixed(1428340210000L);

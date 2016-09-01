@@ -142,34 +142,6 @@ public class DynamoSchedulePlanDaoTest {
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
         assertEquals(getSchedulePlanGuids(plan1, plan2), getSchedulePlanGuids(plans));
     }
-    
-    @Test
-    public void filtersSchedulePlans() {
-        Set<String> guids = Sets.newHashSet();
-        Set<String> oneGuid = Sets.newHashSet();
-        
-        List<SchedulePlan> plans = TestUtils.getSchedulePlans(studyIdentifier);
-        SchedulePlan plan = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(0));
-        guids.add(plan.getGuid());
-        plansToDelete.add(new Keys(plan.getStudyKey(), plan.getGuid()));
-        
-        SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(1));
-        guids.add(plan2.getGuid());
-        oneGuid.add(plan2.getGuid());
-        plansToDelete.add(new Keys(plan2.getStudyKey(), plan2.getGuid()));
-
-        SchedulePlan plan3 = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(2));
-        guids.add(plan3.getGuid());
-        plansToDelete.add(new Keys(plan3.getStudyKey(), plan3.getGuid()));
-        
-        // No known client, all the guids are returned
-        plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
-        assertEquals(guids, getSchedulePlanGuids(plans));
-        
-        // Only one schedule plan matches v9
-        plans = schedulePlanDao.getSchedulePlans(ClientInfo.fromUserAgentCache("app/9"), studyIdentifier);
-        assertEquals(oneGuid, getSchedulePlanGuids(plans));
-    }
 
     @Test
     public void scheduleCriteriaStrategyWork() {

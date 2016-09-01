@@ -37,8 +37,6 @@ public final class DynamoSchedulePlan implements SchedulePlan {
     private static final String MODIFIED_ON_PROPERTY = "modifiedOn";
     private static final String STRATEGY_PROPERTY = "strategy";
     private static final String VERSION_PROPERTY = "version";
-    private static final String MIN_APP_VERSION_PROPERTY = "minAppVersion";
-    private static final String MAX_APP_VERSION_PROPERTY = "maxAppVersion";
 
     private String guid;
     private String label;
@@ -46,8 +44,6 @@ public final class DynamoSchedulePlan implements SchedulePlan {
     private Long version;
     private long modifiedOn;
     private ScheduleStrategy strategy;
-    private Integer minAppVersion;
-    private Integer maxAppVersion;
 
     public static DynamoSchedulePlan fromJson(JsonNode node) {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
@@ -56,8 +52,6 @@ public final class DynamoSchedulePlan implements SchedulePlan {
         plan.setModifiedOn(JsonUtils.asMillisSinceEpoch(node, MODIFIED_ON_PROPERTY));
         plan.setData(JsonUtils.asObjectNode(node, STRATEGY_PROPERTY));
         plan.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
-        plan.setMinAppVersion(JsonUtils.asInt(node, MIN_APP_VERSION_PROPERTY));
-        plan.setMaxAppVersion(JsonUtils.asInt(node, MAX_APP_VERSION_PROPERTY));
         return plan;
     }
 
@@ -130,26 +124,6 @@ public final class DynamoSchedulePlan implements SchedulePlan {
         this.label = label;
     }
 
-    @Override
-    public Integer getMinAppVersion() {
-        return minAppVersion;
-    }
-
-    @Override
-    public void setMinAppVersion(Integer minAppVersion) {
-        this.minAppVersion = minAppVersion;
-    }
-
-    @Override
-    public Integer getMaxAppVersion() {
-        return maxAppVersion;
-    }
-
-    @Override
-    public void setMaxAppVersion(Integer maxAppVersion) {
-        this.maxAppVersion = maxAppVersion;
-    }
-
     @DynamoDBAttribute(attributeName = "strategy")
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     @JsonIgnore
@@ -181,8 +155,6 @@ public final class DynamoSchedulePlan implements SchedulePlan {
         result = prime * result + Objects.hashCode(modifiedOn);
         result = prime * result + Objects.hashCode(strategy);
         result = prime * result + Objects.hashCode(studyKey);
-        result = prime * result + Objects.hashCode(minAppVersion);
-        result = prime * result + Objects.hashCode(maxAppVersion);
         result = prime * result + Objects.hashCode(version);
         return result;
     }
@@ -199,15 +171,13 @@ public final class DynamoSchedulePlan implements SchedulePlan {
         return (Objects.equals(guid, other.guid) && Objects.equals(label, other.label)
                 && Objects.equals(modifiedOn, other.modifiedOn) && Objects.equals(strategy, other.strategy)
                 && Objects.equals(label, other.label) && Objects.equals(studyKey, other.studyKey)
-                && Objects.equals(version,  other.version) && Objects.equals(minAppVersion, other.minAppVersion)
-                && Objects.equals(maxAppVersion, other.maxAppVersion));
+                && Objects.equals(version,  other.version));
     }
 
     @Override
     public String toString() {
-        return String.format(
-                "DynamoSchedulePlan [guid=%s, label=%s, studyKey=%s, modifiedOn=%s, strategy=%s, minAppVersin=%s, maxAppVersion=%s]",
-                guid, label, studyKey, modifiedOn, strategy, minAppVersion, maxAppVersion);
+        return String.format("DynamoSchedulePlan [guid=%s, label=%s, studyKey=%s, modifiedOn=%s, strategy=%s]",
+            guid, label, studyKey, modifiedOn, strategy);
     }
 
 }
