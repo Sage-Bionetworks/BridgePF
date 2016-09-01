@@ -260,6 +260,45 @@ public class UploadSchemaValidatorTest {
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
+    @Test(expected = InvalidEntityException.class)
+    public void invalidFieldName() {
+        // The specifics of what is an invalid field name is covered in UploadUtilTest. This tests that the validator
+        // validates invalid field names.
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("Test Schema");
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("**invalid$field^name##")
+                .withType(UploadFieldType.BOOLEAN).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void invalidMultiChoiceAnswer() {
+        // Similarly
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("Test Schema");
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("multi-choice-q")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("!invalid@choice%").build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
     // These tests are redundant, but I wrote them specifically to test the messages that are sent
     // back, and some use JSON to test what happens when properties are missing
     
