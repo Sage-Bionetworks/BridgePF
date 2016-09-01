@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import java.util.List;
-
 import javax.annotation.Resource;
 
 import org.junit.Before;
@@ -14,7 +12,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ABTestGroup;
