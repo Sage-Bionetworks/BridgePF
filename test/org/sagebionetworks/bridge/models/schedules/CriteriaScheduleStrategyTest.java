@@ -289,10 +289,10 @@ public class CriteriaScheduleStrategyTest {
             assertError(e, "strategy.scheduleCriteria[1].criteria.allOfGroups", 0, " 'group1' is not in enumeration: <no data groups declared>");
             assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 0, " 'group2' is not in enumeration: <no data groups declared>");
             assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 1, " 'group1' is not in enumeration: <no data groups declared>");
-            assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersions.iphone_os", 0, " cannot be less than minAppVersion");
+            assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersions.iphone_os", 0, " cannot be less than minAppVersions.iphone_os");
             assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersions.iphone_os", 1, " cannot be negative");
             assertError(e, "strategy.scheduleCriteria[4].criteria.minAppVersions.iphone_os", 0, " cannot be negative");
-            assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersions.iphone_os", 0, " cannot be less than minAppVersion");
+            assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersions.iphone_os", 0, " cannot be less than minAppVersions.iphone_os");
             assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersions.iphone_os", 1, " cannot be negative");
             assertError(e, "strategy.scheduleCriteria[5].criteria.minAppVersions.iphone_os", 0, " cannot be negative");
             assertError(e, "strategy.scheduleCriteria[5].schedule.activities", 0, " are required");
