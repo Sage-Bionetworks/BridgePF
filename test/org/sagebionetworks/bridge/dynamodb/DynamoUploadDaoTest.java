@@ -7,7 +7,10 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -123,34 +126,51 @@ public class DynamoUploadDaoTest {
     
     @Test
     public void canRetrieveUploadRecords() throws Exception {
-        UploadRequest uploadRequest = createRequest();
-        Upload upload1 = dao.createUpload(uploadRequest, TEST_STUDY, "code1");
-        uploadIds.add(upload1.getUploadId());
-        
-        uploadRequest = createRequest();
-        Upload upload2 = dao.createUpload(uploadRequest, TEST_STUDY, "code2");
-        uploadIds.add(upload2.getUploadId());
-        
+        int numUploads = 2;
+        Map<String, String> healthcodeToUploadId = new HashMap<>();
+        for (int i = 0; i < numUploads; i++) {
+            String healthcode = "code" + i;
+            UploadRequest uploadRequest = createRequest();
+            Upload upload = dao.createUpload(uploadRequest, TEST_STUDY, healthcode);
+            String uploadId = upload.getUploadId();
+
+            uploadIds.add(uploadId);
+            healthcodeToUploadId.put(healthcode, uploadId);
+        }
+
         // GSIs are eventually consistent. Try sleeping here.
         Thread.sleep(2000);
-        
-        List<? extends Upload> uploads = dao.getUploads("code1", DateTime.now().minusMinutes(1), DateTime.now());
+
+        DateTime now = DateTime.now();
+
+        List<? extends Upload> uploads = dao.getUploads("code0", now.minusMinutes(1), now);
         assertEquals(1, uploads.size());
-        assertEquals(upload1.getUploadId(), uploads.get(0).getUploadId());
+        assertEquals(healthcodeToUploadId.get("code0"), uploads.get(0).getUploadId());
         
         // This is a range outside of the just created records... should not return anything.
-        uploads = dao.getUploads("code1", DateTime.now().minusMinutes(3), DateTime.now().minusMinutes(2));
+        uploads = dao.getUploads("code0", now.minusMinutes(3), now.minusMinutes(2));
         assertEquals(0, uploads.size());
         
         // Now verify you can get this through the study-based call
-        uploads = dao.getStudyUploads(TEST_STUDY, DateTime.now().minusMinutes(1), DateTime.now());
-        assertEquals(2, uploads.size());
-        assertEquals(upload1.getUploadId(), uploads.get(0).getUploadId());
-        assertEquals(upload2.getUploadId(), uploads.get(1).getUploadId());
-        assertEquals("code1", uploads.get(0).getHealthCode());
-        assertEquals("code2", uploads.get(1).getHealthCode());
+        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(1), now);
+        assertEquals(numUploads, uploads.size());
 
-        uploads = dao.getStudyUploads(TEST_STUDY, DateTime.now().minusMinutes(3), DateTime.now().minusMinutes(2));
+        // DDB can return uploads in any order. This is true, regardless of mocking DateTime.now().
+        Set<String> foundHealthCodeSet = new HashSet<>();
+        Set<String> foundUploadIdSet = new HashSet<>();
+        for (Upload oneUpload : uploads) {
+            String foundHealthCode = oneUpload.getHealthCode();
+            String foundUploadId = oneUpload.getUploadId();
+            assertEquals(healthcodeToUploadId.get(foundHealthCode), foundUploadId);
+
+            foundHealthCodeSet.add(foundHealthCode);
+            foundUploadIdSet.add(foundUploadId);
+        }
+        assertEquals(healthcodeToUploadId.keySet(), foundHealthCodeSet);
+        assertEquals(numUploads, foundUploadIdSet.size());
+        assertTrue(foundUploadIdSet.containsAll(healthcodeToUploadId.values()));
+
+        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now.minusMinutes(2));
         assertEquals(0, uploads.size());
     }
     

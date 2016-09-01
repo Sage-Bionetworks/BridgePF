@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.upload;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -11,6 +14,7 @@ import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.DecimalNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -21,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.schema.SchemaUtils;
 
@@ -48,6 +53,12 @@ public class UploadUtil {
             "share", "size", "smallint", "start", "successful", "synonym", "sysdate", "table", "then", "time", "to",
             "trigger", "uid", "union", "unique", "update", "user", "validate", "values", "varchar", "varchar2", "view",
             "whenever", "where", "with").build();
+
+    /*
+     * Suffix used for unit fields in schemas. For example, if we had a field called "jogtime", we would have a field
+     * called "jogtime_unit".
+     */
+    public static final String UNIT_FIELD_SUFFIX = "_unit";
 
     /** Utility method for canonicalizing an upload JSON value given the schema's field type. */
     public static CanonicalizationResult canonicalize(final JsonNode valueNode, UploadFieldType type) {
@@ -289,6 +300,96 @@ public class UploadUtil {
         } else {
             return node.toString();
         }
+    }
+
+    // Helper method to test that two field defs are identical except for the maxAppVersion field (which can only be
+    // added to newFieldDef). This is because adding maxAppVersion is how we mark fields as deprecated. Package-scoped
+    // to facilitate unit tests.
+
+    /**
+     * Helper method to test whether a schema field definition can be modified as specified.
+     *
+     * @param oldFieldDef
+     *         the original field definition, before modification
+     * @param newFieldDef
+     *         the new field definition, representing the intended modification
+     * @return true if the fields can be modified, false otherwise
+     */
+    public static boolean isCompatibleFieldDef(UploadFieldDefinition oldFieldDef, UploadFieldDefinition newFieldDef) {
+        // Short-cut: If they are equal, then they are compatible.
+        if (oldFieldDef.equals(newFieldDef)) {
+            return true;
+        }
+
+        // Attributes that don't affect field def compatibility
+        // fileExtension - This is just a hint to BridgeEX for serializing the values. It doesn't affect the columns or
+        //   validation.
+        // mimeType - Similarly, this is also just a serialization hint.
+        // min/maxAppVersion - These will be dummied out. TODO remove this comment when no longer needed
+
+        // Different types are obviously not compatible.
+        // This is the most likely reason fields are incompatible. Check this first.
+        if (oldFieldDef.getType() != newFieldDef.getType()) {
+            return false;
+        }
+
+        // allowOther - You can flip this to true (adds a field), but you can't flip it from true to false.
+        Boolean oldAllowOther = oldFieldDef.getAllowOtherChoices();
+        Boolean newAllowOther = newFieldDef.getAllowOtherChoices();
+        if (oldAllowOther != null && oldAllowOther && (newAllowOther == null || !newAllowOther)) {
+            return false;
+        }
+
+        // Changing the maxLength will cause the Synapse column to be recreated, so we need to block this. (Strictly
+        // speaking, BridgeEX has code to prevent this by ignoring the new max length if it is different, for legacy
+        // reasons but this is confusing behavior, so we should just prevent this situation from happening to begin
+        // with.)
+        if (!Objects.equals(oldFieldDef.getMaxLength(), newFieldDef.getMaxLength())) {
+            return false;
+        }
+
+        List<String> oldMultiChoiceAnswerList = oldFieldDef.getMultiChoiceAnswerList();
+        List<String> newMultiChoiceAnswerList = newFieldDef.getMultiChoiceAnswerList();
+        if (oldMultiChoiceAnswerList != null && newMultiChoiceAnswerList != null) {
+            // Choices might have been re-ordered, so convert to sets so we can determine the choices that have been
+            // added, deleted, or retained.
+            Set<String> oldMultiChoiceAnswerSet = new HashSet<>(oldMultiChoiceAnswerList);
+            Set<String> newMultiChoiceAnswerSet = new HashSet<>(newMultiChoiceAnswerList);
+
+            // Adding choices is okay. Deleting choices is not. (Renaming is deleting one choice and adding another.)
+            Set<String> deletedChoiceSet = Sets.difference(oldMultiChoiceAnswerSet, newMultiChoiceAnswerSet);
+            if (!deletedChoiceSet.isEmpty()) {
+                return false;
+            }
+        } else if (oldMultiChoiceAnswerList != null || newMultiChoiceAnswerList != null) {
+            // This should never happen, but if we add or remove a multi-choice answer list, we should flag the field
+            // defs as incompatible.
+            return false;
+        }
+
+        // This should never happen, but if for some reason, the field name changes, the fields are incompatible.
+        if (!Objects.equals(oldFieldDef.getName(), newFieldDef.getName())) {
+            return false;
+        }
+
+        // Going from required to optional is fine. Going from optional to required is okay only if you're adding a
+        // minAppVerison.
+        if (!oldFieldDef.isRequired() && newFieldDef.isRequired()) {
+            return false;
+        }
+
+        // isUnboundedText controls whether we use a String or LargeText in Synapse. So changing this is not
+        // compatible. (null defaults to false)
+        //noinspection ConstantConditions
+        boolean oldIsUnboundedText = oldFieldDef.isUnboundedText() != null ? oldFieldDef.isUnboundedText() : false;
+        //noinspection ConstantConditions
+        boolean newIsUnboundedText = newFieldDef.isUnboundedText() != null ? newFieldDef.isUnboundedText() : false;
+        if (oldIsUnboundedText != newIsUnboundedText) {
+            return false;
+        }
+
+        // If we passed all incompatibility checks, then we're compatible.
+        return true;
     }
 
     /**

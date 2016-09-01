@@ -105,9 +105,16 @@ public class DynamoIndexHelper {
     }
     
     /**
+     * <p>
      * Queries the secondary index with the specified key name and value. Results will be returned as a list of
      * the specified class. Unlike {@link #queryKeys}, this method re-queries DynamoDB to get the full rows of the
      * DynamoDB rows.
+     * </p>
+     * <p>
+     * Note that for some reason, this method seems to return results in an unspecified order (generally sorted forward
+     * on the range key or sorted backwards). It's unclear why this is the case, and it's not obvious how to fix it.
+     * See https://sagebionetworks.jira.com/browse/BRIDGE-1467
+     * </p>
      *
      * @param clazz
      *         expected result class
