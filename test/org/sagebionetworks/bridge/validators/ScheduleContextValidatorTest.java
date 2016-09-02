@@ -29,9 +29,6 @@ public class ScheduleContextValidatorTest {
             .build();
         
         Validate.nonEntityThrowingException(validator, context);
-        
-        // defaults
-        assertEquals(0, context.getMinimumPerSchedule());
     }
     
     @Test

@@ -122,8 +122,6 @@ public abstract class ActivityScheduler {
      * to meet the minimum.
      */
     protected boolean hasNotMetMinimumCount(ScheduleContext context, ScheduleType scheduleType, int currentCount) {
-        // Only if this is a repeating scheduled and a minimum value has been set, do we test to see if we
-        // must continue because the count is less than the minimum required.
         return scheduleType != ScheduleType.ONCE && 
                 context.getMinimumPerSchedule() > 0 && 
                 currentCount < context.getMinimumPerSchedule();

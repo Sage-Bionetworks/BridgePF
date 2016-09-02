@@ -111,10 +111,9 @@ public class ScheduledActivityController extends BaseController {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
         }
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-        
         int minimumPerSchedule = BridgeUtils.getIntOrDefault(minimumPerScheduleString, 0);
-        
         DateTime accountCreatedOn = session.getParticipant().getCreatedOn();
+        
         if (accountCreatedOn == null) {
             Study study = studyService.getStudy(session.getStudyIdentifier());
             // Everyone should have an ID at this point... otherwise sessions are hanging out for over a week.

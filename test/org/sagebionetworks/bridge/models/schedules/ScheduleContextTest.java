@@ -48,11 +48,12 @@ public class ScheduleContextTest {
     }
     
     @Test
-    public void defaultsTimeZoneAndClientInfo() {
+    public void defaultsTimeZoneMinimumAndClientInfo() {
         ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
         
         assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getCriteriaContext().getClientInfo());
         assertNotNull(context.getNow());
+        assertEquals(0, context.getMinimumPerSchedule());
     }
     
     @Test
