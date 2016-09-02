@@ -8,20 +8,21 @@ import java.util.Set;
 
 import org.springframework.validation.Errors;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+
 import com.google.common.collect.Sets;
 
 /**
- * Utility classes for working with domain entities that should be matched by a growing list of 
- * criteria, such as the version of the app making a request or the data groups associated to 
- * a user. Matching is currently done through information passed in through the ScheduleContext, 
- * a parameter object of values against which matching occurs.
+ * Utility classes for working with domain entities that should be matched by a growing list of criteria, such as the
+ * version of the app making a request or the data groups associated to a user. Matching is currently done through
+ * information passed in through the ScheduleContext, a parameter object of values against which matching occurs.
  */
 public class CriteriaUtils {
     
     /**
-     * A matching method that matches our common set of matching criteria for consents, schedulses, and more. 
-     * We use the dataGroups and app version in the scheduling context and compare this to required and/or 
-     * prohibitied data groups, and an application version range, to determine if there is a match or not. 
+     * Match the context of a request (the user's language and data groups, the application making the request) against
+     * the criteria for including an object in the content that a user sees. Returns true if the object should be
+     * included, and false otherwise.
      */
     public static boolean matchCriteria(CriteriaContext context, Criteria criteria) {
         checkNotNull(context);
@@ -32,9 +33,10 @@ public class CriteriaUtils {
         checkNotNull(criteria.getNoneOfGroups());
         
         Integer appVersion = context.getClientInfo().getAppVersion();
-        if (appVersion != null) {
-            Integer minAppVersion = criteria.getMinAppVersion();
-            Integer maxAppVersion = criteria.getMaxAppVersion();
+        String appOs = context.getClientInfo().getOsName();
+        if (appVersion != null && appOs != null) {
+            Integer minAppVersion = criteria.getMinAppVersion(appOs);
+            Integer maxAppVersion = criteria.getMaxAppVersion(appOs);
             if ((minAppVersion != null && appVersion < minAppVersion) ||
                 (maxAppVersion != null && appVersion > maxAppVersion)) {
                 return false;
@@ -55,20 +57,35 @@ public class CriteriaUtils {
         return true;
     }
 
+    /**
+     * Validate that the criteria are correct (e.g. including the same data group in both required and prohibited sets,
+     * or having a min-max version range out of order, are obviously incorrect because they can never match).
+     */
     public static void validate(Criteria criteria, Set<String> dataGroups, Errors errors) {
-        if ((criteria.getMinAppVersion() != null && criteria.getMaxAppVersion() != null) && 
-            (criteria.getMaxAppVersion() < criteria.getMinAppVersion())) {
-                errors.rejectValue("maxAppVersion", "cannot be less than minAppVersion");
-        }
-        if (criteria.getMinAppVersion() != null && criteria.getMinAppVersion() < 0) {
-            errors.rejectValue("minAppVersion", "cannot be negative");
-        }
-        if (criteria.getMaxAppVersion() != null && criteria.getMaxAppVersion() < 0) {
-            errors.rejectValue("maxAppVersion", "cannot be negative");
+        for (String osName : criteria.getAppVersionOperatingSystems()) {
+            Integer minAppVersion = criteria.getMinAppVersion(osName);
+            Integer maxAppVersion = criteria.getMaxAppVersion(osName);
+            String errorKey = BridgeUtils.textToErrorKey(osName);
+            
+            if (minAppVersion != null && maxAppVersion != null && maxAppVersion < minAppVersion) {
+                pushSubpathError(errors, "maxAppVersions", errorKey, "cannot be less than minAppVersions."+errorKey);
+            }
+            if (minAppVersion != null && minAppVersion < 0) {
+                pushSubpathError(errors, "minAppVersions", errorKey, "cannot be negative");
+            }
+            if (maxAppVersion != null && maxAppVersion < 0) {
+                pushSubpathError(errors, "maxAppVersions", errorKey, "cannot be negative");
+            }
         }
         validateDataGroups(errors, dataGroups, criteria.getAllOfGroups(), "allOfGroups");
         validateDataGroups(errors, dataGroups, criteria.getNoneOfGroups(), "noneOfGroups");
         validateDataGroupNotRequiredAndProhibited(criteria, errors);
+    }
+    
+    private static void pushSubpathError(Errors errors, String subpath, String errorKey, String error) {
+        errors.pushNestedPath(subpath);
+        errors.rejectValue(errorKey, error);
+        errors.popNestedPath();
     }
 
     // This is a simple match: if a criteria declares a language, the user must declare the language

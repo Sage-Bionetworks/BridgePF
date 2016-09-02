@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.Set;
 
@@ -69,8 +70,8 @@ public class DynamoSubpopulationTest {
         JsonNode critNode = node.get("criteria");
         assertEquals(ALL_OF_GROUPS, JsonUtils.asStringSet(critNode, "allOfGroups"));
         assertEquals(NONE_OF_GROUPS, JsonUtils.asStringSet(critNode, "noneOfGroups"));
-        assertEquals(2, critNode.get("minAppVersion").asInt());
-        assertEquals(10, critNode.get("maxAppVersion").asInt());
+        assertEquals(2, critNode.get("minAppVersions").get(IOS).asInt());
+        assertEquals(10, critNode.get("maxAppVersions").get(IOS).asInt());
         
         Subpopulation newSubpop = BridgeObjectMapper.get().treeToValue(node, Subpopulation.class);
         // Not serialized, these values have to be added back to have equal objects 
@@ -90,8 +91,8 @@ public class DynamoSubpopulationTest {
         assertEquals(pdfURL, newSubpop.getConsentPDF());
         
         Criteria critObject = newSubpop.getCriteria();
-        assertEquals(new Integer(2), critObject.getMinAppVersion());
-        assertEquals(new Integer(10), critObject.getMaxAppVersion());
+        assertEquals(new Integer(2), critObject.getMinAppVersion(IOS));
+        assertEquals(new Integer(10), critObject.getMaxAppVersion(IOS));
         assertEquals(ALL_OF_GROUPS, critObject.getAllOfGroups());
         assertEquals(NONE_OF_GROUPS, critObject.getNoneOfGroups());
     }

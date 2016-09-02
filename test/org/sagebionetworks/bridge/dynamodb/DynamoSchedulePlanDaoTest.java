@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.List;
 import java.util.Set;
@@ -211,12 +212,12 @@ public class DynamoSchedulePlanDaoTest {
         
         // Should be able to read the criteria objects for this.
         Criteria criteria1 = criteriaDao.getCriteria("scheduleCriteria:"+plan.getGuid()+":0");
-        assertEquals(new Integer(2), criteria1.getMinAppVersion());
-        assertEquals(new Integer(8), criteria1.getMaxAppVersion());
+        assertEquals(new Integer(2), criteria1.getMinAppVersion(IOS));
+        assertEquals(new Integer(8), criteria1.getMaxAppVersion(IOS));
         
         Criteria criteria2 = criteriaDao.getCriteria("scheduleCriteria:"+plan.getGuid()+":1");
-        assertEquals(new Integer(9), criteria2.getMinAppVersion());
-        assertEquals(new Integer(14), criteria2.getMaxAppVersion());
+        assertEquals(new Integer(9), criteria2.getMinAppVersion(IOS));
+        assertEquals(new Integer(14), criteria2.getMaxAppVersion(IOS));
         
         plansToDelete.add(new Keys(studyId.getIdentifier(), plan.getGuid()));
     }

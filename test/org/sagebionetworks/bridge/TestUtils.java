@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
@@ -368,8 +369,8 @@ public class TestUtils {
     
     public static Criteria createCriteria(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
         DynamoCriteria crit = new DynamoCriteria();
-        crit.setMinAppVersion(minAppVersion);
-        crit.setMaxAppVersion(maxAppVersion);
+        crit.setMinAppVersion(OperatingSystem.IOS, minAppVersion);
+        crit.setMaxAppVersion(OperatingSystem.IOS, maxAppVersion);
         crit.setAllOfGroups(allOfGroups);
         crit.setNoneOfGroups(noneOfGroups);
         return crit;
@@ -380,8 +381,10 @@ public class TestUtils {
         if (criteria != null) {
             crit.setKey(criteria.getKey());
             crit.setLanguage(criteria.getLanguage());
-            crit.setMinAppVersion(criteria.getMinAppVersion());
-            crit.setMaxAppVersion(criteria.getMaxAppVersion());
+            for (String osName : criteria.getAppVersionOperatingSystems()) {
+                crit.setMinAppVersion(osName, criteria.getMinAppVersion(osName));
+                crit.setMaxAppVersion(osName, criteria.getMaxAppVersion(osName));
+            }
             crit.setNoneOfGroups(criteria.getNoneOfGroups());
             crit.setAllOfGroups(criteria.getAllOfGroups());
         }

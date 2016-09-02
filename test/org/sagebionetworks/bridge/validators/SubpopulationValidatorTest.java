@@ -52,8 +52,8 @@ public class SubpopulationValidatorTest {
             Validate.entityThrowingException(validator, subpop);
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
-            assertMessage(e, "minAppVersion", " cannot be negative");
-            assertMessage(e, "maxAppVersion", " cannot be negative");
+            assertMessage(e, "minAppVersions.iphone_os", " cannot be negative");
+            assertMessage(e, "maxAppVersions.iphone_os", " cannot be negative");
             assertMessage(e, "studyIdentifier", " is required");
             assertMessage(e, "name", " is required");
             assertMessage(e, "guid", " is required");
