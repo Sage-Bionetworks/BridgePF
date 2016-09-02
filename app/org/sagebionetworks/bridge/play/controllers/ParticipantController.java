@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static java.lang.Integer.parseInt;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
@@ -14,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -87,8 +85,8 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        int offsetBy = getIntOrDefault(offsetByString, 0);
-        int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
+        int offsetBy = BridgeUtils.getIntOrDefault(offsetByString, 0);
+        int pageSize = BridgeUtils.getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
         
         PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
         return okResult(page);
@@ -213,16 +211,5 @@ public class ParticipantController extends BaseController {
                 study, userId, startTime, endTime);
 
         return okResult(uploads);
-    }
-    
-    private int getIntOrDefault(String value, int defaultValue) {
-        if (isBlank(value)) {
-            return defaultValue;
-        }
-        try {
-            return parseInt(value);
-        } catch(NumberFormatException e) {
-            throw new BadRequestException(value + " is not an integer");
-        }
     }
 }

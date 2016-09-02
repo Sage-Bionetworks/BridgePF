@@ -11,6 +11,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -179,6 +181,18 @@ public class BridgeUtilsTest {
     @Test(expected = IllegalArgumentException.class)
     public void textToErrorKeyRejectsEmptyString() {
         BridgeUtils.textToErrorKey(" ");
+    }
+    
+    @Test
+    public void parseIntegerOrDefault() {
+        assertEquals(3, BridgeUtils.getIntOrDefault(null, 3));
+        assertEquals(3, BridgeUtils.getIntOrDefault("  ", 3));
+        assertEquals(1, BridgeUtils.getIntOrDefault("1", 3));
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void parseIntegerOrDefaultThrowsException() {
+        BridgeUtils.getIntOrDefault("asdf", 3);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

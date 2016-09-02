@@ -22,7 +22,7 @@ class IntervalActivityScheduler extends ActivityScheduler {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         DateTime datetime = getScheduledTimeBasedOnEvent(context);
         if (datetime != null) {
-            while(datetime.isBefore(context.getEndsOn())) {
+            while(keepScheduling(context, datetime, scheduledActivities)) {
                 addScheduledActivityForAllTimes(scheduledActivities, plan, context, datetime);
                 // A one-time activity with no interval (for example); don't loop
                 if (schedule.getInterval() == null) {
@@ -33,5 +33,14 @@ class IntervalActivityScheduler extends ActivityScheduler {
         }
         return trimScheduledActivities(scheduledActivities);
     }
-
+    
+    /**
+     * If scheduling hasn't reached the end time, or hasn't accumulated the minimum number of tasks, returns true, or 
+     * false otherwise. 
+     */
+    private boolean keepScheduling(ScheduleContext context, DateTime scheduledTime, List<ScheduledActivity> scheduledActivities) {
+        return scheduledTime.isBefore(context.getEndsOn()) || 
+                hasNotMetMinimumCount(context, schedule.getScheduleType(), scheduledActivities.size());
+    }
+    
 }

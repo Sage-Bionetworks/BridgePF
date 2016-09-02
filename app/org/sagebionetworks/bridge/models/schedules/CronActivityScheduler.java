@@ -20,19 +20,28 @@ class CronActivityScheduler extends ActivityScheduler {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         DateTime scheduledTime = getScheduledTimeBasedOnEvent(context);
         
-        if (scheduledTime != null) {
+        if (keepScheduling(context, scheduledTime, scheduledActivities)) {
             MutableTrigger trigger = parseTrigger(scheduledTime);
             
-            while (scheduledTime.isBefore(context.getEndsOn())) {
+            while (keepScheduling(context, scheduledTime, scheduledActivities)) {
                 Date next = trigger.getFireTimeAfter(scheduledTime.toDate());
                 scheduledTime = new DateTime(next, context.getZone());
                 
-                if (scheduledTime.isBefore(context.getEndsOn())) {
+                if (keepScheduling(context, scheduledTime, scheduledActivities)) {
                     addScheduledActivityForAllTimes(scheduledActivities, plan, context, scheduledTime);    
                 }
             }
         }
         return trimScheduledActivities(scheduledActivities);
+    }
+    
+    /**
+     * If scheduling hasn't reached the end time, or hasn't accumulated the minimum number of tasks, returns true, or 
+     * false otherwise. 
+     */
+    private boolean keepScheduling(ScheduleContext context, DateTime scheduledTime, List<ScheduledActivity> scheduledActivities) {
+        return scheduledTime.isBefore(context.getEndsOn()) || 
+                hasNotMetMinimumCount(context, schedule.getScheduleType(), scheduledActivities.size());
     }
     
     private MutableTrigger parseTrigger(DateTime scheduledTime) {

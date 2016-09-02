@@ -14,6 +14,13 @@ public class ScheduleContextValidator implements Validator {
      * something like daysAhead=10000.
      */
     public static final int MAX_EXPIRES_ON_DAYS = 5;
+    
+    /**
+     * The maximum number of tasks you can force when scheduling. For our use case it's hard to argue 
+     * for a large value here and it could cause the scheduler to run for a long time if the number is 
+     * overly large. 
+     */
+    public static final int MAX_MIN_ACTIVITY_COUNT = 5;
 
     @Override
     public boolean supports(Class<?> cls) {
@@ -44,6 +51,11 @@ public class ScheduleContextValidator implements Validator {
             errors.rejectValue("endsOn", "must be after the time of the request");
         } else if (context.getEndsOn().minusDays(MAX_EXPIRES_ON_DAYS).isAfter(now)) {
             errors.rejectValue("endsOn", "must be "+MAX_EXPIRES_ON_DAYS+" days or less");
+        }
+        if (context.getMinimumPerSchedule() < 0) {
+            errors.rejectValue("minimumPerSchedule", "cannot be negative");
+        } else if (context.getMinimumPerSchedule() > MAX_MIN_ACTIVITY_COUNT) {
+            errors.rejectValue("minimumPerSchedule", "cannot be greater than " + MAX_MIN_ACTIVITY_COUNT);
         }
     }
 

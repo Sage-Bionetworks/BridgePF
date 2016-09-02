@@ -115,5 +115,17 @@ public abstract class ActivityScheduler {
             }
         }
         return eventDateTime;
-    }    
+    }
+    
+    /**
+     * If this is a repeating schedule and a minimum value has been set, test to see if the there are enough tasks 
+     * to meet the minimum.
+     */
+    protected boolean hasNotMetMinimumCount(ScheduleContext context, ScheduleType scheduleType, int currentCount) {
+        // Only if this is a repeating scheduled and a minimum value has been set, do we test to see if we
+        // must continue because the count is less than the minimum required.
+        return scheduleType != ScheduleType.ONCE && 
+                context.getMinimumPerSchedule() > 0 && 
+                currentCount < context.getMinimumPerSchedule();
+    }
 }

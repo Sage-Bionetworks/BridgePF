@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Integer.parseInt;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.util.Collection;
@@ -16,6 +18,7 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.StringUtils;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -223,4 +226,20 @@ public class BridgeUtils {
         }
         return text.toLowerCase().replaceAll(" ", "_").replaceAll("[^a-zA-Z0-9_-]", "");    
     }
+    
+    /**
+     * Parse the string as an integer value, or return the defaultValue if it is null. If the value is 
+     * provided but not a parseable integer, thrown a BadRequestException.
+     */
+    public static int getIntOrDefault(String value, int defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return parseInt(value);
+        } catch(NumberFormatException e) {
+            throw new BadRequestException(value + " is not an integer");
+        }
+    }
+    
 }

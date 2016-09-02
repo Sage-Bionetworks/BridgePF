@@ -18,6 +18,7 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,6 +28,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -287,7 +289,6 @@ public class ActivitySchedulerTest {
     
     @Test
     public void scheduleIsTranslatedToTimeZoneWhenCreatedAndPersisted() {
-        
         // 10am every morning from the time of enrollment
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
@@ -328,6 +329,82 @@ public class ActivitySchedulerTest {
             allGuids.add(schActivity.getGuid());
         }
         assertEquals(activities.size(), allGuids.size());
+    }
+    
+    @Test
+    public void minimumOverridesTimeBasedIntervalScheduling() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setLabel("Monthly Schedule");
+        schedule.setInterval(Period.parse("P1M"));
+        schedule.addTimes("14:00");
+        schedule.setExpires("P1W");
+        schedule.addActivity(new Activity.Builder().withLabel("An activity").withTask("taskId").build());
+        
+        verifyMinimumIsMet(schedule, Lists.newArrayList("2015-04-23T14:00:00.000Z", "2015-05-23T14:00:00.000Z",
+                "2015-06-23T14:00:00.000Z", "2015-07-23T14:00:00.000Z"));
+    }
+
+    @Test
+    public void minimumOverridesTimeBasedCronScheduling() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setLabel("Monthly Schedule");
+        schedule.setCronTrigger("0 0 14 10 1/1 ? *");
+        schedule.setExpires("P1W");
+        schedule.addActivity(new Activity.Builder().withLabel("An activity").withTask("taskId").build());
+        
+        verifyMinimumIsMet(schedule, Lists.newArrayList("2015-04-10T14:00:00.000Z", "2015-05-10T14:00:00.000Z",
+                "2015-06-10T14:00:00.000Z", "2015-07-10T14:00:00.000Z"));
+    }
+    
+    private void verifyMinimumIsMet(Schedule schedule, List<String> dates) {
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        plan.setStrategy(strategy);
+        
+        ScheduleContext noMinContext = getContext(DateTimeZone.UTC, ENROLLMENT.plusDays(10));
+        
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, noMinContext);
+        // There are none on the monthly schedule
+        assertEquals(0, scheduledActivities.size());
+        
+        // Adjust this to have a minimum of 4
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(noMinContext)
+                .withMinimumPerSchedule(4).build();
+        
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        assertEquals(4, scheduledActivities.size());
+        for (int i=0; i < 4; i++) {
+            assertEquals(dates.get(i), scheduledActivities.get(i).getScheduledOn().toString());    
+        }
+    }
+    
+    @Test
+    public void greaterOfMinOrTimeBasedSchedulingReturned() {
+        // In this test the N days values return more tasks than the minimum, the full set of 
+        // tasks should be returned (not the minimum).
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setLabel("Daily Schedule");
+        schedule.setInterval(Period.parse("P1D"));
+        schedule.addTimes("14:00");
+        schedule.setExpires("P1D");
+        schedule.addActivity(new Activity.Builder().withLabel("An activity").withTask("taskId").build());
+        
+        // 2015-04-06T10:10:10.000-07:00
+        ScheduleContext noMinContext = getContext(DateTimeZone.UTC, NOW.plusWeeks(2));
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, noMinContext);
+        assertEquals(4, scheduledActivities.size());
+        
+        ScheduleContext minContext = new ScheduleContext.Builder()
+                .withContext(noMinContext)
+                .withMinimumPerSchedule(1).build();
+        
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, minContext);
+        // It's still 4... the minimum is ignored because there are more tasks in the time window
+        assertEquals(4, scheduledActivities.size());
     }
     
     private ScheduleContext getContext(DateTime endsOn) {

@@ -72,6 +72,7 @@ public class ScheduleContextTest {
                 .withStudyIdentifier(studyId)
                 .withTimeZone(PST)
                 .withEndsOn(endsOn)
+                .withMinimumPerSchedule(3)
                 .withEvents(events)
                 .withHealthCode("healthCode")
                 .withUserDataGroups(USER_DATA_GROUPS)
@@ -81,6 +82,7 @@ public class ScheduleContextTest {
         assertEquals(PST, context.getZone());
         assertEquals(endsOn, context.getEndsOn());
         assertEquals(events.get("enrollment"), context.getEvent("enrollment"));
+        assertEquals(3, context.getMinimumPerSchedule());
         assertEquals("healthCode", context.getCriteriaContext().getHealthCode());
         assertEquals(USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
         assertEquals(now, context.getNow());

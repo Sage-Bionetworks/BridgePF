@@ -9,6 +9,7 @@ import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -55,13 +56,14 @@ public class ScheduledActivityController extends BaseController {
     // This annotation adds a deprecation header to the REST API method.
     @Deprecated
     public Result getTasks(String untilString, String offset, String daysAhead) throws Exception {
-        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead);
+        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead, null);
         
         return okResultAsTasks(scheduledActivities);
     }
 
-    public Result getScheduledActivities(String untilString, String offset, String daysAhead) throws Exception {
-        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead);
+    public Result getScheduledActivities(String untilString, String offset, String daysAhead, String minimumPerScheduleString)
+            throws Exception {
+        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead, minimumPerScheduleString);
         
         return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER
                 .writeValueAsString(new ResourceList<ScheduledActivity>(scheduledActivities)));
@@ -89,8 +91,8 @@ public class ScheduledActivityController extends BaseController {
         return ok(node);
     }
     
-    private List<ScheduledActivity> getScheduledActivitiesInternal(String untilString, String offset, String daysAhead)
-            throws Exception {
+    private List<ScheduledActivity> getScheduledActivitiesInternal(String untilString, String offset, String daysAhead,
+            String minimumPerScheduleString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         DateTime endsOn = null;
@@ -109,6 +111,8 @@ public class ScheduledActivityController extends BaseController {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
         }
         ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+        
+        int minimumPerSchedule = BridgeUtils.getIntOrDefault(minimumPerScheduleString, 0);
         
         DateTime accountCreatedOn = session.getParticipant().getCreatedOn();
         if (accountCreatedOn == null) {
@@ -136,6 +140,7 @@ public class ScheduledActivityController extends BaseController {
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .withClientInfo(clientInfo)
                 .withTimeZone(zone)
+                .withMinimumPerSchedule(minimumPerSchedule)
                 .withAccountCreatedOn(accountCreatedOn)
                 .withEndsOn(endsOn).build();
         return scheduledActivityService.getScheduledActivities(context);
