@@ -57,31 +57,6 @@ public class SchedulePlanValidatorTest {
     }
     
     @Test
-    public void itIsValidToSetMinMaxToSameVersion() {
-        SchedulePlan plan = getValidSimpleStrategy();
-        plan.setMinAppVersion(1);
-        plan.setMaxAppVersion(1);
-        Validate.entityThrowingException(validator, plan);
-    }
-
-    @Test
-    public void cannotSetMaxUnderMinAppVersion() {
-        SchedulePlan plan = getValidSimpleStrategy();
-        plan.setMinAppVersion(0);
-        plan.setMaxAppVersion(-1);
-        assertMessage(plan, "maxAppVersion cannot be less than minAppVersion", "maxAppVersion");
-    }
-    
-    @Test
-    public void cannotSetMinLessThanZero() {
-        SchedulePlan plan = getValidSimpleStrategy();
-        plan.setMinAppVersion(-2);
-        plan.setMaxAppVersion(-1);
-        assertMessage(plan, "minAppVersion cannot be negative", "minAppVersion");
-        assertMessage(plan, "maxAppVersion cannot be negative", "maxAppVersion");
-    }
-    
-    @Test
     public void studyKeyRequired() {
         SchedulePlan plan = getValidSimpleStrategy();
         plan.setStudyKey(null);

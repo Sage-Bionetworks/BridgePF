@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.List;
 import java.util.Set;
@@ -142,34 +143,6 @@ public class DynamoSchedulePlanDaoTest {
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
         assertEquals(getSchedulePlanGuids(plan1, plan2), getSchedulePlanGuids(plans));
     }
-    
-    @Test
-    public void filtersSchedulePlans() {
-        Set<String> guids = Sets.newHashSet();
-        Set<String> oneGuid = Sets.newHashSet();
-        
-        List<SchedulePlan> plans = TestUtils.getSchedulePlans(studyIdentifier);
-        SchedulePlan plan = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(0));
-        guids.add(plan.getGuid());
-        plansToDelete.add(new Keys(plan.getStudyKey(), plan.getGuid()));
-        
-        SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(1));
-        guids.add(plan2.getGuid());
-        oneGuid.add(plan2.getGuid());
-        plansToDelete.add(new Keys(plan2.getStudyKey(), plan2.getGuid()));
-
-        SchedulePlan plan3 = schedulePlanDao.createSchedulePlan(studyIdentifier, plans.get(2));
-        guids.add(plan3.getGuid());
-        plansToDelete.add(new Keys(plan3.getStudyKey(), plan3.getGuid()));
-        
-        // No known client, all the guids are returned
-        plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
-        assertEquals(guids, getSchedulePlanGuids(plans));
-        
-        // Only one schedule plan matches v9
-        plans = schedulePlanDao.getSchedulePlans(ClientInfo.fromUserAgentCache("app/9"), studyIdentifier);
-        assertEquals(oneGuid, getSchedulePlanGuids(plans));
-    }
 
     @Test
     public void scheduleCriteriaStrategyWork() {
@@ -211,12 +184,12 @@ public class DynamoSchedulePlanDaoTest {
         
         // Should be able to read the criteria objects for this.
         Criteria criteria1 = criteriaDao.getCriteria("scheduleCriteria:"+plan.getGuid()+":0");
-        assertEquals(new Integer(2), criteria1.getMinAppVersion());
-        assertEquals(new Integer(8), criteria1.getMaxAppVersion());
+        assertEquals(new Integer(2), criteria1.getMinAppVersion(IOS));
+        assertEquals(new Integer(8), criteria1.getMaxAppVersion(IOS));
         
         Criteria criteria2 = criteriaDao.getCriteria("scheduleCriteria:"+plan.getGuid()+":1");
-        assertEquals(new Integer(9), criteria2.getMinAppVersion());
-        assertEquals(new Integer(14), criteria2.getMaxAppVersion());
+        assertEquals(new Integer(9), criteria2.getMinAppVersion(IOS));
+        assertEquals(new Integer(14), criteria2.getMaxAppVersion(IOS));
         
         plansToDelete.add(new Keys(studyId.getIdentifier(), plan.getGuid()));
     }

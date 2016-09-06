@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.List;
 import java.util.Set;
@@ -97,16 +98,16 @@ public class DynamoSchedulePlanDaoMockTest {
         
         // now have criteriaDao return a different criteria object, that should update the plan
         Criteria persistedCriteria = Criteria.create();
-        persistedCriteria.setMinAppVersion(1);
-        persistedCriteria.setMaxAppVersion(65);
+        persistedCriteria.setMinAppVersion(IOS, 1);
+        persistedCriteria.setMaxAppVersion(IOS, 65);
         when(criteriaDao.getCriteria(key)).thenReturn(persistedCriteria);
         
         plans = dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         plan = plans.get(0);
         strategy = (CriteriaScheduleStrategy)plan.getStrategy();
         criteria = strategy.getScheduleCriteria().get(0).getCriteria();
-        assertEquals(new Integer(1), criteria.getMinAppVersion());
-        assertEquals(new Integer(65), criteria.getMaxAppVersion());
+        assertEquals(new Integer(1), criteria.getMinAppVersion(IOS));
+        assertEquals(new Integer(65), criteria.getMaxAppVersion(IOS));
         assertTrue(criteria.getAllOfGroups().isEmpty());
         assertTrue(criteria.getNoneOfGroups().isEmpty());
     }
@@ -124,15 +125,15 @@ public class DynamoSchedulePlanDaoMockTest {
         
         // now have criteriaDao return a different criteria object, that should update the plan
         Criteria persistedCriteria = Criteria.create();
-        persistedCriteria.setMinAppVersion(1);
-        persistedCriteria.setMaxAppVersion(65);
+        persistedCriteria.setMinAppVersion(IOS, 1);
+        persistedCriteria.setMaxAppVersion(IOS, 65);
         when(criteriaDao.getCriteria(key)).thenReturn(persistedCriteria);
         
         plan = dao.getSchedulePlan(TEST_STUDY, plan.getGuid());
         strategy = (CriteriaScheduleStrategy)plan.getStrategy();
         criteria = strategy.getScheduleCriteria().get(0).getCriteria();
-        assertEquals(new Integer(1), criteria.getMinAppVersion());
-        assertEquals(new Integer(65), criteria.getMaxAppVersion());
+        assertEquals(new Integer(1), criteria.getMinAppVersion(IOS));
+        assertEquals(new Integer(65), criteria.getMaxAppVersion(IOS));
         assertTrue(criteria.getAllOfGroups().isEmpty());
         assertTrue(criteria.getNoneOfGroups().isEmpty());
     }
@@ -169,15 +170,15 @@ public class DynamoSchedulePlanDaoMockTest {
         
         Criteria newCriteria = Criteria.create();
         newCriteria.setKey(crit.getKey());
-        newCriteria.setMinAppVersion(100);
-        newCriteria.setMaxAppVersion(200);
+        newCriteria.setMinAppVersion(IOS, 100);
+        newCriteria.setMaxAppVersion(IOS, 200);
         strategy.getScheduleCriteria().set(0, new ScheduleCriteria(scheduleCriteria.getSchedule(), newCriteria));
         
         plan = dao.updateSchedulePlan(TEST_STUDY, plan);
         scheduleCriteria = strategy.getScheduleCriteria().get(0);
         criteria = scheduleCriteria.getCriteria();
-        assertEquals(new Integer(100), criteria.getMinAppVersion());
-        assertEquals(new Integer(200), criteria.getMaxAppVersion());
+        assertEquals(new Integer(100), criteria.getMinAppVersion(IOS));
+        assertEquals(new Integer(200), criteria.getMaxAppVersion(IOS));
         
         verify(criteriaDao).createOrUpdateCriteria(newCriteria);
     }
@@ -190,8 +191,8 @@ public class DynamoSchedulePlanDaoMockTest {
     }
 
     private void assertCriteria(Criteria criteria) {
-        assertEquals(new Integer(2), criteria.getMinAppVersion());
-        assertEquals(new Integer(10), criteria.getMaxAppVersion());
+        assertEquals(new Integer(2), criteria.getMinAppVersion(IOS));
+        assertEquals(new Integer(10), criteria.getMaxAppVersion(IOS));
         assertEquals(ALL_OF_GROUPS, criteria.getAllOfGroups());
         assertEquals(NONE_OF_GROUPS, criteria.getNoneOfGroups());
     }

@@ -210,5 +210,17 @@ public class BridgeUtils {
         }
         return null;
     }
-
+    
+    /**
+     * Converts a string to an error key friendly string, e.g. "iPhone OS" is converted to "iphone_os".
+     * 
+     * @throws IllegalArgumentException
+     *             if the string cannot be converted to an error key.
+     */
+    public static String textToErrorKey(String text) {
+        if (StringUtils.isBlank(text)) {
+            throw new IllegalArgumentException("String is not translatable to an error key: " + text);
+        }
+        return text.toLowerCase().replaceAll(" ", "_").replaceAll("[^a-zA-Z0-9_-]", "");    
+    }
 }

@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -37,7 +38,7 @@ public class DynamoStudyTest {
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         study.setVersion(2L);
-        study.getMinSupportedAppVersions().put("iPhone OS", 2);
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 2);
         study.setStormpathHref("test");
         
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
@@ -71,7 +72,9 @@ public class DynamoStudyTest {
         
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
         assertNotNull(supportedVersionsNode);
-        assertEqualsAndNotNull(study.getMinSupportedAppVersions().get("iPhone OS"), (Integer)supportedVersionsNode.get("iPhone OS").asInt());
+        assertEqualsAndNotNull(
+                study.getMinSupportedAppVersions().get(OperatingSystem.IOS), 
+                (Integer)supportedVersionsNode.get(OperatingSystem.IOS).asInt());
         
         // Using the filtered view of a study, this should not include a couple of fields we don't expose to researchers.
         // Negates the need for a view wrapper object, is contextually adjustable, unlike @JsonIgnore.

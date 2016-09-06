@@ -1,16 +1,30 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Criteria;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 @DynamoDBTable(tableName = "Criteria")
@@ -19,10 +33,10 @@ public final class DynamoCriteria implements Criteria {
 
     private String key;
     private String language;
-    private Integer minAppVersion;
-    private Integer maxAppVersion;
     private Set<String> allOfGroups = Sets.newHashSet();
     private Set<String> noneOfGroups = Sets.newHashSet();
+    private Map<String, Integer> minAppVersions = Maps.newHashMap();
+    private Map<String, Integer> maxAppVersions = Maps.newHashMap();
     
     @Override
     @DynamoDBHashKey
@@ -41,22 +55,41 @@ public final class DynamoCriteria implements Criteria {
     public void setLanguage(String language) {
         this.language = language;
     }
-    @Override
-    @DynamoDBAttribute    
-    public Integer getMinAppVersion() {
-        return minAppVersion;
-    }
-    public void setMinAppVersion(Integer minAppVersion) {
-        this.minAppVersion = minAppVersion;
-    }
-    @Override
+    
+    /**
+     * This property is supported for backwards compatibility with the existing table, but is no longer visible 
+     * in the Criteria interface. The value is stored in the map of min app versions by platform, so this can be 
+     * removed after migration.
+     */
     @DynamoDBAttribute
-    public Integer getMaxAppVersion() {
-        return maxAppVersion;
+    @JsonIgnore
+    Integer getMinAppVersion() {
+        return minAppVersions.get(IOS);
     }
-    public void setMaxAppVersion(Integer maxAppVersion) {
-        this.maxAppVersion = maxAppVersion;
+    @JsonSetter
+    void setMinAppVersion(Integer minAppVersion) {
+        if (!minAppVersions.containsKey(IOS)) {
+            setMinAppVersion(IOS, minAppVersion);
+        }
     }
+    /**
+     * This property is supported for backwards compatibility with the existing table, but is no longer visible 
+     * in the Criteria interface. The value is stored in the map of min app versions by platform, so this can be 
+     * removed after migration.
+     */
+    @DynamoDBAttribute
+    @JsonIgnore
+    Integer getMaxAppVersion() {
+        return maxAppVersions.get(IOS);
+    }
+    @JsonSetter
+    void setMaxAppVersion(Integer maxAppVersion) {
+        if (!maxAppVersions.containsKey(IOS)) {
+            setMaxAppVersion(IOS, maxAppVersion);
+        }
+    }
+    
+    
     @Override
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
@@ -64,7 +97,7 @@ public final class DynamoCriteria implements Criteria {
         return allOfGroups;
     }
     public void setAllOfGroups(Set<String> allOfGroups) {
-        this.allOfGroups = (allOfGroups == null) ? Sets.newHashSet() : allOfGroups;
+        this.allOfGroups = (allOfGroups == null) ? new HashSet<>() : allOfGroups;
     }
     @Override
     @DynamoDBAttribute
@@ -73,12 +106,83 @@ public final class DynamoCriteria implements Criteria {
         return noneOfGroups;
     }
     public void setNoneOfGroups(Set<String> noneOfGroups) {
-        this.noneOfGroups = (noneOfGroups == null) ? Sets.newHashSet() : noneOfGroups;
+        this.noneOfGroups = (noneOfGroups == null) ? new HashSet<>() : noneOfGroups;
+    }
+    
+    /**
+     * The map-based getter and setter supports DynamoDB persistence and the return of a JSON object/map in the API. In
+     * the Java interface for Criteria, convenience methods to get/put values for an OS are exposed and the map is not
+     * directly accessible. 
+     */
+    @DynamoDBAttribute
+    @JsonGetter
+    public Map<String, Integer> getMinAppVersions() {
+        return ImmutableMap.copyOf(minAppVersions);
+    }
+    public void setMinAppVersions(Map<String, Integer> minAppVersions) {
+        this.minAppVersions = (minAppVersions == null) ? new HashMap<>() : withoutNullEntries(minAppVersions);
+    }
+    @DynamoDBIgnore
+    @Override
+    public Integer getMinAppVersion(String osName) {
+        return minAppVersions.get(osName);
+    }
+    @DynamoDBIgnore
+    @Override
+    public void setMinAppVersion(String osName, Integer minAppVersion) {
+        putOrRemove(minAppVersions, osName, minAppVersion);
+    }
+    
+    /**
+     * The map-based getter and setter supports DynamoDB persistence and the return of a JSON object/map in the API. In
+     * the Java interface for Criteria, convenience methods to get/put values for an OS are exposed and the map is not
+     * directly accessible.
+     */
+    @DynamoDBAttribute
+    @JsonGetter
+    public Map<String, Integer> getMaxAppVersions() {
+        return ImmutableMap.copyOf(maxAppVersions);
+    }
+    public void setMaxAppVersions(Map<String, Integer> maxAppVersions) {
+        this.maxAppVersions = (minAppVersions == null) ? new HashMap<>() : withoutNullEntries(maxAppVersions);
+    }
+    @DynamoDBIgnore
+    @Override
+    public Integer getMaxAppVersion(String osName) {
+        return maxAppVersions.get(osName);
+    }
+    @DynamoDBIgnore
+    @Override
+    public void setMaxAppVersion(String osName, Integer maxAppVersion) {
+        putOrRemove(maxAppVersions, osName, maxAppVersion);
+    }
+    @DynamoDBIgnore
+    @JsonIgnore
+    @Override
+    public Set<String> getAppVersionOperatingSystems() {
+        return new ImmutableSet.Builder<String>()
+                .addAll(minAppVersions.keySet())
+                .addAll(maxAppVersions.keySet()).build();
+    }
+    /**
+     * Creates a new copy of the map, removing any entries that have a null value (particularly easy to do this in JSON).
+     */
+    private Map<String,Integer> withoutNullEntries(Map<String, Integer> map) {
+        return map.entrySet().stream().filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
+    }
+    private void putOrRemove(Map<String,Integer> map, String osName, Integer version) {
+        checkArgument(isNotBlank(osName));
+        if (version != null) {
+            map.put(osName, version);    
+        } else {
+            map.remove(osName);
+        }
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(key, language, minAppVersion, maxAppVersion, allOfGroups, noneOfGroups);
+        return Objects.hash(key, language, maxAppVersions, minAppVersions, allOfGroups, noneOfGroups);
     }
     @Override
     public boolean equals(Object obj) {
@@ -91,14 +195,13 @@ public final class DynamoCriteria implements Criteria {
                 Objects.equals(language, other.language) && 
                 Objects.equals(noneOfGroups, other.noneOfGroups) && 
                 Objects.equals(allOfGroups, other.allOfGroups) && 
-                Objects.equals(minAppVersion, other.minAppVersion) && 
-                Objects.equals(maxAppVersion, other.maxAppVersion);
+                Objects.equals(minAppVersions, other.minAppVersions) && 
+                Objects.equals(maxAppVersions, other.maxAppVersions);
     }
     @Override
     public String toString() {
         return "DynamoCriteria [key=" + key + ", language=" + language + ", allOfGroups=" + allOfGroups
-                + ", noneOfGroups=" + noneOfGroups + ", minAppVersion=" + minAppVersion + ", maxAppVersion="
-                + maxAppVersion + "]";
+                + ", noneOfGroups=" + noneOfGroups + ", minAppVersions=" + minAppVersions + ", maxAppVersions="
+                + maxAppVersions + "]";
     }
-    
 }

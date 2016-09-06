@@ -164,6 +164,23 @@ public class BridgeUtilsTest {
         BridgeUtils.getIdFromStormpathHref("https://enterprise.stormpath.io/v2/accounts/6278jk74xoPOXkruh9vJnh");
     }
     
+    @Test
+    public void textToErrorKey() {
+        assertEquals("iphone_os", BridgeUtils.textToErrorKey("iPhone OS"));
+        assertEquals("android", BridgeUtils.textToErrorKey("Android"));
+        assertEquals("testers_operating_system_v2", BridgeUtils.textToErrorKey("Tester's Operating System v2"));
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void textToErrorKeyRejectsNull() {
+        BridgeUtils.textToErrorKey(null);
+    }
+            
+    @Test(expected = IllegalArgumentException.class)
+    public void textToErrorKeyRejectsEmptyString() {
+        BridgeUtils.textToErrorKey(" ");
+    }
+    
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(first.size(), second.size());

@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
@@ -198,12 +199,10 @@ public class TestUtils {
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
-            if (context.getCriteriaContext().getClientInfo().isTargetedAppVersion(plan.getMinAppVersion(), plan.getMaxAppVersion())) {
-                Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
-                // It's become possible for a user to match no schedule
-                if (schedule != null) {
-                    scheduledActivities.addAll(schedule.getScheduler().getScheduledActivities(plan, context));    
-                }
+            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
+            // It's become possible for a user to match no schedule
+            if (schedule != null) {
+                scheduledActivities.addAll(schedule.getScheduler().getScheduledActivities(plan, context));    
             }
         }
         Collections.sort(scheduledActivities, ScheduledActivity.SCHEDULED_ACTIVITY_COMPARATOR);
@@ -221,23 +220,18 @@ public class TestUtils {
         plan.setGuid("DDD");
         plan.setStrategy(getStrategy("P3D", TestConstants.TEST_1_ACTIVITY));
         plan.setStudyKey(studyId.getIdentifier());
-        plan.setMinAppVersion(2);
-        plan.setMaxAppVersion(5);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
         plan.setStrategy(getStrategy("P1D", TestConstants.TEST_2_ACTIVITY));
         plan.setStudyKey(studyId.getIdentifier());
-        plan.setMinAppVersion(9);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
         plan.setStrategy(getStrategy("P2D", TestConstants.TEST_3_ACTIVITY));
         plan.setStudyKey(studyId.getIdentifier());
-        plan.setMinAppVersion(5);
-        plan.setMaxAppVersion(8);
         plans.add(plan);
 
         return plans;
@@ -368,8 +362,8 @@ public class TestUtils {
     
     public static Criteria createCriteria(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
         DynamoCriteria crit = new DynamoCriteria();
-        crit.setMinAppVersion(minAppVersion);
-        crit.setMaxAppVersion(maxAppVersion);
+        crit.setMinAppVersion(OperatingSystem.IOS, minAppVersion);
+        crit.setMaxAppVersion(OperatingSystem.IOS, maxAppVersion);
         crit.setAllOfGroups(allOfGroups);
         crit.setNoneOfGroups(noneOfGroups);
         return crit;
@@ -380,8 +374,10 @@ public class TestUtils {
         if (criteria != null) {
             crit.setKey(criteria.getKey());
             crit.setLanguage(criteria.getLanguage());
-            crit.setMinAppVersion(criteria.getMinAppVersion());
-            crit.setMaxAppVersion(criteria.getMaxAppVersion());
+            for (String osName : criteria.getAppVersionOperatingSystems()) {
+                crit.setMinAppVersion(osName, criteria.getMinAppVersion(osName));
+                crit.setMaxAppVersion(osName, criteria.getMaxAppVersion(osName));
+            }
             crit.setNoneOfGroups(criteria.getNoneOfGroups());
             crit.setAllOfGroups(criteria.getAllOfGroups());
         }

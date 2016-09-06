@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -94,7 +95,7 @@ public class DynamoSubpopulationDaoTest {
         retrievedSubpop.setName("Name 2");
         retrievedSubpop.setDescription("Description 2");
         retrievedSubpop.setRequired(false);
-        retrievedSubpop.getCriteria().setMinAppVersion(3);
+        retrievedSubpop.getCriteria().setMinAppVersion(OperatingSystem.IOS, 3);
         Subpopulation finalSubpop = dao.updateSubpopulation(retrievedSubpop);
         
         // With this change, they should be equivalent using value equality
@@ -103,7 +104,7 @@ public class DynamoSubpopulationDaoTest {
         assertEquals("Description 2", retrievedSubpop.getDescription());
         assertFalse(retrievedSubpop.isRequired());
         assertEquals(retrievedSubpop, finalSubpop);
-        assertEquals(new Integer(3), finalSubpop.getCriteria().getMinAppVersion());
+        assertEquals(new Integer(3), finalSubpop.getCriteria().getMinAppVersion(OperatingSystem.IOS));
 
         // Some further things that should be true:
         // There's now only one subpopulation in the list
@@ -344,10 +345,10 @@ public class DynamoSubpopulationDaoTest {
         
         Criteria criteria = Criteria.create();
         if (min != null) {
-            criteria.setMinAppVersion(min);
+            criteria.setMinAppVersion(OperatingSystem.IOS, min);
         }
         if (max != null) {
-            criteria.setMaxAppVersion(max);
+            criteria.setMaxAppVersion(OperatingSystem.IOS, max);
         }
         if (group != null) {
             criteria.setAllOfGroups(Sets.newHashSet(group));
@@ -359,7 +360,7 @@ public class DynamoSubpopulationDaoTest {
     
     private CriteriaContext criteriaContext(int version, String tag) {
         CriteriaContext.Builder builder = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version))
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
                 .withStudyIdentifier(studyId);
         if (tag != null) {
             builder.withUserDataGroups(Sets.newHashSet(tag));    

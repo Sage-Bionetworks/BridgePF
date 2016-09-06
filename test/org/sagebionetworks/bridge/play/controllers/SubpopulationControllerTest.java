@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -128,8 +129,8 @@ public class SubpopulationControllerTest {
         assertEquals("Description", created.getDescription());
         assertTrue(created.isDefaultGroup());
         Criteria criteria = created.getCriteria();
-        assertEquals((Integer)2, criteria.getMinAppVersion());
-        assertEquals((Integer)10, criteria.getMaxAppVersion());
+        assertEquals((Integer)2, criteria.getMinAppVersion(OperatingSystem.IOS));
+        assertEquals((Integer)10, criteria.getMaxAppVersion(OperatingSystem.IOS));
         assertEquals(Sets.newHashSet("requiredGroup"), criteria.getAllOfGroups());
         assertEquals(Sets.newHashSet("prohibitedGroup"), criteria.getNoneOfGroups());
     }
@@ -158,8 +159,8 @@ public class SubpopulationControllerTest {
         assertEquals("Description", created.getDescription());
         assertTrue(created.isDefaultGroup());
         Criteria criteria = created.getCriteria();
-        assertEquals((Integer)2, criteria.getMinAppVersion());
-        assertEquals((Integer)10, criteria.getMaxAppVersion());
+        assertEquals((Integer)2, criteria.getMinAppVersion(OperatingSystem.IOS));
+        assertEquals((Integer)10, criteria.getMaxAppVersion(OperatingSystem.IOS));
         assertEquals(Sets.newHashSet("requiredGroup"), criteria.getAllOfGroups());
         assertEquals(Sets.newHashSet("prohibitedGroup"), criteria.getNoneOfGroups());
     }

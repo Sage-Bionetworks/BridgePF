@@ -78,7 +78,6 @@ public class ScheduledActivityServiceTest {
         schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setLabel("Label");
         schedulePlan.setStudyKey(TEST_STUDY.getIdentifier());
-        schedulePlan.setMinAppVersion(10);
         schedulePlan.setStrategy(strategy);
         schedulePlan = schedulePlanService.createSchedulePlan(study, schedulePlan);
     }
@@ -162,24 +161,6 @@ public class ScheduledActivityServiceTest {
         assertEquals(2, activities.size());
         assertEquals(msk3+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk4+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
-    }
-    
-    @Test
-    public void activitiesAreFilteredBasedOnAppVersion() throws Exception {
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withContext(getContextWith2DayWindow(DateTimeZone.UTC))
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/5")).build();
-        
-        // Ask for version 5, nothing is created
-        List<ScheduledActivity> activities = service.getScheduledActivities(context);
-        assertEquals(0, activities.size());
-        
-        // Ask for version 11, normal activities are created.
-        context = new ScheduleContext.Builder()
-                .withContext(context)
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/11")).build();
-        activities = service.getScheduledActivities(context);
-        assertEquals(3, activities.size());
     }
     
     @Test

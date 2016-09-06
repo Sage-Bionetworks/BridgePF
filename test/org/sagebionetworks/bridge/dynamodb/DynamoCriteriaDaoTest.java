@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.HashSet;
 
@@ -42,35 +43,35 @@ public class DynamoCriteriaDaoTest {
         Criteria criteria = Criteria.create();
         criteria.setKey("key");
         criteria.setLanguage("de");
-        criteria.setMinAppVersion(2);
-        criteria.setMaxAppVersion(8);
+        criteria.setMinAppVersion(IOS, 2);
+        criteria.setMaxAppVersion(IOS, 8);
         criteria.setAllOfGroups(ALL_OF_GROUPS);
         criteria.setNoneOfGroups(NONE_OF_GROUPS);
         
         Criteria result = criteriaDao.createOrUpdateCriteria(criteria);
         assertEquals("key", result.getKey());
         assertEquals("de", result.getLanguage());
-        assertEquals(new Integer(2), result.getMinAppVersion());
-        assertEquals(new Integer(8), result.getMaxAppVersion());
+        assertEquals(new Integer(2), result.getMinAppVersion(IOS));
+        assertEquals(new Integer(8), result.getMaxAppVersion(IOS));
         assertEquals(ALL_OF_GROUPS, result.getAllOfGroups());
         assertEquals(NONE_OF_GROUPS, result.getNoneOfGroups());
         
         Criteria retrieved = criteriaDao.getCriteria("key");
         assertEquals("key", retrieved.getKey());
         assertEquals("de", retrieved.getLanguage());
-        assertEquals(new Integer(2), retrieved.getMinAppVersion());
-        assertEquals(new Integer(8), retrieved.getMaxAppVersion());
+        assertEquals(new Integer(2), retrieved.getMinAppVersion(IOS));
+        assertEquals(new Integer(8), retrieved.getMaxAppVersion(IOS));
         assertEquals(ALL_OF_GROUPS, retrieved.getAllOfGroups());
         assertEquals(NONE_OF_GROUPS, retrieved.getNoneOfGroups());
         
         // Try nullifying this, setting a property
         criteria.setAllOfGroups(null);
         criteria.setLanguage(null);
-        criteria.setMinAppVersion(4);
+        criteria.setMinAppVersion(IOS, 4);
         criteriaDao.createOrUpdateCriteria(criteria);
         
         retrieved = criteriaDao.getCriteria("key");
-        assertEquals(new Integer(4), retrieved.getMinAppVersion());
+        assertEquals(new Integer(4), retrieved.getMinAppVersion(IOS));
         assertNull(retrieved.getLanguage());
         assertTrue(retrieved.getAllOfGroups().isEmpty());
         
@@ -85,12 +86,25 @@ public class DynamoCriteriaDaoTest {
     public void canCopy() {
         Criteria criteria = Criteria.create();
         criteria.setKey("key1");
-        criteria.setMinAppVersion(12);
+        criteria.setMinAppVersion(IOS, 12);
         criteria.setLanguage("fr");
         
         Criteria newCriteria = TestUtils.copyCriteria(criteria);
-        assertEquals(new Integer(12), newCriteria.getMinAppVersion());
+        assertEquals(new Integer(12), newCriteria.getMinAppVersion(IOS));
         assertEquals("fr", newCriteria.getLanguage());
     }
-
+    
+    @Test
+    public void originalMinMaxValuesAreMigratedToPlatformMap() {
+        DynamoCriteria dynoCriteria = new DynamoCriteria();
+        dynoCriteria.setKey("key1");
+        dynoCriteria.setMinAppVersion(1);
+        dynoCriteria.setMaxAppVersion(4);
+        
+        criteriaDao.createOrUpdateCriteria(dynoCriteria);
+        
+        Criteria criteria = criteriaDao.getCriteria("key1");
+        assertEquals(new Integer(1), criteria.getMinAppVersion(IOS));
+        assertEquals(new Integer(4), criteria.getMaxAppVersion(IOS));
+    }        
 }

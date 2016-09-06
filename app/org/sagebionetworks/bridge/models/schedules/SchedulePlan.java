@@ -27,10 +27,4 @@ public interface SchedulePlan extends BridgeEntity {
     
     public ScheduleStrategy getStrategy();
     public void setStrategy(ScheduleStrategy strategy);
-    
-    public Integer getMinAppVersion();
-    public void setMinAppVersion(Integer minAppVersion);
-    
-    public Integer getMaxAppVersion();
-    public void setMaxAppVersion(Integer maxAppVersion);
 }

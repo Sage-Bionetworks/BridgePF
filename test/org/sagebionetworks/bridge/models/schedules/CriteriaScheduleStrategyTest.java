@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -30,6 +31,9 @@ import com.google.common.collect.Sets;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class CriteriaScheduleStrategyTest {
+    
+    private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(
+            "Cardio Health/1 (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4");
     
     private static final Schedule SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS = makeValidSchedule(
             "Strategy With App Versions");
@@ -84,8 +88,12 @@ public class CriteriaScheduleStrategyTest {
         assertEquals("ScheduleCriteria", schCriteria1.get("type").asText());
         
         JsonNode criteriaNode = schCriteria1.get("criteria");
-        assertEquals(4, criteriaNode.get("minAppVersion").asInt());
-        assertEquals(12, criteriaNode.get("maxAppVersion").asInt());
+        
+        JsonNode minVersionsNode = criteriaNode.get("minAppVersions");
+        assertEquals(4, minVersionsNode.get(OperatingSystem.IOS).asInt());
+        JsonNode maxVersionsNode = criteriaNode.get("maxAppVersions");
+        assertEquals(12, maxVersionsNode.get(OperatingSystem.IOS).asInt());
+        
         assertNotNull(criteriaNode.get("allOfGroups"));
         assertNotNull(criteriaNode.get("noneOfGroups"));
         assertNotNull(schCriteria1.get("schedule"));
@@ -114,7 +122,7 @@ public class CriteriaScheduleStrategyTest {
         assertEquals(SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS, schedule);
         
         // Context version info outside minimum range of first criteria, last one returned
-        schedule = getScheduleFromStrategy(ClientInfo.fromUserAgentCache("app/2"));
+        schedule = getScheduleFromStrategy(CLIENT_INFO);
         assertEquals(SCHEDULE_FOR_STRATEGY_NO_CRITERIA, schedule);
     }
     
@@ -128,7 +136,7 @@ public class CriteriaScheduleStrategyTest {
         assertEquals(SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS, schedule);
         
         // Context version info outside maximum range of first criteria, last one returned
-        schedule = getScheduleFromStrategy(ClientInfo.fromUserAgentCache("app/44"));
+        schedule = getScheduleFromStrategy(CLIENT_INFO);
         assertEquals(SCHEDULE_FOR_STRATEGY_NO_CRITERIA, schedule);
     }
     
@@ -203,7 +211,7 @@ public class CriteriaScheduleStrategyTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/44"))
+                .withClientInfo(CLIENT_INFO)
                 .withUserDataGroups(Sets.newHashSet("group1"))
                 .withHealthCode("BBB").build();
 
@@ -219,7 +227,7 @@ public class CriteriaScheduleStrategyTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/44"))
+                .withClientInfo(CLIENT_INFO)
                 .withHealthCode("AAA").build();
         
         // First two ScheduleCriteria don't match; the first because the app version is wrong 
@@ -281,12 +289,12 @@ public class CriteriaScheduleStrategyTest {
             assertError(e, "strategy.scheduleCriteria[1].criteria.allOfGroups", 0, " 'group1' is not in enumeration: <no data groups declared>");
             assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 0, " 'group2' is not in enumeration: <no data groups declared>");
             assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 1, " 'group1' is not in enumeration: <no data groups declared>");
-            assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersion", 0, " cannot be less than minAppVersion");
-            assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersion", 1, " cannot be negative");
-            assertError(e, "strategy.scheduleCriteria[4].criteria.minAppVersion", 0, " cannot be negative");
-            assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersion", 0, " cannot be less than minAppVersion");
-            assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersion", 1, " cannot be negative");
-            assertError(e, "strategy.scheduleCriteria[5].criteria.minAppVersion", 0, " cannot be negative");
+            assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersions.iphone_os", 0, " cannot be less than minAppVersions.iphone_os");
+            assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersions.iphone_os", 1, " cannot be negative");
+            assertError(e, "strategy.scheduleCriteria[4].criteria.minAppVersions.iphone_os", 0, " cannot be negative");
+            assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersions.iphone_os", 0, " cannot be less than minAppVersions.iphone_os");
+            assertError(e, "strategy.scheduleCriteria[5].criteria.maxAppVersions.iphone_os", 1, " cannot be negative");
+            assertError(e, "strategy.scheduleCriteria[5].criteria.minAppVersions.iphone_os", 0, " cannot be negative");
             assertError(e, "strategy.scheduleCriteria[5].schedule.activities", 0, " are required");
             assertError(e, "strategy.scheduleCriteria[5].schedule.scheduleType", 0, " is required");
          }

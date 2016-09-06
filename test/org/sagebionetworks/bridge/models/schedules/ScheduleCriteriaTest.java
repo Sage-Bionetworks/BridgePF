@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -20,8 +21,8 @@ public class ScheduleCriteriaTest {
         Schedule schedule = TestUtils.getSchedule("A schedule");
         
         Criteria criteria = Criteria.create();
-        criteria.setMinAppVersion(2);
-        criteria.setMaxAppVersion(10);
+        criteria.setMinAppVersion(OperatingSystem.IOS, 2);
+        criteria.setMaxAppVersion(OperatingSystem.IOS, 10);
         
         ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         
