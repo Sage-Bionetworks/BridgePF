@@ -20,7 +20,7 @@ class CronActivityScheduler extends ActivityScheduler {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         DateTime scheduledTime = getScheduledTimeBasedOnEvent(context);
         
-        if (continueScheduling(context, scheduledTime, scheduledActivities)) {
+        if (scheduledTime != null) {
             MutableTrigger trigger = parseTrigger(scheduledTime);
             
             while (continueScheduling(context, scheduledTime, scheduledActivities)) {
