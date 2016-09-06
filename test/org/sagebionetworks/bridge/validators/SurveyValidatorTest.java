@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.upload.UploadUtil;
 
 import com.google.common.collect.Lists;
 
@@ -211,6 +212,20 @@ public class SurveyValidatorTest {
     }
 
     @Test
+    public void questionIdentifierInvalid() {
+        try {
+            survey = new TestSurvey(SurveyValidatorTest.class, false);
+            survey.getElements().get(0).setIdentifier("**invalid!q##");
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("elements[0].identifier " + UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE,
+                    errorFor(e, "elements[0].identifier"));
+        }
+    }
+
+    @Test
     public void questionUiHintRequired() {
         try {
             survey = new TestSurvey(SurveyValidatorTest.class, false);
@@ -379,6 +394,23 @@ public class SurveyValidatorTest {
     }
 
     @Test
+    public void multiValueWithOptionWithInvalidValue() {
+        try {
+            List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption("My Question", null,
+                    "@invalid#answer$", null));
+
+            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+            ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
+
+            Validate.entityThrowingException(validator, survey);
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertEquals("value " + UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE,
+                    errorFor(e, "elements[7].constraints.enumeration[0].value"));
+        }
+    }
+
+    @Test
     public void multiValueWithDupeOptions() {
         try {
             List<SurveyQuestionOption> optionList = ImmutableList.of(
@@ -429,7 +461,7 @@ public class SurveyValidatorTest {
                 new SurveyRule.Builder().withOperator(Operator.EQ).withValue("No").withSkipToTarget("theend").build());
         
         SurveyQuestion question = new DynamoSurveyQuestion();
-        question.setIdentifier("start");
+        question.setIdentifier("start-q");
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
@@ -464,7 +496,7 @@ public class SurveyValidatorTest {
         constraints.getRules().add(rule);
         
         SurveyQuestion question = new DynamoSurveyQuestion();
-        question.setIdentifier("start");
+        question.setIdentifier("start-q");
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
@@ -500,7 +532,7 @@ public class SurveyValidatorTest {
         constraints.getRules().add(rule);
         
         SurveyQuestion question = new DynamoSurveyQuestion();
-        question.setIdentifier("start");
+        question.setIdentifier("start-q");
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
