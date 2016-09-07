@@ -121,7 +121,7 @@ public abstract class ActivityScheduler {
      * If scheduling hasn't reached the end time, or hasn't accumulated the minimum number of tasks, returns true, or 
      * false otherwise. 
      */
-    protected boolean continueScheduling(ScheduleContext context, DateTime scheduledTime, List<ScheduledActivity> scheduledActivities) {
+    protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime, List<ScheduledActivity> scheduledActivities) {
         return scheduledTime.isBefore(context.getEndsOn()) || 
                hasNotMetMinimumCount(context, scheduledActivities.size());
     }

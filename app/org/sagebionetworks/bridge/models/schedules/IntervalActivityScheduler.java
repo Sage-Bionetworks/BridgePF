@@ -22,7 +22,7 @@ class IntervalActivityScheduler extends ActivityScheduler {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         DateTime datetime = getScheduledTimeBasedOnEvent(context);
         if (datetime != null) {
-            while(continueScheduling(context, datetime, scheduledActivities)) {
+            while(shouldContinueScheduling(context, datetime, scheduledActivities)) {
                 addScheduledActivityForAllTimes(scheduledActivities, plan, context, datetime);
                 // A one-time activity with no interval (for example); don't loop
                 if (schedule.getInterval() == null) {
