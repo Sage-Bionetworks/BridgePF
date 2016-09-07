@@ -51,14 +51,9 @@ public class ScheduleControllerTest {
         studyId = new StudyIdentifierImpl(TestUtils.randomName(ScheduleControllerTest.class));
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app name/9");
         
-        // This filter is done in the bowels of the DAO; tested elsewhere
-        List<SchedulePlan> plans = Lists.newArrayList();
-        for (SchedulePlan plan : TestUtils.getSchedulePlans(studyId)) {
-            if (clientInfo.isTargetedAppVersion(plan.getMinAppVersion(), plan.getMaxAppVersion())) {
-                plans.add(plan);
-            }
-        }
-        // add a plan that will returns null for a schedule, this is not included in the final list.
+        List<SchedulePlan> plans = TestUtils.getSchedulePlans(studyId);
+        
+        // Add a plan that will returns null for a schedule, this is not included in the final list.
         // This is now possible and should not cause an error or a gap in the returned array.
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setStrategy(new ScheduleStrategy() {
@@ -98,7 +93,7 @@ public class ScheduleControllerTest {
         
         JsonNode node = BridgeObjectMapper.get().readTree(content);
         
-        assertEquals(1, node.get("total").asInt());
+        assertEquals(3, node.get("total").asInt());
     }
     
     @SuppressWarnings("deprecation")

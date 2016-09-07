@@ -282,6 +282,52 @@ public class UploadUtilTest {
     }
 
     @Test
+    public void isValidFieldNameInvalid() {
+        String[] testCases = {
+                null,
+                "",
+                "   ",
+                "_foo",
+                "foo_",
+                "-foo",
+                "foo-",
+                ".foo",
+                "foo.",
+                ".foo",
+                "foo.",
+                "foo*bar",
+                "foo__bar",
+                "foo--bar",
+                "foo..bar",
+                "foo  bar",
+                "foo-_-bar",
+                "select",
+                "where",
+                "time",
+        };
+
+        for (String oneTestCase : testCases) {
+            assertFalse(oneTestCase + " should be invalid", UploadUtil.isValidSchemaFieldName(oneTestCase));
+        }
+    }
+
+    @Test
+    public void isValidFieldNameValid() {
+        String[] testCases = {
+                "foo",
+                "foo_bar",
+                "foo-bar",
+                "foo.bar",
+                "foo bar",
+                "foo-bar_baz.qwerty asdf",
+        };
+
+        for (String oneTestCase : testCases) {
+            assertTrue(oneTestCase + " should be valid", UploadUtil.isValidSchemaFieldName(oneTestCase));
+        }
+    }
+
+    @Test
     public void isCompatibleFieldDef() {
         // { old, new, expected }
         Object[][] testCases = {

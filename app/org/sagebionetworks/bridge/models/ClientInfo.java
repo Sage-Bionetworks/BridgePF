@@ -150,18 +150,6 @@ public final class ClientInfo {
     	// greater than or equal to the minSupportedVersion
     	return (appVersion == null || minSupportedVersion == null || appVersion >= minSupportedVersion);
     }
-    
-    public boolean isTargetedAppVersion(Integer minValue, Integer maxValue) {
-        // If there's no declared client version, it matches anything.
-        if (appVersion != null) {
-            // Otherwise we can't be outside of either range boundary if the boundary is declared.
-            if ((minValue != null && appVersion < minValue) || 
-                (maxValue != null && appVersion > maxValue)) {
-                return false;
-            }
-        }
-        return true;
-    }
 
     @Override
     public int hashCode() {
