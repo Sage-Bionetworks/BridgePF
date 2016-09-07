@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.node.BigIntegerNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.DecimalNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -30,6 +32,27 @@ import org.sagebionetworks.bridge.schema.SchemaUtils;
 /** Utility class that contains static utility methods for handling uploads. */
 public class UploadUtil {
     private static final Logger logger = LoggerFactory.getLogger(UploadUtil.class);
+
+    private static final Pattern FIELD_NAME_MULTIPLE_SPECIAL_CHARS_PATTERN = Pattern.compile("[\\-\\._ ]{2,}");
+    private static final Pattern FIELD_NAME_SPECIAL_CHARS_PATTERN = Pattern.compile("[\\-\\._ ]");
+    private static final Pattern FIELD_NAME_VALID_CHARS_PATTERN = Pattern.compile("[a-zA-Z0-9\\-\\._ ]+");
+    public static final String INVALID_FIELD_NAME_ERROR_MESSAGE = "must start and end with an alphanumeric character, "
+            + "can only contain alphanumeric characters, spaces, dashes, underscores, and periods, can't contain two "
+            + "or more non-alphanumeric characters in a row, and can't be a reserved keyword";
+
+    // List of reserved SQL keywords and Synapse keywords that can't be used as field names.
+    private static final Set<String> RESERVED_FIELD_NAME_LIST = ImmutableSet.<String>builder().add("access", "add",
+            "all", "alter", "and", "any", "as", "asc", "audit", "between", "by", "char", "check", "cluster", "column",
+            "column_value", "comment", "compress", "connect", "create", "current", "date", "decimal", "default",
+            "delete", "desc", "distinct", "drop", "else", "exclusive", "exists", "file", "float", "for", "from",
+            "grant", "group", "having", "identified", "immediate", "in", "increment", "index", "initial", "insert",
+            "integer", "intersect", "into", "is", "level", "like", "lock", "long", "maxextents", "minus", "mlslabel",
+            "mode", "modify", "nested_table_id", "noaudit", "nocompress", "not", "nowait", "null", "number", "of",
+            "offline", "on", "online", "option", "or", "order", "pctfree", "prior", "public", "raw", "rename",
+            "resource", "revoke", "row", "row_id", "row_version", "rowid", "rownum", "rows", "select", "session", "set",
+            "share", "size", "smallint", "start", "successful", "synonym", "sysdate", "table", "then", "time", "to",
+            "trigger", "uid", "union", "unique", "update", "user", "validate", "values", "varchar", "varchar2", "view",
+            "whenever", "where", "with").build();
 
     /*
      * Suffix used for unit fields in schemas. For example, if we had a field called "jogtime", we would have a field
@@ -366,6 +389,60 @@ public class UploadUtil {
         }
 
         // If we passed all incompatibility checks, then we're compatible.
+        return true;
+    }
+
+    /**
+     * <p>
+     * Validates a schema field name or multi-choice answer. Since these become Synapse table fields, we need to
+     * validate them.
+     * </p>
+     * <p>
+     * Rules:
+     * 1. must start and end with an alphanumeric character
+     * 2. can only contain alphanumeric characters, spaces, dashes, underscores, and periods
+     * 3. can't contain two or more non-alphanumeric characters in a row
+     * 4. can't be a reserved keyword
+     * </p>
+     *
+     * @param name
+     *         name to validate
+     * @return true if valid, false otherwise
+     */
+    public static boolean isValidSchemaFieldName(String name) {
+        // Blank names are invalid.
+        if (StringUtils.isBlank(name)) {
+            return false;
+        }
+
+        // Can't be a reserved keyword
+        if (RESERVED_FIELD_NAME_LIST.contains(name)) {
+            return false;
+        }
+
+        // Can only contain alphanumeric, space, dash, underscore, and period.
+        if (!FIELD_NAME_VALID_CHARS_PATTERN.matcher(name).matches()) {
+            return false;
+        }
+
+        // Must start and end with an alphanumeric char
+        String firstChar = name.substring(0, 1);
+        if (FIELD_NAME_SPECIAL_CHARS_PATTERN.matcher(firstChar).matches()) {
+            return false;
+        }
+
+        int nameLength = name.length();
+        String lastChar = name.substring(nameLength - 1, nameLength);
+        if (FIELD_NAME_SPECIAL_CHARS_PATTERN.matcher(lastChar).matches()) {
+            return false;
+        }
+
+        // Can't contain multiple special chars in a row.
+        if (FIELD_NAME_MULTIPLE_SPECIAL_CHARS_PATTERN.matcher(name).find()) {
+            return false;
+        }
+
+        // Exhausted all our rules, so it must be valid.
         return true;
     }
 

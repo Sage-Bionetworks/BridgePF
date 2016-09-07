@@ -237,7 +237,7 @@ public class DynamoUploadSchemaDaoMockTest {
         // decimal
         {
             SurveyQuestion q = new DynamoSurveyQuestion();
-            q.setIdentifier("decimal");
+            q.setIdentifier("decimal-q");
             q.setConstraints(new DecimalConstraints());
             surveyElementList.add(q);
         }
@@ -353,10 +353,10 @@ public class DynamoUploadSchemaDaoMockTest {
         assertEquals(UploadFieldType.STRING, fieldDefList.get(9).getType());
         assertEquals(Unit.MAX_STRING_LENGTH, fieldDefList.get(9).getMaxLength().intValue());
 
-        assertEquals("decimal", fieldDefList.get(10).getName());
+        assertEquals("decimal-q", fieldDefList.get(10).getName());
         assertEquals(UploadFieldType.FLOAT, fieldDefList.get(10).getType());
 
-        assertEquals("decimal" + UploadUtil.UNIT_FIELD_SUFFIX, fieldDefList.get(11).getName());
+        assertEquals("decimal-q" + UploadUtil.UNIT_FIELD_SUFFIX, fieldDefList.get(11).getName());
         assertEquals(UploadFieldType.STRING, fieldDefList.get(11).getType());
         assertEquals(Unit.MAX_STRING_LENGTH, fieldDefList.get(11).getMaxLength().intValue());
 

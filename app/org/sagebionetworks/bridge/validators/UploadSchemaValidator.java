@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.upload.UploadUtil;
 
 /** Validator for {@link org.sagebionetworks.bridge.models.upload.UploadSchema} */
 public class UploadSchemaValidator implements Validator {
@@ -99,6 +100,11 @@ public class UploadSchemaValidator implements Validator {
                             errors.rejectValue("name", "is required");
                         } else {
                             fieldNameList.add(fieldName);
+
+                            // Validate field name.
+                            if (!UploadUtil.isValidSchemaFieldName(fieldName)) {
+                                errors.rejectValue("name", UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE);
+                            }
                         }
 
                         UploadFieldType fieldType = fieldDef.getType();
@@ -115,9 +121,17 @@ public class UploadSchemaValidator implements Validator {
                             } else {
                                 // Multi-Choice fields create extra "sub-field" columns, and we need to check for
                                 // potential name collisions.
-                                //noinspection Convert2streamapi
-                                for (String oneAnswer : multiChoiceAnswerList) {
+
+                                int numAnswers = multiChoiceAnswerList.size();
+                                for (int j = 0; j < numAnswers; j++) {
+                                    String oneAnswer = multiChoiceAnswerList.get(j);
                                     fieldNameList.add(fieldName + MULTI_CHOICE_FIELD_SEPARATOR + oneAnswer);
+
+                                    // Validate choice answer name.
+                                    if (!UploadUtil.isValidSchemaFieldName(oneAnswer)) {
+                                        errors.rejectValue("multiChoice[" + j + "]",
+                                                UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE);
+                                    }
                                 }
                             }
 

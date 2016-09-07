@@ -29,6 +29,8 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.upload.UploadUtil;
+
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -84,9 +86,13 @@ public class SurveyValidator implements Validator {
         }
     }
     private void doValidateQuestion(SurveyQuestion question, Errors errors) {
-        if (isBlank(question.getIdentifier())) {
+        String questionId = question.getIdentifier();
+        if (isBlank(questionId)) {
             errors.rejectValue("identifier", "is required");
+        } else if (!UploadUtil.isValidSchemaFieldName(questionId)) {
+            errors.rejectValue("identifier", UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE);
         }
+
         if (question.getUiHint() == null) {
             errors.rejectValue("uiHint", "is required");
         }
@@ -227,8 +233,12 @@ public class SurveyValidator implements Validator {
                     rejectField(errors, "label", "must be specified");
                 }
 
-                // record values seen so far
                 String optionValue = oneOption.getValue();
+                if (!UploadUtil.isValidSchemaFieldName(optionValue)) {
+                    rejectField(errors, "value", UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE);
+                }
+
+                // record values seen so far
                 if (!valueSet.contains(optionValue)) {
                     valueSet.add(optionValue);
                 } else {
