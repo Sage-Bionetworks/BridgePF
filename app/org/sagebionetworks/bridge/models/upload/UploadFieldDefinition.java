@@ -37,18 +37,6 @@ public interface UploadFieldDefinition extends BridgeEntity {
     @Nullable String getMimeType();
 
     /**
-     * The oldest app version number for which this field is required. App versions before this will treat this field
-     * as optional, as it doesn't exist yet. Does nothing if required is false.
-     */
-    @Nullable Integer getMinAppVersion();
-
-    /**
-     * Similar to minAppVersion. This is used for when required fields are removed from the app, but we want to re-use
-     * the old Synapse table.
-     */
-    @Nullable Integer getMaxAppVersion();
-
-    /**
      * Used for STRING, SINGLE_CHOICE, and INLINE_JSON_BLOB types. This is a hint for BridgeEX to create a Synapse
      * column with the right width.
      */

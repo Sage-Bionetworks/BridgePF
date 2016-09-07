@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -32,7 +31,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.UploadDao;
@@ -596,114 +594,5 @@ public class UploadHandlersEndToEndTest {
         verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(attachmentId),
                 attachmentContentCaptor.capture());
         return BridgeObjectMapper.get().readTree(attachmentContentCaptor.getValue());
-    }
-
-    @Test
-    public void missingOptionalFieldAboveMaxAppVersion() throws Exception {
-        // set up schema
-        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.value")
-                        .withType(UploadFieldType.INLINE_JSON_BLOB).withMaxAppVersion(20).build());
-
-        DynamoUploadSchema schema = new DynamoUploadSchema();
-        schema.setFieldDefinitions(fieldDefList);
-        schema.setName("Max App Version Test");
-        schema.setRevision(2);
-        schema.setSchemaId("max-app-version-test");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-
-        // set up upload files
-        String infoJsonText = "{\n" +
-                "   \"files\":[{\n" +
-                "       \"filename\":\"record.json\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   }],\n" +
-                "   \"item\":\"max-app-version-test\",\n" +
-                "   \"schemaRevision\":2,\n" +
-                "   \"appVersion\":\"version 1.30, build 30\",\n" +
-                "   \"phoneInfo\":\"Unit Test Hardware\"\n" +
-                "}";
-
-        String recordJsonText = "{}";
-
-        Map<String, String> fileMap = ImmutableMap.<String, String>builder().put("info.json", infoJsonText)
-                .put("record.json", recordJsonText).build();
-
-        // execute
-        test(schema, null, fileMap);
-
-        // verify created record
-        ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
-        verify(mockHealthDataService, atLeastOnce()).createOrUpdateRecord(recordCaptor.capture());
-
-        HealthDataRecord record = recordCaptor.getValue();
-        validateCommonRecordProps(record);
-        assertEquals("max-app-version-test", record.getSchemaId());
-        assertEquals(2, record.getSchemaRevision());
-
-        JsonNode dataNode = record.getData();
-        assertEquals(0, dataNode.size());
-
-        // validate no uploads to S3
-        verifyZeroInteractions(mockS3UploadHelper);
-
-        // verify no attachments
-        verify(mockHealthDataService, never()).createOrUpdateAttachment(any(HealthDataAttachment.class));
-
-        // verify upload dao write validation status
-        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), RECORD_ID);
-    }
-
-    @Test
-    public void missingOptionalFieldBelowMaxAppVersion() throws Exception {
-        // set up schema
-        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.value")
-                        .withType(UploadFieldType.INLINE_JSON_BLOB).withMaxAppVersion(20).build());
-
-        DynamoUploadSchema schema = new DynamoUploadSchema();
-        schema.setFieldDefinitions(fieldDefList);
-        schema.setName("Max App Version Test");
-        schema.setRevision(2);
-        schema.setSchemaId("max-app-version-test");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-
-        // set up upload files
-        String infoJsonText = "{\n" +
-                "   \"files\":[{\n" +
-                "       \"filename\":\"record.json\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   }],\n" +
-                "   \"item\":\"max-app-version-test\",\n" +
-                "   \"schemaRevision\":2,\n" +
-                "   \"appVersion\":\"version 1.10, build 10\",\n" +
-                "   \"phoneInfo\":\"Unit Test Hardware\"\n" +
-                "}";
-
-        String recordJsonText = "{}";
-
-        Map<String, String> fileMap = ImmutableMap.<String, String>builder().put("info.json", infoJsonText)
-                .put("record.json", recordJsonText).build();
-
-        // execute
-        test(schema, null, fileMap);
-
-        // no records or attachments are created; nothing is uploaded to S3
-        verifyZeroInteractions(mockS3UploadHelper);
-        verify(mockHealthDataService, never()).createOrUpdateRecord(any(HealthDataRecord.class));
-        verify(mockHealthDataService, never()).createOrUpdateAttachment(any(HealthDataAttachment.class));
-
-        // verify upload dao write validation status
-        // Error message list may contain other messages. For simplicity, concat them all together and just search for
-        // the specific one you're looking for.
-        // Additionally, record ID was never assigned, since upload failed out at the StrictValidationHandler, long
-        // before the UploadArtifactsHandler.
-        ArgumentCaptor<List> errorMessageListCaptor = ArgumentCaptor.forClass(List.class);
-        verify(mockUploadDao).writeValidationStatus(eq(UPLOAD), eq(UploadStatus.VALIDATION_FAILED),
-                errorMessageListCaptor.capture(), isNull(String.class));
-        String joinedErrorMessageList = BridgeUtils.COMMA_JOINER.join(errorMessageListCaptor.getValue());
-        assertTrue(joinedErrorMessageList.contains("Required field record.json.value missing"));
     }
 }

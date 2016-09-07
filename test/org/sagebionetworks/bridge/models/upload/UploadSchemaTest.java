@@ -255,18 +255,18 @@ public class UploadSchemaTest {
         String marshalledJson = fieldDefListMarshaller.marshall(fieldDefList);
 
         // then convert to a list so we can validate the raw JSON
-        List<Map<String, Object>> fieldDefJsonList = JsonUtils.INTERNAL_OBJECT_MAPPER.readValue(marshalledJson,
+        List<Map<String, Object>> fieldDefJsonList = BridgeObjectMapper.get().readValue(marshalledJson,
                 List.class);
         assertEquals(2, fieldDefJsonList.size());
 
         Map<String, Object> fooJsonMap = fieldDefJsonList.get(0);
         assertEquals("foo", fooJsonMap.get("name"));
         assertTrue((boolean) fooJsonMap.get("required"));
-        assertEquals("INT", fooJsonMap.get("type"));
+        assertEquals("int", fooJsonMap.get("type"));
 
         Map<String, Object> barJsonMap = fieldDefJsonList.get(1);
         assertEquals("bar", barJsonMap.get("name"));
         assertFalse((boolean) barJsonMap.get("required"));
-        assertEquals("STRING", barJsonMap.get("type"));
+        assertEquals("string", barJsonMap.get("type"));
     }
 }

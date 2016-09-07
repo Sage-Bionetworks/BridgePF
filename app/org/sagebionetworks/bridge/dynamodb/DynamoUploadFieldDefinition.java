@@ -23,8 +23,6 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     private final @Nullable Boolean allowOtherChoices;
     private final @Nullable String fileExtension;
     private final @Nullable String mimeType;
-    private final @Nullable Integer minAppVersion;
-    private final @Nullable Integer maxAppVersion;
     private final @Nullable Integer maxLength;
     private final @Nullable List<String> multiChoiceAnswerList;
     private final @Nonnull String name;
@@ -34,14 +32,11 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
 
     /** Private constructor. Construction of a DynamoUploadFieldDefinition should go through the Builder. */
     private DynamoUploadFieldDefinition(@Nullable Boolean allowOtherChoices, @Nullable String fileExtension,
-            @Nullable String mimeType, @Nullable Integer minAppVersion, @Nullable Integer maxAppVersion,
-            @Nullable Integer maxLength, @Nullable List<String> multiChoiceAnswerList, @Nonnull String name,
-            boolean required, @Nonnull UploadFieldType type, @Nonnull Boolean unboundedText) {
+            @Nullable String mimeType, @Nullable Integer maxLength, @Nullable List<String> multiChoiceAnswerList,
+            @Nonnull String name, boolean required, @Nonnull UploadFieldType type, @Nonnull Boolean unboundedText) {
         this.allowOtherChoices = allowOtherChoices;
         this.fileExtension = fileExtension;
         this.mimeType = mimeType;
-        this.minAppVersion = minAppVersion;
-        this.maxAppVersion = maxAppVersion;
         this.maxLength = maxLength;
         this.multiChoiceAnswerList = multiChoiceAnswerList;
         this.name = name;
@@ -66,18 +61,6 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     @Override
     public @Nullable String getMimeType() {
         return mimeType;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public @Nullable Integer getMinAppVersion() {
-        return minAppVersion;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public @Nullable Integer getMaxAppVersion() {
-        return maxAppVersion;
     }
 
     /** {@inheritDoc} */
@@ -130,8 +113,6 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
                 Objects.equals(allowOtherChoices, that.allowOtherChoices) &&
                 Objects.equals(fileExtension, that.fileExtension) &&
                 Objects.equals(mimeType, that.mimeType) &&
-                Objects.equals(minAppVersion, that.minAppVersion) &&
-                Objects.equals(maxAppVersion, that.maxAppVersion) &&
                 Objects.equals(maxLength, that.maxLength) &&
                 Objects.equals(multiChoiceAnswerList, that.multiChoiceAnswerList) &&
                 Objects.equals(name, that.name) &&
@@ -142,7 +123,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        return Objects.hash(allowOtherChoices, fileExtension, mimeType, minAppVersion, maxAppVersion, maxLength,
+        return Objects.hash(allowOtherChoices, fileExtension, mimeType, maxLength,
                 multiChoiceAnswerList, name, required, type, unboundedText);
     }
 
@@ -151,8 +132,6 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         private Boolean allowOtherChoices;
         private String fileExtension;
         private String mimeType;
-        private Integer minAppVersion;
-        private Integer maxAppVersion;
         private Integer maxLength;
         private List<String> multiChoiceAnswerList;
         private String name;
@@ -165,8 +144,6 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             this.allowOtherChoices = other.getAllowOtherChoices();
             this.fileExtension = other.getFileExtension();
             this.mimeType = other.getMimeType();
-            this.minAppVersion = other.getMinAppVersion();
-            this.maxAppVersion = other.getMaxAppVersion();
             this.maxLength = other.getMaxLength();
             this.multiChoiceAnswerList = other.getMultiChoiceAnswerList();
             this.name = other.getName();
@@ -191,18 +168,6 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
         /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMimeType */
         public Builder withMimeType(String mimeType) {
             this.mimeType = mimeType;
-            return this;
-        }
-
-        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMinAppVersion */
-        public Builder withMinAppVersion(Integer minAppVersion) {
-            this.minAppVersion = minAppVersion;
-            return this;
-        }
-
-        /** @see org.sagebionetworks.bridge.models.upload.UploadFieldDefinition#getMaxAppVersion */
-        public Builder withMaxAppVersion(Integer maxAppVersion) {
-            this.maxAppVersion = maxAppVersion;
             return this;
         }
 
@@ -278,8 +243,8 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
                 multiChoiceAnswerListCopy = answerListBuilder.build();
             }
 
-            return new DynamoUploadFieldDefinition(allowOtherChoices, fileExtension, mimeType, minAppVersion,
-                    maxAppVersion, maxLength, multiChoiceAnswerListCopy, sanitizedName, required, type, unboundedText);
+            return new DynamoUploadFieldDefinition(allowOtherChoices, fileExtension, mimeType, maxLength,
+                    multiChoiceAnswerListCopy, sanitizedName, required, type, unboundedText);
         }
     }
 }
