@@ -37,8 +37,6 @@ import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class IosSchemaValidationHandler2Test {
-    private static final int TEST_APP_VERSION = 42;
-    private static final String TEST_APP_VERSION_STRING = "version 1.1.0, build " + TEST_APP_VERSION;
     private static final String TEST_HEALTHCODE = "test-healthcode";
     private static final String TEST_STUDY_ID = "test-study";
     private static final String TEST_UPLOAD_DATE_STRING = "2015-04-13";
@@ -217,7 +215,6 @@ public class IosSchemaValidationHandler2Test {
                 "       \"filename\":\"$sanitize..me.json\",\n" +
                 "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "   }],\n" +
-                "   \"appVersion\":\"" + TEST_APP_VERSION_STRING + "\",\n" +
                 "   \"item\":\"test-survey\"\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
@@ -327,7 +324,6 @@ public class IosSchemaValidationHandler2Test {
                 "       \"filename\":\"baz.json\",\n" +
                 "       \"timestamp\":\"2015-08-22T03:24:01-07:00\"\n" +
                 "   }],\n" +
-                "   \"appVersion\":\"" + TEST_APP_VERSION_STRING + "\",\n" +
                 "   \"surveyGuid\":\"test-guid\",\n" +
                 "   \"surveyCreatedOn\":\"2015-08-27T13:38:55-07:00\"\n" +
                 "}";
@@ -415,7 +411,6 @@ public class IosSchemaValidationHandler2Test {
                 "       \"filename\":\"date.json\",\n" +
                 "       \"timestamp\":\"2015-04-13T18:47:41-07:00\"\n" +
                 "   }],\n" +
-                "   \"appVersion\":\"" + TEST_APP_VERSION_STRING + "\",\n" +
                 "   \"item\":\"json-data\"\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
@@ -496,7 +491,6 @@ public class IosSchemaValidationHandler2Test {
                 "       \"filename\":\"$sanitize..json..file.json\",\n" +
                 "       \"timestamp\":\"2015-04-13T18:58:21-07:00\"\n" +
                 "   }],\n" +
-                "   \"appVersion\":\"" + TEST_APP_VERSION_STRING + "\",\n" +
                 "   \"item\":\"non-json-data\"\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
@@ -569,7 +563,6 @@ public class IosSchemaValidationHandler2Test {
                 "       \"filename\":\"field.json\",\n" +
                 "       \"timestamp\":\"2015-04-22T18:39:44-07:00\"\n" +
                 "   }],\n" +
-                "   \"appVersion\":\"" + TEST_APP_VERSION_STRING + "\",\n" +
                 "   \"item\":\"mixed-data\"\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
@@ -645,7 +638,6 @@ public class IosSchemaValidationHandler2Test {
                 "       \"filename\":\"dummy.json\",\n" +
                 "       \"timestamp\":\"2015-07-21T15:24:57-07:00\"\n" +
                 "   }],\n" +
-                "   \"appVersion\":\"" + TEST_APP_VERSION_STRING + "\",\n" +
                 "   \"item\":\"schema-rev-test\"\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
@@ -691,7 +683,6 @@ public class IosSchemaValidationHandler2Test {
                 "       \"filename\":\"dummy.json\",\n" +
                 "       \"timestamp\":\"2015-07-21T15:24:57-07:00\"\n" +
                 "   }],\n" +
-                "   \"appVersion\":\"" + TEST_APP_VERSION_STRING + "\",\n" +
                 "   \"item\":\"schema-rev-test\",\n" +
                 "   \"schemaRevision\":3\n" +
                 "}";
@@ -731,8 +722,6 @@ public class IosSchemaValidationHandler2Test {
     }
 
     private static void validateCommonProps(UploadValidationContext ctx) {
-        assertEquals(TEST_APP_VERSION, ctx.getAppVersion().intValue());
-
         HealthDataRecordBuilder recordBuilder = ctx.getHealthDataRecordBuilder();
         assertEquals(TEST_HEALTHCODE, recordBuilder.getHealthCode());
         assertEquals(TEST_STUDY_ID, recordBuilder.getStudyId());

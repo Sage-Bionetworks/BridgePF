@@ -364,43 +364,6 @@ public class StrictValidationHandlerTest {
     }
 
     @Test
-    public void appVersionBelowMax() throws Exception {
-        // Upload is missing a field that's required and has a maxAppVersion. Upload has a version below the
-        // maxAppVersion. This gets validated and throws.
-
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
-                .withName("required with max app version").withType(UploadFieldType.STRING).withMaxAppVersion(20)
-                .build());
-
-        // expected errors
-        List<String> expectedErrorList = ImmutableList.of("required with max app version");
-
-        // add app version to context
-        context.setAppVersion(10);
-
-        // execute and validate
-        test(additionalFieldDefList, null, null, expectedErrorList, true);
-    }
-
-    @Test
-    public void appVersionAboveMax() throws Exception {
-        // Upload is missing a field that's required and has a maxAppVersion. Upload has a version above the
-        // maxAppVersion. The missing field is ignored.
-
-        // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
-                .withName("required with max app version").withType(UploadFieldType.STRING).withMaxAppVersion(20)
-                .build());
-
-        // add app version to context
-        context.setAppVersion(30);
-
-        // execute and validate
-        test(additionalFieldDefList, null, null, null, false);
-    }
-
-    @Test
     public void studyConfiguredToNotThrow() throws Exception {
         // additional field defs
         List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(

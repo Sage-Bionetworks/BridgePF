@@ -24,9 +24,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
@@ -221,7 +221,7 @@ public class DynamoUploadSchema implements UploadSchema {
         @Override
         public String marshall(List<UploadFieldDefinition> fieldDefList) {
             try {
-                return JsonUtils.INTERNAL_OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(
+                return BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(
                         fieldDefList);
             } catch (JsonProcessingException ex) {
                 throw new DynamoDBMappingException(ex);
@@ -232,7 +232,7 @@ public class DynamoUploadSchema implements UploadSchema {
         @Override
         public List<UploadFieldDefinition> unmarshall(Class<List<UploadFieldDefinition>> clazz, String json) {
             try {
-                return JsonUtils.INTERNAL_OBJECT_MAPPER.readValue(json,
+                return BridgeObjectMapper.get().readValue(json,
                         new TypeReference<List<UploadFieldDefinition>>() {});
             } catch (IOException ex) {
                 throw new DynamoDBMappingException(ex);

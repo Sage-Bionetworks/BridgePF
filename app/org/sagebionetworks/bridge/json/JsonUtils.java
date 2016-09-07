@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.models.surveys.DataType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
@@ -33,12 +32,6 @@ public class JsonUtils {
     private static final String MULTIVALUE_PROPERTY = "multivalue";
     public static final TypeReference<Map<String, Object>> TYPE_REF_RAW_MAP =
             new TypeReference<Map<String, Object>>(){};
-
-    /**
-     * This Jackson object mapper should be used for internal JSON conversion (such as to/from DynamoDB), where we
-     * don't need the special features provided by {@link org.sagebionetworks.bridge.json.BridgeObjectMapper}.
-     */
-    public static final ObjectMapper INTERNAL_OBJECT_MAPPER = new ObjectMapper();
 
     public static String asText(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {

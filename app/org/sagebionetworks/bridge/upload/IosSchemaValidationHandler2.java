@@ -63,10 +63,8 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private static final Logger logger = LoggerFactory.getLogger(IosSchemaValidationHandler2.class);
 
-    private static final Pattern APP_VERSION_PATTERN = Pattern.compile("version [^,]+, build (\\d+)");
     private static final String FILENAME_INFO_JSON = "info.json";
     private static final Pattern FILENAME_TIMESTAMP_PATTERN = Pattern.compile("-\\d{8,}");
-    private static final String KEY_APP_VERSION = "appVersion";
     private static final String KEY_FILENAME = "filename";
     private static final String KEY_FILES = "files";
     private static final String KEY_IDENTIFIER = "identifier";
@@ -158,9 +156,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         // Use info.json verbatim is the metadata.
         JsonNode infoJson = getInfoJsonFile(context, uploadId, jsonDataMap);
         recordBuilder.withMetadata(infoJson);
-
-        // parse app version from info.json
-        parseAppVersionFromInfoJson(context, uploadId, infoJson);
 
         // validate and normalize filenames
         validateInfoJsonFileList(context, uploadId, jsonDataMap, unzippedDataMap, infoJson, recordBuilder);
@@ -269,37 +264,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         return infoJson;
     }
 
-    // Parse appVersion from info.json and write the value into the context. The expected format is
-    // "version 1.1.0, build 42", and the build number (42 in our example) is the appVersion number.
-    //
-    // This is package-scoped to facilitate unit tests.
-    static void parseAppVersionFromInfoJson(UploadValidationContext context, String uploadId, JsonNode infoJson) {
-        // Attempt to parse from info.json
-        Integer appVersion = null;
-        JsonNode appVersionNode = infoJson.get(KEY_APP_VERSION);
-        if (appVersionNode != null && appVersionNode.isTextual()) {
-            String appVersionStr = appVersionNode.textValue();
-
-            Matcher matcher = APP_VERSION_PATTERN.matcher(appVersionStr);
-            if (matcher.matches()) {
-                String buildNumStr = matcher.group(1);
-                try {
-                    appVersion = Integer.valueOf(buildNumStr);
-                } catch (NumberFormatException ex) {
-                    // Suppress the exception. There will be a message written into the context soon enough that will
-                    // contain more than enough information to track this down, if necessary.
-                }
-            }
-        }
-
-        // If we have it, add it to the context. If not, write a message.
-        if (appVersion != null) {
-            context.setAppVersion(appVersion);
-        } else {
-            context.addMessage("Couldn't parse app version for upload " + uploadId);
-        }
-    }
-
     private static void validateInfoJsonFileList(UploadValidationContext context, String uploadId,
             Map<String, JsonNode> jsonDataMap, Map<String, byte[]> unzippedDataMap, JsonNode infoJson,
             HealthDataRecordBuilder recordBuilder) {
@@ -351,6 +315,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
                         filename));
             } else {
                 DateTime timestamp = UploadUtil.parseIosTimestamp(timestampNode.textValue());
+                //noinspection ConstantConditions
                 if (createdOn == null || timestamp.isAfter(createdOn)) {
                     createdOn = timestamp;
                 }
@@ -358,6 +323,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         }
 
         // sanity check filenames with the info.json file list
+        //noinspection Convert2streamapi
         for (String oneFilename : fileNameSet) {
             if (!oneFilename.equals(FILENAME_INFO_JSON) && !infoJsonFilesByName.containsKey(oneFilename)) {
                 context.addMessage(String.format(
