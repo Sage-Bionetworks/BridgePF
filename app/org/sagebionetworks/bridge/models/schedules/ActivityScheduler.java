@@ -115,5 +115,24 @@ public abstract class ActivityScheduler {
             }
         }
         return eventDateTime;
-    }    
+    }
+    
+    /**
+     * If scheduling hasn't reached the end time, or hasn't accumulated the minimum number of tasks, returns true, or 
+     * false otherwise. 
+     */
+    protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime, List<ScheduledActivity> scheduledActivities) {
+        return scheduledTime.isBefore(context.getEndsOn()) || 
+               hasNotMetMinimumCount(context, scheduledActivities.size());
+    }
+    
+    /**
+     * If this is a repeating schedule and a minimum value has been set, test to see if the there are enough tasks 
+     * to meet the minimum.
+     */
+    protected boolean hasNotMetMinimumCount(ScheduleContext context, int currentCount) {
+        return schedule.getScheduleType() != ScheduleType.ONCE && 
+               context.getMinimumPerSchedule() > 0 && 
+               currentCount < context.getMinimumPerSchedule();
+    }
 }

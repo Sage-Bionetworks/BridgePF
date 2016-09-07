@@ -28,14 +28,16 @@ public final class ScheduleContext {
     private final Map<String,DateTime> events;
     private final DateTime now;
     private final DateTime accountCreatedOn;
+    private final int minimumPerSchedule;
     private final CriteriaContext criteriaContext;
     
     private ScheduleContext(DateTimeZone zone, DateTime endsOn, Map<String, DateTime> events, DateTime now,
-            DateTime accountCreatedOn, CriteriaContext criteriaContext) {
+            int minimumPerSchedule, DateTime accountCreatedOn, CriteriaContext criteriaContext) {
         this.zone = zone;
         this.endsOn = endsOn;
         this.events = events;
         this.now = now;
+        this.minimumPerSchedule = minimumPerSchedule;
         this.accountCreatedOn = accountCreatedOn;
         this.criteriaContext = criteriaContext;
     }
@@ -85,6 +87,10 @@ public final class ScheduleContext {
         return now;
     }
     
+    public int getMinimumPerSchedule() {
+        return minimumPerSchedule;
+    }
+    
     public DateTime getAccountCreatedOn() {
         return accountCreatedOn;
     }
@@ -95,7 +101,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(zone, endsOn, events, now, accountCreatedOn, criteriaContext);
+        return Objects.hash(zone, endsOn, events, now, accountCreatedOn, minimumPerSchedule, criteriaContext);
     }
 
     @Override
@@ -107,6 +113,7 @@ public final class ScheduleContext {
         ScheduleContext other = (ScheduleContext) obj;
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
                 Objects.equals(events, other.events) && Objects.equals(now, other.now) &&
+                Objects.equals(minimumPerSchedule, other.minimumPerSchedule) &&
                 Objects.equals(accountCreatedOn, other.accountCreatedOn) && 
                 Objects.equals(criteriaContext, other.criteriaContext));
     }
@@ -114,7 +121,8 @@ public final class ScheduleContext {
     @Override
     public String toString() {
         return "ScheduleContext [zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + ", now=" + now
-                + ", accountCreatedOn=" + accountCreatedOn + ", criteriaContext=" + criteriaContext + "]";
+                + ", accountCreatedOn=" + accountCreatedOn + ", minimumPerSchedule=" + minimumPerSchedule 
+                + ", criteriaContext=" + criteriaContext + "]";
     }
 
 
@@ -122,6 +130,7 @@ public final class ScheduleContext {
         private DateTimeZone zone;
         private DateTime endsOn;
         private Map<String,DateTime> events;
+        private int minimumPerSchedule;
         private DateTime now;
         private DateTime accountCreatedOn;
         private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
@@ -144,6 +153,10 @@ public final class ScheduleContext {
         }
         public Builder withClientInfo(ClientInfo clientInfo) {
             contextBuilder.withClientInfo(clientInfo);
+            return this;
+        }
+        public Builder withMinimumPerSchedule(int minimumPerSchedule) {
+            this.minimumPerSchedule = minimumPerSchedule;
             return this;
         }
         public Builder withTimeZone(DateTimeZone zone) {
@@ -181,6 +194,7 @@ public final class ScheduleContext {
             this.endsOn = context.endsOn;
             this.events = context.events;
             this.now = context.now;
+            this.minimumPerSchedule = context.minimumPerSchedule;
             this.accountCreatedOn = context.accountCreatedOn;
             contextBuilder.withContext(context.criteriaContext);
             return this;
@@ -192,7 +206,7 @@ public final class ScheduleContext {
             if (now == null) {
                 now = (zone == null) ? DateTime.now() : DateTime.now(zone);
             }
-            return new ScheduleContext(zone, endsOn, events, now, accountCreatedOn, contextBuilder.build());
+            return new ScheduleContext(zone, endsOn, events, now, minimumPerSchedule, accountCreatedOn, contextBuilder.build());
         }
     }
 }

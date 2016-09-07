@@ -7,7 +7,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -30,7 +29,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -67,9 +65,6 @@ public class ScheduledActivityControllerTest {
 
     @Mock
     ScheduledActivityService scheduledActivityService;
-    
-    @Mock
-    AccountDao accountDao;
     
     @Mock
     StudyService studyService;
@@ -112,14 +107,12 @@ public class ScheduledActivityControllerTest {
         when(scheduledActivityService.getScheduledActivities(any(ScheduleContext.class))).thenReturn(list);
 
         doReturn(ACCOUNT_CREATED_ON).when(account).getCreatedOn();
-        doReturn(account).when(accountDao).getAccount(any(), eq(ID));
         doReturn(study).when(studyService).getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
 
         controller = spy(new ScheduledActivityController());
         controller.setScheduledActivityService(scheduledActivityService);
         controller.setStudyService(studyService);
         controller.setCacheProvider(cacheProvider);
-        controller.setAccountDao(accountDao);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
         clientInfo = ClientInfo.fromUserAgentCache("App Name/4 SDK/2");
@@ -135,13 +128,14 @@ public class ScheduledActivityControllerTest {
         when(scheduledActivityService.getScheduledActivities(any(ScheduleContext.class))).thenReturn(list);
         controller.setScheduledActivityService(scheduledActivityService);
         
-        controller.getScheduledActivities(null, "+03:00", "3");
+        controller.getScheduledActivities(null, "+03:00", "3", "5");
         
         verify(scheduledActivityService).getScheduledActivities(captor.capture());
         
         ScheduleContext context = captor.getValue();
         assertEquals(DateTimeZone.forOffsetHours(3), context.getZone());
         assertEquals(Sets.newHashSet("group1"), context.getCriteriaContext().getUserDataGroups());
+        assertEquals(5, context.getMinimumPerSchedule());
         
         CriteriaContext critContext = context.getCriteriaContext();
         assertEquals("BBB", critContext.getHealthCode());
@@ -154,7 +148,7 @@ public class ScheduledActivityControllerTest {
     public void getScheduledActivitiesAsScheduledActivitiesReturnsCorrectType() throws Exception {
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
         
-        Result result = controller.getScheduledActivities(now.toString(), null, null);
+        Result result = controller.getScheduledActivities(now.toString(), null, null, null);
         String output = Helpers.contentAsString(result);
 
         JsonNode results = BridgeObjectMapper.get().readTree(output);
@@ -190,7 +184,7 @@ public class ScheduledActivityControllerTest {
         // Until value is simply passed along as is to the scheduler.
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
         
-        controller.getScheduledActivities(now.toString(), null, null);
+        controller.getScheduledActivities(now.toString(), null, null, null);
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(now, contextCaptor.getValue().getEndsOn());
@@ -198,18 +192,19 @@ public class ScheduledActivityControllerTest {
     }
     
     @Test
-    public void getScheduledActivitiesWithDaysAheadAndTimeZone() throws Exception {
+    public void getScheduledActivitiesWithDaysAheadTimeZoneAndMinimum() throws Exception {
         // We expect the endsOn value to be three days from now at the end of the day 
         // (set millis to 0 so the values match at the end of the test).
         DateTime expectedEndsOn = DateTime.now()
             .withZone(DateTimeZone.forOffsetHours(3)).plusDays(3)
             .withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59).withMillisOfSecond(0);
         
-        controller.getScheduledActivities(null, "+03:00", "3");
+        controller.getScheduledActivities(null, "+03:00", "3", null);
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(expectedEndsOn, contextCaptor.getValue().getEndsOn().withMillisOfSecond(0));
         assertEquals(expectedEndsOn.getZone(), contextCaptor.getValue().getZone());
+        assertEquals(0, contextCaptor.getValue().getMinimumPerSchedule());
         assertEquals(clientInfo, contextCaptor.getValue().getCriteriaContext().getClientInfo());
     }
     
@@ -224,41 +219,15 @@ public class ScheduledActivityControllerTest {
     @Test(expected = NotAuthenticatedException.class)
     public void mustBeAuthenticated() throws Exception {
         controller = new ScheduledActivityController();
-        controller.getScheduledActivities(DateTime.now().toString(), null, null);
+        controller.getScheduledActivities(DateTime.now().toString(), null, null, null);
     }
     
     @Test
     public void fullyInitializedSessionProvidesAccountCreatedOnInScheduleContext() throws Exception {
-        controller.getScheduledActivities(null, "-07:00", "3");
+        controller.getScheduledActivities(null, "-07:00", "3", null);
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(ACCOUNT_CREATED_ON, context.getAccountCreatedOn());
     }
     
-    @Test
-    public void oldSessionsWithIdAndNoAccountCreatedOn() throws Exception {
-        Account account = mock(Account.class);
-        doReturn(ACCOUNT_CREATED_ON).when(account).getCreatedOn();
-        doReturn(account).when(accountDao).getAccount(any(Study.class), eq("AAA"));
-        
-        StudyParticipant participant = new StudyParticipant.Builder().withId("AAA").build();
-        session.setParticipant(participant);
-        
-        controller.getScheduledActivities(null, "-07:00", "3");
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
-        ScheduleContext context = contextCaptor.getValue();
-        assertEquals(ACCOUNT_CREATED_ON, context.getAccountCreatedOn());
-    }
-    
-    @Test
-    public void oldSessionsWithNoIdAndNoAccountCreatedOn() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-            .withCreatedOn(null).withId(null).build();
-        session.setParticipant(participant);
-        
-        controller.getScheduledActivities(null, "-07:00", "3");
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
-        ScheduleContext context = contextCaptor.getValue();
-        assertNotNull(context.getAccountCreatedOn()); // this is a timestamp, so
-    }
 }

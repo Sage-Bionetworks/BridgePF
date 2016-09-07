@@ -1,25 +1,20 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -33,35 +28,27 @@ import play.mvc.Result;
 
 @Controller
 public class ScheduledActivityController extends BaseController {
-
-    private static final Logger LOG = LoggerFactory.getLogger(ScheduledActivityController.class);  
     
     private static final TypeReference<ArrayList<ScheduledActivity>> scheduledActivityTypeRef = new TypeReference<ArrayList<ScheduledActivity>>() {};
 
     private ScheduledActivityService scheduledActivityService;
-    
-    private AccountDao accountDao;
 
     @Autowired
     public void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
     
-    @Autowired
-    public void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
-    }
-    
     // This annotation adds a deprecation header to the REST API method.
     @Deprecated
     public Result getTasks(String untilString, String offset, String daysAhead) throws Exception {
-        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead);
+        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead, null);
         
         return okResultAsTasks(scheduledActivities);
     }
 
-    public Result getScheduledActivities(String untilString, String offset, String daysAhead) throws Exception {
-        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead);
+    public Result getScheduledActivities(String untilString, String offset, String daysAhead, String minimumPerScheduleString)
+            throws Exception {
+        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead, minimumPerScheduleString);
         
         return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER
                 .writeValueAsString(new ResourceList<ScheduledActivity>(scheduledActivities)));
@@ -89,10 +76,27 @@ public class ScheduledActivityController extends BaseController {
         return ok(node);
     }
     
-    private List<ScheduledActivity> getScheduledActivitiesInternal(String untilString, String offset, String daysAhead)
-            throws Exception {
+    private List<ScheduledActivity> getScheduledActivitiesInternal(String untilString, String offset, String daysAhead,
+            String minimumPerScheduleString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
 
+        ScheduleContext.Builder builder = new ScheduleContext.Builder();
+        addEndsOnWithZone(builder, untilString, offset, daysAhead);
+        
+        builder.withUserDataGroups(session.getParticipant().getDataGroups());
+        builder.withHealthCode(session.getHealthCode());
+        builder.withUserId(session.getId());
+        builder.withStudyIdentifier(session.getStudyIdentifier());
+        builder.withAccountCreatedOn(session.getParticipant().getCreatedOn());
+        
+        builder.withLanguages(getLanguages(session));
+        builder.withClientInfo(getClientInfoFromUserAgentHeader());
+        builder.withMinimumPerSchedule(getIntOrDefault(minimumPerScheduleString, 0));
+        
+        return scheduledActivityService.getScheduledActivities(builder.build());
+    }
+    
+    private void addEndsOnWithZone(ScheduleContext.Builder builder, String untilString, String offset, String daysAhead) {
         DateTime endsOn = null;
         DateTimeZone zone = null;
 
@@ -108,36 +112,7 @@ public class ScheduledActivityController extends BaseController {
         } else {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
         }
-        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
-        
-        DateTime accountCreatedOn = session.getParticipant().getCreatedOn();
-        if (accountCreatedOn == null) {
-            Study study = studyService.getStudy(session.getStudyIdentifier());
-            // Everyone should have an ID at this point... otherwise sessions are hanging out for over a week.
-            if (session.getId() == null) {
-                accountCreatedOn = DateTime.now();
-                LOG.debug("neither accountCreatedOn nor ID exist in session, using current time");
-            } else {
-                Account account = accountDao.getAccount(study, session.getId());
-                accountCreatedOn = account.getCreatedOn();
-                LOG.debug("accountCreatedOn not in session, retrieving it and updating session");
-            }
-            StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                    .withCreatedOn(accountCreatedOn).build();
-            session.setParticipant(participant);
-            updateSession(session);
-        }
-        
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withLanguages(getLanguages(session))
-                .withUserDataGroups(session.getParticipant().getDataGroups())
-                .withHealthCode(session.getHealthCode())
-                .withUserId(session.getId())
-                .withStudyIdentifier(session.getStudyIdentifier())
-                .withClientInfo(clientInfo)
-                .withTimeZone(zone)
-                .withAccountCreatedOn(accountCreatedOn)
-                .withEndsOn(endsOn).build();
-        return scheduledActivityService.getScheduledActivities(context);
+        builder.withEndsOn(endsOn);
+        builder.withTimeZone(zone);
     }
 }

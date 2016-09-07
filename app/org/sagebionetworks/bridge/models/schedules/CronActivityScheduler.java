@@ -23,11 +23,11 @@ class CronActivityScheduler extends ActivityScheduler {
         if (scheduledTime != null) {
             MutableTrigger trigger = parseTrigger(scheduledTime);
             
-            while (scheduledTime.isBefore(context.getEndsOn())) {
+            while (shouldContinueScheduling(context, scheduledTime, scheduledActivities)) {
                 Date next = trigger.getFireTimeAfter(scheduledTime.toDate());
                 scheduledTime = new DateTime(next, context.getZone());
                 
-                if (scheduledTime.isBefore(context.getEndsOn())) {
+                if (shouldContinueScheduling(context, scheduledTime, scheduledActivities)) {
                     addScheduledActivityForAllTimes(scheduledActivities, plan, context, scheduledTime);    
                 }
             }

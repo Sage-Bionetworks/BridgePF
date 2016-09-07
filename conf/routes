@@ -109,7 +109,7 @@ GET    /v4/schedules   @org.sagebionetworks.bridge.play.controllers.ScheduleCont
 # ScheduledActivities (nee Tasks)
 GET    /v3/tasks       @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.getTasks(until: String ?= null, offset: String ?= null, daysAhead: String ?= null)
 POST   /v3/tasks       @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.updateScheduledActivities()
-GET    /v3/activities  @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.getScheduledActivities(until: String ?= null, offset: String ?= null, daysAhead: String ?= null)
+GET    /v3/activities  @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.getScheduledActivities(until: String ?= null, offset: String ?= null, daysAhead: String ?= null, minimumPerSchedule: String ?= null)
 POST   /v3/activities  @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.updateScheduledActivities()
 
 # Uploads

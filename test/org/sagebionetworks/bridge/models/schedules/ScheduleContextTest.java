@@ -48,11 +48,12 @@ public class ScheduleContextTest {
     }
     
     @Test
-    public void defaultsTimeZoneAndClientInfo() {
+    public void defaultsTimeZoneMinimumAndClientInfo() {
         ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
         
         assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getCriteriaContext().getClientInfo());
         assertNotNull(context.getNow());
+        assertEquals(0, context.getMinimumPerSchedule());
     }
     
     @Test
@@ -72,6 +73,7 @@ public class ScheduleContextTest {
                 .withStudyIdentifier(studyId)
                 .withTimeZone(PST)
                 .withEndsOn(endsOn)
+                .withMinimumPerSchedule(3)
                 .withEvents(events)
                 .withHealthCode("healthCode")
                 .withUserDataGroups(USER_DATA_GROUPS)
@@ -81,6 +83,7 @@ public class ScheduleContextTest {
         assertEquals(PST, context.getZone());
         assertEquals(endsOn, context.getEndsOn());
         assertEquals(events.get("enrollment"), context.getEvent("enrollment"));
+        assertEquals(3, context.getMinimumPerSchedule());
         assertEquals("healthCode", context.getCriteriaContext().getHealthCode());
         assertEquals(USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
         assertEquals(now, context.getNow());
