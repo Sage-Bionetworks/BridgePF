@@ -130,6 +130,16 @@ public class StudyConsentServiceTest {
         assertEquals("<p>This is all the content that should be kept.</p>\n<br />\n<p>And this makes it a fragment.</p>", view.getDocumentContent());
     }
     
+    @Test
+    public void ckeditorMarkupIsPreserved() {
+        String doc = "<s>This is a test</s><p style=\"color:red\">of new attributes ${url}.</p><hr />";
+        
+        StudyConsentForm form = new StudyConsentForm(doc);
+        StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);
+        // Text is pretty printed so remove that before comparing 
+        assertEquals(doc, view.getDocumentContent().replaceAll("[\n\t\r]", ""));
+    }
+    
     /**
      * There used to be a test that an InvalidEntityException would be thrown if the content was not valid XML. But
      * Jsoup is very dogged in fixing even the worst documents, as this test demonstrates. Consenquently the validator 

@@ -23,7 +23,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.jsoup.nodes.Entities.EscapeMode;
-import org.jsoup.safety.Whitelist;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -235,7 +236,7 @@ public class StudyConsentService {
     }
     
     private String sanitizeHTML(String documentContent) {
-        documentContent = Jsoup.clean(documentContent, Whitelist.relaxed());
+        documentContent = Jsoup.clean(documentContent, BridgeConstants.CKEDITOR_WHITELIST);
         Document document = Jsoup.parseBodyFragment(documentContent);
         document.outputSettings().escapeMode(EscapeMode.xhtml)
             .prettyPrint(false).syntax(Syntax.xml).charset("UTF-8");
