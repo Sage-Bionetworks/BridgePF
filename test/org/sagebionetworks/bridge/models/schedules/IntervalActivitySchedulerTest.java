@@ -514,7 +514,6 @@ public class IntervalActivitySchedulerTest {
         schedule.setInterval("P1W");
         schedule.addTimes("08:00");
         
-        
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         plan.setStrategy(strategy);
