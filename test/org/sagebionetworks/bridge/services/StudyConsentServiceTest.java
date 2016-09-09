@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.s3.S3Helper;
+
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -128,6 +129,37 @@ public class StudyConsentServiceTest {
         StudyConsentForm form = new StudyConsentForm(doc);
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);
         assertEquals("<p>This is all the content that should be kept.</p>\n<br />\n<p>And this makes it a fragment.</p>", view.getDocumentContent());
+    }
+    
+    @Test
+    public void ckeditorMarkupIsPreserved() {
+        String doc = "<s>This is a test</s><p style=\"color:red\">of new attributes ${url}.</p><hr />";
+        
+        StudyConsentForm form = new StudyConsentForm(doc);
+        StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);
+        // Text is pretty printed so remove that before comparing 
+        assertEquals(doc, view.getDocumentContent().replaceAll("[\n\t\r]", ""));
+    }
+    
+    @Test
+    public void studyWithXmlCharactersCanBeRenderedAsPDF() {
+        String doc = "<p>This is a test ${url} of how we escape ${studyName}${supportEmail}${technicalEmail}${sponsorName}</p>";
+        
+        StudyConsentForm form = new StudyConsentForm(doc);
+        StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);
+        
+        Study studyWithEntities = new DynamoStudy();
+        studyWithEntities.setIdentifier(study.getIdentifier());
+        studyWithEntities.setName("This name's got an apostrophe & an ampersand");
+        studyWithEntities.setSponsorName("This has a UTF-8 flower: ❃");
+        // not sure our mail system allows these next two, but it shouldn't break document rendering
+        studyWithEntities.setTechnicalEmail("дерек@екзампил.ком"); 
+        studyWithEntities.setSupportEmail("\"test@test.com\"");
+        
+        // Without escaping this call throws a SAXParseException. I've verified the HTML preserves all the UTF-8
+        // characters and displays correctly. The PDF displays what it can with the font it uses (to display the flower,
+        // we'd need to include a font with more UTF-8 characters; we do not).
+        studyConsentService.publishConsent(studyWithEntities, subpopulation, view.getCreatedOn());
     }
     
     /**

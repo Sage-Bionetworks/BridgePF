@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import java.util.Set;
 
 import org.joda.time.DateTimeZone;
+import org.jsoup.safety.Whitelist;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -73,5 +74,16 @@ public class BridgeConstants {
     
     public static final String STORMPATH_NAME_PLACEHOLDER_STRING = "<EMPTY>";
     
-    public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();    
+    public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();
+    
+    /**
+     * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options we have 
+     * displayed in the UI.
+     */
+    public static final Whitelist CKEDITOR_WHITELIST = Whitelist.relaxed()
+            .addTags("hr", "s", "caption")
+            .addAttributes(":all", "style", "scope")
+            .addAttributes("a", "target")
+            .addAttributes("table", "align", "border", "cellpadding", "cellspacing", "summary");
+    
 }

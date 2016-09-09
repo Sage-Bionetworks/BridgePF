@@ -18,6 +18,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -292,7 +294,7 @@ public class StudyService {
             if (template.getMimeType() == MimeType.TEXT) {
                 body = Jsoup.clean(body, Whitelist.none());
             } else {
-                body = Jsoup.clean(body, Whitelist.relaxed());
+                body = Jsoup.clean(body, BridgeConstants.CKEDITOR_WHITELIST);
             }
         }
         return new EmailTemplate(subject, body, template.getMimeType());

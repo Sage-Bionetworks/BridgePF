@@ -288,4 +288,26 @@ public class StudyServiceTest {
     public void cantDeleteApiStudy() {
         studyService.deleteStudy("api");
     }
+    
+    @Test
+    public void ckeditorHTMLIsPreserved() {
+        study = TestUtils.getValidStudy(StudyServiceTest.class);
+        
+        String body = "<s>This is a test</s><p style=\"color:red\">of new attributes ${url}.</p><hr>";
+        
+        EmailTemplate template = new EmailTemplate("Subject", body, MimeType.HTML);
+        
+        study.setVerifyEmailTemplate(template);
+        study.setResetPasswordTemplate(template);
+        study = studyService.createStudy(study);
+        
+        // The templates are pretty-print formatted, so remove that. Otherwise, everything should be
+        // preserved.
+        
+        template = study.getVerifyEmailTemplate();
+        assertEquals(body, template.getBody().replaceAll("[\n\t\r]", ""));
+        
+        template = study.getResetPasswordTemplate();
+        assertEquals(body, template.getBody().replaceAll("[\n\t\r]", ""));
+    }
 }

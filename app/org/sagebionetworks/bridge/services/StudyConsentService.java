@@ -19,11 +19,14 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.jsoup.nodes.Entities.EscapeMode;
-import org.jsoup.safety.Whitelist;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -47,6 +50,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 import org.xhtmlrenderer.pdf.ITextRenderer;
+import org.xhtmlrenderer.util.XRRuntimeException;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
 import com.google.common.collect.Maps;
@@ -56,6 +60,9 @@ import com.lowagie.text.DocumentException;
 public class StudyConsentService {
 
     private static Logger logger = LoggerFactory.getLogger(StudyConsentService.class);
+    
+    // Documented to be threat-safe
+    private static final CharSequenceTranslator XML_ESCAPER = StringEscapeUtils.ESCAPE_XML11;
     
     private Validator validator;
     private StudyConsentDao studyConsentDao;
@@ -219,7 +226,7 @@ public class StudyConsentService {
             subpop.setPublishedConsentCreatedOn(timestamp);
             subpopService.updateSubpopulation(study, subpop);
 
-        } catch(IOException | DocumentException e) {
+        } catch(IOException | DocumentException | XRRuntimeException e) {
             throw new BridgeServiceException(e.getMessage());
         }
         return new StudyConsentView(consent, documentContent);
@@ -235,7 +242,7 @@ public class StudyConsentService {
     }
     
     private String sanitizeHTML(String documentContent) {
-        documentContent = Jsoup.clean(documentContent, Whitelist.relaxed());
+        documentContent = Jsoup.clean(documentContent, BridgeConstants.CKEDITOR_WHITELIST);
         Document document = Jsoup.parseBodyFragment(documentContent);
         document.outputSettings().escapeMode(EscapeMode.xhtml)
             .prettyPrint(false).syntax(Syntax.xml).charset("UTF-8");
@@ -244,14 +251,16 @@ public class StudyConsentService {
     
     private void publishFormatsToS3(Study study, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
         Map<String,String> map = Maps.newHashMap();
-        map.put("studyName", study.getName());
-        map.put("supportEmail", study.getSupportEmail());
-        map.put("technicalEmail", study.getTechnicalEmail());
-        map.put("sponsorName", study.getSponsorName());
+        String escapedStudyName = XML_ESCAPER.translate(study.getName());
+        
+        map.put("studyName", escapedStudyName);
+        map.put("supportEmail", XML_ESCAPER.translate(study.getSupportEmail()));
+        map.put("technicalEmail", XML_ESCAPER.translate(study.getTechnicalEmail()));
+        map.put("sponsorName", XML_ESCAPER.translate(study.getSponsorName()));
         String resolvedHTML = BridgeUtils.resolveTemplate(bodyTemplate, map);
 
         map = Maps.newHashMap();
-        map.put("studyName", study.getName());
+        map.put("studyName", escapedStudyName);
         map.put("consent.body", resolvedHTML);
         resolvedHTML = BridgeUtils.resolveTemplate(fullPageTemplate, map);
         
