@@ -61,9 +61,7 @@ public class StudyConsentService {
 
     private static Logger logger = LoggerFactory.getLogger(StudyConsentService.class);
     
-    /**
-     * I'm assuming this is thread-safe because it's exposed as a static constant.
-     */
+    // Documented to be threat-safe
     private static final CharSequenceTranslator XML_ESCAPER = StringEscapeUtils.ESCAPE_XML11;
     
     private Validator validator;

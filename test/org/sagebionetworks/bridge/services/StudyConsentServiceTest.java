@@ -14,7 +14,6 @@ import javax.annotation.Resource;
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -80,7 +79,6 @@ public class StudyConsentServiceTest {
     }
 
     @Test
-    @Ignore
     public void crudStudyConsent() {
         String documentContent = "<p>This is a consent document.</p><p>This is the second paragraph of same.</p>";
         StudyConsentForm form = new StudyConsentForm(documentContent);
@@ -105,7 +103,6 @@ public class StudyConsentServiceTest {
     }
     
     @Test
-    @Ignore
     public void studyConsentWithFileAndS3ContentTakesS3Content() throws Exception {
         long createdOn = DateUtils.getCurrentMillisFromEpoch();
         String key = subpopulation.getGuidString() + "." + createdOn;
@@ -119,7 +116,6 @@ public class StudyConsentServiceTest {
     }
     
     @Test
-    @Ignore
     public void invalidMarkupIsFixed() {
         StudyConsentForm form = new StudyConsentForm("<cml><p>This is not valid XML.</cml>");
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);
@@ -127,7 +123,6 @@ public class StudyConsentServiceTest {
     }
     
     @Test
-    @Ignore
     public void fullDocumentsAreConvertedToFragments() {
         String doc = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title></head><body><p>This is all the content that should be kept.</p><br><p>And this makes it a fragment.</p></body></html>";
         
@@ -137,7 +132,6 @@ public class StudyConsentServiceTest {
     }
     
     @Test
-    @Ignore
     public void ckeditorMarkupIsPreserved() {
         String doc = "<s>This is a test</s><p style=\"color:red\">of new attributes ${url}.</p><hr />";
         
@@ -174,7 +168,6 @@ public class StudyConsentServiceTest {
      * just isn't throwing an exception when testing through the service.
      */
     @Test
-    @Ignore
     public void evenVeryBrokenContentIsFixed() {
         StudyConsentForm form = new StudyConsentForm("</script><div ankle='foo'>This just isn't a SGML-based document no matter how you slice it.</p><h4><img>");
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);
@@ -182,7 +175,6 @@ public class StudyConsentServiceTest {
     }
     
     @Test
-    @Ignore
     public void publishingConsentCreatesPublicBucketDocuments() throws IOException {
         String content = "<p>"+BridgeUtils.generateGuid()+"</p>";
 
@@ -199,7 +191,6 @@ public class StudyConsentServiceTest {
     }
     
     @Test
-    @Ignore
     public void getActiveConsentUsesSubpopulation() {
         String documentContent = "<p>This is a consent document.</p>";
         StudyConsentForm form = new StudyConsentForm(documentContent);
@@ -211,7 +202,6 @@ public class StudyConsentServiceTest {
     }
     
     @Test
-    @Ignore
     public void getActiveConsentWorksWithoutSubpopulation() {
         StudyConsentForm form = new StudyConsentForm("<p>This is a consent document.</p>");
         StudyConsentView view = studyConsentService.addConsent(subpopulation.getGuid(), form);        
@@ -223,7 +213,6 @@ public class StudyConsentServiceTest {
     }
     
     @Test
-    @Ignore
     public void publishConsentUpdatesSubpopulation() {
         String documentContent = "<p>This is a consent document.</p>";
         StudyConsentForm form = new StudyConsentForm(documentContent);
