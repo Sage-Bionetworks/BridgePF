@@ -52,29 +52,11 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result verifyEmail() throws Exception {
-        JsonNode json = requestToJSON(request());
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
-        Study study = getStudyOrThrowException(json);
 
-        // Note: currently we support mobile applications, that send an email that users open in 
-        // a browser to verify their email address. NOT a mobile app using the Bridge SDK. So 
-        // User-Agent (and Accept-Language possibly) are incorrect and the session we are 
-        // returning can have incorrect consent information. See BRIDGE-1352 about why session
-        // handling exists here, along with a proposal to remove it.
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        authenticationService.verifyEmail(emailVerification);
         
-        UserSession session = authenticationService.verifyEmail(study, context, emailVerification);
-        
-        writeSessionInfoToMetrics(session);
-        setSessionToken(session.getSessionToken());
-
-        // In normal course of events (verify email, consent to research),
-        // an exception is thrown. Code after this line will rarely execute
-        if (!session.doesConsent()) {
-            throw new ConsentRequiredException(session);
-        }
-
-        return okResult(UserSessionInfo.toJSON(session));
+        return okResult("Email address verified.");
     }
 
     public Result resendEmailVerification() throws Exception {

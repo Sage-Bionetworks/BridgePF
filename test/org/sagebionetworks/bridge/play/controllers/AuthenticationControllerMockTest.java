@@ -412,53 +412,14 @@ public class AuthenticationControllerMockTest {
         TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
-        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
         ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
-        when(authenticationService.verifyEmail(same(study), any(), emailVerifyCaptor.capture())).thenReturn(session);
-
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
         // execute and validate
         Result result = controller.verifyEmail();
-        assertSessionInPlayResult(result);
-        assertSessionInfoInMetrics(metrics);
+        TestUtils.assertResult(result, 200, "Email address verified.");
 
         // validate email verification
-        EmailVerification emailVerify = emailVerifyCaptor.getValue();
-        assertEquals(TEST_VERIFY_EMAIL_TOKEN, emailVerify.getSptoken());
-    }
-
-    @Test
-    public void verifyEmailUnconsented() throws Exception {
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
-        
-        // mock getMetrics
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
-        // mock request
-        String requestJsonString = "{\n" +
-                "   \"sptoken\":\"" + TEST_VERIFY_EMAIL_TOKEN + "\",\n" +
-                "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
-                "}";
-
-        TestUtils.mockPlayContextWithJson(requestJsonString);
-
-        // mock AuthenticationService
-        UserSession session = createSession(null, null);
-        ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
-        when(authenticationService.verifyEmail(same(study), any(), emailVerifyCaptor.capture())).thenReturn(session);
-
-        // execute and validate
-        try {
-            controller.verifyEmail();
-            fail("expected exception");
-        } catch (ConsentRequiredException ex) {
-            // expected exception
-        }
-        assertSessionInfoInMetrics(metrics);
-
-        // validate email verification
+        verify(authenticationService).verifyEmail(emailVerifyCaptor.capture());
         EmailVerification emailVerify = emailVerifyCaptor.getValue();
         assertEquals(TEST_VERIFY_EMAIL_TOKEN, emailVerify.getSptoken());
     }

@@ -1,15 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
@@ -47,7 +44,6 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -384,36 +380,6 @@ public class AuthenticationServiceTest {
         assertEquals(LANGS, persistedLangs);
     }
     
-    @Test
-    public void verifyEmailWorksWithRepairConsents() throws Exception {
-        testUser = helper.getBuilder(AuthenticationServiceTest.class)
-                .withConsent(false).withSignIn(true).build();
-        // Calling verifyEmail fails if you don't have a valid sptoken, which we don't have. So we have to mock the 
-        // DAO to verify that the call succeeds
-        EmailVerification verification = new EmailVerification("asdf");
-        Study study = testUser.getStudy();
-        
-        // We need to mock the client because it will throw an exception when it gets the garbage token "asdf", 
-        // and we're only concerned with what happens when this is successful. Tedious to mock the Stormpath client.
-        AccountDao accountDaoSpy = mock(AccountDao.class);
-        when(accountDaoSpy.verifyEmail(study, verification)).thenReturn(accountDao.getAccount(study, testUser.getId()));
-        authService.setAccountDao(accountDaoSpy);
-        try {
-            CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(testUser.getStudyIdentifier())
-                    .build();
-
-            UserSession session = authService.verifyEmail(study, context, verification);
-            // Consents are okay. User hasn't consented.
-            ConsentStatus status = session.getConsentStatuses().values().iterator().next();
-            assertFalse(status.isConsented());
-
-            // This should not have been altered in any way by the lack of consents.
-            verify(accountDaoSpy).verifyEmail(study, verification);
-        } finally {
-            authService.setAccountDao(accountDao);
-        }
-    }
-
     @Test
     public void updateSession() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false)

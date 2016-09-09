@@ -156,8 +156,7 @@ public class StormpathAccountDaoMockTest {
         when(stormpathAccount.getCustomData()).thenReturn(customData);
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
 
-        Account account = dao.verifyEmail(study, verification);
-        assertNotNull(account);
+        dao.verifyEmail(verification);
         verify(client).verifyAccountEmail("tokenAAA");
     }
 
@@ -366,18 +365,6 @@ public class StormpathAccountDaoMockTest {
     @Test(expected = IllegalArgumentException.class)
     public void getStudyPagedAccountsRejectsNonsenseOffsetBy() {
         dao.getPagedAccountSummaries(study, -10, BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
-    }
-    
-    @Test
-    public void verifyEmailCreatesHealthCode() {
-        mockAccountWithoutHealthCode();
-        
-        doReturn(stormpathAccount).when(client).verifyAccountEmail("spToken");
-        EmailVerification emailVerification = new EmailVerification("spToken");
-        
-        Account account = dao.verifyEmail(study, emailVerification);
-        assertEquals("ABC", account.getHealthCode());
-        verify(healthCodeService).createMapping(study);
     }
     
     @Test
