@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asLong;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
@@ -480,6 +481,7 @@ public class IntervalActivitySchedulerTest {
         assertDates(scheduledActivities, 
                 "2015-04-07 09:40", "2015-04-07 13:40", "2015-04-09 09:40", "2015-04-09 13:40");
     }
+
     // This is a specific scenario in one of our studies and I wanted to have a test specifically to verify this works.
     @Test
     public void oneDayDelayWithTimesSchedulesTheNextDayAfterAnEvent() {
@@ -497,6 +499,37 @@ public class IntervalActivitySchedulerTest {
         
         assertDates(scheduledActivities, 
                 "2015-04-07 08:00", "2015-04-07 14:00", "2015-04-07 20:00");
+    }
+    
+    // This verifies that the minimum tasks per schedule setting will work correctly even if 
+    // a time window has been set for the schedule... that we don't fall into an infinite loop, 
+    // but the window still limits tasks (because that's the only thing it's really good for is 
+    // placing a hard stop on an app's scheduling).
+    @Test
+    public void recurringWithWindowAndMinTasksWorks() {
+        Schedule schedule = new Schedule();
+        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setExpires("P5D");
+        schedule.setInterval("P1W");
+        schedule.addTimes("08:00");
+        
+        
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        plan.setStrategy(strategy);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(getContext(ENROLLMENT))
+                .withMinimumPerSchedule(2).build();
+        
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        assertEquals(2, scheduledActivities.size());
+        
+        // But this will lock out tasks. Scheduling window takes precedence.
+        schedule.setEndsOn(ENROLLMENT.plusDays(3)); 
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        assertTrue(scheduledActivities.isEmpty());
     }
 
     private ScheduleContext getContext(DateTime endsOn) {
