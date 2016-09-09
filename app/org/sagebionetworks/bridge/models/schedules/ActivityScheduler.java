@@ -122,8 +122,8 @@ public abstract class ActivityScheduler {
      * false otherwise. 
      */
     protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime, List<ScheduledActivity> scheduledActivities) {
-        return scheduledTime.isBefore(context.getEndsOn()) || 
-               hasNotMetMinimumCount(context, scheduledActivities.size());
+        boolean boundaryNotMet = scheduledTime.isBefore(context.getEndsOn()) || hasNotMetMinimumCount(context, scheduledActivities.size());
+        return isInWindow(scheduledTime) && boundaryNotMet;
     }
     
     /**
