@@ -96,6 +96,12 @@ public abstract class ActivityScheduler {
                (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
     }
     
+    private boolean isBeforeWindowEnd(DateTime scheduledTime) {
+        DateTime endsOn = schedule.getEndsOn();
+        
+        return (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
+    }
+    
     private DateTime getExpiresOn(DateTime scheduledTime) {
         if (schedule.getExpires() == null) {
             return null;
@@ -123,7 +129,7 @@ public abstract class ActivityScheduler {
      */
     protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime, List<ScheduledActivity> scheduledActivities) {
         boolean boundaryNotMet = scheduledTime.isBefore(context.getEndsOn()) || hasNotMetMinimumCount(context, scheduledActivities.size());
-        return isInWindow(scheduledTime) && boundaryNotMet;
+        return isBeforeWindowEnd(scheduledTime) && boundaryNotMet;
     }
     
     /**
