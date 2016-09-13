@@ -17,6 +17,9 @@ public enum UploadStatus {
     /** Upload validation has failed. */
     VALIDATION_FAILED,
 
+    /** Upload is a duplicate of an existing upload and was ignored. */
+    DUPLICATE,
+
     /** Upload has succeeded, including validation. */
     SUCCEEDED,
 }

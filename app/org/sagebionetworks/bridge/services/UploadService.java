@@ -11,11 +11,13 @@ import javax.annotation.Resource;
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.amazonaws.AmazonClientException;
 import com.google.common.base.Strings;
 
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -61,7 +63,9 @@ public class UploadService {
     
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
+    static final String CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST = "upload.dupe.study.whitelist";
 
+    private Set<String> dupeStudyWhitelist;
     private HealthDataService healthDataService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
@@ -76,6 +80,11 @@ public class UploadService {
     @Autowired
     final void setConfig(BridgeConfig config) {
         uploadBucket = config.getProperty(CONFIG_KEY_UPLOAD_BUCKET);
+
+        // This is the set of study IDs where we ignore dedupe logic. This configuration exists (1) for integration
+        // tests, where we always upload the same files over and over and (2) for studies where it's valid and expected
+        // for apps to always submit the same files over and over again.
+        dupeStudyWhitelist = ImmutableSet.copyOf(config.getList(CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST));
     }
 
     /**
@@ -148,7 +157,8 @@ public class UploadService {
             uploadId = originalUploadId;
         } else {
             // This is a new upload.
-            Upload upload = uploadDao.createUpload(uploadRequest, studyId, participant.getHealthCode());
+            Upload upload = uploadDao.createUpload(uploadRequest, studyId, participant.getHealthCode(),
+                    originalUploadId);
             uploadId = upload.getUploadId();
 
             if (originalUploadId != null) {
@@ -329,8 +339,13 @@ public class UploadService {
             logger.error("Missing S3 server-side encryption (SSE) for presigned upload " + uploadId + ".");
         }
 
+        // If it's a dupe, we use Dupe status instead of Validation_In_Progress. (This is for bookkeeping purposes.)
+        boolean isDupe = isDupe(studyId, upload);
+        UploadStatus status = isDupe ? UploadStatus.DUPLICATE : UploadStatus.VALIDATION_IN_PROGRESS;
+
+        // Update status and timestamps in the upload DDB entry.
         try {
-            uploadDao.uploadComplete(completedBy, upload);
+            uploadDao.uploadComplete(completedBy, status, upload);
         } catch (ConcurrentModificationException ex) {
             // The old workflow is the app calls uploadComplete. The new workflow has an S3 trigger to call
             // uploadComplete. During the transition, it's very likely that this will be called twice, sometimes
@@ -342,10 +357,29 @@ public class UploadService {
             return;
         }
 
-        // kick off upload validation
-        uploadValidationService.validateUpload(studyId, upload);
+        // kick off upload validation (ignore if dupe)
+        if (!isDupe) {
+            uploadValidationService.validateUpload(studyId, upload);
+        }
     }
-    
+
+    // Helper method that encapsulates dedupe logic. Takes into account whether the upload was tagged with a dupe ID as
+    // well as the server configuration.
+    private boolean isDupe(StudyIdentifier studyId, Upload upload) {
+        if (upload.getDuplicateUploadId() == null) {
+            // No dupe upload ID registered. Not a dupe.
+            return false;
+        }
+
+        if (dupeStudyWhitelist.contains(studyId.getIdentifier())) {
+            // Whitelist says let the upload through regardless of dedupe logic.
+            return false;
+        }
+
+        // Has a dupe upload ID, not whitelisted. Is a dupe.
+        return true;
+    }
+
     @FunctionalInterface
     private static interface UploadSupplier {
         List<? extends Upload> get(DateTime startTime, DateTime endTime);

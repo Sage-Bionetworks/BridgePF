@@ -42,7 +42,7 @@ public class DynamoUploadDaoMockTest {
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
         UploadRequest req = createUploadRequest();
-        Upload upload = dao.createUpload(req, TEST_STUDY, "fakeHealthCode");
+        Upload upload = dao.createUpload(req, TEST_STUDY, "fakeHealthCode", "original-upload-id");
 
         // Validate that our mock DDB mapper was called.
         ArgumentCaptor<DynamoUpload2> arg = ArgumentCaptor.forClass(DynamoUpload2.class);
@@ -50,6 +50,7 @@ public class DynamoUploadDaoMockTest {
 
         // Validate that our DDB upload object matches our upload request, and that the upload ID matches.
         assertEquals(upload.getUploadId(), arg.getValue().getUploadId());
+        assertEquals("original-upload-id", arg.getValue().getDuplicateUploadId());
         assertEquals(TEST_STUDY.getIdentifier(), arg.getValue().getStudyId());
         assertTrue(arg.getValue().getRequestedOn() > 0);
         assertEquals(req.getContentLength(), arg.getValue().getContentLength());
@@ -108,13 +109,13 @@ public class DynamoUploadDaoMockTest {
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
-        dao.uploadComplete(UploadCompletionClient.APP, new DynamoUpload2());
+        dao.uploadComplete(UploadCompletionClient.APP, UploadStatus.DUPLICATE, new DynamoUpload2());
 
-        // Verify our mock. We add status=VALIDATION_IN_PROGRESS and uploadDate on save, so only check for those
+        // Verify our mock. We add upload status and uploadDate on save, so only check for those
         // properties.
         ArgumentCaptor<DynamoUpload2> argSave = ArgumentCaptor.forClass(DynamoUpload2.class);
         verify(mockMapper).save(argSave.capture());
-        assertEquals(UploadStatus.VALIDATION_IN_PROGRESS, argSave.getValue().getStatus());
+        assertEquals(UploadStatus.DUPLICATE, argSave.getValue().getStatus());
         assertEquals(UploadCompletionClient.APP, argSave.getValue().getCompletedBy());
         assertTrue(argSave.getValue().getCompletedOn() > 0);
 

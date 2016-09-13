@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.AP
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,6 +30,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 @SuppressWarnings("unchecked")
 public class UploadServiceUploadCompleteMockTest {
+    private static final String DUPE_UPLOAD_ID = "original-upload-id";
     private static final String TEST_BUCKET = "test-bucket";
     private static final String TEST_UPLOAD_ID = "test-upload";
 
@@ -42,6 +44,7 @@ public class UploadServiceUploadCompleteMockTest {
         // mock config
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST)).thenReturn(ImmutableList.of());
 
         // set up mocks - The actual behavior will vary with each test.
         mockS3Client = mock(AmazonS3.class);
@@ -119,7 +122,8 @@ public class UploadServiceUploadCompleteMockTest {
         when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
 
         // mock uploadDao.uploadComplete()
-        doThrow(ConcurrentModificationException.class).when(mockUploadDao).uploadComplete(APP, upload);
+        doThrow(ConcurrentModificationException.class).when(mockUploadDao).uploadComplete(APP,
+                UploadStatus.VALIDATION_IN_PROGRESS, upload);
 
         // execute
         svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
@@ -144,7 +148,56 @@ public class UploadServiceUploadCompleteMockTest {
         svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
 
         // Verify upload DAO and validation.
-        verify(mockUploadDao).uploadComplete(APP, upload);
+        verify(mockUploadDao).uploadComplete(APP, UploadStatus.VALIDATION_IN_PROGRESS, upload);
+        verify(mockUploadValidationService).validateUpload(TestConstants.TEST_STUDY, upload);
+    }
+
+    @Test
+    public void dupeCase() {
+        // set up input
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(TEST_UPLOAD_ID);
+        upload.setStatus(UploadStatus.REQUESTED);
+        upload.setDuplicateUploadId(DUPE_UPLOAD_ID);
+
+        // mock S3
+        ObjectMetadata mockObjMetadata = mock(ObjectMetadata.class);
+        when(mockObjMetadata.getSSEAlgorithm()).thenReturn(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
+
+        // execute
+        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
+
+        // Verify upload DAO and validation.
+        verify(mockUploadDao).uploadComplete(APP, UploadStatus.DUPLICATE, upload);
+        verify(mockUploadValidationService, never()).validateUpload(any(StudyIdentifier.class), any(Upload.class));
+    }
+
+    @Test
+    public void dupeWhitelisted() {
+        // reset mock config to include "api" in the dupe study whitelist
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST)).thenReturn(ImmutableList.of(
+                TestConstants.TEST_STUDY_IDENTIFIER));
+        svc.setConfig(mockConfig);
+
+        // set up input
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(TEST_UPLOAD_ID);
+        upload.setStatus(UploadStatus.REQUESTED);
+        upload.setDuplicateUploadId(DUPE_UPLOAD_ID);
+
+        // mock S3
+        ObjectMetadata mockObjMetadata = mock(ObjectMetadata.class);
+        when(mockObjMetadata.getSSEAlgorithm()).thenReturn(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
+
+        // execute
+        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
+
+        // Verify upload DAO and validation.
+        verify(mockUploadDao).uploadComplete(APP, UploadStatus.VALIDATION_IN_PROGRESS, upload);
         verify(mockUploadValidationService).validateUpload(TestConstants.TEST_STUDY, upload);
     }
 }

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 
 import org.joda.time.DateTime;
@@ -21,9 +22,12 @@ public interface UploadDao {
      *         the study of the user
      * @param healthCode
      *         user's health code
+     * @param originalUploadId
+     *         upload ID this upload is a duplicate of, or null if it's not a dupe
      * @return upload metadata of created upload
      */
-    Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId, @Nonnull String healthCode);
+    Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId,
+            @Nonnull String healthCode, @Nullable String originalUploadId);
 
     /**
      * Gets the upload metadata associated with this upload.
@@ -43,16 +47,20 @@ public interface UploadDao {
      * Get the uploads for an entire study in the indicated time range.
      */
     List<? extends Upload> getStudyUploads(@Nonnull StudyIdentifier studyId, @Nonnull DateTime startTime, @Nonnull DateTime endTime);
-    
+
     /**
      * Signals to the Bridge server that the file has been uploaded. This also kicks off upload validation.
      *
      * @param completedBy
      *         a string description of the client that is completing this upload (client, s3 listener, etc.)
+     * @param status
+     *         upload status of the completed status; is generally either VALIDATION_IN_PROGRESS if
+     *         we're kicking off validation or DUPLICATE if it's a duplicate
      * @param upload
      *         upload to mark as completed
      */
-    void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull Upload upload);
+    void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull UploadStatus status,
+            @Nonnull Upload upload);
 
     /**
      * Persists the validation status, message list, and health data record ID (if it exists) to the Upload metadata

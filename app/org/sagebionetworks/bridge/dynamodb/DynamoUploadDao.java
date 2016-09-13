@@ -6,6 +6,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -61,13 +62,15 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId, @Nonnull String healthCode) {
+    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId,
+            @Nonnull String healthCode, @Nullable String originalUploadId) {
         checkNotNull(uploadRequest, "Upload request is null");
         checkNotNull(studyId, "Study identifier is null");
         checkArgument(StringUtils.isNotBlank(healthCode), "Health code is null or blank");        
 
         // Always write new uploads to the new upload table.
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
+        upload.setDuplicateUploadId(originalUploadId);
         upload.setStudyId(studyId.getIdentifier());
         upload.setRequestedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(upload);
@@ -110,15 +113,17 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull Upload upload) {
+    public void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull UploadStatus status,
+            @Nonnull Upload upload) {
         DynamoUpload2 upload2 = (DynamoUpload2) upload;
 
-        upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
+        upload2.setStatus(status);
 
         // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
         upload2.setUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
         upload2.setCompletedOn(DateUtils.getCurrentMillisFromEpoch());
         upload2.setCompletedBy(completedBy);
+
         try {
             mapper.save(upload2);
         } catch (ConditionalCheckFailedException ex) {
