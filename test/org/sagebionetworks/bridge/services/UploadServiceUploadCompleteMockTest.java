@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.AP
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,6 +30,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 @SuppressWarnings("unchecked")
 public class UploadServiceUploadCompleteMockTest {
+    private static final String DUPE_UPLOAD_ID = "original-upload-id";
     private static final String TEST_BUCKET = "test-bucket";
     private static final String TEST_UPLOAD_ID = "test-upload";
 
@@ -42,6 +44,7 @@ public class UploadServiceUploadCompleteMockTest {
         // mock config
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST)).thenReturn(ImmutableList.of());
 
         // set up mocks - The actual behavior will vary with each test.
         mockS3Client = mock(AmazonS3.class);
@@ -67,6 +70,24 @@ public class UploadServiceUploadCompleteMockTest {
         svc.uploadComplete(TEST_STUDY, APP, upload);
 
         // Verify upload DAO and validation aren't called. Can skip S3 because we don't want to over-specify our tests.
+        verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
+    }
+
+    @Test
+    public void dupe() {
+        // Dupes are detected during the Create Upload call. By the time they get here, the upload is already marked
+        // with status=DUPLICATE and a dupe upload ID. Upload Complete trivially ignores these.
+
+        // set up input
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(TEST_UPLOAD_ID);
+        upload.setStatus(UploadStatus.DUPLICATE);
+        upload.setDuplicateUploadId(DUPE_UPLOAD_ID);
+
+        // execute
+        svc.uploadComplete(TEST_STUDY, APP, upload);
+
+        // Similarly, verify upload DAO and validation aren't called.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
     }
 

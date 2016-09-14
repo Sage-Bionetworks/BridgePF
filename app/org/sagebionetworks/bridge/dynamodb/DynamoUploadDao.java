@@ -6,6 +6,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -61,7 +62,8 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId, @Nonnull String healthCode) {
+    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId,
+            @Nonnull String healthCode, @Nullable String originalUploadId) {
         checkNotNull(uploadRequest, "Upload request is null");
         checkNotNull(studyId, "Study identifier is null");
         checkArgument(StringUtils.isNotBlank(healthCode), "Health code is null or blank");        
@@ -70,6 +72,13 @@ public class DynamoUploadDao implements UploadDao {
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
         upload.setStudyId(studyId.getIdentifier());
         upload.setRequestedOn(DateUtils.getCurrentMillisFromEpoch());
+
+        if (originalUploadId != null) {
+            // This is a dupe. Tag it as such.
+            upload.setDuplicateUploadId(originalUploadId);
+            upload.setStatus(UploadStatus.DUPLICATE);
+        }
+
         mapper.save(upload);
         return upload;
     }

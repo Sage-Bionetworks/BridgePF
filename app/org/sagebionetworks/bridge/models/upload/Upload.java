@@ -12,6 +12,9 @@ public interface Upload {
      */
     boolean canBeValidated();
 
+    /** The original ID that this upload is a duplicate of, or null if this upload is not a duplicate. */
+    String getDuplicateUploadId();
+
     /** Name of the file to upload. */
     String getFilename();
 

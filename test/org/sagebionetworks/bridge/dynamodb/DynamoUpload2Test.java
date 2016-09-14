@@ -40,6 +40,7 @@ public class DynamoUpload2Test {
         upload.setContentLength(10000L);
         upload.setContentMd5("abc");
         upload.setContentType("application/json");
+        upload.setDuplicateUploadId("original-upload-id");
         upload.setFilename("filename.zip");
         upload.setHealthCode("healthCode");
         upload.setRecordId("ABC");
@@ -55,6 +56,7 @@ public class DynamoUpload2Test {
         assertEquals(requestedOn.toString(), node.get("requestedOn").asText());
         assertEquals(completedOn.toString(), node.get("completedOn").asText());
         assertEquals(10000L, node.get("contentLength").asLong());
+        assertEquals("original-upload-id", node.get("duplicateUploadId").textValue());
         assertEquals("succeeded", node.get("status").asText());
         assertEquals("2016-10-10", node.get("uploadDate").asText());
         assertEquals("DEF", node.get("uploadId").asText());

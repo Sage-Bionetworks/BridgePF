@@ -37,6 +37,7 @@ public class DynamoUpload2 implements Upload {
     private long contentLength;
     private String contentMd5;
     private String contentType;
+    private String duplicateUploadId;
     private String filename;
     private String healthCode;
     private String recordId;
@@ -103,6 +104,17 @@ public class DynamoUpload2 implements Upload {
     /** @see #getContentType */
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getDuplicateUploadId() {
+        return duplicateUploadId;
+    }
+
+    /** @see #getDuplicateUploadId */
+    public void setDuplicateUploadId(String duplicateUploadId) {
+        this.duplicateUploadId = duplicateUploadId;
     }
 
     /** {@inheritDoc} */

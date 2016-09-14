@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -40,6 +41,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoUploadDaoTest {
     private static final DateTime MOCK_NOW = DateTime.parse("2016-04-12T15:00:00-0700");
+    private static final String ORIGINAL_UPLOAD_ID = "original-upload-id";
     private static final String TEST_HEALTH_CODE = "test-health-code";
     private static final int UPLOAD_CONTENT_LENGTH = 1213;
     private static final String UPLOAD_CONTENT_MD5 = "fFROLXJeXfzQvXYhJRKNfg==";
@@ -92,11 +94,12 @@ public class DynamoUploadDaoTest {
         UploadRequest uploadRequest = createRequest();
 
         // create upload
-        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE);
+        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE, null);
         assertUpload(upload);
         assertEquals(UploadStatus.REQUESTED, upload.getStatus());
         assertEquals(TEST_STUDY_IDENTIFIER, upload.getStudyId());
         assertNotNull(upload.getUploadId());
+        assertNull(upload.getDuplicateUploadId());
         uploadIds.add(upload.getUploadId());
 
         // get upload back from dao
@@ -123,7 +126,26 @@ public class DynamoUploadDaoTest {
         assertEquals(UploadStatus.VALIDATION_IN_PROGRESS, completedUpload.getStatus());
         assertEquals(MOCK_NOW.toLocalDate(), completedUpload.getUploadDate());
     }
-    
+
+    @Test
+    public void testDuplicate() throws Exception {
+        // Most of the stuff in this code path has already been tested in test(). So this simplified test tests the new
+        // parameters for dedupe logic.
+
+        UploadRequest uploadRequest = createRequest();
+
+        // create upload - We still care about study ID and requestedOn for reporting, as well as dupe attributes.
+        DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE,
+                ORIGINAL_UPLOAD_ID);
+        uploadIds.add(upload.getUploadId());
+        assertEquals(ORIGINAL_UPLOAD_ID, upload.getDuplicateUploadId());
+        assertEquals(UploadStatus.DUPLICATE, upload.getStatus());
+        assertEquals(TEST_STUDY_IDENTIFIER, upload.getStudyId());
+        assertEquals(MOCK_NOW.getMillis(), upload.getRequestedOn());
+
+        // We don't call Upload Complete in this scenario.
+    }
+
     @Test
     public void canRetrieveUploadRecords() throws Exception {
         int numUploads = 2;
@@ -131,7 +153,7 @@ public class DynamoUploadDaoTest {
         for (int i = 0; i < numUploads; i++) {
             String healthcode = "code" + i;
             UploadRequest uploadRequest = createRequest();
-            Upload upload = dao.createUpload(uploadRequest, TEST_STUDY, healthcode);
+            Upload upload = dao.createUpload(uploadRequest, TEST_STUDY, healthcode, null);
             String uploadId = upload.getUploadId();
 
             uploadIds.add(uploadId);
