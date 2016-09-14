@@ -261,23 +261,11 @@ public class ParticipantControllerTest {
     
     @Test
     public void createParticipant() throws Exception {
-        IdentifierHolder holder = new IdentifierHolder("ABCD");
+        IdentifierHolder holder = setUpCreateParticipant();
         doReturn(holder).when(participantService).createParticipant(eq(study), any(), any(StudyParticipant.class), eq(true));
         
-        study.getUserProfileAttributes().add("phone");
-        mockPlayContextWithJson(createJson("{'firstName':'firstName',"+
-                "'lastName':'lastName',"+
-                "'email':'email@email.com',"+
-                "'externalId':'externalId',"+
-                "'password':'newUserPassword',"+
-                "'sharingScope':'sponsors_and_partners',"+
-                "'notifyByEmail':true,"+
-                "'dataGroups':['group2','group1'],"+
-                "'attributes':{'phone':'123456789'},"+
-                "'languages':['en','fr']}"));
-        
-        Result result = controller.createParticipant();
-        
+        Result result = controller.createParticipant("true");
+
         assertEquals(201, result.status());
         String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
         assertEquals(holder.getIdentifier(), id);
@@ -295,6 +283,36 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
         assertEquals("123456789", participant.getAttributes().get("phone"));
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
+    }
+    
+    @Test
+    public void createParticipantWithoutEmailVerification() throws Exception {
+        IdentifierHolder holder = setUpCreateParticipant();
+        doReturn(holder).when(participantService).createParticipant(eq(study), any(), any(StudyParticipant.class), eq(false));
+        
+        Result result = controller.createParticipant("false");
+        
+        String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
+        assertEquals(holder.getIdentifier(), id);
+        
+        verify(participantService).createParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture(), eq(false));
+    }
+
+    private IdentifierHolder setUpCreateParticipant() throws Exception {
+        IdentifierHolder holder = new IdentifierHolder("ABCD");
+        
+        study.getUserProfileAttributes().add("phone");
+        mockPlayContextWithJson(createJson("{'firstName':'firstName',"+
+                "'lastName':'lastName',"+
+                "'email':'email@email.com',"+
+                "'externalId':'externalId',"+
+                "'password':'newUserPassword',"+
+                "'sharingScope':'sponsors_and_partners',"+
+                "'notifyByEmail':true,"+
+                "'dataGroups':['group2','group1'],"+
+                "'attributes':{'phone':'123456789'},"+
+                "'languages':['en','fr']}"));
+        return holder;
     }
 
     @Test
