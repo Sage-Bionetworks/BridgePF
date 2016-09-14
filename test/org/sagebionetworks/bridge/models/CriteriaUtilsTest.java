@@ -286,6 +286,27 @@ public class CriteriaUtilsTest {
         context = getContextWithLanguage("EN");
         assertTrue(CriteriaUtils.matchCriteria(context, criteria));
     }
+    
+    // We had a report that this was not working so I mocked this out... it filters correctly.
+    @Test
+    public void testThatMoleMapperConfigurationWorks() {
+        ClientInfo info = ClientInfo.parseUserAgentString("MoleMapper/4 (iPhone 6S+; iPhone OS/9.3.4) BridgeSDK/7");
+        
+        Criteria oldCriteria = Criteria.create();
+        oldCriteria.setMinAppVersion("iPhone OS", 0);
+        oldCriteria.setMaxAppVersion("iPhone OS", 3);
+        
+        oldCriteria.setMinAppVersion("Android", 0);
+        oldCriteria.setMaxAppVersion("Android", 0);
+        
+        CriteriaContext context = getContext(info);
+        assertFalse(CriteriaUtils.matchCriteria(context, oldCriteria));
+        
+        Criteria newCriteria = Criteria.create();
+        newCriteria.setMinAppVersion("iPhone OS", 4);
+        
+        assertTrue(CriteriaUtils.matchCriteria(context, newCriteria));
+    }
 
     private Criteria getCriteria(Set<String> required, Set<String> prohibited, String os, Integer min, Integer max) {
         Criteria criteria = Criteria.create();
