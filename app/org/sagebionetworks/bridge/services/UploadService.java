@@ -139,15 +139,20 @@ public class UploadService {
         DateTime uploadRequestedOn = DateUtils.getCurrentDateTime();
         String originalUploadId = null;
         UploadStatus originalUploadStatus = null;
-        try {
-            originalUploadId = uploadDedupeDao.getDuplicate(participant.getHealthCode(), uploadMd5, uploadRequestedOn);
-            if (originalUploadId != null) {
-                Upload originalUpload = uploadDao.getUpload(originalUploadId);
-                originalUploadStatus = originalUpload.getStatus();
+
+        // Dedupe logic gated on whitelist.
+        if (!dupeStudyWhitelist.contains(studyId.getIdentifier())) {
+            try {
+                originalUploadId = uploadDedupeDao.getDuplicate(participant.getHealthCode(), uploadMd5,
+                        uploadRequestedOn);
+                if (originalUploadId != null) {
+                    Upload originalUpload = uploadDao.getUpload(originalUploadId);
+                    originalUploadStatus = originalUpload.getStatus();
+                }
+            } catch (RuntimeException ex) {
+                // Don't want dedupe logic to fail the upload. Log an error and swallow the exception.
+                logger.error("Error deduping upload: " + ex.getMessage(), ex);
             }
-        } catch (RuntimeException ex) {
-            // Don't want dedupe logic to fail the upload. Log an error and swallow the exception.
-            logger.error("Error deduping upload: " + ex.getMessage(), ex);
         }
 
         String uploadId;
@@ -339,13 +344,8 @@ public class UploadService {
             logger.error("Missing S3 server-side encryption (SSE) for presigned upload " + uploadId + ".");
         }
 
-        // If it's a dupe, we use Dupe status instead of Validation_In_Progress. (This is for bookkeeping purposes.)
-        boolean isDupe = isDupe(studyId, upload);
-        UploadStatus status = isDupe ? UploadStatus.DUPLICATE : UploadStatus.VALIDATION_IN_PROGRESS;
-
-        // Update status and timestamps in the upload DDB entry.
         try {
-            uploadDao.uploadComplete(completedBy, status, upload);
+            uploadDao.uploadComplete(completedBy, upload);
         } catch (ConcurrentModificationException ex) {
             // The old workflow is the app calls uploadComplete. The new workflow has an S3 trigger to call
             // uploadComplete. During the transition, it's very likely that this will be called twice, sometimes
@@ -357,27 +357,8 @@ public class UploadService {
             return;
         }
 
-        // kick off upload validation (ignore if dupe)
-        if (!isDupe) {
-            uploadValidationService.validateUpload(studyId, upload);
-        }
-    }
-
-    // Helper method that encapsulates dedupe logic. Takes into account whether the upload was tagged with a dupe ID as
-    // well as the server configuration.
-    private boolean isDupe(StudyIdentifier studyId, Upload upload) {
-        if (upload.getDuplicateUploadId() == null) {
-            // No dupe upload ID registered. Not a dupe.
-            return false;
-        }
-
-        if (dupeStudyWhitelist.contains(studyId.getIdentifier())) {
-            // Whitelist says let the upload through regardless of dedupe logic.
-            return false;
-        }
-
-        // Has a dupe upload ID, not whitelisted. Is a dupe.
-        return true;
+        // kick off upload validation
+        uploadValidationService.validateUpload(studyId, upload);
     }
 
     @FunctionalInterface

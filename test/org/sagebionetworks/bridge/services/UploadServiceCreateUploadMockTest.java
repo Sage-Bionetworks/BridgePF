@@ -16,6 +16,7 @@ import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -85,6 +86,7 @@ public class UploadServiceCreateUploadMockTest {
         // mock config
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST)).thenReturn(ImmutableList.of());
 
         // mock upload DAOs. (The tests will mock the calls, since they vary with each test.)
         mockUploadDao = mock(UploadDao.class);
@@ -172,6 +174,30 @@ public class UploadServiceCreateUploadMockTest {
         // verify we create the upload, but we don't register a dupe
         verify(mockUploadDao).createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE, TEST_ORIGINAL_UPLOAD_ID);
         verify(mockUploadDedupeDao, never()).registerUpload(any(), any(), any(), any());
+    }
+
+    @Test
+    public void dupeWhitelisted() {
+        // If the current study is whitelisted for dupes, then all 3 cases (not dupe, incomplete dupe, complete dupe)
+        // look exactly the same. We have no way of knowing whether something is a dupe or not, because we never look.
+
+        // mock config with dupe study whitelist
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST)).thenReturn(ImmutableList.of(
+                TestConstants.TEST_STUDY_IDENTIFIER));
+        svc.setConfig(mockConfig);
+
+        // mock upload DAO
+        when(mockUploadDao.createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE, null)).thenReturn(TEST_UPLOAD);
+
+        testUpload(TEST_UPLOAD_ID);
+
+        // verify we created and registered the dupe; verify we never queried for dupes
+        verify(mockUploadDedupeDao, never()).getDuplicate(any(), any(), any());
+        verify(mockUploadDao).createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE, null);
+        verify(mockUploadDedupeDao).registerUpload(TEST_HEALTH_CODE, TEST_UPLOAD_MD5, TEST_UPLOAD_REQUESTED_ON,
+                TEST_UPLOAD_ID);
     }
 
     @Test

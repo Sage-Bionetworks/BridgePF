@@ -53,14 +53,10 @@ public interface UploadDao {
      *
      * @param completedBy
      *         a string description of the client that is completing this upload (client, s3 listener, etc.)
-     * @param status
-     *         upload status of the completed status; is generally either VALIDATION_IN_PROGRESS if
-     *         we're kicking off validation or DUPLICATE if it's a duplicate
      * @param upload
      *         upload to mark as completed
      */
-    void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull UploadStatus status,
-            @Nonnull Upload upload);
+    void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull Upload upload);
 
     /**
      * Persists the validation status, message list, and health data record ID (if it exists) to the Upload metadata

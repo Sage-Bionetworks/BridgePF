@@ -74,6 +74,24 @@ public class UploadServiceUploadCompleteMockTest {
     }
 
     @Test
+    public void dupe() {
+        // Dupes are detected during the Create Upload call. By the time they get here, the upload is already marked
+        // with status=DUPLICATE and a dupe upload ID. Upload Complete trivially ignores these.
+
+        // set up input
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(TEST_UPLOAD_ID);
+        upload.setStatus(UploadStatus.DUPLICATE);
+        upload.setDuplicateUploadId(DUPE_UPLOAD_ID);
+
+        // execute
+        svc.uploadComplete(TEST_STUDY, APP, upload);
+
+        // Similarly, verify upload DAO and validation aren't called.
+        verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
+    }
+
+    @Test
     public void notFoundInS3() {
         // set up input
         DynamoUpload2 upload = new DynamoUpload2();
@@ -122,8 +140,7 @@ public class UploadServiceUploadCompleteMockTest {
         when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
 
         // mock uploadDao.uploadComplete()
-        doThrow(ConcurrentModificationException.class).when(mockUploadDao).uploadComplete(APP,
-                UploadStatus.VALIDATION_IN_PROGRESS, upload);
+        doThrow(ConcurrentModificationException.class).when(mockUploadDao).uploadComplete(APP, upload);
 
         // execute
         svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
@@ -148,56 +165,7 @@ public class UploadServiceUploadCompleteMockTest {
         svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
 
         // Verify upload DAO and validation.
-        verify(mockUploadDao).uploadComplete(APP, UploadStatus.VALIDATION_IN_PROGRESS, upload);
-        verify(mockUploadValidationService).validateUpload(TestConstants.TEST_STUDY, upload);
-    }
-
-    @Test
-    public void dupeCase() {
-        // set up input
-        DynamoUpload2 upload = new DynamoUpload2();
-        upload.setUploadId(TEST_UPLOAD_ID);
-        upload.setStatus(UploadStatus.REQUESTED);
-        upload.setDuplicateUploadId(DUPE_UPLOAD_ID);
-
-        // mock S3
-        ObjectMetadata mockObjMetadata = mock(ObjectMetadata.class);
-        when(mockObjMetadata.getSSEAlgorithm()).thenReturn(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
-
-        // execute
-        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
-
-        // Verify upload DAO and validation.
-        verify(mockUploadDao).uploadComplete(APP, UploadStatus.DUPLICATE, upload);
-        verify(mockUploadValidationService, never()).validateUpload(any(StudyIdentifier.class), any(Upload.class));
-    }
-
-    @Test
-    public void dupeWhitelisted() {
-        // reset mock config to include "api" in the dupe study whitelist
-        BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
-        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST)).thenReturn(ImmutableList.of(
-                TestConstants.TEST_STUDY_IDENTIFIER));
-        svc.setConfig(mockConfig);
-
-        // set up input
-        DynamoUpload2 upload = new DynamoUpload2();
-        upload.setUploadId(TEST_UPLOAD_ID);
-        upload.setStatus(UploadStatus.REQUESTED);
-        upload.setDuplicateUploadId(DUPE_UPLOAD_ID);
-
-        // mock S3
-        ObjectMetadata mockObjMetadata = mock(ObjectMetadata.class);
-        when(mockObjMetadata.getSSEAlgorithm()).thenReturn(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
-
-        // execute
-        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
-
-        // Verify upload DAO and validation.
-        verify(mockUploadDao).uploadComplete(APP, UploadStatus.VALIDATION_IN_PROGRESS, upload);
+        verify(mockUploadDao).uploadComplete(APP, upload);
         verify(mockUploadValidationService).validateUpload(TestConstants.TEST_STUDY, upload);
     }
 }

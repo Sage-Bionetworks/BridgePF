@@ -70,9 +70,15 @@ public class DynamoUploadDao implements UploadDao {
 
         // Always write new uploads to the new upload table.
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
-        upload.setDuplicateUploadId(originalUploadId);
         upload.setStudyId(studyId.getIdentifier());
         upload.setRequestedOn(DateUtils.getCurrentMillisFromEpoch());
+
+        if (originalUploadId != null) {
+            // This is a dupe. Tag it as such.
+            upload.setDuplicateUploadId(originalUploadId);
+            upload.setStatus(UploadStatus.DUPLICATE);
+        }
+
         mapper.save(upload);
         return upload;
     }
@@ -113,17 +119,15 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull UploadStatus status,
-            @Nonnull Upload upload) {
+    public void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull Upload upload) {
         DynamoUpload2 upload2 = (DynamoUpload2) upload;
 
-        upload2.setStatus(status);
+        upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
 
         // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
         upload2.setUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
         upload2.setCompletedOn(DateUtils.getCurrentMillisFromEpoch());
         upload2.setCompletedBy(completedBy);
-
         try {
             mapper.save(upload2);
         } catch (ConditionalCheckFailedException ex) {

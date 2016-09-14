@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -98,6 +99,7 @@ public class DynamoUploadDaoTest {
         assertEquals(UploadStatus.REQUESTED, upload.getStatus());
         assertEquals(TEST_STUDY_IDENTIFIER, upload.getStudyId());
         assertNotNull(upload.getUploadId());
+        assertNull(upload.getDuplicateUploadId());
         uploadIds.add(upload.getUploadId());
 
         // get upload back from dao
@@ -108,11 +110,11 @@ public class DynamoUploadDaoTest {
         DynamoUpload2 fetchedUpload2 = (DynamoUpload2) dao.getUpload(upload.getUploadId());
 
         // upload complete
-        dao.uploadComplete(UploadCompletionClient.S3_WORKER, UploadStatus.VALIDATION_IN_PROGRESS, fetchedUpload);
+        dao.uploadComplete(UploadCompletionClient.S3_WORKER, fetchedUpload);
 
         // second call to upload complete throws ConcurrentModificationException
         try {
-            dao.uploadComplete(UploadCompletionClient.APP, UploadStatus.VALIDATION_IN_PROGRESS, fetchedUpload2);
+            dao.uploadComplete(UploadCompletionClient.APP, fetchedUpload2);
             fail("expected exception");
         } catch (ConcurrentModificationException ex) {
             // expected exception
@@ -132,22 +134,16 @@ public class DynamoUploadDaoTest {
 
         UploadRequest uploadRequest = createRequest();
 
-        // create upload - We still care about requestedOn for reporting.
+        // create upload - We still care about study ID and requestedOn for reporting, as well as dupe attributes.
         DynamoUpload2 upload = (DynamoUpload2) dao.createUpload(uploadRequest, TEST_STUDY, TEST_HEALTH_CODE,
                 ORIGINAL_UPLOAD_ID);
         uploadIds.add(upload.getUploadId());
         assertEquals(ORIGINAL_UPLOAD_ID, upload.getDuplicateUploadId());
+        assertEquals(UploadStatus.DUPLICATE, upload.getStatus());
+        assertEquals(TEST_STUDY_IDENTIFIER, upload.getStudyId());
         assertEquals(MOCK_NOW.getMillis(), upload.getRequestedOn());
 
-        // upload complete
-        dao.uploadComplete(UploadCompletionClient.S3_WORKER, UploadStatus.DUPLICATE, upload);
-
-        // fetch completed upload - Similarly, We still care about uploadDate and createdOn.
-        DynamoUpload2 completedUpload = (DynamoUpload2) dao.getUpload(upload.getUploadId());
-        assertEquals(UploadStatus.DUPLICATE, completedUpload.getStatus());
-        assertEquals(MOCK_NOW.toLocalDate(), completedUpload.getUploadDate());
-        assertEquals(MOCK_NOW.getMillis(), completedUpload.getCompletedOn());
-        assertEquals(UploadCompletionClient.S3_WORKER, completedUpload.getCompletedBy());
+        // We don't call Upload Complete in this scenario.
     }
 
     @Test
