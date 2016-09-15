@@ -94,22 +94,6 @@ public class UploadFieldDefinitionTest {
     }
 
     @Test
-    public void fieldNameSanitization() {
-        // Don't need to exhaustively test all sanitizations, just that sanitization happens.
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName(".foo..bar")
-                .withType(UploadFieldType.STRING).build();
-        assertEquals("_foo.bar", fieldDef.getName());
-    }
-
-    @Test
-    public void choiceNameSanitization() {
-        // Similarly
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("saniTest")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("-bar", "!@baz#$").build();
-        assertEquals(ImmutableList.of("_bar", "__baz__"), fieldDef.getMultiChoiceAnswerList());
-    }
-
-    @Test
     public void testSerialization() throws Exception {
         // start with JSON
         String jsonText = "{\n" +

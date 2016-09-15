@@ -325,7 +325,8 @@ public class DynamoUploadSchemaDaoMockTest {
 
         assertEquals("single-choice", fieldDefList.get(2).getName());
         assertEquals(UploadFieldType.SINGLE_CHOICE, fieldDefList.get(2).getType());
-        assertEquals(6, fieldDefList.get(2).getMaxLength().intValue());
+        assertEquals(DynamoUploadSchemaDao.SINGLE_CHOICE_DEFAULT_LENGTH, fieldDefList.get(2).getMaxLength()
+                .intValue());
 
         assertEquals("duration", fieldDefList.get(3).getName());
         assertEquals(UploadFieldType.INT, fieldDefList.get(3).getType());
@@ -371,6 +372,71 @@ public class DynamoUploadSchemaDaoMockTest {
 
         assertEquals("timestamp", fieldDefList.get(15).getName());
         assertEquals(UploadFieldType.TIMESTAMP, fieldDefList.get(15).getType());
+    }
+
+    @Test
+    public void singleChoiceLengthTest() {
+        DynamoUploadSchemaDao.setSingleChoiceDefaultLength(2);
+        try {
+            List<SurveyElement> surveyElementList = new ArrayList<>();
+
+            // single-choice, short
+            {
+                MultiValueConstraints constraints = new MultiValueConstraints();
+                constraints.setDataType(DataType.STRING);
+                constraints.setAllowMultiple(false);
+                constraints.setEnumeration(ImmutableList.of(new SurveyQuestionOption("aa"),
+                        new SurveyQuestionOption("bb"), new SurveyQuestionOption("cc")));
+
+                SurveyQuestion q = new DynamoSurveyQuestion();
+                q.setIdentifier("single-choice-short");
+                q.setConstraints(constraints);
+                surveyElementList.add(q);
+            }
+
+            // single-choice, unbounded
+            {
+                MultiValueConstraints constraints = new MultiValueConstraints();
+                constraints.setDataType(DataType.STRING);
+                constraints.setAllowMultiple(false);
+                constraints.setEnumeration(ImmutableList.of(new SurveyQuestionOption("foo"),
+                        new SurveyQuestionOption("bar"), new SurveyQuestionOption("baz")));
+
+                SurveyQuestion q = new DynamoSurveyQuestion();
+                q.setIdentifier("single-choice-unbounded");
+                q.setConstraints(constraints);
+                surveyElementList.add(q);
+            }
+
+            Survey survey = makeSurveyWithElements(surveyElementList);
+
+            // Similarly, spy getUploadSchemaNoThrow(), createSchemaV4() and updateSchemaV4().
+            UploadSchema dummy = new DynamoUploadSchema();
+            DynamoUploadSchemaDao dao = spy(new DynamoUploadSchemaDao());
+            doReturn(null).when(dao).getUploadSchemaNoThrow(any(), any());
+            doReturn(dummy).when(dao).createSchemaRevisionV4(any(), any());
+
+            // set up test dao and execute - Most of this stuff is tested above, so just test result specific to this
+            // test
+            dao.createUploadSchemaFromSurvey(TestConstants.TEST_STUDY, survey, false);
+
+            // validate created schema - We only care about the specific fields.
+            ArgumentCaptor<UploadSchema> createdSchemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
+            verify(dao).createSchemaRevisionV4(eq(TestConstants.TEST_STUDY), createdSchemaCaptor.capture());
+            UploadSchema createdSchema = createdSchemaCaptor.getValue();
+            List<UploadFieldDefinition> fieldDefList = createdSchema.getFieldDefinitions();
+            assertEquals(2, fieldDefList.size());
+
+            assertEquals("single-choice-short", fieldDefList.get(0).getName());
+            assertEquals(UploadFieldType.SINGLE_CHOICE, fieldDefList.get(0).getType());
+            assertEquals(2, fieldDefList.get(0).getMaxLength().intValue());
+
+            assertEquals("single-choice-unbounded", fieldDefList.get(1).getName());
+            assertEquals(UploadFieldType.SINGLE_CHOICE, fieldDefList.get(1).getType());
+            assertTrue(fieldDefList.get(1).isUnboundedText());
+        } finally {
+            DynamoUploadSchemaDao.resetSingleChoiceDefaultLength();
+        }
     }
 
     private static DynamoUploadSchema makeSchemaForSurveyTests() {

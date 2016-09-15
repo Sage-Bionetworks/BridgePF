@@ -281,6 +281,26 @@ public class UploadSchemaValidatorTest {
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
+    @Test
+    public void keywordsAreValidChoiceValues() {
+        // Similarly
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("Test Schema");
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("multi-choice-q")
+                .withType(UploadFieldType.MULTI_CHOICE)
+                .withMultiChoiceAnswerList("true", "false", "select", "where").build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
     @Test(expected = InvalidEntityException.class)
     public void invalidMultiChoiceAnswer() {
         // Similarly
@@ -437,10 +457,6 @@ public class UploadSchemaValidatorTest {
                 .build());
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("baz.timezone")
                 .withType(UploadFieldType.STRING).build());
-        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("#underscore")
-                .withType(UploadFieldType.STRING).build());
-        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("!underscore")
-                .withType(UploadFieldType.STRING).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -451,7 +467,7 @@ public class UploadSchemaValidatorTest {
         } catch (InvalidEntityException ex) {
             thrownEx = ex;
         }
-        assertTrue(thrownEx.getMessage().contains("conflict in field names or sub-field names: _underscore, bar.bar, "
+        assertTrue(thrownEx.getMessage().contains("conflict in field names or sub-field names: bar.bar, "
                 + "bar.other, baz.timezone, foo-field"));
     }
 

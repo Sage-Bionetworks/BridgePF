@@ -36,22 +36,24 @@ public class UploadUtil {
     private static final Pattern FIELD_NAME_MULTIPLE_SPECIAL_CHARS_PATTERN = Pattern.compile("[\\-\\._ ]{2,}");
     private static final Pattern FIELD_NAME_SPECIAL_CHARS_PATTERN = Pattern.compile("[\\-\\._ ]");
     private static final Pattern FIELD_NAME_VALID_CHARS_PATTERN = Pattern.compile("[a-zA-Z0-9\\-\\._ ]+");
-    public static final String INVALID_FIELD_NAME_ERROR_MESSAGE = "must start and end with an alphanumeric character, "
-            + "can only contain alphanumeric characters, spaces, dashes, underscores, and periods, can't contain two "
-            + "or more non-alphanumeric characters in a row, and can't be a reserved keyword";
+    public static final String INVALID_ANSWER_CHOICE_ERROR_MESSAGE = "invalid value %s: must start and end with an " +
+            "alphanumeric character, can only contain alphanumeric characters, spaces, dashes, underscores, and " +
+            "periods, can't contain two or more non-alphanumeric characters in a row";
+    public static final String INVALID_FIELD_NAME_ERROR_MESSAGE = INVALID_ANSWER_CHOICE_ERROR_MESSAGE +
+            ", and can't be a reserved keyword";
 
     // List of reserved SQL keywords and Synapse keywords that can't be used as field names.
     private static final Set<String> RESERVED_FIELD_NAME_LIST = ImmutableSet.<String>builder().add("access", "add",
             "all", "alter", "and", "any", "as", "asc", "audit", "between", "by", "char", "check", "cluster", "column",
             "column_value", "comment", "compress", "connect", "create", "current", "date", "decimal", "default",
-            "delete", "desc", "distinct", "drop", "else", "exclusive", "exists", "file", "float", "for", "from",
+            "delete", "desc", "distinct", "drop", "else", "exclusive", "exists", "false", "file", "float", "for", "from",
             "grant", "group", "having", "identified", "immediate", "in", "increment", "index", "initial", "insert",
             "integer", "intersect", "into", "is", "level", "like", "lock", "long", "maxextents", "minus", "mlslabel",
             "mode", "modify", "nested_table_id", "noaudit", "nocompress", "not", "nowait", "null", "number", "of",
             "offline", "on", "online", "option", "or", "order", "pctfree", "prior", "public", "raw", "rename",
             "resource", "revoke", "row", "row_id", "row_version", "rowid", "rownum", "rows", "select", "session", "set",
             "share", "size", "smallint", "start", "successful", "synonym", "sysdate", "table", "then", "time", "to",
-            "trigger", "uid", "union", "unique", "update", "user", "validate", "values", "varchar", "varchar2", "view",
+            "trigger", "true", "uid", "union", "unique", "update", "user", "validate", "values", "varchar", "varchar2", "view",
             "whenever", "where", "with").build();
 
     /*
@@ -325,7 +327,6 @@ public class UploadUtil {
         // fileExtension - This is just a hint to BridgeEX for serializing the values. It doesn't affect the columns or
         //   validation.
         // mimeType - Similarly, this is also just a serialization hint.
-        // min/maxAppVersion - These will be dummied out. TODO remove this comment when no longer needed
 
         // Different types are obviously not compatible.
         // This is the most likely reason fields are incompatible. Check this first.
@@ -394,29 +395,23 @@ public class UploadUtil {
 
     /**
      * <p>
-     * Validates a schema field name or multi-choice answer. Since these become Synapse table fields, we need to
-     * validate them.
+     * Validates a survey answer choice. Since these become Synapse table fields, we need to validate them. For
+     * consistency, we want to apply the same rules to both single-choice and multi-choice.
      * </p>
      * <p>
      * Rules:
      * 1. must start and end with an alphanumeric character
      * 2. can only contain alphanumeric characters, spaces, dashes, underscores, and periods
      * 3. can't contain two or more non-alphanumeric characters in a row
-     * 4. can't be a reserved keyword
      * </p>
      *
      * @param name
      *         name to validate
      * @return true if valid, false otherwise
      */
-    public static boolean isValidSchemaFieldName(String name) {
+    public static boolean isValidAnswerChoice(String name) {
         // Blank names are invalid.
         if (StringUtils.isBlank(name)) {
-            return false;
-        }
-
-        // Can't be a reserved keyword
-        if (RESERVED_FIELD_NAME_LIST.contains(name)) {
             return false;
         }
 
@@ -439,6 +434,30 @@ public class UploadUtil {
 
         // Can't contain multiple special chars in a row.
         if (FIELD_NAME_MULTIPLE_SPECIAL_CHARS_PATTERN.matcher(name).find()) {
+            return false;
+        }
+
+        // Exhausted all our rules, so it must be valid.
+        return true;
+    }
+
+    /**
+     * Validates a schema field name or survey question name (identifier). This includes all the same rules as
+     * {@link #isValidAnswerChoice}, and in addition, the name can't be a reserved keyword.
+     *
+     * @param name
+     *         name to validate
+     * @return true if valid, false otherwise
+     */
+    public static boolean isValidSchemaFieldName(String name) {
+        // Valid schema field name follows all the same rules as a valid survey answer choice. (This also checks for
+        // nulls and blanks.)
+        if (!isValidAnswerChoice(name)) {
+            return false;
+        }
+
+        // In addition, it can't be a reserved keyword.
+        if (RESERVED_FIELD_NAME_LIST.contains(name)) {
             return false;
         }
 

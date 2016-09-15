@@ -76,6 +76,21 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
                     .put(DataType.DATETIME, UploadFieldType.TIMESTAMP)
                     .build();
 
+    // Default string length for single_choice field. This is needed to prevent single_choice questions from changing
+    // in length a lot. Package-scoped to facilitate unit tests.
+    static final int SINGLE_CHOICE_DEFAULT_LENGTH = 100;
+    private static int singleChoiceDefaultLength = SINGLE_CHOICE_DEFAULT_LENGTH;
+
+    /** Overrides the single_choice default length. Used for unit tests. */
+    static void setSingleChoiceDefaultLength(int singleChoiceDefaultLength) {
+        DynamoUploadSchemaDao.singleChoiceDefaultLength = singleChoiceDefaultLength;
+    }
+
+    /** Resets the singleChoiceDefaultLength and removes the override. Used for unit tests. */
+    static void resetSingleChoiceDefaultLength() {
+        DynamoUploadSchemaDao.singleChoiceDefaultLength = SINGLE_CHOICE_DEFAULT_LENGTH;
+    }
+
     private DynamoDBMapper mapper;
     private DynamoIndexHelper studyIdIndex;
 
@@ -262,7 +277,17 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
                 for (SurveyQuestionOption oneSurveyOption : multiValueConstraints.getEnumeration()) {
                     maxLength = Math.max(maxLength, oneSurveyOption.getValue().length());
                 }
-                fieldDefBuilder.withMaxLength(maxLength);
+
+                if (maxLength <= singleChoiceDefaultLength) {
+                    // If you update the single_choice field with longer answers, this changes the max length and
+                    // breaks the schema. As such, we'll need to "pad" the single_choice field to the default length
+                    // (100), so that Synapse tables don't need to be recreated.
+                    fieldDefBuilder.withMaxLength(singleChoiceDefaultLength);
+                } else {
+                    // If the choices are very long, we should just use an unbounded string. This unfortunately is not
+                    // searchable in Synapse, but it allows for stable survey schema revisions.
+                    fieldDefBuilder.withUnboundedText(true);
+                }
             }
         } else {
             // Get upload field type from the map.

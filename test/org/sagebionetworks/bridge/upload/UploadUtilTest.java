@@ -282,7 +282,7 @@ public class UploadUtilTest {
     }
 
     @Test
-    public void isValidFieldNameInvalid() {
+    public void invalidFieldNameAndAnswerChoice() {
         String[] testCases = {
                 null,
                 "",
@@ -301,18 +301,32 @@ public class UploadUtilTest {
                 "foo..bar",
                 "foo  bar",
                 "foo-_-bar",
-                "select",
-                "where",
-                "time",
         };
 
         for (String oneTestCase : testCases) {
-            assertFalse(oneTestCase + " should be invalid", UploadUtil.isValidSchemaFieldName(oneTestCase));
+            assertFalse(oneTestCase + " should be invalid answer choice", UploadUtil.isValidAnswerChoice(oneTestCase));
+            assertFalse(oneTestCase + " should be invalid field name", UploadUtil.isValidSchemaFieldName(oneTestCase));
         }
     }
 
     @Test
-    public void isValidFieldNameValid() {
+    public void invalidFieldNameValidAnswerChoice() {
+        String[] testCases = {
+                "select",
+                "where",
+                "time",
+                "true",
+                "false",
+        };
+
+        for (String oneTestCase : testCases) {
+            assertTrue(oneTestCase + " should be valid answer choice", UploadUtil.isValidAnswerChoice(oneTestCase));
+            assertFalse(oneTestCase + " should be invalid field name", UploadUtil.isValidSchemaFieldName(oneTestCase));
+        }
+    }
+
+    @Test
+    public void validFieldNameAndAnswerChoice() {
         String[] testCases = {
                 "foo",
                 "foo_bar",
@@ -323,7 +337,8 @@ public class UploadUtilTest {
         };
 
         for (String oneTestCase : testCases) {
-            assertTrue(oneTestCase + " should be valid", UploadUtil.isValidSchemaFieldName(oneTestCase));
+            assertTrue(oneTestCase + " should be valid answer choice", UploadUtil.isValidAnswerChoice(oneTestCase));
+            assertTrue(oneTestCase + " should be valid field name", UploadUtil.isValidSchemaFieldName(oneTestCase));
         }
     }
 
