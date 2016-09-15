@@ -213,14 +213,15 @@ public class SurveyValidatorTest {
 
     @Test
     public void questionIdentifierInvalid() {
+        String fieldName = "**invalid!q##";
         try {
             survey = new TestSurvey(SurveyValidatorTest.class, false);
-            survey.getElements().get(0).setIdentifier("**invalid!q##");
+            survey.getElements().get(0).setIdentifier(fieldName);
 
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("elements[0].identifier " + UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE,
+            assertEquals("elements[0].identifier " + String.format(UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE, fieldName),
                     errorFor(e, "elements[0].identifier"));
         }
     }
@@ -394,10 +395,23 @@ public class SurveyValidatorTest {
     }
 
     @Test
+    public void keywordsAreValidChoiceValues() {
+        List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption("true"),
+                new SurveyQuestionOption("false"), new SurveyQuestionOption("select"),
+                new SurveyQuestionOption("where"));
+
+        SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+        ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
+
+        Validate.entityThrowingException(validator, survey);
+    }
+
+    @Test
     public void multiValueWithOptionWithInvalidValue() {
+        String answerChoice = "@invalid#answer$";
         try {
             List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption("My Question", null,
-                    "@invalid#answer$", null));
+                    answerChoice, null));
 
             SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
             ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
@@ -405,7 +419,8 @@ public class SurveyValidatorTest {
             Validate.entityThrowingException(validator, survey);
             fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertEquals("value " + UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE,
+            assertEquals("elements[7].constraints.enumeration[0].value " +
+                            String.format(UploadUtil.INVALID_ANSWER_CHOICE_ERROR_MESSAGE, answerChoice),
                     errorFor(e, "elements[7].constraints.enumeration[0].value"));
         }
     }

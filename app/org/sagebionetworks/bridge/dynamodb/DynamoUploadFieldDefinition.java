@@ -12,7 +12,6 @@ import com.google.common.collect.ImmutableList;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
-import org.sagebionetworks.bridge.schema.SchemaUtils;
 
 /**
  * Dynamo DB implementation of UploadFieldDefinition. While there is nothing specific to Dynamo DB in this class, this
@@ -228,23 +227,14 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
                 required = true;
             }
 
-            // Sanitize the field name.
-            String sanitizedName = SchemaUtils.sanitizeFieldName(name);
-
             // If the answer list was specified, make an immutable copy.
             List<String> multiChoiceAnswerListCopy = null;
             if (multiChoiceAnswerList != null) {
-                ImmutableList.Builder<String> answerListBuilder = ImmutableList.builder();
-                for (String oneAnswer : multiChoiceAnswerList) {
-                    // Since multi-choice answers become part of Synapse column names, we should sanitize those too.
-                    answerListBuilder.add(SchemaUtils.sanitizeFieldName(oneAnswer));
-                }
-
-                multiChoiceAnswerListCopy = answerListBuilder.build();
+                multiChoiceAnswerListCopy = ImmutableList.copyOf(multiChoiceAnswerList);
             }
 
             return new DynamoUploadFieldDefinition(allowOtherChoices, fileExtension, mimeType, maxLength,
-                    multiChoiceAnswerListCopy, sanitizedName, required, type, unboundedText);
+                    multiChoiceAnswerListCopy, name, required, type, unboundedText);
         }
     }
 }

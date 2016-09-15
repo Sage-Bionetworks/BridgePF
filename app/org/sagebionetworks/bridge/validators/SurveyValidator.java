@@ -90,7 +90,7 @@ public class SurveyValidator implements Validator {
         if (isBlank(questionId)) {
             errors.rejectValue("identifier", "is required");
         } else if (!UploadUtil.isValidSchemaFieldName(questionId)) {
-            errors.rejectValue("identifier", UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE);
+            errors.rejectValue("identifier", String.format(UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE, questionId));
         }
 
         if (question.getUiHint() == null) {
@@ -234,8 +234,9 @@ public class SurveyValidator implements Validator {
                 }
 
                 String optionValue = oneOption.getValue();
-                if (!UploadUtil.isValidSchemaFieldName(optionValue)) {
-                    rejectField(errors, "value", UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE);
+                if (!UploadUtil.isValidAnswerChoice(optionValue)) {
+                    errors.rejectValue("value", String.format(UploadUtil.INVALID_ANSWER_CHOICE_ERROR_MESSAGE,
+                            optionValue));
                 }
 
                 // record values seen so far
