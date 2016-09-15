@@ -257,10 +257,7 @@ public class UploadHandlersEndToEndTest {
                 new DynamoUploadFieldDefinition.Builder().withName("BBB").withType(UploadFieldType.MULTI_CHOICE)
                         .withMultiChoiceAnswerList("fencing", "football", "running", "swimming", "3").build(),
                 new DynamoUploadFieldDefinition.Builder().withName("delicious").withType(UploadFieldType.MULTI_CHOICE)
-                        .withMultiChoiceAnswerList("Yes", "No").withAllowOtherChoices(true).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("$sanitize..me")
-                        .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("$dollar", "-dash", " space")
-                        .build());
+                        .withMultiChoiceAnswerList("Yes", "No").withAllowOtherChoices(true).build());
 
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setFieldDefinitions(fieldDefList);
@@ -289,9 +286,6 @@ public class UploadHandlersEndToEndTest {
                 "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
                 "   },{\n" +
                 "       \"filename\":\"delicious.json\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"$sanitize..me.json\",\n" +
                 "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
                 "   }],\n" +
                 "   \"surveyGuid\":\"survey-guid\",\n" +
@@ -327,18 +321,9 @@ public class UploadHandlersEndToEndTest {
                 "   \"endDate\":\"2015-04-02T03:27:09-07:00\"\n" +
                 "}";
 
-        String sanitizeMeJsonText = "{\n" +
-                "   \"questionType\":0,\n" +
-                "   \"choiceAnswers\":[\"$dollar\", \"-dash\", \" space\"],\n" +
-                "   \"startDate\":\"2015-04-02T03:27:05-07:00\",\n" +
-                "   \"questionTypeName\":\"MultipleChoice\",\n" +
-                "   \"item\":\"$sanitize..me\",\n" +
-                "   \"endDate\":\"2015-04-02T03:27:09-07:00\"\n" +
-                "}";
-
         Map<String, String> fileMap = ImmutableMap.<String, String>builder().put("info.json", infoJsonText)
                 .put("AAA.json", aaaJsonText).put("BBB.json", bbbJsonText).put("delicious.json", deliciousJsonText)
-                .put("$sanitize..me.json", sanitizeMeJsonText).build();
+                .build();
 
         // execute
         test(schema, survey, fileMap);
@@ -353,7 +338,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(2, record.getSchemaRevision());
 
         JsonNode dataNode = record.getData();
-        assertEquals(4, dataNode.size());
+        assertEquals(3, dataNode.size());
         assertEquals("Yes", dataNode.get("AAA").textValue());
 
         JsonNode bbbChoiceAnswersNode = dataNode.get("BBB");
@@ -366,12 +351,6 @@ public class UploadHandlersEndToEndTest {
         assertEquals(2, deliciousNode.size());
         assertEquals("Yes", deliciousNode.get(0).textValue());
         assertEquals("Maybe", deliciousNode.get(1).textValue());
-
-        JsonNode sanitizeMeChoiceAnswersNode = dataNode.get("_sanitize.me");
-        assertEquals(3, sanitizeMeChoiceAnswersNode.size());
-        assertEquals("_dollar", sanitizeMeChoiceAnswersNode.get(0).textValue());
-        assertEquals("_dash", sanitizeMeChoiceAnswersNode.get(1).textValue());
-        assertEquals("_space", sanitizeMeChoiceAnswersNode.get(2).textValue());
 
         // validate no uploads to S3
         verifyZeroInteractions(mockS3UploadHelper);
@@ -416,13 +395,7 @@ public class UploadHandlersEndToEndTest {
                 new DynamoUploadFieldDefinition.Builder().withName("record.json.QQQ").withType(UploadFieldType.TIME_V2)
                         .build(),
                 new DynamoUploadFieldDefinition.Builder().withName("record.json.arrr")
-                        .withType(UploadFieldType.TIMESTAMP).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.$sanitize..this..field")
-                    .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("$sanitize..blob..file")
-                        .withType(UploadFieldType.ATTACHMENT_V2).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("$sanitize..json..file.json")
-                        .withType(UploadFieldType.ATTACHMENT_V2).build());
+                        .withType(UploadFieldType.TIMESTAMP).build());
 
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setFieldDefinitions(fieldDefList);
@@ -452,12 +425,6 @@ public class UploadHandlersEndToEndTest {
                 "   },{\n" +
                 "       \"filename\":\"record.json\",\n" +
                 "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"$sanitize..blob..file\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"$sanitize..json..file.json\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
                 "   }],\n" +
                 "   \"item\":\"non-survey-schema\",\n" +
                 "   \"schemaRevision\":2,\n" +
@@ -485,19 +452,12 @@ public class UploadHandlersEndToEndTest {
                 "   \"OOO\":\"2.718\",\n" +
                 "   \"PPP\":1337,\n" +
                 "   \"QQQ\":\"2016-06-03T19:21:35.378-0700\",\n" +
-                "   \"arrr\":\"2016-06-03T18:12:34.567+0900\",\n" +
-                "   \"$sanitize..this..field\":\"$text..values..don't..sanitize\"\n" +
+                "   \"arrr\":\"2016-06-03T18:12:34.567+0900\"\n" +
                 "}";
-
-        String sanitizeBlobFileContent = "#blob#file#not#sanitized..";
-
-        String sanitizeJsonFileContent = "[\"  json!@not#$sanitized  \"]";
 
         Map<String, String> fileMap = ImmutableMap.<String, String>builder().put("info.json", infoJsonText)
                 .put("CCC.txt", cccTxtContent).put("DDD.csv", dddCsvContent).put("EEE.json", eeeJsonContent)
                 .put("FFF.json", fffJsonContent).put("GGG.txt", gggTxtContent).put("record.json", recordJsonContent)
-                .put("$sanitize..blob..file", sanitizeBlobFileContent)
-                .put("$sanitize..json..file.json", sanitizeJsonFileContent)
                 .build();
 
         // execute
@@ -513,7 +473,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(2, record.getSchemaRevision());
 
         JsonNode dataNode = record.getData();
-        assertEquals(18, dataNode.size());
+        assertEquals(15, dataNode.size());
         assertTrue(dataNode.get("record.json.III").booleanValue());
         assertEquals("2016-06-03", dataNode.get("record.json.JJJ").textValue());
         assertEquals("PT1H", dataNode.get("record.json.LLL").textValue());
@@ -523,7 +483,6 @@ public class UploadHandlersEndToEndTest {
         assertEquals("19:21:35.378", dataNode.get("record.json.QQQ").textValue());
         assertEquals(DateTime.parse("2016-06-03T18:12:34.567+0900"),
                 DateTime.parse(dataNode.get("record.json.arrr").textValue()));
-        assertEquals("$text..values..don't..sanitize", dataNode.get("record.json._sanitize.this.field").textValue());
 
         JsonNode nnnNode = dataNode.get("record.json.NNN");
         assertEquals(2, nnnNode.size());
@@ -562,18 +521,10 @@ public class UploadHandlersEndToEndTest {
         assertEquals("inside", hhhNode.get(1).textValue());
         assertEquals("file", hhhNode.get(2).textValue());
 
-        String sanitizeBlobFileAttachmentId = dataNode.get("_sanitize.blob.file").textValue();
-        validateTextAttachment(sanitizeBlobFileContent, sanitizeBlobFileAttachmentId);
-
-        String sanitizeJsonFileAttachmentId = dataNode.get("_sanitize.json.file.json").textValue();
-        JsonNode sanitizeJsonNode = getAttachmentAsJson(sanitizeJsonFileAttachmentId);
-        assertEquals(1, sanitizeJsonNode.size());
-        assertEquals("  json!@not#$sanitized  ", sanitizeJsonNode.get(0).textValue());
-
         // verify attachments in HealthDataAttachments - Of all the attributes, the only one that actually matters is
         // the record ID
         ArgumentCaptor<HealthDataAttachment> attachmentCaptor = ArgumentCaptor.forClass(HealthDataAttachment.class);
-        verify(mockHealthDataService, times(8)).createOrUpdateAttachment(attachmentCaptor.capture());
+        verify(mockHealthDataService, times(6)).createOrUpdateAttachment(attachmentCaptor.capture());
         for (HealthDataAttachment oneAttachment : attachmentCaptor.getAllValues()) {
             assertEquals(RECORD_ID, oneAttachment.getRecordId());
         }

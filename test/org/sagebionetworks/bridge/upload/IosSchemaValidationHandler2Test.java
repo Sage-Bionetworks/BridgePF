@@ -82,8 +82,6 @@ public class IosSchemaValidationHandler2Test {
                         .build(),
                 new DynamoUploadFieldDefinition.Builder().withName("baz")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("$sanitize..me").withType(UploadFieldType.STRING)
-                        .build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
@@ -99,8 +97,6 @@ public class IosSchemaValidationHandler2Test {
                 new DynamoUploadFieldDefinition.Builder().withName("string.json.string")
                         .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("string.json.intAsString")
-                        .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("string.json.$sanitize..this..field")
                         .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("blob.json.blob")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
@@ -123,10 +119,6 @@ public class IosSchemaValidationHandler2Test {
                 new DynamoUploadFieldDefinition.Builder().withName("nonJsonFile.txt")
                         .withType(UploadFieldType.ATTACHMENT_BLOB).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("jsonFile.json")
-                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("$sanitize..blob..file")
-                        .withType(UploadFieldType.ATTACHMENT_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("$sanitize..json..file.json")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
@@ -211,9 +203,6 @@ public class IosSchemaValidationHandler2Test {
                 "   },{\n" +
                 "       \"filename\":\"baz.json\",\n" +
                 "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"$sanitize..me.json\",\n" +
-                "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "   }],\n" +
                 "   \"item\":\"test-survey\"\n" +
                 "}";
@@ -250,22 +239,11 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode bazAnswerJsonNode = BridgeObjectMapper.get().readTree(bazAnswerJsonText);
 
-        String sanitizeMeAnswerJsonText = "{\n" +
-                "   \"questionType\":0,\n" +
-                "   \"textAnswer\":\"value doesn't matter\",\n" +
-                "   \"startDate\":\"2015-04-02T03:23:59-07:00\",\n" +
-                "   \"questionTypeName\":\"Text\",\n" +
-                "   \"item\":\"$sanitize..me\",\n" +
-                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
-                "}";
-        JsonNode sanitizeMeAnswerJsonNode = BridgeObjectMapper.get().readTree(sanitizeMeAnswerJsonText);
-
         context.setJsonDataMap(ImmutableMap.of(
                 "info.json", infoJsonNode,
                 "foo.json", fooAnswerJsonNode,
                 "bar.json", barAnswerJsonNode,
-                "baz.json", bazAnswerJsonNode,
-                "$sanitize..me.json", sanitizeMeAnswerJsonNode));
+                "baz.json", bazAnswerJsonNode));
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
 
         // execute
@@ -281,11 +259,10 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(4, dataNode.size());
+        assertEquals(3, dataNode.size());
         assertEquals("foo answer", dataNode.get("foo").textValue());
         assertEquals(42, dataNode.get("bar").intValue());
         assertEquals("lb", dataNode.get("bar_unit").textValue());
-        assertEquals("value doesn't matter", dataNode.get("_sanitize.me").textValue());
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
         assertEquals(1, attachmentMap.size());
@@ -417,8 +394,7 @@ public class IosSchemaValidationHandler2Test {
 
         String stringJsonText = "{\n" +
                 "   \"string\":\"This is a string\",\n" +
-                "   \"intAsString\":42,\n" +
-                "   \"$sanitize..this..field\":\"sanitize key, not value\"\n" +
+                "   \"intAsString\":42\n" +
                 "}";
         JsonNode stringJsonNode = BridgeObjectMapper.get().readTree(stringJsonText);
 
@@ -453,11 +429,10 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(5, dataNode.size());
+        assertEquals(4, dataNode.size());
         assertEquals("This is a string", dataNode.get("string.json.string").textValue());
         assertTrue(dataNode.get("string.json.intAsString").isTextual());
         assertEquals("42", dataNode.get("string.json.intAsString").textValue());
-        assertEquals("sanitize key, not value", dataNode.get("string.json._sanitize.this.field").textValue());
         assertEquals("2015-12-25", dataNode.get("date.json.date").textValue());
         assertEquals("2015-12-25", dataNode.get("date.json.timestampAsDate").textValue());
 
@@ -484,12 +459,6 @@ public class IosSchemaValidationHandler2Test {
                 "   },{\n" +
                 "       \"filename\":\"nonJsonFile.txt\",\n" +
                 "       \"timestamp\":\"2015-04-13T18:58:21-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"$sanitize..blob..file\",\n" +
-                "       \"timestamp\":\"2015-04-13T18:58:21-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"$sanitize..json..file.json\",\n" +
-                "       \"timestamp\":\"2015-04-13T18:58:21-07:00\"\n" +
                 "   }],\n" +
                 "   \"item\":\"non-json-data\"\n" +
                 "}";
@@ -500,15 +469,11 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode jsonJsonNode = BridgeObjectMapper.get().readTree(jsonJsonText);
 
-        JsonNode sanitizeJsonNode = BridgeObjectMapper.get().readTree("[\"content doesn't matter here\"]");
-
         context.setJsonDataMap(ImmutableMap.of(
                 "info.json", infoJsonNode,
-                "jsonFile.json", jsonJsonNode,
-                "$sanitize..json..file.json", sanitizeJsonNode));
+                "jsonFile.json", jsonJsonNode));
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
                 .put("nonJsonFile.txt", "This is non-JSON data".getBytes(Charsets.UTF_8))
-                .put("$sanitize..blob..file", "Nor here".getBytes(Charsets.UTF_8))
                 .build());
 
         // execute
@@ -527,20 +492,13 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(0, dataNode.size());
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(4, attachmentMap.size());
+        assertEquals(2, attachmentMap.size());
 
         JsonNode jsonJsonAttachmentNode = BridgeObjectMapper.get().readTree(attachmentMap.get("jsonFile.json"));
         assertEquals(1, jsonJsonAttachmentNode.size());
         assertEquals("This is JSON data", jsonJsonAttachmentNode.get("field").textValue());
 
-        JsonNode sanitizeJsonAttachmentNode = BridgeObjectMapper.get().readTree(attachmentMap.get(
-                "_sanitize.json.file.json"));
-        assertEquals(1, sanitizeJsonAttachmentNode.size());
-        assertEquals("content doesn't matter here", sanitizeJsonAttachmentNode.get(0).textValue());
-
         assertEquals("This is non-JSON data", new String(attachmentMap.get("nonJsonFile.txt"), Charsets.UTF_8));
-
-        assertEquals("Nor here", new String(attachmentMap.get("_sanitize.blob.file"), Charsets.UTF_8));
 
         // We should have no messages.
         assertTrue(context.getMessageList().isEmpty());
