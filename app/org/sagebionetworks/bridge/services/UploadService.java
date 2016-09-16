@@ -278,10 +278,8 @@ public class UploadService {
             builder.withUpload(upload);
             if (upload.getRecordId() != null) {
                 HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
-                if (record != null) {
-                    builder.withSchemaId(record.getSchemaId());
-                    builder.withSchemaRevision(record.getSchemaRevision());
-                }
+                builder.withSchemaId(record.getSchemaId());
+                builder.withSchemaRevision(record.getSchemaRevision());
             }
             return builder.build();
         }).collect(Collectors.toList());
