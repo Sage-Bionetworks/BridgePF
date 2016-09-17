@@ -282,7 +282,9 @@ public class UploadService {
                     builder.withSchemaId(record.getSchemaId());
                     builder.withSchemaRevision(record.getSchemaRevision());
                 } else {
-                    logger.warn("This record ID did not retrieve a health data record:" + upload.getRecordId());
+                    logger.warn("This upload does not have an associated record: uploadId: " + upload.getUploadId() + ", recordId: " + 
+                            upload.getRecordId() + ", duplicateUploadId" + upload.getDuplicateUploadId() + 
+                            ", status=" + upload.getStatus());
                 }
             }
             return builder.build();
