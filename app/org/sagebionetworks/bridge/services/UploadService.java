@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -18,6 +20,7 @@ import com.amazonaws.AmazonClientException;
 import com.google.common.base.Strings;
 
 import com.google.common.collect.ImmutableSet;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -278,14 +281,8 @@ public class UploadService {
             builder.withUpload(upload);
             if (upload.getRecordId() != null) {
                 HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
-                if (record != null) {
-                    builder.withSchemaId(record.getSchemaId());
-                    builder.withSchemaRevision(record.getSchemaRevision());
-                } else {
-                    logger.warn("This upload does not have an associated record: uploadId: " + upload.getUploadId() + ", recordId: " + 
-                            upload.getRecordId() + ", duplicateUploadId" + upload.getDuplicateUploadId() + 
-                            ", status=" + upload.getStatus());
-                }
+                builder.withSchemaId(record.getSchemaId());
+                builder.withSchemaRevision(record.getSchemaRevision());
             }
             return builder.build();
         }).collect(Collectors.toList());
@@ -363,6 +360,12 @@ public class UploadService {
 
         // kick off upload validation
         uploadValidationService.validateUpload(studyId, upload);
+    }
+    
+    public void deleteUploadsForHealthCode(String healthCode) {
+        checkArgument(isNotBlank(healthCode));
+        
+        uploadDao.deleteUploadsForHealthCode(healthCode);
     }
 
     @FunctionalInterface

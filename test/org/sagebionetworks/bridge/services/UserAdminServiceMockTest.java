@@ -10,6 +10,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.Map;
 
@@ -23,10 +24,14 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -48,6 +53,36 @@ public class UserAdminServiceMockTest {
     @Mock
     private ConsentService consentService;
     
+    @Mock
+    private AccountDao accountDao;
+    
+    @Mock
+    private Account account;
+    
+    @Mock
+    private UploadService uploadService;
+    
+    @Mock
+    private HealthDataService healthDataService;
+    
+    @Mock
+    private CacheProvider cacheProvider;
+    
+    @Mock
+    private ScheduledActivityService scheduledActivityService;
+    
+    @Mock
+    private ActivityEventService activityEventService;
+    
+    @Mock
+    private ParticipantOptionsService participantOptionsService;
+    
+    @Mock
+    private ExternalIdService externalIdService;
+    
+    @Mock
+    private ParticipantOptionsLookup lookup;
+    
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     
@@ -65,6 +100,14 @@ public class UserAdminServiceMockTest {
         service.setAuthenticationService(authenticationService);
         service.setConsentService(consentService);
         service.setParticipantService(participantService);
+        service.setUploadService(uploadService);
+        service.setAccountDao(accountDao);
+        service.setCacheProvider(cacheProvider);
+        service.setHealthDataService(healthDataService);
+        service.setScheduledActivityService(scheduledActivityService);
+        service.setActivityEventService(activityEventService);
+        service.setParticipantOptionsService(participantOptionsService);
+        service.setExternalIdService(externalIdService);
 
         // Make a user with multiple consent statuses, and just verify that we call the 
         // consent service that many times.
@@ -128,6 +171,30 @@ public class UserAdminServiceMockTest {
                 verify(consentService, never()).consentToResearch(eq(study), eq(guid), eq(participant), any(), eq(SharingScope.NO_SHARING), eq(false));    
             }
         }
+    }
+    
+    @Test
+    public void deleteUser() {
+        Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        
+        doReturn("userId").when(account).getId();
+        doReturn("healthCode").when(account).getHealthCode();
+        doReturn(account).when(accountDao).getAccount(study, "userId");
+        
+        doReturn(lookup).when(participantOptionsService).getOptions("healthCode");
+        doReturn("externalId").when(lookup).getString(EXTERNAL_IDENTIFIER);
+        
+        service.deleteUser(study, "userId");
+        
+        // Verify a lot of stuff is deleted or removed
+        verify(cacheProvider).removeSessionByUserId("userId");
+        verify(healthDataService).deleteRecordsForHealthCode("healthCode");
+        verify(uploadService).deleteUploadsForHealthCode("healthCode");
+        verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
+        verify(activityEventService).deleteActivityEvents("healthCode");
+        verify(externalIdService).unassignExternalId(study, "externalId", "healthCode");
+        verify(participantOptionsService).deleteAllParticipantOptions("healthCode");
+        verify(accountDao).deleteAccount(study, "userId");
     }
     
 }

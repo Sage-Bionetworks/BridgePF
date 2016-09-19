@@ -74,4 +74,12 @@ public interface UploadDao {
      */
     void writeValidationStatus(@Nonnull Upload upload, @Nonnull UploadStatus status,
             @Nonnull List<String> validationMessageList, String recordId);
+    
+    /**
+     * Delete all the upload records for a given health code. This is used to clean up records when a user is deleted, 
+     * typically as part of testing. 
+     * @param healthCode
+     *      the health code of the user being deleted.  
+     */
+    void deleteUploadsForHealthCode(@Nonnull String healthCode);
 }
