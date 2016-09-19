@@ -158,7 +158,7 @@ public class DynamoUploadDao implements UploadDao {
     
     @Override
     public void deleteUploadsForHealthCode(@Nonnull String healthCode) {
-        List<? extends Upload> uploadsToDelete = healthCodeRequestedOnIndex.query(
+        List<? extends Upload> uploadsToDelete = healthCodeRequestedOnIndex.queryKeys(
                 DynamoUpload2.class, "healthCode", healthCode, null);
         
         if (!uploadsToDelete.isEmpty()) {
