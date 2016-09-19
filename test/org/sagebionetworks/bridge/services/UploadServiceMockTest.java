@@ -3,8 +3,11 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -283,5 +286,22 @@ public class UploadServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void verifiesTimeRange() {
         svc.getUploads("ABC", START_TIME.minusDays(1).minusMinutes(1), END_TIME);
+    }
+    
+    @Test
+    public void deleteUploadsByHealthCodeWorks() {
+        svc.deleteUploadsForHealthCode("ABC");
+        verify(mockDao).deleteUploadsForHealthCode("ABC");
+    }
+    
+    @Test
+    public void deleteUploadsByHealthCodeRequiresHealthCode() {
+        try {
+            svc.deleteUploadsForHealthCode("");
+            fail("Should have thrown exception");
+        } catch(IllegalArgumentException e) {
+            // expected
+        }
+        verify(mockDao, never()).deleteUploadsForHealthCode(any());
     }
 }

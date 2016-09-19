@@ -45,6 +45,7 @@ public class UserAdminService {
     private CacheProvider cacheProvider;
     private ParticipantOptionsService optionsService;
     private ExternalIdService externalIdService;
+    private UploadService uploadService;
 
     @Autowired
     final void setAuthenticationService(AuthenticationService authenticationService) {
@@ -86,6 +87,11 @@ public class UserAdminService {
     final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
+    @Autowired
+    final void setUploadService(UploadService uploadService) {
+        this.uploadService = uploadService;
+    }
+    
     
     /**
      * Create a user and optionally consent the user and/or sign the user in. If a specific subpopulation 
@@ -176,6 +182,7 @@ public class UserAdminService {
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);
+            uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);
 

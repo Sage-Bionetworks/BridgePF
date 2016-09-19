@@ -193,14 +193,30 @@ public class DynamoUploadDaoTest {
         assertTrue(foundUploadIdSet.containsAll(healthcodeToUploadId.values()));
 
         uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now.minusMinutes(2));
-        assertEquals(0, uploads.size());
+        assertTrue(uploads.isEmpty());
+        
+        // Now delete all the uploads, and a query within the correct time range should return no results
+        for (String healthCode : healthcodeToUploadId.keySet()) {
+            dao.deleteUploadsForHealthCode(healthCode);
+        }
+        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now);
+        assertTrue(uploads.isEmpty());
+        
+        // We do not need to delete these uploads to clean up the test, we just did it.
+        uploadIds.clear();
+    }
+    
+    @Test
+    public void deleteByHealthCodeSilentlyFails() {
+        // It's not an error if there are no records to delete.
+        dao.deleteUploadsForHealthCode("nonexistentHealthCode");
     }
     
     @Test
     public void uploadRecordsEmpty() throws Exception {
         List<? extends Upload> uploads = dao.getUploads("nonexistentCode", DateTime.now().minusMinutes(1),
                 DateTime.now());
-        
+
         assertTrue(uploads.isEmpty());
     }
 

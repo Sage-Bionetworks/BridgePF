@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 
@@ -19,6 +20,7 @@ import org.joda.time.LocalDate;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
@@ -153,4 +155,16 @@ public class DynamoUploadDao implements UploadDao {
         // persist
         mapper.save(upload2);
     }
+    
+    @Override
+    public void deleteUploadsForHealthCode(@Nonnull String healthCode) {
+        List<? extends Upload> uploadsToDelete = healthCodeRequestedOnIndex.queryKeys(
+                DynamoUpload2.class, "healthCode", healthCode, null);
+        
+        if (!uploadsToDelete.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(uploadsToDelete);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
+    }
 }
+
