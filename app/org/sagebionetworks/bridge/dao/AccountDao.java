@@ -22,79 +22,73 @@ public interface AccountDao {
     
     /**
      * Verify an email address using a supplied, one-time token for verification.
-     * @return
      */
-    public void verifyEmail(EmailVerification verification);
+    void verifyEmail(EmailVerification verification);
     
     /**
      * Sign up sends an email address with a link that includes a one-time token for verification. That email
      * can be resent by calling this method.
      */
-    public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email);
+    void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email);
     
     /**
      * Request that an email be sent to the account holder with a link to reset a password, including a 
      * one-time verification token. 
      */
-    public void requestResetPassword(Study study, Email email);
+    void requestResetPassword(Study study, Email email);
     
     /**
      * Reset a password, supplying a new password and the one-time verification token that was sent via email 
      * to the account holder.
      */
-    public void resetPassword(PasswordReset passwordReset);
+    void resetPassword(PasswordReset passwordReset);
     
     /**
      * Authenticate a user with the supplied credentials, returning that user's account record
      * if successful. 
      */
-    public Account authenticate(Study study, SignIn signIn);
+    Account authenticate(Study study, SignIn signIn);
 
     /**
      * A factory method to construct a valid Account object that will work with our underlying 
      * persistence store. This does NOT save the account, you must call createAccount() after 
      * the account has been updated.
      */
-    public Account constructAccount(Study study, String email, String password);
+    Account constructAccount(Study study, String email, String password);
     
     /**
      * Create an account. The account object should initially be retrieved from the 
      * constructAccount() factory method.
      */
-    public void createAccount(Study study, Account account, boolean suppressEmail);
+    void createAccount(Study study, Account account, boolean suppressEmail);
     
     /**
      * Save account changes. Account should have been retrieved from the getAccount() method 
      * (constructAccount() is not sufficient).
      */
-    public void updateAccount(Account account);
+    void updateAccount(Account account);
     
     /**
      * Get an account in the context of a study by the user's ID or by their email address (email is 
      * deprecated and in the process of being removed). Returns null if there is no account, it is 
      * up to callers to translate this into the appropriate exception, if any. 
      */
-    public Account getAccount(Study study, String id);
+    Account getAccount(Study study, String id);
     
     /**
      * Delete an account along with the authentication credentials.
-     * @param study
-     * @param email
      */
-    public void deleteAccount(Study study, String email);
+    void deleteAccount(Study study, String email);
     
     /**
      * Get all account summaries in all studies in a given environment.
-     * @return
      */
-    public Iterator<AccountSummary> getAllAccounts();
+    Iterator<AccountSummary> getAllAccounts();
     
     /**
      * Get all account summaries in one study in a given environment.
-     * @param study
-     * @return
      */
-    public Iterator<AccountSummary> getStudyAccounts(Study study);
+    Iterator<AccountSummary> getStudyAccounts(Study study);
     
     /**
      * Get a page of lightweight account summaries (most importantly, the email addresses of 
@@ -111,10 +105,11 @@ public interface AccountDao {
      *      a paged resource list that includes the page of account summaries, as well as other information 
      *      about the request and the total number of records.
      */
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter);
+    PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
+            String emailFilter);
     
     /**
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
      */
-    public String getHealthCodeForEmail(Study study, String email);
+    String getHealthCodeForEmail(Study study, String email);
 }

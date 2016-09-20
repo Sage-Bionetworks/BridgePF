@@ -21,28 +21,26 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 @JsonDeserialize(as=DynamoStudy.class)
 public interface Study extends BridgeEntity, StudyIdentifier {
 
-    public static final ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
+    ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
         SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref", "active")));
 
-    public static final ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
+    ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
 
     /**
      * The display name of the study (will be seen by participants in email). This name makes the 
      * most sense when it starts with "The".
-     * @return
      */
-    public String getName();
-    public void setName(String name);
+    String getName();
+    void setName(String name);
 
     /**
      * The name of the institution or research group conducting the study. 
-     * @return
      */
-    public String getSponsorName();
-    public void setSponsorName(String sponsorName);
+    String getSponsorName();
+    void setSponsorName(String sponsorName);
     
     /**
      * A string that uniquely identifies the study, and serves as a domain within which accounts are 
@@ -50,38 +48,34 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      * an acronym or short phrase for the study. For example "uw-asthma" or "ohsu-molemapper". Cannot
      * be changed once created.
      */
-    public String getIdentifier();
-    public void setIdentifier(String identifier);
+    String getIdentifier();
+    void setIdentifier(String identifier);
     
     /**
      * A strongly typed version of the study identifier.
-     * @return
      */
-    public StudyIdentifier getStudyIdentifier();
+    StudyIdentifier getStudyIdentifier();
     
     /**
      * DynamoDB version number for optimistic locking of record.
-     * @return
      */
-    public Long getVersion();
-    public void setVersion(Long version);
+    Long getVersion();
+    void setVersion(Long version);
     
     /**
      * User must confirm that they are at least this many years old in order to
      * participate in the study. 
-     * @return
      */
-    public int getMinAgeOfConsent();
-    public void setMinAgeOfConsent(int minAge);
+    int getMinAgeOfConsent();
+    void setMinAgeOfConsent(int minAge);
     
     /**
      * The email address that will be given to study participants and other end user for all support 
      * requests and queries (technical, study-related, etc.). This can be a comma-separated list of 
      * email addresses.
-     * @return
      */
-    public String getSupportEmail();
-    public void setSupportEmail(String email);
+    String getSupportEmail();
+    void setSupportEmail(String email);
 
     /** Synapse team ID that is granted read access to exported health data records. */
     Long getSynapseDataAccessTeamId();
@@ -100,8 +94,8 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      * issues related either to client development or hand-offs of the study data through the 
      * Bridge server. This can be a comma-separated list of email addresses.
      */
-    public String getTechnicalEmail();
-    public void setTechnicalEmail(String email);
+    String getTechnicalEmail();
+    void setTechnicalEmail(String email);
 
     /**
      * By default, all studies are exported using the default nightly schedule. Some studies may need custom schedules
@@ -117,108 +111,98 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      * Copies of all consent agreements, as well as rosters of all participants in a study, or any 
      * other study governance issues, will be emailed to this address. This can be a comma-separated 
      * list of email addresses. 
-     * @return
      */
-    public String getConsentNotificationEmail();
-    public void setConsentNotificationEmail(String email);
+    String getConsentNotificationEmail();
+    void setConsentNotificationEmail(String email);
     
     /**
      * The URI that identifies the Stormpath directory where all accounts for this study, in a given 
      * environment, will be stored.
-     * @return
      */
-    public String getStormpathHref();
-    public void setStormpathHref(String stormpathHref);
+    String getStormpathHref();
+    void setStormpathHref(String stormpathHref);
     
     /**
      * Extension attributes that can be accepted on the UserProfile object for this study. These 
      * attributes will be exported with the participant roster. 
-     * @return
      */
-    public Set<String> getUserProfileAttributes();
-    public void setUserProfileAttributes(Set<String> attributes);
+    Set<String> getUserProfileAttributes();
+    void setUserProfileAttributes(Set<String> attributes);
 
     /**
      * The enumerated task identifiers that can be used when scheduling tasks for this study. These are provided 
      * through the UI to prevent errors when creating schedules. 
-     * @return
      */
-    public Set<String> getTaskIdentifiers();
-    public void setTaskIdentifiers(Set<String> taskIdentifiers);
+    Set<String> getTaskIdentifiers();
+    void setTaskIdentifiers(Set<String> taskIdentifiers);
 
     /**
      * The enumerated set of data group strings that can be assigned to users in this study. This enumeration ensures 
      * the values are meaningful to the study and the data groups cannot be filled maliciously with junk tags. 
-     * @return
      */
-    public Set<String> getDataGroups();
-    public void setDataGroups(Set<String> dataGroups);
+    Set<String> getDataGroups();
+    void setDataGroups(Set<String> dataGroups);
 
     
     /**
      * The password policy for users signing up for this study. 
-     * @return
      */
-    public PasswordPolicy getPasswordPolicy();
-    public void setPasswordPolicy(PasswordPolicy passwordPolicy);
+    PasswordPolicy getPasswordPolicy();
+    void setPasswordPolicy(PasswordPolicy passwordPolicy);
 
     /**
      * The template for emails delivered to users during sign up, asking them to verify their email 
      * address. This template must at least include the "${url}" template variable, which will be 
      * used to place a link back to a page that completes the email verification for Bridge. 
-     * @return
      */
-    public EmailTemplate getVerifyEmailTemplate();
-    public void setVerifyEmailTemplate(EmailTemplate template);
+    EmailTemplate getVerifyEmailTemplate();
+    void setVerifyEmailTemplate(EmailTemplate template);
     
     /**
      * The template for emails delivered to users who ask to reset their passwords. This template 
      * must at least include the "${url}" template variable, which will be used to place a link 
      * back to a page that completes the password reset request. 
-     * @return
      */
-    public EmailTemplate getResetPasswordTemplate();
-    public void setResetPasswordTemplate(EmailTemplate template);
+    EmailTemplate getResetPasswordTemplate();
+    void setResetPasswordTemplate(EmailTemplate template);
     
     /**
      * Is this study active? Currently not in use, a de-activated study will be hidden from the 
      * study APIs and will no longer be available for use (a logical delete).
-     * @return
      */
-    public boolean isActive();
-    public void setActive(boolean active);
+    boolean isActive();
+    void setActive(boolean active);
 
     /** True if uploads in this study should fail on strict validation errors. */
-    public boolean isStrictUploadValidationEnabled();
+    boolean isStrictUploadValidationEnabled();
 
     /** @see #isStrictUploadValidationEnabled */
-    public void setStrictUploadValidationEnabled(boolean enabled);
+    void setStrictUploadValidationEnabled(boolean enabled);
     
     /** True if this study will export the healthCode when generating a participant roster. */
-    public boolean isHealthCodeExportEnabled();
+    boolean isHealthCodeExportEnabled();
     
     /** @see #isHealthCodeExportEnabled(); */
-    public void setHealthCodeExportEnabled(boolean enabled);
+    void setHealthCodeExportEnabled(boolean enabled);
     
     /** True if this study requires users to verify their email addresses in order to sign up. 
      * True by default.
      */
-    public boolean isEmailVerificationEnabled();
+    boolean isEmailVerificationEnabled();
     
     /** @see #isEmailVerificationEnabled(); */
-    public void setEmailVerificationEnabled(boolean enabled);
+    void setEmailVerificationEnabled(boolean enabled);
     
     /**
      * True if this study will enforce constraints on the external identifier. The ID will have 
      * to be an ID entered into Bridge, it will be assigned to one and only one user, and a user's 
      * ID cannot be changed after it is set. Otherwise, the external ID is just a string field 
      * that can be freely updated.
-     * @return
      */
-    public boolean isExternalIdValidationEnabled();
+    boolean isExternalIdValidationEnabled();
     
     /** @see #isExternalIdValidationEnabled(); */
-    public void setExternalIdValidationEnabled(boolean externalIdValidationEnabled);
+    void setExternalIdValidationEnabled(boolean externalIdValidationEnabled);
     
     /**
      * Minimum supported app version number. If set, user app clients pointing to an older version will 

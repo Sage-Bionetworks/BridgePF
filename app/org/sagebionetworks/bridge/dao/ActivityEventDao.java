@@ -11,7 +11,7 @@ public interface ActivityEventDao {
      * Publish an event into this user's event stream. This event becomes available 
      * for scheduling activities for this user.
      */
-    public void publishEvent(ActivityEvent event);
+    void publishEvent(ActivityEvent event);
     
     /**
      * Get a map of events, where the string key is an event identifier, and the value 
@@ -20,12 +20,12 @@ public interface ActivityEventDao {
      * 
      * @see org.sagebionetworks.bridge.models.activities.ActivityEventObjectType
      */
-    public Map<String, DateTime> getActivityEventMap(String healthCode);
+    Map<String, DateTime> getActivityEventMap(String healthCode);
     
     /**
      * Delete all activity events for this user. This should only be called when physically 
      * deleting test users; users in production take too many server resources to completely 
      * delete this way.
      */
-    public void deleteActivityEvents(String healthCode);
+    void deleteActivityEvents(String healthCode);
 }
