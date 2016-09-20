@@ -13,8 +13,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
  */
 public interface ExternalIdDao {
     
-    public static final String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
-    public static final String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
+    String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
+    String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
     /**
      * Retrieve external IDs that match the ID and/or assignment filters. These records are returned in pages of pageSize 

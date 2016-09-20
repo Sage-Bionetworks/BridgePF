@@ -8,14 +8,14 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface SchedulePlanDao {
 
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier);
+    List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier);
     
-    public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid);
+    SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     
-    public SchedulePlan createSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan);
+    SchedulePlan createSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan);
     
-    public SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan);
+    SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan);
     
-    public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid);
+    void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     
 }

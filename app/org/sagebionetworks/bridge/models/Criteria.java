@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as = DynamoCriteria.class)
 public interface Criteria extends BridgeEntity {
     
-    public static Criteria create() {
+    static Criteria create() {
         return new DynamoCriteria();
     }
 

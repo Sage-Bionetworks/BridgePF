@@ -4,6 +4,6 @@ import javax.mail.MessagingException;
 
 public interface MimeTypeEmailProvider {
 
-    public MimeTypeEmail getMimeTypeEmail() throws MessagingException;
+    MimeTypeEmail getMimeTypeEmail() throws MessagingException;
     
 }

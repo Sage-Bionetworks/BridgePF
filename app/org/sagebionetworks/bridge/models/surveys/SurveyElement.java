@@ -8,25 +8,25 @@ import org.sagebionetworks.bridge.json.JsonNodeToSurveyElementConverter;
 @JsonDeserialize(converter = JsonNodeToSurveyElementConverter.class)
 public interface SurveyElement {
 
-    public String getSurveyCompoundKey();
-    public void setSurveyCompoundKey(String surveyCompoundKey);
+    String getSurveyCompoundKey();
+    void setSurveyCompoundKey(String surveyCompoundKey);
 
-    public void setSurveyKeyComponents(String surveyGuid, long createdOn);
+    void setSurveyKeyComponents(String surveyGuid, long createdOn);
 
-    public String getGuid();
-    public void setGuid(String guid);
+    String getGuid();
+    void setGuid(String guid);
     
-    public String getIdentifier();
-    public void setIdentifier(String identifier);
+    String getIdentifier();
+    void setIdentifier(String identifier);
     
-    public int getOrder();
-    public void setOrder(int order);
+    int getOrder();
+    void setOrder(int order);
     
-    public String getType();
-    public void setType(String type);
+    String getType();
+    void setType(String type);
     
-    public JsonNode getData();
-    public void setData(JsonNode data);
+    JsonNode getData();
+    void setData(JsonNode data);
     
 }
 

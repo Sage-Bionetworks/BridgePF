@@ -21,23 +21,23 @@ public interface ScheduledActivity extends BridgeEntity {
      * structure, we do not use @JsonIgnore annotation on DynamoScheduledActivity. Instead, we 
      * exclude those values using a filter and this writer.
      */
-    public static final ObjectWriter SCHEDULED_ACTIVITY_WRITER = new BridgeObjectMapper().writer(
+    ObjectWriter SCHEDULED_ACTIVITY_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
         SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "schedulePlanGuid")));
 
     /**
      * Researchers get the schedule plan GUID. 
      */
-    public static final ObjectWriter RESEARCHER_SCHEDULED_ACTIVITY_WRITER = new BridgeObjectMapper().writer(
+    ObjectWriter RESEARCHER_SCHEDULED_ACTIVITY_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter", 
             SimpleBeanPropertyFilter.serializeAllExcept("healthCode")));
     
-    public static ScheduledActivity create() {
+    static ScheduledActivity create() {
         return new DynamoScheduledActivity();
     }
 
     // Sorts in reverse order.
-    public static final Comparator<ScheduledActivity> SCHEDULED_ACTIVITY_COMPARATOR = new Comparator<ScheduledActivity>() {
+    Comparator<ScheduledActivity> SCHEDULED_ACTIVITY_COMPARATOR = new Comparator<ScheduledActivity>() {
         @Override
         public int compare(ScheduledActivity scheduledActivity1, ScheduledActivity scheduledActivity2) {
             // Sort activities with no set scheduled time behind activities with scheduled times.
@@ -59,54 +59,52 @@ public interface ScheduledActivity extends BridgeEntity {
         }
     };
 
-    public ScheduledActivityStatus getStatus();
+    ScheduledActivityStatus getStatus();
 
     /**
      * Get the time zone for this request. Currently this is a field on the activity and must be set to get DateTime values
      * from other fields in the class. This forces one method of converting schedule times to local times in order to
      * satisfy the API's delivery of times in the user's time zone, and may change when we convert closer to the service
      * layer and remove this as a consideration from activity construction.
-     * 
-     * @return
      */
-    public DateTimeZone getTimeZone();
+    DateTimeZone getTimeZone();
 
-    public void setTimeZone(DateTimeZone timeZone);
+    void setTimeZone(DateTimeZone timeZone);
     
-    public String getSchedulePlanGuid();
+    String getSchedulePlanGuid();
 
-    public void setSchedulePlanGuid(String schedulePlanGuid);
+    void setSchedulePlanGuid(String schedulePlanGuid);
 
-    public String getGuid();
+    String getGuid();
 
-    public void setGuid(String guid);
+    void setGuid(String guid);
 
-    public String getHealthCode();
+    String getHealthCode();
 
-    public void setHealthCode(String healthCode);
+    void setHealthCode(String healthCode);
 
-    public Activity getActivity();
+    Activity getActivity();
 
-    public void setActivity(Activity activity);
+    void setActivity(Activity activity);
 
-    public DateTime getScheduledOn();
+    DateTime getScheduledOn();
 
-    public void setScheduledOn(DateTime scheduledOn);
+    void setScheduledOn(DateTime scheduledOn);
 
-    public DateTime getExpiresOn();
+    DateTime getExpiresOn();
 
-    public void setExpiresOn(DateTime expiresOn);
+    void setExpiresOn(DateTime expiresOn);
 
-    public Long getStartedOn();
+    Long getStartedOn();
 
-    public void setStartedOn(Long startedOn);
+    void setStartedOn(Long startedOn);
 
-    public Long getFinishedOn();
+    Long getFinishedOn();
 
-    public void setFinishedOn(Long finishedOn);
+    void setFinishedOn(Long finishedOn);
 
-    public boolean getPersistent();
+    boolean getPersistent();
 
-    public void setPersistent(boolean persistent);
+    void setPersistent(boolean persistent);
     
 }

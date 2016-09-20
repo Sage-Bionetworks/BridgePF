@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
  */
 public interface Account extends BridgeEntity {
 
-    public default ConsentSignature getActiveConsentSignature(SubpopulationGuid subpopGuid) {
+    default ConsentSignature getActiveConsentSignature(SubpopulationGuid subpopGuid) {
         List<ConsentSignature> history = getConsentSignatureHistory(subpopGuid);
         if (!history.isEmpty()) {
             ConsentSignature signature = history.get(history.size()-1);
@@ -27,40 +27,39 @@ public interface Account extends BridgeEntity {
         return null;
     }
     
-    public String getFirstName();
-    public void setFirstName(String firstName);
+    String getFirstName();
+    void setFirstName(String firstName);
     
-    public String getLastName();
-    public void setLastName(String lastName);
+    String getLastName();
+    void setLastName(String lastName);
     
-    public String getAttribute(String name);
-    public void setAttribute(String name, String value);
+    String getAttribute(String name);
+    void setAttribute(String name, String value);
 
-    public String getEmail();
-    public void setEmail(String email);
+    String getEmail();
+    void setEmail(String email);
     
-    public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid);
+    List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid);
     
-    public Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
+    Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
     
-    public String getHealthCode();
+    String getHealthCode();
 
-    public void setHealthId(HealthId healthId);
+    void setHealthId(HealthId healthId);
 
-    public AccountStatus getStatus();
-    public void setStatus(AccountStatus status);
+    AccountStatus getStatus();
+    void setStatus(AccountStatus status);
 
-    public StudyIdentifier getStudyIdentifier();
+    StudyIdentifier getStudyIdentifier();
     
-    public Set<Roles> getRoles();
-    public void setRoles(Set<Roles> roles);
+    Set<Roles> getRoles();
+    void setRoles(Set<Roles> roles);
 
     /**
      * This is the store-specific identifier for the account (in the case of 
      * Stormpath, it's the unique part of the href they return for this account).
-     * @return
      */
-    public String getId();
+    String getId();
     
-    public DateTime getCreatedOn();
+    DateTime getCreatedOn();
 }

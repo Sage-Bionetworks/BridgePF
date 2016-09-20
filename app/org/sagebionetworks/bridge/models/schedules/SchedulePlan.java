@@ -10,21 +10,21 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as = DynamoSchedulePlan.class)
 public interface SchedulePlan extends BridgeEntity {
 
-    public String getGuid();
-    public void setGuid(String guid);
+    String getGuid();
+    void setGuid(String guid);
     
-    public String getLabel();
-    public void setLabel(String label);
+    String getLabel();
+    void setLabel(String label);
     
-    public String getStudyKey();
-    public void setStudyKey(String studyKey);
+    String getStudyKey();
+    void setStudyKey(String studyKey);
     
-    public long getModifiedOn();
-    public void setModifiedOn(long modifiedOn);
+    long getModifiedOn();
+    void setModifiedOn(long modifiedOn);
     
-    public Long getVersion();
-    public void setVersion(Long version);
+    Long getVersion();
+    void setVersion(Long version);
     
-    public ScheduleStrategy getStrategy();
-    public void setStrategy(ScheduleStrategy strategy);
+    ScheduleStrategy getStrategy();
+    void setStrategy(ScheduleStrategy strategy);
 }
