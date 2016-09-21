@@ -118,6 +118,13 @@ abstract class AsyncBackfillTemplate implements BackfillService {
      * create a message on a task and calls the callback with the BackfillRecord.
      */
     protected void recordMessage(BackfillTask task, BackfillCallback callback, String message) {
+        logger.info(message);
+        callback.newRecords(backfillRecordFactory.createOnly(task, message));
+    }
+
+    /** Similar to recordMessage(), except this logs an error with a stacktrace instead of an info. */
+    protected void recordError(BackfillTask task, BackfillCallback callback, String message, Throwable t) {
+        logger.error(message, t);
         callback.newRecords(backfillRecordFactory.createOnly(task, message));
     }
 
