@@ -9,10 +9,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -21,6 +19,7 @@ import org.junit.Test;
 import org.springframework.validation.MapBindingResult;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
@@ -36,14 +35,12 @@ public class HealthDataRecordTest {
     // for getRecordBuilder().
     private static final HealthDataDao DAO = new DynamoHealthDataDao();
     
-    private static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1", "group2");
-
     @Test
     public void testBuilder() {
         // build
         HealthDataRecord record = DAO.getRecordBuilder().withHealthCode("dummy healthcode")
                 .withSchemaId("dummy schema").withSchemaRevision(3).withStudyId("dummy study")
-                .withUserDataGroups(USER_DATA_GROUPS).build();
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
 
         // validate
         assertEquals("dummy healthcode", record.getHealthCode());
@@ -51,7 +48,7 @@ public class HealthDataRecordTest {
         assertEquals("dummy schema", record.getSchemaId());
         assertEquals(3, record.getSchemaRevision());
         assertEquals("dummy study", record.getStudyId());
-        assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, record.getUserDataGroups());
 
         assertTrue(record.getData().isObject());
         assertEquals(0, record.getData().size());
@@ -82,7 +79,7 @@ public class HealthDataRecordTest {
                 .withUploadDate(uploadDate).withUploadId("optional upload ID").withUploadedOn(uploadedOn)
                 .withUserExternalId("optional external ID")
                 .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-                .withUserDataGroups(USER_DATA_GROUPS)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
                 .withVersion(42L).build();
 
         // validate
@@ -97,7 +94,7 @@ public class HealthDataRecordTest {
         assertEquals(uploadedOn, record.getUploadedOn().longValue());
         assertEquals("optional external ID", record.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
-        assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, record.getUserDataGroups());
         assertEquals(42, record.getVersion().longValue());
 
         assertEquals(1, record.getData().size());
@@ -119,7 +116,7 @@ public class HealthDataRecordTest {
         assertEquals(uploadedOn, copyRecord.getUploadedOn().longValue());
         assertEquals("optional external ID", copyRecord.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, copyRecord.getUserSharingScope());
-        assertEquals(USER_DATA_GROUPS, record.getUserDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, record.getUserDataGroups());
         assertEquals(42, copyRecord.getVersion().longValue());
 
         assertEquals(1, copyRecord.getData().size());

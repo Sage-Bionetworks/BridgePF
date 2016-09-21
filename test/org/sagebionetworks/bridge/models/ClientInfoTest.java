@@ -41,8 +41,10 @@ public class ClientInfoTest {
         ClientInfo info = new ClientInfo.Builder()
                 .withAppName("AppName")
                 .withAppVersion(1)
+                .withDeviceName("Happy Jagger")
                 .withOsName(IOS)
                 .withOsVersion("Version1")
+                .withSdkName("BridgeSDK")
                 .withSdkVersion(4).build();
         assertEquals("AppName", info.getAppName());
         assertEquals(1, info.getAppVersion().intValue());

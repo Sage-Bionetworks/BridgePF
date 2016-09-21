@@ -2,12 +2,10 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Set;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableSet;
 import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +30,6 @@ public class DynamoHealthDataDaoDdbTest {
     private static final String UPLOAD_ID = "upload-id";
     private static final long UPLOADED_ON = 1462575525894L;
     private static final String USER_EXTERNAL_ID = "external-id";
-    private static final Set<String> USER_DATA_GROUPS = ImmutableSet.of("group1", "group2");
 
     @Resource(name = "healthDataDdbMapper")
     private DynamoDBMapper mapper;
@@ -54,7 +51,7 @@ public class DynamoHealthDataDaoDdbTest {
         record.setUploadedOn(UPLOADED_ON);
         record.setUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS);
         record.setUserExternalId(USER_EXTERNAL_ID);
-        record.setUserDataGroups(USER_DATA_GROUPS);
+        record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
 
         // Save it to DDB, then read it back and make sure it has the same fields. (Can't use .equals(), even if we
         // implemented it, because the mapper functions modify the object we pass in.)
@@ -74,7 +71,7 @@ public class DynamoHealthDataDaoDdbTest {
             assertEquals(UPLOADED_ON, savedRecord.getUploadedOn().longValue());
             assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, savedRecord.getUserSharingScope());
             assertEquals(USER_EXTERNAL_ID, savedRecord.getUserExternalId());
-            assertEquals(USER_DATA_GROUPS, savedRecord.getUserDataGroups());
+            assertEquals(TestConstants.USER_DATA_GROUPS, savedRecord.getUserDataGroups());
             assertEquals(1L, savedRecord.getVersion().longValue());
 
             JsonNode dataNode = savedRecord.getData();

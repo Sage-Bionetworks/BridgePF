@@ -21,6 +21,7 @@ POST   /v3/participants/self                                 @org.sagebionetwork
 GET    /v3/participants/:userId                              @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String)
 POST   /v3/participants/:userId                              @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)
 GET    /v3/participants/:userId/uploads                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.getUploads(userId: String, startTime: String ?= null, endTime: String ?= null)
+GET    /v3/participants/:userId/requestInfo                  @org.sagebionetworks.bridge.play.controllers.ParticipantController.getRequestInfo(userId: String)
 GET    /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistory(userId: String, offsetKey: String ?= null, pageSize: String ?= null)
 DELETE /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteActivities(userId: String)
 POST   /v3/participants/:userId/signOut                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(userId: String)

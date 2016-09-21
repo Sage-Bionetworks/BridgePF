@@ -9,12 +9,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
-import com.google.common.collect.Sets;
 
 import org.joda.time.LocalDate;
 import org.joda.time.format.ISODateTimeFormat;
@@ -43,7 +41,6 @@ public class UploadArtifactsHandlerTest {
     private static final byte[] BYTES_FOO = ATTACHMENT_TEXT_FOO.getBytes(Charsets.UTF_8);
     private static final String TEST_RECORD_ID = "test-record";
     private static final String TEST_UPLOAD_ID = "test-upload";
-    private static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1","group2");
 
     @Test
     public void test() throws Exception {
@@ -121,7 +118,7 @@ public class UploadArtifactsHandlerTest {
         assertEquals(TEST_UPLOAD_ID, createIntermediateRecordArg.getUploadId());
         assertEquals("dummy-external-ID", createIntermediateRecordArg.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, createIntermediateRecordArg.getUserSharingScope());
-        assertEquals(USER_DATA_GROUPS, createIntermediateRecordArg.getUserDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, createIntermediateRecordArg.getUserDataGroups());
         assertEquals(42, createIntermediateRecordArg.getVersion().longValue());
 
         assertTrue(createIntermediateRecordArg.getMetadata().isObject());
@@ -144,7 +141,7 @@ public class UploadArtifactsHandlerTest {
         assertEquals(TEST_UPLOAD_ID, createFinalRecordArg.getUploadId());
         assertEquals("dummy-external-ID", createFinalRecordArg.getUserExternalId());
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, createFinalRecordArg.getUserSharingScope());
-        assertEquals(USER_DATA_GROUPS, createFinalRecordArg.getUserDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, createFinalRecordArg.getUserDataGroups());
         assertEquals(42, createFinalRecordArg.getVersion().longValue());
 
         assertTrue(createFinalRecordArg.getMetadata().isObject());
@@ -186,7 +183,7 @@ public class UploadArtifactsHandlerTest {
                 .withUploadDate(LocalDate.parse("2015-11-18")).withUploadId(TEST_UPLOAD_ID)
                 .withUserExternalId("dummy-external-ID")
                 .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-                .withUserDataGroups(USER_DATA_GROUPS)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
                 .withVersion(42L);
     }
 }

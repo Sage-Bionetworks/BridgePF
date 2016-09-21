@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -80,6 +81,9 @@ public class ScheduledActivityControllerTest {
     
     @Captor
     ArgumentCaptor<ScheduleContext> contextCaptor;
+    
+    @Captor
+    ArgumentCaptor<RequestInfo> requestInfoCaptor;
     
     UserSession session;
     
@@ -142,6 +146,15 @@ public class ScheduledActivityControllerTest {
         assertEquals(TestUtils.newLinkedHashSet("en","fr"), critContext.getLanguages());
         assertEquals("api", critContext.getStudyIdentifier().getIdentifier());
         assertEquals(clientInfo, critContext.getClientInfo());
+        
+        verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        RequestInfo requestInfo = requestInfoCaptor.getValue();
+        assertEquals("id", requestInfo.getUserId());
+        assertEquals(TestUtils.newLinkedHashSet("en","fr"), requestInfo.getLanguages());
+        assertEquals(Sets.newHashSet("group1"), requestInfo.getUserDataGroups());
+        assertNotNull(requestInfo.getActivitiesAccessedOn());
+        assertEquals(DateTimeZone.forOffsetHours(3), requestInfo.getTimeZone());
+        assertEquals(TestConstants.TEST_STUDY, requestInfo.getStudyIdentifier());
     }
     
     @Test

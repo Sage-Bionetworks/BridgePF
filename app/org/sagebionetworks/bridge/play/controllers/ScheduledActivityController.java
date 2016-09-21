@@ -11,6 +11,7 @@ import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
@@ -93,7 +94,20 @@ public class ScheduledActivityController extends BaseController {
         builder.withClientInfo(getClientInfoFromUserAgentHeader());
         builder.withMinimumPerSchedule(getIntOrDefault(minimumPerScheduleString, 0));
         
-        return scheduledActivityService.getScheduledActivities(builder.build());
+        ScheduleContext context = builder.build();
+        
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withUserId(context.getCriteriaContext().getUserId())
+                .withClientInfo(context.getCriteriaContext().getClientInfo())
+                .withUserAgent(request().getHeader(USER_AGENT))
+                .withLanguages(context.getCriteriaContext().getLanguages())
+                .withUserDataGroups(context.getCriteriaContext().getUserDataGroups())
+                .withActivitiesAccessedOn(context.getNow())
+                .withTimeZone(context.getZone())
+                .withStudyIdentifier(context.getCriteriaContext().getStudyIdentifier()).build();
+        cacheProvider.updateRequestInfo(requestInfo);
+        
+        return scheduledActivityService.getScheduledActivities(context);
     }
     
     private void addEndsOnWithZone(ScheduleContext.Builder builder, String untilString, String offset, String daysAhead) {
