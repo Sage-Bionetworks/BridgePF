@@ -58,13 +58,15 @@ public class CacheProvider {
         checkNotNull(requestInfo, "requestInfo is required");
         checkNotNull(requestInfo.getUserId(), "requestInfo.userId is required");
      
-        RequestInfo.Builder builder = new RequestInfo.Builder();
         RequestInfo existingRequestInfo = getRequestInfo(requestInfo.getUserId());
         if (existingRequestInfo != null) {
+            RequestInfo.Builder builder = new RequestInfo.Builder();    
             builder.copyOf(existingRequestInfo);
+            builder.copyOf(requestInfo);
+            setRequestInfo(builder.build());
+        } else {
+            setRequestInfo(requestInfo);
         }
-        builder.copyOf(requestInfo);
-        setRequestInfo(builder.build());
     }
     
     private void setRequestInfo(RequestInfo requestInfo) {
