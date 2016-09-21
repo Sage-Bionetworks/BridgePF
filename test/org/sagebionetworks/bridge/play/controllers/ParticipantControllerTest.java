@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -324,6 +325,17 @@ public class ParticipantControllerTest {
         assertEquals(200, result.status());
         RequestInfo info = MAPPER.readValue(Helpers.contentAsString(result), RequestInfo.class);
         assertNotNull(info); // values are all null, but object is returned
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getParticipantRequestInfoOnlyReturnsCurrentStudyInfo() throws Exception {
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withUserAgent("app/20")
+                .withTimeZone(DateTimeZone.forOffsetHours(-7))
+                .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
+        
+        doReturn(requestInfo).when(cacheProvider).getRequestInfo("userId");
+        controller.getRequestInfo("userId");
     }
     
     private IdentifierHolder setUpCreateParticipant() throws Exception {
