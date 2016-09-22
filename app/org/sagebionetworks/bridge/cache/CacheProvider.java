@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -46,6 +47,52 @@ public class CacheProvider {
     @Resource(name = "sessionExpireInSeconds")
     final void setSessionExpireInSeconds(int sessionExpireInSeconds) {
         this.sessionExpireInSeconds = sessionExpireInSeconds;
+    }
+    
+    /**
+     * Take existing data in the request info object and augment with any new information 
+     * in the request info object passed as a parameter, then persist that. Different calls
+     * contribute some different fields to the total RequestInfo object.
+     */
+    public void updateRequestInfo(RequestInfo requestInfo) {
+        checkNotNull(requestInfo, "requestInfo is required");
+        checkNotNull(requestInfo.getUserId(), "requestInfo.userId is required");
+     
+        RequestInfo existingRequestInfo = getRequestInfo(requestInfo.getUserId());
+        if (existingRequestInfo != null) {
+            RequestInfo.Builder builder = new RequestInfo.Builder();    
+            builder.copyOf(existingRequestInfo);
+            builder.copyOf(requestInfo);
+            setRequestInfo(builder.build());
+        } else {
+            setRequestInfo(requestInfo);
+        }
+    }
+    
+    private void setRequestInfo(RequestInfo requestInfo) {
+        try {
+            String ser = bridgeObjectMapper.writeValueAsString(requestInfo);
+            String redisKey = RedisKey.REQUEST_INFO.getRedisKey(requestInfo.getUserId());
+            jedisOps.set(redisKey, ser);
+        } catch (Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+        
+    }
+    
+    public RequestInfo getRequestInfo(String userId) {
+        try {
+        String redisKey = RedisKey.REQUEST_INFO.getRedisKey(userId);
+            String ser = jedisOps.get(redisKey);
+            if (ser != null) {
+                return bridgeObjectMapper.readValue(ser, RequestInfo.class);
+            }
+        } catch (Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+        return null;
     }
 
     public void setUserSession(final UserSession session) {

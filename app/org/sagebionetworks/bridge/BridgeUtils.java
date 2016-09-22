@@ -42,6 +42,7 @@ public class BridgeUtils {
     public static final Joiner COMMA_SPACE_JOINER = Joiner.on(", ");
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
+    public static final Joiner SPACE_JOINER = Joiner.on(" ");
 
     /**
      * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.

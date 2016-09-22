@@ -9,6 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -106,8 +108,11 @@ public final class ClientInfo {
     private final String sdkName;
     private final Integer sdkVersion;
 
-    private ClientInfo(String appName, Integer appVersion, String deviceName, String osName, String osVersion, String sdkName,
-            Integer sdkVersion) {
+    @JsonCreator
+    private ClientInfo(@JsonProperty("appName") String appName, @JsonProperty("appVersion") Integer appVersion,
+            @JsonProperty("deviceName") String deviceName, @JsonProperty("osName") String osName,
+            @JsonProperty("osVersion") String osVersion, @JsonProperty("sdkName") String sdkName,
+            @JsonProperty("sdkVersion") Integer sdkVersion) {
         this.appName = appName;
         this.appVersion = appVersion;
         this.deviceName = deviceName;

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import java.util.Set;
+
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -8,6 +10,8 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+
+import com.google.common.collect.Sets;
 
 public class TestConstants {
     
@@ -69,4 +73,5 @@ public class TestConstants {
             .withGuid(SubpopulationGuid.create("foo6")).withRequired(false).withConsented(false)
             .withSignedMostRecentConsent(false).build();
     
+    public static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1","group2");
 }

@@ -14,8 +14,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 
-import java.util.HashSet;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
@@ -32,11 +30,13 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -54,7 +54,6 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationControllerMockTest {
     
-    private static final HashSet<String> DATA_GROUPS = Sets.newHashSet("A","B");
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
     private static final String TEST_PASSWORD = "password";
     private static final String TEST_USER_STORMPATH_ID = "spId";
@@ -75,16 +74,23 @@ public class AuthenticationControllerMockTest {
     @Mock
     StudyService studyService;
     
+    @Mock
+    CacheProvider cacheProvider;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
+    
+    @Captor
+    ArgumentCaptor<RequestInfo> requestInfoCaptor;
     
     @Before
     public void before() {
         controller = spy(new AuthenticationController());
         controller.setAuthenticationService(authenticationService);
+        controller.setCacheProvider(cacheProvider);
         
         study = new DynamoStudy();
-        study.setDataGroups(DATA_GROUPS);
+        study.setDataGroups(TestConstants.USER_DATA_GROUPS);
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
         controller.setStudyService(studyService);
     }
@@ -314,6 +320,14 @@ public class AuthenticationControllerMockTest {
                 fail("expected exception");
             }
             assertSessionInPlayResult(result);
+            
+            verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+            RequestInfo requestInfo = requestInfoCaptor.getValue();
+            assertEquals("spId", requestInfo.getUserId());
+            assertEquals(TEST_STUDY_ID, requestInfo.getStudyIdentifier());
+            assertTrue(requestInfo.getSignedInOn() != null);
+            assertEquals(TestConstants.USER_DATA_GROUPS, requestInfo.getUserDataGroups());
+            
         } catch (ConsentRequiredException ex) {
             if (!shouldThrow) {
                 throw ex;
@@ -444,6 +458,8 @@ public class AuthenticationControllerMockTest {
     private UserSession createSession(ConsentStatus status, Roles role) {
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         builder.withId(TEST_USER_STORMPATH_ID);
+        // set this value so we can verify it is copied into RequestInfo on a sign in.
+        builder.withDataGroups(TestConstants.USER_DATA_GROUPS);
         if (role != null) {
             builder.withRoles(Sets.newHashSet(role));
         }

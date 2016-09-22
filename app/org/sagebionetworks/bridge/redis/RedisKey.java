@@ -30,6 +30,9 @@ public interface RedisKey {
 
     /** User (email). */
     RedisKey USER = new SimpleKey("user");
+    
+    /** RequestInfo */
+    RedisKey REQUEST_INFO = new SimpleKey("request-info");
 
     /** User ID to session token. */
     RedisKey USER_SESSION = new CompoundKey((SimpleKey)USER, (SimpleKey)SESSION);

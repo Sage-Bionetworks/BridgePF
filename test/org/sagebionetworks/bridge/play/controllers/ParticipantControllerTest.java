@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
@@ -42,10 +43,12 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -54,6 +57,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -298,6 +302,42 @@ public class ParticipantControllerTest {
         verify(participantService).createParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture(), eq(false));
     }
 
+    @Test
+    public void getParticipantRequestInfo() throws Exception {
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withUserAgent("app/20")
+                .withTimeZone(DateTimeZone.forOffsetHours(-7))
+                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+        
+        doReturn(requestInfo).when(cacheProvider).getRequestInfo("userId");
+        Result result = controller.getRequestInfo("userId");
+        
+        // serialization was tested separately... just validate the object is there
+        RequestInfo info = MAPPER.readValue(Helpers.contentAsString(result), RequestInfo.class);
+        assertEquals(requestInfo, info);
+    }
+    
+    @Test
+    public void getParticipantRequestInfoIsNullsafe() throws Exception {
+        // There is no request info.
+        Result result = controller.getRequestInfo("userId");
+        
+        assertEquals(200, result.status());
+        RequestInfo info = MAPPER.readValue(Helpers.contentAsString(result), RequestInfo.class);
+        assertNotNull(info); // values are all null, but object is returned
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getParticipantRequestInfoOnlyReturnsCurrentStudyInfo() throws Exception {
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withUserAgent("app/20")
+                .withTimeZone(DateTimeZone.forOffsetHours(-7))
+                .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
+        
+        doReturn(requestInfo).when(cacheProvider).getRequestInfo("userId");
+        controller.getRequestInfo("userId");
+    }
+    
     private IdentifierHolder setUpCreateParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder("ABCD");
         

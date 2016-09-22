@@ -8,8 +8,10 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -106,11 +108,21 @@ public class AuthenticationController extends BaseController {
                 throw e;
             }
             writeSessionInfoToMetrics(session);
+            
+            RequestInfo requestInfo = new RequestInfo.Builder()
+                    .withUserId(session.getId())
+                    .withClientInfo(context.getClientInfo())
+                    .withUserAgent(request().getHeader(USER_AGENT))
+                    .withLanguages(session.getParticipant().getLanguages())
+                    .withUserDataGroups(session.getParticipant().getDataGroups())
+                    .withStudyIdentifier(session.getStudyIdentifier())
+                    .withSignedInOn(DateUtils.getCurrentDateTime()).build();
+            cacheProvider.updateRequestInfo(requestInfo);
         }
 
         // Set session token. This way, even if we get a ConsentRequiredException, users are still able to sign consent
         setSessionToken(session.getSessionToken());
-
+        
         // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
         // you've consented to research.
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {

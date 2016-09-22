@@ -7,7 +7,6 @@ import static org.junit.Assert.assertFalse;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -20,12 +19,8 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
-import com.google.common.collect.Sets;
-
 public class ScheduleContextTest {
 
-    private static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("A","B");
-    
     @Test
     public void equalsHashCode() {
         EqualsVerifier.forClass(ScheduleContext.class).allFieldsShouldBeUsed().verify();
@@ -76,7 +71,7 @@ public class ScheduleContextTest {
                 .withMinimumPerSchedule(3)
                 .withEvents(events)
                 .withHealthCode("healthCode")
-                .withUserDataGroups(USER_DATA_GROUPS)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
                 .withNow(now).build();
         assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
         assertEquals(clientInfo, context.getCriteriaContext().getClientInfo());
@@ -85,7 +80,7 @@ public class ScheduleContextTest {
         assertEquals(events.get("enrollment"), context.getEvent("enrollment"));
         assertEquals(3, context.getMinimumPerSchedule());
         assertEquals("healthCode", context.getCriteriaContext().getHealthCode());
-        assertEquals(USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
         assertEquals(now, context.getNow());
 
         // and the other studyId setter

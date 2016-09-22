@@ -13,10 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -116,6 +118,20 @@ public class ParticipantController extends BaseController {
         String ser = writer.writeValueAsString(participant);
 
         return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
+    }
+    
+    public Result getRequestInfo(String userId) throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        // Verify it's in the same study as the researcher.
+        RequestInfo requestInfo = cacheProvider.getRequestInfo(userId);
+        if (requestInfo == null) {
+            requestInfo = new RequestInfo.Builder().build();
+        } else if (!study.getStudyIdentifier().equals(requestInfo.getStudyIdentifier())) {
+            throw new EntityNotFoundException(StudyParticipant.class);
+        }
+        return okResult(requestInfo);
     }
     
     public Result updateParticipant(String userId) {

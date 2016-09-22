@@ -6,10 +6,13 @@ import static org.junit.Assert.assertNull;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,11 +23,17 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.redis.JedisOps;
 
 import redis.clients.jedis.JedisPool;
@@ -35,8 +44,15 @@ import redis.clients.jedis.JedisPoolConfig;
 public class CacheProviderTest {
 
     private static final String STRING_KEY = "cache-string-test";
-
     private static final String STUDY_IDENTIFIER = "cache-study-test";
+    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
+    private static final String USER_ID = "userId";
+    private static final String USER_AGENT_STRING = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.116 Safari/537.36";
+    private static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("en", "fr");
+    private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+    private static final DateTimeZone MST = DateTimeZone.forOffsetHours(3);
+    private static final DateTime ACTIVITIES_REQUESTED_ON = DateUtils.getCurrentDateTime();
+    private static final DateTime SIGNED_IN_ON = ACTIVITIES_REQUESTED_ON.minusHours(4);
 
     @Autowired
     private CacheProvider cacheProvider;
@@ -132,6 +148,39 @@ public class CacheProviderTest {
         // still expired after 4 seconds.
         retrieved = cacheProvider.getUserSession(sessionToken);
         assertNull(retrieved);
+    }
+    
+    @Test
+    public void canSetAndUpdateRequestInfo() {
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withUserId(USER_ID)
+                .withUserAgent(USER_AGENT_STRING)
+                .withStudyIdentifier(STUDY_ID)
+                .withTimeZone(PST)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+                .build();
+        cacheProvider.updateRequestInfo(requestInfo);
+        
+        // Add different information, rewriting one value
+        RequestInfo extraRequestInfo = new RequestInfo.Builder()
+                .withUserId(USER_ID)
+                .withLanguages(LANGUAGES)
+                .withTimeZone(MST)
+                .withActivitiesAccessedOn(ACTIVITIES_REQUESTED_ON)
+                .withSignedInOn(SIGNED_IN_ON)
+                .build();
+        cacheProvider.updateRequestInfo(extraRequestInfo);
+        
+        // Data is combined in cache.
+        RequestInfo combinedRequestInfo = cacheProvider.getRequestInfo(USER_ID);
+        assertEquals("userId", combinedRequestInfo.getUserId());
+        assertEquals(USER_AGENT_STRING, combinedRequestInfo.getUserAgent());
+        assertEquals(STUDY_ID, combinedRequestInfo.getStudyIdentifier());
+        assertEquals(TestConstants.USER_DATA_GROUPS, combinedRequestInfo.getUserDataGroups());
+        assertEquals(LANGUAGES, combinedRequestInfo.getLanguages());
+        assertEquals(MST, combinedRequestInfo.getTimeZone());
+        assertEquals(ACTIVITIES_REQUESTED_ON.withZone(MST), combinedRequestInfo.getActivitiesAccessedOn());
+        assertEquals(SIGNED_IN_ON.withZone(MST), combinedRequestInfo.getSignedInOn());
     }
     
 }
