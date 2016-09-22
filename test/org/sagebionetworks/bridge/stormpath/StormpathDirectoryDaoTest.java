@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -97,6 +98,7 @@ public class StormpathDirectoryDaoTest {
         directoryDao.deleteDirectoryForStudy(study);
         newDirectory = directoryDao.getDirectoryForStudy(study);
         assertNull("Directory has been deleted", newDirectory);
+        assertFalse("Mapping no longer exists", containsMapping(stormpathHref));
         
         study = null;
     }
