@@ -720,7 +720,14 @@ public class ParticipantServiceTest {
         assertEquals(EMAIL, participant.getEmail());
         assertEquals(ID, participant.getId());
     }
-    
+
+    // Contrived test case for a case that never happens, but somehow does.
+    // See https://sagebionetworks.jira.com/browse/BRIDGE-1463
+    @Test(expected = EntityNotFoundException.class)
+    public void getStudyParticipantWithoutAccountThrows404() {
+        participantService.getParticipant(STUDY, (Account) null, false);
+    }
+
     @Test
     public void requestResetPassword() {
         mockHealthCodeAndAccountRetrieval();

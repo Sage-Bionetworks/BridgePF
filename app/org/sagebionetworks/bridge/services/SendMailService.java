@@ -4,6 +4,6 @@ import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
 public interface SendMailService {
 
-    public void sendEmail(MimeTypeEmailProvider provider);
+    void sendEmail(MimeTypeEmailProvider provider);
 
 }

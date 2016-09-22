@@ -9,24 +9,24 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @BridgeTypeName("SurveyQuestion")
 public interface SurveyQuestion extends SurveyElement {
 
-    public String getPrompt();
+    String getPrompt();
 
-    public void setPrompt(String prompt);
+    void setPrompt(String prompt);
 
-    public String getPromptDetail();
+    String getPromptDetail();
 
-    public void setPromptDetail(String promptDetail);
+    void setPromptDetail(String promptDetail);
 
-    public boolean getFireEvent();
+    boolean getFireEvent();
 
-    public void setFireEvent(boolean fireEvent);
+    void setFireEvent(boolean fireEvent);
 
-    public UIHint getUiHint();
+    UIHint getUiHint();
 
-    public void setUiHint(UIHint hint);
+    void setUiHint(UIHint hint);
 
-    public Constraints getConstraints();
+    Constraints getConstraints();
 
-    public void setConstraints(Constraints constraints);
+    void setConstraints(Constraints constraints);
 
 }

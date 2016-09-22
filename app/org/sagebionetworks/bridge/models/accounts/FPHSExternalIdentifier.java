@@ -10,14 +10,14 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoFPHSExternalIdentifier.class)
 public interface FPHSExternalIdentifier extends BridgeEntity {
 
-    public static FPHSExternalIdentifier create(String externalId) {
+    static FPHSExternalIdentifier create(String externalId) {
         return new DynamoFPHSExternalIdentifier(externalId);
     }
     
-    public String getExternalId();
-    public void setExternalId(String externalId);
+    String getExternalId();
+    void setExternalId(String externalId);
     
-    public boolean isRegistered();
-    public void setRegistered(boolean registered);
+    boolean isRegistered();
+    void setRegistered(boolean registered);
     
 }

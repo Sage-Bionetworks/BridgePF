@@ -9,16 +9,16 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @BridgeTypeName("SurveyInfoScreen")
 public interface SurveyInfoScreen extends SurveyElement {
     
-    public String getTitle();
-    public void setTitle(String title);
+    String getTitle();
+    void setTitle(String title);
     
-    public String getPrompt();
-    public void setPrompt(String prompt);
+    String getPrompt();
+    void setPrompt(String prompt);
     
-    public String getPromptDetail();
-    public void setPromptDetail(String promptDetail);
+    String getPromptDetail();
+    void setPromptDetail(String promptDetail);
 
-    public Image getImage();
-    public void setImage(Image image);
+    Image getImage();
+    void setImage(Image image);
     
 }

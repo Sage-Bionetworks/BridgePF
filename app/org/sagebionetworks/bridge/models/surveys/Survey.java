@@ -13,45 +13,45 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @BridgeTypeName("Survey")
 public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
     
-    public String getStudyIdentifier();
-    public void setStudyIdentifier(String studyIdentifier);
+    String getStudyIdentifier();
+    void setStudyIdentifier(String studyIdentifier);
     
-    public String getGuid();
-    public void setGuid(String guid);
+    String getGuid();
+    void setGuid(String guid);
     
-    public long getCreatedOn();
-    public void setCreatedOn(long createdOn);
+    long getCreatedOn();
+    void setCreatedOn(long createdOn);
     
-    public long getModifiedOn();
-    public void setModifiedOn(long modifiedOn);
+    long getModifiedOn();
+    void setModifiedOn(long modifiedOn);
     
-    public Long getVersion();
-    public void setVersion(Long version);
+    Long getVersion();
+    void setVersion(Long version);
     
-    public String getName();
-    public void setName(String name);
+    String getName();
+    void setName(String name);
 
-    public String getIdentifier();
-    public void setIdentifier(String identifier);
+    String getIdentifier();
+    void setIdentifier(String identifier);
 
-    public boolean isPublished();
-    public void setPublished(boolean published);
+    boolean isPublished();
+    void setPublished(boolean published);
 
-    public boolean isDeleted();
-    public void setDeleted(boolean deleted);
+    boolean isDeleted();
+    void setDeleted(boolean deleted);
     
     /**
      * Gets the upload schema revision that corresponds to this survey. See
      * {@link org.sagebionetworks.bridge.models.upload.UploadSchema#getRevision} for more details.
      */
-    public Integer getSchemaRevision();
+    Integer getSchemaRevision();
 
     /** @see #getSchemaRevision */
-    public void setSchemaRevision(Integer schemaRevision);
+    void setSchemaRevision(Integer schemaRevision);
 
-    public List<SurveyElement> getElements();
-    public void setElements(List<SurveyElement> elements);
+    List<SurveyElement> getElements();
+    void setElements(List<SurveyElement> elements);
     
-    public List<SurveyQuestion> getUnmodifiableQuestionList();
+    List<SurveyQuestion> getUnmodifiableQuestionList();
     
 }

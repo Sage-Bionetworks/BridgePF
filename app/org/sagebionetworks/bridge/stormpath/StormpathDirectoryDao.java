@@ -131,23 +131,13 @@ public class StormpathDirectoryDao implements DirectoryDao {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         Application app = getApplication();
         checkNotNull(app);
-        
-        Directory existing = getDirectoryForStudy(study);
-        
-        // delete the mapping
-        ApplicationAccountStoreMapping mapping = getApplicationMapping(existing.getHref(), app);
-        if (mapping != null) {
-            mapping.delete();
-        } else {
-            logger.warn("ApplicationAccountStoreMapping not found: " + app.getName() + ", " + existing.getHref());
-        }
 
         // delete the directory
-        Directory directory = client.getResource(existing.getHref(), Directory.class);
+        Directory directory = getDirectoryForStudy(study);
         if (directory != null) {
             directory.delete();
         } else {
-            logger.warn("Directory not found: " + existing.getHref());
+            logger.warn("Directory not found: " + study.getStormpathHref());
         }
     }
 

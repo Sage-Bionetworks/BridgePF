@@ -19,13 +19,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoReportIndex.class)
 public interface ReportIndex {
 
-    public static ReportIndex create() {
+    static ReportIndex create() {
         return new DynamoReportIndex();
     }
     
     @JsonIgnore
     String getKey();
-    public void setKey(String key);
+    void setKey(String key);
     
     String getIdentifier();
     void setIdentifier(String identifier);

@@ -11,6 +11,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @BridgeTypeName("StudyIdentifier")
 public interface StudyIdentifier {
     
-    public String getIdentifier();
+    String getIdentifier();
 
 }

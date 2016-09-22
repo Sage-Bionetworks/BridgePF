@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoReportData.class)
 public interface ReportData {
 
-    public static ReportData create() {
+    static ReportData create() {
         return new DynamoReportData();
     }
     
