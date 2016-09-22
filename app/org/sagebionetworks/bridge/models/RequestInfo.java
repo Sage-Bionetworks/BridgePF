@@ -7,10 +7,12 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Information about the criteria and access times of requests from a specific user. Useful for 
@@ -67,14 +69,14 @@ public final class RequestInfo {
         return userDataGroups;
     }
 
+    @JsonSerialize(using=DateTimeSerializer.class)
     public DateTime getActivitiesAccessedOn() {
-        return (timeZone != null && activitiesAccessedOn != null) ?
-                activitiesAccessedOn.withZone(timeZone) : activitiesAccessedOn;
+        return (activitiesAccessedOn == null) ? null : activitiesAccessedOn.withZone(timeZone);
     }
 
+    @JsonSerialize(using=DateTimeSerializer.class)
     public DateTime getSignedInOn() {
-        return (timeZone != null && signedInOn != null) ?
-                signedInOn.withZone(timeZone) : signedInOn;
+        return (signedInOn == null) ? null : signedInOn.withZone(timeZone);
     }
     
     public DateTimeZone getTimeZone() {
@@ -124,7 +126,7 @@ public final class RequestInfo {
         private Set<String> userDataGroups;
         private DateTime activitiesAccessedOn;
         private DateTime signedInOn;
-        private DateTimeZone timeZone;
+        private DateTimeZone timeZone = DateTimeZone.UTC;
         private StudyIdentifier studyIdentifier;
 
         public Builder copyOf(RequestInfo requestInfo) {
