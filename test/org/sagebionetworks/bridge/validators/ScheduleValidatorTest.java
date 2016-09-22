@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalTime;
+import org.joda.time.Period;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
@@ -27,6 +29,76 @@ public class ScheduleValidatorTest {
         schedule = new Schedule();
         validator = new ScheduleValidator(Sets.newHashSet("tapTest"));
     }
+    
+    @Test
+    public void persistentScheduleDoesNotHaveDelay() {
+        schedule.setScheduleType(ScheduleType.PERSISTENT);
+        schedule.setDelay(Period.parse("P2D"));
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
+                    e.getErrors().get("scheduleType").get(0));
+        }
+    }
+    
+    @Test
+    public void persistentScheduleDoesNotHaveInterval() {
+        schedule.setScheduleType(ScheduleType.PERSISTENT);
+        schedule.setInterval(Period.parse("P2D"));
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
+                    e.getErrors().get("scheduleType").get(0));
+        }
+    }
+    
+    @Test
+    public void persistentScheduleDoesNotHaveCronExpression() {
+        schedule.setScheduleType(ScheduleType.PERSISTENT);
+        schedule.setCronTrigger("asdf");
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
+                    e.getErrors().get("scheduleType").get(0));
+        }
+    }
+    
+    @Test
+    public void persistentScheduleDoesNotHaveTimes() {
+        schedule.setScheduleType(ScheduleType.PERSISTENT);
+        schedule.addTimes(LocalTime.parse("10:00"));
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
+                    e.getErrors().get("scheduleType").get(0));
+        }
+    }
+    
+    @Test
+    public void persistentScheduleDoesNotHaveExpiration() {
+        schedule.setScheduleType(ScheduleType.PERSISTENT);
+        schedule.setExpires(Period.parse("P1D"));
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
+                    e.getErrors().get("scheduleType").get(0));
+        }
+    }    
     
     @Test
     public void mustHaveAtLeastOneActivityAndAScheduleType() {

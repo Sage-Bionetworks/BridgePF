@@ -52,7 +52,7 @@ public abstract class ActivityScheduler {
         }
     }
     
-    private void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
+    protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
             ScheduleContext context, DateTime scheduledTime) {
         // Assert that the scheduledTime was constructed by subclass implementation with the correct time zone.
         checkArgument(context.getZone().equals(scheduledTime.getZone()), 
