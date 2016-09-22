@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -56,6 +58,7 @@ import com.google.common.collect.Sets;
 
 @Component
 public class ParticipantService {
+    private static Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
 
     private static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
     
@@ -121,6 +124,20 @@ public class ParticipantService {
     }
     
     public StudyParticipant getParticipant(Study study, Account account, boolean includeHistory) {
+        if (account == null) {
+            // This should never happen. However, it occasionally does happen, generally only during integration tests.
+            // If a call is taking a long time for whatever reason, the call will timeout and the tests will delete the
+            // account. If this happens in the middle of a call (such as give consent or update self participant),
+            // we'll suddenly have no account here.
+            //
+            // We'll still want to log an error for this so we'll be aware when it happens. At the very least, we'll
+            // have this comment and a marginally useful error message instead of a mysterious null pointer exception.
+            //
+            // See https://sagebionetworks.jira.com/browse/BRIDGE-1463 for more info.
+            LOG.error("getParticipant() called with no account. Was the account deleted in the middle of the call?");
+            throw new EntityNotFoundException(Account.class);
+        }
+
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
 
         ParticipantOptionsLookup lookup = optionsService.getOptions(account.getHealthCode());
