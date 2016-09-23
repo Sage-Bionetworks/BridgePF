@@ -22,6 +22,10 @@ public class PersistentActivityScheduler extends ActivityScheduler {
             // when creating a schedule. It's clearer if you don't include this "finished" event, though it 
             // won't break anything if a user does include it in the eventId.
             
+            // similar to a safety check in ActivityScheduler.getScheduledTimeBasedOnEvent
+            if (schedule.getEventId() == null) {
+                schedule.setEventId("enrollment");
+            }
             String finishedId = "activity:"+activity.getGuid()+":finished";
             DateTime scheduledTime = getFirstEventDateTime(context, finishedId+"," + schedule.getEventId());
 
