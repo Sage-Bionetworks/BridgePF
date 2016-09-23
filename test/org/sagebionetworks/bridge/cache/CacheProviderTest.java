@@ -173,7 +173,7 @@ public class CacheProviderTest {
         
         // Data is combined in cache.
         RequestInfo combinedRequestInfo = cacheProvider.getRequestInfo(USER_ID);
-        assertEquals("userId", combinedRequestInfo.getUserId());
+        assertEquals(USER_ID, combinedRequestInfo.getUserId());
         assertEquals(USER_AGENT_STRING, combinedRequestInfo.getUserAgent());
         assertEquals(STUDY_ID, combinedRequestInfo.getStudyIdentifier());
         assertEquals(TestConstants.USER_DATA_GROUPS, combinedRequestInfo.getUserDataGroups());
@@ -181,6 +181,9 @@ public class CacheProviderTest {
         assertEquals(MST, combinedRequestInfo.getTimeZone());
         assertEquals(ACTIVITIES_REQUESTED_ON.withZone(MST), combinedRequestInfo.getActivitiesAccessedOn());
         assertEquals(SIGNED_IN_ON.withZone(MST), combinedRequestInfo.getSignedInOn());
+        
+        cacheProvider.removeRequestInfo(USER_ID);
+        assertNull(cacheProvider.getRequestInfo(USER_ID));
     }
     
 }

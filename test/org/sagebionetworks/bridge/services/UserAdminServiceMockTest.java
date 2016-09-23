@@ -188,6 +188,7 @@ public class UserAdminServiceMockTest {
         
         // Verify a lot of stuff is deleted or removed
         verify(cacheProvider).removeSessionByUserId("userId");
+        verify(cacheProvider).removeRequestInfo("userId");
         verify(healthDataService).deleteRecordsForHealthCode("healthCode");
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
