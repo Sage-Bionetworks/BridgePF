@@ -149,13 +149,15 @@ public final class Schedule implements BridgeEntity {
         this.eventId = eventId;
     }
     /**
-     * A persistent schedule is one that keeps a scheduled activity alive in the list of 
-     * activities, recreating it every time it is completed. Persistent schedules are 
-     * scheduled to occur one time, but have an event ID that immediately triggers 
-     * re-scheduling when one of the activities assigned by the schedule is completed.
-     * @return
+     * Persistent schedules will reschedule an activity immediately after it is finished. 
+     * This is a type of schedule, but previously it was also inferred from a particular 
+     * configuration of one-time schedules. Both kinds of persistent schedule are supported 
+     * until we can migrate to the new PERSISTENT schedule type.
      */
     public boolean getPersistent() {
+        if (getScheduleType() == ScheduleType.PERSISTENT) {
+            return true;
+        }
         if (activities != null) {
             for (Activity activity : activities) {
                 if (activity.isPersistentlyRescheduledBy(this)) {
@@ -170,6 +172,8 @@ public final class Schedule implements BridgeEntity {
     public ActivityScheduler getScheduler() {
         if (getCronTrigger() != null) {
             return new CronActivityScheduler(this);
+        } else if (scheduleType == ScheduleType.PERSISTENT) {
+            return new PersistentActivityScheduler(this);
         }
         return new IntervalActivityScheduler(this);
     }
@@ -192,20 +196,8 @@ public final class Schedule implements BridgeEntity {
     }
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(activities);
-        result = prime * result + Objects.hashCode(cronTrigger);
-        result = prime * result + Objects.hashCode(endsOn);
-        result = prime * result + Objects.hashCode(expires);
-        result = prime * result + Objects.hashCode(delay);
-        result = prime * result + Objects.hashCode(interval);
-        result = prime * result + Objects.hashCode(label);
-        result = prime * result + Objects.hashCode(scheduleType);
-        result = prime * result + Objects.hashCode(startsOn);
-        result = prime * result + Objects.hashCode(eventId);
-        result = prime * result + Objects.hashCode(times);
-        return result;
+        return Objects.hash(activities, cronTrigger, endsOn, expires, delay, interval, label, 
+                scheduleType, startsOn, eventId, times);
     }
     @Override
     public boolean equals(Object obj) {

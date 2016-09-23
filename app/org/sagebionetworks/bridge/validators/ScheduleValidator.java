@@ -41,6 +41,9 @@ public class ScheduleValidator implements Validator {
         if (schedule.getScheduleType() == null) {
             errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, "is required");
         }
+        if (persistentScheduleHasRecurringConfiguration(schedule)) {
+            errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, "should not have delay, interval, cron expression, times, or an expiration");
+        }
         if (oneTimeScheduleHasIntervalOrCronExpression(schedule)) {
             errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, "set to once, but also has an interval and/or cron expression");
         }
@@ -77,6 +80,20 @@ public class ScheduleValidator implements Validator {
         validateActivities(schedule, errors);
     }
     
+    /**
+     * Persistent schedules are very simple, they should not have a delay, interval, cron expression, or 
+     * times.
+     * @param schedule
+     * @return
+     */
+    private boolean persistentScheduleHasRecurringConfiguration(Schedule schedule) {
+        if (schedule.getScheduleType() != ScheduleType.PERSISTENT) {
+            return false;
+        }
+        return (schedule.getInterval() != null || schedule.getCronTrigger() != null ||
+                schedule.getDelay() != null || schedule.getExpires() != null || 
+                !schedule.getTimes().isEmpty());
+    }
     /**
      * A one time schedule should not have an interval or cron expression.
      * @param schedule
