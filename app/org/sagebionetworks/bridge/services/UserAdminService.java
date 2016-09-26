@@ -179,6 +179,7 @@ public class UserAdminService {
             // remove this first so if account is partially deleted, re-authenticating will pick
             // up accurate information about the state of the account (as we can recover it)
             cacheProvider.removeSessionByUserId(account.getId());
+            cacheProvider.removeRequestInfo(account.getId());
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);

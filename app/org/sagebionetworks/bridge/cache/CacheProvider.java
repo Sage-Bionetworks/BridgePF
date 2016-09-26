@@ -69,6 +69,17 @@ public class CacheProvider {
         }
     }
     
+    public void removeRequestInfo(String userId) {
+        checkNotNull(userId);
+        try {
+            final String requestInfoKey = RedisKey.REQUEST_INFO.getRedisKey(userId);
+            jedisOps.del(requestInfoKey);
+        } catch(Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+    
     private void setRequestInfo(RequestInfo requestInfo) {
         try {
             String ser = bridgeObjectMapper.writeValueAsString(requestInfo);
