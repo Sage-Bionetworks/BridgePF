@@ -30,8 +30,11 @@ import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AsyncBackfillTemplateTest {
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncBackfillTemplateTest.class);
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -148,7 +151,15 @@ public class AsyncBackfillTemplateTest {
                 long expireInMillis = TestBackfillService.EXPIRE * 1000L;
                 // Make sure the time point after which we look for the list of backfill tasks
                 // goes back for the duration of lock expiration
-                return beforeBackfill - expireInMillis < since && since < afterBackfill - expireInMillis;
+                long lower = beforeBackfill - expireInMillis;
+                long upper = afterBackfill - expireInMillis;
+                if (lower < since && since < upper) {
+                    return true;
+                } else {
+                    LOG.error("getTasks() expected to be called with a time between " + lower + " and " + upper +
+                            ", actual=" + since);
+                    return false;
+                }
             }
         };
         verify(backfillDao, times(1)).getTasks(eq(taskName), longThat(sinceMatcher));
