@@ -12,7 +12,6 @@ common: &default_settings
   app_name: BridgePF
   enable_auto_app_naming: true
   enable_auto_transaction_naming: false
-  high_security: true
   log_file_name: newrelic_agent.log
 
   # The levels in increasing order of verboseness are:
