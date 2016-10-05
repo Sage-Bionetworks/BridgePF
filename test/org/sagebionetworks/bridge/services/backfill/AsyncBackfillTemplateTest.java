@@ -153,7 +153,7 @@ public class AsyncBackfillTemplateTest {
                 // goes back for the duration of lock expiration
                 long lower = beforeBackfill - expireInMillis;
                 long upper = afterBackfill - expireInMillis;
-                if (lower < since && since < upper) {
+                if (lower <= since && since <= upper) {
                     return true;
                 } else {
                     LOG.error("getTasks() expected to be called with a time between " + lower + " and " + upper +
