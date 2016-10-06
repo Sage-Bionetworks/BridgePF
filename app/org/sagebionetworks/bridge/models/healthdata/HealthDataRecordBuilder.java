@@ -33,6 +33,8 @@ public abstract class HealthDataRecordBuilder {
     private Set<String> userDataGroups;
     private ParticipantOption.SharingScope userSharingScope;
     private Long version;
+    private HealthDataRecord.ExporterStatus synapseExporterStatus;
+
 
     /** Copies all fields from the specified record into the builder. This is useful for updating records. */
     public HealthDataRecordBuilder copyOf(HealthDataRecord record) {
@@ -51,6 +53,7 @@ public abstract class HealthDataRecordBuilder {
         userDataGroups = record.getUserDataGroups();
         userSharingScope = record.getUserSharingScope();
         version = record.getVersion();
+        synapseExporterStatus = record.getSynapseExporterStatus();
         return this;
     }
 
@@ -215,6 +218,17 @@ public abstract class HealthDataRecordBuilder {
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getVersion */
     public HealthDataRecordBuilder withVersion(Long version) {
         this.version = version;
+        return this;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getSynapseExporterStatus */
+    public HealthDataRecord.ExporterStatus getSynapseExporterStatus() {
+        return synapseExporterStatus;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getSynapseExporterStatus */
+    public HealthDataRecordBuilder withSynapseExporterStatus(HealthDataRecord.ExporterStatus synapseExporterStatus) {
+        this.synapseExporterStatus = synapseExporterStatus;
         return this;
     }
 

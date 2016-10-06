@@ -1,25 +1,42 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadSession;
 
 public class HealthDataServiceTest {
     // We want to do as much testing as possible through the generic interface, so we have this DAO that we use just
     // for getRecordBuilder().
     private static final HealthDataDao DAO = new DynamoHealthDataDao();
+
+    private static final String TEST_HEALTH_CODE = "valid healthcode";
+    private static final String TEST_SCHEMA_ID = "valid schema";
+    private static final String TEST_STUDY_ID = "valid study";
+    private static final String TEST_RECORD_ID = "mock record ID";
 
     @Test(expected = InvalidEntityException.class)
     public void createOrUpdateRecordNullRecord() {
@@ -122,5 +139,44 @@ public class HealthDataServiceTest {
         assertEquals("foo healthcode", recordList.get(0).getHealthCode());
         assertEquals("bar healthcode", recordList.get(1).getHealthCode());
         assertEquals("baz healthcode", recordList.get(2).getHealthCode());
+    }
+
+    @Test
+    public void updateRecordSuccess() throws Exception {
+
+        // first create a mock record
+        // record
+        HealthDataRecord record = DAO.getRecordBuilder().withHealthCode(TEST_HEALTH_CODE)
+                .withSchemaId(TEST_SCHEMA_ID).withSchemaRevision(3).withStudyId(TEST_STUDY_ID).build();
+
+        // mock dao
+        HealthDataDao mockDao = mock(HealthDataDao.class);
+        when(mockDao.createOrUpdateRecord(record)).thenReturn(TEST_RECORD_ID);
+
+        HealthDataService svc = new HealthDataService();
+        svc.setHealthDataDao(mockDao);
+
+        // execute and validate
+        String retVal = svc.createOrUpdateRecord(record);
+        assertEquals(TEST_RECORD_ID, retVal);
+
+        // then create a mock json request
+        RecordExportStatusRequest recordExportStatusRequest = createMockRecordExportStatusRequest();
+        when(mockDao.getRecordById(TEST_RECORD_ID)).thenReturn(record);
+
+        // finally call service method and assert
+        svc.updateRecordsWithExporterStatus(recordExportStatusRequest);
+        HealthDataRecord recordAfter = svc.getRecordById(TEST_RECORD_ID);
+        assertNotNull(recordAfter.getSynapseExporterStatus());
+        assertEquals(HealthDataRecord.ExporterStatus.SUCCEEDED, recordAfter.getSynapseExporterStatus());
+
+    }
+
+    private RecordExportStatusRequest createMockRecordExportStatusRequest() throws Exception {
+        RecordExportStatusRequest request = new RecordExportStatusRequest();
+        request.setRecordIds(Arrays.asList(TEST_RECORD_ID));
+        request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
+
+        return request;
     }
 }
