@@ -22,13 +22,13 @@ public class HealthDataController extends BaseController {
         this.healthDataService = healthDataService;
     }
 
-    public Result setRecordsStatus() throws JsonProcessingException{
+    public Result updateRecordsStatus() throws JsonProcessingException{
         UserSession session = getAuthenticatedSession(WORKER);
 
         RecordExportStatusRequest recordExportStatusRequest = parseJson(request(), RecordExportStatusRequest.class);
 
         List<String> updatedRecordIds = healthDataService.updateRecordsWithExporterStatus(recordExportStatusRequest);
 
-        return okResult("update exporter status to: " + updatedRecordIds + " complete!");
+        return okResult("Update exporter status to: " + updatedRecordIds + " complete.");
     }
 }

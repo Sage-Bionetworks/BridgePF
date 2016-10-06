@@ -3,21 +3,15 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
@@ -25,8 +19,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
-import org.sagebionetworks.bridge.models.upload.UploadRequest;
-import org.sagebionetworks.bridge.models.upload.UploadSession;
 
 public class HealthDataServiceTest {
     // We want to do as much testing as possible through the generic interface, so we have this DAO that we use just
@@ -166,6 +158,7 @@ public class HealthDataServiceTest {
 
         // finally call service method and assert
         svc.updateRecordsWithExporterStatus(recordExportStatusRequest);
+        verify(mockDao).getRecordById(TEST_RECORD_ID);
         HealthDataRecord recordAfter = svc.getRecordById(TEST_RECORD_ID);
         assertNotNull(recordAfter.getSynapseExporterStatus());
         assertEquals(HealthDataRecord.ExporterStatus.SUCCEEDED, recordAfter.getSynapseExporterStatus());

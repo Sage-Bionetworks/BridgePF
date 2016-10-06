@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.healthdata.*;
+import org.sagebionetworks.bridge.validators.RecordExportStatusRequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,8 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.Validator;
+
 
 /** Service handler for health data APIs. */
 @Component
@@ -25,6 +29,7 @@ public class HealthDataService {
     private HealthDataDao healthDataDao;
 
     private final static int MAX_NUM_RECORD_IDS = 100;
+    private static final Validator exporterStatusValidator = new RecordExportStatusRequestValidator();
 
     /** Health data attachment DAO. This is configured by Spring. */
     @Autowired
@@ -167,26 +172,23 @@ public class HealthDataService {
      * @return updated health record ids list
      */
     public List<String> updateRecordsWithExporterStatus(RecordExportStatusRequest recordExportStatusRequest) {
+        Validate.entityThrowingException(exporterStatusValidator, recordExportStatusRequest);
+
         List<String> healthRecordIds = recordExportStatusRequest.getRecordIds();
         HealthDataRecord.ExporterStatus synapseExporterStatus = recordExportStatusRequest.getSynapseExporterStatus();
-        if (recordExportStatusRequest.getRecordIds().isEmpty() || recordExportStatusRequest.getSynapseExporterStatus()== null) {
-            throw new InvalidEntityException(String.format(Validate.CANNOT_BE_BLANK, "healthRecordIds/synapseExporterStatus"));
-        }
 
         if (healthRecordIds.size() > MAX_NUM_RECORD_IDS) {
-            throw new InvalidEntityException("Size of the record ids list exceeds the limit.");
+            throw new BadRequestException("Size of the record ids list exceeds the limit.");
         }
 
-        List<String> updatedRecordIds = new ArrayList<String>();
-
-        healthRecordIds.forEach(id->{
+        List<String> updatedRecordIds = healthRecordIds.stream().map(id->{
             DynamoHealthDataRecord record = (DynamoHealthDataRecord) getRecordById(id);
             if (record == null) {
                 throw new NotFoundException("The record: " + id + " cannot be found in our database.");
             }
             record.setSynapseExporterStatus(synapseExporterStatus);
-            updatedRecordIds.add(createOrUpdateRecord(record));
-        });
+            return createOrUpdateRecord(record);
+        }).collect(Collectors.toList());
 
         return updatedRecordIds;
     }
