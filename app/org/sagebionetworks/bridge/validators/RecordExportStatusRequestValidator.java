@@ -37,18 +37,14 @@ public class RecordExportStatusRequestValidator implements Validator {
             RecordExportStatusRequest record = (RecordExportStatusRequest) target;
 
             // recordIds
-            List<String> recordIds = record.getRecordIds();
-            if (recordIds == null) {
+            if (record.getRecordIds() == null) {
                 errors.rejectValue("recordIds", Validate.CANNOT_BE_NULL);
-            }
-
-            if (recordIds.isEmpty()) {
+            } else if (record.getRecordIds().isEmpty()) {
                 errors.rejectValue("recordIds", Validate.CANNOT_BE_BLANK);
             }
 
             // synapseExporterStatus
-            HealthDataRecord.ExporterStatus synapseExporterStatus = record.getSynapseExporterStatus();
-            if (synapseExporterStatus == null) {
+            if (record.getSynapseExporterStatus() == null) {
                 errors.rejectValue("synapseExporterStatus", Validate.CANNOT_BE_NULL);
             }
 

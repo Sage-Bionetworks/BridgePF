@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -29,6 +30,7 @@ public class HealthDataServiceTest {
     private static final String TEST_SCHEMA_ID = "valid schema";
     private static final String TEST_STUDY_ID = "valid study";
     private static final String TEST_RECORD_ID = "mock record ID";
+    private static final String TEST_RECORD_ID_2 = "mock record ID 2";
 
     @Test(expected = InvalidEntityException.class)
     public void createOrUpdateRecordNullRecord() {
@@ -133,6 +135,40 @@ public class HealthDataServiceTest {
         assertEquals("baz healthcode", recordList.get(2).getHealthCode());
     }
 
+    @Test(expected = InvalidEntityException.class)
+    public void updateRecordsWithExporterStatusNullRecordIds() {
+        RecordExportStatusRequest request = new RecordExportStatusRequest();
+        request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
+        new HealthDataService().updateRecordsWithExporterStatus(request);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void updateRecordsWithExporterStatusEmptyRecordIds() {
+        RecordExportStatusRequest request = new RecordExportStatusRequest();
+        request.setRecordIds(Arrays.asList());
+        request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
+        new HealthDataService().updateRecordsWithExporterStatus(request);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void updateRecordsWithExporterStatusNullStatus() {
+        RecordExportStatusRequest request = new RecordExportStatusRequest();
+        request.setRecordIds(Arrays.asList(TEST_RECORD_ID));
+        new HealthDataService().updateRecordsWithExporterStatus(request);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void updateRecordsWithExporterStatusExceedRecordIdListLimit() {
+        RecordExportStatusRequest request = new RecordExportStatusRequest();
+        List<String> recordIds = new ArrayList<>();
+        for (int i = 0; i < 101; i++) {
+            recordIds.add(TEST_RECORD_ID);
+        }
+        request.setRecordIds(recordIds);
+        request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
+        new HealthDataService().updateRecordsWithExporterStatus(request);
+    }
+
     @Test
     public void updateRecordSuccess() throws Exception {
 
@@ -141,9 +177,14 @@ public class HealthDataServiceTest {
         HealthDataRecord record = DAO.getRecordBuilder().withHealthCode(TEST_HEALTH_CODE)
                 .withSchemaId(TEST_SCHEMA_ID).withSchemaRevision(3).withStudyId(TEST_STUDY_ID).build();
 
+        HealthDataRecord record2 = DAO.getRecordBuilder().withHealthCode(TEST_HEALTH_CODE)
+                .withSchemaId(TEST_SCHEMA_ID).withSchemaRevision(3).withStudyId(TEST_STUDY_ID).build();
+
+
         // mock dao
         HealthDataDao mockDao = mock(HealthDataDao.class);
         when(mockDao.createOrUpdateRecord(record)).thenReturn(TEST_RECORD_ID);
+        when(mockDao.createOrUpdateRecord(record2)).thenReturn(TEST_RECORD_ID_2);
 
         HealthDataService svc = new HealthDataService();
         svc.setHealthDataDao(mockDao);
@@ -155,6 +196,7 @@ public class HealthDataServiceTest {
         // then create a mock json request
         RecordExportStatusRequest recordExportStatusRequest = createMockRecordExportStatusRequest();
         when(mockDao.getRecordById(TEST_RECORD_ID)).thenReturn(record);
+        when(mockDao.getRecordById(TEST_RECORD_ID_2)).thenReturn(record2);
 
         // finally call service method and assert
         svc.updateRecordsWithExporterStatus(recordExportStatusRequest);
@@ -162,12 +204,16 @@ public class HealthDataServiceTest {
         HealthDataRecord recordAfter = svc.getRecordById(TEST_RECORD_ID);
         assertNotNull(recordAfter.getSynapseExporterStatus());
         assertEquals(HealthDataRecord.ExporterStatus.SUCCEEDED, recordAfter.getSynapseExporterStatus());
+        verify(mockDao).getRecordById(TEST_RECORD_ID_2);
+        HealthDataRecord record2After = svc.getRecordById(TEST_RECORD_ID_2);
+        assertNotNull(record2After.getSynapseExporterStatus());
+        assertEquals(HealthDataRecord.ExporterStatus.SUCCEEDED, record2After.getSynapseExporterStatus());
 
     }
 
     private RecordExportStatusRequest createMockRecordExportStatusRequest() throws Exception {
         RecordExportStatusRequest request = new RecordExportStatusRequest();
-        request.setRecordIds(Arrays.asList(TEST_RECORD_ID));
+        request.setRecordIds(Arrays.asList(TEST_RECORD_ID, TEST_RECORD_ID_2));
         request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
 
         return request;
