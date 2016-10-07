@@ -43,6 +43,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private String userExternalId;
     private Set<String> userDataGroups;
     private Long version;
+    private ExporterStatus synapseExporterStatus;
 
     /** {@inheritDoc} */
     @JsonSerialize(using = DateTimeToLongSerializer.class)
@@ -225,6 +226,17 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
         this.version = version;
     }
 
+    /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    public ExporterStatus getSynapseExporterStatus() {
+        return synapseExporterStatus;
+    }
+
+    /** @see #getSynapseExporterStatus */
+    public void setSynapseExporterStatus(ExporterStatus synapseExporterStatus) {
+        this.synapseExporterStatus = synapseExporterStatus;
+    }
+
     /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder}. */
     public static class Builder extends HealthDataRecordBuilder {
         /** {@inheritDoc} */
@@ -246,6 +258,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
             record.setUserExternalId(getUserExternalId());
             record.setUserDataGroups(getUserDataGroups());
             record.setVersion(getVersion());
+            record.setSynapseExporterStatus(getSynapseExporterStatus());
             return record;
         }
     }

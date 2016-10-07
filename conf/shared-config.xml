@@ -166,4 +166,8 @@
     <bean id="ReportControllerProxied" parent="proxiedController">
         <property name="targetName" value="reportController"/>
     </bean>
+
+    <bean id="HealthDataControllerProxied" parent="proxiedController">
+        <property name="targetName" value="healthDataController"/>
+    </bean>
 </beans>

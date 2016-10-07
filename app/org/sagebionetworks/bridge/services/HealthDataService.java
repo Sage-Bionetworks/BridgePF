@@ -1,8 +1,14 @@
 package org.sagebionetworks.bridge.services;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.models.healthdata.*;
+import org.sagebionetworks.bridge.validators.RecordExportStatusRequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -11,18 +17,19 @@ import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachmentBuilder;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.Validator;
+
 
 /** Service handler for health data APIs. */
 @Component
 public class HealthDataService {
     private HealthDataAttachmentDao healthDataAttachmentDao;
     private HealthDataDao healthDataDao;
+
+    private final static int MAX_NUM_RECORD_IDS = 100;
+    private static final Validator exporterStatusValidator = new RecordExportStatusRequestValidator();
 
     /** Health data attachment DAO. This is configured by Spring. */
     @Autowired
@@ -155,5 +162,34 @@ public class HealthDataService {
     /** Returns a builder object, used for building records, for create or update. */
     public HealthDataRecordBuilder getRecordBuilder() {
         return healthDataDao.getRecordBuilder();
+    }
+
+    /**
+     * returns received list of record Ids after updating
+     * @param recordExportStatusRequest
+     *         POJO contains: a lit of health record ids, not upload ids and
+     *         an Synapse Exporter Status with value either NOT_EXPORTED or SUCCEEDED
+     * @return updated health record ids list
+     */
+    public List<String> updateRecordsWithExporterStatus(RecordExportStatusRequest recordExportStatusRequest) {
+        Validate.entityThrowingException(exporterStatusValidator, recordExportStatusRequest);
+
+        List<String> healthRecordIds = recordExportStatusRequest.getRecordIds();
+        HealthDataRecord.ExporterStatus synapseExporterStatus = recordExportStatusRequest.getSynapseExporterStatus();
+
+        if (healthRecordIds.size() > MAX_NUM_RECORD_IDS) {
+            throw new BadRequestException("Size of the record ids list exceeds the limit.");
+        }
+
+        List<String> updatedRecordIds = healthRecordIds.stream().map(id->{
+            DynamoHealthDataRecord record = (DynamoHealthDataRecord) getRecordById(id);
+            if (record == null) {
+                throw new NotFoundException("The record: " + id + " cannot be found in our database.");
+            }
+            record.setSynapseExporterStatus(synapseExporterStatus);
+            return createOrUpdateRecord(record);
+        }).collect(Collectors.toList());
+
+        return updatedRecordIds;
     }
 }

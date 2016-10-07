@@ -24,6 +24,10 @@ public interface HealthDataRecord extends BridgeEntity {
             new SimpleFilterProvider().addFilter("filter",
                     SimpleBeanPropertyFilter.serializeAllExcept("healthCode")));
 
+    public enum ExporterStatus {
+        NOT_EXPORTED, SUCCEEDED;
+    }
+
     /**
      * The timestamp at which this health data was created (recorded on the client), in milliseconds since 1970-01-01
      * (start of epoch).
@@ -83,4 +87,10 @@ public interface HealthDataRecord extends BridgeEntity {
      * request.
      */
     Long getVersion();
+
+    /**
+     * Used to get the Bridge-Exporter's status of if that tasks' records are submitted to Synapse
+     * Only two values: NOT_EXPORTED and SUCCEEDED
+     */
+    ExporterStatus getSynapseExporterStatus();
 }
