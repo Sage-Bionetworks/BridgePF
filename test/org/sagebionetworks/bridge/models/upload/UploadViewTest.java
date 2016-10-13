@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 /**
  * An API view of uploads that combines information from our internal upload health data record tables.
@@ -33,8 +34,9 @@ public class UploadViewTest {
         upload.setHealthCode("health-code");
         
         UploadView view = new UploadView.Builder().withUpload(upload)
-                .withSchemaId("schema-name").withSchemaRevision(10).build();
-        
+                .withSchemaId("schema-name").withSchemaRevision(10)
+                .withHealthRecordExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED).build();
+
         JsonNode node = BridgeObjectMapper.get().valueToTree(view);
         assertEquals(1000, node.get("contentLength").asInt());
         assertEquals("succeeded", node.get("status").asText());
@@ -44,6 +46,7 @@ public class UploadViewTest {
         assertEquals("schema-name", node.get("schemaId").asText());
         assertEquals(10, node.get("schemaRevision").asInt());
         assertEquals("Upload", node.get("type").asText());
+        assertEquals("succeeded", node.get("healthRecordExporterStatus").asText());
         
         // Should not be here. If these are not there, @JsonIgnore is working as intended
         // and tested in UploadTest
