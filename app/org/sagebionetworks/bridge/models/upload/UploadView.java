@@ -37,7 +37,9 @@ public final class UploadView {
         return schemaRevision;
     }
 
-    public HealthDataRecord.ExporterStatus getHealthRecordExporterStatus() { return healthRecordExporterStatus; }
+    public HealthDataRecord.ExporterStatus getHealthRecordExporterStatus() {
+        return healthRecordExporterStatus;
+    }
     
     public static class Builder {
         private Upload upload;
