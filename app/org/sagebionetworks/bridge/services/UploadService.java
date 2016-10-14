@@ -283,6 +283,7 @@ public class UploadService {
                 HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
                 builder.withSchemaId(record.getSchemaId());
                 builder.withSchemaRevision(record.getSchemaRevision());
+                builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
             }
             return builder.build();
         }).collect(Collectors.toList());
