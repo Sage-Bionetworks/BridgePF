@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -23,20 +23,24 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
-import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
 import com.google.common.collect.ImmutableMap;
@@ -44,6 +48,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+@RunWith(MockitoJUnitRunner.class)
 public class ScheduledActivityServiceMockTest {
     
     private static final HashSet<Object> EMPTY_SET = Sets.newHashSet();
@@ -54,13 +59,26 @@ public class ScheduledActivityServiceMockTest {
     
     private static final String USER_ID = "CCC";
     
+    private static final String SURVEY_GUID = "surveyGuid";
+    
+    private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2015-04-03T10:40:34.000-07:00");
+    
     private ScheduledActivityService service;
     
+    @Mock
     private SchedulePlanService schedulePlanService;
     
+    @Mock
     private ScheduledActivityDao activityDao;
     
+    @Mock
     private ActivityEventService activityEventService;
+    
+    @Mock
+    private SurveyService surveyService;
+    
+    @Mock
+    private Survey survey;
     
     private DateTime endsOn;
     
@@ -71,17 +89,14 @@ public class ScheduledActivityServiceMockTest {
         
         service = new ScheduledActivityService();
         
-        schedulePlanService = mock(SchedulePlanService.class);
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
 
         Map<String,DateTime> map = ImmutableMap.of();
-        activityEventService = mock(ActivityEventService.class);
         when(activityEventService.getActivityEventMap(anyString())).thenReturn(map);
         
         ScheduleContext context = createScheduleContext(endsOn);
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
-        activityDao = mock(DynamoScheduledActivityDao.class);
         when(activityDao.getActivity(any(), anyString(), anyString())).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
@@ -91,9 +106,16 @@ public class ScheduledActivityServiceMockTest {
         });
         when(activityDao.getActivities(context.getZone(), scheduledActivities)).thenReturn(scheduledActivities);
         
+        doReturn(SURVEY_GUID).when(survey).getGuid();
+        doReturn(SURVEY_CREATED_ON.getMillis()).when(survey).getCreatedOn();
+        doReturn("identifier").when(survey).getIdentifier();
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(
+                eq(TEST_STUDY), any())).thenReturn(survey);
+        
         service.setSchedulePlanService(schedulePlanService);
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
+        service.setSurveyService(surveyService);
     }
     
     @Test(expected = BadRequestException.class)
@@ -143,6 +165,25 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         assertTrue(activities.size() > 0);
+    }
+    
+    @Test
+    public void surveysAreResolved() {
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(TEST_STUDY)
+                .withTimeZone(DateTimeZone.UTC)
+                .withAccountCreatedOn(ENROLLMENT.minusHours(2))
+                .withEndsOn(endsOn)
+                .withHealthCode(HEALTH_CODE)
+                .withUserId(USER_ID).build();        
+        
+        List<ScheduledActivity> activities = service.getScheduledActivities(context);
+        for (ScheduledActivity activity : activities) {
+            if (activity.getActivity().getActivityType() == ActivityType.SURVEY) {
+                assertEquals(SURVEY_CREATED_ON.getMillis(), 
+                        activity.getActivity().getSurvey().getCreatedOn().getMillis());
+            }
+        }
     }
     
     @SuppressWarnings({"unchecked","rawtypes"})

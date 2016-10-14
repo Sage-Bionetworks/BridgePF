@@ -1,11 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
-import java.util.List;
 
 /** Validator for {@link org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest}. */
 public class RecordExportStatusRequestValidator implements Validator {
