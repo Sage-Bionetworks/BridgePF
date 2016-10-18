@@ -8,6 +8,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
@@ -295,7 +296,23 @@ public class ReportControllerTest {
         assertEquals("Last", reportData.getData().get("field1").asText());
         assertEquals("Name", reportData.getData().get("field2").asText());
     }
-    
+
+    @Test
+    public void saveStudyReportForSpecifiedStudyData() throws Exception {
+        String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
+        TestUtils.mockPlayContextWithJson(json);
+
+        Result result = controller.saveStudyReportForSpecifiedStudy(TEST_STUDY.getIdentifier(), REPORT_ID);
+        TestUtils.assertResult(result, 201, "Report data saved.");
+
+        verify(mockReportService).saveStudyReport(eq(TEST_STUDY), eq(REPORT_ID), reportDataCaptor.capture());
+        ReportData reportData = reportDataCaptor.getValue();
+        assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
+        assertNull(reportData.getKey());
+        assertEquals("Last", reportData.getData().get("field1").asText());
+        assertEquals("Name", reportData.getData().get("field2").asText());
+    }
+
     @Test
     public void getStudyReportIndices() throws Exception {
         Result result = controller.getReportIndices("study");

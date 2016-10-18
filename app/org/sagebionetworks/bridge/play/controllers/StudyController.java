@@ -1,9 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -20,6 +16,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
@@ -32,6 +29,8 @@ import org.springframework.stereotype.Controller;
 
 import play.libs.Json;
 import play.mvc.Result;
+
+import static org.sagebionetworks.bridge.Roles.*;
 
 @Controller
 public class StudyController extends BaseController {
@@ -166,6 +165,24 @@ public class StudyController extends BaseController {
         
         DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
                 session.getStudyIdentifier(), startTime, endTime);
+
+        return okResult(uploads);
+    }
+
+    /**
+     * another version of getUploads for workers to specify any studyid to get uploads
+     * @param startTimeString
+     * @param endTimeString
+     * @return
+     */
+    public Result getUploadsForStudy(String studyId, String startTimeString, String endTimeString) {
+        UserSession session = getAuthenticatedSession(WORKER);
+
+        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
+
+        DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
+                new StudyIdentifierImpl(studyId), startTime, endTime);
 
         return okResult(uploads);
     }
