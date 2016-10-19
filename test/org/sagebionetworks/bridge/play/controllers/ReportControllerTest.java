@@ -98,6 +98,7 @@ public class ReportControllerTest {
     @Before
     public void before() throws Exception {
         DynamoStudy study = new DynamoStudy();
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         
         controller = spy(new ReportController());
         controller.setReportService(mockReportService);
