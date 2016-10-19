@@ -11,8 +11,10 @@ common: &default_settings
 
   app_name: BridgePF
   enable_auto_app_naming: true
-  enable_auto_transaction_naming: false
-  log_file_name: newrelic_agent.log
+  enable_auto_transaction_naming: true
+
+  # Log to stdout because Heroku doesn't support writing logs to disk.
+  log_file_name: STDOUT
 
   # The levels in increasing order of verboseness are:
   #   off, severe, warning, info, fine, finer, finest
