@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +22,7 @@ public class HealthDataController extends BaseController {
     }
 
     public Result updateRecordsStatus() throws JsonProcessingException{
-        UserSession session = getAuthenticatedSession(WORKER);
+        getAuthenticatedSession(WORKER);
 
         RecordExportStatusRequest recordExportStatusRequest = parseJson(request(), RecordExportStatusRequest.class);
 

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
@@ -15,11 +16,14 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -40,6 +44,8 @@ public class ScheduledActivityService {
     
     private SchedulePlanService schedulePlanService;
     
+    private SurveyService surveyService;
+    
     @Autowired
     public final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
         this.activityDao = activityDao;
@@ -51,6 +57,10 @@ public class ScheduledActivityService {
     @Autowired
     public final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
+    }
+    @Autowired
+    public final void setSurveyService(SurveyService surveyService) {
+        this.surveyService = surveyService;
     }
     
     public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {
@@ -151,10 +161,32 @@ public class ScheduledActivityService {
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             if (schedule != null) {
                 List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
-                scheduledActivities.addAll(activities);    
+                List<ScheduledActivity> resolvedActivities = resolveLinks(context, activities);
+                scheduledActivities.addAll(resolvedActivities);    
             }
         }
         return scheduledActivities;
+    }
+    
+    private List<ScheduledActivity> resolveLinks(ScheduleContext context, List<ScheduledActivity> activities) {
+        return activities.stream().map(schActivity -> {
+            Activity activity = schActivity.getActivity();
+
+            if (isReferenceToPublishedSurvey(activity)) {
+                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(
+                        context.getCriteriaContext().getStudyIdentifier(), activity.getSurvey().getGuid());
+
+                Activity resolvedActivity = new Activity.Builder().withActivity(activity)
+                        .withSurvey(survey.getIdentifier(), survey.getGuid(), new DateTime(survey.getCreatedOn()))
+                        .build();
+                schActivity.setActivity(resolvedActivity);
+            }
+            return schActivity;
+        }).collect(toList());
+    }
+    
+    private boolean isReferenceToPublishedSurvey(Activity activity) {
+        return (activity.getActivityType() == ActivityType.SURVEY && activity.getSurvey().getCreatedOn() == null);
     }
     
 }
