@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -175,14 +176,16 @@ public class StudyController extends BaseController {
      * @param endTimeString
      * @return
      */
-    public Result getUploadsForStudy(String studyId, String startTimeString, String endTimeString) {
+    public Result getUploadsForStudy(String studyId, String startTimeString, String endTimeString) throws EntityNotFoundException {
         UserSession session = getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
 
+        Study study = studyService.getStudy(studyId);
+
         DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
-                new StudyIdentifierImpl(studyId), startTime, endTime);
+                study.getStudyIdentifier(), startTime, endTime);
 
         return okResult(uploads);
     }

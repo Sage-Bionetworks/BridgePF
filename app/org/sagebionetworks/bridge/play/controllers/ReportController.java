@@ -225,7 +225,8 @@ public class ReportController extends BaseController {
         ReportData reportData = parseJson(request(), ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
 
-        reportService.saveStudyReport(new StudyIdentifierImpl(studyId), identifier, reportData);
+        Study study = studyService.getStudy(studyId);
+        reportService.saveStudyReport(study.getStudyIdentifier(), identifier, reportData);
 
         return createdResult("Report data saved.");
     }

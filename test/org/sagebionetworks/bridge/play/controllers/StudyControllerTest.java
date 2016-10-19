@@ -87,9 +87,11 @@ public class StudyControllerTest {
         
         study = new DynamoStudy();
         study.setSupportEmail(EMAIL_ADDRESS);
+        study.setIdentifier(studyId.getIdentifier());
         
         when(mockStudyService.getStudy(studyId)).thenReturn(study);
-        
+        when(mockStudyService.getStudy(studyId.getIdentifier())).thenReturn(study);
+
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
 
         mockUploadCertService = mock(UploadCertificateService.class);
@@ -116,7 +118,23 @@ public class StudyControllerTest {
 
         controller.getStudyPublicKeyAsPem();
     }
-    
+
+    @Test(expected = UnauthorizedException.class)
+    public void cannotAccessGetUploadsForSpecifiedStudyUnlessWorker () throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("healthCode")
+                .withRoles(Sets.newHashSet()).build();
+        UserSession session = new UserSession(participant);
+        session.setAuthenticated(true);
+
+        DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
+        DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
+
+        doReturn(session).when(controller).getSessionIfItExists();
+
+        controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
+    }
+
     @Test
     public void canGetCmsPublicKeyPemFile() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -217,6 +235,7 @@ public class StudyControllerTest {
         Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
         assertEquals(200, result.status());
 
+        verify(mockStudyService).getStudy(studyId.getIdentifier());
         verify(mockUploadService).getStudyUploads(studyId, startTime, endTime);
 
         // in other words, it's the object we mocked out from the service, we were returned the value.

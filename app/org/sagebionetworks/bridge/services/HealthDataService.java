@@ -28,7 +28,7 @@ public class HealthDataService {
     private HealthDataAttachmentDao healthDataAttachmentDao;
     private HealthDataDao healthDataDao;
 
-    private final static int MAX_NUM_RECORD_IDS = 100;
+    private final static int MAX_NUM_RECORD_IDS = 25;
     private static final Validator exporterStatusValidator = new RecordExportStatusRequestValidator();
 
     /** Health data attachment DAO. This is configured by Spring. */

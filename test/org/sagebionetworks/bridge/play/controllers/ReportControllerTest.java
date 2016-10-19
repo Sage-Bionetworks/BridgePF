@@ -120,6 +120,7 @@ public class ReportControllerTest {
         session.setConsentStatuses(statuses);
         
         doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
+        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY.getIdentifier());
         doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
         doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(session).when(controller).getSessionIfItExists();
@@ -305,6 +306,7 @@ public class ReportControllerTest {
         Result result = controller.saveStudyReportForSpecifiedStudy(TEST_STUDY.getIdentifier(), REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
 
+        verify(mockStudyService).getStudy(TEST_STUDY_IDENTIFIER);
         verify(mockReportService).saveStudyReport(eq(TEST_STUDY), eq(REPORT_ID), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
