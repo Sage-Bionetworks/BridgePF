@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.json;
 
+import org.sagebionetworks.bridge.models.studies.MimeType;
+
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
@@ -25,6 +27,9 @@ class LowercaseEnumModule extends SimpleModule {
             @Override
             public JsonDeserializer<?> findEnumDeserializer(Class<?> type, DeserializationConfig config,
                     BeanDescription beanDesc) throws JsonMappingException {
+                if (type == MimeType.class) {
+                    return null;
+                }
                 return new LowercaseEnumDeserializer((Class<Enum<?>>) type);
             }
         };
