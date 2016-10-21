@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
@@ -177,7 +176,7 @@ public class StudyController extends BaseController {
      * @return
      */
     public Result getUploadsForStudy(String studyId, String startTimeString, String endTimeString) throws EntityNotFoundException {
-        UserSession session = getAuthenticatedSession(WORKER);
+        getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
