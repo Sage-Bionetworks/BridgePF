@@ -43,6 +43,8 @@ public class UserSessionInfoTest {
         session.setStudyIdentifier(new StudyIdentifierImpl("study-identifier"));
         
         JsonNode node = UserSessionInfo.toJSON(session);
+        assertEquals("first name", node.get("firstName").asText());
+        assertEquals("last name", node.get("lastName").asText());
         assertEquals(session.isAuthenticated(), node.get("authenticated").asBoolean());
         assertEquals(ConsentStatus.isConsentCurrent(map), node.get("signedMostRecentConsent").asBoolean());
         assertEquals(ConsentStatus.isUserConsented(map), node.get("consented").asBoolean());

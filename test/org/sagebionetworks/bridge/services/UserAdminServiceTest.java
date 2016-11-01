@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -63,38 +64,42 @@ public class UserAdminServiceTest {
 
     private StudyParticipant participant;
 
-    private UserSession testUser;
+    private UserSession session;
 
     @Before
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         String email = TestUtils.makeRandomTestEmail(UserAdminServiceTest.class);
         participant = new StudyParticipant.Builder().withEmail(email).withPassword("P4ssword!").build();
-
-        SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-        authService.signIn(study, TEST_CONTEXT, signIn);
     }
 
     @After
     public void after() {
-        if (testUser != null) {
-            userAdminService.deleteUser(study, testUser.getId());
+        if (session != null) {
+            userAdminService.deleteUser(study, session.getId());
         }
     }
 
-    @Test(expected = BridgeServiceException.class)
+    @Test
     public void deletedUserHasBeenDeleted() {
-        testUser = userAdminService.createUser(study, participant, null, true, true);
+        session = userAdminService.createUser(study, participant, null, true, true);
 
-        userAdminService.deleteUser(study, testUser.getId());
+        userAdminService.deleteUser(study, session.getId());
+        session = null;
 
         // This should fail with a 404.
-        authService.signIn(study, TEST_CONTEXT, new SignIn(participant.getEmail(), participant.getPassword()));
+        try {
+            authService.signIn(study, TEST_CONTEXT, new SignIn(participant.getEmail(), participant.getPassword()));
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            
+        }
     }
 
     @Test
     public void canCreateConsentedAndSignedInUser() {
-        UserSession session = userAdminService.createUser(study, participant, null, true, true);
+        session = userAdminService.createUser(study, participant, null, true, true);
+        
         assertTrue(session.isAuthenticated());
         assertTrue(session.doesConsent());
         for(ConsentStatus status : session.getConsentStatuses().values()) {
@@ -104,23 +109,17 @@ public class UserAdminServiceTest {
     
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session1 = userAdminService.createUser(study, participant, null, false, false);
-        assertFalse(session1.isAuthenticated());
+        UserSession session = userAdminService.createUser(study, participant, null, false, false);
+        assertFalse(session.isAuthenticated());
 
-        UserSession session = authService.signIn(study, TEST_CONTEXT, new SignIn(participant.getEmail(),
-                participant.getPassword()));
+        session = authService.signIn(study, TEST_CONTEXT,
+                new SignIn(participant.getEmail(), participant.getPassword()));
         assertFalse(session.doesConsent());
     }
 
-    // Next two test the same thing in two different ways.
-    public void cannotCreateTheSameUserTwice() {
-        testUser = userAdminService.createUser(study, participant, null, true, true);
-        testUser = userAdminService.createUser(study, participant, null, true, true);
-    }
-    
     @Test
     public void cannotCreateUserWithSameEmail() {
-        testUser = userAdminService.createUser(study, participant, null, true, false);
+        session = userAdminService.createUser(study, participant, null, true, false);
         try {
             userAdminService.createUser(study, participant, null, false, false);
             fail("Sign up with email already in use should throw an exception");
@@ -131,22 +130,24 @@ public class UserAdminServiceTest {
 
     @Test
     public void testDeleteUserWhenSignedOut() {
-        UserSession session = userAdminService.createUser(study, participant, null, true, true);
+        session = userAdminService.createUser(study, participant, null, true, true);
         authService.signOut(session);
         assertNull(authService.getSession(session.getSessionToken()));
         // Shouldn't crash
         userAdminService.deleteUser(study, session.getId());
         assertNull(authService.getSession(session.getSessionToken()));
+        session = null;
     }
 
     @Test
     public void testDeleteUserThatHasBeenDeleted() {
-        UserSession session = userAdminService.createUser(study, participant, null, true, true);
+        session = userAdminService.createUser(study, participant, null, true, true);
         userAdminService.deleteUser(study, session.getId());
         assertNull(authService.getSession(session.getSessionToken()));
         // Delete again shouldn't crash
         userAdminService.deleteUser(study, session.getId());
         assertNull(authService.getSession(session.getSessionToken()));
+        session = null;
     }
     
     @Test
@@ -154,7 +155,7 @@ public class UserAdminServiceTest {
         List<String> idForTest = Lists.newArrayList("AAA");
         externalIdService.addExternalIds(study, idForTest);
         try {
-            UserSession session = userAdminService.createUser(study, participant, null, true, true);
+            session = userAdminService.createUser(study, participant, null, true, true);
             study.setExternalIdValidationEnabled(true);
             
             externalIdService.assignExternalId(study, "AAA", session.getHealthCode());
@@ -171,6 +172,7 @@ public class UserAdminServiceTest {
             // Now this works
             externalIdService.assignExternalId(study, "AAA", session.getHealthCode());
         } finally {
+            session = null;
             // this is a cheat, for sure, but allow deletion
             study.setExternalIdValidationEnabled(false);
             externalIdService.deleteExternalIds(study, idForTest);
