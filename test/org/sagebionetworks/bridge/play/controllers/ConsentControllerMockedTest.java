@@ -386,7 +386,7 @@ public class ConsentControllerMockedTest {
                 new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
-
+    
     private void validateSignature(ConsentSignature signature) {
         assertEquals(UNIX_TIMESTAMP, signature.getSignedOn());
         assertEquals("Jack Aubrey", signature.getName());
