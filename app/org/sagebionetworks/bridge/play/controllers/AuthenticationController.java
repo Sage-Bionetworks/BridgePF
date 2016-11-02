@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.stereotype.Controller;
 
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,6 +36,7 @@ public class AuthenticationController extends BaseController {
         return signInWithRetry(5);
     }
 
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut() throws Exception {
         final UserSession session = getSessionIfItExists();
         if (session != null) {

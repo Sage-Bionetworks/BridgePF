@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
@@ -25,12 +29,16 @@ public class UserDataDownloadController extends BaseController {
      * Play handler for requesting user data. User must be authenticated and consented. (Otherwise, they couldn't have
      * any data to download to begin with.)
      */
-    public Result requestUserData() throws JsonProcessingException {
+    public Result requestUserData(String startDate, String endDate) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
-
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
-        DateRange dateRange = parseJson(request(), DateRange.class);
-
+        
+        DateRange dateRange = null;
+        if (isNotBlank(startDate) && isNotBlank(endDate)) {
+            dateRange = new DateRange(LocalDate.parse(startDate), LocalDate.parse(endDate));
+        } else {
+            dateRange = parseJson(request(), DateRange.class);    
+        }
         userDataDownloadService.requestUserData(studyIdentifier, session.getParticipant().getEmail(), dateRange);
         return acceptedResult("Request submitted.");
     }

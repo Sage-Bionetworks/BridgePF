@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.services.SurveyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import com.google.common.base.Supplier;
@@ -207,6 +208,7 @@ public class SurveyController extends BaseController {
         return createdResult(new GuidCreatedOnVersionHolderImpl(survey));
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result versionSurvey(String surveyGuid, String createdOnString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
@@ -239,6 +241,7 @@ public class SurveyController extends BaseController {
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result publishSurvey(String surveyGuid, String createdOnString, String newSchemaRev) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();

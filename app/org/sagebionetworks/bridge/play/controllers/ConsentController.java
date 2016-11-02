@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 @Controller
@@ -131,6 +132,7 @@ public class ConsentController extends BaseController {
         return okResult("User has been withdrawn from the study.");
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result emailCopyV2(String guid) {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());

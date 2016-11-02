@@ -18,6 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 @Controller
@@ -72,8 +73,8 @@ public class UploadController extends BaseController {
      * Signals to the Bridge server that the upload is complete. This kicks off the asynchronous validation process
      * through the Upload Validation Service.
      */
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result uploadComplete(String uploadId) throws Exception {
-
         final Metrics metrics = getMetrics();
         if (metrics != null) {
             metrics.setUploadId(uploadId);

@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import play.libs.Json;
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import static org.sagebionetworks.bridge.Roles.*;
@@ -105,9 +106,11 @@ public class StudyController extends BaseController {
         return ok(Study.STUDY_WRITER.writeValueAsString(study));
     }
 
-    public Result getAllStudies(String format) throws Exception {
+    // You can get a truncated view of studies with either format=summary or summary=true; 
+    // the latter allows us to make this a boolean flag in the Java client libraries.
+    public Result getAllStudies(String format, String summary) throws Exception {
         List<Study> studies = studyService.getStudies();
-        if ("summary".equals(format)) {
+        if ("summary".equals(format) || "true".equals(summary)) {
             Collections.sort(studies, STUDY_COMPARATOR);
             return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
         }
@@ -149,6 +152,7 @@ public class StudyController extends BaseController {
         return okResult(new EmailVerificationStatusHolder(status));
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result verifyEmail() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());

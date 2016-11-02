@@ -68,7 +68,7 @@ DELETE /v3/users/:userId                  @org.sagebionetworks.bridge.play.contr
 GET    /v3/users/self                     @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
 POST   /v3/users/self                     @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
 POST   /v3/users/self/externalId          @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier
-POST   /v3/users/self/emailData           @org.sagebionetworks.bridge.play.controllers.UserDataDownloadController.requestUserData
+POST   /v3/users/self/emailData           @org.sagebionetworks.bridge.play.controllers.UserDataDownloadController.requestUserData(startDate: String ?= null, endDate: String ?= null)
 GET    /v3/users/self/unsubscribeEmail    @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 POST   /v3/users/self/unsubscribeEmail    @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 POST   /v3/users/self/dataSharing         @org.sagebionetworks.bridge.play.controllers.ConsentController.changeSharingScope
@@ -140,7 +140,7 @@ DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.
 POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
 
 # Studies
-GET    /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null)
+GET    /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null, summary: String ?= null)
 POST   /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy 
 GET    /v3/studies/self             @org.sagebionetworks.bridge.play.controllers.StudyController.getCurrentStudy
 GET    /v3/studies/self/publicKey   @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyPublicKeyAsPem
