@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;

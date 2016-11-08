@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
@@ -47,6 +48,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private Activity activity;
     private boolean persistent;
     private DateTimeZone timeZone;
+    private Schedule schedule;
 
     @Override
     @DynamoDBIgnore
@@ -93,6 +95,17 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @Override
     public void setScheduledOn(DateTime scheduledOn) {
         this.localScheduledOn = (scheduledOn == null) ? null : scheduledOn.toLocalDateTime();
+    }
+    
+    @Override
+    @DynamoDBIgnore
+    @JsonIgnore
+    public Schedule getSchedule() {
+        return schedule;
+    }
+    
+    public void setSchedule(Schedule schedule) {
+        this.schedule = schedule;
     }
 
     @Override

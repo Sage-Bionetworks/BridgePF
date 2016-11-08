@@ -38,7 +38,7 @@ import com.google.common.collect.Sets;
  */
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class ScheduledActivityServiceTest {
+public class ScheduledActivityServiceRecurringTest {
 
     @Resource
     private ScheduledActivityService service;
@@ -62,7 +62,7 @@ public class ScheduledActivityServiceTest {
     public void before() {
         study = studyService.getStudy(TEST_STUDY.getIdentifier());
         study.setTaskIdentifiers(Sets.newHashSet("taskId"));
-        testUser = helper.getBuilder(ScheduledActivityServiceTest.class).build();
+        testUser = helper.getBuilder(ScheduledActivityServiceRecurringTest.class).build();
         
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule Label");
