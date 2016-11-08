@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -14,12 +15,15 @@ import nl.jqno.equalsverifier.Warning;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
+import org.joda.time.LocalTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
@@ -281,6 +285,32 @@ public class DynamoScheduledActivityTest {
         // Still in time zone -6 hours.
         assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
         assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
+    }
+    
+    @Test
+    public void isOnceTaskWithoutTimes() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        assertTrue(ScheduledActivity.isOnceTaskWithoutTimes(schedule));
+        
+        schedule.addTimes(LocalTime.parse("10:00"));
+        assertFalse(ScheduledActivity.isOnceTaskWithoutTimes(schedule));
+        
+        schedule.getTimes().clear();
+        schedule.setCronTrigger("some nonsense here");
+        assertFalse(ScheduledActivity.isOnceTaskWithoutTimes(schedule));
+        
+        schedule.setCronTrigger(null);
+        schedule.setScheduleType(ScheduleType.PERSISTENT);
+        assertFalse(ScheduledActivity.isOnceTaskWithoutTimes(schedule));
+    }
+
+    @Test
+    public void eventToPriorUTCMidnight() {
+        DateTime dateTime = DateTime.parse("2016-11-06T04:32.123-07:00");
+        DateTime midnight = ScheduledActivity.eventToPriorUTCMidnight(dateTime);
+        
+        assertEquals("2016-11-05T00:00:00.000Z", midnight.toString());
     }
     
 }

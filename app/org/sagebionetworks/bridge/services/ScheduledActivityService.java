@@ -103,10 +103,7 @@ public class ScheduledActivityService {
             return Collections.emptySet();
         }
         return scheduledActivities.stream().filter(act -> {
-            Schedule schedule = act.getSchedule();
-            return schedule.getScheduleType() == ScheduleType.ONCE && 
-                   schedule.getTimes().isEmpty() && 
-                   schedule.getCronTrigger() == null;
+            return ScheduledActivity.isOnceTaskWithoutTimes(act.getSchedule());
         }).map(ScheduledActivity::getSchedulePlanGuid).collect(toSet());
     }
     
@@ -122,7 +119,7 @@ public class ScheduledActivityService {
         for (int i=0; i < dbActivities.size(); i++) {
             ScheduledActivity activity = dbActivities.get(i);
             if (oneTimeSchedulePlans.contains(activity.getSchedulePlanGuid())) {
-                DateTime dateTime = activity.getScheduledOn().withTime(LocalTime.MIDNIGHT);
+                DateTime dateTime = ScheduledActivity.eventToPriorUTCMidnight(activity.getScheduledOn());
                 String guid = activity.getActivity().getGuid() + ":" + dateTime.toLocalDateTime().toString();
                 activity.setScheduledOn(dateTime);
                 activity.setGuid(guid);

@@ -4,6 +4,8 @@ import java.util.Comparator;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalTime;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -15,7 +17,17 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 @JsonDeserialize(as = DynamoScheduledActivity.class)
 public interface ScheduledActivity extends BridgeEntity {
-
+    
+    public static boolean isOnceTaskWithoutTimes(Schedule schedule) {
+        return (schedule.getTimes().isEmpty() && 
+                schedule.getScheduleType() == ScheduleType.ONCE && 
+                schedule.getCronTrigger() == null);
+    }
+    
+    public static DateTime eventToPriorUTCMidnight(DateTime dateTime) {
+        return new DateTime(dateTime, DateTimeZone.UTC).minusDays(1).withTime(LocalTime.MIDNIGHT);
+    }
+    
     /**
      * Due to the use of the DynamoIndexHelper, which uses JSON deserialization to recover object
      * structure, we do not use @JsonIgnore annotation on DynamoScheduledActivity. Instead, we 

@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalTime;
 
 public abstract class ActivityScheduler {
@@ -61,9 +62,11 @@ public abstract class ActivityScheduler {
      * the rare event someone tries it.
      */
     protected DateTime adjustOnceIntervalActivityWithNoTimes(ScheduleContext context, DateTime scheduledTime) {
-        // We already know there are no times... but in case this is ever called in another sequence, do check it
-        if (schedule.getTimes().isEmpty() && schedule.getScheduleType() == ScheduleType.ONCE && schedule.getCronTrigger() == null) {
-            return new DateTime(scheduledTime, context.getZone()).withTime(LocalTime.MIDNIGHT);
+        // We already know there are no times... but in case this is ever called in another sequence, do check it.
+        // Normalize to UTC minus one day from enrollment, to ensure no matter where user is at the time of request,
+        // the one-time activity is available.
+        if (ScheduledActivity.isOnceTaskWithoutTimes(schedule)) {
+            return ScheduledActivity.eventToPriorUTCMidnight(scheduledTime);
         }
         return scheduledTime;
     }
