@@ -36,7 +36,7 @@ public interface ScheduledActivity extends BridgeEntity {
         return new DynamoScheduledActivity();
     }
 
-    // Sorts in reverse order.
+    // Sorts in temporal order, oldest to newest activity, labels alphabetically if at the same moment in time.
     Comparator<ScheduledActivity> SCHEDULED_ACTIVITY_COMPARATOR = new Comparator<ScheduledActivity>() {
         @Override
         public int compare(ScheduledActivity scheduledActivity1, ScheduledActivity scheduledActivity2) {
@@ -61,6 +61,15 @@ public interface ScheduledActivity extends BridgeEntity {
 
     ScheduledActivityStatus getStatus();
 
+    /**
+     * BRIDGE-1589. Carry over the schedule used to generate a ScheduledActivity in order to infer one-time tasks 
+     * that may have been duplicated as a result of scheduling from enrollment in a particular time zone. This 
+     * schedule is not persisted or returned to the user.
+     */
+    Schedule getSchedule();
+    
+    void setSchedule(Schedule schedule);
+    
     /**
      * Get the time zone for this request. Currently this is a field on the activity and must be set to get DateTime values
      * from other fields in the class. This forces one method of converting schedule times to local times in order to

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
@@ -29,7 +30,8 @@ public class DynamoScheduledActivityTest {
 
     @Test
     public void equalsHashCode() {
-        EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS)
+                .allFieldsShouldBeUsedExcept("schedule").verify();
     }
 
     @Test
@@ -106,7 +108,7 @@ public class DynamoScheduledActivityTest {
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(schActivity);
-        
+
         JsonNode node = mapper.readTree(output);
         assertEquals("AAA-BBB-CCC", node.get("guid").asText());
         assertEquals(scheduledOnString, node.get("scheduledOn").asText());
@@ -114,6 +116,7 @@ public class DynamoScheduledActivityTest {
         assertEquals("scheduled", node.get("status").asText());
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertTrue(node.get("persistent").asBoolean());
+        assertNull(node.get("schedule"));
         
         JsonNode activityNode = node.get("activity");
         assertEquals("Activity3", activityNode.get("label").asText());

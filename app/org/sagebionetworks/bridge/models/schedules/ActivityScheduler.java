@@ -42,7 +42,7 @@ public abstract class ActivityScheduler {
     protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, 
             SchedulePlan plan, ScheduleContext context, DateTime scheduledTime) {
         if (schedule.getTimes().isEmpty()) {
-            // We're using whatever hour/minute/seconds were in the original event.
+            scheduledTime = adjustOnceIntervalActivityWithNoTimes(context, scheduledTime);
             addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime);
         } else {
             for (LocalTime time : schedule.getTimes()) {
@@ -50,6 +50,22 @@ public abstract class ActivityScheduler {
                 addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime);
             }
         }
+    }
+    
+    /**
+     * BRIDGE-1589: Adjust one-time interval tasks with no specified times so the time portion is 
+     * midnight of the event day. We are curently using the event's time, but that time changes 
+     * with daylight savings time (unlike schedules with specified times... these times are set the 
+     * same regardless of time zone). It is accompanied by a validation rule to prevent setting 
+     * expiration of a one-time to less than 24 hours because that isn't going to make sense in 
+     * the rare event someone tries it.
+     */
+    protected DateTime adjustOnceIntervalActivityWithNoTimes(ScheduleContext context, DateTime scheduledTime) {
+        // We already know there are no times... but in case this is ever called in another sequence, do check it
+        if (schedule.getTimes().isEmpty() && schedule.getScheduleType() == ScheduleType.ONCE && schedule.getCronTrigger() == null) {
+            return new DateTime(scheduledTime, context.getZone()).withTime(LocalTime.MIDNIGHT);
+        }
+        return scheduledTime;
     }
     
     protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
@@ -72,6 +88,7 @@ public abstract class ActivityScheduler {
                     schActivity.setScheduledOn(scheduledTime);
                     schActivity.setGuid(activity.getGuid() + ":" + scheduledTime.toLocalDateTime().toString());
                     schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
+                    schActivity.setSchedule(schedule);
                     if (expiresOn != null) {
                         schActivity.setExpiresOn(expiresOn);
                     }
