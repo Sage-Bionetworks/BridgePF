@@ -159,4 +159,30 @@ public class ScheduleTest {
         schedule.setDelay((Period)null);
         assertTrue(schedule.getPersistent());
     }
+    
+    @Test
+    public void isOnceTaskWithoutTimes() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        assertTrue(Schedule.isScheduleWithoutTimes(schedule));
+        
+        schedule.addTimes(LocalTime.parse("10:00"));
+        assertFalse(Schedule.isScheduleWithoutTimes(schedule));
+        
+        schedule.getTimes().clear();
+        schedule.setCronTrigger("some nonsense here");
+        assertFalse(Schedule.isScheduleWithoutTimes(schedule));
+        
+        schedule.setCronTrigger(null);
+        schedule.setScheduleType(ScheduleType.PERSISTENT);
+        assertFalse(Schedule.isScheduleWithoutTimes(schedule));
+    }
+
+    @Test
+    public void eventToPriorUTCMidnight() {
+        DateTime dateTime = DateTime.parse("2016-11-06T04:32.123-07:00");
+        DateTime midnight = Schedule.eventToMidnight(dateTime);
+        
+        assertEquals("2016-11-05T00:00:00.000Z", midnight.toString());
+    }
 }

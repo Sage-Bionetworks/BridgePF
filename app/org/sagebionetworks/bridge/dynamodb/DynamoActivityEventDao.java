@@ -11,6 +11,8 @@ import java.util.Map;
 import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
@@ -66,10 +68,10 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         
         Builder<String,DateTime> builder = ImmutableMap.<String,DateTime>builder();
         for (DynamoActivityEvent event : queryResults) {
-            builder.put(getEventMapKey(event), new DateTime(event.getTimestamp()));
+            builder.put(getEventMapKey(event), new DateTime(event.getTimestamp(), DateTimeZone.UTC));
             if (isEnrollment(event)) {
-                builder.put(TWO_WEEKS, new DateTime(event.getTimestamp()).minusWeeks(2));
-                builder.put(TWO_MONTHS, new DateTime(event.getTimestamp()).minusMonths(2));
+                builder.put(TWO_WEEKS, new DateTime(event.getTimestamp(), DateTimeZone.UTC).minusWeeks(2));
+                builder.put(TWO_MONTHS, new DateTime(event.getTimestamp(), DateTimeZone.UTC).minusMonths(2));
             }
         }
         return builder.build();

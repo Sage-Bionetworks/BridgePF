@@ -195,7 +195,7 @@ public final class ScheduleContext {
             this.events = context.events;
             this.now = context.now;
             this.minimumPerSchedule = context.minimumPerSchedule;
-            this.accountCreatedOn = context.accountCreatedOn;
+            this.accountCreatedOn = new DateTime(context.accountCreatedOn, DateTimeZone.UTC);
             contextBuilder.withContext(context.criteriaContext);
             return this;
         }

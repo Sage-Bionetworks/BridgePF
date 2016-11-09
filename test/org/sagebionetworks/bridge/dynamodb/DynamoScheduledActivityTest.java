@@ -286,31 +286,4 @@ public class DynamoScheduledActivityTest {
         assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
         assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
     }
-    
-    @Test
-    public void isOnceTaskWithoutTimes() {
-        Schedule schedule = new Schedule();
-        schedule.setScheduleType(ScheduleType.ONCE);
-        assertTrue(ScheduledActivity.isOnceTaskWithoutTimes(schedule));
-        
-        schedule.addTimes(LocalTime.parse("10:00"));
-        assertFalse(ScheduledActivity.isOnceTaskWithoutTimes(schedule));
-        
-        schedule.getTimes().clear();
-        schedule.setCronTrigger("some nonsense here");
-        assertFalse(ScheduledActivity.isOnceTaskWithoutTimes(schedule));
-        
-        schedule.setCronTrigger(null);
-        schedule.setScheduleType(ScheduleType.PERSISTENT);
-        assertFalse(ScheduledActivity.isOnceTaskWithoutTimes(schedule));
-    }
-
-    @Test
-    public void eventToPriorUTCMidnight() {
-        DateTime dateTime = DateTime.parse("2016-11-06T04:32.123-07:00");
-        DateTime midnight = ScheduledActivity.eventToPriorUTCMidnight(dateTime);
-        
-        assertEquals("2016-11-05T00:00:00.000Z", midnight.toString());
-    }
-    
 }

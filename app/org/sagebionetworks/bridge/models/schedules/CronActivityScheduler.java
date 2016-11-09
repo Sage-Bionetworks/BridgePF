@@ -25,7 +25,7 @@ class CronActivityScheduler extends ActivityScheduler {
             
             while (shouldContinueScheduling(context, scheduledTime, scheduledActivities)) {
                 Date next = trigger.getFireTimeAfter(scheduledTime.toDate());
-                scheduledTime = new DateTime(next, context.getZone());
+                scheduledTime = new DateTime(next);
                 
                 if (shouldContinueScheduling(context, scheduledTime, scheduledActivities)) {
                     addScheduledActivityForAllTimes(scheduledActivities, plan, context, scheduledTime);    

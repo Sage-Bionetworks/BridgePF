@@ -1,12 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 
 import java.util.List;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.LocalTime;
 
 public abstract class ActivityScheduler {
@@ -47,7 +45,7 @@ public abstract class ActivityScheduler {
             addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime);
         } else {
             for (LocalTime time : schedule.getTimes()) {
-                scheduledTime = new DateTime(scheduledTime, context.getZone()).withTime(time);
+                scheduledTime = scheduledTime.withTime(time);
                 addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime);
             }
         }
@@ -65,17 +63,14 @@ public abstract class ActivityScheduler {
         // We already know there are no times... but in case this is ever called in another sequence, do check it.
         // Normalize to UTC minus one day from enrollment, to ensure no matter where user is at the time of request,
         // the one-time activity is available.
-        if (ScheduledActivity.isOnceTaskWithoutTimes(schedule)) {
-            return ScheduledActivity.eventToPriorUTCMidnight(scheduledTime);
+        if (Schedule.isScheduleWithoutTimes(schedule)) {
+            return Schedule.eventToMidnight(scheduledTime);
         }
         return scheduledTime;
     }
     
     protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
             ScheduleContext context, DateTime scheduledTime) {
-        // Assert that the scheduledTime was constructed by subclass implementation with the correct time zone.
-        checkArgument(context.getZone().equals(scheduledTime.getZone()), 
-            "Scheduled DateTime does not have requested time zone: " + scheduledTime.getZone());
 
         // If this time point is outside of the schedule's active window, skip it.
         if (isInWindow(scheduledTime)) {
@@ -135,7 +130,7 @@ public abstract class ActivityScheduler {
             String[] eventIds = eventIdsString.trim().split("\\s*,\\s*");
             for (String thisEventId : eventIds) {
                 if (context.getEvent(thisEventId) != null) {
-                    eventDateTime = context.getEvent(thisEventId).withZone(context.getZone());
+                    eventDateTime = context.getEvent(thisEventId);
                     break;
                 }
             }

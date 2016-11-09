@@ -28,8 +28,9 @@ public class PersistentActivityScheduler extends ActivityScheduler {
             }
             String finishedId = "activity:"+activity.getGuid()+":finished";
             DateTime scheduledTime = getFirstEventDateTime(context, finishedId+"," + schedule.getEventId());
-
+            
             if (scheduledTime != null) {
+                scheduledTime = Schedule.eventToMidnight(scheduledTime);
                 addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime);            
             }
         }

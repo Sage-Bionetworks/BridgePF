@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
-import org.joda.time.LocalTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +24,6 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -82,8 +80,8 @@ public class ScheduledActivityService {
         List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
         
         // BRIDGE-1589. Infer scheduled activities derived from ONCE schedules. Adjust DB activities
-        Set<String> schedulePlansWithOneTimeActivities = getOneTimeSchedulePlans(scheduledActivities);
-        adjustPersistedOneTimeActivities(context, dbActivities, schedulePlansWithOneTimeActivities);
+        Set<String> schedulePlansWithoutTimes = getOneTimeSchedulePlans(scheduledActivities);
+        adjustPersistedOneTimeActivities(context, dbActivities, schedulePlansWithoutTimes);
         
         List<ScheduledActivity> saves = updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
         activityDao.saveActivities(saves);
@@ -103,7 +101,7 @@ public class ScheduledActivityService {
             return Collections.emptySet();
         }
         return scheduledActivities.stream().filter(act -> {
-            return ScheduledActivity.isOnceTaskWithoutTimes(act.getSchedule());
+            return Schedule.isScheduleWithoutTimes(act.getSchedule());
         }).map(ScheduledActivity::getSchedulePlanGuid).collect(toSet());
     }
     
@@ -119,7 +117,7 @@ public class ScheduledActivityService {
         for (int i=0; i < dbActivities.size(); i++) {
             ScheduledActivity activity = dbActivities.get(i);
             if (oneTimeSchedulePlans.contains(activity.getSchedulePlanGuid())) {
-                DateTime dateTime = ScheduledActivity.eventToPriorUTCMidnight(activity.getScheduledOn());
+                DateTime dateTime = Schedule.eventToMidnight(activity.getScheduledOn());
                 String guid = activity.getActivity().getGuid() + ":" + dateTime.toLocalDateTime().toString();
                 activity.setScheduledOn(dateTime);
                 activity.setGuid(guid);
@@ -168,17 +166,21 @@ public class ScheduledActivityService {
         // Build the map manually while de-duplicating the db activities, particularly saving any copy that has 
         // client-persisted state in it (startedOn is good enough here). 
         // Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
+        
         Map<String, ScheduledActivity> dbMap = Maps.newHashMap();
         for (ScheduledActivity dbActivity : dbActivities) {
-            // If never put in the map, or it has a startedOn value, add it, overwriting any existing
-            if (!dbMap.containsKey(dbActivity.getGuid()) || dbActivity.getStartedOn() != null) {
+            
+            // If never put in the map, or it has a startedOn value and the existing one doesn't, add it
+            ScheduledActivity existing = dbMap.get(dbActivity.getGuid());
+            if (existing == null) {
+                dbMap.put(dbActivity.getGuid(), dbActivity);
+            } else if (existing.getStartedOn() == null && dbActivity.getStartedOn() != null) {
                 dbMap.put(dbActivity.getGuid(), dbActivity);
             }
         }
-        // At this point all one-time interval tasks without times whether schedules or already persisted, have a time
-        // of midnight, and the db activities have been procssed so there is only one and we can determine if we're 
-        // adding to an existing activity record or creating a new one. 
-
+        // At this point all one-time interval tasks without times whether schedules or already persisted, have a 
+        // time of midnight, and the db activities have been processed so there is only one and we can determine 
+        // if we're adding to an existing activity record or creating a new one.
         List<ScheduledActivity> saves = Lists.newArrayList();
         for (int i=0; i < scheduledActivities.size(); i++) {
             ScheduledActivity activity = scheduledActivities.get(i);
@@ -214,6 +216,7 @@ public class ScheduledActivityService {
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getCriteriaContext().getClientInfo(),
                 context.getCriteriaContext().getStudyIdentifier());
+        
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             if (schedule != null) {
