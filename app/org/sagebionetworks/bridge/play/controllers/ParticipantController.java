@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Sets;
 
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 @Controller
@@ -148,6 +149,7 @@ public class ParticipantController extends BaseController {
         return okResult("Participant updated.");
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut(String userId) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());

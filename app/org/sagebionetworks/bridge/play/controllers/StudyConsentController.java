@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 @Controller
@@ -140,6 +141,7 @@ public class StudyConsentController extends BaseController {
         return createdResult(studyConsent);
     }
 
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result publishConsentV2(String guid, String createdOn) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());

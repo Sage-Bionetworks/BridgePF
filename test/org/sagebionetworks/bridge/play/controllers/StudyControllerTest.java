@@ -1,16 +1,22 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
+
+import java.util.List;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -141,7 +147,7 @@ public class StudyControllerTest {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode")
-                .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+                .withRoles(Sets.newHashSet(DEVELOPER)).build();
         when(mockSession.getParticipant()).thenReturn(participant);
         
         Result result = controller.getStudyPublicKeyAsPem();
@@ -180,17 +186,17 @@ public class StudyControllerTest {
     
     @Test
     public void developerCanAccessCurrentStudy() throws Exception {
-        testRoleAccessToCurrentStudy(Roles.DEVELOPER);
+        testRoleAccessToCurrentStudy(DEVELOPER);
     }
     
     @Test
     public void researcherCanAccessCurrentStudy() throws Exception {
-        testRoleAccessToCurrentStudy(Roles.RESEARCHER);
+        testRoleAccessToCurrentStudy(RESEARCHER);
     }
     
     @Test
     public void adminCanAccessCurrentStudy() throws Exception {
-        testRoleAccessToCurrentStudy(Roles.ADMIN);
+        testRoleAccessToCurrentStudy(ADMIN);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -244,7 +250,45 @@ public class StudyControllerTest {
         assertEquals(startTime, retrieved.getStartTime());
         assertEquals(endTime, retrieved.getEndTime());
     }
+    
+    @Test
+    public void getSummaryStudiesWithFormatWorks() throws Exception {
+        List<Study> studies = Lists.newArrayList(new DynamoStudy());
+        doReturn(studies).when(mockStudyService).getStudies();
+        
+        Result result = controller.getAllStudies("summary", null);
+        assertEquals(200, result.status());
+        assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
 
+        // Throw an exception if the code makes it this far.
+        doThrow(new RuntimeException()).when(controller).getAuthenticatedSession(ADMIN);
+    }
+
+    @Test
+    public void getSummaryStudiesWithSummaryWorks() throws Exception {
+        List<Study> studies = Lists.newArrayList(new DynamoStudy());
+        doReturn(studies).when(mockStudyService).getStudies();
+        
+        Result result = controller.getAllStudies(null, "true");
+        assertEquals(200, result.status());
+        assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
+        
+        // Throw an exception if the code makes it this far.
+        doThrow(new RuntimeException()).when(controller).getAuthenticatedSession(ADMIN);
+    }
+    
+    @Test
+    public void getFullStudiesWorks() throws Exception {
+        List<Study> studies = Lists.newArrayList(new DynamoStudy());
+        doReturn(studies).when(mockStudyService).getStudies();
+        
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        Result result = controller.getAllStudies(null, "false");
+        assertEquals(200, result.status());
+        assertTrue(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
+    }
+        
     private void testRoleAccessToCurrentStudy(Roles role) throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(role)).build();
         UserSession session = new UserSession(participant);

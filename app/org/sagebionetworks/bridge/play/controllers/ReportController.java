@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -220,7 +219,7 @@ public class ReportController extends BaseController {
      * A similar method as above but specifying study id only for WORKER
      */
     public Result saveStudyReportForSpecifiedStudy(String studyId, String identifier) throws Exception {
-        UserSession session = getAuthenticatedSession(WORKER);
+        getAuthenticatedSession(WORKER);
 
         ReportData reportData = parseJson(request(), ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
