@@ -80,11 +80,12 @@ public class PersistentActivitySchedulerTest {
     }
     @Test
     public void startEndsOnScheduleWorks() {
-        schedule.setStartsOn("2015-03-23T10:00:00Z");
+        // Because we're shifting time to midnight, we need to change this time to midnight
+        // or this test will not pass, and that's expected.
+        schedule.setStartsOn("2015-03-23T00:00:00Z");
         schedule.setEndsOn("2015-03-26T10:00:00Z");
         
         // Should get one activity
-        System.out.println(ENROLLMENT.plusMonths(1));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(scheduledActivities, "2015-03-23 00:00");
     }
