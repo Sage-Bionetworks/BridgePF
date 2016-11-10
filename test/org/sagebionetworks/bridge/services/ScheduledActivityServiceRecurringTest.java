@@ -115,7 +115,7 @@ public class ScheduledActivityServiceRecurringTest {
         String pst2 = DateTime.now(PST).plusDays(1).toLocalDate().toString();
         String pst3 = DateTime.now(PST).plusDays(2).toLocalDate().toString();
         // Never returned... though it exists
-        // String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
+        String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
         
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
@@ -137,6 +137,7 @@ public class ScheduledActivityServiceRecurringTest {
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
         assertEquals(pst3+"T10:00:00.000-07:00", activities.get(2).getScheduledOn().toString());
+        //assertEquals(pst4+"T10:00:00.000-07:00", activities.get(3).getScheduledOn().toString());
         
         // Dave returns to the Moscow and we move time forward a day.
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-24T03:39:57.779+03:00").getMillis());

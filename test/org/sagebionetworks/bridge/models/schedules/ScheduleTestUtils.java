@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 public class ScheduleTestUtils {
     
@@ -35,7 +36,8 @@ public class ScheduleTestUtils {
     public static void assertDates(List<ScheduledActivity> activities, String... output) {
         assertEquals(output.length, activities.size());
         for (int i=0; i < activities.size(); i++) {
-            assertEquals(asLong(output[i]), activities.get(i).getScheduledOn().getMillis());
+            assertEquals(new DateTime(asLong(output[i]), DateTimeZone.UTC), activities.get(i).getScheduledOn());
+            //assertEquals(asLong(output[i]), activities.get(i).getScheduledOn().getMillis());
         }
     }
 }

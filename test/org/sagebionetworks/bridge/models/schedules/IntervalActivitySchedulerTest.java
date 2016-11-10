@@ -278,7 +278,7 @@ public class IntervalActivitySchedulerTest {
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(6)));
         // Pulled back to yesterday midnight to avoid TZ changes causing activity to be unavailable
-        assertDates(scheduledActivities, "2015-04-01 00:00");
+        assertDates(scheduledActivities, "2015-04-02 00:00");
     }
     @Test
     public void onceEventDelayExpiresStartEndsOnScheduleWorks() {
@@ -300,7 +300,7 @@ public class IntervalActivitySchedulerTest {
         events.put("survey:AAA:completedOn", asDT("2015-04-06 09:22"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(6)));
         
-        assertEquals(asLong("2015-04-04 00:00"), scheduledActivities.get(0).getScheduledOn().getMillis());
+        assertEquals(asLong("2015-04-06 00:00"), scheduledActivities.get(0).getScheduledOn().getMillis());
         assertEquals(asLong("2015-04-09 00:00"), scheduledActivities.get(0).getExpiresOn().getMillis());
     }
     @Test

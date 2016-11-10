@@ -38,12 +38,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+/**
+ * This test extensively reproduces Erin's test account in Lily (1232) where there are currently duplicates, and uses that 
+ * to verify de-duplication and the correct fix for any schedule that has no times in it (the time must be set to 
+ * a standard time and midnight seems to work regardless of when the timestamp is).
+ */
 @RunWith(MockitoJUnitRunner.class)
 public class ScheduledActivityServiceDuplicateTest {
-    
-    private DateTimeZone PST = DateTimeZone.forOffsetHours(-8);
-    private DateTimeZone MSK = DateTimeZone.forOffsetHours(4);
-
     //"studyKey (S)","guid (S)","label (S)","modifiedOn (N)","strategy (S)","version (N)"
     private static final String[][] SCHEDULE_PLAN_RECORDS = new String[][] {
         new String[] {"lilly","04aaee5e-6e8e-4282-8b8a-4c041af09434","Onsite Schedule 4","1462824789953","{\"type\":\"CriteriaScheduleStrategy\",\"scheduleCriteria\":[{\"schedule\":{\"scheduleType\":\"once\",\"eventId\":\"activity:71c00390-19a6-4ece-a2f2-c1300daf3d63:finished\",\"activities\":[{\"label\":\"Activity Session 4\",\"labelDetail\":\"Do in clinic - 5 minutes\",\"guid\":\"d9a52be9-4c59-4c67-a0d6-236b7bf92c45\",\"task\":{\"identifier\":\"1-Combo-295f81EF-13CB-4DB4-8223-10A173AA0780\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}],\"persistent\":false,\"delay\":\"PT12H\",\"expires\":\"PT1H\",\"times\":[],\"type\":\"Schedule\"},\"criteria\":{\"allOfGroups\":[\"onsite\"],\"noneOfGroups\":[],\"type\":\"Criteria\"},\"type\":\"ScheduleCriteria\"}]}","4"},
@@ -58,7 +59,8 @@ public class ScheduledActivityServiceDuplicateTest {
         new String[] {"lilly","39badeaa-8204-4475-996d-b8d829c9b5cd","Test Persistent Schedule","1478721380678","{\"type\":\"CriteriaScheduleStrategy\",\"scheduleCriteria\":[{\"schedule\":{\"scheduleType\":\"persistent\",\"activities\":[{\"label\":\"Do Persistent Activity\",\"guid\":\"21e97935-6d64-4cd5-ae70-653caad7b2f9\",\"task\":{\"identifier\":\"1-StudyTracker-408C5ED4-AB61-41d3-AF37-7f44C6A16BBF\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}],\"persistent\":true,\"times\":[],\"type\":\"Schedule\"},\"criteria\":{\"allOfGroups\":[],\"noneOfGroups\":[],\"minAppVersions\":{},\"maxAppVersions\":{},\"type\":\"Criteria\"},\"type\":\"ScheduleCriteria\"}]}","1"}
     };
     
-    // "healthCode (S)","guid (S)","data (S)","localScheduledOn (S)","persistent (N)","schedulePlanGuid (S)","localExpiresOn (S)","finishedOn (N)","startedOn (N)"
+    // "healthCode (S)","guid (S)","data (S)","localScheduledOn (S)","persistent (N)","schedulePlanGuid (S)",
+    // "localExpiresOn (S)","finishedOn (N)","startedOn (N)"
     private static final String[][] PERSISTED_ACTIVITIES = new String[][] {
         new String[] {"d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f","278f4d75-adc1-4003-8a3c-f8e9e196b621:2016-08-21T14:00:00.000","{\"activity\":{\"label\":\"Activity Session 3\",\"labelDetail\":\"Do at home - 5 minutes\",\"guid\":\"278f4d75-adc1-4003-8a3c-f8e9e196b621\",\"task\":{\"identifier\":\"1-Combo-295f81EF-13CB-4DB4-8223-10A173AA0780\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}}","2016-08-21T14:00:00.000","0","a5ae70d5-4273-4308-b212-c570b4e10759","2016-08-21T15:00:00.000",null,null},
         new String[] {"d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f","278f4d75-adc1-4003-8a3c-f8e9e196b621:2016-08-22T14:00:00.000","{\"activity\":{\"label\":\"Activity Session 3\",\"labelDetail\":\"Do at home - 5 minutes\",\"guid\":\"278f4d75-adc1-4003-8a3c-f8e9e196b621\",\"task\":{\"identifier\":\"1-Combo-295f81EF-13CB-4DB4-8223-10A173AA0780\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}}","2016-08-22T14:00:00.000","0","a5ae70d5-4273-4308-b212-c570b4e10759","2016-08-22T15:00:00.000",null,null},
@@ -129,11 +131,12 @@ public class ScheduledActivityServiceDuplicateTest {
         new String[] {"d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f","bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T12:43:07.951","{\"activity\":{\"label\":\"Background Survey\",\"labelDetail\":\"5 minutes\",\"guid\":\"bea8fd5d-7622-451f-a727-f9e37f00e1be\",\"task\":{\"identifier\":\"1-MedicationTracker-20EF8ED2-E461-4C20-9024-F43FCAAAF4C3\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}}","2016-06-30T12:43:07.951","0","a599020c-73e0-42d4-95a4-7d8860fbffd3","1471742129501","1471742065356"},
         new String[] {"d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f","d9a52be9-4c59-4c67-a0d6-236b7bf92c45:2016-09-08T02:34:45.378","{\"activity\":{\"label\":\"Activity Session 4\",\"labelDetail\":\"Do in clinic - 5 minutes\",\"guid\":\"d9a52be9-4c59-4c67-a0d6-236b7bf92c45\",\"task\":{\"identifier\":\"1-Combo-295f81EF-13CB-4DB4-8223-10A173AA0780\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}}","2016-09-08T02:34:45.378","0","04aaee5e-6e8e-4282-8b8a-4c041af09434","2016-09-08T03:34:45.378",null,null}
     };
-    // Lilly account 1232
     private static final String HEALTH_CODE = "d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f";
     private static final DateTime ENROLLMENT = DateTime.parse("2016-06-30T19:43:07.951Z");
     private static final DateTime ENROLLMENT_AFTER_DAY_ROLLS = DateTime.parse("2016-07-01T03:13:07.951Z");
-    private static final DateTime DATE_ACTIVITIES_RETRIEVED = DateTime.parse("2016-11-07T18:32:31.000Z");
+    private static final DateTime ACTIVITIES_LAST_RETRIEVED_ON = DateTime.parse("2016-11-07T18:32:31.000Z");
+    private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-8);
+    private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(4);
     
     @Mock
     ScheduledActivityDao activityDao;
@@ -151,7 +154,7 @@ public class ScheduledActivityServiceDuplicateTest {
     @Before
     public void before() throws Exception {
         // This is the exact time that Erin contacted the server
-        DateTimeUtils.setCurrentMillisFixed(DATE_ACTIVITIES_RETRIEVED.getMillis());
+        DateTimeUtils.setCurrentMillisFixed(ACTIVITIES_LAST_RETRIEVED_ON.getMillis());
         
         service = new ScheduledActivityService();
         service.setScheduledActivityDao(activityDao);
@@ -160,8 +163,7 @@ public class ScheduledActivityServiceDuplicateTest {
         
         contextBuilder = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))
-                .withNow(DATE_ACTIVITIES_RETRIEVED)
-                .withAccountCreatedOn(ENROLLMENT.minusHours(2))
+                .withNow(ACTIVITIES_LAST_RETRIEVED_ON)
                 .withStudyIdentifier("test-study")
                 .withEndsOn(DateTime.now().plusDays(4))
                 .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f")
@@ -229,23 +231,25 @@ public class ScheduledActivityServiceDuplicateTest {
         return plans;
     }
     
-    private void mockEvents(DateTime enrollment) {
+    private ScheduleContext mockEventsAndContext(DateTime enrollment, DateTimeZone zone) {
         Map<String,DateTime> events = new ImmutableMap.Builder<String, DateTime>()
-            .put("enrollment",ENROLLMENT)
-            .put("activity:278f4d75-adc1-4003-8a3c-f8e9e196b621:finished", new DateTime(1473283964607L))
-            .put("activity:56092328-955b-4289-a59f-415b192602d2:finished", new DateTime(1473453198249L))
-            .put("activity:6966c3d7-0949-43a8-804e-efc25d0f83e2:finished", new DateTime(1471742129501L))
-            .put("activity:71c00390-19a6-4ece-a2f2-c1300daf3d63:finished", new DateTime(1473284085378L))
-            .put("activity:bea8fd5d-7622-451f-a727-f9e37f00e1be:finished", new DateTime(1471742129501L)).build();
+            .put("enrollment",ENROLLMENT.withZone(DateTimeZone.UTC))
+            .put("activity:278f4d75-adc1-4003-8a3c-f8e9e196b621:finished", new DateTime(1473283964607L, DateTimeZone.UTC))
+            .put("activity:56092328-955b-4289-a59f-415b192602d2:finished", new DateTime(1473453198249L, DateTimeZone.UTC))
+            .put("activity:6966c3d7-0949-43a8-804e-efc25d0f83e2:finished", new DateTime(1471742129501L, DateTimeZone.UTC))
+            .put("activity:71c00390-19a6-4ece-a2f2-c1300daf3d63:finished", new DateTime(1473284085378L, DateTimeZone.UTC))
+            .put("activity:bea8fd5d-7622-451f-a727-f9e37f00e1be:finished", new DateTime(1471742129501L, DateTimeZone.UTC)).build();
         doReturn(events).when(activityEventService).getActivityEventMap(HEALTH_CODE);
+        contextBuilder.withAccountCreatedOn(enrollment.minusDays(3));
+        contextBuilder.withTimeZone(zone);
+        return contextBuilder.build();
     }
     
     // BRIDGE-1589, using duplicates generated for Erin Mount's Lily account (user 1232)
     @Test
     public void testExistingDuplicationScenario() throws Exception {
         // Mock activityEventService
-        mockEvents(ENROLLMENT);
-        ScheduleContext context = contextBuilder.withTimeZone(PST).build();
+        ScheduleContext context = mockEventsAndContext(ENROLLMENT, PST);
         
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
@@ -272,8 +276,7 @@ public class ScheduledActivityServiceDuplicateTest {
     @Test
     public void settingEnrollmetToNextDayUTCWorks() throws Exception {
         // Mock activityEventService
-        mockEvents(ENROLLMENT_AFTER_DAY_ROLLS);
-        ScheduleContext context = contextBuilder.withTimeZone(MSK).build();
+        ScheduleContext context = mockEventsAndContext(ENROLLMENT_AFTER_DAY_ROLLS, MSK);
         
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
@@ -300,8 +303,7 @@ public class ScheduledActivityServiceDuplicateTest {
     @Test
     public void withNoPersistedTasksItWorks() throws Exception {
         // Mock activityEventService
-        mockEvents(ENROLLMENT);
-        ScheduleContext context = contextBuilder.withTimeZone(PST).build();
+        ScheduleContext context = mockEventsAndContext(ENROLLMENT, PST);
         
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
@@ -325,8 +327,7 @@ public class ScheduledActivityServiceDuplicateTest {
     @Test
     public void withNoPersistedTasksItWorksEvenOnNextDayUTC() throws Exception {
         // Mock activityEventService
-        mockEvents(ENROLLMENT_AFTER_DAY_ROLLS);
-        ScheduleContext context = contextBuilder.withTimeZone(MSK).build();
+        ScheduleContext context = mockEventsAndContext(ENROLLMENT_AFTER_DAY_ROLLS, MSK);
         
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);

@@ -56,7 +56,7 @@ public class PersistentActivitySchedulerTest {
     public void scheduleWorks() {
         // enrollment "2015-03-23T10:00:00Z"
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(1)));
-        assertDates(scheduledActivities, "2015-03-23 10:00");
+        assertDates(scheduledActivities, "2015-03-23 00:00");
     }
     @Test
     public void startsOnScheduleWorks() {
@@ -76,7 +76,7 @@ public class PersistentActivitySchedulerTest {
         
         schedule.setEndsOn("2015-04-23T13:40:00Z");
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
-        assertDates(scheduledActivities, "2015-03-23 10:00");
+        assertDates(scheduledActivities, "2015-03-23 00:00");
     }
     @Test
     public void startEndsOnScheduleWorks() {
@@ -85,7 +85,7 @@ public class PersistentActivitySchedulerTest {
         
         // Should get one activity
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
-        assertDates(scheduledActivities, "2015-03-23 10:00");
+        assertDates(scheduledActivities, "2015-03-23 00:00");
     }
     @Test
     public void sequenceOfEventsWorks() {
@@ -98,12 +98,12 @@ public class PersistentActivitySchedulerTest {
         // Once that occurs, a task is issued for "right now"
         events.put("survey:AAA:finished", asDT("2015-04-10 11:40"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
-        assertDates(scheduledActivities, "2015-04-10 11:40");
+        assertDates(scheduledActivities, "2015-04-10 00:00");
         
         // and it's reissued any time that task itself is completed.
         events.put("activity:"+schedule.getActivities().get(0).getGuid()+":finished", asDT("2015-04-12 09:40"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(2)));
-        assertDates(scheduledActivities, "2015-04-12 09:40");
+        assertDates(scheduledActivities, "2015-04-12 00:00");
     }
     @Test
     public void originalPersistentScheduleStructureStillWorks() {

@@ -9,6 +9,7 @@ import java.util.Map;
 import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,19 +54,19 @@ public class DynamoActivityEventDaoTest {
         
         Map<String,DateTime> map = activityEventDao.getActivityEventMap("BBB");
         assertEquals(6, map.size());
-        assertEquals(time1, map.get("enrollment"));
-        assertEquals(time1.minusWeeks(2), map.get("two_weeks_before_enrollment"));
-        assertEquals(time1.minusMonths(2), map.get("two_months_before_enrollment"));
-        assertEquals(time2, map.get("survey:AAA-BBB-CCC:finished"));
-        assertEquals(time3, map.get("question:DDD-EEE-FFF:answered=someValue"));
-        assertEquals(time6, map.get("activity:AAA-BBB-CCC:finished"));
+        assertEquals(time1.withZone(DateTimeZone.UTC), map.get("enrollment"));
+        assertEquals(time1.withZone(DateTimeZone.UTC).minusWeeks(2), map.get("two_weeks_before_enrollment"));
+        assertEquals(time1.withZone(DateTimeZone.UTC).minusMonths(2), map.get("two_months_before_enrollment"));
+        assertEquals(time2.withZone(DateTimeZone.UTC), map.get("survey:AAA-BBB-CCC:finished"));
+        assertEquals(time3.withZone(DateTimeZone.UTC), map.get("question:DDD-EEE-FFF:answered=someValue"));
+        assertEquals(time6.withZone(DateTimeZone.UTC), map.get("activity:AAA-BBB-CCC:finished"));
         
         // Update timestamp of answer event while keeping same answer
         event = getQuestionAnsweredEvent(time4, "someValue");
         activityEventDao.publishEvent(event);
         
         map = activityEventDao.getActivityEventMap("BBB");
-        assertEquals(time4, map.get("question:DDD-EEE-FFF:answered=someValue"));
+        assertEquals(time4.withZone(DateTimeZone.UTC), map.get("question:DDD-EEE-FFF:answered=someValue"));
         
         // Update answer event with different answer and later timestamp
         event = getQuestionAnsweredEvent(time5, "anotherAnswer");
@@ -73,7 +74,7 @@ public class DynamoActivityEventDaoTest {
         
         // Creates a different key in activity event map. Researchers schedule against specific answers.
         map = activityEventDao.getActivityEventMap("BBB");
-        assertEquals(time5, map.get("question:DDD-EEE-FFF:answered=anotherAnswer"));
+        assertEquals(time5.withZone(DateTimeZone.UTC), map.get("question:DDD-EEE-FFF:answered=anotherAnswer"));
         // The key point here is that the other answer is no longer in the map, so there can't be 
         // an "either or" scheduling conflict. The user can only answer one way or another on a 
         // given question, even if the answer is updated.
@@ -103,7 +104,7 @@ public class DynamoActivityEventDaoTest {
         activityEventDao.publishEvent(event);
         
         Map<String,DateTime> eventMap = activityEventDao.getActivityEventMap("BBB");
-        assertEquals(firstEvent, eventMap.get("enrollment"));
+        assertEquals(firstEvent.withZone(DateTimeZone.UTC), eventMap.get("enrollment"));
     }
     
     private DynamoActivityEvent getEnrollmentEvent(DateTime timestamp) {

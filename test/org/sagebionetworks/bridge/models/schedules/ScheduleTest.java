@@ -175,7 +175,7 @@ public class ScheduleTest {
         
         schedule.setCronTrigger(null);
         schedule.setScheduleType(ScheduleType.PERSISTENT);
-        assertFalse(Schedule.isScheduleWithoutTimes(schedule));
+        assertTrue(Schedule.isScheduleWithoutTimes(schedule));
     }
 
     @Test
@@ -183,6 +183,6 @@ public class ScheduleTest {
         DateTime dateTime = DateTime.parse("2016-11-06T04:32.123-07:00");
         DateTime midnight = Schedule.eventToMidnight(dateTime);
         
-        assertEquals("2016-11-05T00:00:00.000Z", midnight.toString());
+        assertEquals("2016-11-06T00:00:00.000Z", midnight.toString());
     }
 }

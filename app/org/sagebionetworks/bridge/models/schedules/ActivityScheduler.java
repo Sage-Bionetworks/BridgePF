@@ -142,8 +142,13 @@ public abstract class ActivityScheduler {
      * If scheduling hasn't reached the end time, or hasn't accumulated the minimum number of tasks, returns true, or 
      * false otherwise. 
      */
-    protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime, List<ScheduledActivity> scheduledActivities) {
-        boolean boundaryNotMet = scheduledTime.isBefore(context.getEndsOn()) || hasNotMetMinimumCount(context, scheduledActivities.size());
+    protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime,
+            List<ScheduledActivity> scheduledActivities) {
+        DateTime scheduledTimeInZone = scheduledTime.withZone(context.getZone());
+        DateTime endsOnInZone = context.getEndsOn().withZone(context.getZone());
+        
+        boolean boundaryNotMet = scheduledTimeInZone.isBefore(endsOnInZone) || 
+                hasNotMetMinimumCount(context, scheduledActivities.size());
         return isBeforeWindowEnd(scheduledTime) && boundaryNotMet;
     }
     
