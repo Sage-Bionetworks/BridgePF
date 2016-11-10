@@ -84,6 +84,7 @@ public class PersistentActivitySchedulerTest {
         schedule.setEndsOn("2015-03-26T10:00:00Z");
         
         // Should get one activity
+        System.out.println(ENROLLMENT.plusMonths(1));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
         assertDates(scheduledActivities, "2015-03-23 00:00");
     }

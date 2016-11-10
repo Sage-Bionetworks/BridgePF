@@ -115,7 +115,7 @@ public class ScheduledActivityServiceRecurringTest {
         String pst2 = DateTime.now(PST).plusDays(1).toLocalDate().toString();
         String pst3 = DateTime.now(PST).plusDays(2).toLocalDate().toString();
         // Never returned... though it exists
-        String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
+        // String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
         
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
