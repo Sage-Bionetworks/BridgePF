@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.springframework.validation.Errors;
@@ -34,22 +35,55 @@ public class ActivityValidator implements Validator {
         if (isBlank(activity.getLabel())) {
             errors.rejectValue("label", CANNOT_BE_BLANK);
         }
+
+        // an activity must be exactly one of: compound, task, or survey
+        int numSources = 0;
+
+        if (activity.getCompoundActivity() != null) {
+            numSources++;
+            validate(errors, activity.getCompoundActivity());
+        }
+
         if (activity.getTask() != null) {
+            numSources++;
             validate(errors, activity.getTask());
-        } else if (activity.getSurvey() != null){
+        }
+
+        if (activity.getSurvey() != null){
+            numSources++;
             validate(errors, activity.getSurvey());
-        } else {
-            errors.rejectValue("", "must have a task or survey reference");
+        }
+
+        if (numSources != 1) {
+            errors.rejectValue("activity", "must have exactly one of compound activity, task, or survey");
         }
     }
-    
+
+    private void validate(Errors errors, CompoundActivity compoundActivity) {
+        errors.pushNestedPath("compoundActivity");
+
+        // taskIdentifier must be specified and must be in the Study's list
+        String taskIdentifier = compoundActivity.getTaskIdentifier();
+        if (isBlank(taskIdentifier)) {
+            errors.rejectValue("taskIdentifier", CANNOT_BE_BLANK);
+        } else if (!taskIdentifiers.contains(taskIdentifier)) {
+            errors.rejectValue("taskIdentifier", getTaskIdentifierMessage(taskIdentifier));
+        }
+
+        errors.popNestedPath();
+    }
+
     private void validate(Errors errors, TaskReference ref) {
         errors.pushNestedPath("task");
-        if (isBlank(ref.getIdentifier())) {
+
+        // taskIdentifier must be specified and must be in the Study's list
+        String taskIdentifier = ref.getIdentifier();
+        if (isBlank(taskIdentifier)) {
             errors.rejectValue("identifier", CANNOT_BE_BLANK);
-        } else if (!taskIdentifiers.contains(ref.getIdentifier())) {
-            errors.rejectValue("identifier", getTaskIdentifierMessage(ref));
+        } else if (!taskIdentifiers.contains(taskIdentifier)) {
+            errors.rejectValue("identifier", getTaskIdentifierMessage(taskIdentifier));
         }
+
         errors.popNestedPath();
     }
    
@@ -61,8 +95,8 @@ public class ActivityValidator implements Validator {
         errors.popNestedPath();
     }
     
-    private String getTaskIdentifierMessage(TaskReference ref) {
-        String message = "'" + ref.getIdentifier() + "' is not in enumeration: ";
+    private String getTaskIdentifierMessage(String taskIdentifier) {
+        String message = "'" + taskIdentifier + "' is not in enumeration: ";
         if (taskIdentifiers.isEmpty()) {
             message += "<no task identifiers declared>";
         } else {

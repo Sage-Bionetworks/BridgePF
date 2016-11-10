@@ -6,9 +6,11 @@ import static org.junit.Assert.fail;
 import java.util.Collections;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 
 import com.google.common.collect.Sets;
 
@@ -26,10 +28,75 @@ public class ActivityValidatorTest {
             assertEquals("label cannot be missing, null, or blank", e.getErrors().get("label").get(0));
         }
     }
-    
+
+    @Test
+    public void noSources() {
+        try {
+            Activity activity = new Activity.Builder().withLabel("Label").build();
+            Validate.entityThrowingException(new ActivityValidator(EMPTY_TASKS), activity);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("activity must have exactly one of compound activity, task, or survey", e.getErrors()
+                    .get("activity").get(0));
+        }
+    }
+
+    @Test
+    public void multipleSources() {
+        try {
+            CompoundActivity compoundActivity = new CompoundActivity.Builder().withTaskIdentifier("combo-activity")
+                    .build();
+            Activity activity = new Activity.Builder().withLabel("Label").withCompoundActivity(compoundActivity)
+                    .withPublishedSurvey("My Survey", "CCC").build();
+            Validate.entityThrowingException(new ActivityValidator(ImmutableSet.of("combo-activity")), activity);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("activity must have exactly one of compound activity, task, or survey", e.getErrors()
+                    .get("activity").get(0));
+        }
+    }
+
+    @Test
+    public void validCompoundActivity() {
+        CompoundActivity compoundActivity = new CompoundActivity.Builder().withTaskIdentifier("combo-activity")
+                .build();
+        Activity activity = new Activity.Builder().withLabel("Label").withCompoundActivity(compoundActivity).build();
+        Validate.entityThrowingException(new ActivityValidator(ImmutableSet.of("combo-activity")), activity);
+    }
+
+    @Test
+    public void compoundActivityWithoutTaskIdentifier() {
+        try {
+            CompoundActivity compoundActivity = new CompoundActivity.Builder().build();
+            Activity activity = new Activity.Builder().withLabel("Label").withCompoundActivity(compoundActivity)
+                    .build();
+            Validate.entityThrowingException(new ActivityValidator(ImmutableSet.of("combo-activity")), activity);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("compoundActivity.taskIdentifier cannot be missing, null, or blank", e.getErrors()
+                    .get("compoundActivity.taskIdentifier").get(0));
+        }
+    }
+
+    @Test
+    public void compoundActivityWithInvaludTaskIdentifier() {
+        try {
+            CompoundActivity compoundActivity = new CompoundActivity.Builder().withTaskIdentifier("bad-activity")
+                    .build();
+            Activity activity = new Activity.Builder().withLabel("Label").withCompoundActivity(compoundActivity)
+                    .build();
+            Validate.entityThrowingException(new ActivityValidator(ImmutableSet.of("combo-activity")), activity);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("compoundActivity.taskIdentifier 'bad-activity' is not in enumeration: combo-activity.",
+                    e.getErrors().get("compoundActivity.taskIdentifier").get(0));
+        }
+    }
+
     @Test
     public void surveyWithoutIdentifierIsOk() {
-        new Activity.Builder().withLabel("Label").withSurvey(null, "BBB", null).build();
+        Activity activity = new Activity.Builder().withLabel("Label").withSurvey(null, "BBB", null).build();
+        Validate.entityThrowingException(new ActivityValidator(EMPTY_TASKS), activity);
     }
     
     @Test
