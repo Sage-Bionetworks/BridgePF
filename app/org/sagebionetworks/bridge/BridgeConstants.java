@@ -74,6 +74,8 @@ public class BridgeConstants {
     
     public static final String STORMPATH_NAME_PLACEHOLDER_STRING = "<EMPTY>";
     
+    public static final String TEST_USER_GROUP = "test_user";
+    
     public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();
     
     /**
