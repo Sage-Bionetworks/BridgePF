@@ -158,18 +158,25 @@ public class StormpathAccountDaoTest {
             int half = accounts.getItems().size()/2;
             DateTime middleCreatedOn = accounts.getItems().get(half).getCreatedOn();
             
-            // Late timestamp, nothing is returned
+            // This returns no accounts 
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, DateTime.now(), null);
             assertEquals(0, accounts.getItems().size());
 
-            // This should filter to half the accounts
+            // This returns the last half of the accounts
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, middleCreatedOn, null);
             assertEquals(half+1, accounts.getItems().size());
             assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("startDate"));
+            for (AccountSummary summary : accounts.getItems()) {
+                assertTrue(summary.getCreatedOn().getMillis() >= middleCreatedOn.getMillis());
+            }
             
+            // This returns the first half of the accounts
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, null, middleCreatedOn);
             assertEquals(half+1, accounts.getItems().size());
             assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("endDate"));
+            for (AccountSummary summary : accounts.getItems()) {
+                assertTrue(summary.getCreatedOn().getMillis() <= middleCreatedOn.getMillis());
+            }
         } finally {
             for (String id : newAccounts) {
                 accountDao.deleteAccount(study, id);
