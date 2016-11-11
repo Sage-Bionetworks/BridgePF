@@ -165,9 +165,11 @@ public class StormpathAccountDaoTest {
             // This should filter to half the accounts
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, middleCreatedOn, null);
             assertEquals(half+1, accounts.getItems().size());
+            assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("startDate"));
             
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, null, middleCreatedOn);
             assertEquals(half+1, accounts.getItems().size());
+            assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("endDate"));
         } finally {
             for (String id : newAccounts) {
                 accountDao.deleteAccount(study, id);
