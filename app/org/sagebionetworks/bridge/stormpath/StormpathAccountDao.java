@@ -49,6 +49,8 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import com.stormpath.sdk.directory.CustomData;
+
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,7 +150,8 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
+            String emailFilter, DateTime startDate, DateTime endDate) {
         checkNotNull(study);
         checkArgument(offsetBy >= 0);
         checkArgument(pageSize >= API_MINIMUM_PAGE_SIZE && pageSize <= API_MAXIMUM_PAGE_SIZE);
@@ -164,7 +167,12 @@ public class StormpathAccountDao implements AccountDao {
         if (isNotBlank(emailFilter)) {
             criteria = criteria.add(Accounts.email().containsIgnoreCase(emailFilter));
         }
-        
+        if (startDate != null) {
+            criteria.add(Accounts.createdAt().gte(startDate.toDate()));    
+        }
+        if (endDate != null) {
+            criteria.add(Accounts.createdAt().lte(endDate.toDate()));    
+        }
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         AccountList accts = directory.getAccounts(criteria);
         

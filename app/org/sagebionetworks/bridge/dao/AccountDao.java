@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.Iterator;
 
+import org.joda.time.DateTime;
+
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -101,12 +103,16 @@ public interface AccountDao {
      *      number of records to return (or the number of remaining records if less than the pageSize).
      * @param emailFilter
      *      a substring that will be matched (ignoring case) against the email addresses of the accounts.
+     * @param startDate
+     *      a date and time on or after which the account should have been created in order to match the query.
+     * @param endDate
+     *      a date and time on or before which the account should have been created in order to match the query.
      * @return
      *      a paged resource list that includes the page of account summaries, as well as other information 
      *      about the request and the total number of records.
      */
     PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter);
+            String emailFilter, DateTime startDate, DateTime endDate);
     
     /**
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.

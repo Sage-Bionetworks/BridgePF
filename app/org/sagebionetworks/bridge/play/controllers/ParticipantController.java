@@ -84,14 +84,18 @@ public class ParticipantController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
-    public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter) {
+    public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter,
+            String startDateString, String endDateString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         
         Study study = studyService.getStudy(session.getStudyIdentifier());
         int offsetBy = getIntOrDefault(offsetByString, 0);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
+        DateTime startDate = DateUtils.getDateTimeOrDefault(startDateString, null);
+        DateTime endDate = DateUtils.getDateTimeOrDefault(endDateString, null);
         
-        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
+                emailFilter, startDate, endDate);
         return okResult(page);
     }
     

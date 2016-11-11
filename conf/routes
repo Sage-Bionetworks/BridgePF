@@ -14,7 +14,7 @@ POST   /v3/auth/verifyEmail             @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resendEmailVerification
 
 # Participants Researcher APIs
-GET    /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null)
+GET    /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, createdBefore: String ?= null, createdAfter: String ?= null)
 POST   /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant(verifyEmail: String ?= "true")
 GET    /v3/participants/self                                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant
 POST   /v3/participants/self                                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateSelfParticipant
