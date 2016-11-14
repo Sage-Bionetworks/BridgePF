@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -13,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -146,6 +148,7 @@ public class StudyServiceMockTest {
         service.createStudy(study);
 
         verify(emailVerificationService).verifyEmailAddress(study.getSupportEmail());
+        assertTrue(study.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP));
     }
 
     @Test
