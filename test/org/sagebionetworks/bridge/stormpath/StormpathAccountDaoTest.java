@@ -152,10 +152,10 @@ public class StormpathAccountDaoTest {
             
             // Now work with up to 13 accounts (there are at least 6), sort them by createdOn
             accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, null, null);
+            
             Collections.sort(accounts.getItems(), comparing(AccountSummary::getCreatedOn));
-
             totalAccounts = accounts.getItems().size();
-            int half = accounts.getItems().size()/2;
+            int half = totalAccounts/2;
             DateTime middleCreatedOn = accounts.getItems().get(half).getCreatedOn();
 
             // This returns no accounts 
