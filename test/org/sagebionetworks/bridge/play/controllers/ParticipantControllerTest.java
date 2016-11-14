@@ -117,6 +117,12 @@ public class ParticipantControllerTest {
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     
+    @Captor
+    private ArgumentCaptor<DateTime> startTimeCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DateTime> endTimeCaptor;
+    
     private UserSession session;
     
     private Study study;
@@ -172,7 +178,13 @@ public class ParticipantControllerTest {
         assertEquals(new Integer(10), page.getOffsetBy());
         assertEquals(20, page.getPageSize());
         assertEquals("foo", page.getFilters().get("emailFilter"));
-        verify(participantService).getPagedAccountSummaries(study, 10, 20, "foo", start, end);
+        
+        // DateTime instances don't seem to be equal unless you use the library's equality methods, which
+        // verification does not do. So capture and compare that way.
+        verify(participantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
+                startTimeCaptor.capture(), endTimeCaptor.capture());
+        assertEquals(start.toString(), startTimeCaptor.getValue().toString());
+        assertEquals(end.toString(), endTimeCaptor.getValue().toString());
     }
     
     @Test(expected = BadRequestException.class)
