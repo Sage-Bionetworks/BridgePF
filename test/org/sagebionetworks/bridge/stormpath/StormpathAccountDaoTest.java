@@ -149,32 +149,29 @@ public class StormpathAccountDaoTest {
                 assertNull(summary.getFirstName());
                 assertNull(summary.getLastName());
             }
-
-            // Now work with up to 20 accounts (there are at least 6), sort them by createdOn
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, null, null);
+            
+            // Now work with up to 13 accounts (there are at least 6), sort them by createdOn
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, null, null);
             Collections.sort(accounts.getItems(), comparing(AccountSummary::getCreatedOn));
 
             totalAccounts = accounts.getItems().size();
             int half = accounts.getItems().size()/2;
-            
             DateTime middleCreatedOn = accounts.getItems().get(half).getCreatedOn();
 
             // This returns no accounts 
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, DateTime.now(), null);
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, DateTime.now(), null);
             assertEquals(0, accounts.getItems().size());
 
             // This returns the last half of the accounts
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, middleCreatedOn, null);
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, middleCreatedOn, null);
 
-            assertEquals(half+1, accounts.getItems().size());
             assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("startDate"));
             for (AccountSummary summary : accounts.getItems()) {
                 assertTrue(summary.getCreatedOn().getMillis() >= middleCreatedOn.getMillis());
             }
             
             // This returns the first half of the accounts
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, null, middleCreatedOn);
-            assertEquals(half+1, accounts.getItems().size());
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, null, middleCreatedOn);
             assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("endDate"));
             for (AccountSummary summary : accounts.getItems()) {
                 assertTrue(summary.getCreatedOn().getMillis() <= middleCreatedOn.getMillis());
