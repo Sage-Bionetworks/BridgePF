@@ -156,6 +156,7 @@ public class StormpathAccountDaoTest {
 
             totalAccounts = accounts.getItems().size();
             int half = accounts.getItems().size()/2;
+            
             DateTime middleCreatedOn = accounts.getItems().get(half).getCreatedOn();
 
             // This returns no accounts 
@@ -165,7 +166,7 @@ public class StormpathAccountDaoTest {
             // This returns the last half of the accounts
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, middleCreatedOn, null);
 
-            assertEquals(half, accounts.getItems().size());
+            assertEquals(half+1, accounts.getItems().size());
             assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("startDate"));
             for (AccountSummary summary : accounts.getItems()) {
                 assertTrue(summary.getCreatedOn().getMillis() >= middleCreatedOn.getMillis());
@@ -173,7 +174,7 @@ public class StormpathAccountDaoTest {
             
             // This returns the first half of the accounts
             accounts = accountDao.getPagedAccountSummaries(study, 0, 20, null, null, middleCreatedOn);
-            assertEquals(half, accounts.getItems().size());
+            assertEquals(half+1, accounts.getItems().size());
             assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("endDate"));
             for (AccountSummary summary : accounts.getItems()) {
                 assertTrue(summary.getCreatedOn().getMillis() <= middleCreatedOn.getMillis());

@@ -165,14 +165,18 @@ public class StormpathAccountDao implements AccountDao {
         if (endDate == null) {
             endDate = DISTANT_FUTURE;
         }
+        // The Stormpath range is exclusive on the high end, add one millisecond to the end date so it is inclusive. 
+        DateTime inclusiveEndDate = new DateTime(endDate.getMillis()+1);
+        
         // limitTo sets the number of records that will be requested from the server, but the iterator behavior
         // of AccountList is such that it will keep fetching records when you get to the limitTo page size. 
         // To make one request of records, you must stop iterating when you get to limitTo records. Furthermore, 
         // getSize() in the iterator is the total number of records that match the criteria... not the smaller of 
         // either the number of records returned or limitTo (as you might expect in a paging API when you get the 
         // last page of records). Behavior as described by Stormpath in email.
+        
         AccountCriteria criteria = Accounts.criteria()
-                .add(Accounts.createdAt().in(startDate.toDate(), endDate.toDate()))
+                .add(Accounts.createdAt().in(startDate.toDate(), inclusiveEndDate.toDate()))
                 .limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
         if (isNotBlank(emailFilter)) {
             criteria = criteria.add(Accounts.email().containsIgnoreCase(emailFilter));
