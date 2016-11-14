@@ -56,6 +56,7 @@ import com.google.common.collect.Sets;
 public class StormpathAccountDaoTest {
 
     private static final String PASSWORD = "P4ssword!";
+    private static final int DATE_RECORDS_LIMIT = 9;
 
     @Resource(name="stormpathAccountDao")
     private StormpathAccountDao accountDao;
@@ -139,11 +140,11 @@ public class StormpathAccountDaoTest {
             assertEquals(0, accounts.getItems().size());
             
             // This should filter down to one of the accounts
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridgeit@", null, null);
+            accounts = accountDao.getPagedAccountSummaries(study, 0, 5, "bridgeit@", null, null);
             assertEquals(1, accounts.getItems().size());
             assertEquals("bridgeit@sagebase.org", accounts.getItems().get(0).getEmail());
             
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 20, "bridge-testing+SADT", null, null);
+            accounts = accountDao.getPagedAccountSummaries(study, 0, DATE_RECORDS_LIMIT, "bridge-testing+SADT", null, null);
             assertTrue(accounts.getItems().size() > 0);
             for (AccountSummary summary : accounts.getItems()) {
                 assertNull(summary.getFirstName());
@@ -151,7 +152,7 @@ public class StormpathAccountDaoTest {
             }
             
             // Now work with up to 13 accounts (there are at least 6), sort them by createdOn
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, null, null);
+            accounts = accountDao.getPagedAccountSummaries(study, 0, DATE_RECORDS_LIMIT, null, null, null);
             
             Collections.sort(accounts.getItems(), comparing(AccountSummary::getCreatedOn));
             totalAccounts = accounts.getItems().size();
@@ -159,11 +160,11 @@ public class StormpathAccountDaoTest {
             DateTime middleCreatedOn = accounts.getItems().get(half).getCreatedOn();
 
             // This returns no accounts 
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, DateTime.now(), null);
+            accounts = accountDao.getPagedAccountSummaries(study, 0, DATE_RECORDS_LIMIT, null, DateTime.now(), null);
             assertEquals(0, accounts.getItems().size());
 
             // This returns the last half of the accounts
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, middleCreatedOn, null);
+            accounts = accountDao.getPagedAccountSummaries(study, 0, DATE_RECORDS_LIMIT, null, middleCreatedOn, null);
 
             assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("startDate"));
             for (AccountSummary summary : accounts.getItems()) {
@@ -171,7 +172,8 @@ public class StormpathAccountDaoTest {
             }
             
             // This returns the first half of the accounts
-            accounts = accountDao.getPagedAccountSummaries(study, 0, 13, null, null, middleCreatedOn);
+            accounts = accountDao.getPagedAccountSummaries(study, 0, DATE_RECORDS_LIMIT, null, null, middleCreatedOn);
+            
             assertEquals(middleCreatedOn.toString(), accounts.getFilters().get("endDate"));
             for (AccountSummary summary : accounts.getItems()) {
                 assertTrue(summary.getCreatedOn().getMillis() <= middleCreatedOn.getMillis());
