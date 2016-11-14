@@ -20,6 +20,8 @@ public class CacheAdminService {
 
     private final String SESSION_SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix();
     private final String USER_SESSION_SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix() + RedisKey.SEPARATOR + RedisKey.USER.getSuffix();
+    private final String REQUEST_INFO_SUFFIX = RedisKey.SEPARATOR + RedisKey.REQUEST_INFO.getSuffix();
+    
     private JedisPool jedisPool;
     
     @Autowired
@@ -63,6 +65,6 @@ public class CacheAdminService {
     }
     
     private boolean notASessionKey(String key) {
-        return !(key.endsWith(SESSION_SUFFIX) || key.endsWith(USER_SESSION_SUFFIX));
+        return !(key.endsWith(SESSION_SUFFIX) || key.endsWith(USER_SESSION_SUFFIX) || key.endsWith(REQUEST_INFO_SUFFIX));
     }
 }

@@ -18,6 +18,11 @@ import redis.clients.jedis.JedisPool;
 
 public class CacheAdminServiceTest {
 
+    private static final String REQUEST_INFO_KEY = "10E9SFUz9BYrqCrTzfiaNW:request-info";
+    
+    private final static Set<String> KEYS = Sets.newHashSet("foo:study", "bar:session", "baz:Survey:view",
+            "xh7YDmjGQuTKnfdv9iJb0:session:user", REQUEST_INFO_KEY);
+    
     private CacheAdminService adminService;
     
     @Before
@@ -71,18 +76,20 @@ public class CacheAdminServiceTest {
         adminService.removeItem(null);
     }
     
+    @Test(expected = BridgeServiceException.class)
+    public void cannotRemoveRequestInfo() {
+        adminService.removeItem(REQUEST_INFO_KEY);
+    }
+    
     private Jedis createStubJedis() {
         return new Jedis("") {
-            // xh7YDmjGQuTKnfdv9iJb0:session:user is an actual key we're suppressing
-            private Set<String> set = Sets.newHashSet("foo:study", "bar:session", "baz:Survey:view", "xh7YDmjGQuTKnfdv9iJb0:session:user");
-
             @Override
             public Set<String> keys(String pattern) {
-                return set;
+                return KEYS;
             }
             @Override
             public Long del(String key) {
-                return (set.remove(key)) ? 1L : 0L;
+                return (KEYS.remove(key)) ? 1L : 0L;
             }
         };
     }
