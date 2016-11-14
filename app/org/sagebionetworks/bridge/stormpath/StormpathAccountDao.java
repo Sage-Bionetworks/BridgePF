@@ -51,6 +51,7 @@ import org.sagebionetworks.bridge.util.BridgeCollectors;
 import com.stormpath.sdk.directory.CustomData;
 
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +81,9 @@ import com.stormpath.sdk.resource.ResourceException;
 @Component("stormpathAccountDao")
 public class StormpathAccountDao implements AccountDao {
 
+    private static DateTime DISTANT_PAST = DateTime.parse("2000-01-01T00:00:00.000Z");
+    private static DateTime DISTANT_FUTURE = DateTime.parse("2100-01-01T00:00:00.000Z");
+    
     private static Logger logger = LoggerFactory.getLogger(StormpathAccountDao.class);
 
     private Application application;
@@ -156,23 +160,25 @@ public class StormpathAccountDao implements AccountDao {
         checkArgument(offsetBy >= 0);
         checkArgument(pageSize >= API_MINIMUM_PAGE_SIZE && pageSize <= API_MAXIMUM_PAGE_SIZE);
 
+        if (startDate == null) {
+            startDate = DISTANT_PAST;
+        }
+        if (endDate == null) {
+            endDate = DISTANT_FUTURE;
+        }
         // limitTo sets the number of records that will be requested from the server, but the iterator behavior
         // of AccountList is such that it will keep fetching records when you get to the limitTo page size. 
         // To make one request of records, you must stop iterating when you get to limitTo records. Furthermore, 
         // getSize() in the iterator is the total number of records that match the criteria... not the smaller of 
         // either the number of records returned or limitTo (as you might expect in a paging API when you get the 
         // last page of records). Behavior as described by Stormpath in email.
-        
-        AccountCriteria criteria = Accounts.criteria().limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
+        AccountCriteria criteria = Accounts.criteria()
+                .add(Accounts.createdAt().in(startDate.toDate(), endDate.toDate()))
+                .limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
         if (isNotBlank(emailFilter)) {
             criteria = criteria.add(Accounts.email().containsIgnoreCase(emailFilter));
         }
-        if (startDate != null) {
-            criteria.add(Accounts.createdAt().gte(startDate.toDate()));    
-        }
-        if (endDate != null) {
-            criteria.add(Accounts.createdAt().lte(endDate.toDate()));    
-        }
+        
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         AccountList accts = directory.getAccounts(criteria);
         
