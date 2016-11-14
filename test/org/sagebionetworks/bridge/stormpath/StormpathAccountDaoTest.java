@@ -159,8 +159,9 @@ public class StormpathAccountDaoTest {
             int half = totalAccounts/2;
             DateTime middleCreatedOn = accounts.getItems().get(half).getCreatedOn();
 
-            // This returns no accounts 
-            accounts = accountDao.getPagedAccountSummaries(study, 0, DATE_RECORDS_LIMIT, null, DateTime.now(), null);
+            // This returns no accounts. We have to advanced the time because the servers do get out-of-sync with
+            // Stormpath's server time.
+            accounts = accountDao.getPagedAccountSummaries(study, 0, DATE_RECORDS_LIMIT, null, DateTime.now().plusMinutes(5), null);
             assertEquals(0, accounts.getItems().size());
 
             // This returns the last half of the accounts
