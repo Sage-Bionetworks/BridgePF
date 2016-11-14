@@ -51,7 +51,6 @@ import org.sagebionetworks.bridge.util.BridgeCollectors;
 import com.stormpath.sdk.directory.CustomData;
 
 import org.joda.time.DateTime;
-import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
