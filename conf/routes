@@ -138,6 +138,7 @@ DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.
 
 # Bridge Exporter
 POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
+POST /v3/recordExportStatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
 
 # Studies
 GET    /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null, summary: String ?= null)
