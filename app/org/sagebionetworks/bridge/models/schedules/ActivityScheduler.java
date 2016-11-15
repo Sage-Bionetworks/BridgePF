@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 
 public abstract class ActivityScheduler {
@@ -41,12 +43,12 @@ public abstract class ActivityScheduler {
     protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, 
             SchedulePlan plan, ScheduleContext context, DateTime scheduledTime) {
         if (schedule.getTimes().isEmpty()) {
-            scheduledTime = adjustOnceIntervalActivityWithNoTimes(context, scheduledTime);
-            addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime);
+            //scheduledTime = adjustOnceIntervalActivityWithNoTimes(context, scheduledTime);
+            addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), LocalTime.MIDNIGHT);
         } else {
             for (LocalTime time : schedule.getTimes()) {
-                scheduledTime = scheduledTime.withTime(time);
-                addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime);
+                //scheduledTime = scheduledTime.withTime(time);
+                addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), time);
             }
         }
     }
@@ -70,12 +72,14 @@ public abstract class ActivityScheduler {
     }
     
     protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
-            ScheduleContext context, DateTime scheduledTime) {
-
+            ScheduleContext context, LocalDate localDate, LocalTime localTime) {
         // If this time point is outside of the schedule's active window, skip it.
-        if (isInWindow(scheduledTime)) {
+        
+        DateTime utcTime = localDate.toDateTime(localTime).withZone(DateTimeZone.UTC);
+        
+        if (isInWindow(utcTime)) {
             // As long at the activities are not already expired, add them.
-            DateTime expiresOn = getExpiresOn(scheduledTime);
+            DateTime expiresOn = getExpiresOn(utcTime);
             if (expiresOn == null || expiresOn.isAfter(context.getNow())) {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
@@ -83,8 +87,8 @@ public abstract class ActivityScheduler {
                     schActivity.setTimeZone(context.getZone());
                     schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());
                     schActivity.setActivity(activity);
-                    schActivity.setScheduledOn(scheduledTime);
-                    schActivity.setGuid(activity.getGuid() + ":" + scheduledTime.toLocalDateTime().toString());
+                    schActivity.setScheduledOn(localDate.toDateTime(localTime, context.getZone()));
+                    schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime).toString());
                     schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
                     schActivity.setSchedule(schedule);
                     if (expiresOn != null) {
@@ -144,11 +148,9 @@ public abstract class ActivityScheduler {
      */
     protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime,
             List<ScheduledActivity> scheduledActivities) {
-        DateTime scheduledTimeInZone = scheduledTime.withZone(context.getZone());
-        DateTime endsOnInZone = context.getEndsOn().withZone(context.getZone());
-        
-        boolean boundaryNotMet = scheduledTimeInZone.isBefore(endsOnInZone) || 
+        boolean boundaryNotMet = scheduledTime.isBefore(context.getEndsOn()) || 
                 hasNotMetMinimumCount(context, scheduledActivities.size());
+        
         return isBeforeWindowEnd(scheduledTime) && boundaryNotMet;
     }
     

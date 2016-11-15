@@ -20,7 +20,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -116,6 +118,11 @@ public class ScheduledActivityServiceMockTest {
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
         service.setSurveyService(surveyService);
+    }
+    
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test(expected = BadRequestException.class)
@@ -378,6 +385,10 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void complexCriteriaBasedScheduleWorksThroughService() throws Exception {
+        // Setting the time to late in the date breaks this test... so we do that.
+        DateTime testNow = DateTime.parse(DateTime.now().toLocalDate() + "T16:25:51.195-08:00");
+        DateTimeUtils.setCurrentMillisFixed(testNow.getMillis());
+
         String json = TestUtils.createJson("{"+  
             "'guid':'5fe9029e-beb6-4163-ac35-23d048deeefe',"+
             "'label':'Voice Activity',"+
@@ -492,11 +503,11 @@ public class ScheduledActivityServiceMockTest {
             .withClientInfo(info)
             .withStudyIdentifier("test-study")
             .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
-            .withEndsOn(DateTime.now().plusDays(1).withTimeAtStartOfDay())
-            .withTimeZone(DateTimeZone.UTC)
+                .withEndsOn(DateTime.now().plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
+                .withTimeZone(DateTimeZone.UTC)
             .withHealthCode("AAA")
             .withUserId(USER_ID)
-            .withAccountCreatedOn(ENROLLMENT.minusHours(2))
+            .withAccountCreatedOn(DateTime.now().minusDays(4))
             .build();
         
         // Is a parkinson patient, gets 3 tasks
