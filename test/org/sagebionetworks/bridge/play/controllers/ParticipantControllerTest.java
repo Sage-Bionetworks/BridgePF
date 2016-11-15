@@ -117,6 +117,12 @@ public class ParticipantControllerTest {
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     
+    @Captor
+    private ArgumentCaptor<DateTime> startTimeCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DateTime> endTimeCaptor;
+    
     private UserSession session;
     
     private Study study;
@@ -146,7 +152,7 @@ public class ParticipantControllerTest {
         
         when(authService.getSession(eq(study), any())).thenReturn(session);
         
-        when(participantService.getPagedAccountSummaries(eq(study), anyInt(), anyInt(), any())).thenReturn(page);
+        when(participantService.getPagedAccountSummaries(eq(study), anyInt(), anyInt(), any(), any(), any())).thenReturn(page);
         
         controller.setParticipantService(participantService);
         controller.setStudyService(studyService);
@@ -158,7 +164,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void getParticipants() throws Exception {
-        Result result = controller.getParticipants("10", "20", "foo");
+        DateTime start = DateTime.now();
+        DateTime end = DateTime.now();
+        Result result = controller.getParticipants("10", "20", "foo", start.toString(), end.toString());
         PagedResourceList<AccountSummary> page = resultToPage(result);
         
         // verify the result contains items
@@ -170,15 +178,21 @@ public class ParticipantControllerTest {
         assertEquals(new Integer(10), page.getOffsetBy());
         assertEquals(20, page.getPageSize());
         assertEquals("foo", page.getFilters().get("emailFilter"));
-        verify(participantService).getPagedAccountSummaries(study, 10, 20, "foo");
+        
+        // DateTime instances don't seem to be equal unless you use the library's equality methods, which
+        // verification does not do. So capture and compare that way.
+        verify(participantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
+                startTimeCaptor.capture(), endTimeCaptor.capture());
+        assertEquals(start.toString(), startTimeCaptor.getValue().toString());
+        assertEquals(end.toString(), endTimeCaptor.getValue().toString());
     }
     
     @Test(expected = BadRequestException.class)
     public void oddParametersUseDefaults() throws Exception {
-        controller.getParticipants("asdf", "qwer", null);
+        controller.getParticipants("asdf", "qwer", null, null, null);
         
         // paging with defaults
-        verify(participantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null);
+        verify(participantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null);
     }
 
     @Test
@@ -257,10 +271,10 @@ public class ParticipantControllerTest {
     
     @Test
     public void nullParametersUseDefaults() throws Exception {
-        controller.getParticipants(null, null, null);
+        controller.getParticipants(null, null, null, null, null);
 
         // paging with defaults
-        verify(participantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null);
+        verify(participantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null);
     }
     
     @Test

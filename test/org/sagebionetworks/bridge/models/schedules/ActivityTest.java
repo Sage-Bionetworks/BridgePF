@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.activities;
+package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -7,28 +7,50 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class ActivityTest {
-    
     @Test
     public void equalsContract() {
-        EqualsVerifier.forClass(Activity.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(Activity.class).allFieldsShouldBeUsed().verify();
     }
-    
+
     @Test
     public void equalsForActivity() {
-        EqualsVerifier.forClass(SurveyReference.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();   
+        EqualsVerifier.forClass(SurveyReference.class).allFieldsShouldBeUsed().verify();
+    }
+
+    @Test
+    public void canSerializeCompoundActivity() throws Exception {
+        // Start with JSON. For simplicity, only have the taskIdentifier in the CompoundActivity, so we aren't
+        // sensitive to changes in that class.
+        String jsonText = "{\n" +
+                "   \"label\":\"My Activity\",\n" +
+                "   \"labelDetail\":\"Description of activity\",\n" +
+                "   \"guid\":\"test-guid\"\n," +
+                "   \"compoundActivity\":{\"taskIdentifier\":\"combo-activity\"}\n" +
+                "}";
+
+        // convert to POJO
+        Activity activity = BridgeObjectMapper.get().readValue(jsonText, Activity.class);
+        assertEquals("My Activity", activity.getLabel());
+        assertEquals("Description of activity", activity.getLabelDetail());
+        assertEquals("test-guid", activity.getGuid());
+        assertEquals("combo-activity", activity.getCompoundActivity().getTaskIdentifier());
+
+        // convert back to JSON
+        JsonNode jsonNode = BridgeObjectMapper.get().convertValue(activity, JsonNode.class);
+        assertEquals("My Activity", jsonNode.get("label").textValue());
+        assertEquals("Description of activity", jsonNode.get("labelDetail").textValue());
+        assertEquals("test-guid", jsonNode.get("guid").textValue());
+        assertEquals("combo-activity", jsonNode.get("compoundActivity").get("taskIdentifier").textValue());
+        assertEquals("compound", jsonNode.get("activityType").textValue());
+        assertEquals("Activity", jsonNode.get("type").textValue());
     }
 
     @Test
@@ -167,9 +189,7 @@ public class ActivityTest {
     
     @Test
     public void createAGuidIfNoneIsSet() throws Exception {
-        Activity activity = new Activity.Builder().withGuid("AAA").withTask("task").withLabel("Label").build();
-        
-        activity = new Activity.Builder().withTask("task").withLabel("Label").build();
+        Activity activity = new Activity.Builder().withTask("task").withLabel("Label").build();
         assertNotNull(activity.getGuid());
     }
     
@@ -204,22 +224,88 @@ public class ActivityTest {
         schedule = BridgeObjectMapper.get().readValue("{\"scheduleType\":\"once\",\"eventId\":\"survey:HHH:finished\",\"activities\":[{\"label\":\"Label\",\"labelDetail\":\"Label Detail\",\"guid\":\"III\",\"task\":{\"identifier\":\"foo\"},\"activityType\":\"task\"}]}", Schedule.class);
         assertFalse(schedule.getActivities().get(0).isPersistentlyRescheduledBy(schedule));
     }
-    
+
     @Test
-    public void activityBuilder() {
-        // Not valid in that it has three reference objects, but good for a test
-        Activity activity1 = new Activity.Builder().withGuid("AAA").withLabel("Label").withLabelDetail("LabelDetail")
-                .withTask("TaskId")
-                .withPublishedSurvey("identifier", "BBB")
+    public void compoundActivity() {
+        CompoundActivity compoundActivity = new CompoundActivity.Builder().withTaskIdentifier("combo-activity")
                 .build();
-        
-        Activity activity2 = new Activity.Builder().withActivity(activity1).build();
-        assertEquals("AAA", activity2.getGuid());
-        assertEquals("Label", activity2.getLabel());
-        assertEquals("LabelDetail", activity2.getLabelDetail());
-        assertEquals("TaskId", activity2.getTask().getIdentifier());
-        assertEquals("BBB", activity2.getSurvey().getGuid());
-        assertEquals("identifier", activity2.getSurvey().getIdentifier());
+        Activity activity = new Activity.Builder().withLabel("My Label").withLabelDetail("My Label Detail")
+                .withGuid("AAA").withCompoundActivity(compoundActivity).build();
+        assertEquals("My Label", activity.getLabel());
+        assertEquals("My Label Detail", activity.getLabelDetail());
+        assertEquals("AAA", activity.getGuid());
+        assertEquals(compoundActivity, activity.getCompoundActivity());
+        assertEquals(ActivityType.COMPOUND, activity.getActivityType());
+        assertEquals("compound:combo-activity:finished", activity.getSelfFinishedEventId());
+
+        // toString() gives a lot of stuff and depends on two other classes. To make the tests robust and resilient to
+        // changes in encapsulated classes, just test a few keywords
+        String activityString = activity.toString();
+        assertTrue(activityString.contains("My Label"));
+        assertTrue(activityString.contains("My Label Detail"));
+        assertTrue(activityString.contains("AAA"));
+        assertTrue(activityString.contains("combo-activity"));
+        assertTrue(activityString.contains("COMPOUND"));
+
+        // test copy constructor
+        Activity copy = new Activity.Builder().withActivity(activity).build();
+        assertEquals(activity, copy);
     }
 
+    @Test
+    public void taskActivityByRef() {
+        TaskReference task = new TaskReference("my-task");
+        Activity activity = new Activity.Builder().withTask(task).build();
+        assertEquals(task, activity.getTask());
+        assertEquals(ActivityType.TASK, activity.getActivityType());
+        assertEquals("task:my-task:finished", activity.getSelfFinishedEventId());
+
+        String activityString = activity.toString();
+        assertTrue(activityString.contains("my-task"));
+        assertTrue(activityString.contains("TASK"));
+
+        // test copy constructor
+        Activity copy = new Activity.Builder().withActivity(activity).build();
+        assertEquals(activity, copy);
+    }
+
+    @Test
+    public void taskActivityById() {
+        // This is already mostly tested above. Just test passing in task ID sets the task correctly.
+        Activity activity = new Activity.Builder().withTask("my-task").build();
+        assertEquals(new TaskReference("my-task"), activity.getTask());
+    }
+
+    @Test
+    public void surveyActivityByRef() {
+        SurveyReference survey = new SurveyReference("my-survey", "BBB", null);
+        Activity activity = new Activity.Builder().withSurvey(survey).build();
+        assertEquals(survey, activity.getSurvey());
+        assertEquals(ActivityType.SURVEY, activity.getActivityType());
+        assertEquals("survey:BBB:finished", activity.getSelfFinishedEventId());
+
+        String activityString = activity.toString();
+        assertTrue(activityString.contains("my-survey"));
+        assertTrue(activityString.contains("BBB"));
+        assertTrue(activityString.contains("SURVEY"));
+
+        // test copy constructor
+        Activity copy = new Activity.Builder().withActivity(activity).build();
+        assertEquals(activity, copy);
+    }
+
+    @Test
+    public void surveyActivityByIdGuidCreatedOn() {
+        // most of this tested above
+        DateTime createdOn = DateTime.now();
+        Activity activity = new Activity.Builder().withSurvey("my-survey", "BBB", createdOn).build();
+        assertEquals(new SurveyReference("my-survey", "BBB", createdOn), activity.getSurvey());
+    }
+
+    @Test
+    public void publishedSurveyActivity() {
+        // most of this tested above
+        Activity activity = new Activity.Builder().withPublishedSurvey("my-published-survey", "CCC").build();
+        assertEquals(new SurveyReference("my-published-survey", "CCC", null), activity.getSurvey());
+    }
 }

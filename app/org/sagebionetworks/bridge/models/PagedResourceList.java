@@ -7,6 +7,8 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import org.joda.time.DateTime;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -54,6 +56,15 @@ public class PagedResourceList<T> {
     public PagedResourceList<T> withFilter(String key, String value) {
         if (isNotBlank(key) && isNotBlank(value)) {
             filters.put(key, value);
+        }
+        return this;
+    }
+    /**
+     * A convenience method for adding a date filter.
+     */
+    public PagedResourceList<T> withFilter(String key, DateTime value) {
+        if (isNotBlank(key) && value != null) {
+            filters.put(key, value.toString());
         }
         return this;
     }

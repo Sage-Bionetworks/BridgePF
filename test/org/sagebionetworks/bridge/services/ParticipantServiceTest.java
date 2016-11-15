@@ -118,6 +118,9 @@ public class ParticipantServiceTest {
             .copyOf(PARTICIPANT)
             .withExternalId(null).build();
     
+    private static final DateTime START_DATE = DateTime.now();
+    private static final DateTime END_DATE = START_DATE.plusDays(1);
+    
     private ParticipantService participantService;
     
     @Mock
@@ -297,36 +300,41 @@ public class ParticipantServiceTest {
     
     @Test
     public void getPagedAccountSummaries() {
-        participantService.getPagedAccountSummaries(STUDY, 1100, 50, "foo");
+        participantService.getPagedAccountSummaries(STUDY, 1100, 50, "foo", START_DATE, END_DATE);
         
-        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, "foo"); 
+        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, "foo", START_DATE, END_DATE); 
     }
     
     @Test(expected = NullPointerException.class)
     public void getPagedAccountSummariesWithBadStudy() {
-        participantService.getPagedAccountSummaries(null, 0, 100, null);
+        participantService.getPagedAccountSummaries(null, 0, 100, null, null, null);
     }
     
     @Test(expected = BadRequestException.class)
     public void getPagedAccountSummariesWithNegativeOffsetBy() {
-        participantService.getPagedAccountSummaries(STUDY, -1, 100, null);
+        participantService.getPagedAccountSummaries(STUDY, -1, 100, null, null, null);
     }
 
     @Test(expected = BadRequestException.class)
     public void getPagedAccountSummariesWithNegativePageSize() {
-        participantService.getPagedAccountSummaries(STUDY, 0, -100, null);
+        participantService.getPagedAccountSummaries(STUDY, 0, -100, null, null, null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getPagedAccountSummariesWithBadDateRange() {
+        participantService.getPagedAccountSummaries(STUDY, 0, -100, null, END_DATE, START_DATE);
     }
     
     @Test
     public void getPagedAccountSummariesWithoutEmailFilterOK() {
-        participantService.getPagedAccountSummaries(STUDY, 1100, 50, null);
+        participantService.getPagedAccountSummaries(STUDY, 1100, 50, null, null, null);
         
-        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, null); 
+        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, null, null, null); 
     }
     
     @Test(expected = BadRequestException.class)
     public void getPagedAccountSummariesWithTooLargePageSize() {
-        participantService.getPagedAccountSummaries(STUDY, 0, 251, null);
+        participantService.getPagedAccountSummaries(STUDY, 0, 251, null, null, null);
     }
     
     @Test(expected = EntityNotFoundException.class)

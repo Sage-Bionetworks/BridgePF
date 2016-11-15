@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -144,7 +145,8 @@ public class StudyServiceTest {
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceTest]", newStudy.getName());
         assertEquals(18, newStudy.getMinAgeOfConsent());
-        assertEquals(Sets.newHashSet("beta_users", "production_users"), newStudy.getDataGroups());
+        assertEquals(Sets.newHashSet("beta_users", "production_users", BridgeConstants.TEST_USER_GROUP),
+                newStudy.getDataGroups());
         assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());

@@ -49,6 +49,8 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import com.stormpath.sdk.directory.CustomData;
+
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +80,9 @@ import com.stormpath.sdk.resource.ResourceException;
 @Component("stormpathAccountDao")
 public class StormpathAccountDao implements AccountDao {
 
+    private static DateTime DISTANT_PAST = DateTime.parse("2000-01-01T00:00:00.000Z");
+    private static DateTime DISTANT_FUTURE = DateTime.parse("2100-01-01T00:00:00.000Z");
+    
     private static Logger logger = LoggerFactory.getLogger(StormpathAccountDao.class);
 
     private Application application;
@@ -148,11 +153,21 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
+            String emailFilter, DateTime startDate, DateTime endDate) {
         checkNotNull(study);
         checkArgument(offsetBy >= 0);
         checkArgument(pageSize >= API_MINIMUM_PAGE_SIZE && pageSize <= API_MAXIMUM_PAGE_SIZE);
 
+        if (startDate == null) {
+            startDate = DISTANT_PAST;
+        }
+        if (endDate == null) {
+            endDate = DISTANT_FUTURE;
+        }
+        // The Stormpath range is exclusive on the high end, add one millisecond to the end date so it is inclusive. 
+        DateTime inclusiveEndDate = new DateTime(endDate.getMillis()+1);
+        
         // limitTo sets the number of records that will be requested from the server, but the iterator behavior
         // of AccountList is such that it will keep fetching records when you get to the limitTo page size. 
         // To make one request of records, you must stop iterating when you get to limitTo records. Furthermore, 
@@ -160,7 +175,9 @@ public class StormpathAccountDao implements AccountDao {
         // either the number of records returned or limitTo (as you might expect in a paging API when you get the 
         // last page of records). Behavior as described by Stormpath in email.
         
-        AccountCriteria criteria = Accounts.criteria().limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
+        AccountCriteria criteria = Accounts.criteria()
+                .add(Accounts.createdAt().in(startDate.toDate(), inclusiveEndDate.toDate()))
+                .limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
         if (isNotBlank(emailFilter)) {
             criteria = criteria.add(Accounts.email().containsIgnoreCase(emailFilter));
         }
@@ -178,7 +195,9 @@ public class StormpathAccountDao implements AccountDao {
             }
         }
         return new PagedResourceList<AccountSummary>(results, offsetBy, pageSize, accts.getSize())
-                .withFilter("emailFilter", emailFilter);
+                .withFilter("emailFilter", emailFilter)
+                .withFilter("startDate", startDate)
+                .withFilter("endDate", endDate);
     }
     
     @Override

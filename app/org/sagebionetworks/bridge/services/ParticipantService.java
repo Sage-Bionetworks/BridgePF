@@ -61,6 +61,7 @@ public class ParticipantService {
     private static Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
 
     private static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
+    private static final String DATE_RANGE_ERROR = "startDate should be before endDate";
     
     private AccountDao accountDao;
     
@@ -175,7 +176,8 @@ public class ParticipantService {
         return builder.build();
     }
     
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize, String emailFilter) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
+            String emailFilter, DateTime startDate, DateTime endDate) {
         checkNotNull(study);
         if (offsetBy < 0) {
             throw new BadRequestException("offsetBy cannot be less than 0");
@@ -184,7 +186,10 @@ public class ParticipantService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter);
+        if (startDate != null && endDate != null && startDate.getMillis() >= endDate.getMillis()) {
+            throw new BadRequestException(DATE_RANGE_ERROR);
+        }
+        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, startDate, endDate);
     }
     
     public void signUserOut(Study study, String email) {
