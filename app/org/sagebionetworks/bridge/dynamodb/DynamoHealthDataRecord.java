@@ -46,14 +46,12 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private ExporterStatus synapseExporterStatus;
 
     /** {@inheritDoc} */
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getCreatedOn() {
         return createdOn;
     }
 
     /** @see #getCreatedOn */
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setCreatedOn(Long createdOn) {
         this.createdOn = createdOn;
     }
@@ -168,14 +166,12 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
 
     /** {@inheritDoc} */
     @DynamoDBIndexRangeKey(attributeName = "uploadedOn", globalSecondaryIndexName = "study-uploadedOn-index")
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getUploadedOn() {
         return uploadedOn;
     }
 
     /** @see #getUploadedOn */
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setUploadedOn(Long uploadedOn) {
         this.uploadedOn = uploadedOn;
     }

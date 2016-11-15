@@ -4,10 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,6 +23,10 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class DynamoHealthDataDaoTest {
+    private static final String TEST_HEALTH_CODE = "1234";
+    private static final Long TEST_CREATED_ON = Long.parseLong("1427970429000");
+    private static final String TEST_SCHEMA_ID = "api";
+
     @Test
     public void createOrUpdateRecord() {
         // mock mapper
@@ -124,5 +130,27 @@ public class DynamoHealthDataDaoTest {
         // execute and validate
         List<HealthDataRecord> retVal = dao.getRecordsForUploadDate("2015-02-11");
         assertSame(mockResult, retVal);
+    }
+
+    @Test
+    public void getRecordsByHealthCodeCreatedOnSchemaId() {
+        // mock index helper
+        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
+        record.setHealthCode(TEST_HEALTH_CODE);
+        record.setId("test ID");
+        record.setCreatedOn(TEST_CREATED_ON);
+        record.setSchemaId(TEST_SCHEMA_ID);
+
+        List<HealthDataRecord> mockResult = Arrays.asList(record);
+        DynamoIndexHelper mockIndex = mock(DynamoIndexHelper.class);
+        when(mockIndex.queryKeys(HealthDataRecord.class, "healthCode", TEST_HEALTH_CODE, null)).thenReturn(mockResult);
+
+        DynamoHealthDataDao dao = new DynamoHealthDataDao();
+        dao.setHealthCodeIndex(mockIndex);
+
+        // execute and validate
+        List<HealthDataRecord> retVal = dao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID);
+
+        assertEquals(mockResult, retVal);
     }
 }

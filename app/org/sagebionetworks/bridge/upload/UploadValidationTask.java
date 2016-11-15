@@ -5,11 +5,15 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.services.HealthDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class represents an asynchronous upload validation task, corresponding with exactly one upload. It implements
@@ -22,6 +26,15 @@ public class UploadValidationTask implements Runnable {
 
     private List<UploadValidationHandler> handlerList;
     private UploadDao uploadDao;
+    private HealthDataService healthDataService;
+
+    public void setHealthDataService(HealthDataService healthDataService) {
+        this.healthDataService = healthDataService;
+    }
+
+    public HealthDataService getHealthDataService() {
+        return this.healthDataService;
+    }
 
     /**
      * Constructs an upload validation task instance with the given context. This should only be called by the
@@ -111,6 +124,30 @@ public class UploadValidationTask implements Runnable {
         }
 
         // TODO: if validation fails, wipe the files from S3
+
+        // dedupe logic over here:
+        dedupeHelper(context.getRecordId());
+    }
+
+    /**
+     * helper method: query healthdatarecord by healthcode, schema and createdOn from the upload just finished above,
+     * if there are more than 1 such records in ddb, there are duplicates. log that information but not stop or delete anything right now
+     * @param healthRecordId
+     */
+    private void dedupeHelper(String healthRecordId) {
+        // get necessary information for query first
+        HealthDataRecord record = healthDataService.getRecordById(healthRecordId);
+
+        Long createdOn = record.getCreatedOn();
+        String healthCode = record.getHealthCode();
+        String schemaId = record.getSchemaId();
+
+        List<HealthDataRecord> retList = healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
+
+        if (retList.size() > 1) {
+            logger.warn(String.format("Duplicate health data records for record id: %s, health code: %s, created on:  %s, schema id: %s, duplicate size: %s",
+                    healthRecordId, healthCode, createdOn, schemaId, retList.size()));
+        }
     }
 
     // Log helper. Unit tests will mock (spy) this, so we verify that we're catching and logging the exception.

@@ -3,7 +3,14 @@ package org.sagebionetworks.bridge.dynamodb;
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -90,5 +97,16 @@ public class DynamoHealthDataDao implements HealthDataDao {
     @Override
     public HealthDataRecordBuilder getRecordBuilder() {
         return new DynamoHealthDataRecord.Builder();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<HealthDataRecord> getRecordsByHealthCodeCreatedOnSchemaId(@Nonnull String healthCode, @Nonnull Long createdOn, @Nonnull String schemaId) {
+        List<HealthDataRecord> recordsByHealthCode = healthCodeIndex.queryKeys(HealthDataRecord.class, "healthCode",
+                healthCode, null);
+
+        return recordsByHealthCode.stream()
+                .filter(record -> record.getCreatedOn().equals(createdOn) && record.getSchemaId().equals(schemaId))
+                .collect(Collectors.toList());
     }
 }
