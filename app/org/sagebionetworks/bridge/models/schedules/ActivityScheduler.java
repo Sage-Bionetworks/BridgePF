@@ -13,7 +13,7 @@ import com.google.common.collect.Lists;
 
 public abstract class ActivityScheduler {
     
-    private static final List<LocalTime> TIMES = Lists.newArrayList(LocalTime.MIDNIGHT);
+    private static final List<LocalTime> MIDNIGHT_IN_LIST = Lists.newArrayList(LocalTime.MIDNIGHT);
 
     protected final Schedule schedule;
     
@@ -47,7 +47,7 @@ public abstract class ActivityScheduler {
     protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
             ScheduleContext context, LocalDate localDate) {
         
-        List<LocalTime> localTimes = (schedule.getTimes().isEmpty()) ? TIMES : schedule.getTimes();
+        List<LocalTime> localTimes = (schedule.getTimes().isEmpty()) ? MIDNIGHT_IN_LIST : schedule.getTimes();
         for (LocalTime localTime : localTimes) {
             addScheduledActivityAtTime(scheduledActivities, plan, context, localDate, localTime);
         }
@@ -56,10 +56,9 @@ public abstract class ActivityScheduler {
     protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
             ScheduleContext context, LocalDate localDate, LocalTime localTime) {
         
-        DateTime scheduledTime = localDate.toDateTime(localTime).withZoneRetainFields(DateTimeZone.UTC);
-        if (isInWindow(scheduledTime)) {
+        if (isInWindow(localDate, localTime)) {
             // As long at the activities are not already expired, add them.
-            DateTime expiresOn = getExpiresOn(scheduledTime);
+            DateTime expiresOn = getExpiresOn(localDate, localTime);
             if (expiresOn == null || expiresOn.isAfter(context.getNow())) {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
@@ -87,8 +86,9 @@ public abstract class ActivityScheduler {
         return scheduledActivities.subList(0, Math.min(scheduledActivities.size(), count));
     }
     
-    private boolean isInWindow(DateTime scheduledTime) {
-        scheduledTime = scheduledTime.withZone(DateTimeZone.UTC);
+    private boolean isInWindow(LocalDate localDate, LocalTime localTime) {
+        DateTime scheduledTime = localDate.toDateTime(localTime).withZoneRetainFields(DateTimeZone.UTC);
+        
         DateTime startsOn = schedule.getStartsOn();
         DateTime endsOn = schedule.getEndsOn();
 
@@ -102,10 +102,11 @@ public abstract class ActivityScheduler {
         return (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
     }
     
-    private DateTime getExpiresOn(DateTime scheduledTime) {
+    private DateTime getExpiresOn(LocalDate localDate, LocalTime localTime) {
         if (schedule.getExpires() == null) {
             return null;
         }
+        DateTime scheduledTime = localDate.toDateTime(localTime).withZoneRetainFields(DateTimeZone.UTC);
         return scheduledTime.plus(schedule.getExpires());
     }
 

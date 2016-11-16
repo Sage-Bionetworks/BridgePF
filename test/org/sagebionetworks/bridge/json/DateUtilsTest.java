@@ -212,4 +212,20 @@ public class DateUtilsTest {
         DateUtils.getDateTimeOrDefault("6/7/2016", null);
     }
     
+    // This method is dealing with local time, but we're casting to UTC so that 
+    // the one time tasks that call this are forced to a common day (this day 
+    // or maybe the day before... this won't matter for one-time task or persistent 
+    // tasks unless they expire, but we prevent a short expiration window). Then if 
+    // the user moves across the datetime boundary, they won't get another task.
+    @Test
+    public void eventToPriorUTCMidnight() {
+        DateTime dateTime = DateTime.parse("2016-11-06T16:32.123-07:00");
+        DateTime midnight = DateUtils.dateTimeToUTCMidnight(dateTime);
+        assertEquals("2016-11-06T00:00:00.000Z", midnight.toString());
+        
+        // Time zone not an issue here, it will normalize to UTC
+        dateTime = DateTime.parse("2016-11-07T02:32.123+03:00");
+        midnight = DateUtils.dateTimeToUTCMidnight(dateTime);
+        assertEquals("2016-11-06T00:00:00.000Z", midnight.toString());
+    }    
 }

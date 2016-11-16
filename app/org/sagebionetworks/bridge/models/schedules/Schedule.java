@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -22,10 +21,6 @@ public final class Schedule implements BridgeEntity {
     public static final boolean isScheduleWithoutTimes(Schedule schedule) {
         return (schedule.getTimes().isEmpty() && 
                 schedule.getCronTrigger() == null);
-    }
-    
-    public static final DateTime eventToMidnight(DateTime dateTime) {
-        return new DateTime(dateTime, DateTimeZone.UTC).withTime(LocalTime.MIDNIGHT);
     }
 
     public static final String SCHEDULE_TYPE_NAME = "Schedule";

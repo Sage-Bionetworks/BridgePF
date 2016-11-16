@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -79,8 +80,8 @@ public class ScheduledActivityService {
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
         List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
         
-        // BRIDGE-1589. Infer scheduled activities derived from ONCE schedules. Adjust DB activities
-        Set<String> schedulePlansWithoutTimes = getOneTimeSchedulePlans(scheduledActivities);
+        // BRIDGE-1589. Infer scheduled activities derived from non-recurring schedules. Adjust DB activities
+        Set<String> schedulePlansWithoutTimes = getSchedulePlansWithoutTimes(scheduledActivities);
         adjustPersistedOneTimeActivities(context, dbActivities, schedulePlansWithoutTimes);
         
         List<ScheduledActivity> saves = updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
@@ -96,7 +97,7 @@ public class ScheduledActivityService {
      * worse case scenario is a user continues to see duplicated one-time tasks. None of this applies to newer
      * accounts where time is already fixed.
      */
-    private Set<String> getOneTimeSchedulePlans(List<ScheduledActivity> scheduledActivities) {
+    private Set<String> getSchedulePlansWithoutTimes(List<ScheduledActivity> scheduledActivities) {
         if (scheduledActivities == null || scheduledActivities.isEmpty()) {
             return Collections.emptySet();
         }
@@ -107,17 +108,18 @@ public class ScheduledActivityService {
     
     /**
      * One-time tasks carried over the timestamp of the enrollment event, but that time would change depending on 
-     * the time zone submitted by the user (daylight savings time changes). For one-time interval-based tasks, that
-     * did not require a time to be set on the schedule, we now set the time to midnight regardless of time zone. 
-     * This method fixes already persisted activities rather than trying to backfill (or until we can backfill). 
-     * This will lead to setting the same scheduledOn time for duplicates that will be removed in a later step. 
+     * the time zone submitted by the user (daylight savings time changes). For one-time interval-based tasks 
+     * (including persistent tasks), that did not require a time to be set on the schedule, we now set the time 
+     * to midnight regardless of time zone. This method fixes already persisted activities rather than trying to 
+     * backfill (or until we can backfill). This will lead to setting the same scheduledOn time for duplicates 
+     * that will be removed in a later step. 
      */
     private void adjustPersistedOneTimeActivities(ScheduleContext context, List<ScheduledActivity> dbActivities,
             Set<String> oneTimeSchedulePlans) {
         for (int i=0; i < dbActivities.size(); i++) {
             ScheduledActivity activity = dbActivities.get(i);
             if (oneTimeSchedulePlans.contains(activity.getSchedulePlanGuid())) {
-                DateTime dateTime = Schedule.eventToMidnight(activity.getScheduledOn());
+                DateTime dateTime = DateUtils.dateTimeToUTCMidnight(activity.getScheduledOn());
                 String guid = activity.getActivity().getGuid() + ":" + dateTime.toLocalDateTime().toString();
                 activity.setScheduledOn(dateTime);
                 activity.setGuid(guid);
