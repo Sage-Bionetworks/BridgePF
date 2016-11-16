@@ -123,13 +123,6 @@ public class ScheduledActivityServiceRecurringTest {
         ScheduleContext context = getContextWith2DayWindow(MSK);
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         
-        System.out.println("");
-        System.out.println("startsOn: " + context.getNow() + ", endsOn: " + context.getEndsOn());
-        for(ScheduledActivity act : activities) {
-            System.out.println(act.getScheduledOn());
-        }
-        System.out.println("should match to: " + msk3+"T10:00:00.000+03:00");
-        
         assertEquals(4, activities.size());
         assertEquals(msk0+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());

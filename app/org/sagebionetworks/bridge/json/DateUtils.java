@@ -216,11 +216,11 @@ public final class DateUtils {
     }
     
     /**
-     * Convert DateTime instance to midnight of a given day, using UTC time zone.
+     * Convert DateTime instance to midnight UTC.
      * @param dateTime
      * @return dateTime at midnight in UTC
      */
-    public static DateTime dateTimeToUTCMidnight(DateTime dateTime) {
+    public static DateTime dateTimeToMidnightUTC(DateTime dateTime) {
         return new DateTime(dateTime, DateTimeZone.UTC).withTime(LocalTime.MIDNIGHT);
     }
 }

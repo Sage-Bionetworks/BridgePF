@@ -220,12 +220,12 @@ public class DateUtilsTest {
     @Test
     public void eventToPriorUTCMidnight() {
         DateTime dateTime = DateTime.parse("2016-11-06T16:32.123-07:00");
-        DateTime midnight = DateUtils.dateTimeToUTCMidnight(dateTime);
+        DateTime midnight = DateUtils.dateTimeToMidnightUTC(dateTime);
         assertEquals("2016-11-06T00:00:00.000Z", midnight.toString());
         
         // Time zone not an issue here, it will normalize to UTC
         dateTime = DateTime.parse("2016-11-07T02:32.123+03:00");
-        midnight = DateUtils.dateTimeToUTCMidnight(dateTime);
+        midnight = DateUtils.dateTimeToMidnightUTC(dateTime);
         assertEquals("2016-11-06T00:00:00.000Z", midnight.toString());
     }    
 }

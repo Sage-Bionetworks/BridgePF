@@ -37,7 +37,6 @@ public class ScheduleTestUtils {
         assertEquals(output.length, activities.size());
         for (int i=0; i < activities.size(); i++) {
             assertEquals(new DateTime(asLong(output[i]), DateTimeZone.UTC), activities.get(i).getScheduledOn());
-            //assertEquals(asLong(output[i]), activities.get(i).getScheduledOn().getMillis());
         }
     }
 }

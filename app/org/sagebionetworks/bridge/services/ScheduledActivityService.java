@@ -119,7 +119,7 @@ public class ScheduledActivityService {
         for (int i=0; i < dbActivities.size(); i++) {
             ScheduledActivity activity = dbActivities.get(i);
             if (oneTimeSchedulePlans.contains(activity.getSchedulePlanGuid())) {
-                DateTime dateTime = DateUtils.dateTimeToUTCMidnight(activity.getScheduledOn());
+                DateTime dateTime = DateUtils.dateTimeToMidnightUTC(activity.getScheduledOn());
                 String guid = activity.getActivity().getGuid() + ":" + dateTime.toLocalDateTime().toString();
                 activity.setScheduledOn(dateTime);
                 activity.setGuid(guid);
