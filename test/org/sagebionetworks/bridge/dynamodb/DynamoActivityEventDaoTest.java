@@ -34,12 +34,14 @@ public class DynamoActivityEventDaoTest {
     
     @Test
     public void canCrudEvent() {
-        DateTime time1 = DateTime.now();
-        DateTime time2 = time1.plusDays(1);
-        DateTime time3 = time1.plusDays(2);
-        DateTime time4 = time1.plusDays(3);
-        DateTime time5 = time1.plusDays(4);
-        DateTime time6 = time1.plusDays(5);
+        // Put all the initial times in non-UTC timezone, they should come back in map in UTC.
+        DateTimeZone MSK = DateTimeZone.forOffsetHours(4);
+        DateTime time1 = DateTime.now().withZone(MSK);
+        DateTime time2 = time1.plusDays(1).withZone(MSK);
+        DateTime time3 = time1.plusDays(2).withZone(MSK);
+        DateTime time4 = time1.plusDays(3).withZone(MSK);
+        DateTime time5 = time1.plusDays(4).withZone(MSK);
+        DateTime time6 = time1.plusDays(5).withZone(MSK);
         
         // This is an answer event. It's key should be "question:CCC:answered" with a value column
         // the activity event map should create a key with the value, such as "question:CCC:answered=value"
