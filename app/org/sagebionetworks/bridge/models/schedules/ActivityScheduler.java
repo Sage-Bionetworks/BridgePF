@@ -9,7 +9,11 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 
+import com.google.common.collect.Lists;
+
 public abstract class ActivityScheduler {
+    
+    private static final List<LocalTime> TIMES = Lists.newArrayList(LocalTime.MIDNIGHT);
 
     protected final Schedule schedule;
     
@@ -41,13 +45,11 @@ public abstract class ActivityScheduler {
     }
     
     protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
-            ScheduleContext context, DateTime scheduledTime) {
-        if (schedule.getTimes().isEmpty()) {
-            addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), LocalTime.MIDNIGHT);
-        } else {
-            for (LocalTime time : schedule.getTimes()) {
-                addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), time);
-            }
+            ScheduleContext context, LocalDate localDate) {
+        
+        List<LocalTime> localTimes = (schedule.getTimes().isEmpty()) ? TIMES : schedule.getTimes();
+        for (LocalTime localTime : localTimes) {
+            addScheduledActivityAtTime(scheduledActivities, plan, context, localDate, localTime);
         }
     }
     
@@ -90,17 +92,8 @@ public abstract class ActivityScheduler {
         DateTime startsOn = schedule.getStartsOn();
         DateTime endsOn = schedule.getEndsOn();
 
-        boolean b = (startsOn == null || scheduledTime.isEqual(startsOn) || scheduledTime.isAfter(startsOn)) && 
-                (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
-        /*
-        StringBuilder sb = new StringBuilder();
-        sb.append("isInWindow=").append(b);
-        sb.append(", scheduledTime=").append(scheduledTime);
-        sb.append(", startsOn=").append(startsOn);
-        sb.append(", endsOn=").append(endsOn);
-        System.out.println(sb.toString());
-        */
-        return b;
+        return (startsOn == null || scheduledTime.isEqual(startsOn) || scheduledTime.isAfter(startsOn)) && 
+               (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
     }
     
     private boolean isBeforeWindowEnd(DateTime scheduledTime) {
@@ -139,9 +132,6 @@ public abstract class ActivityScheduler {
         
         boolean boundaryNotMet = scheduledTime.withZoneRetainFields(context.getZone()).isBefore(context.getEndsOn()) || 
                 hasNotMetMinimumCount(context, scheduledActivities.size());
-
-        System.out.println("shouldContinueScheduling: " + boundaryNotMet + ", scheduledTime: " + scheduledTime +
-                ", scheduledTimeLocal: " + scheduledTime.withZoneRetainFields(context.getZone()) + ", endsOn: " + context.getEndsOn());
         
         return isBeforeWindowEnd(scheduledTime) && boundaryNotMet;
     }
