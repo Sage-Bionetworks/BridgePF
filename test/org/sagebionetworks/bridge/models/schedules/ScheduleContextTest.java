@@ -88,4 +88,16 @@ public class ScheduleContextTest {
         assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
     }
     
+    @Test
+    public void eventTimesAreForcedToUTC() {
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withAccountCreatedOn(DateTime.parse("2010-10-10T10:10:10.010+03:00"))
+                .withStudyIdentifier("study-Id")
+                .build();
+        assertEquals("2010-10-10T07:10:10.010Z", context.getAccountCreatedOn().toString());
+        
+        ScheduleContext context2 = new ScheduleContext.Builder().withContext(context).build();
+        assertEquals("2010-10-10T07:10:10.010Z", context2.getAccountCreatedOn().toString());
+    }
+    
 }

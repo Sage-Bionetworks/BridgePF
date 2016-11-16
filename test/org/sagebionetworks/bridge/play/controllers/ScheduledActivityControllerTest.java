@@ -240,7 +240,7 @@ public class ScheduledActivityControllerTest {
         controller.getScheduledActivities(null, "-07:00", "3", null);
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
-        assertEquals(ACCOUNT_CREATED_ON, context.getAccountCreatedOn());
+        assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());
     }
     
 }

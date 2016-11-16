@@ -295,11 +295,8 @@ public class ScheduledActivityServiceDuplicateTest {
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
-        // First one has been finished and should not be in set
         
-        // It's fifteen because if you're in Moscow, there's a Session 4 task that falls off the list:
-        // 2016-11-07T20:00:00.000-08:00: Activity Session 4 <!-- this is expired
-        assertEquals(15, activities.size());
+        assertEquals(19, activities.size());
         assertEquals(0, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T00:00:00.000").size());
         assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T00:00:00.000").size());
         assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T00:00:00.000").size());

@@ -40,46 +40,24 @@ public abstract class ActivityScheduler {
         return eventTime;
     }
     
-    protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, 
-            SchedulePlan plan, ScheduleContext context, DateTime scheduledTime) {
+    protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
+            ScheduleContext context, DateTime scheduledTime) {
         if (schedule.getTimes().isEmpty()) {
-            //scheduledTime = adjustOnceIntervalActivityWithNoTimes(context, scheduledTime);
             addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), LocalTime.MIDNIGHT);
         } else {
             for (LocalTime time : schedule.getTimes()) {
-                //scheduledTime = scheduledTime.withTime(time);
                 addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), time);
             }
         }
     }
     
-    /**
-     * BRIDGE-1589: Adjust one-time interval tasks with no specified times so the time portion is 
-     * midnight of the event day. We are curently using the event's time, but that time changes 
-     * with daylight savings time (unlike schedules with specified times... these times are set the 
-     * same regardless of time zone). It is accompanied by a validation rule to prevent setting 
-     * expiration of a one-time to less than 24 hours because that isn't going to make sense in 
-     * the rare event someone tries it.
-     */
-    protected DateTime adjustOnceIntervalActivityWithNoTimes(ScheduleContext context, DateTime scheduledTime) {
-        // We already know there are no times... but in case this is ever called in another sequence, do check it.
-        // Normalize to UTC minus one day from enrollment, to ensure no matter where user is at the time of request,
-        // the one-time activity is available.
-        if (Schedule.isScheduleWithoutTimes(schedule)) {
-            return Schedule.eventToMidnight(scheduledTime);
-        }
-        return scheduledTime;
-    }
-    
     protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
             ScheduleContext context, LocalDate localDate, LocalTime localTime) {
-        // If this time point is outside of the schedule's active window, skip it.
         
-        DateTime utcTime = localDate.toDateTime(localTime).withZone(DateTimeZone.UTC);
-        
-        if (isInWindow(utcTime)) {
+        DateTime scheduledTime = localDate.toDateTime(localTime).withZoneRetainFields(DateTimeZone.UTC);
+        if (isInWindow(scheduledTime)) {
             // As long at the activities are not already expired, add them.
-            DateTime expiresOn = getExpiresOn(utcTime);
+            DateTime expiresOn = getExpiresOn(scheduledTime);
             if (expiresOn == null || expiresOn.isAfter(context.getNow())) {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
@@ -108,11 +86,21 @@ public abstract class ActivityScheduler {
     }
     
     private boolean isInWindow(DateTime scheduledTime) {
+        scheduledTime = scheduledTime.withZone(DateTimeZone.UTC);
         DateTime startsOn = schedule.getStartsOn();
         DateTime endsOn = schedule.getEndsOn();
-        
-        return (startsOn == null || scheduledTime.isEqual(startsOn) || scheduledTime.isAfter(startsOn)) && 
-               (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
+
+        boolean b = (startsOn == null || scheduledTime.isEqual(startsOn) || scheduledTime.isAfter(startsOn)) && 
+                (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
+        /*
+        StringBuilder sb = new StringBuilder();
+        sb.append("isInWindow=").append(b);
+        sb.append(", scheduledTime=").append(scheduledTime);
+        sb.append(", startsOn=").append(startsOn);
+        sb.append(", endsOn=").append(endsOn);
+        System.out.println(sb.toString());
+        */
+        return b;
     }
     
     private boolean isBeforeWindowEnd(DateTime scheduledTime) {
@@ -148,8 +136,12 @@ public abstract class ActivityScheduler {
      */
     protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime,
             List<ScheduledActivity> scheduledActivities) {
-        boolean boundaryNotMet = scheduledTime.isBefore(context.getEndsOn()) || 
+        
+        boolean boundaryNotMet = scheduledTime.withZoneRetainFields(context.getZone()).isBefore(context.getEndsOn()) || 
                 hasNotMetMinimumCount(context, scheduledActivities.size());
+
+        System.out.println("shouldContinueScheduling: " + boundaryNotMet + ", scheduledTime: " + scheduledTime +
+                ", scheduledTimeLocal: " + scheduledTime.withZoneRetainFields(context.getZone()) + ", endsOn: " + context.getEndsOn());
         
         return isBeforeWindowEnd(scheduledTime) && boundaryNotMet;
     }
