@@ -223,7 +223,6 @@ public class DateUtilsTest {
         DateTime midnight = DateUtils.dateTimeToMidnightUTC(dateTime);
         assertEquals("2016-11-06T00:00:00.000Z", midnight.toString());
         
-        // Time zone not an issue here, it will normalize to UTC
         dateTime = DateTime.parse("2016-11-07T02:32.123+03:00");
         midnight = DateUtils.dateTimeToMidnightUTC(dateTime);
         assertEquals("2016-11-06T00:00:00.000Z", midnight.toString());

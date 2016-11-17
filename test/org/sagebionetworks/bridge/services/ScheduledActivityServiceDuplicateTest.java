@@ -295,7 +295,7 @@ public class ScheduledActivityServiceDuplicateTest {
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
         
-        assertEquals(19, activities.size());
+        assertEquals(15, activities.size());
         assertEquals(0, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T00:00:00.000").size());
         assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T00:00:00.000").size());
         assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T00:00:00.000").size());

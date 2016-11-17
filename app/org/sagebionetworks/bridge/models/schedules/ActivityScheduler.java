@@ -87,7 +87,7 @@ public abstract class ActivityScheduler {
     }
     
     private boolean isInWindow(LocalDate localDate, LocalTime localTime) {
-        DateTime scheduledTime = localDate.toDateTime(localTime).withZoneRetainFields(DateTimeZone.UTC);
+        DateTime scheduledTime = localDate.toDateTime(localTime, DateTimeZone.UTC);
         
         DateTime startsOn = schedule.getStartsOn();
         DateTime endsOn = schedule.getEndsOn();
@@ -106,7 +106,7 @@ public abstract class ActivityScheduler {
         if (schedule.getExpires() == null) {
             return null;
         }
-        DateTime scheduledTime = localDate.toDateTime(localTime).withZoneRetainFields(DateTimeZone.UTC);
+        DateTime scheduledTime = localDate.toDateTime(localTime, DateTimeZone.UTC);
         return scheduledTime.plus(schedule.getExpires());
     }
 
@@ -130,10 +130,9 @@ public abstract class ActivityScheduler {
      */
     protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime,
             List<ScheduledActivity> scheduledActivities) {
-        
-        boolean boundaryNotMet = scheduledTime.withZoneRetainFields(context.getZone()).isBefore(context.getEndsOn()) || 
+
+        boolean boundaryNotMet = scheduledTime.isBefore(context.getEndsOn()) || 
                 hasNotMetMinimumCount(context, scheduledActivities.size());
-        
         return isBeforeWindowEnd(scheduledTime) && boundaryNotMet;
     }
     
