@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -369,11 +370,11 @@ public class ScheduledActivityServiceMockTest {
         DateTime time4 = DateTime.parse("2014-10-04T00:00:00.000Z");
         
         List<ScheduledActivity> list = createActivities("AAA", "BBB", "CCC", "DDD");
-        list.get(0).setScheduledOn(time2);
-        list.get(1).setScheduledOn(time1);
-        list.get(2).setScheduledOn(time4);
-        list.get(3).setScheduledOn(time3);
-        list.get(3).setExpiresOn(DateTime.now().minusDays(1));
+        list.get(0).setLocalScheduledOn(time2.toLocalDateTime());
+        list.get(1).setLocalScheduledOn(time1.toLocalDateTime());
+        list.get(2).setLocalScheduledOn(time4.toLocalDateTime());
+        list.get(3).setLocalScheduledOn(time3.toLocalDateTime());
+        list.get(3).setLocalExpiresOn(LocalDateTime.now().minusDays(1));
         
         List<ScheduledActivity> result = service.orderActivities(list);
         assertEquals(3, result.size());
@@ -528,7 +529,7 @@ public class ScheduledActivityServiceMockTest {
             ScheduledActivity activity = ScheduledActivity.create();
             activity.setGuid(guid);
             activity.setTimeZone(DateTimeZone.UTC);
-            activity.setScheduledOn(DateTime.now());
+            activity.setLocalScheduledOn(LocalDateTime.now());
             list.add(activity);
         }
         return list;
@@ -542,8 +543,8 @@ public class ScheduledActivityServiceMockTest {
             ScheduledActivity activity = ScheduledActivity.create();
             activity.setTimeZone(timeZone);
             activity.setGuid(guid);
-            activity.setScheduledOn(startedOn);
-            activity.setExpiresOn(expiresOn);
+            activity.setLocalScheduledOn(startedOn.toLocalDateTime());
+            activity.setLocalExpiresOn(expiresOn.toLocalDateTime());
             list.add(activity);
         }
         return list;

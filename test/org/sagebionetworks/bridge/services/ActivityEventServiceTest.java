@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -158,7 +159,7 @@ public class ActivityEventServiceTest {
         ScheduledActivity schActivity = ScheduledActivity.create();
         schActivity.setGuid("AAA:"+DateTime.now().toLocalDateTime());
         schActivity.setActivity(TestConstants.TEST_1_ACTIVITY);
-        schActivity.setExpiresOn(DateTime.now().plusDays(1));
+        schActivity.setLocalExpiresOn(LocalDateTime.now().plusDays(1));
         schActivity.setStartedOn(DateTime.now().getMillis());
         schActivity.setFinishedOn(finishedOn);
         schActivity.setHealthCode("BBB");

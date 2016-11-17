@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -119,9 +120,9 @@ public class ScheduledActivityService {
         for (int i=0; i < dbActivities.size(); i++) {
             ScheduledActivity activity = dbActivities.get(i);
             if (oneTimeSchedulePlans.contains(activity.getSchedulePlanGuid())) {
-                DateTime dateTime = DateUtils.dateTimeToMidnightUTC(activity.getScheduledOn());
-                String guid = activity.getActivity().getGuid() + ":" + dateTime.toLocalDateTime().toString();
-                activity.setScheduledOn(dateTime);
+                LocalDateTime localDateTime = DateUtils.dateTimeToMidnightUTC(activity.getScheduledOn()).toLocalDateTime();
+                String guid = activity.getActivity().getGuid() + ":" + localDateTime;
+                activity.setLocalScheduledOn(localDateTime);
                 activity.setGuid(guid);
             }
         }

@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -226,5 +227,5 @@ public class DateUtilsTest {
         dateTime = DateTime.parse("2016-11-07T02:32.123+03:00");
         midnight = DateUtils.dateTimeToMidnightUTC(dateTime);
         assertEquals("2016-11-06T00:00:00.000Z", midnight.toString());
-    }    
+    }
 }

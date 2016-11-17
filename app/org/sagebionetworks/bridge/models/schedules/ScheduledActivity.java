@@ -4,6 +4,7 @@ import java.util.Comparator;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -99,11 +100,11 @@ public interface ScheduledActivity extends BridgeEntity {
 
     DateTime getScheduledOn();
 
-    void setScheduledOn(DateTime scheduledOn);
+    void setLocalScheduledOn(LocalDateTime localScheduledOn);
 
     DateTime getExpiresOn();
 
-    void setExpiresOn(DateTime expiresOn);
+    void setLocalExpiresOn(LocalDateTime expiresOn);
 
     Long getStartedOn();
 

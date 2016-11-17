@@ -7,6 +7,7 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
 import com.google.common.collect.Lists;
@@ -58,20 +59,21 @@ public abstract class ActivityScheduler {
         
         if (isInWindow(localDate, localTime)) {
             // As long at the activities are not already expired, add them.
-            DateTime expiresOn = getExpiresOn(localDate, localTime);
-            if (expiresOn == null || expiresOn.isAfter(context.getNow())) {
+            LocalDateTime expiresOn = getExpiresOn(localDate, localTime);
+            
+            if (expiresOn == null || expiresOn.isAfter(context.getNow().toLocalDateTime())) {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
                     schActivity.setSchedulePlanGuid(plan.getGuid());
                     schActivity.setTimeZone(context.getZone());
                     schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());
                     schActivity.setActivity(activity);
-                    schActivity.setScheduledOn(localDate.toDateTime(localTime, context.getZone()));
-                    schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime).toString());
+                    schActivity.setLocalScheduledOn(localDate.toLocalDateTime(localTime));
+                    schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime));
                     schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
                     schActivity.setSchedule(schedule);
                     if (expiresOn != null) {
-                        schActivity.setExpiresOn(expiresOn);
+                        schActivity.setLocalExpiresOn(expiresOn);
                     }
                     scheduledActivities.add(schActivity);
                 }
@@ -102,12 +104,11 @@ public abstract class ActivityScheduler {
         return (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
     }
     
-    private DateTime getExpiresOn(LocalDate localDate, LocalTime localTime) {
+    private LocalDateTime getExpiresOn(LocalDate localDate, LocalTime localTime) {
         if (schedule.getExpires() == null) {
             return null;
         }
-        DateTime scheduledTime = localDate.toDateTime(localTime, DateTimeZone.UTC);
-        return scheduledTime.plus(schedule.getExpires());
+        return localDate.toLocalDateTime(localTime).plus(schedule.getExpires());
     }
 
     protected DateTime getFirstEventDateTime(ScheduleContext context, String eventIdsString) {

@@ -38,19 +38,19 @@ public class DynamoScheduledActivityTest {
     public void testComparator() {
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
         activity1.setTimeZone(DateTimeZone.UTC);
-        activity1.setScheduledOn(DateTime.parse("2010-10-10T01:01:01.000Z"));
+        activity1.setLocalScheduledOn(LocalDateTime.parse("2010-10-10T01:01:01.000"));
         activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
         
         // Definitely later
         DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
         activity2.setTimeZone(DateTimeZone.UTC);
-        activity2.setScheduledOn(DateTime.parse("2011-10-10T01:01:01.000Z"));
+        activity2.setLocalScheduledOn(LocalDateTime.parse("2011-10-10T01:01:01.000"));
         activity2.setActivity(TestConstants.TEST_3_ACTIVITY);
         
         // The same as 2 in all respects but activity label comes earlier in alphabet
         DynamoScheduledActivity activity3 = new DynamoScheduledActivity();
         activity3.setTimeZone(DateTimeZone.UTC);
-        activity3.setScheduledOn(DateTime.parse("2011-10-10T01:01:01.000Z"));
+        activity3.setLocalScheduledOn(LocalDateTime.parse("2011-10-10T01:01:01.000"));
         activity3.setActivity(new Activity.Builder().withLabel("A Label").withTask("tapTest").build());
         
         List<ScheduledActivity> activities = Lists.newArrayList(activity1, activity2, activity3);
@@ -65,7 +65,7 @@ public class DynamoScheduledActivityTest {
     public void handlesNullFieldsReasonably() {
         // No time zone
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
-        activity1.setScheduledOn(DateTime.parse("2010-10-10T01:01:01.000Z"));
+        activity1.setLocalScheduledOn(LocalDateTime.parse("2010-10-10T01:01:01.000"));
         activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
         
         // scheduledOn
@@ -76,7 +76,7 @@ public class DynamoScheduledActivityTest {
         // This one is okay
         DynamoScheduledActivity activity3 = new DynamoScheduledActivity();
         activity3.setTimeZone(DateTimeZone.UTC);
-        activity3.setScheduledOn(DateTime.parse("2011-10-10T01:01:01.000Z"));
+        activity3.setLocalScheduledOn(LocalDateTime.parse("2011-10-10T01:01:01.000"));
         activity3.setActivity(new Activity.Builder().withLabel("A Label").withTask("tapTest").build());
         
         List<ScheduledActivity> activities = Lists.newArrayList(activity1, activity2, activity3);
@@ -187,7 +187,7 @@ public class DynamoScheduledActivityTest {
         // Without a time zone, getStatus() works
         assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
         // Now set some values
-        schActivity.setScheduledOn(dateTime);
+        schActivity.setLocalScheduledOn(dateTime.toLocalDateTime());
         schActivity.setTimeZone(DateTimeZone.UTC);
         
         // Scheduled time should be in the time zone that is set
@@ -211,8 +211,8 @@ public class DynamoScheduledActivityTest {
         
         DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
         schActivity.setTimeZone(timeZone);
-        schActivity.setScheduledOn(now);
-        schActivity.setExpiresOn(then);
+        schActivity.setLocalScheduledOn(now.toLocalDateTime());
+        schActivity.setLocalExpiresOn(then.toLocalDateTime());
         assertEquals(schActivity.getLocalScheduledOn(), now.toLocalDateTime());
         assertEquals(schActivity.getLocalExpiresOn(), then.toLocalDateTime());
         
@@ -274,8 +274,8 @@ public class DynamoScheduledActivityTest {
         // Were you to set scheduledOn/expiresOn directly, rather than time zone + local variants,
         // it would still preserve the timezone, that is, the time zone you set separately, not the 
         // time zone you specify.
-        act.setScheduledOn(DateTime.parse("2015-10-01T10:10:10.000-05:00"));
-        act.setExpiresOn(DateTime.parse("2015-10-01T14:10:10.000-05:00"));
+        act.setLocalScheduledOn(LocalDateTime.parse("2015-10-01T10:10:10.000"));
+        act.setLocalExpiresOn(LocalDateTime.parse("2015-10-01T14:10:10.000"));
         json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(act);
         node = BridgeObjectMapper.get().readTree(json);
         // Still in time zone -6 hours.
