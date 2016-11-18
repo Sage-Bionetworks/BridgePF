@@ -554,7 +554,7 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
         
-        assertFalse(schActivities.isEmpty());
+        assertTrue(schActivities.size() > 1);
         for (ScheduledActivity act : schActivities) {
             assertEquals("guid", act.getActivity().getSurvey().getGuid());
         }
