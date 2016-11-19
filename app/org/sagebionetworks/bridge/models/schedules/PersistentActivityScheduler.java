@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalTime;
 
 import com.google.common.collect.Lists;
 
@@ -28,9 +29,9 @@ public class PersistentActivityScheduler extends ActivityScheduler {
             }
             String finishedId = "activity:"+activity.getGuid()+":finished";
             DateTime scheduledTime = getFirstEventDateTime(context, finishedId+"," + schedule.getEventId());
-
+            
             if (scheduledTime != null) {
-                addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime);            
+                addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), LocalTime.MIDNIGHT);            
             }
         }
         return scheduledActivities;

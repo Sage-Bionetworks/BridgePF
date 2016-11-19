@@ -20,7 +20,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -116,6 +119,11 @@ public class ScheduledActivityServiceMockTest {
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
         service.setSurveyService(surveyService);
+    }
+    
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test(expected = BadRequestException.class)
@@ -362,11 +370,11 @@ public class ScheduledActivityServiceMockTest {
         DateTime time4 = DateTime.parse("2014-10-04T00:00:00.000Z");
         
         List<ScheduledActivity> list = createActivities("AAA", "BBB", "CCC", "DDD");
-        list.get(0).setScheduledOn(time2);
-        list.get(1).setScheduledOn(time1);
-        list.get(2).setScheduledOn(time4);
-        list.get(3).setScheduledOn(time3);
-        list.get(3).setExpiresOn(DateTime.now().minusDays(1));
+        list.get(0).setLocalScheduledOn(time2.toLocalDateTime());
+        list.get(1).setLocalScheduledOn(time1.toLocalDateTime());
+        list.get(2).setLocalScheduledOn(time4.toLocalDateTime());
+        list.get(3).setLocalScheduledOn(time3.toLocalDateTime());
+        list.get(3).setLocalExpiresOn(LocalDateTime.now().minusDays(1));
         
         List<ScheduledActivity> result = service.orderActivities(list);
         assertEquals(3, result.size());
@@ -378,6 +386,10 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void complexCriteriaBasedScheduleWorksThroughService() throws Exception {
+        // Setting the time to late in the date breaks this test... so we do that.
+        DateTime testNow = DateTime.parse(DateTime.now().toLocalDate() + "T16:25:51.195-08:00");
+        DateTimeUtils.setCurrentMillisFixed(testNow.getMillis());
+
         String json = TestUtils.createJson("{"+  
             "'guid':'5fe9029e-beb6-4163-ac35-23d048deeefe',"+
             "'label':'Voice Activity',"+
@@ -492,11 +504,11 @@ public class ScheduledActivityServiceMockTest {
             .withClientInfo(info)
             .withStudyIdentifier("test-study")
             .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
-            .withEndsOn(DateTime.now().plusDays(1).withTimeAtStartOfDay())
-            .withTimeZone(DateTimeZone.UTC)
+                .withEndsOn(DateTime.now().plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
+                .withTimeZone(DateTimeZone.UTC)
             .withHealthCode("AAA")
             .withUserId(USER_ID)
-            .withAccountCreatedOn(ENROLLMENT.minusHours(2))
+            .withAccountCreatedOn(DateTime.now().minusDays(4))
             .build();
         
         // Is a parkinson patient, gets 3 tasks
@@ -517,7 +529,7 @@ public class ScheduledActivityServiceMockTest {
             ScheduledActivity activity = ScheduledActivity.create();
             activity.setGuid(guid);
             activity.setTimeZone(DateTimeZone.UTC);
-            activity.setScheduledOn(DateTime.now());
+            activity.setLocalScheduledOn(LocalDateTime.now());
             list.add(activity);
         }
         return list;
@@ -531,8 +543,8 @@ public class ScheduledActivityServiceMockTest {
             ScheduledActivity activity = ScheduledActivity.create();
             activity.setTimeZone(timeZone);
             activity.setGuid(guid);
-            activity.setScheduledOn(startedOn);
-            activity.setExpiresOn(expiresOn);
+            activity.setLocalScheduledOn(startedOn.toLocalDateTime());
+            activity.setLocalExpiresOn(expiresOn.toLocalDateTime());
             list.add(activity);
         }
         return list;

@@ -38,7 +38,7 @@ import com.google.common.collect.Sets;
  */
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class ScheduledActivityServiceTest {
+public class ScheduledActivityServiceRecurringTest {
 
     @Resource
     private ScheduledActivityService service;
@@ -62,7 +62,7 @@ public class ScheduledActivityServiceTest {
     public void before() {
         study = studyService.getStudy(TEST_STUDY.getIdentifier());
         study.setTaskIdentifiers(Sets.newHashSet("taskId"));
-        testUser = helper.getBuilder(ScheduledActivityServiceTest.class).build();
+        testUser = helper.getBuilder(ScheduledActivityServiceRecurringTest.class).build();
         
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule Label");
@@ -122,6 +122,7 @@ public class ScheduledActivityServiceTest {
         // 23rd, 24th and 25th
         ScheduleContext context = getContextWith2DayWindow(MSK);
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
+        
         assertEquals(4, activities.size());
         assertEquals(msk0+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
@@ -137,6 +138,7 @@ public class ScheduledActivityServiceTest {
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
         assertEquals(pst3+"T10:00:00.000-07:00", activities.get(2).getScheduledOn().toString());
+        //assertEquals(pst4+"T10:00:00.000-07:00", activities.get(3).getScheduledOn().toString());
         
         // Dave returns to the Moscow and we move time forward a day.
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-24T03:39:57.779+03:00").getMillis());

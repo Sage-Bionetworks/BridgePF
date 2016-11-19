@@ -211,5 +211,4 @@ public class DateUtilsTest {
     public void getDateTimeOrDefaultThrowsException() {
         DateUtils.getDateTimeOrDefault("6/7/2016", null);
     }
-    
 }

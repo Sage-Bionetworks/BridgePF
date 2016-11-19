@@ -182,7 +182,7 @@ public final class ScheduleContext {
             return this;
         }
         public Builder withAccountCreatedOn(DateTime accountCreatedOn) {
-            this.accountCreatedOn = accountCreatedOn;
+            this.accountCreatedOn = new DateTime(accountCreatedOn, DateTimeZone.UTC);
             return this;
         }
         public Builder withLanguages(LinkedHashSet<String> languages) {
@@ -190,12 +190,12 @@ public final class ScheduleContext {
             return this;
         }
         public Builder withContext(ScheduleContext context) {
-            this.zone = context.zone;
-            this.endsOn = context.endsOn;
-            this.events = context.events;
-            this.now = context.now;
-            this.minimumPerSchedule = context.minimumPerSchedule;
-            this.accountCreatedOn = context.accountCreatedOn;
+            withTimeZone(context.zone);
+            withEndsOn(context.endsOn);
+            withEvents(context.events);
+            withNow(context.now);
+            withMinimumPerSchedule(context.minimumPerSchedule);
+            withAccountCreatedOn(context.accountCreatedOn);
             contextBuilder.withContext(context.criteriaContext);
             return this;
         }

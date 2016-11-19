@@ -17,6 +17,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
 public final class Schedule implements BridgeEntity {
+    
+    public static final boolean isScheduleWithoutTimes(Schedule schedule) {
+        return (schedule.getTimes().isEmpty() && 
+                schedule.getCronTrigger() == null);
+    }
 
     public static final String SCHEDULE_TYPE_NAME = "Schedule";
     

@@ -213,5 +213,4 @@ public final class DateUtils {
             throw new BadRequestException(value + " is not an ISO timestamp");
         }
     }
-    
 }

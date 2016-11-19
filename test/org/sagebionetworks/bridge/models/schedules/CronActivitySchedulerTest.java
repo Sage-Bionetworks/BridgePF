@@ -117,7 +117,7 @@ public class CronActivitySchedulerTest {
         schedule.setCronTrigger("0 0 10,13,20 ? * MON-FRI *");
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(2)));
-        assertDates(scheduledActivities, "2015-03-23 13:00", "2015-03-23 20:00", "2015-03-24 10:00", "2015-03-24 13:00", "2015-03-24 20:00");
+        assertDates(scheduledActivities, "2015-03-23 13:00", "2015-03-23 20:00", "2015-03-24 10:00", "2015-03-24 13:00", "2015-03-24 20:00", "2015-03-25 10:00");
     }
     @Test
     public void recurringCronScheduleAgainstCalculatedEventWorks() {

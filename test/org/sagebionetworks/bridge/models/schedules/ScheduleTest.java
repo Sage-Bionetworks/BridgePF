@@ -159,4 +159,22 @@ public class ScheduleTest {
         schedule.setDelay((Period)null);
         assertTrue(schedule.getPersistent());
     }
+    
+    @Test
+    public void isOnceTaskWithoutTimes() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        assertTrue(Schedule.isScheduleWithoutTimes(schedule));
+        
+        schedule.addTimes(LocalTime.parse("10:00"));
+        assertFalse(Schedule.isScheduleWithoutTimes(schedule));
+        
+        schedule.getTimes().clear();
+        schedule.setCronTrigger("some nonsense here");
+        assertFalse(Schedule.isScheduleWithoutTimes(schedule));
+        
+        schedule.setCronTrigger(null);
+        schedule.setScheduleType(ScheduleType.PERSISTENT);
+        assertTrue(Schedule.isScheduleWithoutTimes(schedule));
+    }
 }
