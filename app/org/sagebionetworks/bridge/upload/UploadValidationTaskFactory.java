@@ -36,7 +36,7 @@ public class UploadValidationTaskFactory {
     }
 
     @Autowired
-    public void setHealthDataService(HealthDataService healthDataService) {
+    public final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
 

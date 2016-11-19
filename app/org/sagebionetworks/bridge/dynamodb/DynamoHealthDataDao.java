@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
@@ -23,9 +26,12 @@ import org.springframework.stereotype.Component;
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.dao.HealthDataDao}. */
 @Component
 public class DynamoHealthDataDao implements HealthDataDao {
+    private static final long CREATED_ON_OFFSET_MILIS = 100;
+
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeIndex;
     private DynamoIndexHelper uploadDateIndex;
+    private DynamoIndexHelper healthCodeCreatedOnIndex;
 
     /** DynamoDB mapper for the HealthDataRecord table. This is configured by Spring. */
     @Resource(name = "healthDataDdbMapper")
@@ -50,6 +56,16 @@ public class DynamoHealthDataDao implements HealthDataDao {
     public void setUploadDateIndex(DynamoIndexHelper uploadDateIndex) {
         this.uploadDateIndex = uploadDateIndex;
     }
+
+    /**
+     * DynamoDB Index reference for the healthCodeCreatedOnIndex index. This is needed because the DynamoDB mapper does allow queries
+     * using global secondary indices. This is configured by Spring
+     */
+    @Resource(name = "healthDataHealthCodeCreatedOnIndex")
+    public void setHealthCodeCreatedOnIndex(DynamoIndexHelper healthCodeCreatedOnIndex) {
+        this.healthCodeCreatedOnIndex = healthCodeCreatedOnIndex;
+    }
+
 
     /** {@inheritDoc} */
     @Override
@@ -102,11 +118,33 @@ public class DynamoHealthDataDao implements HealthDataDao {
     /** {@inheritDoc} */
     @Override
     public List<HealthDataRecord> getRecordsByHealthCodeCreatedOnSchemaId(@Nonnull String healthCode, @Nonnull Long createdOn, @Nonnull String schemaId) {
-        List<HealthDataRecord> recordsByHealthCode = healthCodeIndex.queryKeys(HealthDataRecord.class, "healthCode",
-                healthCode, null);
+        Condition rangeKeyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.BETWEEN)
+                .withAttributeValueList(new AttributeValue().withN(String.valueOf((createdOn - CREATED_ON_OFFSET_MILIS)))
+                        , new AttributeValue().withN(String.valueOf((createdOn + CREATED_ON_OFFSET_MILIS))));
 
-        return recordsByHealthCode.stream()
-                .filter(record -> record.getCreatedOn().equals(createdOn) && record.getSchemaId().equals(schemaId))
-                .collect(Collectors.toList());
+        DynamoHealthDataRecord queryRecord = new DynamoHealthDataRecord();
+        queryRecord.setHealthCode(healthCode);
+
+        DynamoDBQueryExpression<DynamoHealthDataRecord> expression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
+                .withConsistentRead(false)
+                .withHashKeyValues(queryRecord)
+                .withRangeKeyCondition("createdOn", rangeKeyCondition);
+
+        List<DynamoHealthDataRecord> recordList = mapper.query(DynamoHealthDataRecord.class, expression);
+
+        List<HealthDataRecord> finalRecords = new ArrayList<>();
+        for (Object oneResult : recordList) {
+            if (!DynamoHealthDataRecord.class.isInstance(oneResult)) {
+                // This should never happen, but just in case.
+                throw new BridgeServiceException(String.format(
+                        "DynamoDB returned objects of type %s instead of %s",
+                        oneResult.getClass().getName(), DynamoHealthDataRecord.class.getName()));
+            }
+
+            finalRecords.add((HealthDataRecord) oneResult);
+        }
+
+        return finalRecords;
     }
 }

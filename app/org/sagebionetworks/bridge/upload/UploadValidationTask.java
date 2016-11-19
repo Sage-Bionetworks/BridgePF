@@ -6,14 +6,12 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class represents an asynchronous upload validation task, corresponding with exactly one upload. It implements
@@ -28,7 +26,7 @@ public class UploadValidationTask implements Runnable {
     private UploadDao uploadDao;
     private HealthDataService healthDataService;
 
-    public void setHealthDataService(HealthDataService healthDataService) {
+    public final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
 
@@ -126,7 +124,17 @@ public class UploadValidationTask implements Runnable {
         // TODO: if validation fails, wipe the files from S3
 
         // dedupe logic over here:
-        dedupeHelper(context.getRecordId());
+        try {
+            dedupeHelper(context.getRecordId());
+        } catch (ClassNotFoundException e) {
+            logClassNotFoundException(e);
+        }
+
+    }
+
+    // helper method to log exception
+    void logClassNotFoundException(ClassNotFoundException e) {
+        logger.error("Record not found in ddb", e);
     }
 
     /**
@@ -134,9 +142,14 @@ public class UploadValidationTask implements Runnable {
      * if there are more than 1 such records in ddb, there are duplicates. log that information but not stop or delete anything right now
      * @param healthRecordId
      */
-    private void dedupeHelper(String healthRecordId) {
+    private void dedupeHelper(String healthRecordId) throws ClassNotFoundException {
         // get necessary information for query first
         HealthDataRecord record = healthDataService.getRecordById(healthRecordId);
+
+        // if there is no record in ddb,
+        if (record == null) {
+            throw new ClassNotFoundException("Record not found in ddb");
+        }
 
         Long createdOn = record.getCreatedOn();
         String healthCode = record.getHealthCode();
@@ -145,8 +158,24 @@ public class UploadValidationTask implements Runnable {
         List<HealthDataRecord> retList = healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
 
         if (retList.size() > 1) {
-            logger.warn(String.format("Duplicate health data records for record id: %s, health code: %s, created on:  %s, schema id: %s, duplicate size: %s",
+            logger.info(String.format("Duplicate health data records for record id: %s, health code: %s, created on:  %s, schema id: %s, duplicate size: %s",
                     healthRecordId, healthCode, createdOn, schemaId, retList.size()));
+
+            logDuplicateUploadRecords(retList);
+        } else if (retList.size() == 0) {
+            // should not be reached since getRecordById() already test if there is a record exists
+            throw new ClassNotFoundException("Record not found in ddb");
+        }
+        // else there is only one such record exists in ddb, means no duplicate -- do nothing
+    }
+
+    void logDuplicateUploadRecords(List<HealthDataRecord> dupeRecords) {
+        for (HealthDataRecord dupeRecord: dupeRecords) {
+            logger.info("Duplicate HealthDataRecord: " + "record id: " + dupeRecord.getId()
+                    + ", createdOn: " + dupeRecord.getCreatedOn().toString()
+                    + ", healthCode: " + dupeRecord.getHealthCode() + ", schemaId: " + dupeRecord.getSchemaId()
+                    + ", studyId: " + dupeRecord.getStudyId() + ", uploadDate: " + dupeRecord.getUploadDate().toString()
+                    + ", uploadId: " + dupeRecord.getUploadId());
         }
     }
 
