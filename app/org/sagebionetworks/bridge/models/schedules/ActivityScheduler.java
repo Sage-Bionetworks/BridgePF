@@ -58,13 +58,12 @@ public abstract class ActivityScheduler {
             ScheduleContext context, LocalDate localDate, LocalTime localTime) {
         
         if (isInWindow(localDate, localTime)) {
-            // As long at the activities are not already expired, add them.
-            LocalDateTime expiresOn = getExpiresOn(localDate, localTime);
-            
             if (!shouldContinueScheduling(context, localDate.toDateTime(localTime, context.getZone()),
                     scheduledActivities)) {
                 return;
             }
+            // As long at the activities are not already expired, add them.
+            LocalDateTime expiresOn = getExpiresOn(localDate, localTime);
             if (expiresOn == null || expiresOn.isAfter(context.getNow().toLocalDateTime())) {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
