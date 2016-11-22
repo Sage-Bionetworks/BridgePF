@@ -91,6 +91,9 @@ public class ScheduledActivityServiceRecurringTest {
         }
     }
     
+    // WARNING: The notes here are not correct due to changes we've made in the way we test the time zone.
+    // The last day MSK seems to fall outside the scope of the tests. This needs to be fixed in later
+    // updates but we're currently addressing the duplication of tasks.
     @Test
     public void retrievalActivitiesAcrossTimeAndTimeZones() throws Exception {
         // We start this test in the early morning in Russia, in the future so the new user's
@@ -108,14 +111,11 @@ public class ScheduledActivityServiceRecurringTest {
         String msk1 = DateTime.now(MSK).toLocalDate().toString();
         String msk2 = DateTime.now(MSK).plusDays(1).toLocalDate().toString();
         String msk3 = DateTime.now(MSK).plusDays(2).toLocalDate().toString();
-        String msk4 = DateTime.now(MSK).plusDays(3).toLocalDate().toString();
         
         // Anticipated schedule times in California (exact seconds not important)
         String pst1 = DateTime.now(PST).toLocalDate().toString();
         String pst2 = DateTime.now(PST).plusDays(1).toLocalDate().toString();
         String pst3 = DateTime.now(PST).plusDays(2).toLocalDate().toString();
-        // Never returned... though it exists
-        // String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
         
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
@@ -127,7 +127,6 @@ public class ScheduledActivityServiceRecurringTest {
         assertEquals(msk0+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
         assertEquals(msk2+"T10:00:00.000+03:00", activities.get(2).getScheduledOn().toString());
-        //assertEquals(msk3+"T10:00:00.000+03:00", activities.get(3).getScheduledOn().toString());
         
         // Dave teleports to California, where it's still the prior day. He gets 4 activities 
         // (yesterday, today in Russia, tomorrow and the next day). One activity was created beyond
@@ -138,7 +137,6 @@ public class ScheduledActivityServiceRecurringTest {
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
         assertEquals(pst3+"T10:00:00.000-07:00", activities.get(2).getScheduledOn().toString());
-        //assertEquals(pst4+"T10:00:00.000-07:00", activities.get(3).getScheduledOn().toString());
         
         // Dave returns to the Moscow and we move time forward a day.
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-24T03:39:57.779+03:00").getMillis());
@@ -150,7 +148,6 @@ public class ScheduledActivityServiceRecurringTest {
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk2+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
         assertEquals(msk3+"T10:00:00.000+03:00", activities.get(2).getScheduledOn().toString());
-        //assertEquals(msk4+"T10:00:00.000+03:00", activities.get(3).getScheduledOn().toString());
         
         // Dave, please finish some activities... 
         activities.get(0).setFinishedOn(DateTime.now().getMillis());
@@ -162,7 +159,6 @@ public class ScheduledActivityServiceRecurringTest {
         
         assertEquals(1, activities.size());
         assertEquals(msk3+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
-        //assertEquals(msk4+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
     }
     
     @Test
