@@ -83,7 +83,7 @@ public class ConsentController extends BaseController {
     
     @Deprecated
     public Result withdrawConsent() throws Exception {
-        final UserSession session = getAuthenticatedAndConsentedSession();
+        final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         
         return withdrawConsentV2(study.getIdentifier());
@@ -104,7 +104,7 @@ public class ConsentController extends BaseController {
     }
     
     public Result withdrawConsentV2(String guid) throws Exception {
-        final UserSession session = getAuthenticatedAndConsentedSession();
+        final UserSession session = getAuthenticatedSession();
         final Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
@@ -122,7 +122,7 @@ public class ConsentController extends BaseController {
     }
     
     public Result withdrawFromAllConsents() {
-        final UserSession session = getAuthenticatedAndConsentedSession();
+        final UserSession session = getAuthenticatedSession();
         final Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
