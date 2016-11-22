@@ -61,6 +61,10 @@ public abstract class ActivityScheduler {
             // As long at the activities are not already expired, add them.
             LocalDateTime expiresOn = getExpiresOn(localDate, localTime);
             
+            if (!shouldContinueScheduling(context, localDate.toDateTime(localTime, context.getZone()),
+                    scheduledActivities)) {
+                return;
+            }
             if (expiresOn == null || expiresOn.isAfter(context.getNow().toLocalDateTime())) {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
@@ -132,16 +136,27 @@ public abstract class ActivityScheduler {
     protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime,
             List<ScheduledActivity> scheduledActivities) {
 
+        if (scheduledOnAfterEndsOnNoMinimumCount(context, scheduledTime)) {
+            return false;
+        }
+        if (!isBeforeWindowEnd(scheduledTime)) {
+            return false;
+        }
         boolean boundaryNotMet = scheduledTime.isBefore(context.getEndsOn()) || 
                 hasNotMetMinimumCount(context, scheduledActivities.size());
-        return isBeforeWindowEnd(scheduledTime) && boundaryNotMet;
+        
+        return boundaryNotMet;
+    }
+    
+    private boolean scheduledOnAfterEndsOnNoMinimumCount(ScheduleContext context, DateTime scheduledTime) {
+        return scheduledTime.isAfter(context.getEndsOn()) && context.getMinimumPerSchedule() == 0;
     }
     
     /**
      * If this is a repeating schedule and a minimum value has been set, test to see if the there are enough tasks 
      * to meet the minimum.
      */
-    protected boolean hasNotMetMinimumCount(ScheduleContext context, int currentCount) {
+    private boolean hasNotMetMinimumCount(ScheduleContext context, int currentCount) {
         return schedule.getScheduleType() != ScheduleType.ONCE && 
                context.getMinimumPerSchedule() > 0 && 
                currentCount < context.getMinimumPerSchedule();

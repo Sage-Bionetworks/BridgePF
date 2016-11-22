@@ -23,8 +23,12 @@ class IntervalActivityScheduler extends ActivityScheduler {
         DateTime datetime = getScheduledTimeBasedOnEvent(context);
 
         if (datetime != null) {
-            while(shouldContinueScheduling(context, datetime, scheduledActivities)) {
-                addScheduledActivityForAllTimes(scheduledActivities, plan, context, datetime.toLocalDate());
+            // Remove the time component at this point because we're going to be adding the times in the array
+            // of times, and then we'll test again. If this moves past the day where smoe times are in and some 
+            // times are out, then the loop will break.
+            DateTime startOfDay = datetime.withTimeAtStartOfDay();
+            while(shouldContinueScheduling(context, startOfDay, scheduledActivities)) {
+                addScheduledActivityForAllTimes(scheduledActivities, plan, context, startOfDay.toLocalDate());
                 // A one-time activity with no interval (for example); don't loop
                 if (schedule.getInterval() == null) {
                     return trimScheduledActivities(scheduledActivities);

@@ -7,7 +7,6 @@ import static org.junit.Assert.fail;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;

@@ -317,7 +317,8 @@ public class IntervalActivitySchedulerTest {
         schedule.setStartsOn("2015-03-20T09:00:00Z");
 
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(4)));
-        assertDates(scheduledActivities, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40");
+        
+        assertDates(scheduledActivities, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40", "2015-03-27 09:40");
     }
     @Test
     public void recurringEndsOnScheduleWorks() {
@@ -443,7 +444,7 @@ public class IntervalActivitySchedulerTest {
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(16)));
-        assertDates(scheduledActivities, "2015-04-06 09:40", "2015-04-06 13:40", "2015-04-08 09:40", "2015-04-08 13:40");
+        assertDates(scheduledActivities, "2015-04-06 09:40", "2015-04-06 13:40", "2015-04-08 09:40");
     }
     @Test
     public void recurringEventDelayStartsOnScheduleWorks() {
@@ -455,7 +456,7 @@ public class IntervalActivitySchedulerTest {
         // The delay doesn't mean the schedule fires on this event
         events.put("survey:AAA:completedOn", asDT("2015-04-01 09:22"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusWeeks(3)));
-        assertDates(scheduledActivities, "2015-04-11 09:40", "2015-04-11 13:40", "2015-04-13 09:40", "2015-04-13 13:40");
+        assertDates(scheduledActivities, "2015-04-11 09:40", "2015-04-11 13:40", "2015-04-13 09:40");
     }
     @Test
     public void recurringEventDelayEndsOnScheduleWorks() {
@@ -533,6 +534,59 @@ public class IntervalActivitySchedulerTest {
         assertTrue(scheduledActivities.isEmpty());
     }
 
+    // In these next two tasks, the different times of day do not alter the fact that there 
+    // are 4 tasks that are returned.
+    
+    @Test
+    public void eventIsEarlyUTC() {
+        DateTime enrollment = DateTime.parse("2015-04-04T04:00:00.000Z");
+        events.clear();
+        events.put("enrollment", enrollment);
+        
+        Schedule schedule = new Schedule();
+        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setExpires("P1D");
+        schedule.setInterval("P1D");
+        schedule.addTimes("10:00");
+        
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        plan.setStrategy(strategy);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(getContext(DateTime.parse("2015-04-10T13:00:00.000Z")))
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).build();
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        assertEquals(4, scheduledActivities.size());
+    }
+    
+    @Test
+    public void eventIsLateUTC() {
+        DateTime enrollment = DateTime.parse("2015-04-04T22:00:00.000Z");
+        events.clear();
+        events.put("enrollment", enrollment);
+        
+        Schedule schedule = new Schedule();
+        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setExpires("P1D");
+        schedule.setInterval("P1D");
+        schedule.addTimes("10:00");
+        
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        plan.setStrategy(strategy);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(getContext(DateTime.parse("2015-04-10T13:00:00.000Z")))
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).build();
+        
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        assertEquals(4, scheduledActivities.size());
+    }
+    
     private ScheduleContext getContext(DateTime endsOn) {
         return new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
