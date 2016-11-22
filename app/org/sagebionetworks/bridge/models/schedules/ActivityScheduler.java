@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import java.util.List;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
@@ -57,11 +56,8 @@ public abstract class ActivityScheduler {
     protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
             ScheduleContext context, LocalDate localDate, LocalTime localTime) {
         
-        if (isInWindow(localDate, localTime)) {
-            if (!shouldContinueScheduling(context, localDate.toDateTime(localTime, context.getZone()),
-                    scheduledActivities)) {
-                return;
-            }
+        DateTime localDateTime = localDate.toDateTime(localTime, context.getZone());
+        if (isInWindow(localDateTime)) {
             // As long at the activities are not already expired, add them.
             LocalDateTime expiresOn = getExpiresOn(localDate, localTime);
             if (expiresOn == null || expiresOn.isAfter(context.getNow().toLocalDateTime())) {
@@ -91,9 +87,7 @@ public abstract class ActivityScheduler {
         return scheduledActivities.subList(0, Math.min(scheduledActivities.size(), count));
     }
     
-    private boolean isInWindow(LocalDate localDate, LocalTime localTime) {
-        DateTime scheduledTime = localDate.toDateTime(localTime, DateTimeZone.UTC);
-        
+    private boolean isInWindow(DateTime scheduledTime) {
         DateTime startsOn = schedule.getStartsOn();
         DateTime endsOn = schedule.getEndsOn();
 
