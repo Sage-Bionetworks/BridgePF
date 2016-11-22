@@ -318,7 +318,7 @@ public class IntervalActivitySchedulerTest {
 
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(4)));
         
-        assertDates(scheduledActivities, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40", "2015-03-27 09:40");
+        assertDates(scheduledActivities, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40");
     }
     @Test
     public void recurringEndsOnScheduleWorks() {
