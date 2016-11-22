@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -16,6 +17,7 @@ import org.sagebionetworks.bridge.services.ScheduledActivityServiceRecurringTest
  * These are run as part of the entire test suite, but when working on the scheduling, it is useful
  * to be able to run these tests separately. 
  */
+@Ignore
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     ScheduledActivityServiceDuplicateTest.class,
