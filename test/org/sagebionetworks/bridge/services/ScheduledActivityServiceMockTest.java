@@ -95,6 +95,9 @@ public class ScheduledActivityServiceMockTest {
     @SuppressWarnings("unchecked")
     @Before
     public void before() {
+        DateTime testNow = DateTime.parse(DateTime.now().toLocalDate() + "T14:25:51.195-08:00");
+        DateTimeUtils.setCurrentMillisFixed(testNow.getMillis());
+        
         endsOn = DateTime.now().plusDays(2);
         
         service = new ScheduledActivityService();
@@ -393,10 +396,6 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void complexCriteriaBasedScheduleWorksThroughService() throws Exception {
-        // Setting the time to late in the date breaks this test... so we do that.
-        DateTime testNow = DateTime.parse(DateTime.now().toLocalDate() + "T16:25:51.195-08:00");
-        DateTimeUtils.setCurrentMillisFixed(testNow.getMillis());
-
         String json = TestUtils.createJson("{"+  
             "'guid':'5fe9029e-beb6-4163-ac35-23d048deeefe',"+
             "'label':'Voice Activity',"+
@@ -498,7 +497,7 @@ public class ScheduledActivityServiceMockTest {
         "}");
         
         Map<String,DateTime> events = Maps.newHashMap();
-        events.put("enrollment", DateTime.now().minusDays(3));
+        events.put("enrollment", DateTime.now().withZone(DateTimeZone.UTC).minusDays(3));
         when(activityEventService.getActivityEventMap("AAA")).thenReturn(events);
         
         ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
@@ -522,7 +521,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
 
         // See BRIDGE-1603
-        assertTrue(schActivities.size() == 3 || schActivities.size() == 6);
+        assertEquals(6, schActivities.size());
         
         // Not a parkinson patient, get 1 task
         context = new ScheduleContext.Builder()
@@ -530,7 +529,7 @@ public class ScheduledActivityServiceMockTest {
                 .withUserDataGroups(Sets.newHashSet("test_user")).build();
         schActivities = service.getScheduledActivities(context);
         // See BRIDGE-1603
-        assertTrue(1 == schActivities.size() || 2 == schActivities.size());
+        assertEquals(2, schActivities.size());
     }
     
     @Test
