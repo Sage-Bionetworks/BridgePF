@@ -4,7 +4,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.eq;
 
 import javax.annotation.Nonnull;
 
@@ -35,9 +43,6 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
 public class UploadValidationTaskTest {
-    public UploadValidationTaskTest() throws IOException {
-    }
-
     private static final long CREATED_ON = 1424136378727L;
     private static final String HEALTH_CODE = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
     private static final String RECORD_ID = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
@@ -113,8 +118,65 @@ public class UploadValidationTaskTest {
 
     private HealthDataService healthDataService;
 
+    public UploadValidationTaskTest() throws IOException {
+    }
+
     @Before
-    public void setupHealthDataService() {
+    public void setup() throws IOException {
+//        TEST_RECORD = new DynamoHealthDataRecord.Builder()
+//                .withCreatedOn(CREATED_ON)
+//                .withHealthCode(HEALTH_CODE)
+//                .withId(RECORD_ID)
+//                .withSchemaId(SCHEMA_ID)
+//                .withSchemaRevision(SCHEMA_REV)
+//                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+//                .withUploadDate(UPLOAD_DATE)
+//                .withUploadedOn(UPLOADED_ON)
+//                .withUploadId(UPLOAD_ID)
+//                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
+//                .withUserExternalId(USER_EXTERNAL_ID)
+//                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+//                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
+//                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
+//                .build();
+//
+//        TEST_RECORD_DUPE = new DynamoHealthDataRecord.Builder()
+//                .withCreatedOn(CREATED_ON)
+//                .withHealthCode(HEALTH_CODE)
+//                .withId(RECORD_ID_2)
+//                .withSchemaId(SCHEMA_ID)
+//                .withSchemaRevision(SCHEMA_REV)
+//                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+//                .withUploadDate(UPLOAD_DATE)
+//                .withUploadedOn(UPLOADED_ON)
+//                .withUploadId(UPLOAD_ID)
+//                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
+//                .withUserExternalId(USER_EXTERNAL_ID)
+//                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+//                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
+//                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
+//                .build();
+//
+//        TEST_RECORD_DUPE_2 = new DynamoHealthDataRecord.Builder()
+//                .withCreatedOn(CREATED_ON)
+//                .withHealthCode(HEALTH_CODE)
+//                .withId(RECORD_ID_3)
+//                .withSchemaId(SCHEMA_ID)
+//                .withSchemaRevision(SCHEMA_REV)
+//                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+//                .withUploadDate(UPLOAD_DATE)
+//                .withUploadedOn(UPLOADED_ON)
+//                .withUploadId(UPLOAD_ID)
+//                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
+//                .withUserExternalId(USER_EXTERNAL_ID)
+//                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+//                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
+//                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
+//                .build();
+//
+//        TEST_RECORD_DUPE_LIST_NORMAL = Arrays.asList(TEST_RECORD, TEST_RECORD_DUPE);
+//        TEST_RECORD_DUPE_LIST_MULTI = Arrays.asList(TEST_RECORD, TEST_RECORD_DUPE, TEST_RECORD_DUPE_2);
+
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(eq(RECORD_ID))).thenReturn(TEST_RECORD);
         when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(TEST_RECORD_DUPE_LIST_NORMAL);
@@ -265,7 +327,7 @@ public class UploadValidationTaskTest {
         task.run();
 
         // verify log helper was called
-        verify(task).logDuplicateUploadRecords(eq(TEST_RECORD_DUPE_LIST_NORMAL));
+        verify(task).logDuplicateUploadRecords(eq(TEST_RECORD), eq(TEST_RECORD_DUPE_LIST_NORMAL));
     }
 
     @Test
@@ -293,7 +355,7 @@ public class UploadValidationTaskTest {
         task.run();
 
         // verify log helper was NOT called
-        verify(task, times(0)).logDuplicateUploadRecords(any());
+        verify(task, times(0)).logDuplicateUploadRecords(any(), any());
     }
 
     @Test
@@ -316,7 +378,8 @@ public class UploadValidationTaskTest {
         when(healthDataService.getRecordById(any())).thenReturn(null);
         task.setHealthDataService(healthDataService);
         task.run();
-        verify(task).logClassNotFoundException(any());
+//        verify(task).logClassNotFoundException(any());
+        verify(task, times(0)).logDuplicateUploadRecords(any(), any());
     }
 
     @Test
@@ -340,7 +403,7 @@ public class UploadValidationTaskTest {
         when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(new ArrayList<HealthDataRecord>());
         task.setHealthDataService(healthDataService);
         task.run();
-        verify(task).logClassNotFoundException(any());
+        verify(task, times(0)).logDuplicateUploadRecords(any(), any());
     }
 
     @Test
@@ -365,7 +428,7 @@ public class UploadValidationTaskTest {
         task.setHealthDataService(healthDataService);
 
         task.run();
-        verify(task).logDuplicateUploadRecords(eq(TEST_RECORD_DUPE_LIST_MULTI));
+        verify(task).logDuplicateUploadRecords(eq(TEST_RECORD), eq(TEST_RECORD_DUPE_LIST_MULTI));
     }
 
     // Test handler that makes its presence known only by writing a message to the validation context.

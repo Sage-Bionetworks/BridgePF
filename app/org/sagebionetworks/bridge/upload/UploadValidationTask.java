@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
+import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.slf4j.Logger;
@@ -126,15 +128,15 @@ public class UploadValidationTask implements Runnable {
         // dedupe logic over here:
         try {
             dedupeHelper(context.getRecordId());
-        } catch (ClassNotFoundException e) {
-            logClassNotFoundException(e);
+        } catch (Throwable e) {
+            logErrorMsg(e);
         }
 
     }
 
     // helper method to log exception
-    void logClassNotFoundException(ClassNotFoundException e) {
-        logger.error("Record not found in ddb", e);
+    void logErrorMsg(Throwable e) {
+        logger.error("An error occurred:", e);
     }
 
     /**
@@ -142,13 +144,16 @@ public class UploadValidationTask implements Runnable {
      * if there are more than 1 such records in ddb, there are duplicates. log that information but not stop or delete anything right now
      * @param healthRecordId
      */
-    private void dedupeHelper(String healthRecordId) throws ClassNotFoundException {
+    private void dedupeHelper(String healthRecordId) throws BadRequestException {
+        if (healthRecordId == null) {
+            return; // no record yet, no need to check duplicates
+        }
         // get necessary information for query first
         HealthDataRecord record = healthDataService.getRecordById(healthRecordId);
 
-        // if there is no record in ddb,
+        // if there is no record in ddb, we should just finish dedupe logic since no record is a common case
         if (record == null) {
-            throw new ClassNotFoundException("Record not found in ddb");
+            return;
         }
 
         Long createdOn = record.getCreatedOn();
@@ -158,24 +163,25 @@ public class UploadValidationTask implements Runnable {
         List<HealthDataRecord> retList = healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
 
         if (retList.size() > 1) {
-            logger.info(String.format("Duplicate health data records for record id: %s, health code: %s, created on:  %s, schema id: %s, duplicate size: %s",
-                    healthRecordId, healthCode, createdOn, schemaId, retList.size()));
+            logger.info(String.format("Duplicate health data records for record id: %s, created on:  %s, schema id: %s, duplicate size: %s",
+                    healthRecordId, createdOn, schemaId, retList.size()));
 
-            logDuplicateUploadRecords(retList);
-        } else if (retList.size() == 0) {
-            // should not be reached since getRecordById() already test if there is a record exists
-            throw new ClassNotFoundException("Record not found in ddb");
+            logDuplicateUploadRecords(record, retList);
         }
-        // else there is only one such record exists in ddb, means no duplicate -- do nothing
+        // else there is only one such record exists in ddb or no record exists yet, means no duplicate -- do nothing
     }
 
-    void logDuplicateUploadRecords(List<HealthDataRecord> dupeRecords) {
+    void logDuplicateUploadRecords(HealthDataRecord originRecord, List<HealthDataRecord> dupeRecords) {
+        logger.info("Origin Record: " + "record id: " + originRecord.getId());
+
         for (HealthDataRecord dupeRecord: dupeRecords) {
-            logger.info("Duplicate HealthDataRecord: " + "record id: " + dupeRecord.getId()
-                    + ", createdOn: " + dupeRecord.getCreatedOn().toString()
-                    + ", healthCode: " + dupeRecord.getHealthCode() + ", schemaId: " + dupeRecord.getSchemaId()
-                    + ", studyId: " + dupeRecord.getStudyId() + ", uploadDate: " + dupeRecord.getUploadDate().toString()
-                    + ", uploadId: " + dupeRecord.getUploadId());
+            if (!dupeRecord.getId().equals(originRecord.getId())) {
+                logger.info("Duplicate HealthDataRecord: " + "record id: " + dupeRecord.getId()
+                        + ", createdOn: " + dupeRecord.getCreatedOn().toString()
+                        + ", schemaId: " + dupeRecord.getSchemaId()
+                        + ", studyId: " + dupeRecord.getStudyId() + ", uploadDate: " + dupeRecord.getUploadDate().toString()
+                        + ", uploadId: " + dupeRecord.getUploadId());
+            }
         }
     }
 
