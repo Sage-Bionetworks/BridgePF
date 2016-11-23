@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.spi.MutableTrigger;
 
@@ -24,11 +25,15 @@ class CronActivityScheduler extends ActivityScheduler {
             MutableTrigger trigger = parseTrigger(scheduledTime);
             
             while (shouldContinueScheduling(context, scheduledTime, scheduledActivities)) {
+                // We use the scheduler to generate times in UTC (cron doesn't specify time zones
+                // and is usually in UTC), but when we add them, we add using localDate and 
+                // localTime, and then shift that to the user's time zone. So '0 0 10 1/1 * ? *' 
+                // is at 10am in the user's time zone. 
                 Date next = trigger.getFireTimeAfter(scheduledTime.toDate());
-                scheduledTime = new DateTime(next, context.getZone());
+                scheduledTime = new DateTime(next, DateTimeZone.UTC);
                 
                 if (shouldContinueScheduling(context, scheduledTime, scheduledActivities)) {
-                    addScheduledActivityForAllTimes(scheduledActivities, plan, context, scheduledTime);    
+                    addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), scheduledTime.toLocalTime());
                 }
             }
         }

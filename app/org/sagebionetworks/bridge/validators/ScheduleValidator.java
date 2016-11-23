@@ -47,6 +47,9 @@ public class ScheduleValidator implements Validator {
         if (oneTimeScheduleHasIntervalOrCronExpression(schedule)) {
             errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, "set to once, but also has an interval and/or cron expression");
         }
+        if (oneTimeScheduleHasTooShortExpiresPeriod(schedule)) {
+            errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, "set to once with no time of day start, but expires in under a day (this can cause confusing behavior)");
+        }
         if (recurringScheduleLacksRepeatingInfo(schedule)) {
             errors.rejectValue(Schedule.INTERVAL_PROPERTY, "or cron expression must be set when a schedule repeats");
         }
@@ -102,6 +105,25 @@ public class ScheduleValidator implements Validator {
     private boolean oneTimeScheduleHasIntervalOrCronExpression(Schedule schedule) {
         boolean repeats = (schedule.getInterval() != null || schedule.getCronTrigger() != null);
         return (schedule.getScheduleType() == ScheduleType.ONCE && repeats);
+    }
+    
+    /**
+     * Most ONCE schedules have no time, and are scheduledOn midnight of the day of the event. However 
+     * if you try and expire it in a matter of hours, it's very possible it'll be expired before it would 
+     * ever be seen by the user, or expired faster than you'd intended, etc. Expires needs to be at least 
+     * a day or longer.
+     */
+    private boolean oneTimeScheduleHasTooShortExpiresPeriod(Schedule schedule) {
+        // If it has no expiration, isn't a one-time schedule, or has times, then this doesn't apply.
+        if (schedule.getExpires() == null ||
+            schedule.getScheduleType() != ScheduleType.ONCE ||
+            (schedule.getTimes() != null && !schedule.getTimes().isEmpty())) {
+            return false;
+        }
+        DateTime now = DateTime.now();
+        DateTime dur = now.plus(schedule.getExpires());
+        DateTime oneDay = now.plusDays(1);
+        return dur.isBefore(oneDay);
     }
     
     /**

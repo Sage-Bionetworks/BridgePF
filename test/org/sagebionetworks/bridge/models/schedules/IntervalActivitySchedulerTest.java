@@ -180,7 +180,7 @@ public class IntervalActivitySchedulerTest {
         
         schedule.getTimes().clear();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
-        assertDates(scheduledActivities, "2015-04-10 11:40");
+        assertDates(scheduledActivities, "2015-04-10 00:00");
     }
     @Test
     public void onceEventStartsOnScheduleWorks() {
@@ -237,7 +237,7 @@ public class IntervalActivitySchedulerTest {
         // If we delete the times, it delays exactly 50 hours. (2 days, 2 hours)
         schedule.getTimes().clear();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
-        assertDates(scheduledActivities, "2015-04-04 11:22");
+        assertDates(scheduledActivities, "2015-04-04 00:00");
     }
     @Test
     public void onceEventDelayStartsOnScheduleWorks() {
@@ -277,7 +277,8 @@ public class IntervalActivitySchedulerTest {
         
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(6)));
-        assertDates(scheduledActivities, "2015-04-02 12:22");
+        // Pulled back to yesterday midnight to avoid TZ changes causing activity to be unavailable
+        assertDates(scheduledActivities, "2015-04-02 00:00");
     }
     @Test
     public void onceEventDelayExpiresStartEndsOnScheduleWorks() {
@@ -298,8 +299,9 @@ public class IntervalActivitySchedulerTest {
         
         events.put("survey:AAA:completedOn", asDT("2015-04-06 09:22"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(6)));
-        assertEquals(asLong("2015-04-06 12:22"), scheduledActivities.get(0).getScheduledOn().getMillis());
-        assertEquals(asLong("2015-04-09 12:22"), scheduledActivities.get(0).getExpiresOn().getMillis());
+        
+        assertEquals(asLong("2015-04-06 00:00"), scheduledActivities.get(0).getScheduledOn().getMillis());
+        assertEquals(asLong("2015-04-09 00:00"), scheduledActivities.get(0).getExpiresOn().getMillis());
     }
     @Test
     public void recurringScheduleWorks() {
@@ -315,6 +317,7 @@ public class IntervalActivitySchedulerTest {
         schedule.setStartsOn("2015-03-20T09:00:00Z");
 
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(4)));
+        
         assertDates(scheduledActivities, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40");
     }
     @Test
@@ -531,6 +534,61 @@ public class IntervalActivitySchedulerTest {
         assertTrue(scheduledActivities.isEmpty());
     }
 
+    // In these next two tasks, the different times of day should not alter the fact that there 
+    // are 4 tasks that are returned. However they do, and this will be fixed in a later 
+    // reworking of the scheduler.
+    
+    @Test
+    public void eventIsEarlyUTC() {
+        DateTime enrollment = DateTime.parse("2015-04-04T04:00:00.000Z");
+        events.clear();
+        events.put("enrollment", enrollment);
+        
+        Schedule schedule = new Schedule();
+        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setExpires("P1D");
+        schedule.setInterval("P1D");
+        schedule.addTimes("10:00");
+        
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        plan.setStrategy(strategy);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(getContext(DateTime.parse("2015-04-10T13:00:00.000Z")))
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).build();
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        
+        assertEquals(5, scheduledActivities.size());
+    }
+    
+    @Test
+    public void eventIsLateUTC() {
+        DateTime enrollment = DateTime.parse("2015-04-04T22:00:00.000Z");
+        events.clear();
+        events.put("enrollment", enrollment);
+        
+        Schedule schedule = new Schedule();
+        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setExpires("P1D");
+        schedule.setInterval("P1D");
+        schedule.addTimes("10:00");
+        
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        plan.setStrategy(strategy);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withContext(getContext(DateTime.parse("2015-04-10T13:00:00.000Z")))
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).build();
+        
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        assertEquals(4, scheduledActivities.size());
+    }
+    
     private ScheduleContext getContext(DateTime endsOn) {
         return new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)

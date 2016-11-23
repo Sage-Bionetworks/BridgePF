@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
@@ -34,7 +35,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @DynamoDBTable(tableName = "Task")
 @JsonFilter("filter")
 public final class DynamoScheduledActivity implements ScheduledActivity, BridgeEntity {
-    
+
     private static final String ACTIVITY_PROPERTY = "activity";
 
     private String healthCode;
@@ -47,6 +48,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private Activity activity;
     private boolean persistent;
     private DateTimeZone timeZone;
+    private Schedule schedule;
 
     @Override
     @DynamoDBIgnore
@@ -91,8 +93,14 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     }
 
     @Override
-    public void setScheduledOn(DateTime scheduledOn) {
-        this.localScheduledOn = (scheduledOn == null) ? null : scheduledOn.toLocalDateTime();
+    @DynamoDBIgnore
+    @JsonIgnore
+    public Schedule getSchedule() {
+        return schedule;
+    }
+
+    public void setSchedule(Schedule schedule) {
+        this.schedule = schedule;
     }
 
     @Override
@@ -100,11 +108,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getExpiresOn() {
         return getInstant(getLocalExpiresOn());
-    }
-
-    @Override
-    public void setExpiresOn(DateTime expiresOn) {
-        this.localExpiresOn = (expiresOn == null) ? null : expiresOn.toLocalDateTime();
     }
 
     private DateTime getInstant(LocalDateTime localDateTime) {
@@ -122,6 +125,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         return localScheduledOn;
     }
 
+    @Override
     public void setLocalScheduledOn(LocalDateTime localScheduledOn) {
         this.localScheduledOn = localScheduledOn;
     }
@@ -137,6 +141,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         return localExpiresOn;
     }
 
+    @Override
     public void setLocalExpiresOn(LocalDateTime localExpiresOn) {
         this.localExpiresOn = localExpiresOn;
     }
@@ -163,8 +168,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         this.guid = guid;
     }
 
-    @DynamoDBIndexHashKey(attributeName="schedulePlanGuid", globalSecondaryIndexName = "schedulePlanGuid-index")
-    @DynamoProjection(projectionType=ProjectionType.KEYS_ONLY, globalSecondaryIndexName = "schedulePlanGuid-index")
+    @DynamoDBIndexHashKey(attributeName = "schedulePlanGuid", globalSecondaryIndexName = "schedulePlanGuid-index")
+    @DynamoProjection(projectionType = ProjectionType.KEYS_ONLY, globalSecondaryIndexName = "schedulePlanGuid-index")
     @Override
     public String getSchedulePlanGuid() {
         return schedulePlanGuid;
@@ -252,7 +257,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
                 && Objects.equals(localScheduledOn, other.localScheduledOn) && Objects.equals(guid, other.guid)
                 && Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn)
                 && Objects.equals(healthCode, other.healthCode) && Objects.equals(persistent, other.persistent)
-                && Objects.equals(timeZone, other.timeZone) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
+                && Objects.equals(timeZone, other.timeZone)
+                && Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
     }
 
     @Override

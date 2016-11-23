@@ -38,7 +38,7 @@ import com.google.common.collect.Sets;
  */
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class ScheduledActivityServiceTest {
+public class ScheduledActivityServiceRecurringTest {
 
     @Resource
     private ScheduledActivityService service;
@@ -62,7 +62,6 @@ public class ScheduledActivityServiceTest {
     public void before() {
         study = studyService.getStudy(TEST_STUDY.getIdentifier());
         study.setTaskIdentifiers(Sets.newHashSet("taskId"));
-        testUser = helper.getBuilder(ScheduledActivityServiceTest.class).build();
         
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule Label");
@@ -91,12 +90,22 @@ public class ScheduledActivityServiceTest {
         }
     }
     
+    // WARNING: The notes here are not correct due to changes we've made in the way we test the time zone.
+    // The last day MSK seems to fall outside the scope of the tests. This needs to be fixed in later
+    // updates but we're currently addressing the duplication of tasks.
     @Test
     public void retrievalActivitiesAcrossTimeAndTimeZones() throws Exception {
+        int year = DateTime.now().getYear();
+        DateTime targetDateTime = DateTime.parse((year+1)+"-09-23T03:39:57.779+03:00");
+                
+        // Start a couple of days ago when creating the account. enrollment is at a fixed time.
+        DateTimeUtils.setCurrentMillisFixed(targetDateTime.minusDays(2).getMillis());
+        
+        testUser = helper.getBuilder(ScheduledActivityServiceRecurringTest.class).build();
+        
         // We start this test in the early morning in Russia, in the future so the new user's
         // enrollment doesn't screw up the test.
-        int year = DateTime.now().getYear();
-        DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-23T03:39:57.779+03:00").getMillis());
+        DateTimeUtils.setCurrentMillisFixed(targetDateTime.getMillis());
 
         // These time zones are far apart and for our chosen time, Dave will be teleporting to the 
         // previous day. Our scheduler must do something rational.
@@ -114,15 +123,15 @@ public class ScheduledActivityServiceTest {
         String pst1 = DateTime.now(PST).toLocalDate().toString();
         String pst2 = DateTime.now(PST).plusDays(1).toLocalDate().toString();
         String pst3 = DateTime.now(PST).plusDays(2).toLocalDate().toString();
-        // Never returned... though it exists
-        // String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
+        String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
         
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
         // 23rd, 24th and 25th
         ScheduleContext context = getContextWith2DayWindow(MSK);
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
-        assertEquals(4, activities.size());
+        
+        assertEquals(4, activities.size());//4
         assertEquals(msk0+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
         assertEquals(msk2+"T10:00:00.000+03:00", activities.get(2).getScheduledOn().toString());
@@ -133,10 +142,11 @@ public class ScheduledActivityServiceTest {
         // the window, over in Moscow... that is not returned because although it exists, we 
         // filter it out from the persisted activities retrieved from the db.
         activities = service.getScheduledActivities(getContextWith2DayWindow(PST));
-        assertEquals(3, activities.size());
+        assertEquals(4, activities.size());
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
         assertEquals(pst3+"T10:00:00.000-07:00", activities.get(2).getScheduledOn().toString());
+        assertEquals(pst4+"T10:00:00.000-07:00", activities.get(3).getScheduledOn().toString());
         
         // Dave returns to the Moscow and we move time forward a day.
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-24T03:39:57.779+03:00").getMillis());
@@ -165,6 +175,8 @@ public class ScheduledActivityServiceTest {
     
     @Test
     public void persistedActivitiesAreFilteredByEndsOn() throws Exception {
+        testUser = helper.getBuilder(ScheduledActivityServiceRecurringTest.class).build();
+
         // This was demonstrated above, but by only one activity... this is a more exaggerated test
         
         // Four days...

@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -92,7 +93,7 @@ public class ScheduledActivityControllerTest {
         DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
         schActivity.setTimeZone(DateTimeZone.UTC);
         schActivity.setGuid(BridgeUtils.generateGuid());
-        schActivity.setScheduledOn(DateTime.now(DateTimeZone.UTC).minusDays(1));
+        schActivity.setLocalScheduledOn(LocalDateTime.now().minusDays(1));
         schActivity.setActivity(TestConstants.TEST_3_ACTIVITY);
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
@@ -240,7 +241,7 @@ public class ScheduledActivityControllerTest {
         controller.getScheduledActivities(null, "-07:00", "3", null);
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
-        assertEquals(ACCOUNT_CREATED_ON, context.getAccountCreatedOn());
+        assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());
     }
     
 }

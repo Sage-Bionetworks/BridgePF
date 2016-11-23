@@ -31,6 +31,29 @@ public class ScheduleValidatorTest {
     }
     
     @Test
+    public void oneTimeScheduleWithExpirationNotUnderOneDay() {
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setExpires(Period.parse("PT23H"));
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals(
+                    "scheduleType set to once with no time of day start, but expires in under a day (this can cause confusing behavior)",
+                    e.getErrors().get("scheduleType").get(0));
+        }
+    }
+    
+    @Test
+    public void onTimeScheduleWithAdequateExpirationOK() {
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setExpires(Period.parse("PT36H"));
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        Validate.entityThrowingException(validator, schedule);
+    }
+    
+    @Test
     public void persistentScheduleDoesNotHaveDelay() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setDelay(Period.parse("P2D"));
