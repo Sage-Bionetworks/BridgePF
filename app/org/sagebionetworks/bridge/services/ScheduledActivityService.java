@@ -153,6 +153,8 @@ public class ScheduledActivityService {
     }
     
     private List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
+        // Reduce the number of calls to get a survey, as repeating tasks will make several calls
+        Map<String,Survey> surveyCache = Maps.newHashMap();
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getCriteriaContext().getClientInfo(),
@@ -161,21 +163,26 @@ public class ScheduledActivityService {
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             if (schedule != null) {
                 List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
-                List<ScheduledActivity> resolvedActivities = resolveLinks(context, activities);
+                List<ScheduledActivity> resolvedActivities = resolveLinks(context, surveyCache, activities);
                 scheduledActivities.addAll(resolvedActivities);    
             }
         }
         return scheduledActivities;
     }
     
-    private List<ScheduledActivity> resolveLinks(ScheduleContext context, List<ScheduledActivity> activities) {
+    private List<ScheduledActivity> resolveLinks(ScheduleContext context, Map<String, Survey> surveyCache,
+            List<ScheduledActivity> activities) {
+
         return activities.stream().map(schActivity -> {
             Activity activity = schActivity.getActivity();
 
             if (isReferenceToPublishedSurvey(activity)) {
-                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(
-                        context.getCriteriaContext().getStudyIdentifier(), activity.getSurvey().getGuid());
-
+                Survey survey = surveyCache.get(activity.getSurvey().getGuid());
+                if (survey == null) {
+                    survey = surveyService.getSurveyMostRecentlyPublishedVersion(
+                            context.getCriteriaContext().getStudyIdentifier(), activity.getSurvey().getGuid());
+                    surveyCache.put(survey.getGuid(), survey);
+                }
                 Activity resolvedActivity = new Activity.Builder().withActivity(activity)
                         .withSurvey(survey.getIdentifier(), survey.getGuid(), new DateTime(survey.getCreatedOn()))
                         .build();

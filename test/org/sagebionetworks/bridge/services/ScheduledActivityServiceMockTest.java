@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,15 +32,21 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
@@ -509,6 +517,49 @@ public class ScheduledActivityServiceMockTest {
                 .withUserDataGroups(Sets.newHashSet("test_user")).build();
         schActivities = service.getScheduledActivities(context);
         assertEquals(1, schActivities.size());
+    }
+    
+    @Test
+    public void surveysAreCached() {
+        DynamoSurvey survey = new DynamoSurvey();
+        survey.setIdentifier("surveyId");
+        survey.setGuid("guid");
+        doReturn(survey).when(surveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withTimeZone(DateTimeZone.UTC)
+                .withUserId("userId")
+                .withAccountCreatedOn(DateTime.now().minusDays(3))
+                .withHealthCode("healthCode")
+                .withEndsOn(DateTime.now().plusDays(3))
+                .withStudyIdentifier("studyId").build();
+        
+        Activity activity = new Activity.Builder().withLabel("Label").withSurvey("surveyId", "guid", null).build();
+        
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval(Period.parse("P1D"));
+        schedule.setActivities(Lists.newArrayList(activity));
+        
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        
+        DynamoSchedulePlan plan1 = new DynamoSchedulePlan();
+        plan1.setStrategy(strategy);
+        
+        DynamoSchedulePlan plan2 = new DynamoSchedulePlan();
+        plan2.setStrategy(strategy);
+        
+        doReturn(Lists.newArrayList(plan1,plan2)).when(schedulePlanService).getSchedulePlans(any(), any());
+        
+        List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
+        
+        assertTrue(schActivities.size() > 1);
+        for (ScheduledActivity act : schActivities) {
+            assertEquals("guid", act.getActivity().getSurvey().getGuid());
+        }
+        
+        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
     }
     
     private List<ScheduledActivity> createActivities(String... guids) {
