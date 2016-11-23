@@ -518,10 +518,10 @@ public class ScheduledActivityServiceMockTest {
             .withAccountCreatedOn(DateTime.now().minusDays(4))
             .build();
         
-        // Is a parkinson patient, gets 3 tasks
+        // Is a parkinson patient, gets 3 tasks (or 6 tasks late in the day, see BRIDGE-1603
         List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
-        
-        // test is failing with 6 tasks rather than 3, but only on dev-travis
+
+        // See BRIDGE-1603
         assertTrue(schActivities.size() == 3 || schActivities.size() == 6);
         
         // Not a parkinson patient, get 1 task
@@ -529,6 +529,7 @@ public class ScheduledActivityServiceMockTest {
                 .withContext(context)
                 .withUserDataGroups(Sets.newHashSet("test_user")).build();
         schActivities = service.getScheduledActivities(context);
+        // See BRIDGE-1603
         assertTrue(1 == schActivities.size() || 2 == schActivities.size());
     }
     
