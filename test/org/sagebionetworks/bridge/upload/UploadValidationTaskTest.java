@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -38,7 +37,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
@@ -57,129 +55,85 @@ public class UploadValidationTaskTest {
     private static final long UPLOADED_ON = 1462575525894L;
     private static final String USER_EXTERNAL_ID = "external-id";
 
-    private HealthDataRecord TEST_RECORD = new DynamoHealthDataRecord.Builder()
-            .withCreatedOn(CREATED_ON)
-            .withHealthCode(HEALTH_CODE)
-            .withId(RECORD_ID)
-            .withSchemaId(SCHEMA_ID)
-            .withSchemaRevision(SCHEMA_REV)
-            .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-            .withUploadDate(UPLOAD_DATE)
-            .withUploadedOn(UPLOADED_ON)
-            .withUploadId(UPLOAD_ID)
-            .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-            .withUserExternalId(USER_EXTERNAL_ID)
-            .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-            .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-            .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-            .build();
+    private HealthDataRecord testRecord;
 
-    private HealthDataRecord TEST_RECORD_DUPE = new DynamoHealthDataRecord.Builder()
-            .withCreatedOn(CREATED_ON)
-            .withHealthCode(HEALTH_CODE)
-            .withId(RECORD_ID_2)
-            .withSchemaId(SCHEMA_ID)
-            .withSchemaRevision(SCHEMA_REV)
-            .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-            .withUploadDate(UPLOAD_DATE)
-            .withUploadedOn(UPLOADED_ON)
-            .withUploadId(UPLOAD_ID)
-            .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-            .withUserExternalId(USER_EXTERNAL_ID)
-            .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-            .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-            .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-            .build();
+    private HealthDataRecord testRecordDupe;
 
-    private HealthDataRecord TEST_RECORD_DUPE_2 = new DynamoHealthDataRecord.Builder()
-            .withCreatedOn(CREATED_ON)
-            .withHealthCode(HEALTH_CODE)
-            .withId(RECORD_ID_3)
-            .withSchemaId(SCHEMA_ID)
-            .withSchemaRevision(SCHEMA_REV)
-            .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-            .withUploadDate(UPLOAD_DATE)
-            .withUploadedOn(UPLOADED_ON)
-            .withUploadId(UPLOAD_ID)
-            .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-            .withUserExternalId(USER_EXTERNAL_ID)
-            .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-            .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-            .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-            .build();
+    private HealthDataRecord testRecordDupe2;
 
-    private final List<HealthDataRecord> TEST_RECORD_DUPE_LIST_NORMAL = Arrays.asList(TEST_RECORD, TEST_RECORD_DUPE);
-    private final List<HealthDataRecord> TEST_RECORD_DUPE_LIST_MULTI = Arrays.asList(TEST_RECORD, TEST_RECORD_DUPE, TEST_RECORD_DUPE_2);
+    private List<HealthDataRecord> testRecordDupeListNormal;
+    private List<HealthDataRecord> testRecordDupeListMulti;
 
     private final List<UploadValidationHandler> handlerList = ImmutableList.of(
             new MessageHandler("foo was here"), new MessageHandler("bar was here"),
             new MessageHandler("kilroy was here"), new RecordIdHandler(RECORD_ID));
 
+    private final List<UploadValidationHandler> nullRecordIdHandlerList = ImmutableList.of(
+            new MessageHandler("foo was here"), new MessageHandler("bar was here"),
+            new MessageHandler("kilroy was here"), new RecordIdHandler(null));
+
 
     private HealthDataService healthDataService;
 
-    public UploadValidationTaskTest() throws IOException {
-    }
-
     @Before
     public void setup() throws IOException {
-//        TEST_RECORD = new DynamoHealthDataRecord.Builder()
-//                .withCreatedOn(CREATED_ON)
-//                .withHealthCode(HEALTH_CODE)
-//                .withId(RECORD_ID)
-//                .withSchemaId(SCHEMA_ID)
-//                .withSchemaRevision(SCHEMA_REV)
-//                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-//                .withUploadDate(UPLOAD_DATE)
-//                .withUploadedOn(UPLOADED_ON)
-//                .withUploadId(UPLOAD_ID)
-//                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-//                .withUserExternalId(USER_EXTERNAL_ID)
-//                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-//                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-//                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-//                .build();
-//
-//        TEST_RECORD_DUPE = new DynamoHealthDataRecord.Builder()
-//                .withCreatedOn(CREATED_ON)
-//                .withHealthCode(HEALTH_CODE)
-//                .withId(RECORD_ID_2)
-//                .withSchemaId(SCHEMA_ID)
-//                .withSchemaRevision(SCHEMA_REV)
-//                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-//                .withUploadDate(UPLOAD_DATE)
-//                .withUploadedOn(UPLOADED_ON)
-//                .withUploadId(UPLOAD_ID)
-//                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-//                .withUserExternalId(USER_EXTERNAL_ID)
-//                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-//                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-//                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-//                .build();
-//
-//        TEST_RECORD_DUPE_2 = new DynamoHealthDataRecord.Builder()
-//                .withCreatedOn(CREATED_ON)
-//                .withHealthCode(HEALTH_CODE)
-//                .withId(RECORD_ID_3)
-//                .withSchemaId(SCHEMA_ID)
-//                .withSchemaRevision(SCHEMA_REV)
-//                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-//                .withUploadDate(UPLOAD_DATE)
-//                .withUploadedOn(UPLOADED_ON)
-//                .withUploadId(UPLOAD_ID)
-//                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-//                .withUserExternalId(USER_EXTERNAL_ID)
-//                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-//                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-//                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-//                .build();
-//
-//        TEST_RECORD_DUPE_LIST_NORMAL = Arrays.asList(TEST_RECORD, TEST_RECORD_DUPE);
-//        TEST_RECORD_DUPE_LIST_MULTI = Arrays.asList(TEST_RECORD, TEST_RECORD_DUPE, TEST_RECORD_DUPE_2);
+        testRecord = new DynamoHealthDataRecord.Builder()
+                .withCreatedOn(CREATED_ON)
+                .withHealthCode(HEALTH_CODE)
+                .withId(RECORD_ID)
+                .withSchemaId(SCHEMA_ID)
+                .withSchemaRevision(SCHEMA_REV)
+                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withUploadDate(UPLOAD_DATE)
+                .withUploadedOn(UPLOADED_ON)
+                .withUploadId(UPLOAD_ID)
+                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
+                .withUserExternalId(USER_EXTERNAL_ID)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
+                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
+                .build();
+
+        testRecordDupe = new DynamoHealthDataRecord.Builder()
+                .withCreatedOn(CREATED_ON)
+                .withHealthCode(HEALTH_CODE)
+                .withId(RECORD_ID_2)
+                .withSchemaId(SCHEMA_ID)
+                .withSchemaRevision(SCHEMA_REV)
+                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withUploadDate(UPLOAD_DATE)
+                .withUploadedOn(UPLOADED_ON)
+                .withUploadId(UPLOAD_ID)
+                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
+                .withUserExternalId(USER_EXTERNAL_ID)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
+                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
+                .build();
+
+        testRecordDupe2 = new DynamoHealthDataRecord.Builder()
+                .withCreatedOn(CREATED_ON)
+                .withHealthCode(HEALTH_CODE)
+                .withId(RECORD_ID_3)
+                .withSchemaId(SCHEMA_ID)
+                .withSchemaRevision(SCHEMA_REV)
+                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withUploadDate(UPLOAD_DATE)
+                .withUploadedOn(UPLOADED_ON)
+                .withUploadId(UPLOAD_ID)
+                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
+                .withUserExternalId(USER_EXTERNAL_ID)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
+                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
+                .build();
+
+        testRecordDupeListNormal = Arrays.asList(testRecord, testRecordDupe);
+        testRecordDupeListMulti = Arrays.asList(testRecord, testRecordDupe, testRecordDupe2);
 
         healthDataService = mock(HealthDataService.class);
-        when(healthDataService.getRecordById(eq(RECORD_ID))).thenReturn(TEST_RECORD);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(TEST_RECORD_DUPE_LIST_NORMAL);
+        when(healthDataService.getRecordById(eq(RECORD_ID))).thenReturn(testRecord);
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(testRecordDupeListNormal);
     }
 
     @Test
@@ -307,6 +261,31 @@ public class UploadValidationTaskTest {
     }
 
     @Test
+    public void dedupeNullRecordId() {
+        // input
+        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
+
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId("test-upload");
+
+        UploadValidationContext ctx = new UploadValidationContext();
+        ctx.setStudy(study);
+        ctx.setUpload(upload2);
+
+        // set up validation task
+        UploadValidationTask task = spy(new UploadValidationTask(ctx));
+        task.setHandlerList(nullRecordIdHandlerList);
+        task.setHealthDataService(healthDataService);
+
+        // execute
+        task.run();
+
+        // should have no interaction with dedupe logic
+        verify(task, times(0)).logDuplicateUploadRecords(any(), any());
+        verify(task, times(0)).logErrorMsg(any());
+    }
+
+    @Test
     public void dedupeInformation() {
         // input
         DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
@@ -327,7 +306,7 @@ public class UploadValidationTaskTest {
         task.run();
 
         // verify log helper was called
-        verify(task).logDuplicateUploadRecords(eq(TEST_RECORD), eq(TEST_RECORD_DUPE_LIST_NORMAL));
+        verify(task).logDuplicateUploadRecords(eq(testRecord), eq(testRecordDupeListNormal));
     }
 
     @Test
@@ -347,8 +326,8 @@ public class UploadValidationTaskTest {
         task.setHandlerList(handlerList);
         // only return one test record
         healthDataService = mock(HealthDataService.class);
-        when(healthDataService.getRecordById(any())).thenReturn(TEST_RECORD);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(Arrays.asList(TEST_RECORD));
+        when(healthDataService.getRecordById(any())).thenReturn(testRecord);
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(Arrays.asList(testRecord));
         task.setHealthDataService(healthDataService);
 
         // execute
@@ -378,7 +357,6 @@ public class UploadValidationTaskTest {
         when(healthDataService.getRecordById(any())).thenReturn(null);
         task.setHealthDataService(healthDataService);
         task.run();
-//        verify(task).logClassNotFoundException(any());
         verify(task, times(0)).logDuplicateUploadRecords(any(), any());
     }
 
@@ -399,7 +377,7 @@ public class UploadValidationTaskTest {
         task.setHandlerList(handlerList);
         // return an empty list
         healthDataService = mock(HealthDataService.class);
-        when(healthDataService.getRecordById(any())).thenReturn(TEST_RECORD);
+        when(healthDataService.getRecordById(any())).thenReturn(testRecord);
         when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(new ArrayList<HealthDataRecord>());
         task.setHealthDataService(healthDataService);
         task.run();
@@ -423,12 +401,12 @@ public class UploadValidationTaskTest {
         task.setHandlerList(handlerList);
 
         healthDataService = mock(HealthDataService.class);
-        when(healthDataService.getRecordById(any())).thenReturn(TEST_RECORD);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(eq(HEALTH_CODE), eq(CREATED_ON), eq(SCHEMA_ID))).thenReturn(TEST_RECORD_DUPE_LIST_MULTI);
+        when(healthDataService.getRecordById(any())).thenReturn(testRecord);
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(eq(HEALTH_CODE), eq(CREATED_ON), eq(SCHEMA_ID))).thenReturn(testRecordDupeListMulti);
         task.setHealthDataService(healthDataService);
 
         task.run();
-        verify(task).logDuplicateUploadRecords(eq(TEST_RECORD), eq(TEST_RECORD_DUPE_LIST_MULTI));
+        verify(task).logDuplicateUploadRecords(eq(testRecord), eq(testRecordDupeListMulti));
     }
 
     // Test handler that makes its presence known only by writing a message to the validation context.

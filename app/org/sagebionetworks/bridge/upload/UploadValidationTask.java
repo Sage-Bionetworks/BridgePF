@@ -176,7 +176,8 @@ public class UploadValidationTask implements Runnable {
 
         for (HealthDataRecord dupeRecord: dupeRecords) {
             if (!dupeRecord.getId().equals(originRecord.getId())) {
-                logger.info("Duplicate HealthDataRecord: " + "record id: " + dupeRecord.getId()
+                logger.info("Origin Record: " + "record id: " + originRecord.getId()
+                        + ", Duplicate HealthDataRecord: " + "record id: " + dupeRecord.getId()
                         + ", createdOn: " + dupeRecord.getCreatedOn().toString()
                         + ", schemaId: " + dupeRecord.getSchemaId()
                         + ", studyId: " + dupeRecord.getStudyId() + ", uploadDate: " + dupeRecord.getUploadDate().toString()

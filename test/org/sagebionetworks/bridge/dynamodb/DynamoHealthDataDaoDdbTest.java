@@ -44,10 +44,9 @@ public class DynamoHealthDataDaoDdbTest {
     private static final String HEALTH_CODE_2 = "test-healthcode-2";
     private static final String SCHEMA_ID_2 = "test-schema-id-2";
 
-    private String HEALTH_CODE;
-    private String RECORD_ID;
+    private String healthCode;
+    private String recordId;
 
-//    private String SCHEMA_ID;
     private DynamoHealthDataRecord testRecord;
 
     @Resource(name = "healthDataDdbMapper")
@@ -58,16 +57,15 @@ public class DynamoHealthDataDaoDdbTest {
 
     @Before
     public void setup() throws IOException {
-        HEALTH_CODE = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
-        RECORD_ID = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
-//        SCHEMA_ID = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
+        healthCode = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
+        recordId = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
 
         // create test record and save it
         testRecord = new DynamoHealthDataRecord();
         testRecord.setCreatedOn(CREATED_ON);
-        testRecord.setHealthCode(HEALTH_CODE);
+        testRecord.setHealthCode(healthCode);
         testRecord.setSchemaId(SCHEMA_ID);
-        testRecord.setId(RECORD_ID);
+        testRecord.setId(recordId);
         testRecord.setSchemaRevision(SCHEMA_REV);
         testRecord.setUploadDate(UPLOAD_DATE);
         testRecord.setUploadedOn(UPLOADED_ON);
@@ -93,8 +91,8 @@ public class DynamoHealthDataDaoDdbTest {
 
         // validate fields
         assertEquals(CREATED_ON, savedRecord.getCreatedOn().longValue());
-        assertEquals(HEALTH_CODE, savedRecord.getHealthCode());
-        assertEquals(RECORD_ID, savedRecord.getId());
+        assertEquals(healthCode, savedRecord.getHealthCode());
+        assertEquals(recordId, savedRecord.getId());
         assertEquals(SCHEMA_ID, savedRecord.getSchemaId());
         assertEquals(SCHEMA_REV, savedRecord.getSchemaRevision());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, savedRecord.getStudyId());
@@ -119,7 +117,7 @@ public class DynamoHealthDataDaoDdbTest {
     @Test
     public void getRecordsByHealthCodeCreatedOnSchemaId() throws IOException {
         // query that record
-        List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(HEALTH_CODE, CREATED_ON, SCHEMA_ID);
+        List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(healthCode, CREATED_ON, SCHEMA_ID);
 
         // verify
         assertNotNull(retList);
@@ -129,8 +127,8 @@ public class DynamoHealthDataDaoDdbTest {
 
         // validate fields
         assertEquals(CREATED_ON, savedRecord.getCreatedOn().longValue());
-        assertEquals(HEALTH_CODE, savedRecord.getHealthCode());
-        assertEquals(RECORD_ID, savedRecord.getId());
+        assertEquals(healthCode, savedRecord.getHealthCode());
+        assertEquals(recordId, savedRecord.getId());
         assertEquals(SCHEMA_ID, savedRecord.getSchemaId());
         assertEquals(SCHEMA_REV, savedRecord.getSchemaRevision());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, savedRecord.getStudyId());
@@ -164,7 +162,7 @@ public class DynamoHealthDataDaoDdbTest {
     @Test
     public void differentSchemaIdForgetRecordsByHealthCodeCreatedOnSchemaId() {
         // query from a different schemaId
-        List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(HEALTH_CODE, CREATED_ON, SCHEMA_ID_2);
+        List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(healthCode, CREATED_ON, SCHEMA_ID_2);
 
         // verify - should not have anything in the list
         assertNotNull(retList);
@@ -174,7 +172,7 @@ public class DynamoHealthDataDaoDdbTest {
     @Test
     public void createdOnOutOfRangeForgetRecordsByHealthCodeCreatedOnSchemaId() {
         // query from a createdOn value out of range
-        List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(HEALTH_CODE, CREATED_ON + TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS) + 1L, SCHEMA_ID);
+        List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(healthCode, CREATED_ON + TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS) + 1L, SCHEMA_ID);
 
         // verify - should not have anything in the list
         assertNotNull(retList);
@@ -184,7 +182,7 @@ public class DynamoHealthDataDaoDdbTest {
     @Test
     public void createdOnInRangeForgetRecordsByHealthCodeCreatedOnSchemaId() {
         // query from a createdOn value out of range
-        List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(HEALTH_CODE, CREATED_ON + TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS), SCHEMA_ID);
+        List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(healthCode, CREATED_ON + TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS), SCHEMA_ID);
 
         // verify - should not have anything in the list
         assertNotNull(retList);
