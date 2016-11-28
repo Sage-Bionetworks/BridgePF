@@ -24,6 +24,7 @@ public class ClientInfoTest {
     private static final String VALID_LONG_UA_1_DEPRECATED = "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4";
     private static final String VALID_LONG_UA_2_DEPRECATED = "Cardio Health/1 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4";
     private static final String VALID_LONG_UA_3_DEPRECATED = "Belgium/2 (Motorola Flip-Phone; Android 14) BridgeJavaSDK/10";
+    private static final String VALID_LONG_WITH_SYNONYM = "Cardio Health/1 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4";
     
     private static final String INVALID_UA_1 = "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi";
     private static final String INVALID_UA_2 = "Integration Tests (Linux/3.13.0-36-generic) BridgeJavaSDK/3";
@@ -225,5 +226,18 @@ public class ClientInfoTest {
     public void deprecatedOperatingSystemParsed() {
         ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_UA_3_DEPRECATED);
         assertEquals(ANDROID, info.getOsName());
+    }
+    
+    @Test
+    public void synonymOsNameConvertedToCanonicalValue() {
+        ClientInfo info = ClientInfo.parseUserAgentString(VALID_LONG_WITH_SYNONYM);
+        
+        assertEquals("Cardio Health", info.getAppName());
+        assertEquals(1, info.getAppVersion().intValue());
+        assertEquals("Unknown iPhone", info.getDeviceName());
+        assertEquals(IOS, info.getOsName());
+        assertEquals("9.0.2", info.getOsVersion());
+        assertEquals("BridgeSDK", info.getSdkName());
+        assertEquals(4, info.getSdkVersion().intValue());        
     }
  }
