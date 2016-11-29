@@ -72,7 +72,7 @@ public class ParticipantOptionTest {
     public void canRetrieveEmptyValuesFromStudyParticipant() {
         StudyParticipant emptyParticipant = new StudyParticipant.Builder().build();
         assertNull(ParticipantOption.DATA_GROUPS.fromParticipant(emptyParticipant));
-        assertEquals("false",ParticipantOption.EMAIL_NOTIFICATIONS.fromParticipant(emptyParticipant));
+        assertEquals("true",ParticipantOption.EMAIL_NOTIFICATIONS.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.EXTERNAL_IDENTIFIER.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.LANGUAGES.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.SHARING_SCOPE.fromParticipant(emptyParticipant));

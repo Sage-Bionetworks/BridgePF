@@ -32,7 +32,8 @@ public enum ParticipantOption {
     },
     EMAIL_NOTIFICATIONS(Boolean.TRUE.toString(), "notifyByEmail") {
         public String fromParticipant(StudyParticipant participant) {
-            return Boolean.toString(participant.isNotifyByEmail());
+            Boolean bool = participant.isNotifyByEmail();
+            return (bool == null) ? getDefaultValue() : Boolean.toString(bool);
         }
         public String deserialize(JsonNode node) {
             checkNotNull(node);

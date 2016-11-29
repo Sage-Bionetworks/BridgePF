@@ -25,6 +25,7 @@ public class UserSessionInfoTest {
                 .withEmail("test@test.com")
                 .withFirstName("first name")
                 .withLastName("last name")
+                .withNotifyByEmail(false)
                 .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
                 .withId("user-identifier")
                 .withRoles(Sets.newHashSet(RESEARCHER))
@@ -56,6 +57,7 @@ public class UserSessionInfoTest {
         assertEquals("foo", node.get("dataGroups").get(0).asText());
         assertEquals("staging", node.get("environment").asText());
         assertEquals(participant.getId(), node.get("id").asText());
+        assertFalse(node.get("notifyByEmail").asBoolean());
         assertNull(node.get("healthCode"));
         assertNull(node.get("encryptedHealthCode"));
         assertEquals("UserSessionInfo", node.get("type").asText());
