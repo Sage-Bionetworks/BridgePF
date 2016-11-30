@@ -29,7 +29,6 @@ public class DynamoHealthDataDao implements HealthDataDao {
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeIndex;
     private DynamoIndexHelper uploadDateIndex;
-    private DynamoIndexHelper healthCodeCreatedOnIndex;
 
     /** DynamoDB mapper for the HealthDataRecord table. This is configured by Spring. */
     @Resource(name = "healthDataDdbMapper")
@@ -54,16 +53,6 @@ public class DynamoHealthDataDao implements HealthDataDao {
     public void setUploadDateIndex(DynamoIndexHelper uploadDateIndex) {
         this.uploadDateIndex = uploadDateIndex;
     }
-
-    /**
-     * DynamoDB Index reference for the healthCodeCreatedOnIndex index. This is needed because the DynamoDB mapper does allow queries
-     * using global secondary indices. This is configured by Spring
-     */
-    @Resource(name = "healthDataHealthCodeCreatedOnIndex")
-    public final void setHealthCodeCreatedOnIndex(DynamoIndexHelper healthCodeCreatedOnIndex) {
-        this.healthCodeCreatedOnIndex = healthCodeCreatedOnIndex;
-    }
-
 
     /** {@inheritDoc} */
     @Override
