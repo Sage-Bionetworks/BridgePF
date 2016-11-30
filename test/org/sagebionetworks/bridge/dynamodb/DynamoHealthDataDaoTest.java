@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -11,9 +12,11 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -141,12 +144,17 @@ public class DynamoHealthDataDaoTest {
         record.setCreatedOn(TEST_CREATED_ON);
         record.setSchemaId(TEST_SCHEMA_ID);
 
-        List<HealthDataRecord> mockResult = Arrays.asList(record);
-        DynamoIndexHelper mockIndex = mock(DynamoIndexHelper.class);
-        when(mockIndex.queryKeys(HealthDataRecord.class, "healthCode", TEST_HEALTH_CODE, null)).thenReturn(mockResult);
-
+        List<DynamoHealthDataRecord> mockResult = Arrays.asList(record);
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
-        dao.setHealthCodeIndex(mockIndex);
+
+        // mock mapper
+        PaginatedQueryList<DynamoHealthDataRecord> mockGetResult = mock(PaginatedQueryList.class);
+        when(mockGetResult.isEmpty()).thenReturn(false);
+        when(mockGetResult.iterator()).thenReturn(mockResult.iterator()); // mock iterator to handle foreach loop
+        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
+        when(mockMapper.query(eq(DynamoHealthDataRecord.class), any())).thenReturn(mockGetResult);
+
+        dao.setMapper(mockMapper);
 
         // execute and validate
         List<HealthDataRecord> retVal = dao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID);
