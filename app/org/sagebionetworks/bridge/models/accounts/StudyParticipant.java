@@ -55,7 +55,7 @@ public final class StudyParticipant implements BridgeEntity {
     private final String externalId;
     private final String password;
     private final SharingScope sharingScope;
-    private final boolean notifyByEmail;
+    private final Boolean notifyByEmail;
     private final Set<String> dataGroups;
     private final String healthCode;
     private final Map<String,String> attributes;
@@ -67,7 +67,7 @@ public final class StudyParticipant implements BridgeEntity {
     private final String id;
     
     private StudyParticipant(String firstName, String lastName, String email, String externalId, String password,
-            SharingScope sharingScope, boolean notifyByEmail, Set<String> dataGroups, String healthCode,
+            SharingScope sharingScope, Boolean notifyByEmail, Set<String> dataGroups, String healthCode,
             Map<String, String> attributes, Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles,
             LinkedHashSet<String> languages, AccountStatus status, DateTime createdOn, String id) {
         
@@ -117,7 +117,7 @@ public final class StudyParticipant implements BridgeEntity {
     public SharingScope getSharingScope() {
         return sharingScope;
     }
-    public boolean isNotifyByEmail() {
+    public Boolean isNotifyByEmail() {
         return notifyByEmail;
     }
     public Set<String> getDataGroups() {
@@ -182,7 +182,7 @@ public final class StudyParticipant implements BridgeEntity {
         private String externalId;
         private String password;
         private SharingScope sharingScope;
-        private boolean notifyByEmail;
+        private Boolean notifyByEmail;
         private Set<String> dataGroups;
         private String healthCode;
         private Map<String,String> attributes;
@@ -287,7 +287,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.sharingScope = sharingScope;
             return this;
         }
-        public Builder withNotifyByEmail(boolean notifyByEmail) {
+        public Builder withNotifyByEmail(Boolean notifyByEmail) {
             this.notifyByEmail = notifyByEmail;
             return this;
         }

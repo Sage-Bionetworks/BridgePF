@@ -65,6 +65,7 @@ public class ExceptionInterceptorTest {
                 .withFirstName("firstName")
                 .withLastName("lastName")
                 .withHealthCode("healthCode")
+                .withNotifyByEmail(true)
                 .withId("userId")
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withDataGroups(Sets.newHashSet("group1")).build();
@@ -95,6 +96,7 @@ public class ExceptionInterceptorTest {
         assertEquals("email@email.com", node.get("email").asText());
         assertEquals("userId", node.get("id").asText());
         assertTrue(node.get("dataSharing").asBoolean());
+        assertTrue(node.get("notifyByEmail").asBoolean());
         assertEquals("UserSessionInfo", node.get("type").asText());
         ArrayNode array = (ArrayNode)node.get("roles");
         assertEquals(0, array.size());
