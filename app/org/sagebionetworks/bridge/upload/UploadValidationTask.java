@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
+import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.services.HealthDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +26,15 @@ public class UploadValidationTask implements Runnable {
 
     private List<UploadValidationHandler> handlerList;
     private UploadDao uploadDao;
+    private HealthDataService healthDataService;
+
+    public final void setHealthDataService(HealthDataService healthDataService) {
+        this.healthDataService = healthDataService;
+    }
+
+    public HealthDataService getHealthDataService() {
+        return this.healthDataService;
+    }
 
     /**
      * Constructs an upload validation task instance with the given context. This should only be called by the
@@ -111,6 +124,64 @@ public class UploadValidationTask implements Runnable {
         }
 
         // TODO: if validation fails, wipe the files from S3
+
+        // dedupe logic over here:
+        try {
+            dedupeHelper(context.getRecordId());
+        } catch (Throwable e) {
+            logErrorMsg(e);
+        }
+
+    }
+
+    // helper method to log exception
+    void logErrorMsg(Throwable e) {
+        logger.error("An error occurred:", e);
+    }
+
+    /**
+     * helper method: query healthdatarecord by healthcode, schema and createdOn from the upload just finished above,
+     * if there are more than 1 such records in ddb, there are duplicates. log that information but not stop or delete anything right now
+     * @param healthRecordId
+     */
+    private void dedupeHelper(String healthRecordId) throws BadRequestException {
+        if (healthRecordId == null) {
+            return; // no record yet, no need to check duplicates
+        }
+        // get necessary information for query first
+        HealthDataRecord record = healthDataService.getRecordById(healthRecordId);
+
+        // if there is no record in ddb, we should just finish dedupe logic since no record is a common case
+        if (record == null) {
+            return;
+        }
+
+        Long createdOn = record.getCreatedOn();
+        String healthCode = record.getHealthCode();
+        String schemaId = record.getSchemaId();
+
+        List<HealthDataRecord> retList = healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
+
+        if (retList.size() > 1) {
+            logger.info(String.format("Duplicate health data records for record id: %s, created on:  %s, schema id: %s, duplicate size: %s",
+                    healthRecordId, createdOn, schemaId, retList.size()));
+
+            logDuplicateUploadRecords(record, retList);
+        }
+        // else there is only one such record exists in ddb or no record exists yet, means no duplicate -- do nothing
+    }
+
+    void logDuplicateUploadRecords(HealthDataRecord originRecord, List<HealthDataRecord> dupeRecords) {
+        for (HealthDataRecord dupeRecord: dupeRecords) {
+            if (!dupeRecord.getId().equals(originRecord.getId())) {
+                logger.info("Origin Record: " + "record id: " + originRecord.getId()
+                        + ", Duplicate HealthDataRecord: " + "record id: " + dupeRecord.getId()
+                        + ", createdOn: " + dupeRecord.getCreatedOn().toString()
+                        + ", schemaId: " + dupeRecord.getSchemaId()
+                        + ", studyId: " + dupeRecord.getStudyId() + ", uploadDate: " + dupeRecord.getUploadDate().toString()
+                        + ", uploadId: " + dupeRecord.getUploadId());
+            }
+        }
     }
 
     // Log helper. Unit tests will mock (spy) this, so we verify that we're catching and logging the exception.

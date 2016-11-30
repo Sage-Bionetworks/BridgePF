@@ -8,6 +8,7 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.services.HealthDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class UploadValidationTaskFactory {
     private List<UploadValidationHandler> handlerList;
     private UploadDao uploadDao;
+    private HealthDataService healthDataService;
 
     /** Validation handler list. This is configured by Spring. */
     @Resource(name = "uploadValidationHandlerList")
@@ -31,6 +33,11 @@ public class UploadValidationTaskFactory {
     @Autowired
     public void setUploadDao(UploadDao uploadDao) {
         this.uploadDao = uploadDao;
+    }
+
+    @Autowired
+    public final void setHealthDataService(HealthDataService healthDataService) {
+        this.healthDataService = healthDataService;
     }
 
     /**
@@ -52,6 +59,7 @@ public class UploadValidationTaskFactory {
         UploadValidationTask task = new UploadValidationTask(context);
         task.setHandlerList(handlerList);
         task.setUploadDao(uploadDao);
+        task.setHealthDataService(healthDataService);
         return task;
     }
 }

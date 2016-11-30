@@ -52,4 +52,16 @@ public interface HealthDataDao {
      * to unpack uploads.
      */
     HealthDataRecordBuilder getRecordBuilder();
+
+    /**
+     * Get a list of records by healthCode, creatdOn and SchemaId
+     * @param healthCode
+     *      healthCode in String format
+     * @param createdOn
+     *      createdOn in Long format -- same as in ddb
+     * @param schemaId
+     *      schemaId in String format
+     * @return list of all health records matching criterion
+     */
+    List<HealthDataRecord> getRecordsByHealthCodeCreatedOnSchemaId(@Nonnull String healthCode, @Nonnull Long createdOn, @Nonnull String schemaId);
 }

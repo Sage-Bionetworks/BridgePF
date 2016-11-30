@@ -31,6 +31,7 @@ public class HealthDataServiceTest {
     private static final String TEST_STUDY_ID = "valid study";
     private static final String TEST_RECORD_ID = "mock record ID";
     private static final String TEST_RECORD_ID_2 = "mock record ID 2";
+    private static final Long TEST_CREATED_ON = Long.parseLong("1427970429000");
 
     @Test(expected = InvalidEntityException.class)
     public void createOrUpdateRecordNullRecord() {
@@ -217,5 +218,51 @@ public class HealthDataServiceTest {
         request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
 
         return request;
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByEmptyHealthcodeCreatedOnSchemaId() {
+        new HealthDataService().getRecordsByHealthcodeCreatedOnSchemaId("", TEST_CREATED_ON, TEST_SCHEMA_ID);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByNullHealthcodeCreatedOnSchemaId() {
+        new HealthDataService().getRecordsByHealthcodeCreatedOnSchemaId(null, TEST_CREATED_ON, TEST_SCHEMA_ID);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthcodeNullCreatedOnSchemaId() {
+        new HealthDataService().getRecordsByHealthcodeCreatedOnSchemaId(TEST_HEALTH_CODE, null, TEST_SCHEMA_ID);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthcodeCreatedOnEmptySchemaId() {
+        new HealthDataService().getRecordsByHealthcodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, "");
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthcodeCreatedOnNullSchemaId() {
+        new HealthDataService().getRecordsByHealthcodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, null);
+    }
+
+    @Test
+    public void getRecordsByHealthcodeCreatedOnSchemaId() {
+        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
+        record.setHealthCode(TEST_HEALTH_CODE);
+        record.setId("test ID");
+        record.setCreatedOn(TEST_CREATED_ON);
+        record.setSchemaId(TEST_SCHEMA_ID);
+
+        List<HealthDataRecord> mockResult = Arrays.asList(record);
+
+        // mock dao
+        HealthDataDao mockDao = mock(HealthDataDao.class);
+        when(mockDao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID)).thenReturn(mockResult);
+        HealthDataService svc = new HealthDataService();
+        svc.setHealthDataDao(mockDao);
+
+        // execute and verify
+        List<HealthDataRecord> retList = svc.getRecordsByHealthcodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID);
+        assertEquals(mockResult, retList);
     }
 }

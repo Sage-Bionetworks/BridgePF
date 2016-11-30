@@ -46,6 +46,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private ExporterStatus synapseExporterStatus;
 
     /** {@inheritDoc} */
+    @DynamoDBIndexRangeKey(attributeName = "createdOn", globalSecondaryIndexName = "healthCode-createdOn-index")
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getCreatedOn() {
@@ -71,7 +72,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-index")
+    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-createdOn-index")
     @Override
     public String getHealthCode() {
         return healthCode;

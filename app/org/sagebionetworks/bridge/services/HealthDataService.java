@@ -128,6 +128,20 @@ public class HealthDataService {
         return healthDataDao.getRecordsForUploadDate(uploadDate);
     }
 
+    public List<HealthDataRecord> getRecordsByHealthcodeCreatedOnSchemaId(String healthCode, Long createdOn, String schemaId) {
+        if (StringUtils.isBlank(healthCode)) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "healthCode"));
+        }
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "schemaId"));
+        }
+        if (createdOn == null) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "createdOn"));
+        }
+
+        return healthDataDao.getRecordsByHealthCodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
+    }
+
     /* HEALTH DATA ATTACHMENT APIs */
 
     /**
