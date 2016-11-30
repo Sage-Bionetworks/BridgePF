@@ -152,6 +152,9 @@ GET    /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers
 POST   /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
 DELETE /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String)
 
+# synapse project and team creation api
+POST   /v3/studies/self/synapseProject  @org.sagebionetworks.bridge.play.controllers.StudyController.createSynapse(userId: String ?= null)
+
 GET    /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.getExternalIds(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
 POST   /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.addExternalIds
 DELETE /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.deleteExternalIds

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -18,6 +19,7 @@ import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.SynapseProjectTeamCreationHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
@@ -123,6 +125,18 @@ public class StudyController extends BaseController {
         Study study = parseJson(request(), Study.class);
         study = studyService.createStudy(study);
         return okResult(new VersionHolder(study.getVersion()));
+    }
+
+    public Result createSynapse(String userId) throws Exception {
+        // first get current study
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        // then create project and team and grant admin permission to current user and exporter
+        Long userIdNum = Long.parseLong(userId);
+        studyService.createSynapseProjectTeam(userIdNum, study);
+
+        return okResult(new SynapseProjectTeamCreationHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
     }
 
     public Result deleteStudy(String identifier) throws Exception {
