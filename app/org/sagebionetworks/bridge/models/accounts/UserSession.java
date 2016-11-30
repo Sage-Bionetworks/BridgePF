@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 
 import java.util.Collections;
 import java.util.Map;
@@ -55,6 +56,9 @@ public class UserSession {
     }
     public boolean isAuthenticated() {
         return authenticated;
+    }
+    public boolean isAdmin() {
+        return !Collections.disjoint(ADMINISTRATIVE_ROLES, this.participant.getRoles());
     }
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;

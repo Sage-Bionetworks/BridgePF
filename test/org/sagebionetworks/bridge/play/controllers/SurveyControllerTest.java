@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -43,12 +44,15 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SurveyService;
 
 import com.google.common.collect.Lists;
@@ -69,6 +73,8 @@ public class SurveyControllerTest {
     private SurveyController controller;
     
     private SurveyService service;
+    
+    private StudyService studyService;
     
     private ViewCache viewCache;
     
@@ -111,9 +117,15 @@ public class SurveyControllerTest {
         }).when(provider).removeString(anyString());
         viewCache.setCacheProvider(provider);
         
+        DynamoStudy study = new DynamoStudy();
+        
+        studyService = mock(StudyService.class);
+        doReturn(study).when(studyService).getStudy(any(StudyIdentifier.class));
+        
         controller = spy(new SurveyController());
         controller.setSurveyService(service);
         controller.setViewCache(viewCache);
+        controller.setStudyService(studyService);
         
         setUserSession("api");
     }
@@ -132,11 +144,23 @@ public class SurveyControllerTest {
                 .withHealthCode("BBB")
                 .withRoles(Sets.newHashSet(DEVELOPER)).build();
         // The mock user is initially
+        SubpopulationGuid guid = SubpopulationGuid.create("subpopGuid");
+        ConsentStatus status = new ConsentStatus.Builder().withName("Name").withConsented(true).withGuid(guid)
+                .withSignedMostRecentConsent(true).build();
+        
+        Map<SubpopulationGuid,ConsentStatus> consentStatuses = Maps.newHashMap();
+        consentStatuses.put(guid, status);
+        
         session = new UserSession(participant);
         session.setStudyIdentifier(new StudyIdentifierImpl(studyIdentifier));
+        session.setConsentStatuses(consentStatuses);
+        session.setAuthenticated(true);
+        doReturn(session).when(controller).getSessionIfItExists();
+        /*
         doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession(any(Roles.class));
+        */
     }
     
     @Test
@@ -700,6 +724,7 @@ public class SurveyControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(ADMIN)).build();
         session.setParticipant(participant);
+        session.setConsentStatuses(Maps.newHashMap());
         
         try {
             controller.getSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
@@ -720,7 +745,7 @@ public class SurveyControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet()).build();
         session.setParticipant(participant);
-        
+        session.setConsentStatuses(Maps.newHashMap());
         try {
             controller.getSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
             fail("Exception should have been thrown.");
