@@ -156,11 +156,6 @@ public class SurveyControllerTest {
         session.setConsentStatuses(consentStatuses);
         session.setAuthenticated(true);
         doReturn(session).when(controller).getSessionIfItExists();
-        /*
-        doReturn(session).when(controller).getAuthenticatedSession();
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(session).when(controller).getAuthenticatedSession(any(Roles.class));
-        */
     }
     
     @Test
