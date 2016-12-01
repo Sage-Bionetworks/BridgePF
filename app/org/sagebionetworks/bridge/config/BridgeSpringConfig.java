@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.config;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +32,8 @@ import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
+import org.sagebionetworks.client.SynapseAdminClientImpl;
+import org.sagebionetworks.client.SynapseClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -447,4 +450,11 @@ public class BridgeSpringConfig {
         return BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
     }
 
+    @Bean(name="bridgePFSynapseClient")
+    public SynapseClient synapseClient() throws IOException {
+        SynapseClient synapseClient = new SynapseAdminClientImpl();
+        synapseClient.setUserName(bridgeConfig().get("synapse.user"));
+        synapseClient.setApiKey(bridgeConfig().get("synapse.api.key"));
+        return synapseClient;
+    }
 }

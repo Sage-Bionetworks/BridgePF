@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -38,6 +39,7 @@ import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.SynapseProjectTeamCreationHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
@@ -61,6 +63,10 @@ public class StudyControllerTest {
     private static final String PEM_TEXT = "-----BEGIN CERTIFICATE-----\nMIIExDCCA6ygAwIBAgIGBhCnnOuXMA0GCSqGSIb3DQEBBQUAMIGeMQswCQYDVQQG\nEwJVUzELMAkGA1UECAwCV0ExEDAOBgNVBAcMB1NlYXR0bGUxGTAXBgNVBAoMEFNh\nVlOwuuAxumMyIq5W4Dqk8SBcH9Y4qlk7\nEND CERTIFICATE-----";
 
     private static final TypeReference<DateTimeRangeResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<DateTimeRangeResourceList<? extends Upload>>(){};
+
+    private static final String TEST_PROJECT_ID = "synapseProjectId";
+    private static final Long TEST_TEAM_ID = Long.parseLong("123");
+    private static final String TEST_USER_ID = "1234";
 
     private StudyController controller;
     private StudyIdentifier studyId;
@@ -94,9 +100,12 @@ public class StudyControllerTest {
         study = new DynamoStudy();
         study.setSupportEmail(EMAIL_ADDRESS);
         study.setIdentifier(studyId.getIdentifier());
+        study.setSynapseProjectId(TEST_PROJECT_ID);
+        study.setSynapseDataAccessTeamId(TEST_TEAM_ID);
         
         when(mockStudyService.getStudy(studyId)).thenReturn(study);
         when(mockStudyService.getStudy(studyId.getIdentifier())).thenReturn(study);
+        when(mockStudyService.createSynapseProjectTeam(any(), any())).thenReturn(study);
 
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
 
@@ -139,6 +148,22 @@ public class StudyControllerTest {
         doReturn(session).when(controller).getSessionIfItExists();
 
         controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
+    }
+
+    @Test
+    public void canCreateSynapse() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+
+        Result result = controller.createSynapse(TEST_USER_ID);
+        String synapseIds = Helpers.contentAsString(result);
+
+        // verify
+        verify(mockStudyService).getStudy(eq(studyId));
+        verify(mockStudyService).createSynapseProjectTeam(eq(Long.parseLong(TEST_USER_ID)), eq(study));
+
+        JsonNode synapse = BridgeObjectMapper.get().readTree(synapseIds);
+        assertEquals(TEST_PROJECT_ID, synapse.get("projectId").asText());
+        assertEquals(TEST_TEAM_ID.longValue(), synapse.get("teamId").asLong());
     }
 
     @Test

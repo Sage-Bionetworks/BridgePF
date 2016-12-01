@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
@@ -35,13 +36,23 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import org.sagebionetworks.client.SynapseClient;
+import org.sagebionetworks.client.exceptions.SynapseException;
+import org.sagebionetworks.repo.model.MembershipInvitation;
+import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
+import org.sagebionetworks.repo.model.Project;
+import org.sagebionetworks.repo.model.ResourceAccess;
+import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.util.ModelConstants;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component("studyService")
 public class StudyService {
-    
+    static final String EXPORTER_SYNAPSE_USER_ID = "3325672"; // copy-paste from website
+
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
@@ -52,6 +63,7 @@ public class StudyService {
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
     private EmailVerificationService emailVerificationService;
+    private SynapseClient synapseClient;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -102,7 +114,12 @@ public class StudyService {
     final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
         this.emailVerificationService = emailVerificationService;
     }
-    
+    @Autowired
+    @Qualifier("bridgePFSynapseClient")
+    public final void setSynapseClient(SynapseClient synapseClient) {
+        this.synapseClient = synapseClient;
+    }
+
     public Study getStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
         
@@ -155,6 +172,52 @@ public class StudyService {
 
         return study;
     }
+
+    public Study createSynapseProjectTeam(Long userId, Study study) throws SynapseException {
+        // create synapse project and team
+        Team team = new Team();
+        team.setName(randomAlphanumeric(5) + "Bridge-Team");
+        Project project = new Project();
+        project.setName(randomAlphanumeric(5) + "Bridge-Project");
+
+        Team newTeam = synapseClient.createTeam(team);
+
+        Project newProject = synapseClient.createEntity(project);
+
+        // modify project acl
+        org.sagebionetworks.repo.model.AccessControlList acl = synapseClient.getACL(newProject.getId());
+        // add exporter as admin
+        ResourceAccess toSet = new ResourceAccess();
+        toSet.setPrincipalId(Long.parseLong(EXPORTER_SYNAPSE_USER_ID));
+        toSet.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        acl.getResourceAccess().add(toSet);
+        // add user as admin
+        ResourceAccess toSetUser = new ResourceAccess();
+        toSetUser.setPrincipalId(userId); // passed by user as parameter
+        toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        acl.getResourceAccess().add(toSetUser);
+
+        synapseClient.updateACL(acl);
+
+        // send invitation to target user for joining new team and grant admin permission to that user
+        MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
+        teamMemberInvitation.setInviteeId(userId.toString());
+        teamMemberInvitation.setTeamId(newTeam.getId());
+
+        synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
+        synapseClient.setTeamMemberPermissions(newTeam.getId(), userId.toString(), true);
+
+        String newTeamId = newTeam.getId();
+        String newProjectId = newProject.getId();
+
+        // finally, update study
+        study.setSynapseProjectId(newProjectId);
+        study.setSynapseDataAccessTeamId(Long.parseLong(newTeamId));
+        updateStudy(study, false);
+
+        return study;
+    }
+
     public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
