@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;

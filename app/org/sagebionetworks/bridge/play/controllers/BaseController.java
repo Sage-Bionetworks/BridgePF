@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -116,57 +117,71 @@ public abstract class BaseController extends Controller {
      * exist (user not authorized), consent has not been given or the client app version is not supported.
      */
     UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
-        UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());        
-        verifySupportedVersionOrThrowException(study);
-        if (!session.doesConsent()) {
-            throw new ConsentRequiredException(session);
-        }
-        return session;
+        return getAuthenticatedSession(true);
     }
 
     /**
-     * Retrieve a user's session or throw an exception if the user is not authenticated. 
-     * User does not have to give consent. If roles are provided, user must have one of 
-     * the specified roles or an authorization exception will be thrown.
+     * Retrieve a user's session or throw an exception if the user is not authenticated. User does not have to give
+     * consent. If roles are provided, user must have one of the specified roles or an authorization exception will be
+     * thrown. If no roles are supplied, the user just needs to be authenticated.
      */
-    UserSession getAuthenticatedSession(Roles... roles) {
-        final UserSession session = getSessionIfItExists();
-        if (session == null || !session.isAuthenticated()) {
-            throw new NotAuthenticatedException();
-        }
-        if (roles == null || roles.length == 0 || session.isInRole(Sets.newHashSet(roles))) {
-            return session;
-        }
-        throw new UnauthorizedException();
+    UserSession getAuthenticatedSession(Roles... roles) throws NotAuthenticatedException, UnauthorizedException {
+        return getAuthenticatedSession(false, roles);
     }
     
-    UserSession getSessionEitherConsentedOrInRole(Roles... roles) {
+    /**
+     * Return a session if the user is a consented participant, OR if the user has one of the supplied roles. If no
+     * roles are supplied, this method returns the session only if the caller is a consented participant.
+     */
+    UserSession getSessionEitherConsentedOrInRole(Roles... roles) throws NotAuthenticatedException,
+            ConsentRequiredException, UnsupportedVersionException, UnauthorizedException {
+        
+        return getAuthenticatedSession(true, roles);
+    }
+    
+    /**
+     * This method centralizes session checking. If consent is required, user must be consented, if roles are supplied,
+     * the user must have one of the roles, and if both are provided, the user must be EITHER consented OR in one of the
+     * given roles. If neither is supplied (<code>getAuthenticatedSession(false)</code>), than you just need to be
+     * authenticated. This method also ensures that the user's app version is up-to-date if consent is required.
+     */
+    UserSession getAuthenticatedSession(boolean consentRequired, Roles...roles) {
         final UserSession session = getSessionIfItExists();
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
-        Study study = studyService.getStudy(session.getStudyIdentifier());        
-        verifySupportedVersionOrThrowException(study);
+        // Any method that can throw a 412 can also throw a 410 (min app version not met).
+        if (consentRequired) {
+            Study study = studyService.getStudy(session.getStudyIdentifier());
+            verifySupportedVersionOrThrowException(study);
+        }
         
-        // If the user has roles, and this call is testing for roles, it is tested first on 
-        // authorization under a role. Test users have a test role which messes this up... 
-        // remove it.
-        Set<Roles> userRoles = Sets.newHashSet(session.getParticipant().getRoles());
-        userRoles.remove(Roles.TEST_USERS);
+        Set<Roles> userRoles = session.getParticipant().getRoles();
+        // if there are roles, they are required
+        boolean rolesRequired = (roles != null && roles.length > 0); 
+        boolean userHasRoles = !userRoles.isEmpty();
+        boolean isInRole = (rolesRequired) ? !Collections.disjoint(Sets.newHashSet(roles), userRoles) : false;
         
-        if (!userRoles.isEmpty() && roles != null && roles.length > 0) {
-            if (session.isInRole(Sets.newHashSet(roles))) {
-                return session;
-            }
+        if ((consentRequired && session.doesConsent()) || (rolesRequired && isInRole)) {
+            return session;
+        }
+
+        // Behavior here is unusual. It privileges the UnauthorizedException first for users with roles, 
+        // and the ConsentRequiredException first for users without any roles.
+        if (userHasRoles && rolesRequired && !isInRole) {
             throw new UnauthorizedException();
         }
-        if (!session.doesConsent()) {
+        if (consentRequired && !session.doesConsent()) {
             throw new ConsentRequiredException(session);
         }
+        if (rolesRequired && !isInRole) {
+            throw new UnauthorizedException();
+        }
+        // If you get here, then all that was requested was an authenticated user, 
+        // user doesn't need to be consented or to possess any specific role.
         return session;
     }
-
+    
     void setSessionToken(String sessionToken) {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
