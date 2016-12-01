@@ -177,6 +177,8 @@ public abstract class BaseController extends Controller {
         if (rolesRequired && !isInRole) {
             throw new UnauthorizedException();
         }
+        // If you get here, then all that was requested was an authenticated user, 
+        // user doesn't need to be consented or to possess any specific role.
         return session;
     }
     

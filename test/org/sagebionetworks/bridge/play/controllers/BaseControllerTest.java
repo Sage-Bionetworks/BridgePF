@@ -12,7 +12,9 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -30,17 +32,23 @@ import org.junit.Test;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -341,6 +349,138 @@ public class BaseControllerTest {
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());
+    }
+    
+    @Test(expected = NotAuthenticatedException.class)
+    public void getSessionAuthenticatedFail() {
+        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        BaseController controller = setupForSessionTest(session);
+        
+        controller.getAuthenticatedSession(false);
+    }
+    
+    @Test
+    public void getSessionAuthenticatedSucceed() {
+        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        session.setAuthenticated(true);
+        BaseController controller = setupForSessionTest(session);
+        
+        UserSession returned = controller.getAuthenticatedSession(false);
+        assertEquals(session, returned);
+    }
+    
+    @Test(expected = NotAuthenticatedException.class)
+    public void getSessionAuthenticatedAndConsentedFail() {
+        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        BaseController controller = setupForSessionTest(session);
+        
+        controller.getAuthenticatedSession(true);
+    }
+    
+    @Test
+    public void getSessionAuthenticatedAndConsentedSucceed() {
+        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        session.setConsentStatuses(getConsentStatusMap(true));
+        session.setAuthenticated(true);
+        BaseController controller = setupForSessionTest(session);
+        
+        UserSession returned = controller.getAuthenticatedSession(true);
+        assertEquals(session, returned);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getSessionWithRoleFail() {
+        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        session.setAuthenticated(true);
+        BaseController controller = setupForSessionTest(session);
+        
+        controller.getAuthenticatedSession(false, Roles.DEVELOPER);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getSessionWithWrongRoleFail() {
+        UserSession session = new UserSession(
+                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build());
+        session.setAuthenticated(true);
+        BaseController controller = setupForSessionTest(session);
+        
+        controller.getAuthenticatedSession(false, Roles.DEVELOPER);
+    }
+    
+    @Test
+    public void getSessionWithRoleSucceed() {
+        UserSession session = new UserSession(
+                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER)).build());
+        session.setAuthenticated(true);
+        BaseController controller = setupForSessionTest(session);
+        
+        UserSession returned = controller.getAuthenticatedSession(false, Roles.DEVELOPER);
+        assertEquals(session, returned);
+    }
+    
+    // In this scenario, a user without roles receives the consent required exception
+    @Test(expected = ConsentRequiredException.class)
+    public void getSessionWithNoRolesConsentedOrRoleFails() {
+        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        session.setAuthenticated(true);
+        
+        BaseController controller = setupForSessionTest(session);
+        
+        controller.getAuthenticatedSession(true, Roles.DEVELOPER);
+    }
+    
+    // In this scenario, a user with roles receives the UnauthorizedException
+    @Test(expected = UnauthorizedException.class)
+    public void getSessionWithNoConsentConsentedOrRoleFails() {
+        UserSession session = new UserSession(
+                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build());
+        session.setAuthenticated(true);
+        
+        BaseController controller = setupForSessionTest(session);
+        
+        controller.getAuthenticatedSession(true, Roles.DEVELOPER);
+    }
+    
+    @Test
+    public void getSessionWithConsentedUserNotInRoleSuccess() {
+        UserSession session = new UserSession(
+                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build());
+        session.setConsentStatuses(getConsentStatusMap(true));
+        session.setAuthenticated(true);
+        
+        BaseController controller = setupForSessionTest(session);
+        
+        UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
+        assertEquals(session, returned);
+    }
+    
+    @Test
+    public void getSessionWithConsentedUserInRoleSuccess() {
+        UserSession session = new UserSession(
+                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER)).build());
+        session.setConsentStatuses(getConsentStatusMap(true));
+        session.setAuthenticated(true);
+        
+        BaseController controller = setupForSessionTest(session);
+        
+        UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
+        assertEquals(session, returned);
+    }
+    
+    private BaseController setupForSessionTest(UserSession session) {
+        BaseController controller = spy(new SchedulePlanController());
+        doReturn(session).when(controller).getSessionIfItExists();
+
+        StudyService studyService = mock(StudyService.class);
+        controller.setStudyService(studyService);
+        
+        doNothing().when(controller).verifySupportedVersionOrThrowException(any());
+        return controller;
+    }
+    
+    private Map<SubpopulationGuid,ConsentStatus> getConsentStatusMap(boolean consented) {
+        return TestUtils.toMap(new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("guid"))
+                .withConsented(consented).withSignedMostRecentConsent(consented).build());
     }
     
     private void mockHeader(String header, String value) throws Exception {
