@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * <p>
@@ -29,8 +31,8 @@ import com.google.common.cache.LoadingCache;
  * <p>
  * The full User-Agent header must be provided to enable the filtering of content based on the version of the application 
  * making a request (because versioning information is specific to the name of the OS on which the app is running; we 
- * currently expect either "iPhone OS" or "Android", but any value can be used and will work as long as it is also set 
- * in the filtering criteria).
+ * currently expect either "iPhone OS", "iOS", or "Android", but any value can be used and will work as long as it is 
+ * also set in the filtering criteria).
  * </p>
  * 
  * <p>Some examples:</p>
@@ -61,15 +63,23 @@ import com.google.common.cache.LoadingCache;
  */
 public final class ClientInfo {
 
-    private static Logger logger = LoggerFactory.getLogger(ClientInfo.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientInfo.class);
 
+    /**
+     * Apple has changed the name of the iOS platform from "iPhone OS" to "iOS" and this is reflected in the 
+     * User-Agent string we send. To avoid confusion, recognize such synonyms/spelling errors and map them
+     * to our two canonical platforms, "iPhone OS" and "Android". 
+     */
+    private static final Map<String,String> PLATFORM_SYNONYMS = new ImmutableMap.Builder<String,String>()
+            .put("iOS", "iPhone OS").build();
+    
     /**
      * A cache of ClientInfo objects that have already been parsed from user agent strings. 
      * We're using this, rather than ConcurrentHashMap, because external clients submit this string, 
      * and thus could create an infinite number of them, starving the server. The cache will protect 
      * against this with its size limit.
      */
-    private static LoadingCache<String, ClientInfo> userAgents = CacheBuilder.newBuilder()
+    private static final LoadingCache<String, ClientInfo> userAgents = CacheBuilder.newBuilder()
        .maximumSize(500)
        .build(new CacheLoader<String,ClientInfo>() {
             @Override
@@ -231,6 +241,9 @@ public final class ClientInfo {
          * User-Agent header is not in our prescribed format.
          */
         public ClientInfo build() {
+            if (PLATFORM_SYNONYMS.containsKey(osName)) {
+                osName = PLATFORM_SYNONYMS.get(osName);
+            }
             return new ClientInfo(appName, appVersion, deviceName, osName, osVersion, sdkName, sdkVersion);
         }
 
@@ -249,7 +262,7 @@ public final class ClientInfo {
             } catch(ExecutionException e) {
                 // This should not happen, the CacheLoader doesn't throw exceptions
                 // Log it and return UNKNOWN_CLIENT
-                logger.error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
             }
         }
         return UNKNOWN_CLIENT;
