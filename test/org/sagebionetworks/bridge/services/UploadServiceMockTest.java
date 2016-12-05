@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -17,7 +18,6 @@ import java.util.List;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -188,9 +188,15 @@ public class UploadServiceMockTest {
         // Failed mock upload
         doReturn("failed-upload-id").when(mockFailedUpload).getUploadId();
         doReturn(UploadStatus.REQUESTED).when(mockFailedUpload).getStatus();
-        
+
+        // Mock upload with record ID but no record
+        Upload mockUploadWithNoRecord = mock(Upload.class);
+        when(mockUploadWithNoRecord.getUploadId()).thenReturn("upload-id-with-no-record");
+        when(mockUploadWithNoRecord.getStatus()).thenReturn(UploadStatus.SUCCEEDED);
+        when(mockUploadWithNoRecord.getRecordId()).thenReturn("missing-record-id");
+
         // Mock getUploads/getUpload calls
-        List<? extends Upload> results = Lists.newArrayList(mockUpload, mockFailedUpload);
+        List<? extends Upload> results = ImmutableList.of(mockUpload, mockFailedUpload, mockUploadWithNoRecord);
         doReturn(results).when(mockDao).getUploads("ABC", START_TIME, END_TIME);
         doReturn(results).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME);
         doReturn(mockUpload).when(mockDao).getUpload("upload-id");
@@ -199,6 +205,7 @@ public class UploadServiceMockTest {
         // Mock the record returned from the validation status record
         doReturn("schema-id").when(mockRecord).getSchemaId();
         doReturn(10).when(mockRecord).getSchemaRevision();
+        doReturn(HealthDataRecord.ExporterStatus.SUCCEEDED).when(mockRecord).getSynapseExporterStatus();
         // Mock UploadValidationStatus from health data record;
         doReturn(mockRecord).when(mockHealthDataService).getRecordById("record-id");
     }
@@ -212,19 +219,7 @@ public class UploadServiceMockTest {
         DateTimeRangeResourceList<? extends UploadView> returned = svc.getUploads("ABC", START_TIME, END_TIME);
         
         verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
-        verify(mockHealthDataService).getRecordById("record-id");
-        verifyNoMoreInteractions(mockHealthDataService);
-        
-        // The two sources of information are combined in the view.
-        UploadView view = returned.getItems().get(0);
-        assertEquals(UploadStatus.SUCCEEDED, view.getUpload().getStatus());
-        assertEquals("schema-id", view.getSchemaId());
-        assertEquals(new Integer(10), view.getSchemaRevision());
-        
-        UploadView failedView = returned.getItems().get(1);
-        assertEquals(UploadStatus.REQUESTED, failedView.getUpload().getStatus());
-        assertNull(failedView.getSchemaId());
-        assertNull(failedView.getSchemaRevision());
+        validateUploadMocks(returned);
     }
     
     @Test
@@ -236,20 +231,38 @@ public class UploadServiceMockTest {
                 START_TIME, END_TIME);
         
         verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME);
+        validateUploadMocks(returned);
+    }
+
+    private void validateUploadMocks(DateTimeRangeResourceList<? extends UploadView> returned) {
         verify(mockHealthDataService).getRecordById("record-id");
+        verify(mockHealthDataService).getRecordById("missing-record-id");
         verifyNoMoreInteractions(mockHealthDataService);
-        
+
+        List<? extends UploadView> uploadList = returned.getItems();
+        assertEquals(3, uploadList.size());
+
         // The two sources of information are combined in the view.
-        UploadView view = returned.getItems().get(0);
+        UploadView view = uploadList.get(0);
         assertEquals(UploadStatus.SUCCEEDED, view.getUpload().getStatus());
-        // Does not have schema information for this view of uploads.
+        assertEquals("record-id", view.getUpload().getRecordId());
         assertEquals("schema-id", view.getSchemaId());
         assertEquals(new Integer(10), view.getSchemaRevision());
-        
-        UploadView failedView = returned.getItems().get(1);
+        assertEquals(HealthDataRecord.ExporterStatus.SUCCEEDED, view.getHealthRecordExporterStatus());
+
+        UploadView failedView = uploadList.get(1);
         assertEquals(UploadStatus.REQUESTED, failedView.getUpload().getStatus());
+        assertNull(failedView.getUpload().getRecordId());
         assertNull(failedView.getSchemaId());
         assertNull(failedView.getSchemaRevision());
+        assertNull(failedView.getHealthRecordExporterStatus());
+
+        UploadView viewWithNoRecord = uploadList.get(2);
+        assertEquals(UploadStatus.SUCCEEDED, viewWithNoRecord.getUpload().getStatus());
+        assertEquals("missing-record-id", viewWithNoRecord.getUpload().getRecordId());
+        assertNull(viewWithNoRecord.getSchemaId());
+        assertNull(viewWithNoRecord.getSchemaRevision());
+        assertNull(viewWithNoRecord.getHealthRecordExporterStatus());
     }
 
     @Test
