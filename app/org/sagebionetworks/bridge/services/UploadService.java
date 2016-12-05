@@ -281,9 +281,11 @@ public class UploadService {
             builder.withUpload(upload);
             if (upload.getRecordId() != null) {
                 HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
-                builder.withSchemaId(record.getSchemaId());
-                builder.withSchemaRevision(record.getSchemaRevision());
-                builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
+                if (record != null) {
+                    builder.withSchemaId(record.getSchemaId());
+                    builder.withSchemaRevision(record.getSchemaRevision());
+                    builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
+                }
             }
             return builder.build();
         }).collect(Collectors.toList());
