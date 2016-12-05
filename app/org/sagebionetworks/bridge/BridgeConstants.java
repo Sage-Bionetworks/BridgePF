@@ -22,6 +22,8 @@ public class BridgeConstants {
 
     public static final String BRIDGE_DEPRECATED_STATUS = "deprecated";
 
+    public static final String BRIDGE_WARNING_STATUS = "warning";
+
     public static final String SESSION_TOKEN_HEADER = "Bridge-Session";
 
     public static final String BRIDGE_STUDY_HEADER = "Bridge-Study";

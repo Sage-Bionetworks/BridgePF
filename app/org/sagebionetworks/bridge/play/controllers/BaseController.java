@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -47,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
+import play.mvc.Http;
 import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
@@ -258,13 +260,25 @@ public abstract class BaseController extends Controller {
                 LOG.debug("Malformed Accept-Language header sent: " + acceptLanguageHeader);
             }
         }
+
+        // if no Accept-Language header detected, we shall add an extra warning header
+        Http.Response response = Http.Context.current().response();
+        response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.BRIDGE_WARNING_STATUS);
+
         return new LinkedHashSet<>();
     }
     
     ClientInfo getClientInfoFromUserAgentHeader() {
         String userAgentHeader = request().getHeader(USER_AGENT);
         ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
-        
+
+        // if the user agent cannot be parsed (probably due to missing user agent string or unrecognizable user agent),
+        // should set an extra header to http response as warning - we should have an user agent info for filtering to work
+        if (info.equals(ClientInfo.UNKNOWN_CLIENT)) {
+            Http.Response response = Http.Context.current().response();
+            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.BRIDGE_WARNING_STATUS);
+        }
+
         LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);
     	return info;
     }
