@@ -139,7 +139,7 @@ public class BaseControllerTest {
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
 
         Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, BRIDGE_WARNING_STATUS);
 
         assertNull(info.getAppName());
         assertNull(info.getAppVersion());
@@ -157,7 +157,7 @@ public class BaseControllerTest {
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
 
         Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, BRIDGE_WARNING_STATUS);
 
         assertNull(info.getAppName());
         assertNull(info.getAppVersion());
@@ -175,7 +175,7 @@ public class BaseControllerTest {
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
 
         Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, BRIDGE_WARNING_STATUS);
 
         assertNull(info.getAppName());
         assertNull(info.getAppVersion());
@@ -294,7 +294,7 @@ public class BaseControllerTest {
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, BRIDGE_WARNING_STATUS);
 
         mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
@@ -414,7 +414,7 @@ public class BaseControllerTest {
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, BRIDGE_WARNING_STATUS);
     }
 
     @Test
@@ -431,7 +431,7 @@ public class BaseControllerTest {
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, BRIDGE_WARNING_STATUS);
     }
 
     @Test
@@ -448,7 +448,7 @@ public class BaseControllerTest {
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, BRIDGE_WARNING_STATUS);
     }
 
     @Test
@@ -465,7 +465,7 @@ public class BaseControllerTest {
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, BRIDGE_WARNING_STATUS);
     }
 
     @Test(expected = NotAuthenticatedException.class)

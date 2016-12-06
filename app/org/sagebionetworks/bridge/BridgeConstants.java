@@ -22,14 +22,7 @@ public class BridgeConstants {
 
     public static final String BRIDGE_DEPRECATED_STATUS = "deprecated";
 
-    public static final String BRIDGE_WARNING_STATUS = "warning";
-
-    public static final String WARN_NO_USER_AGENT = BRIDGE_WARNING_STATUS
-            + ": User-Agent header is missing or invalid; filtering based on application version not available";
-
-    public static final String WARN_NO_ACCEPT_LANGUAGE = BRIDGE_WARNING_STATUS
-            + ": Accept-Language header is missing or invalid; filtering based on language not available";
-
+    public static final String BRIDGE_WARNING_STATUS = "Bridge-Warning: you're calling a deprecated endpoint; you haven't included an Accept-Language header; we can't parse your User-Agent header";
 
     public static final String SESSION_TOKEN_HEADER = "Bridge-Session";
 

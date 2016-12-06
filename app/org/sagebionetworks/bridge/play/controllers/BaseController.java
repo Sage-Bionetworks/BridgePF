@@ -263,7 +263,7 @@ public abstract class BaseController extends Controller {
 
         // if no Accept-Language header detected, we shall add an extra warning header
         Http.Response response = Http.Context.current().response();
-        response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.WARN_NO_ACCEPT_LANGUAGE);
+        response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.BRIDGE_WARNING_STATUS);
 
         return new LinkedHashSet<>();
     }
@@ -276,7 +276,7 @@ public abstract class BaseController extends Controller {
         // should set an extra header to http response as warning - we should have an user agent info for filtering to work
         if (info.equals(ClientInfo.UNKNOWN_CLIENT)) {
             Http.Response response = Http.Context.current().response();
-            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.WARN_NO_USER_AGENT);
+            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.BRIDGE_WARNING_STATUS);
         }
 
         LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);
