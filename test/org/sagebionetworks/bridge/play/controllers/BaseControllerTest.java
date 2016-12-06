@@ -133,6 +133,16 @@ public class BaseControllerTest {
     }
 
     @Test
+    public void doesNotSetWarningHeaderWhenHasUserAgent() throws Exception {
+        mockPlayContext();
+        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse, times(0)).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+    }
+
+    @Test
     public void setWarningHeaderWhenNoUserAgent() throws Exception {
         mockPlayContext();
 
@@ -395,6 +405,19 @@ public class BaseControllerTest {
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());
+    }
+
+    @Test
+    public void doesNotSetWarnHeaderWhenHasAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
+
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+
+        // verify if it does not set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse, times(0)).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
     }
 
     @Test

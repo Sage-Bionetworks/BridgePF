@@ -36,6 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
+import play.mvc.Http;
 
 public class BridgeUtils {
     
@@ -67,6 +68,16 @@ public class BridgeUtils {
             }
         }
         return template;
+    }
+
+    public static void addWarningMessage(String msg) {
+        Http.Response response = Http.Context.current().response();
+        if (response.getHeaders().containsKey(BridgeConstants.BRIDGE_API_STATUS_HEADER)) {
+            String previousWarning = response.getHeaders().get(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, previousWarning + "; " + msg);
+        } else {
+            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, msg);
+        }
     }
     
     public static String generateGuid() {

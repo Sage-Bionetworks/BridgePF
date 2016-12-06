@@ -3,11 +3,11 @@ package org.sagebionetworks.bridge;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.junit.Test;
 
@@ -16,8 +16,36 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import play.mvc.Http;
 
 public class BridgeUtilsTest {
+    private static final String TEST_WARNING_MSG = "test warning msg";
+    private static final String TEST_WARNING_MSG_2 = "test warning msg 2";
+    private static final String TEST_WARNING_MSG_COMBINED = TEST_WARNING_MSG + "; " + TEST_WARNING_MSG_2;
+    private static final Map<String, String> TEST_HEADERS;
+    static {
+        TEST_HEADERS = new HashMap<>();
+        TEST_HEADERS.put(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG);
+    }
+
+    @Test
+    public void addWarningMsgWorks() throws Exception {
+        // mock context
+        Http.Context context = mock(Http.Context.class);
+        Http.Response mockResponse = mock(Http.Response.class);
+        when(context.response()).thenReturn(mockResponse);
+        Http.Context.current.set(context);
+
+        BridgeUtils.addWarningMessage(TEST_WARNING_MSG);
+        // verify if it set warning header
+        Http.Response response = Http.Context.current().response();
+        verify(response).setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG);
+
+        // verify if it append new warning msg
+        when(response.getHeaders()).thenReturn(TEST_HEADERS);
+        BridgeUtils.addWarningMessage(TEST_WARNING_MSG_2);
+        verify(response).setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG_COMBINED);
+    }
 
     @Test
     public void templateResolverWorks() {
