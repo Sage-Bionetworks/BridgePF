@@ -4,9 +4,8 @@ import static org.apache.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.BridgeConstants.*;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
-import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import static org.junit.Assert.assertEquals;
@@ -138,7 +137,24 @@ public class BaseControllerTest {
         assertNull(info.getSdkName());
         assertNull(info.getSdkVersion());
     }
-    
+
+    @Test
+    public void setWarningHeaderWhenNoUserAgent() throws Exception {
+        mockPlayContext();
+
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
+    }
+
     @Test (expected = UnsupportedVersionException.class)
     public void testInvalidSupportedVersionThrowsException() throws Exception {
         mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
@@ -245,7 +261,11 @@ public class BaseControllerTest {
         // testing this because the rest of these tests will use ImmutableSet.of()
         assertTrue(langs instanceof LinkedHashSet); 
         assertEquals(ImmutableSet.of(), langs);
-        
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+
         mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
         langs = controller.getLanguagesFromAcceptLanguageHeader();
