@@ -4,6 +4,7 @@ import static org.apache.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.*;
 import static org.sagebionetworks.bridge.BridgeConstants.*;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -11,13 +12,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 import static org.sagebionetworks.bridge.TestUtils.newLinkedHashSet;
@@ -141,6 +135,42 @@ public class BaseControllerTest {
     @Test
     public void setWarningHeaderWhenNoUserAgent() throws Exception {
         mockPlayContext();
+
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
+    }
+
+    @Test
+    public void setWarningHeaderWhenEmptyUserAgent() throws Exception {
+        mockPlayContext();
+        mockHeader(USER_AGENT, "");
+
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
+    }
+
+    @Test
+    public void setWarningHeaderWhenNullUserAgent() throws Exception {
+        mockPlayContext();
+        mockHeader(USER_AGENT, null);
 
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
 
@@ -370,7 +400,74 @@ public class BaseControllerTest {
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());
     }
-    
+
+    @Test
+    public void setWarnHeaderWhenNoAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+
+        // with no accept language header at all, things don't break;
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet);
+        assertEquals(ImmutableSet.of(), langs);
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenEmptyAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, "");
+
+        // with no accept language header at all, things don't break;
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet);
+        assertEquals(ImmutableSet.of(), langs);
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenNullAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, null);
+
+        // with no accept language header at all, things don't break;
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet);
+        assertEquals(ImmutableSet.of(), langs);
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenInvalidAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, "ThisIsAnVvalidAcceptLanguage");
+
+        // with no accept language header at all, things don't break;
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet);
+        assertEquals(ImmutableSet.of(), langs);
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
     @Test(expected = NotAuthenticatedException.class)
     public void getSessionAuthenticatedFail() {
         UserSession session = new UserSession(new StudyParticipant.Builder().build());
