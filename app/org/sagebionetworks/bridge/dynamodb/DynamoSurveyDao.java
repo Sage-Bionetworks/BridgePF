@@ -218,6 +218,7 @@ public class DynamoSurveyDao implements SurveyDao {
         survey.setSchemaRevision(null);
         survey.setPublished(false);
         survey.setDeleted(false);
+        survey.setVersion(null);
         return saveSurvey(survey);
     }
 

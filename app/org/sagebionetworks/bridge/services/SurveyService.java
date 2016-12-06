@@ -62,7 +62,6 @@ public class SurveyService {
         checkNotNull(survey, "Survey cannot be null");
         
         survey.setGuid(BridgeUtils.generateGuid());
-        survey.setVersion(null);
         for (SurveyElement element : survey.getElements()) {
             element.setGuid(BridgeUtils.generateGuid());
         }
