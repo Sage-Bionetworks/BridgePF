@@ -14,7 +14,12 @@ public class DeprecationInterceptor implements MethodInterceptor {
     public Object invoke(MethodInvocation method) throws Throwable {
         if (method.getMethod().isAnnotationPresent(Deprecated.class)) {
             Http.Response response = Http.Context.current().response();
-            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.BRIDGE_DEPRECATED_STATUS);
+            if (response.getHeaders().containsKey(BridgeConstants.BRIDGE_API_STATUS_HEADER)) {
+                String previousWarning = response.getHeaders().get(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+                response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, previousWarning + "; " + BridgeConstants.BRIDGE_DEPRECATED_STATUS);
+            } else {
+                response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.BRIDGE_DEPRECATED_STATUS);
+            }
         }
         return method.proceed();
     }

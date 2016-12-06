@@ -263,8 +263,12 @@ public abstract class BaseController extends Controller {
 
         // if no Accept-Language header detected, we shall add an extra warning header
         Http.Response response = Http.Context.current().response();
-        response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.BRIDGE_WARNING_STATUS);
-
+        if (response.getHeaders().containsKey(BridgeConstants.BRIDGE_API_STATUS_HEADER)) {
+            String previousWarning = response.getHeaders().get(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, previousWarning + "; " + BridgeConstants.WARN_NO_ACCEPT_LANGUAGE);
+        } else {
+            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.WARN_NO_ACCEPT_LANGUAGE);
+        }
         return new LinkedHashSet<>();
     }
     
@@ -276,7 +280,12 @@ public abstract class BaseController extends Controller {
         // should set an extra header to http response as warning - we should have an user agent info for filtering to work
         if (info.equals(ClientInfo.UNKNOWN_CLIENT)) {
             Http.Response response = Http.Context.current().response();
-            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.BRIDGE_WARNING_STATUS);
+            if (response.getHeaders().containsKey(BridgeConstants.BRIDGE_API_STATUS_HEADER)) {
+                String previousWarning = response.getHeaders().get(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+                response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, previousWarning + "; " + BridgeConstants.WARN_NO_USER_AGENT);
+            } else {
+                response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, BridgeConstants.WARN_NO_USER_AGENT);
+            }
         }
 
         LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);
