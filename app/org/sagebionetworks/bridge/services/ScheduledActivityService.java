@@ -120,9 +120,9 @@ public class ScheduledActivityService {
     protected List<ScheduledActivity> updateActivitiesAndCollectSaves(List<ScheduledActivity> scheduledActivities, List<ScheduledActivity> dbActivities) {
         Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
         
-        // At this point all one-time interval tasks without times whether schedules or already persisted, have a 
-        // time of midnight, and the db activities have been processed so there is only one and we can determine 
-        // if we're adding to an existing activity record or creating a new one.
+        // Find activities that have been scheduled, but not saved. If they have been scheduled and saved,
+        // replace the scheduled activity with the database activity so the existing state is returned to 
+        // user (startedOn/finishedOn). Don't save expired tasks though.
         List<ScheduledActivity> saves = Lists.newArrayList();
         for (int i=0; i < scheduledActivities.size(); i++) {
             ScheduledActivity activity = scheduledActivities.get(i);
