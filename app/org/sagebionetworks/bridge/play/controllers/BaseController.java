@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -49,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
+import play.mvc.Http;
 import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
@@ -262,7 +262,7 @@ public abstract class BaseController extends Controller {
         }
 
         // if no Accept-Language header detected, we shall add an extra warning header
-        BridgeUtils.addWarningMessage(BridgeConstants.WARN_NO_ACCEPT_LANGUAGE);
+        addWarningMessage(BridgeConstants.WARN_NO_ACCEPT_LANGUAGE);
         return new LinkedHashSet<>();
     }
     
@@ -273,7 +273,7 @@ public abstract class BaseController extends Controller {
         // if the user agent cannot be parsed (probably due to missing user agent string or unrecognizable user agent),
         // should set an extra header to http response as warning - we should have an user agent info for filtering to work
         if (info.equals(ClientInfo.UNKNOWN_CLIENT)) {
-            BridgeUtils.addWarningMessage(BridgeConstants.WARN_NO_USER_AGENT);
+            addWarningMessage(BridgeConstants.WARN_NO_USER_AGENT);
         }
 
         LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);
@@ -394,6 +394,20 @@ public abstract class BaseController extends Controller {
             metrics.setSessionId(session.getInternalSessionToken());
             metrics.setUserId(session.getId());
             metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+        }
+    }
+
+    /**
+     * Helper method to add warning message to http header using play framework
+     * @param msg
+     */
+    public static void addWarningMessage(String msg) {
+        Http.Response response = Http.Context.current().response();
+        if (response.getHeaders().containsKey(BridgeConstants.BRIDGE_API_STATUS_HEADER)) {
+            String previousWarning = response.getHeaders().get(BridgeConstants.BRIDGE_API_STATUS_HEADER);
+            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, previousWarning + "; " + msg);
+        } else {
+            response.setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, msg);
         }
     }
 }

@@ -22,6 +22,8 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.Roles;
@@ -52,6 +54,33 @@ public class BaseControllerTest {
     
     private static final String DUMMY_JSON = createJson("{'dummy-key':'dummy-value'}");
     private static final LinkedHashSet<String> LANGUAGE_SET = newLinkedHashSet("en","fr");
+    private static final String TEST_WARNING_MSG = "test warning msg";
+    private static final String TEST_WARNING_MSG_2 = "test warning msg 2";
+    private static final String TEST_WARNING_MSG_COMBINED = TEST_WARNING_MSG + "; " + TEST_WARNING_MSG_2;
+    private static final Map<String, String> TEST_HEADERS;
+    static {
+        TEST_HEADERS = new HashMap<>();
+        TEST_HEADERS.put(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG);
+    }
+
+    @Test
+    public void addWarningMsgWorks() throws Exception {
+        // mock context
+        Http.Context context = mock(Http.Context.class);
+        Http.Response mockResponse = mock(Http.Response.class);
+        when(context.response()).thenReturn(mockResponse);
+        Http.Context.current.set(context);
+
+        BaseController.addWarningMessage(TEST_WARNING_MSG);
+        // verify if it set warning header
+        Http.Response response = Http.Context.current().response();
+        verify(response).setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG);
+
+        // verify if it append new warning msg
+        when(response.getHeaders()).thenReturn(TEST_HEADERS);
+        BaseController.addWarningMessage(TEST_WARNING_MSG_2);
+        verify(response).setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG_COMBINED);
+    }
 
     @Test
     public void testParseJsonFromText() {
