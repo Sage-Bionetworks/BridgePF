@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
@@ -124,12 +123,6 @@ public class DynamoSurveyDaoTest {
     @Test(expected = NullPointerException.class)
     public void createPreventsEmptyStudyKey() {
         testSurvey.setStudyIdentifier(null);
-        surveyDao.createSurvey(testSurvey);
-    }
-
-    @Test(expected = BridgeServiceException.class)
-    public void createPreventsRecreatingASurvey() {
-        createSurvey(testSurvey);
         surveyDao.createSurvey(testSurvey);
     }
 

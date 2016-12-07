@@ -126,12 +126,6 @@ public class DynamoSubpopulationDaoTest {
         assertEquals(deletedSubpop.getGuid(), allSubpops.get(0).getGuid());
     }
     
-    @Test(expected = BadRequestException.class)
-    public void cannotRecreateExistingObject() {
-        Subpopulation subpop = createSubpop("Name", null, null, null);
-        dao.createSubpopulation(subpop);
-    }
-
     @Test
     public void getSubpopulationsWillNotCreateDefault() {
         List<Subpopulation> subpops = dao.getSubpopulations(studyId, false, true);
