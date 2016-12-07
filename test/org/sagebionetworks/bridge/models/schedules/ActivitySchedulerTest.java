@@ -129,7 +129,7 @@ public class ActivitySchedulerTest {
         schedule2.setEventId("task:task1");
 
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusMonths(2)));
-        assertEquals(asLong("2015-04-23 00:00"), scheduledActivities.get(0).getScheduledOn().getMillis());
+        assertEquals(asLong("2015-04-23 10:00"), scheduledActivities.get(0).getScheduledOn().getMillis());
 
         scheduledActivities = schedule2.getScheduler().getScheduledActivities(plan, getContext(NOW.plusMonths(2)));
         assertEquals(0, scheduledActivities.size());
@@ -141,7 +141,7 @@ public class ActivitySchedulerTest {
         
         // One-time tasks without times specified continue to schedule at midnight.
         scheduledActivities = schedule2.getScheduler().getScheduledActivities(plan, getContext(NOW.plusMonths(2)));
-        assertEquals(activity1Event.withTime(LocalTime.MIDNIGHT), scheduledActivities.get(0).getScheduledOn());
+        assertEquals(activity1Event, scheduledActivities.get(0).getScheduledOn());
     }
     
     @Test
@@ -229,11 +229,11 @@ public class ActivitySchedulerTest {
         
         events.put("scheduledOn:task:foo", NOW.minusHours(3));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
-        assertEquals(NOW.minusHours(3).withTime(LocalTime.MIDNIGHT), scheduledActivities.get(0).getScheduledOn());
+        assertEquals(NOW.minusHours(3), scheduledActivities.get(0).getScheduledOn());
 
         events.put("scheduledOn:task:foo", NOW.plusHours(8));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
-        assertEquals(NOW.plusHours(8).withTime(LocalTime.MIDNIGHT), scheduledActivities.get(0).getScheduledOn());
+        assertEquals(NOW.plusHours(8), scheduledActivities.get(0).getScheduledOn());
     }
     
     @Test
@@ -244,11 +244,11 @@ public class ActivitySchedulerTest {
         schedule.setScheduleType(ONCE);
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
-        assertEquals(ENROLLMENT.withTime(LocalTime.MIDNIGHT).plusDays(2), scheduledActivities.get(0).getScheduledOn());
+        assertEquals(ENROLLMENT.plusDays(2), scheduledActivities.get(0).getScheduledOn());
         
         events.remove("survey:event");
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
-        assertEquals(ENROLLMENT.withTime(LocalTime.MIDNIGHT), scheduledActivities.get(0).getScheduledOn());
+        assertEquals(ENROLLMENT, scheduledActivities.get(0).getScheduledOn());
         
         // BUT this produces nothing because the system doesn't fallback to enrollment if an event has been set
         schedule.setEventId("survey:event");

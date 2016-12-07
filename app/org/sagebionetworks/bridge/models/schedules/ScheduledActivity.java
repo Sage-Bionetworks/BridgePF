@@ -64,15 +64,6 @@ public interface ScheduledActivity extends BridgeEntity {
     ScheduledActivityStatus getStatus();
 
     /**
-     * BRIDGE-1589. Carry over the schedule used to generate a ScheduledActivity in order to infer one-time tasks 
-     * that may have been duplicated as a result of scheduling from enrollment in a particular time zone. This 
-     * schedule is not persisted or returned to the user.
-     */
-    Schedule getSchedule();
-    
-    void setSchedule(Schedule schedule);
-    
-    /**
      * Get the time zone for this request. Currently this is a field on the activity and must be set to get DateTime values
      * from other fields in the class. This forces one method of converting schedule times to local times in order to
      * satisfy the API's delivery of times in the user's time zone, and may change when we convert closer to the service

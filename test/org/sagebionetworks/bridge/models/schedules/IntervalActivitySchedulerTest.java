@@ -180,7 +180,7 @@ public class IntervalActivitySchedulerTest {
         
         schedule.getTimes().clear();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
-        assertDates(scheduledActivities, "2015-04-10 00:00");
+        assertDates(scheduledActivities, "2015-04-10 11:40");
     }
     @Test
     public void onceEventStartsOnScheduleWorks() {
@@ -237,7 +237,7 @@ public class IntervalActivitySchedulerTest {
         // If we delete the times, it delays exactly 50 hours. (2 days, 2 hours)
         schedule.getTimes().clear();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(1)));
-        assertDates(scheduledActivities, "2015-04-04 00:00");
+        assertDates(scheduledActivities, "2015-04-04 11:22");
     }
     @Test
     public void onceEventDelayStartsOnScheduleWorks() {
@@ -278,7 +278,7 @@ public class IntervalActivitySchedulerTest {
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(6)));
         // Pulled back to yesterday midnight to avoid TZ changes causing activity to be unavailable
-        assertDates(scheduledActivities, "2015-04-02 00:00");
+        assertDates(scheduledActivities, "2015-04-02 12:22");
     }
     @Test
     public void onceEventDelayExpiresStartEndsOnScheduleWorks() {
@@ -300,8 +300,8 @@ public class IntervalActivitySchedulerTest {
         events.put("survey:AAA:completedOn", asDT("2015-04-06 09:22"));
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusMonths(6)));
         
-        assertEquals(asLong("2015-04-06 00:00"), scheduledActivities.get(0).getScheduledOn().getMillis());
-        assertEquals(asLong("2015-04-09 00:00"), scheduledActivities.get(0).getExpiresOn().getMillis());
+        assertEquals(asLong("2015-04-06 12:22"), scheduledActivities.get(0).getScheduledOn().getMillis());
+        assertEquals(asLong("2015-04-09 12:22"), scheduledActivities.get(0).getExpiresOn().getMillis());
     }
     @Test
     public void recurringScheduleWorks() {
