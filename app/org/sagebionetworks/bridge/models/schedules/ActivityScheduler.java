@@ -9,12 +9,8 @@ import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
-import com.google.common.collect.Lists;
-
 public abstract class ActivityScheduler {
     
-    private static final List<LocalTime> MIDNIGHT_IN_LIST = Lists.newArrayList(LocalTime.MIDNIGHT);
-
     protected final Schedule schedule;
     
     ActivityScheduler(Schedule schedule) {
@@ -45,11 +41,22 @@ public abstract class ActivityScheduler {
     }
     
     protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
-            ScheduleContext context, LocalDate localDate) {
-        
-        List<LocalTime> localTimes = (schedule.getTimes().isEmpty()) ? MIDNIGHT_IN_LIST : schedule.getTimes();
-        for (LocalTime localTime : localTimes) {
-            addScheduledActivityAtTime(scheduledActivities, plan, context, localDate, localTime);
+            ScheduleContext context, LocalDate localDate, LocalTime existingLocalTime) {
+
+        // If there are times set, use them. If there are no times set, use midnight to avoid time zone changes.  
+        // However, there are one-time schedules with expirations in a matter of hours, that must use the exact 
+        // time of day to be useful. These will break if you change time zones, but given their short lifespan, 
+        // this will be okay until we have a more robust fix.
+        if (schedule.getTimes().isEmpty()) {
+            if (schedule.hasShortExpiration()) {
+                addScheduledActivityAtTime(scheduledActivities, plan, context, localDate, existingLocalTime);
+            } else {
+                addScheduledActivityAtTime(scheduledActivities, plan, context, localDate, LocalTime.MIDNIGHT);    
+            }
+        } else {
+            for (LocalTime localTime : schedule.getTimes()) {
+                addScheduledActivityAtTime(scheduledActivities, plan, context, localDate, localTime);
+            }
         }
     }
     

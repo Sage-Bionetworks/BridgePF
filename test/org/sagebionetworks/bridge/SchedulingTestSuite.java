@@ -7,6 +7,7 @@ import org.junit.runners.Suite;
 import org.sagebionetworks.bridge.models.schedules.ActivitySchedulerTest;
 import org.sagebionetworks.bridge.models.schedules.CronActivitySchedulerTest;
 import org.sagebionetworks.bridge.models.schedules.IntervalActivitySchedulerTest;
+import org.sagebionetworks.bridge.models.schedules.OneTimeShortDurationTaskTest;
 import org.sagebionetworks.bridge.models.schedules.PersistentActivitySchedulerTest;
 import org.sagebionetworks.bridge.services.ScheduledActivityServiceDuplicateTest;
 import org.sagebionetworks.bridge.services.ScheduledActivityServiceMockTest;
@@ -27,7 +28,8 @@ import org.sagebionetworks.bridge.services.ScheduledActivityServiceRecurringTest
     CronActivitySchedulerTest.class,
     IntervalActivitySchedulerTest.class,
     PersistentActivitySchedulerTest.class,
-    ActivitySchedulerTest.class
+    ActivitySchedulerTest.class,
+    OneTimeShortDurationTaskTest.class
  })
 public class SchedulingTestSuite {
 

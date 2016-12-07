@@ -8,6 +8,8 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
+import org.joda.time.PeriodType;
+
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 
@@ -19,7 +21,8 @@ import com.google.common.collect.Lists;
 public final class Schedule implements BridgeEntity {
     
     public static final boolean isScheduleWithoutTimes(Schedule schedule) {
-        return (schedule.getTimes().isEmpty() && 
+        return (schedule.getTimes().isEmpty() &&
+                !schedule.hasShortExpiration() &&
                 schedule.getCronTrigger() == null);
     }
 
@@ -119,6 +122,14 @@ public final class Schedule implements BridgeEntity {
     }
     public Period getExpires() {
         return expires;
+    }
+    @JsonIgnore
+    public boolean hasShortExpiration() {
+        if (expires == null) {
+            return false;
+        }
+        // expiration is in hours for sure. 
+        return expires.toDurationFrom(DateTime.now()).getStandardHours() <= 24;
     }
     @JsonProperty("expires")
     public void setExpires(Period expires) {
