@@ -179,7 +179,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         if (StringUtils.isBlank(base64Str)) {
             return false;
         } else {
-            return Base64.isBase64(base64Str);
+            return Base64.isArrayByteBase64(base64Str.getBytes());
         }
     }
 
