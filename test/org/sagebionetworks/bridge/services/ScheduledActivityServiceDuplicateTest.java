@@ -267,7 +267,6 @@ public class ScheduledActivityServiceDuplicateTest {
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
         
-        log(activities, context);
         allWithinQueryWindow(activities, context);
         //assertEquals(16, activities.size());
         assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T19:43:07.951").size());
@@ -275,16 +274,6 @@ public class ScheduledActivityServiceDuplicateTest {
         assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T19:43:07.951").size());
         // NOTE: this task has reset because the timestamp is different
         // assertNotNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
-    }
-    
-    private void allWithinQueryWindow(List<ScheduledActivity> activities, ScheduleContext context) {
-        for (ScheduledActivity act : activities) {
-            DateTime windowStart = context.getNow();
-            DateTime windowEnd = context.getEndsOn();
-            
-            assertTrue(act.getExpiresOn() == null || act.getExpiresOn().isAfter(windowStart));
-            assertTrue(act.getScheduledOn().isBefore(windowEnd));
-        }
     }
     
     @Test
@@ -340,14 +329,6 @@ public class ScheduledActivityServiceDuplicateTest {
         assertNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
     }
     
-    private void log(List<ScheduledActivity> activities, ScheduleContext context) {
-        System.out.println("activities: " + activities.size());
-        System.out.println("context.getNow(): " + context.getNow() + ", endsOn: " + context.getEndsOn());
-        for (ScheduledActivity act : activities) {
-            System.out.println(act.getExpiresOn() + ": " + act.getActivity().getLabel());
-        }
-    }
-    
     @Test
     public void withNoPersistedTasksItWorksEvenOnNextDayUTC() throws Exception {
         // Mock activityEventService
@@ -374,6 +355,16 @@ public class ScheduledActivityServiceDuplicateTest {
         assertEquals("21e97935-6d64-4cd5-ae70-653caad7b2f9:2016-06-30T00:00:00.000", list.get(0).getGuid());
         // This one hasn't been started, obviously
         assertNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
+    }
+    
+    private void allWithinQueryWindow(List<ScheduledActivity> activities, ScheduleContext context) {
+        for (ScheduledActivity act : activities) {
+            DateTime windowStart = context.getNow();
+            DateTime windowEnd = context.getEndsOn();
+            
+            assertTrue(act.getExpiresOn() == null || act.getExpiresOn().isAfter(windowStart));
+            assertTrue(act.getScheduledOn().isBefore(windowEnd));
+        }
     }
     
     private List<ScheduledActivity> filterByGuid(List<ScheduledActivity> activities, String guid) {
