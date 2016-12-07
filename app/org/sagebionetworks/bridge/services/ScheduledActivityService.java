@@ -4,23 +4,18 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.joda.time.DateTime;
-import org.joda.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -81,51 +76,10 @@ public class ScheduledActivityService {
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
         List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
         
-        // BRIDGE-1589. Infer scheduled activities derived from non-recurring schedules. Adjust DB activities
-        Set<String> schedulePlansWithoutTimes = getSchedulePlansWithoutTimes(scheduledActivities);
-        adjustPersistedOneTimeActivities(context, dbActivities, schedulePlansWithoutTimes);
-        
         List<ScheduledActivity> saves = updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
         activityDao.saveActivities(saves);
         
         return orderActivities(scheduledActivities);
-    }
-    
-    /**
-     * Schedule has been held over from scheduling so we can deduce from scheduled tasks, which persisted tasks 
-     * might have the an issue with their times, or even be duplicates. Note that we do this with existing 
-     * schedule plans for performance reasons, rather than looking up each schedule plan, task by task. The 
-     * worse case scenario is a user continues to see duplicated one-time tasks. None of this applies to newer
-     * accounts where time is already fixed.
-     */
-    private Set<String> getSchedulePlansWithoutTimes(List<ScheduledActivity> scheduledActivities) {
-        if (scheduledActivities == null || scheduledActivities.isEmpty()) {
-            return Collections.emptySet();
-        }
-        return scheduledActivities.stream().filter(act -> {
-            return Schedule.isScheduleWithoutTimes(act.getSchedule());
-        }).map(ScheduledActivity::getSchedulePlanGuid).collect(toSet());
-    }
-    
-    /**
-     * One-time tasks carried over the timestamp of the enrollment event, but that time would change depending on 
-     * the time zone submitted by the user (daylight savings time changes). For one-time interval-based tasks 
-     * (including persistent tasks), that did not require a time to be set on the schedule, we now set the time 
-     * to midnight regardless of time zone. This method fixes already persisted activities rather than trying to 
-     * backfill (or until we can backfill). This will lead to setting the same scheduledOn time for duplicates 
-     * that will be removed in a later step. 
-     */
-    private void adjustPersistedOneTimeActivities(ScheduleContext context, List<ScheduledActivity> dbActivities,
-            Set<String> oneTimeSchedulePlans) {
-        for (int i=0; i < dbActivities.size(); i++) {
-            ScheduledActivity activity = dbActivities.get(i);
-            if (oneTimeSchedulePlans.contains(activity.getSchedulePlanGuid())) {
-                LocalDateTime localDateTime = DateUtils.dateTimeToMidnightUTC(activity.getScheduledOn()).toLocalDateTime();
-                String guid = activity.getActivity().getGuid() + ":" + localDateTime;
-                activity.setLocalScheduledOn(localDateTime);
-                activity.setGuid(guid);
-            }
-        }
     }
     
     public void updateScheduledActivities(String healthCode, List<ScheduledActivity> scheduledActivities) {
@@ -164,23 +118,8 @@ public class ScheduledActivityService {
     }
     
     protected List<ScheduledActivity> updateActivitiesAndCollectSaves(List<ScheduledActivity> scheduledActivities, List<ScheduledActivity> dbActivities) {
-        // BRIDGE-1589: After adjusting activity GUIDs' time portion, we will have generated db activities with duplicate 
-        // GUIDs in dbActivities, and Maps.uniqueIndex will throw an error because the GUIDs are not all unique. 
-        // Build the map manually while de-duplicating the db activities, particularly saving any copy that has 
-        // client-persisted state in it (startedOn is good enough here). 
-        // Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
         
-        Map<String, ScheduledActivity> dbMap = Maps.newHashMap();
-        for (ScheduledActivity dbActivity : dbActivities) {
-            
-            // If never put in the map, or it has a startedOn value and the existing one doesn't, add it
-            ScheduledActivity existing = dbMap.get(dbActivity.getGuid());
-            if (existing == null) {
-                dbMap.put(dbActivity.getGuid(), dbActivity);
-            } else if (existing.getStartedOn() == null && dbActivity.getStartedOn() != null) {
-                dbMap.put(dbActivity.getGuid(), dbActivity);
-            }
-        }
         // At this point all one-time interval tasks without times whether schedules or already persisted, have a 
         // time of midnight, and the db activities have been processed so there is only one and we can determine 
         // if we're adding to an existing activity record or creating a new one.
