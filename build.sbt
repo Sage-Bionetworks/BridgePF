@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   filters,
   // Sage packages
   "org.sagebionetworks" % "bridge-base" % "2.7.1",
-  "org.sagebionetworks" % "synapseJavaClient" % "131.0",
+  "org.sagebionetworks" % "synapseJavaClient" % "161.0-4-g843de2c",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",
