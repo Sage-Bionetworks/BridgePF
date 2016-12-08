@@ -38,6 +38,7 @@ public class StudyParticipantTest {
     private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
     private static final LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","fr");
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");
+    private static final DateTimeZone TIME_ZONE = DateTimeZone.forOffsetHours(4);
     private static final Map<String,String> ATTRIBUTES = ImmutableMap.<String,String>builder()
             .put("A", "B")
             .put("C", "D").build();
@@ -66,6 +67,7 @@ public class StudyParticipantTest {
         assertEquals("enabled", node.get("status").asText());
         assertEquals(CREATED_ON_UTC.toString(), node.get("createdOn").asText());
         assertEquals(STORMPATH_ID, node.get("id").asText());
+        assertEquals("+04:00", node.get("timeZone").asText());
         assertEquals("StudyParticipant", node.get("type").asText());
 
         Set<String> roleNames = Sets.newHashSet(
@@ -85,7 +87,7 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        assertEquals(17, node.size());
+        assertEquals(18, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -93,6 +95,7 @@ public class StudyParticipantTest {
         assertEquals("email@email.com", deserParticipant.getEmail());
         assertEquals("externalId", deserParticipant.getExternalId());
         assertEquals("newUserPassword", deserParticipant.getPassword());
+        assertEquals(TIME_ZONE, deserParticipant.getTimeZone());
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, deserParticipant.getSharingScope());
         assertTrue(deserParticipant.isNotifyByEmail());
         assertEquals(DATA_GROUPS, deserParticipant.getDataGroups());
@@ -145,6 +148,7 @@ public class StudyParticipantTest {
         assertEquals("email@email.com", copy.getEmail());
         assertEquals("externalId", copy.getExternalId());
         assertEquals("newUserPassword", copy.getPassword());
+        assertEquals(TIME_ZONE, copy.getTimeZone());
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, copy.getSharingScope());
         assertTrue(copy.isNotifyByEmail());
         assertEquals(DATA_GROUPS, copy.getDataGroups());
@@ -214,7 +218,8 @@ public class StudyParticipantTest {
                 .withLanguages(LANGS)
                 .withCreatedOn(CREATED_ON)
                 .withId(STORMPATH_ID)
-                .withStatus(AccountStatus.ENABLED);
+                .withStatus(AccountStatus.ENABLED)
+                .withTimeZone(TIME_ZONE);
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
         

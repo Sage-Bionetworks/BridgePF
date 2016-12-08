@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,6 +99,7 @@ public class ParticipantServiceTest {
     private static final LinkedHashSet<String> USER_LANGUAGES = (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet("de,fr");
     private static final String EMAIL = "email@email.com";
     private static final String ID = "ASDF";
+    private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
     private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put(PHONE,"123456789").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
@@ -112,7 +115,8 @@ public class ParticipantServiceTest {
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
             .withStatus(AccountStatus.DISABLED)
-            .withExternalId(USERS_HEALTH_CODE).build();
+            .withExternalId(USERS_HEALTH_CODE)
+            .withTimeZone(USER_TIME_ZONE).build();
             
     private static final StudyParticipant NO_ID_PARTICIPANT = new StudyParticipant.Builder()
             .copyOf(PARTICIPANT)
@@ -223,6 +227,7 @@ public class ParticipantServiceTest {
         assertTrue(options.get(DATA_GROUPS).contains("group2"));
         assertTrue(options.get(LANGUAGES).contains("de"));
         assertTrue(options.get(LANGUAGES).contains("fr"));
+        assertEquals("-03:00", options.get(TIME_ZONE));
         
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
@@ -386,6 +391,7 @@ public class ParticipantServiceTest {
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
         when(lookup.getStringSet(DATA_GROUPS)).thenReturn(TestUtils.newLinkedHashSet("group1","group2"));
         when(lookup.getOrderedStringSet(LANGUAGES)).thenReturn(USER_LANGUAGES);
+        when(lookup.getTimeZone(TIME_ZONE)).thenReturn(USER_TIME_ZONE);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
         // Get the fully initialized participant object (including histories)
@@ -402,6 +408,7 @@ public class ParticipantServiceTest {
         assertEquals(ID, participant.getId());
         assertEquals(AccountStatus.DISABLED, participant.getStatus());
         assertEquals(createdOn, participant.getCreatedOn());
+        assertEquals(USER_TIME_ZONE, participant.getTimeZone());
         assertEquals(USER_LANGUAGES, participant.getLanguages());
         
         assertNull(participant.getAttributes().get("attr1"));
@@ -463,7 +470,8 @@ public class ParticipantServiceTest {
         assertTrue(options.get(DATA_GROUPS).contains("group2"));
         assertTrue(options.get(LANGUAGES).contains("de"));
         assertTrue(options.get(LANGUAGES).contains("fr"));
-        assertNull(options.get(EXTERNAL_IDENTIFIER));
+        assertNull(options.get(EXTERNAL_IDENTIFIER)); // can't set this
+        assertNull(options.get(TIME_ZONE)); // can't set this
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();

@@ -340,6 +340,10 @@ public class ParticipantService {
         if (study.isExternalIdValidationEnabled()) {
             options.remove(EXTERNAL_IDENTIFIER);
         }
+        // You can't update time zone after it is set.
+        if (!isNew) {
+            options.remove(TIME_ZONE);    
+        }
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
         
         account.setFirstName(participant.getFirstName());
