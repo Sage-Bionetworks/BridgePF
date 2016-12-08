@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
@@ -131,14 +132,20 @@ public class DynamoSchedulePlanDaoTest {
     }
     
     @Test
-    public void getAllSchedulePlans() {
+    public void getAllSchedulePlansAndCopySchedulePlanWork() {
         SchedulePlan abPlan = TestUtils.getABTestSchedulePlan(studyIdentifier);
         SchedulePlan simplePlan = TestUtils.getSimpleSchedulePlan(studyIdentifier);
         
+        // This also shows, by the way, that you can copy by creating a scheduleplan
         SchedulePlan plan1 = schedulePlanDao.createSchedulePlan(studyIdentifier, abPlan);
         plansToDelete.add(new Keys(plan1.getStudyKey(), plan1.getGuid()));
         SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(studyIdentifier, simplePlan);
         plansToDelete.add(new Keys(plan2.getStudyKey(), plan2.getGuid()));
+        
+        assertNotEquals(plan1.getGuid(), plan2.getGuid());
+        assertNotEquals(plan1.getModifiedOn(), plan2.getModifiedOn());
+        assertEquals((Long)1L, plan1.getVersion());
+        assertEquals((Long)1L, plan1.getVersion());
         
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
         assertEquals(getSchedulePlanGuids(plan1, plan2), getSchedulePlanGuids(plans));

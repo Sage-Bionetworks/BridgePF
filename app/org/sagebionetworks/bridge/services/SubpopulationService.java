@@ -68,8 +68,6 @@ public class SubpopulationService {
 
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier(study.getIdentifier());
-        subpop.setVersion(null);
-        subpop.setDeleted(false);
 
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);

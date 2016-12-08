@@ -56,15 +56,19 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public Subpopulation createSubpopulation(Subpopulation subpop) {
         checkNotNull(subpop);
-        checkNotNull(subpop.getGuidString());
         checkNotNull(subpop.getStudyIdentifier());
+        
+        if (subpop.getGuid() == null) {
+            subpop.setGuidString(BridgeUtils.generateGuid());
+        }
+        subpop.setDeleted(false); 
+        subpop.setDefaultGroup(false);
+        subpop.setVersion(null);
+        subpop.setPublishedConsentCreatedOn(0L);
 
         Criteria criteria = persistCriteria(subpop);
         subpop.setCriteria(criteria);
-        
-        // these are ignored if submitted. delete remains what it was
-        subpop.setDeleted(false); 
-        subpop.setDefaultGroup(false);
+
         mapper.save(subpop);
         return subpop;
     }

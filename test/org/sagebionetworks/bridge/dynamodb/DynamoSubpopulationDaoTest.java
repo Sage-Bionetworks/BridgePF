@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -86,6 +88,30 @@ public class DynamoSubpopulationDaoTest {
         assertNotNull(savedCriteria);
         assertEquals(subpop.getCriteria().getKey(), savedCriteria.getKey());
         
+        // CREATE AGAIN - COPY
+        String guidString = savedSubpop.getGuidString();
+        savedSubpop.setDeleted(true);
+        savedSubpop.setPublishedConsentCreatedOn(100L);
+        savedSubpop.setDefaultGroup(true);
+        savedSubpop.setVersion(null);
+        savedSubpop.setGuid(null);
+        
+        Subpopulation copy = dao.createSubpopulation(savedSubpop);
+        assertNotNull(copy.getGuid());
+        assertNotEquals(guidString, copy.getGuid());
+        assertFalse(copy.isDeleted());
+        assertFalse(copy.isDefaultGroup());
+        assertEquals((Long)1L, copy.getVersion());
+        assertEquals(0L, copy.getPublishedConsentCreatedOn());
+
+        // Now restore the state of this object to proceed with further tests.
+        savedSubpop.setDeleted(false);
+        savedSubpop.setPublishedConsentCreatedOn(0L);
+        savedSubpop.setDefaultGroup(false);
+        savedSubpop.setVersion(1L);
+        savedSubpop.setGuidString(guidString);
+        savedSubpop.getCriteria().setKey("subpopulation:"+guidString);
+        
         // READ
         Subpopulation retrievedSubpop = dao.getSubpopulation(studyId, savedSubpop.getGuid());
         assertEquals(savedSubpop, retrievedSubpop);
@@ -107,9 +133,9 @@ public class DynamoSubpopulationDaoTest {
         assertEquals(new Integer(3), finalSubpop.getCriteria().getMinAppVersion(OperatingSystem.IOS));
 
         // Some further things that should be true:
-        // There's now only one subpopulation in the list
+        // There's now two subpopulation in the list (remember the copy?)
         List<Subpopulation> allSubpops = dao.getSubpopulations(studyId, false, true);
-        assertEquals(1, allSubpops.size());
+        assertEquals(2, allSubpops.size());
         
         // Logical delete works...
         dao.deleteSubpopulation(studyId, finalSubpop.getGuid(), false);
@@ -118,12 +144,17 @@ public class DynamoSubpopulationDaoTest {
         
         // ... and it hides the subpop in the query used to find subpopulations for a user
         List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false, false);
-        assertEquals(0, subpopulations.size());
+        assertEquals(1, subpopulations.size());
         
         // However, the subpopulation has not been physically deleted and can be retrieved as part of the list
         allSubpops = dao.getSubpopulations(studyId, false, true);
-        assertEquals(1, allSubpops.size());
-        assertEquals(deletedSubpop.getGuid(), allSubpops.get(0).getGuid());
+        assertEquals(2, allSubpops.size());
+        
+        long delGuidCoung = allSubpops.stream()
+                .filter(subpop -> subpop.getGuid() == deletedSubpop.getGuid())
+                .collect(Collectors.counting());
+        
+        assertEquals(deletedSubpop.getGuid(), allSubpops.get(1).getGuid());
     }
     
     @Test
