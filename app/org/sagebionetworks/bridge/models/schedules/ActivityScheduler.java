@@ -44,7 +44,8 @@ public abstract class ActivityScheduler {
             ScheduleContext context, DateTime dateTime) {
 
         if (schedule.getTimes().isEmpty()) {
-            addScheduledActivityAtTime(scheduledActivities, plan, context, dateTime.toLocalDate(), dateTime.toLocalTime());
+            DateTime localDateTime = dateTime.withZone(context.getZone());
+            addScheduledActivityAtTime(scheduledActivities, plan, context, localDateTime.toLocalDate(), localDateTime.toLocalTime());
         } else {
             for (LocalTime localTime : schedule.getTimes()) {
                 addScheduledActivityAtTime(scheduledActivities, plan, context, dateTime.toLocalDate(), localTime);
