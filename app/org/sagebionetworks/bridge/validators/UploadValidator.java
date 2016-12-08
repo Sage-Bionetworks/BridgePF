@@ -42,7 +42,7 @@ public class UploadValidator implements Validator {
             errors.rejectValue("contentMd5", "MD5 must not be empty.");
         }
         try {
-            Base64.decodeBase64(base64md5);
+            Base64.decodeBase64(base64md5.getBytes());
         } catch (Exception e) {
             errors.rejectValue("contentMd5", "MD5 is not base64 encoded.");
         }

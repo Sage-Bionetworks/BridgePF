@@ -10,6 +10,8 @@ resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-ce
 
 resolvers += "Bridge Maven repository" at "https://repo-maven.sagebridge.org/"
 
+resolvers += "Syanpse repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-releases-local/"
+
 resolvers += Resolver.mavenLocal
 
 libraryDependencies ++= Seq(
@@ -17,6 +19,7 @@ libraryDependencies ++= Seq(
   filters,
   // Sage packages
   "org.sagebionetworks" % "bridge-base" % "2.7.1",
+  "org.sagebionetworks" % "synapseJavaClient" % "161.0-4-g843de2c",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",
@@ -32,6 +35,7 @@ libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-lang3" % "3.4",
   "commons-validator" % "commons-validator" % "1.4.1",
   "commons-io" % "commons-io" % "2.4",
+  "org.apache.logging.log4j" % "log4j-api" % "2.6.1",
   // Jackson
   "com.fasterxml.jackson.core" % "jackson-annotations" % "2.7.3",
   "com.fasterxml.jackson.core" % "jackson-core" % "2.7.3",
