@@ -90,11 +90,11 @@ public class ScheduledActivityServiceOnceTest {
         }
     }
 
-
-    @Test // BRIDGE-1589
+    @Test // BRIDGE-1589. This test becomes moot when the user's time zone can't change. Once you pass 
+    // the same time zone into getContextWith2DayAdvance(PST), of course this passes.
     public void onetimeTasksScheduleCorrectlyThroughTimezoneChange() {
         List<ScheduledActivity> first = service.getScheduledActivities(getContextWith2DayAdvance(PST));
-        List<ScheduledActivity> second = service.getScheduledActivities(getContextWith2DayAdvance(MSK));
+        List<ScheduledActivity> second = service.getScheduledActivities(getContextWith2DayAdvance(PST));
         assertEquals(1, first.size());
         assertEquals(1, second.size());
         

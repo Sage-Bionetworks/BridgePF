@@ -146,11 +146,15 @@ public class ScheduledActivityService {
     
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
         Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getHealthCode());
+
+        ImmutableMap.Builder<String,DateTime> builder = new ImmutableMap.Builder<String, DateTime>();
         if (!events.containsKey(ENROLLMENT)) {
-            events = new ImmutableMap.Builder<String, DateTime>().putAll(events)
-                    .put(ENROLLMENT, context.getAccountCreatedOn()).build();
+            builder.put(ENROLLMENT, context.getAccountCreatedOn().withZone(context.getZone()));
         }
-        return events;
+        for(Map.Entry<String, DateTime> entry : events.entrySet()) {
+            builder.put(entry.getKey(), entry.getValue().withZone(context.getZone()));
+        }
+        return builder.build();
     }
     
     protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {

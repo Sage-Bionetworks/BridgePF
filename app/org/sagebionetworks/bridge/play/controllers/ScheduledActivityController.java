@@ -9,10 +9,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -82,14 +84,19 @@ public class ScheduledActivityController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         ScheduleContext.Builder builder = new ScheduleContext.Builder();
-        addEndsOnWithZone(builder, untilString, offset, daysAhead);
-        
+        DateTimeZone zone = addEndsOnWithZone(builder, untilString, offset, daysAhead);
+
+        DateTimeZone timeZone = session.getParticipant().getTimeZone();
+        if (timeZone == null) {
+            timeZone = persistTimeZone(session, zone);
+        }
+
+        builder.withTimeZone(timeZone);
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
         builder.withHealthCode(session.getHealthCode());
         builder.withUserId(session.getId());
         builder.withStudyIdentifier(session.getStudyIdentifier());
         builder.withAccountCreatedOn(session.getParticipant().getCreatedOn());
-        
         builder.withLanguages(getLanguages(session));
         builder.withClientInfo(getClientInfoFromUserAgentHeader());
         builder.withMinimumPerSchedule(getIntOrDefault(minimumPerScheduleString, 0));
@@ -106,11 +113,24 @@ public class ScheduledActivityController extends BaseController {
                 .withTimeZone(context.getZone())
                 .withStudyIdentifier(context.getCriteriaContext().getStudyIdentifier()).build();
         cacheProvider.updateRequestInfo(requestInfo);
-        
+
         return scheduledActivityService.getScheduledActivities(context);
     }
+
+    private DateTimeZone persistTimeZone(UserSession session, DateTimeZone timeZone) {
+        optionsService.setDateTimeZone(session.getStudyIdentifier(), session.getHealthCode(),
+                ParticipantOption.TIME_ZONE, timeZone);
+        
+        StudyParticipant updatedParticipant = session.getParticipant();
+        session.setParticipant(new StudyParticipant.Builder()
+                .copyOf(updatedParticipant)
+                .withTimeZone(timeZone).build());
+        updateSession(session);
+        
+        return timeZone;
+    }
     
-    private void addEndsOnWithZone(ScheduleContext.Builder builder, String untilString, String offset, String daysAhead) {
+    private DateTimeZone addEndsOnWithZone(ScheduleContext.Builder builder, String untilString, String offset, String daysAhead) {
         DateTime endsOn = null;
         DateTimeZone zone = null;
 
@@ -119,14 +139,14 @@ public class ScheduledActivityController extends BaseController {
             endsOn = DateTime.parse(untilString);
             zone = endsOn.getZone();
         } else if (StringUtils.isNotBlank(daysAhead) && StringUtils.isNotBlank(offset)) {
-            zone = DateUtils.parseZoneFromOffsetString(offset);
             int numDays = Integer.parseInt(daysAhead);
+            zone = DateUtils.parseZoneFromOffsetString(offset);
             // When querying for days, we ignore the time of day of the request and query to then end of the day.
             endsOn = DateTime.now(zone).plusDays(numDays).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
         } else {
-            throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
+            throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' parameter.");
         }
         builder.withEndsOn(endsOn);
-        builder.withTimeZone(zone);
+        return zone;
     }
 }

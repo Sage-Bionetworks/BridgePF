@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 
@@ -147,6 +148,7 @@ public class ParticipantService {
         builder.withExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
         builder.withDataGroups(lookup.getStringSet(DATA_GROUPS));
         builder.withLanguages(lookup.getOrderedStringSet(LANGUAGES));
+        builder.withTimeZone(lookup.getTimeZone(TIME_ZONE));
         builder.withFirstName(account.getFirstName());
         builder.withLastName(account.getLastName());
         builder.withEmail(account.getEmail());

@@ -90,9 +90,6 @@ public class ScheduledActivityServiceRecurringTest {
         }
     }
     
-    // WARNING: The notes here are not correct due to changes we've made in the way we test the time zone.
-    // The last day MSK seems to fall outside the scope of the tests. This needs to be fixed in later
-    // updates but we're currently addressing the duplication of tasks.
     @Test
     public void retrievalActivitiesAcrossTimeAndTimeZones() throws Exception {
         int year = DateTime.now().getYear();
@@ -123,7 +120,7 @@ public class ScheduledActivityServiceRecurringTest {
         String pst1 = DateTime.now(PST).toLocalDate().toString();
         String pst2 = DateTime.now(PST).plusDays(1).toLocalDate().toString();
         String pst3 = DateTime.now(PST).plusDays(2).toLocalDate().toString();
-        String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
+        //String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
         
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
@@ -142,11 +139,11 @@ public class ScheduledActivityServiceRecurringTest {
         // the window, over in Moscow... that is not returned because although it exists, we 
         // filter it out from the persisted activities retrieved from the db.
         activities = service.getScheduledActivities(getContextWith2DayWindow(PST));
-        assertEquals(4, activities.size());
+        assertEquals(3, activities.size());
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
         assertEquals(pst3+"T10:00:00.000-07:00", activities.get(2).getScheduledOn().toString());
-        assertEquals(pst4+"T10:00:00.000-07:00", activities.get(3).getScheduledOn().toString());
+        //assertEquals(pst4+"T10:00:00.000-07:00", activities.get(3).getScheduledOn().toString());
         
         // Dave returns to the Moscow and we move time forward a day.
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-24T03:39:57.779+03:00").getMillis());

@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -43,6 +44,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.play.controllers.ScheduledActivityController;
+import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -73,6 +75,9 @@ public class ScheduledActivityControllerTest {
     
     @Mock
     CacheProvider cacheProvider;
+    
+    @Mock
+    ParticipantOptionsService optionsService;
     
     @Mock
     Study study;
@@ -118,6 +123,7 @@ public class ScheduledActivityControllerTest {
         controller.setScheduledActivityService(scheduledActivityService);
         controller.setStudyService(studyService);
         controller.setCacheProvider(cacheProvider);
+        controller.setParticipantOptionsService(optionsService);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
         clientInfo = ClientInfo.fromUserAgentCache("App Name/4 SDK/2");
@@ -125,9 +131,36 @@ public class ScheduledActivityControllerTest {
     }
     
     @Test
-    public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
-        ArgumentCaptor<ScheduleContext> captor = ArgumentCaptor.forClass(ScheduleContext.class);
+    public void timeZoneCapturedFirstTime() throws Exception {
+        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+        controller.getScheduledActivities(null, "+03:00", "3", "5");
         
+        verify(optionsService).setDateTimeZone(TestConstants.TEST_STUDY, session.getHealthCode(),
+                ParticipantOption.TIME_ZONE, MSK);
+        assertEquals(MSK, session.getParticipant().getTimeZone());
+        
+        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        ScheduleContext context = contextCaptor.getValue();
+        assertEquals(MSK, context.getZone());
+    }
+    
+    @Test
+    public void testZoneUsedFromPersistenceWhenAvailable() throws Exception {
+        DateTimeZone UNK = DateTimeZone.forOffsetHours(4);
+        StudyParticipant updatedParticipant = new StudyParticipant.Builder()
+                .copyOf(session.getParticipant())
+                .withTimeZone(UNK).build();
+        session.setParticipant(updatedParticipant);
+        
+        controller.getScheduledActivities(null, "-07:00", "3", "5");
+        
+        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        ScheduleContext context = contextCaptor.getValue();
+        assertEquals(UNK, context.getZone());
+    }
+    
+    @Test
+    public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
         List<ScheduledActivity> list = Lists.newArrayList();
         scheduledActivityService = mock(ScheduledActivityService.class);
         when(scheduledActivityService.getScheduledActivities(any(ScheduleContext.class))).thenReturn(list);
@@ -135,9 +168,9 @@ public class ScheduledActivityControllerTest {
         
         controller.getScheduledActivities(null, "+03:00", "3", "5");
         
-        verify(scheduledActivityService).getScheduledActivities(captor.capture());
+        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         
-        ScheduleContext context = captor.getValue();
+        ScheduleContext context = contextCaptor.getValue();
         assertEquals(DateTimeZone.forOffsetHours(3), context.getZone());
         assertEquals(Sets.newHashSet("group1"), context.getCriteriaContext().getUserDataGroups());
         assertEquals(5, context.getMinimumPerSchedule());

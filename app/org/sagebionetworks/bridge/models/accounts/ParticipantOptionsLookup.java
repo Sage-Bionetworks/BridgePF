@@ -6,8 +6,11 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.json.DateUtils;
 
 /**
  * A wrapper around the JSON object that contains a participant's options. 
@@ -19,6 +22,12 @@ public class ParticipantOptionsLookup {
     public ParticipantOptionsLookup(Map<String,String> options) {
         checkNotNull(options);
         this.options = options;
+    }
+    
+    public DateTimeZone getTimeZone(ParticipantOption option) {
+        String value = options.get(option.name());
+        // This method is null-safe (returns null)
+        return DateUtils.parseZoneFromOffsetString(value);
     }
     
     public String getString(ParticipantOption option) {
