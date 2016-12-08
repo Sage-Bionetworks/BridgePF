@@ -128,13 +128,13 @@ public class StudyController extends BaseController {
         return okResult(new VersionHolder(study.getVersion()));
     }
 
-    public Result createSynapse(String userId) throws Exception {
+    public Result createSynapse(String synapseUserId) throws Exception {
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         // then create project and team and grant admin permission to current user and exporter
-        Long userIdNum = Long.parseLong(userId);
+        Long userIdNum = Long.parseLong(synapseUserId);
         studyService.createSynapseProjectTeam(userIdNum, study);
 
         return createdResult(new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
