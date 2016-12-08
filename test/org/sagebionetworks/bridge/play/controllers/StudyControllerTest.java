@@ -35,11 +35,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.studies.SynapseProjectTeamCreationHolder;
+import org.sagebionetworks.bridge.models.studies.*;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
@@ -152,7 +148,7 @@ public class StudyControllerTest {
 
     @Test
     public void canCreateSynapse() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Result result = controller.createSynapse(TEST_USER_ID);
         String synapseIds = Helpers.contentAsString(result);
@@ -164,6 +160,8 @@ public class StudyControllerTest {
         JsonNode synapse = BridgeObjectMapper.get().readTree(synapseIds);
         assertEquals(TEST_PROJECT_ID, synapse.get("projectId").asText());
         assertEquals(TEST_TEAM_ID.longValue(), synapse.get("teamId").asLong());
+        assertEquals(SynapseProjectIdTeamIdHolder.class.getName(), "org.sagebionetworks.bridge.models.studies." + synapse.get("type").asText());
+        assertEquals(201, result.status());
     }
 
     @Test

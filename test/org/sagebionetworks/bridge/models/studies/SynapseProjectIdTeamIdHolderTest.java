@@ -6,13 +6,13 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 
-public class SynapseProjectTeamCreationHolderTest {
+public class SynapseProjectIdTeamIdHolderTest {
     private static final String TEST_PROJECT_ID = "test-project-id";
     private static final Long TEST_TEAM_ID = Long.parseLong("1234");
 
     @Test
     public void serializesCorrectly() throws Exception {
-        SynapseProjectTeamCreationHolder holder = new SynapseProjectTeamCreationHolder(TEST_PROJECT_ID, TEST_TEAM_ID);
+        SynapseProjectIdTeamIdHolder holder = new SynapseProjectIdTeamIdHolder(TEST_PROJECT_ID, TEST_TEAM_ID);
 
         String synapseIds = BridgeObjectMapper.get().writeValueAsString(holder);
         JsonNode synapse = BridgeObjectMapper.get().readTree(synapseIds);

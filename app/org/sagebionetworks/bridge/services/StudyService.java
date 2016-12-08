@@ -176,9 +176,9 @@ public class StudyService {
     public Study createSynapseProjectTeam(Long userId, Study study) throws SynapseException {
         // create synapse project and team
         Team team = new Team();
-        team.setName(randomAlphanumeric(5) + "Bridge-Team");
+        team.setName(study.getName() + " Access Team");
         Project project = new Project();
-        project.setName(randomAlphanumeric(5) + "Bridge-Project");
+        project.setName(study.getName() + " Project");
 
         Team newTeam = synapseClient.createTeam(team);
 

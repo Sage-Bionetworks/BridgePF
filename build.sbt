@@ -35,6 +35,7 @@ libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-lang3" % "3.4",
   "commons-validator" % "commons-validator" % "1.4.1",
   "commons-io" % "commons-io" % "2.4",
+  "org.apache.logging.log4j" % "log4j-api" % "2.6.1",
   // Jackson
   "com.fasterxml.jackson.core" % "jackson-annotations" % "2.7.3",
   "com.fasterxml.jackson.core" % "jackson-core" % "2.7.3",
