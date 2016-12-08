@@ -51,7 +51,8 @@ import org.springframework.stereotype.Component;
 
 @Component("studyService")
 public class StudyService {
-    static final String EXPORTER_SYNAPSE_USER_ID = "3325672"; // copy-paste from website
+
+    static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
 
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
@@ -176,9 +177,9 @@ public class StudyService {
     public Study createSynapseProjectTeam(Long userId, Study study) throws SynapseException {
         // create synapse project and team
         Team team = new Team();
-        team.setName(study.getName() + " Access Team");
+        team.setName(study.getName().trim().replaceAll("[\\s\\[\\]]", "_") + "AccessTeam");
         Project project = new Project();
-        project.setName(study.getName() + " Project");
+        project.setName(study.getName().trim().replaceAll("[\\s\\[\\]]", "_") + "Project");
 
         Team newTeam = synapseClient.createTeam(team);
 

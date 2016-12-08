@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -66,7 +67,7 @@ import java.util.stream.Collectors;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyServiceTest {
 
-    private static final Long TEST_USER_ID = Long.parseLong("3348228"); // test user exists in synapse
+    private static final Long TEST_USER_ID = Long.parseLong(BridgeConfigFactory.getConfig().getTestSynapseUserId()); // test user exists in synapse
 
     @Resource
     StudyService studyService;

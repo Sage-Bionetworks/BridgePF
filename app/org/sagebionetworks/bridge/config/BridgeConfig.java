@@ -29,6 +29,9 @@ public class BridgeConfig implements Config {
 
     private static final String WEBSERVICES_URL = "webservices.url";
 
+    private static final String EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
+    private static final String TEST_SYNAPSE_USER_ID = "test.synapse.user.id";
+
     private final Config config;
 
     BridgeConfig() {
@@ -123,5 +126,13 @@ public class BridgeConfig implements Config {
     public String getHostnameWithPostfix(String identifier) {
         checkNotNull(identifier);
         return identifier + config.get(HOST_POSTFIX);
+    }
+
+    public String getExporterSynapseId() {
+        return config.get(EXPORTER_SYNAPSE_ID);
+    }
+
+    public String getTestSynapseUserId() {
+        return config.get(TEST_SYNAPSE_USER_ID);
     }
 }
