@@ -68,6 +68,8 @@ import java.util.stream.Collectors;
 public class StudyServiceTest {
 
     private static final Long TEST_USER_ID = Long.parseLong(BridgeConfigFactory.getConfig().getTestSynapseUserId()); // test user exists in synapse
+    private static final String TEST_PROJECT_ID = "testProjectId";
+    private static final Long TEST_TEAM_ID = 1234L;
 
     @Resource
     StudyService studyService;
@@ -128,6 +130,9 @@ public class StudyServiceTest {
         // integration test with synapseclient
         // pre-setup
         study = TestUtils.getValidStudy(StudyServiceTest.class);
+        // remove team and project id for succeed testing
+        study.setSynapseDataAccessTeamId(null);
+        study.setSynapseProjectId(null);
         studyService.createStudy(study);
 
         // execute
@@ -183,6 +188,24 @@ public class StudyServiceTest {
         MembershipInvtnSubmission invtnSubmission = invitationList.get(0);
         assertEquals(invtnSubmission.getInviteeId(), TEST_USER_ID.toString());
         assertEquals(invtnSubmission.getTeamId(), teamId.toString());
+    }
+
+    @Test(expected = EntityAlreadyExistsException.class)
+    public void studyHasProjectId() throws SynapseException {
+        Study testStudy = new DynamoStudy();
+        // remove team and project id for succeed testing
+        testStudy.setSynapseDataAccessTeamId(null);
+        testStudy.setSynapseProjectId(TEST_PROJECT_ID);
+        studyService.createSynapseProjectTeam(TEST_USER_ID, testStudy);
+    }
+
+    @Test(expected = EntityAlreadyExistsException.class)
+    public void studyHasTeamId() throws SynapseException {
+        Study testStudy = new DynamoStudy();
+        // remove team and project id for succeed testing
+        testStudy.setSynapseDataAccessTeamId(TEST_TEAM_ID);
+        testStudy.setSynapseProjectId(null);
+        studyService.createSynapseProjectTeam(TEST_USER_ID, testStudy);
     }
 
     @Test(expected=InvalidEntityException.class)

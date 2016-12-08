@@ -175,6 +175,10 @@ public class StudyService {
     }
 
     public Study createSynapseProjectTeam(Long userId, Study study) throws SynapseException {
+        // first check if study already has project and team ids
+        checkNewEntity(study, study.getSynapseDataAccessTeamId(), "Study already has a team id.");
+        checkNewEntity(study, study.getSynapseProjectId(), "Study already has a project id.");
+
         // create synapse project and team
         Team team = new Team();
         team.setName(study.getName().trim().replaceAll("[\\s\\[\\]]", "_") + "AccessTeam");
