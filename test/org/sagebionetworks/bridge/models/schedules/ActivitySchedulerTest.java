@@ -427,7 +427,6 @@ public class ActivitySchedulerTest {
                 .withMinimumPerSchedule(1).build();
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, minContext);
-        // It's still 5... the minimum is ignored because there are more tasks in the time window
         assertTrue(scheduledActivities.size() > 1);
     }
     
