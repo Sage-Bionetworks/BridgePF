@@ -124,6 +124,8 @@ public class StudyServiceMockTest {
     @Test
     public void createSynapseProjectTeam() throws SynapseException {
         Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
 
         AccessControlList mockAcl = new AccessControlList();
         AccessControlList mockTeamAcl = new AccessControlList();
