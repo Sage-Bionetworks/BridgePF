@@ -58,9 +58,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         checkNotNull(subpop);
         checkNotNull(subpop.getStudyIdentifier());
         
-        if (subpop.getGuid() == null) {
-            subpop.setGuidString(BridgeUtils.generateGuid());
-        }
+        subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setDeleted(false); 
         subpop.setDefaultGroup(false);
         subpop.setVersion(null);
