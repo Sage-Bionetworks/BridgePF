@@ -128,7 +128,7 @@ public class DynamoSubpopulationDaoTest {
     }
     
     @Test
-    public void copySurvey() throws Exception {
+    public void copySubpopulation() throws Exception {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setStudyIdentifier(studyId.getIdentifier());
         subpop.setGuidString(BridgeUtils.generateGuid());

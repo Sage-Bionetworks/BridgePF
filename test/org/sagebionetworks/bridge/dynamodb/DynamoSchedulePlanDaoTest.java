@@ -132,23 +132,36 @@ public class DynamoSchedulePlanDaoTest {
     }
     
     @Test
-    public void getAllSchedulePlansAndCopySchedulePlanWork() {
+    public void getAllSchedulePlans() {
         SchedulePlan abPlan = TestUtils.getABTestSchedulePlan(studyIdentifier);
         SchedulePlan simplePlan = TestUtils.getSimpleSchedulePlan(studyIdentifier);
         
-        // This also shows, by the way, that you can copy by creating a scheduleplan
         SchedulePlan plan1 = schedulePlanDao.createSchedulePlan(studyIdentifier, abPlan);
         plansToDelete.add(new Keys(plan1.getStudyKey(), plan1.getGuid()));
         SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(studyIdentifier, simplePlan);
         plansToDelete.add(new Keys(plan2.getStudyKey(), plan2.getGuid()));
         
-        assertNotEquals(plan1.getGuid(), plan2.getGuid());
-        assertNotEquals(plan1.getModifiedOn(), plan2.getModifiedOn());
-        assertEquals((Long)1L, plan1.getVersion());
-        assertEquals((Long)1L, plan1.getVersion());
-        
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
         assertEquals(getSchedulePlanGuids(plan1, plan2), getSchedulePlanGuids(plans));
+    }
+    
+    @Test
+    public void copySchedulePlan() throws Exception {
+        SchedulePlan simplePlan = TestUtils.getSimpleSchedulePlan(studyIdentifier);
+        
+        SchedulePlan plan1 = schedulePlanDao.createSchedulePlan(studyIdentifier, simplePlan);
+        plansToDelete.add(new Keys(plan1.getStudyKey(), plan1.getGuid()));
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(plan1);
+        SchedulePlan plan2 = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);        
+        plan2.setStudyKey(plan1.getStudyKey());
+        
+        SchedulePlan copy = schedulePlanDao.createSchedulePlan(studyIdentifier, plan2);
+        
+        assertNotEquals(plan1.getGuid(), copy.getGuid());
+        assertNotEquals(plan1.getModifiedOn(), copy.getModifiedOn());
+        assertEquals((Long)1L, plan1.getVersion());
+        assertEquals((Long)1L, copy.getVersion());
     }
 
     @Test
