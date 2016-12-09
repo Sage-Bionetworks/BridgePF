@@ -150,11 +150,10 @@ public class DynamoSubpopulationDaoTest {
         allSubpops = dao.getSubpopulations(studyId, false, true);
         assertEquals(2, allSubpops.size());
         
-        long delGuidCoung = allSubpops.stream()
-                .filter(subpop -> subpop.getGuid() == deletedSubpop.getGuid())
+        long delGuidCount = allSubpops.stream()
+                .filter(subpopulation -> subpopulation.getGuid().equals(deletedSubpop.getGuid()))
                 .collect(Collectors.counting());
-        
-        assertEquals(deletedSubpop.getGuid(), allSubpops.get(1).getGuid());
+        assertEquals(1L, delGuidCount);
     }
     
     @Test
