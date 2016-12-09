@@ -8,14 +8,24 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 public class ScheduleTestUtils {
-    
+
+    /**
+     * Create a DateTime from a string like "2015-05-01 20:00" in a given time zone
+     * @param string
+     * @return
+     */
+    public static DateTime asDT(String string, DateTimeZone zone) {
+        String offset = (DateTimeZone.UTC == zone) ? "Z" : zone.toString();
+        return DateTime.parse(string.replace(" ", "T") + ":00"+offset);
+    }
+
     /**
      * Create a DateTime from a string like "2015-05-01 20:00".
      * @param string
      * @return
      */
     public static DateTime asDT(String string) {
-        return DateTime.parse(string.replace(" ", "T") + ":00Z");
+        return asDT(string, DateTimeZone.UTC);
     }
     
     /**
@@ -33,10 +43,15 @@ public class ScheduleTestUtils {
      * @param activities
      * @param output
      */
-    public static void assertDates(List<ScheduledActivity> activities, String... output) {
+    public static void assertDates(List<ScheduledActivity> activities, DateTimeZone zone, String... output) {
         assertEquals(output.length, activities.size());
         for (int i=0; i < activities.size(); i++) {
-            assertEquals(new DateTime(asLong(output[i]), DateTimeZone.UTC), activities.get(i).getScheduledOn());
+            DateTime datetime = asDT(output[i], zone);
+            assertEquals(datetime, activities.get(i).getScheduledOn());
         }
+    }
+    
+    public static void assertDates(List<ScheduledActivity> activities, String... output) {
+        assertDates(activities, DateTimeZone.UTC, output);
     }
 }

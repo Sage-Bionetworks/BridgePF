@@ -65,6 +65,25 @@ public class IntervalActivitySchedulerTest {
     }
     
     @Test
+    public void onceWithoutTimesUsesLocalTime() throws Exception {
+        Schedule schedule = new Schedule();
+        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setExpires("P2M");
+        
+        ScheduleContext context= new ScheduleContext.Builder()
+                .withStudyIdentifier(TEST_STUDY)
+                .withTimeZone(DateTimeZone.forOffsetHours(-7))
+                .withEndsOn(ENROLLMENT.plusDays(2))
+                .withHealthCode("AAA")
+                .withEvents(events).build();
+        
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        
+        assertDates(scheduledActivities, DateTimeZone.forOffsetHours(-07), "2015-03-23T03:00");
+    }
+    
+    @Test
     public void onceScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         
