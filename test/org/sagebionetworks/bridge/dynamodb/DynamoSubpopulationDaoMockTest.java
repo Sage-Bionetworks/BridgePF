@@ -88,8 +88,6 @@ public class DynamoSubpopulationDaoMockTest {
         dao.createSubpopulation(subpop);
         
         Criteria criteria = subpop.getCriteria();
-        assertEquals(CRITERIA, criteria);
-        
         verify(criteriaDao).createOrUpdateCriteria(criteria);
     }
     
