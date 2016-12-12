@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
@@ -142,6 +143,26 @@ public class DynamoSchedulePlanDaoTest {
         
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
         assertEquals(getSchedulePlanGuids(plan1, plan2), getSchedulePlanGuids(plans));
+    }
+    
+    @Test
+    public void copySchedulePlan() throws Exception {
+        SchedulePlan simplePlan = TestUtils.getSimpleSchedulePlan(studyIdentifier);
+        
+        SchedulePlan plan1 = schedulePlanDao.createSchedulePlan(studyIdentifier, simplePlan);
+        plansToDelete.add(new Keys(plan1.getStudyKey(), plan1.getGuid()));
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(plan1);
+        SchedulePlan plan2 = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);        
+        plan2.setStudyKey(plan1.getStudyKey());
+        
+        SchedulePlan copy = schedulePlanDao.createSchedulePlan(studyIdentifier, plan2);
+        plansToDelete.add(new Keys(copy.getStudyKey(), copy.getGuid()));
+        
+        assertNotEquals(plan1.getGuid(), copy.getGuid());
+        assertNotEquals(plan1.getModifiedOn(), copy.getModifiedOn());
+        assertEquals((Long)1L, plan1.getVersion());
+        assertEquals((Long)1L, copy.getVersion());
     }
 
     @Test

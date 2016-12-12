@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -141,6 +142,37 @@ public class SurveyServiceTest {
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException enfe) {
             // expected exception
+        }
+    }
+    
+    @Test
+    public void copySurvey() throws Exception {
+        Survey survey = surveyService.createSurvey(testSurvey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
+        // mess with some fields
+        survey.setDeleted(true);
+        survey.setPublished(true);
+        
+        // Make a copy with all the same data:
+        String json = BridgeObjectMapper.get().writeValueAsString(survey);
+        Survey survey2 = BridgeObjectMapper.get().readValue(json, Survey.class);
+        // This is JsonIgnored, so add it back.
+        survey2.setStudyIdentifier(survey.getStudyIdentifier());
+        
+        survey2 = surveyService.createSurvey(survey2);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
+        
+        assertNotEquals(survey.getGuid(), survey2.getGuid());
+        assertNotEquals(survey.getCreatedOn(), survey2.getCreatedOn());
+        assertNotEquals(survey.getModifiedOn(), survey2.getModifiedOn());
+        assertEquals((Long)1L, survey.getVersion());
+        assertEquals((Long)1L, survey2.getVersion());
+        assertFalse(survey2.isDeleted());
+        assertFalse(survey2.isPublished());
+        for (int i=0; i < survey.getElements().size(); i++) {
+            SurveyElement el1 = survey.getElements().get(i);
+            SurveyElement el2 = survey2.getElements().get(i);
+            assertNotEquals(el1.getGuid(), el2.getGuid());
         }
     }
 
