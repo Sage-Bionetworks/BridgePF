@@ -7,10 +7,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMappingException;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshaller;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -52,7 +52,7 @@ public class DynamoUploadSchema implements UploadSchema {
     private Long version;
     
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = FieldDefinitionListMarshaller.class)
+    @DynamoDBTypeConverted(converter = FieldDefinitionListMarshaller.class)
     @Override
     public List<UploadFieldDefinition> getFieldDefinitions() {
         return fieldDefList;
@@ -147,7 +147,7 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
     @Override
     public UploadSchemaType getSchemaType() {
         return schemaType;
@@ -216,24 +216,22 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** Custom DynamoDB marshaller for the field definition list. This uses Jackson to convert to and from JSON. */
-    public static class FieldDefinitionListMarshaller implements DynamoDBMarshaller<List<UploadFieldDefinition>> {
+    public static class FieldDefinitionListMarshaller implements DynamoDBTypeConverter<String,List<UploadFieldDefinition>> {
         /** {@inheritDoc} */
         @Override
-        public String marshall(List<UploadFieldDefinition> fieldDefList) {
+        public String convert(List<UploadFieldDefinition> fieldDefList) {
             try {
-                return BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(
-                        fieldDefList);
+                return BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(fieldDefList);
             } catch (JsonProcessingException ex) {
                 throw new DynamoDBMappingException(ex);
             }
         }
-
         /** {@inheritDoc} */
         @Override
-        public List<UploadFieldDefinition> unmarshall(Class<List<UploadFieldDefinition>> clazz, String json) {
+        public List<UploadFieldDefinition> unconvert(String json) {
             try {
-                return BridgeObjectMapper.get().readValue(json,
-                        new TypeReference<List<UploadFieldDefinition>>() {});
+                return BridgeObjectMapper.get().readValue(json, new TypeReference<List<UploadFieldDefinition>>() {
+                });
             } catch (IOException ex) {
                 throw new DynamoDBMappingException(ex);
             }

@@ -17,8 +17,8 @@ import org.sagebionetworks.bridge.models.Criteria;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -92,7 +92,7 @@ public final class DynamoCriteria implements Criteria {
     
     @Override
     @DynamoDBAttribute
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     public Set<String> getAllOfGroups() {
         return allOfGroups;
     }
@@ -101,7 +101,7 @@ public final class DynamoCriteria implements Criteria {
     }
     @Override
     @DynamoDBAttribute
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     public Set<String> getNoneOfGroups() {
         return noneOfGroups;
     }

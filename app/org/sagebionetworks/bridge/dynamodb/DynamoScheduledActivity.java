@@ -19,9 +19,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -106,7 +106,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
      * localized using the caller's time zone.
      */
     @DynamoDBAttribute
-    @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
+    @DynamoDBTypeConverted(converter = LocalDateTimeMarshaller.class)
     @JsonIgnore
     public LocalDateTime getLocalScheduledOn() {
         return localScheduledOn;
@@ -122,7 +122,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
      * localized using the caller's time zone.
      */
     @DynamoDBAttribute
-    @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
+    @DynamoDBTypeConverted(converter = LocalDateTimeMarshaller.class)
     @JsonIgnore
     public LocalDateTime getLocalExpiresOn() {
         return localExpiresOn;
@@ -204,7 +204,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         this.finishedOn = finishedOn;
     }
 
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @JsonIgnore
     public ObjectNode getData() {
         ObjectNode node = JsonNodeFactory.instance.objectNode();

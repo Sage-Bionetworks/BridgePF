@@ -6,18 +6,18 @@ import org.junit.Test;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class EnumMarshallerTest {
-    private static final EnumMarshaller MARSHALLER = new EnumMarshaller();
+    private static final EnumMarshaller MARSHALLER = new EnumMarshaller(TestEnum.class);
 
     @Test
     public void testMarshall() {
-        assertEquals("FOO", MARSHALLER.marshall(TestEnum.FOO));
-        assertEquals("BAR", MARSHALLER.marshall(TestEnum.BAR));
+        assertEquals("FOO", MARSHALLER.convert(TestEnum.FOO));
+        assertEquals("BAR", MARSHALLER.convert(TestEnum.BAR));
     }
 
     @Test
     public void testUnmarshall() {
-        assertEquals(TestEnum.FOO, MARSHALLER.unmarshall((Class) TestEnum.class, "FOO"));
-        assertEquals(TestEnum.BAR, MARSHALLER.unmarshall((Class) TestEnum.class, "BAR"));
+        assertEquals(TestEnum.FOO, MARSHALLER.unconvert("FOO"));
+        assertEquals(TestEnum.BAR, MARSHALLER.unconvert("BAR"));
     }
 
     private static enum TestEnum {

@@ -5,9 +5,9 @@ import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -72,7 +72,7 @@ public class DynamoSurveyElement implements SurveyElement {
      * DynamoDB's SDK for Java is not a complete ORM solution that supports mapping multiple 
      * inheritance.
      */
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @DynamoDBAttribute
     public JsonNode getData() {
         return data;
