@@ -30,8 +30,8 @@ public class DynamoScheduledActivityTest {
 
     @Test
     public void equalsHashCode() {
-        EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS)
-                .allFieldsShouldBeUsedExcept("schedule").verify();
+        EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
+                .verify();
     }
 
     @Test

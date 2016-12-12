@@ -4,21 +4,14 @@ import static org.apache.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.*;
+import static org.sagebionetworks.bridge.BridgeConstants.*;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
-import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 import static org.sagebionetworks.bridge.TestUtils.newLinkedHashSet;
@@ -29,6 +22,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.Roles;
@@ -59,6 +53,33 @@ public class BaseControllerTest {
     
     private static final String DUMMY_JSON = createJson("{'dummy-key':'dummy-value'}");
     private static final LinkedHashSet<String> LANGUAGE_SET = newLinkedHashSet("en","fr");
+    private static final String TEST_WARNING_MSG = "test warning msg";
+    private static final String TEST_WARNING_MSG_2 = "test warning msg 2";
+    private static final String TEST_WARNING_MSG_COMBINED = TEST_WARNING_MSG + "; " + TEST_WARNING_MSG_2;
+    private static final Map<String, String> TEST_HEADERS;
+    static {
+        TEST_HEADERS = new HashMap<>();
+        TEST_HEADERS.put(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG);
+    }
+
+    @Test
+    public void addWarningMsgWorks() throws Exception {
+        // mock context
+        Http.Context context = mock(Http.Context.class);
+        Http.Response mockResponse = mock(Http.Response.class);
+        when(context.response()).thenReturn(mockResponse);
+        Http.Context.current.set(context);
+
+        BaseController.addWarningMessage(TEST_WARNING_MSG);
+        // verify if it set warning header
+        Http.Response response = Http.Context.current().response();
+        verify(response).setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG);
+
+        // verify if it append new warning msg
+        when(response.getHeaders()).thenReturn(TEST_HEADERS);
+        BaseController.addWarningMessage(TEST_WARNING_MSG_2);
+        verify(response).setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG_COMBINED);
+    }
 
     @Test
     public void testParseJsonFromText() {
@@ -138,7 +159,69 @@ public class BaseControllerTest {
         assertNull(info.getSdkName());
         assertNull(info.getSdkVersion());
     }
-    
+
+    @Test
+    public void doesNotSetWarningHeaderWhenHasUserAgent() throws Exception {
+        mockPlayContext();
+        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse, times(0)).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+    }
+
+    @Test
+    public void setWarningHeaderWhenNoUserAgent() throws Exception {
+        mockPlayContext();
+
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
+    }
+
+    @Test
+    public void setWarningHeaderWhenEmptyUserAgent() throws Exception {
+        mockPlayContext();
+        mockHeader(USER_AGENT, "");
+
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
+    }
+
+    @Test
+    public void setWarningHeaderWhenNullUserAgent() throws Exception {
+        mockPlayContext();
+        mockHeader(USER_AGENT, null);
+
+        ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
+
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
+    }
+
     @Test (expected = UnsupportedVersionException.class)
     public void testInvalidSupportedVersionThrowsException() throws Exception {
         mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
@@ -245,7 +328,7 @@ public class BaseControllerTest {
         // testing this because the rest of these tests will use ImmutableSet.of()
         assertTrue(langs instanceof LinkedHashSet); 
         assertEquals(ImmutableSet.of(), langs);
-        
+
         mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
         langs = controller.getLanguagesFromAcceptLanguageHeader();
@@ -350,7 +433,84 @@ public class BaseControllerTest {
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());
     }
-    
+
+    @Test
+    public void doesNotSetWarnHeaderWhenHasAcceptLanguage() throws Exception {
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
+
+        // verify if it does not set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse, times(0)).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenNoAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+
+        // with no accept language header at all, things don't break;
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet);
+        assertEquals(ImmutableSet.of(), langs);
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenEmptyAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, "");
+
+        // with no accept language header at all, things don't break;
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet);
+        assertEquals(ImmutableSet.of(), langs);
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenNullAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, null);
+
+        // with no accept language header at all, things don't break;
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet);
+        assertEquals(ImmutableSet.of(), langs);
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenInvalidAcceptLanguage() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        mockPlayContext();
+        mockHeader(ACCEPT_LANGUAGE, "ThisIsAnVvalidAcceptLanguage");
+
+        // with no accept language header at all, things don't break;
+        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        // testing this because the rest of these tests will use ImmutableSet.of()
+        assertTrue(langs instanceof LinkedHashSet);
+        assertEquals(ImmutableSet.of(), langs);
+
+        // verify if it set warning header
+        Http.Response mockResponse = BaseController.response();
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
     @Test(expected = NotAuthenticatedException.class)
     public void getSessionAuthenticatedFail() {
         UserSession session = new UserSession(new StudyParticipant.Builder().build());

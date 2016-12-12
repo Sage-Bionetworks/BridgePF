@@ -9,12 +9,8 @@ import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
-import com.google.common.collect.Lists;
-
 public abstract class ActivityScheduler {
     
-    private static final List<LocalTime> MIDNIGHT_IN_LIST = Lists.newArrayList(LocalTime.MIDNIGHT);
-
     protected final Schedule schedule;
     
     ActivityScheduler(Schedule schedule) {
@@ -45,11 +41,15 @@ public abstract class ActivityScheduler {
     }
     
     protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
-            ScheduleContext context, LocalDate localDate) {
-        
-        List<LocalTime> localTimes = (schedule.getTimes().isEmpty()) ? MIDNIGHT_IN_LIST : schedule.getTimes();
-        for (LocalTime localTime : localTimes) {
-            addScheduledActivityAtTime(scheduledActivities, plan, context, localDate, localTime);
+            ScheduleContext context, DateTime dateTime) {
+
+        if (schedule.getTimes().isEmpty()) {
+            DateTime localDateTime = dateTime.withZone(context.getZone());
+            addScheduledActivityAtTime(scheduledActivities, plan, context, localDateTime.toLocalDate(), localDateTime.toLocalTime());
+        } else {
+            for (LocalTime localTime : schedule.getTimes()) {
+                addScheduledActivityAtTime(scheduledActivities, plan, context, dateTime.toLocalDate(), localTime);
+            }
         }
     }
     
@@ -70,7 +70,6 @@ public abstract class ActivityScheduler {
                     schActivity.setLocalScheduledOn(localDate.toLocalDateTime(localTime));
                     schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime));
                     schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
-                    schActivity.setSchedule(schedule);
                     if (expiresOn != null) {
                         schActivity.setLocalExpiresOn(expiresOn);
                     }

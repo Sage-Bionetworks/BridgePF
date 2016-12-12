@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
@@ -106,7 +107,7 @@ public class StudyController extends BaseController {
         return ok(Study.STUDY_WRITER.writeValueAsString(study));
     }
 
-    // You can get a truncated view of studies with either format=summary or summary=true; 
+    // You can get a truncated view of studies with either format=summary or summary=true;
     // the latter allows us to make this a boolean flag in the Java client libraries.
     public Result getAllStudies(String format, String summary) throws Exception {
         List<Study> studies = studyService.getStudies();
@@ -125,6 +126,18 @@ public class StudyController extends BaseController {
         Study study = parseJson(request(), Study.class);
         study = studyService.createStudy(study);
         return okResult(new VersionHolder(study.getVersion()));
+    }
+
+    public Result createSynapse(String synapseUserId) throws Exception {
+        // first get current study
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        // then create project and team and grant admin permission to current user and exporter
+        Long userIdNum = Long.parseLong(synapseUserId);
+        studyService.createSynapseProjectTeam(userIdNum, study);
+
+        return createdResult(new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
     }
 
     public Result deleteStudy(String identifier) throws Exception {
