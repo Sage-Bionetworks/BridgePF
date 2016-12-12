@@ -157,6 +157,7 @@ public class DynamoSchedulePlanDaoTest {
         plan2.setStudyKey(plan1.getStudyKey());
         
         SchedulePlan copy = schedulePlanDao.createSchedulePlan(studyIdentifier, plan2);
+        plansToDelete.add(new Keys(copy.getStudyKey(), copy.getGuid()));
         
         assertNotEquals(plan1.getGuid(), copy.getGuid());
         assertNotEquals(plan1.getModifiedOn(), copy.getModifiedOn());
