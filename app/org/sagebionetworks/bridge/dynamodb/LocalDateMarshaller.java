@@ -8,6 +8,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 /**
  * DynamoDB marshaller for JodaTime LocalDate (because the built-in ones don't work very well). This simply marshalls
  * to and from a simple YYYY-MM-DD format.
+ * 
+ * These converters are supposed to be "null-safe", see:
+ * http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/dynamodbv2/datamodeling/DynamoDBTypeConverted.html
  */
 public class LocalDateMarshaller implements DynamoDBTypeConverter<String,LocalDate> {
     /** {@inheritDoc} */

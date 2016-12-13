@@ -9,6 +9,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
+/**
+ * These converters are supposed to be "null-safe", see:
+ * http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/dynamodbv2/datamodeling/DynamoDBTypeConverted.html
+ */
 public class JsonNodeMarshaller implements DynamoDBTypeConverter<String,JsonNode> {
 
     @Override

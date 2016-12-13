@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-@SuppressWarnings({ "rawtypes", "unchecked" })
 public class EnumMarshallerTest {
     private static final EnumMarshaller MARSHALLER = new EnumMarshaller(TestEnum.class);
 

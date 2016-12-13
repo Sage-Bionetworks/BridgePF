@@ -8,6 +8,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
  * specific enumeration type is passed in during construction by DynamoDB, when 
  * this converter is discovered through the @DynamoDBTypeConverted annotation. 
  * </p>
+ * <p>
+ * These converters are supposed to be "null-safe", see:
+ * http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/dynamodbv2/datamodeling/DynamoDBTypeConverted.html
+ * </p>
  */
 @SuppressWarnings("rawtypes")
 public class EnumMarshaller implements DynamoDBTypeConverter<String,Enum> {

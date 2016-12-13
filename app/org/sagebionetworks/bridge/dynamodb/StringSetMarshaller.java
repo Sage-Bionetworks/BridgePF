@@ -12,6 +12,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Marshalls Set<String> values JSON when persisting using DynamoDB. Without this annotation, 
  * DynamoDB throws errors on empty string set fields.
+ * 
+ * These converters are supposed to be "null-safe", see:
+ * http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/dynamodbv2/datamodeling/DynamoDBTypeConverted.html
  */
 public class StringSetMarshaller implements DynamoDBTypeConverter<String,Set<String>> {
 
