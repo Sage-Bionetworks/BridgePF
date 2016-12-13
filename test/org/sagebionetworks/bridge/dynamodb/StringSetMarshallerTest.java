@@ -7,6 +7,8 @@ import java.util.TreeSet;
 
 import org.junit.Test;
 
+import com.google.common.collect.Sets;
+
 public class StringSetMarshallerTest {
     private static final StringSetMarshaller MARSHALLER = new StringSetMarshaller();
     
@@ -23,6 +25,15 @@ public class StringSetMarshallerTest {
         Set<String> deser = MARSHALLER.unconvert(ser);
         
         assertEquals(orderedSet, deser);
+    }
+    
+    @Test
+    public void serializeEmptySet() {
+        String ser = MARSHALLER.convert(Sets.newHashSet());
+        assertEquals("[]", ser);
+        
+        Set<String> deser = MARSHALLER.unconvert(ser);
+        assertEquals(Sets.newHashSet(), deser);
     }
 
 }
