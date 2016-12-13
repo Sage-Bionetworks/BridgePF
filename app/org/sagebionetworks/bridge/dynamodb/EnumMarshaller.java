@@ -20,8 +20,8 @@ public class EnumMarshaller implements DynamoDBTypeConverter<String,Enum> {
 
     /** {@inheritDoc} */
     @Override
-    public String convert(Enum e) {
-        return e.name();
+    public String convert(Enum enumValue) {
+        return enumValue.name();
     }
 
     /** {@inheritDoc} */

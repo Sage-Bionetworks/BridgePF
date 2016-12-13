@@ -217,6 +217,10 @@ public class DynamoUploadSchema implements UploadSchema {
 
     /** Custom DynamoDB marshaller for the field definition list. This uses Jackson to convert to and from JSON. */
     public static class FieldDefinitionListMarshaller implements DynamoDBTypeConverter<String,List<UploadFieldDefinition>> {
+        
+        private static final TypeReference<List<UploadFieldDefinition>> FIELD_LIST_TYPE = new TypeReference<List<UploadFieldDefinition>>() {
+        };
+        
         /** {@inheritDoc} */
         @Override
         public String convert(List<UploadFieldDefinition> fieldDefList) {
@@ -230,8 +234,7 @@ public class DynamoUploadSchema implements UploadSchema {
         @Override
         public List<UploadFieldDefinition> unconvert(String json) {
             try {
-                return BridgeObjectMapper.get().readValue(json, new TypeReference<List<UploadFieldDefinition>>() {
-                });
+                return BridgeObjectMapper.get().readValue(json, FIELD_LIST_TYPE);
             } catch (IOException ex) {
                 throw new DynamoDBMappingException(ex);
             }
