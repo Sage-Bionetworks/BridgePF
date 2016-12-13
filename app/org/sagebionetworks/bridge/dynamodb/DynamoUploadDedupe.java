@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
@@ -79,7 +79,7 @@ public class DynamoUploadDedupe {
      */
     @DynamoDBIndexHashKey(attributeName = "uploadRequestedDate",
             globalSecondaryIndexName = "uploadRequestedDate-index")
-    @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
+    @DynamoDBTypeConverted(converter = LocalDateMarshaller.class)
     @SuppressWarnings("unused")
     public LocalDate getUploadRequestedDate() {
         return uploadRequestedDate;

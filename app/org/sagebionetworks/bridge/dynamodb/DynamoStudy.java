@@ -15,8 +15,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -202,7 +203,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
     public Set<String> getUserProfileAttributes() {
         return profileAttributes;
@@ -214,7 +215,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
     public Set<String> getTaskIdentifiers() {
         return taskIdentifiers;
@@ -226,7 +227,7 @@ public final class DynamoStudy implements Study {
     }
     
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
     public Set<String> getDataGroups() {
         return dataGroups;
@@ -238,7 +239,7 @@ public final class DynamoStudy implements Study {
     }
     
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = PasswordPolicyMarshaller.class)
+    @DynamoDBTypeConvertedJson
     @Override
     public PasswordPolicy getPasswordPolicy() {
         return passwordPolicy;
@@ -250,7 +251,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = EmailTemplateMarshaller.class)
+    @DynamoDBTypeConvertedJson
     @Override
     public EmailTemplate getVerifyEmailTemplate() {
         return verifyEmailTemplate;
@@ -262,7 +263,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = EmailTemplateMarshaller.class)
+    @DynamoDBTypeConvertedJson
     @Override
     public EmailTemplate getResetPasswordTemplate() {
         return resetPasswordTemplate;
