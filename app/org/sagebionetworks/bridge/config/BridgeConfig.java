@@ -3,6 +3,10 @@ package org.sagebionetworks.bridge.config;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,12 +40,19 @@ public class BridgeConfig implements Config {
 
     BridgeConfig() {
         final ClassLoader classLoader = BridgeConfig.class.getClassLoader();
-        final Path templateConfig = Paths.get(classLoader.getResource(TEMPLATE_CONFIG).getPath());
+
+
         final Path localConfig = Paths.get(LOCAL_CONFIG);
         try {
+            // see http://stackoverflow.com/questions/6164448/convert-url-to-normal-windows-filename-java
+            // required for windows
+            final Path templateConfig = Paths.get(classLoader.getResource(TEMPLATE_CONFIG).toURI());
+
             config = Files.exists(localConfig) ? new PropertiesConfig(templateConfig, localConfig)
                     : new PropertiesConfig(templateConfig);
         } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
