@@ -9,11 +9,13 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.ConsentSignatureValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -25,8 +27,18 @@ public final class ConsentSignature implements BridgeEntity {
 
     public static final ObjectWriter SIGNATURE_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
-            SimpleBeanPropertyFilter.serializeAllExcept("signedOn", "consentCreatedOn")));
-
+            SimpleBeanPropertyFilter.serializeAllExcept("signedOn", "consentCreatedOn", "withdrewOn")));
+    
+    // Can't create a custom ObjectReader, in these cases we create a statis forJSON method.
+    public static ConsentSignature fromJSON(JsonNode node) {
+        return new ConsentSignature.Builder()
+                .withName(JsonUtils.asText(node, "name"))
+                .withBirthdate(JsonUtils.asText(node, "birthdate"))
+                .withImageData(JsonUtils.asText(node, "imageData"))
+                .withImageMimeType(JsonUtils.asText(node, "imageMimeType"))
+                .build();
+    }
+    
     private static final ConsentSignatureValidator VALIDATOR = new ConsentSignatureValidator();
 
     private final @Nonnull String name;
