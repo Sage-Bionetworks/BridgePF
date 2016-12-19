@@ -41,19 +41,22 @@ public class BridgeConfig implements Config {
     BridgeConfig() {
         final ClassLoader classLoader = BridgeConfig.class.getClassLoader();
 
+        final Path templateConfig;
+        try {
+            // URL -> URI -> Path is safer, and Windows doesn't work without it
+            // see http://stackoverflow.com/questions/6164448/convert-url-to-normal-windows-filename-java
+            templateConfig =
+                    Paths.get(classLoader.getResource(TEMPLATE_CONFIG).toURI());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Error loading config from classpath resource: " + CONFIG_FILE, e);
+        }
 
         final Path localConfig = Paths.get(LOCAL_CONFIG);
         try {
-            // see http://stackoverflow.com/questions/6164448/convert-url-to-normal-windows-filename-java
-            // required for windows
-            final Path templateConfig = Paths.get(classLoader.getResource(TEMPLATE_CONFIG).toURI());
-
             config = Files.exists(localConfig) ? new PropertiesConfig(templateConfig, localConfig)
                     : new PropertiesConfig(templateConfig);
         } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error loading config from local file: " + localConfig, e);
         }
     }
 
