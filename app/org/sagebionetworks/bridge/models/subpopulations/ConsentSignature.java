@@ -29,7 +29,7 @@ public final class ConsentSignature implements BridgeEntity {
             new SimpleFilterProvider().addFilter("filter",
             SimpleBeanPropertyFilter.serializeAllExcept("signedOn", "consentCreatedOn", "withdrewOn")));
     
-    // Can't create a custom ObjectReader, in these cases we create a statis forJSON method.
+    // Can't create a custom ObjectReader, in these cases we create a static forJSON method.
     public static ConsentSignature fromJSON(JsonNode node) {
         return new ConsentSignature.Builder()
                 .withName(JsonUtils.asText(node, "name"))
