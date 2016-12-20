@@ -162,7 +162,7 @@ DELETE /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalI
 GET    /v3/studies/:studyId/surveys/published                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)
 GET    /v3/studies/:studyId/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByStudyAndSchemaAndRev(studyId: String, schemaId: String, revision: Int)
 DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchema(studyId: String, schemaId: String)
-GET    /v3/reports/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.getPublicStudyReport(studyId: String, identifier: String, startDate: String, endDate: String)
+GET    /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.getPublicStudyReport(studyId: String, identifier: String, startDate: String, endDate: String)
 POST   /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.saveStudyReportForSpecifiedStudy(studyId: String, identifier: String)
 GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null)
 
