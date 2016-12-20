@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
@@ -25,9 +26,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
@@ -91,6 +92,9 @@ public class ReportControllerTest {
     @Captor
     ArgumentCaptor<ReportData> reportDataCaptor;
     
+    @Captor
+    ArgumentCaptor<ReportIndex> reportDataIndex;
+    
     ReportController controller;
     
     UserSession session;
@@ -129,16 +133,16 @@ public class ReportControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(session).when(controller).getAuthenticatedSession(Roles.WORKER);
         
-        ReportIndex index = new DynamoReportIndex();
+        ReportIndex index = ReportIndex.create();
         index.setIdentifier("fofo");
         ReportTypeResourceList<? extends ReportIndex> list = new ReportTypeResourceList<>(
                 Lists.newArrayList(index), ReportType.STUDY);
-        doReturn(list).when(mockReportService).getReportIndices(eq(TEST_STUDY), eq(ReportType.STUDY));
+        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
         
-        index = new DynamoReportIndex();
+        index = ReportIndex.create();
         index.setIdentifier("fofo");
         list = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
-        doReturn(list).when(mockReportService).getReportIndices(eq(TEST_STUDY), eq(ReportType.PARTICIPANT));
+        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     
     private void setupContext() throws Exception {
@@ -400,6 +404,7 @@ public class ReportControllerTest {
         controller.deleteParticipantReportRecord(REPORT_ID, "bar", "2014-05-10");
     }
     
+    @Test
     public void adminCanDeleteParticipantIndex() {
         StudyParticipant regularUser = new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
@@ -410,8 +415,76 @@ public class ReportControllerTest {
     }
     
     @Test(expected = UnauthorizedException.class)
-    public void nonAdminCannotDeleteParticipantIndex() {
-        controller.deleteParticipantReportIndex(REPORT_ID);
+    public void nonAdminCannotDeleteParticipantIndex() throws Exception {
+        Result result = controller.deleteParticipantReportIndex(REPORT_ID);
+        assertResult(result);
+    }
+    
+    @Test
+    public void canUpdateStudyReportIndex() throws Exception {
+        TestUtils.mockPlayContextWithJson("{\"public\":true}");
+        
+        Result result = controller.updateStudyReportIndex(REPORT_ID);
+        
+        verify(mockReportService).updateReportIndex(eq(ReportType.STUDY), reportDataIndex.capture());
+        ReportIndex index = reportDataIndex.getValue();
+        assertTrue(index.isPublic());
+        assertEquals(REPORT_ID, index.getIdentifier());
+        assertEquals("api:STUDY", index.getKey());
+        
+        TestUtils.assertResult(result, 200, "Report index updated.");
+    }
+    
+    @Test
+    public void canUpdateParticipantReportIndex() throws Exception {
+        TestUtils.mockPlayContextWithJson("{\"public\":true}");
+        
+        Result result = controller.updateParticipantReportIndex(REPORT_ID);
+        
+        verify(mockReportService).updateReportIndex(eq(ReportType.PARTICIPANT), reportDataIndex.capture());
+        ReportIndex index = reportDataIndex.getValue();
+        assertTrue(index.isPublic());
+        assertEquals(REPORT_ID, index.getIdentifier());
+        assertEquals("api:PARTICIPANT", index.getKey());
+        
+        TestUtils.assertResult(result, 200, "Report index updated.");
+    }
+    
+    private static final TypeReference<DateRangeResourceList<? extends ReportData>> REPORT_REF = new TypeReference<DateRangeResourceList<? extends ReportData>>() {
+    };
+    
+    @Test
+    public void canGetPublicStudyReport() throws Exception {
+        ReportIndex index = ReportIndex.create();
+        index.setPublic(true);
+        index.setIdentifier(REPORT_ID);
+        ReportTypeResourceList<? extends ReportIndex> list = new ReportTypeResourceList<>(
+                Lists.newArrayList(index), ReportType.STUDY);
+        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
+        
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
+                REPORT_ID, START_DATE, END_DATE);
+        
+        Result result = controller.getPublicStudyReport(
+                TEST_STUDY.getIdentifier(), REPORT_ID, START_DATE.toString(), END_DATE.toString());
+        
+        assertEquals(200, result.status());
+        DateRangeResourceList<? extends ReportData> reportData = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), REPORT_REF);
+        assertEquals(2, reportData.getItems().size());
+        
+        verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
+        verify(mockReportService).getStudyReport(TEST_STUDY, REPORT_ID, START_DATE, END_DATE);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void missingPublicStudyReturns404() throws Exception {
+        controller.getPublicStudyReport(TEST_STUDY.getIdentifier(), "does-not-exist", "2016-05-02", "2016-05-09");
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void privatePublicStudyReturns404() throws Exception {
+        controller.getPublicStudyReport(TEST_STUDY.getIdentifier(), REPORT_ID, "2016-05-02", "2016-05-09");
     }
     
     private void assertResult(Result result) throws Exception {

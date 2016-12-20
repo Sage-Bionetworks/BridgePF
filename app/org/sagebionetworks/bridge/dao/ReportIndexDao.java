@@ -15,6 +15,11 @@ public interface ReportIndexDao {
     void addIndex(ReportDataKey key);
     
     /**
+     * Update an existing index metadata.
+     */
+    void updateIndex(ReportIndex index);
+    
+    /**
      * Remove an index item for a report identifier. This is only done automatically for study reports, because we 
      * can't calculate if an identifier is still in use for a participant test in a performant way. But an endpoint 
      * is exposed so that admins can delete these index records as a part of test clean-up.

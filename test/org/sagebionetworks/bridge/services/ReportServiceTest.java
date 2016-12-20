@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.times;
@@ -24,7 +26,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
@@ -92,7 +93,7 @@ public class ReportServiceTest {
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
         results = new DateRangeResourceList<ReportData>(list, START_DATE, END_DATE);
         
-        DynamoReportIndex index = new DynamoReportIndex();
+        ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
     }
@@ -462,7 +463,7 @@ public class ReportServiceTest {
     @Test
     public void getParticipantIndices() {
         // Need to create an index list with ReportType.PARTICIPANT for this test
-        DynamoReportIndex index = new DynamoReportIndex();
+        ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
         
@@ -473,6 +474,50 @@ public class ReportServiceTest {
         assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
         assertEquals(ReportType.PARTICIPANT, indices.getReportType());
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
+    }
+    
+    @Test
+    public void updateIndex() {
+        ReportIndex index = ReportIndex.create();
+        index.setIdentifier(IDENTIFIER);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
+        doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
+        
+        // This is all that is needed. Everything else is actually inferred by the controller
+        ReportIndex updatedIndex = ReportIndex.create();
+        updatedIndex.setPublic(true);
+        updatedIndex.setIdentifier(IDENTIFIER);
+        updatedIndex.setKey(IDENTIFIER+":STUDY");
+        
+        service.updateReportIndex(ReportType.STUDY, updatedIndex);
+        
+        verify(mockReportIndexDao).updateIndex(reportIndexCaptor.capture());
+        
+        ReportIndex captured = reportIndexCaptor.getValue();
+        assertEquals(IDENTIFIER, captured.getIdentifier());
+        assertTrue(captured.isPublic());
+    }
+    
+    @Test
+    public void cannotMakeParticipantStudyPublic() {
+        ReportIndex index = ReportIndex.create();
+        index.setIdentifier(IDENTIFIER);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        
+        // This is all that is needed. Everything else is actually inferred by the controller
+        ReportIndex updatedIndex = ReportIndex.create();
+        updatedIndex.setPublic(true);
+        updatedIndex.setIdentifier(IDENTIFIER);
+        updatedIndex.setKey(IDENTIFIER+":STUDY");
+        
+        service.updateReportIndex(ReportType.PARTICIPANT, updatedIndex);
+        
+        verify(mockReportIndexDao).updateIndex(reportIndexCaptor.capture());
+        
+        ReportIndex captured = reportIndexCaptor.getValue();
+        assertEquals(IDENTIFIER, captured.getIdentifier());
+        assertFalse(captured.isPublic());
     }
     
     private void invalid(Runnable runnable, String fieldName, String message) {

@@ -12,15 +12,19 @@ import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.ReportService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -202,6 +206,24 @@ public class ReportController extends BaseController {
     }
     
     /**
+     * Get a study report *if* it is marked public, as this call does not require the user to be authenticated.
+     */
+    public Result getPublicStudyReport(String studyIdString, String identifier, String startDateString,
+            String endDateString) {
+        StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
+
+        verifyIndex(studyId, identifier);
+
+        LocalDate startDate = parseDateHelper(startDateString);
+        LocalDate endDate = parseDateHelper(endDateString);
+        
+        DateRangeResourceList<? extends ReportData> results = reportService.getStudyReport(
+                studyId, identifier, startDate, endDate);
+        
+        return ok((JsonNode)MAPPER.valueToTree(results));
+    }
+    
+    /**
      * Report study data can be saved by developers or by worker processes.
      */
     public Result saveStudyReport(String identifier) throws Exception {
@@ -252,6 +274,53 @@ public class ReportController extends BaseController {
         reportService.deleteStudyReportRecord(session.getStudyIdentifier(), identifier, date);
         
         return okResult("Report record deleted.");
+    }
+    
+    /**
+     * Update a single study report index. 
+     */
+    public Result updateStudyReportIndex(String identifier) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        ReportIndex index = parseJson(request(), ReportIndex.class);
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode(session.getHealthCode())
+                .withReportType(ReportType.STUDY)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(session.getStudyIdentifier()).build();
+        index.setKey(key.getIndexKeyString());
+        index.setIdentifier(identifier);
+        
+        reportService.updateReportIndex(ReportType.STUDY, index);
+        
+        return okResult("Report index updated.");
+    }
+    
+    /**
+     * Update a single participant report index. 
+     */
+    public Result updateParticipantReportIndex(String identifier) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        ReportIndex index = parseJson(request(), ReportIndex.class);
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode(session.getHealthCode())
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(session.getStudyIdentifier()).build();
+        index.setKey(key.getIndexKeyString());
+        index.setIdentifier(identifier);
+        
+        reportService.updateReportIndex(ReportType.PARTICIPANT, index);
+        
+        return okResult("Report index updated.");
+    }
+    
+    private void verifyIndex(final StudyIdentifier studyId, final String identifier) {
+        reportService.getReportIndices(studyId, ReportType.STUDY).getItems().stream()
+            .filter(index -> index.isPublic() && index.getIdentifier().equals(identifier))
+            .findFirst()
+            .orElseThrow(() -> new EntityNotFoundException(ReportIndex.class));
     }
     
     private static LocalDate parseDateHelper(String dateStr) {

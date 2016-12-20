@@ -7,6 +7,7 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -33,8 +34,13 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         DynamoReportIndex index = new DynamoReportIndex();
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(key.getIdentifier());
-        
-        mapper.save(index);
+
+        // Don't recreate if it exists. There isn't a non-key attribute to use for a 
+        // conditional save operation, so load, test, then save.
+        DynamoReportIndex dbIndex = mapper.load(index);
+        if (dbIndex == null) {
+            mapper.save(index);
+        }
     }
 
     @Override
@@ -51,6 +57,21 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         }
     }
 
+    @Override
+    public void updateIndex(ReportIndex index) {
+        checkNotNull(index);
+        
+        DynamoReportIndex hashKey = new DynamoReportIndex();
+        hashKey.setKey(index.getKey());
+        hashKey.setIdentifier(index.getIdentifier());
+        
+        DynamoReportIndex dbIndex = mapper.load(hashKey);
+        if (dbIndex == null) {
+            throw new EntityNotFoundException(ReportIndex.class);
+        }
+        mapper.save(index);
+    }
+    
     @Override
     public ReportTypeResourceList<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType reportType) {
         checkNotNull(studyId);

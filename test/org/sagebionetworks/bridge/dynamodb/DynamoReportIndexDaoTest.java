@@ -1,12 +1,15 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,6 +62,14 @@ public class DynamoReportIndexDaoTest {
                 .withHealthCode(BridgeUtils.generateGuid()).build();
     }
     
+    @After
+    public void after() {
+        dao.removeIndex(studyReportKey1);
+        dao.removeIndex(studyReportKey2);
+        dao.removeIndex(participantReportKey1);
+        dao.removeIndex(participantReportKey2);
+    }
+    
     @Test
     public void canCRUDReportIndex() {
         int count = dao.getIndices(TEST_STUDY, ReportType.STUDY).getItems().size();
@@ -69,6 +80,20 @@ public class DynamoReportIndexDaoTest {
 
         ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
         assertEquals(count+2, indices.getItems().size());
+        
+        // Update 3rd record
+        ReportIndex index = indices.getItems().get(count+1);
+        index.setPublic(true);
+        dao.updateIndex(index);
+        
+        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
+        assertTrue(indices.getItems().get(count+1).isPublic());
+        
+        index.setPublic(false);
+        dao.updateIndex(index);
+        
+        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
+        assertFalse(indices.getItems().get(count+1).isPublic());
         
         // Wrong type returns zero records
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
@@ -81,6 +106,25 @@ public class DynamoReportIndexDaoTest {
         dao.removeIndex(studyReportKey2);
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
         assertEquals(count, indices.getItems().size());
+    }
+    
+    @Test
+    public void addingExistingIndexDoesNotDeleteMetadata() {
+        int count = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
+        
+        dao.addIndex(studyReportKey1);
+        ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
+        
+        ReportIndex index = indices.getItems().get(count); // count is now == size()-1 which is what we want 
+        index.setPublic(true);
+        dao.updateIndex(index);
+        
+        // Now, adding this again should not delete the public = true status of index.
+        dao.addIndex(studyReportKey1);
+        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
+        
+        index = indices.getItems().get(count);
+        assertTrue(index.isPublic());
     }
     
     @Test
@@ -105,19 +149,10 @@ public class DynamoReportIndexDaoTest {
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
         assertEquals(0, indices.getItems().size());
         
-        deleteReportKey(participantReportKey1);
-        deleteReportKey(participantReportKey2);
+        dao.removeIndex(participantReportKey1);
+        dao.removeIndex(participantReportKey2);
         
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         assertEquals(count, indices.getItems().size());
-    }
-    
-    private void deleteReportKey(ReportDataKey key) {
-        DynamoReportIndex hashKey = new DynamoReportIndex();
-        hashKey.setKey(key.getIndexKeyString());
-        hashKey.setIdentifier(key.getIdentifier());
-        
-        DynamoReportIndex index = mapper.load(hashKey);
-        mapper.delete(index);
     }
 }
