@@ -451,7 +451,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             String fieldName = oneFieldDef.getName();
 
             if (sanitizedUnzippedDataMap.containsKey(fieldName)) {
-                attachmentMap.put(fieldName, sanitizedUnzippedDataMap.get(fieldName));
+                addAttachment(attachmentMap, fieldName, sanitizedUnzippedDataMap.get(fieldName));
             } else if (sanitizedFlattenedJsonDataMap.containsKey(fieldName)) {
                 copyJsonField(context, uploadId, sanitizedFlattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
                         attachmentMap);
@@ -506,7 +506,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldDef.getType())) {
             try {
-                attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
+                addAttachment(attachmentMap, fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
             } catch (JsonProcessingException ex) {
                 context.addMessage(String.format(
                         "Upload ID %s field %s could not be converted from JSON: %s", uploadId, fieldName,
@@ -532,6 +532,14 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             dataMap.put(fieldName, fieldValue.toString());
         } else {
             dataMap.set(fieldName, fieldValue);
+        }
+    }
+
+    // Helper method which encapsulates validating an upload before adding it to the attachment map. Right now, all it
+    // does is filter out empty attachments.
+    private static void addAttachment(Map<String, byte[]> attachmentMap, String fieldName, byte[] data) {
+        if (data.length != 0) {
+            attachmentMap.put(fieldName, data);
         }
     }
 }

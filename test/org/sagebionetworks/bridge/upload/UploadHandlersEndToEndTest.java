@@ -211,6 +211,11 @@ public class UploadHandlersEndToEndTest {
 
         when(mockHealthDataService.getRecordById(RECORD_ID)).thenAnswer(invocation -> savedRecord);
 
+        // mock HealthDataService should return empty list for getRecordsByHealthcodeCreatedOnSchemaId(), so dedupe
+        // logic doesn't crash
+        when(mockHealthDataService.getRecordsByHealthcodeCreatedOnSchemaId(HEALTH_CODE, CREATED_ON_MILLIS,
+                schema.getSchemaId())).thenReturn(ImmutableList.of());
+
         // set up UploadArtifactsHandler
         UploadArtifactsHandler uploadArtifactsHandler = new UploadArtifactsHandler();
         uploadArtifactsHandler.setHealthDataService(mockHealthDataService);
@@ -224,6 +229,7 @@ public class UploadHandlersEndToEndTest {
         UploadValidationTaskFactory taskFactory = new UploadValidationTaskFactory();
         taskFactory.setHandlerList(handlerList);
         taskFactory.setUploadDao(mockUploadDao);
+        taskFactory.setHealthDataService(mockHealthDataService);
 
         // create task, execute
         UploadValidationTask task = taskFactory.newTask(TestConstants.TEST_STUDY, UPLOAD);
@@ -395,7 +401,9 @@ public class UploadHandlersEndToEndTest {
                 new DynamoUploadFieldDefinition.Builder().withName("record.json.QQQ").withType(UploadFieldType.TIME_V2)
                         .build(),
                 new DynamoUploadFieldDefinition.Builder().withName("record.json.arrr")
-                        .withType(UploadFieldType.TIMESTAMP).build());
+                        .withType(UploadFieldType.TIMESTAMP).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("empty_attachment")
+                        .withType(UploadFieldType.ATTACHMENT_V2).withRequired(false).build());
 
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setFieldDefinitions(fieldDefList);
@@ -424,6 +432,9 @@ public class UploadHandlersEndToEndTest {
                 "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
                 "   },{\n" +
                 "       \"filename\":\"record.json\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"empty_attachment\",\n" +
                 "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
                 "   }],\n" +
                 "   \"item\":\"non-survey-schema\",\n" +
@@ -458,7 +469,7 @@ public class UploadHandlersEndToEndTest {
         Map<String, String> fileMap = ImmutableMap.<String, String>builder().put("info.json", infoJsonText)
                 .put("CCC.txt", cccTxtContent).put("DDD.csv", dddCsvContent).put("EEE.json", eeeJsonContent)
                 .put("FFF.json", fffJsonContent).put("GGG.txt", gggTxtContent).put("record.json", recordJsonContent)
-                .build();
+                .put("empty_attachment", "").build();
 
         // execute
         test(schema, null, fileMap);
