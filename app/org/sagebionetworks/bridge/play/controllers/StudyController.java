@@ -140,12 +140,17 @@ public class StudyController extends BaseController {
         return createdResult(new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
     }
 
-    public Result deleteStudy(String identifier) throws Exception {
+    public Result deleteStudy(String identifier, String physical) throws Exception {
         getAuthenticatedSession(ADMIN);
         if (studyWhitelist.contains(identifier)) {
             return forbidden(Json.toJson(identifier + " is protected by whitelist."));
         }
-        studyService.deleteStudy(identifier);
+        if ("true".equals(physical)) {
+            studyService.deleteStudy(identifier);
+        } else {
+            studyService.deactivateStudy(identifier);
+        }
+
         return okResult("Study deleted.");
     }
 

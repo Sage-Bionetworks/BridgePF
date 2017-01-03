@@ -292,6 +292,7 @@ public class TestUtils {
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(true);
         study.setExternalIdValidationEnabled(true);
+        study.setActive(true);
         return study;
     }
     

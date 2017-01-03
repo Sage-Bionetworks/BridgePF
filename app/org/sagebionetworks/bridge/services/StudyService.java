@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -276,6 +277,25 @@ public class StudyService {
         directoryDao.deleteDirectoryForStudy(existing);
         subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
         cacheProvider.removeStudy(identifier);
+    }
+
+    public void deactivateStudy(String identifier) {
+        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+
+        if (studyWhitelist.contains(identifier)) {
+            throw new UnauthorizedException(identifier + " is protected by whitelist.");
+        }
+
+        // Verify the study exists before you do this.
+        Study existing = getStudy(identifier);
+        if (existing == null) {
+            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
+        }
+        // Verify if the study is de-activated before
+        if (!existing.isActive()) {
+            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is deactivated before.");
+        }
+        studyDao.deactivateStudy(existing);
     }
     
     /**

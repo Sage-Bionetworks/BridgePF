@@ -17,5 +17,6 @@ public interface StudyDao {
     Study updateStudy(Study study);
     
     void deleteStudy(Study study);
-    
+
+    void deactivateStudy(Study study);
 }

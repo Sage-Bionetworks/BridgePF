@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
@@ -119,6 +120,24 @@ public class StudyServiceMockTest {
         consumer.accept(study);
         service.updateStudy(study, true);
         verify(directoryDao).updateDirectoryForStudy(study);
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void deactivateStudyAlreadyDeactivatedBefore() {
+        Study study = getTestStudy();
+        study.setActive(false);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+
+        service.deactivateStudy(study.getIdentifier());
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void deactivateStudyNotFound() {
+        Study study = getTestStudy();
+        study.setActive(false);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(null);
+
+        service.deactivateStudy(study.getIdentifier());
     }
 
     @Test

@@ -52,7 +52,7 @@ public class DynamoStudyDaoTest {
     public void after() {
         for (String oneStudyId : studyIdsToDelete) {
             try {
-                Study study = studyDao.getStudy(oneStudyId);
+                Study study = studyDao.getStudyOnlyForDao(oneStudyId);
                 studyDao.deleteStudy(study);
             } catch (RuntimeException ex) {
                 LOG.error("Error deleting study " + oneStudyId + ": " + ex.getMessage(), ex);
@@ -92,6 +92,20 @@ public class DynamoStudyDaoTest {
         } catch (EntityNotFoundException e) {
             // expected
         }
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void deactivateStudy() {
+        Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
+        createStudy(study);
+
+        studyDao.deactivateStudy(study);
+
+        // verify if that study still exist in dynamodb
+        assertTrue(studyDao.doesIdentifierExist(study.getIdentifier()));
+
+        // but cannot query that study
+        studyDao.getStudy(study.getIdentifier());
     }
     
     @Test
@@ -142,6 +156,46 @@ public class DynamoStudyDaoTest {
         // delete studies
         studyDao.deleteStudy(study1);
         studyDao.deleteStudy(study2);
+
+        // verify that they don't exist
+        {
+            List<Study> savedStudies = studyDao.getStudies();
+            for (Study oneStudy : savedStudies) {
+                if (study1Id.equals(oneStudy.getIdentifier())) {
+                    fail("study " + study1Id + " shouldn't exist");
+                } else if (study2Id.equals(oneStudy.getIdentifier())) {
+                    fail("study " + study2Id + " shouldn't exist");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void canFilterDeactivatedStudies() throws InterruptedException {
+        // create studies
+        Study study1 = createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class));
+        String study1Id = study1.getIdentifier();
+        Study study2 = createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class));
+        String study2Id = study2.getIdentifier();
+
+        // verify that they exist
+        {
+            List<Study> savedStudies = studyDao.getStudies();
+            boolean foundStudy1 = false, foundStudy2 = false;
+            for (Study oneStudy : savedStudies) {
+                if (study1Id.equals(oneStudy.getIdentifier())) {
+                    foundStudy1 = true;
+                } else if (study2Id.equals(oneStudy.getIdentifier())) {
+                    foundStudy2 = true;
+                }
+            }
+            assertTrue(foundStudy1);
+            assertTrue(foundStudy2);
+        }
+
+        // deactivate studies
+        studyDao.deactivateStudy(study1);
+        studyDao.deactivateStudy(study2);
 
         // verify that they don't exist
         {

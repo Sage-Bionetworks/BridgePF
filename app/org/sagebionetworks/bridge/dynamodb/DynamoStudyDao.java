@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -59,14 +60,39 @@ public class DynamoStudyDao implements StudyDao {
         if (study == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found.");
         }
+        if (!study.isActive()) {
+            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is de-activated.");
+        }
+        return study;
+    }
+
+    /**
+     * Only used for dao and testing to get a study no matter if it is deactivated or not
+     * @param identifier
+     * @return
+     */
+    Study getStudyOnlyForDao(String identifier) {
+        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+
+        DynamoStudy study = new DynamoStudy();
+        study.setIdentifier(identifier);
+        study = mapper.load(study);
+        if (study == null) {
+            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found.");
+        }
+
         return study;
     }
     
     @Override
     public List<Study> getStudies() {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
-        
-        List<DynamoStudy> mappings = mapper.scan(DynamoStudy.class, scan);
+
+        // get all active studies
+        List<DynamoStudy> mappings = mapper.scan(DynamoStudy.class, scan).stream()
+                .filter(dynamoStudy -> dynamoStudy.isActive())
+                .collect(Collectors.toList());
+
         return new ArrayList<Study>(mappings);
     }
 
@@ -104,5 +130,19 @@ public class DynamoStudyDao implements StudyDao {
         }
 
         mapper.delete(study);
+    }
+
+    @Override
+    public void deactivateStudy(Study study) {
+        checkNotNull(study, Validate.CANNOT_BE_BLANK, "study");
+
+        String studyId = study.getIdentifier();
+        if (STUDY_WHITE_LIST.contains(studyId)) {
+            throw new UnauthorizedException(studyId + " is protected by whitelist.");
+        }
+
+        study.setActive(false);
+
+        updateStudy(study);
     }
 }
