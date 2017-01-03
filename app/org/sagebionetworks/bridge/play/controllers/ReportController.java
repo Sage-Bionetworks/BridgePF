@@ -317,10 +317,15 @@ public class ReportController extends BaseController {
     }
     
     private void verifyIndex(final StudyIdentifier studyId, final String identifier) {
-        reportService.getReportIndices(studyId, ReportType.STUDY).getItems().stream()
-            .filter(index -> index.isPublic() && index.getIdentifier().equals(identifier))
-            .findFirst()
-            .orElseThrow(() -> new EntityNotFoundException(ReportIndex.class));
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(ReportType.STUDY)
+                .withStudyIdentifier(studyId).build();
+        
+        ReportIndex index = reportService.getReportIndex(key);
+        if (index == null || !index.isPublic()) {
+            throw new EntityNotFoundException(ReportIndex.class);
+        }
     }
     
     private static LocalDate parseDateHelper(String dateStr) {

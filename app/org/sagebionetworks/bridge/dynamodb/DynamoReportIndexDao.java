@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Map;
+
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
@@ -16,9 +18,19 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.google.common.collect.ImmutableMap;
 
 @Component
 public class DynamoReportIndexDao implements ReportIndexDao {
+
+    private static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
+            .withExpected(new ImmutableMap.Builder<String,ExpectedAttributeValue>()
+                    .put("key", new ExpectedAttributeValue(false))
+                    .put("identifier", new ExpectedAttributeValue(false)).build());
     
     private DynamoDBMapper mapper;
 
@@ -28,6 +40,17 @@ public class DynamoReportIndexDao implements ReportIndexDao {
     }
     
     @Override
+    public ReportIndex getIndex(ReportDataKey key) {
+        checkNotNull(key);
+        
+        DynamoReportIndex hashKey = new DynamoReportIndex();
+        hashKey.setKey(key.getIndexKeyString());
+        hashKey.setIdentifier(key.getIdentifier());
+        
+        return mapper.load(hashKey);
+    }
+
+    @Override
     public void addIndex(ReportDataKey key) {
         checkNotNull(key);
         
@@ -35,11 +58,11 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(key.getIdentifier());
 
-        // Don't recreate if it exists. There isn't a non-key attribute to use for a 
-        // conditional save operation, so load, test, then save.
-        DynamoReportIndex dbIndex = mapper.load(index);
-        if (dbIndex == null) {
-            mapper.save(index);
+        try {
+            mapper.save(index, DOES_NOT_EXIST_EXPRESSION);    
+        } catch(ConditionalCheckFailedException e) {
+            // Do not throw an exception if the index already exists. This is called as a side
+            // effect of saving a report, and can be called multiple times for a report.
         }
     }
 
@@ -65,11 +88,17 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         hashKey.setKey(index.getKey());
         hashKey.setIdentifier(index.getIdentifier());
         
-        DynamoReportIndex dbIndex = mapper.load(hashKey);
-        if (dbIndex == null) {
+        Map<String,ExpectedAttributeValue> map = new ImmutableMap.Builder<String,ExpectedAttributeValue>()
+                .put("key", new ExpectedAttributeValue(new AttributeValue(index.getKey())))
+                .put("identifier", new ExpectedAttributeValue(new AttributeValue(index.getIdentifier()))).build();
+        
+        DynamoDBSaveExpression doesExistExpression = new DynamoDBSaveExpression().withExpected(map);
+        
+        try {
+            mapper.save(index, doesExistExpression);
+        } catch(ConditionalCheckFailedException e) {
             throw new EntityNotFoundException(ReportIndex.class);
         }
-        mapper.save(index);
     }
     
     @Override

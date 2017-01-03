@@ -50,6 +50,12 @@ public class ReportService {
         this.reportIndexDao = reportIndexDao;
     }
     
+    public ReportIndex getReportIndex(ReportDataKey key) {
+        checkNotNull(key);
+        
+        return reportIndexDao.getIndex(key);
+    }
+    
     public DateRangeResourceList<? extends ReportData> getStudyReport(StudyIdentifier studyId, String identifier,
             LocalDate startDate, LocalDate endDate) {
         // ReportDataKey validates all parameters to this method

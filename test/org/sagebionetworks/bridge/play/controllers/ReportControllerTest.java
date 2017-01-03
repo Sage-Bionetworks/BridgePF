@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -73,7 +74,7 @@ public class ReportControllerTest {
     private static final LocalDate START_DATE = LocalDate.parse("2015-01-02");
     
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
-
+    
     @Mock
     ReportService mockReportService;
     
@@ -416,8 +417,7 @@ public class ReportControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void nonAdminCannotDeleteParticipantIndex() throws Exception {
-        Result result = controller.deleteParticipantReportIndex(REPORT_ID);
-        assertResult(result);
+        controller.deleteParticipantReportIndex(REPORT_ID);
     }
     
     @Test
@@ -455,12 +455,13 @@ public class ReportControllerTest {
     
     @Test
     public void canGetPublicStudyReport() throws Exception {
+        ReportDataKey key = new ReportDataKey.Builder().withStudyIdentifier(TEST_STUDY).withIdentifier(REPORT_ID)
+                .withReportType(ReportType.STUDY).build();
+        
         ReportIndex index = ReportIndex.create();
         index.setPublic(true);
         index.setIdentifier(REPORT_ID);
-        ReportTypeResourceList<? extends ReportIndex> list = new ReportTypeResourceList<>(
-                Lists.newArrayList(index), ReportType.STUDY);
-        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
+        doReturn(index).when(mockReportService).getReportIndex(key);
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
                 REPORT_ID, START_DATE, END_DATE);
@@ -473,7 +474,7 @@ public class ReportControllerTest {
                 .readValue(Helpers.contentAsString(result), REPORT_REF);
         assertEquals(2, reportData.getItems().size());
         
-        verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
+        verify(mockReportService).getReportIndex(key);
         verify(mockReportService).getStudyReport(TEST_STUDY, REPORT_ID, START_DATE, END_DATE);
     }
     
@@ -484,7 +485,22 @@ public class ReportControllerTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void privatePublicStudyReturns404() throws Exception {
-        controller.getPublicStudyReport(TEST_STUDY.getIdentifier(), REPORT_ID, "2016-05-02", "2016-05-09");
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(REPORT_ID)
+                .withReportType(ReportType.STUDY)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        ReportIndex index = ReportIndex.create();//reportService.getReportIndex(key);
+        index.setPublic(false);
+        index.setKey(key.getIndexKeyString());
+        index.setIdentifier(REPORT_ID);
+        
+        doReturn(index).when(mockReportService).getReportIndex(key);
+        
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
+                REPORT_ID, START_DATE, END_DATE);
+        
+        controller.getPublicStudyReport(TEST_STUDY.getIdentifier(), REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
     private void assertResult(Result result) throws Exception {

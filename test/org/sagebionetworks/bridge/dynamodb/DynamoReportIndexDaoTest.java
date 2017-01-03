@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
@@ -19,6 +20,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -68,6 +70,26 @@ public class DynamoReportIndexDaoTest {
         dao.removeIndex(studyReportKey2);
         dao.removeIndex(participantReportKey1);
         dao.removeIndex(participantReportKey2);
+    }
+    
+    @Test
+    public void getIndexNoIndex() {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withStudyIdentifier(TEST_STUDY)
+                .withIdentifier("invalid-identifier")
+                .withReportType(ReportType.STUDY).build();
+        
+        ReportIndex index = dao.getIndex(key);
+        assertNull(index);
+    }
+    
+    @Test
+    public void getIndexThatExists() {
+        dao.addIndex(studyReportKey1);
+        
+        ReportIndex index = dao.getIndex(studyReportKey1);
+        assertEquals(studyReportKey1.getIdentifier(), index.getIdentifier());
+        assertEquals(studyReportKey1.getIndexKeyString(), index.getKey());
     }
     
     @Test
@@ -154,5 +176,15 @@ public class DynamoReportIndexDaoTest {
         
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         assertEquals(count, indices.getItems().size());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void updateNonExistentIndex() {
+        ReportIndex index = ReportIndex.create();
+        index.setKey(studyReportKey1.getIndexKeyString());
+        index.setIdentifier(studyReportKey1.getIdentifier());
+        index.setPublic(true);
+        
+        dao.updateIndex(index);
     }
 }

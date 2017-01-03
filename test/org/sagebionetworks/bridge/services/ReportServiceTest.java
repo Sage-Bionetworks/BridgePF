@@ -110,6 +110,22 @@ public class ReportServiceTest {
     }
     
     @Test
+    public void getReportIndex() {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(IDENTIFIER).withReportType(ReportType.STUDY)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        ReportIndex index = ReportIndex.create();
+        index.setIdentifier(IDENTIFIER);
+        index.setIdentifier(IDENTIFIER);
+        doReturn(index).when(mockReportIndexDao).getIndex(key);
+        
+        ReportIndex retrievedKey = service.getReportIndex(key);
+        assertEquals(key.getIdentifier(), retrievedKey.getIdentifier());
+        verify(mockReportIndexDao).getIndex(key);
+    }
+    
+    @Test
     public void getStudyReportData() {
         doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, START_DATE, END_DATE);
         
