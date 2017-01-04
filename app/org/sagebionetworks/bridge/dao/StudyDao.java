@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface StudyDao {
 
@@ -18,5 +19,5 @@ public interface StudyDao {
     
     void deleteStudy(Study study);
 
-    void deactivateStudy(Study study);
+    void deactivateStudy(String studyId);
 }

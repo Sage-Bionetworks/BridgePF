@@ -99,7 +99,7 @@ public class DynamoStudyDaoTest {
         Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
         createStudy(study);
 
-        studyDao.deactivateStudy(study);
+        studyDao.deactivateStudy(study.getIdentifier());
 
         // verify if that study still exist in dynamodb
         assertTrue(studyDao.doesIdentifierExist(study.getIdentifier()));

@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -110,14 +111,14 @@ public class DynamoStudyDao implements StudyDao {
     }
 
     @Override
-    public void deactivateStudy(Study study) {
-        checkNotNull(study, Validate.CANNOT_BE_BLANK, "study");
+    public void deactivateStudy(String studyId) {
+        checkNotNull(studyId, Validate.CANNOT_BE_BLANK, "study");
 
-        String studyId = study.getIdentifier();
         if (STUDY_WHITE_LIST.contains(studyId)) {
             throw new UnauthorizedException(studyId + " is protected by whitelist.");
         }
 
+        Study study = getStudy(studyId);
         study.setActive(false);
 
         updateStudy(study);

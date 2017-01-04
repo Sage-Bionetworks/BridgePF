@@ -239,20 +239,30 @@ public class StudyService {
 
     public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         sanitizeHTML(study);
 
         // These cannot be set through the API and will be null here, so they are set on update
-        // it should be able to update deactivated study
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
+
         study.setStormpathHref(originalStudy.getStormpathHref());
-        study.setActive(true);
-        // And this cannot be set unless you're an administrator. Regardless of what the 
+        // And this cannot be set unless you're an administrator. Regardless of what the
         // developer set, set these back to the original study.
         if (!isAdminUpdate) {
+            // prevent non-admins update a deactivated study
+            if (!originalStudy.isActive()) {
+                throw new EntityNotFoundException(Study.class, "Study '"+ study.getIdentifier() +"' is deactivated.");
+            }
+
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
         }
+
+        // prevent anyone changing active to false -- it should be done by deactivateStudy() method
+        if (originalStudy.isActive() && !study.isActive()) {
+            throw new IllegalAccessError("Nobody can set field of active to false in update method.");
+        }
+
         Validate.entityThrowingException(validator, study);
 
         // When the version is out of sync in the cache, then an exception is thrown and the study 
@@ -292,7 +302,7 @@ public class StudyService {
         if (!physical) {
             // deactivate
             if (!existing.isActive()) throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is deactivated before.");
-            studyDao.deactivateStudy(existing);
+            studyDao.deactivateStudy(existing.getIdentifier());
         } else {
             // actual delete
             studyDao.deleteStudy(existing);

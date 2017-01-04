@@ -140,6 +140,41 @@ public class StudyServiceMockTest {
         service.deleteStudy(study.getIdentifier(), false);
     }
 
+    @Test(expected = EntityNotFoundException.class)
+    public void nonAdminsCannotUpdateDeactivatedStudy() {
+        Study study = getTestStudy();
+        study.setActive(false);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+
+        service.updateStudy(study, false);
+    }
+
+    @Test(expected = IllegalAccessError.class)
+    public void nonAdminsCannotSetActiveToFalse() {
+        Study originalStudy = getTestStudy();
+        originalStudy.setActive(true);
+        when(studyDao.getStudy(originalStudy.getIdentifier())).thenReturn(originalStudy);
+
+        Study study = getTestStudy();
+        study.setIdentifier(originalStudy.getIdentifier());
+        study.setActive(false);
+
+        service.updateStudy(study, false);
+    }
+
+    @Test(expected = IllegalAccessError.class)
+    public void adminCannotSetActiveToFalse() {
+        Study originalStudy = getTestStudy();
+        originalStudy.setActive(true);
+        when(studyDao.getStudy(originalStudy.getIdentifier())).thenReturn(originalStudy);
+
+        Study study = getTestStudy();
+        study.setIdentifier(originalStudy.getIdentifier());
+        study.setActive(false);
+
+        service.updateStudy(study, true);
+    }
+
     @Test
     public void createSynapseProjectTeam() throws SynapseException {
         Study study = getTestStudy();
