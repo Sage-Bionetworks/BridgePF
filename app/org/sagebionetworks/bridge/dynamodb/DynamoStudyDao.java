@@ -68,7 +68,7 @@ public class DynamoStudyDao implements StudyDao {
     public List<Study> getStudies() {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
 
-        // get all active studies
+        // get all studies including deactivated ones
         List<DynamoStudy> mappings = mapper.scan(DynamoStudy.class, scan);
 
         return new ArrayList<Study>(mappings);
