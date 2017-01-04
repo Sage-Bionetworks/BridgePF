@@ -60,27 +60,6 @@ public class DynamoStudyDao implements StudyDao {
         if (study == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found.");
         }
-        if (!study.isActive()) {
-            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is de-activated.");
-        }
-        return study;
-    }
-
-    /**
-     * Only used for dao and testing to get a study no matter if it is deactivated or not
-     * @param identifier
-     * @return
-     */
-    Study getStudyOnlyForDao(String identifier) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-
-        DynamoStudy study = new DynamoStudy();
-        study.setIdentifier(identifier);
-        study = mapper.load(study);
-        if (study == null) {
-            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found.");
-        }
-
         return study;
     }
     
@@ -89,9 +68,7 @@ public class DynamoStudyDao implements StudyDao {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
 
         // get all active studies
-        List<DynamoStudy> mappings = mapper.scan(DynamoStudy.class, scan).stream()
-                .filter(dynamoStudy -> dynamoStudy.isActive())
-                .collect(Collectors.toList());
+        List<DynamoStudy> mappings = mapper.scan(DynamoStudy.class, scan);
 
         return new ArrayList<Study>(mappings);
     }

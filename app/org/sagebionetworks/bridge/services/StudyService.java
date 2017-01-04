@@ -122,24 +122,37 @@ public class StudyService {
         this.synapseClient = synapseClient;
     }
 
-    public Study getStudy(String identifier) {
+    private Study getStudy(String identifier, boolean containDeactivated) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-        
+
         Study study = cacheProvider.getStudy(identifier);
         if (study == null) {
             study = studyDao.getStudy(identifier);
             cacheProvider.setStudy(study);
         }
+
+        if (study != null && !study.isActive() && !containDeactivated) {
+            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is de-activated.");
+        }
+
         return study;
     }
+
+    // only return active study
+    public Study getStudy(String identifier) {
+        return getStudy(identifier, false);
+    }
+
     public Study getStudy(StudyIdentifier studyId) {
         checkNotNull(studyId, Validate.CANNOT_BE_NULL, "studyIdentifier");
         
         return getStudy(studyId.getIdentifier());
     }
+
     public List<Study> getStudies() {
         return studyDao.getStudies();
     }
+
     public Study createStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
@@ -230,6 +243,7 @@ public class StudyService {
         sanitizeHTML(study);
 
         // These cannot be set through the API and will be null here, so they are set on update
+        // it should be able to update deactivated study
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setStormpathHref(originalStudy.getStormpathHref());
         study.setActive(true);
@@ -268,8 +282,9 @@ public class StudyService {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
         }
 
-        // Verify the study exists before you do this.
-        Study existing = getStudy(identifier);
+        // Verify the study exists before you do this
+        // only admin can call this method, should contain deactivated ones.
+        Study existing = getStudy(identifier, true);
         if (existing == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
         }
