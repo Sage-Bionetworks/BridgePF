@@ -92,7 +92,7 @@ public class StudyControllerTest {
         controller = spy(new StudyController());
         
         // mock session with study identifier
-        studyId = new StudyIdentifierImpl(TestConstants.TEST_STUDY_IDENTIFIER);
+        studyId = new StudyIdentifierImpl(TestConstants.TEST_STUDY_IDENTIFIER + "test");
         when(mockSession.getStudyIdentifier()).thenReturn(studyId);
         when(mockSession.isAuthenticated()).thenReturn(true);
         
