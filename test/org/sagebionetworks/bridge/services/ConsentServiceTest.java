@@ -122,7 +122,7 @@ public class ConsentServiceTest {
         try {
             helper.deleteUser(testUser);    
         } finally {
-            studyService.deleteStudy(study.getIdentifier());    
+            studyService.deleteStudy(study.getIdentifier(), true);
         }
     }
 

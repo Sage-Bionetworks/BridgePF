@@ -148,9 +148,9 @@ public class StudyController extends BaseController {
             return forbidden(Json.toJson(identifier + " is protected by whitelist."));
         }
         if ("true".equals(physical)) {
-            studyService.deleteStudy(identifier);
+            studyService.deleteStudy(identifier, true);
         } else {
-            studyService.deactivateStudy(identifier);
+            studyService.deleteStudy(identifier, false);
         }
 
         return okResult("Study deleted.");

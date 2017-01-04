@@ -128,7 +128,7 @@ public class StudyServiceMockTest {
         study.setActive(false);
         when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
 
-        service.deactivateStudy(study.getIdentifier());
+        service.deleteStudy(study.getIdentifier(), false);
     }
 
     @Test(expected = EntityNotFoundException.class)
@@ -137,7 +137,7 @@ public class StudyServiceMockTest {
         study.setActive(false);
         when(studyDao.getStudy(study.getIdentifier())).thenReturn(null);
 
-        service.deactivateStudy(study.getIdentifier());
+        service.deleteStudy(study.getIdentifier(), false);
     }
 
     @Test

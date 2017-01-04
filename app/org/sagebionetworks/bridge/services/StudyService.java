@@ -274,8 +274,8 @@ public class StudyService {
         
         return updatedStudy;
     }
-    
-    public void deleteStudy(String identifier) {
+
+    public void deleteStudy(String identifier, boolean physical) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
 
         if (studyWhitelist.contains(identifier)) {
@@ -288,29 +288,18 @@ public class StudyService {
         if (existing == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
         }
-        studyDao.deleteStudy(existing);
-        directoryDao.deleteDirectoryForStudy(existing);
-        subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
-        cacheProvider.removeStudy(identifier);
-    }
 
-    public void deactivateStudy(String identifier) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-
-        if (studyWhitelist.contains(identifier)) {
-            throw new UnauthorizedException(identifier + " is protected by whitelist.");
+        if (!physical) {
+            // deactivate
+            if (!existing.isActive()) throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is deactivated before.");
+            studyDao.deactivateStudy(existing);
+        } else {
+            // actual delete
+            studyDao.deleteStudy(existing);
+            directoryDao.deleteDirectoryForStudy(existing);
+            subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
+            cacheProvider.removeStudy(identifier);
         }
-
-        // Verify the study exists before you do this.
-        Study existing = getStudy(identifier);
-        if (existing == null) {
-            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
-        }
-        // Verify if the study is de-activated before
-        if (!existing.isActive()) {
-            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is deactivated before.");
-        }
-        studyDao.deactivateStudy(existing);
     }
     
     /**

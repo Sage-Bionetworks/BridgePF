@@ -126,7 +126,7 @@ public class AuthenticationControllerTest {
                         response.getBody());
             } finally {
                 if (secondStudy != null) {
-                    studyService.deleteStudy(secondStudy.getIdentifier());
+                    studyService.deleteStudy(secondStudy.getIdentifier(), true);
                 }
             }
         });

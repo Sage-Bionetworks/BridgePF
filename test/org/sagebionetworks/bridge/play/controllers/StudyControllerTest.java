@@ -156,7 +156,7 @@ public class StudyControllerTest {
 
         controller.deleteStudy(study.getIdentifier(), "false");
 
-        verify(mockStudyService).deactivateStudy(study.getIdentifier());
+        verify(mockStudyService).deleteStudy(study.getIdentifier(), false);
         verifyNoMoreInteractions(mockStudyService);
     }
 
@@ -166,7 +166,7 @@ public class StudyControllerTest {
 
         controller.deleteStudy(study.getIdentifier(), "true");
 
-        verify(mockStudyService).deleteStudy(study.getIdentifier());
+        verify(mockStudyService).deleteStudy(study.getIdentifier(), true);
         verifyNoMoreInteractions(mockStudyService);
     }
 
@@ -187,7 +187,7 @@ public class StudyControllerTest {
     @Test(expected = EntityNotFoundException.class)
     public void deactivateStudyThrowsGoodException() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
-        doThrow(new EntityNotFoundException(Study.class)).when(mockStudyService).deactivateStudy(study.getIdentifier());
+        doThrow(new EntityNotFoundException(Study.class)).when(mockStudyService).deleteStudy(study.getIdentifier(), false);
 
         controller.deleteStudy(study.getIdentifier(), "false");
     }
