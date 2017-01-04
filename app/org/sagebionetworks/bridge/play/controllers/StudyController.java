@@ -147,11 +147,8 @@ public class StudyController extends BaseController {
         if (studyWhitelist.contains(identifier)) {
             return forbidden(Json.toJson(identifier + " is protected by whitelist."));
         }
-        if ("true".equals(physical)) {
-            studyService.deleteStudy(identifier, true);
-        } else {
-            studyService.deleteStudy(identifier, false);
-        }
+
+        studyService.deleteStudy(identifier, Boolean.valueOf(physical));
 
         return okResult("Study deleted.");
     }

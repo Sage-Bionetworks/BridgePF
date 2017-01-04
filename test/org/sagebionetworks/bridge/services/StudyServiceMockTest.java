@@ -3,11 +3,13 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.services.StudyService.EXPORTER_SYNAPSE_USER_ID;
 
@@ -29,6 +31,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -138,6 +141,10 @@ public class StudyServiceMockTest {
         when(studyDao.getStudy(study.getIdentifier())).thenReturn(null);
 
         service.deleteStudy(study.getIdentifier(), false);
+
+        verify(studyDao, never()).deactivateStudy(anyString());
+        verify(studyDao, never()).deleteStudy(any());
+
     }
 
     @Test(expected = EntityNotFoundException.class)
@@ -147,9 +154,11 @@ public class StudyServiceMockTest {
         when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
 
         service.updateStudy(study, false);
+
+        verify(studyDao, never()).updateStudy(any());
     }
 
-    @Test(expected = IllegalAccessError.class)
+    @Test(expected = BadRequestException.class)
     public void nonAdminsCannotSetActiveToFalse() {
         Study originalStudy = getTestStudy();
         originalStudy.setActive(true);
@@ -160,9 +169,11 @@ public class StudyServiceMockTest {
         study.setActive(false);
 
         service.updateStudy(study, false);
+
+        verify(studyDao, never()).updateStudy(any());
     }
 
-    @Test(expected = IllegalAccessError.class)
+    @Test(expected = BadRequestException.class)
     public void adminCannotSetActiveToFalse() {
         Study originalStudy = getTestStudy();
         originalStudy.setActive(true);
@@ -173,6 +184,8 @@ public class StudyServiceMockTest {
         study.setActive(false);
 
         service.updateStudy(study, true);
+
+        verify(studyDao, never()).updateStudy(any());
     }
 
     @Test
