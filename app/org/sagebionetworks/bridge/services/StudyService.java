@@ -133,7 +133,7 @@ public class StudyService {
         }
 
         if (study != null && !study.isActive() && !includeDeleted) {
-            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is de-activated.");
+            throw new EntityNotFoundException(Study.class, "Study not found.");
         }
 
         return study;
@@ -258,7 +258,7 @@ public class StudyService {
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method
         if (originalStudy.isActive() && !study.isActive()) {
-            throw new BadRequestException("Nobody can set field of active to false in update method.");
+            throw new BadRequestException("Study cannot be deleted through an update.");
         }
 
         sanitizeHTML(study);
@@ -303,7 +303,7 @@ public class StudyService {
         if (!physical) {
             // deactivate
             if (!existing.isActive()) {
-                throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' is deactivated before.");
+                throw new BadRequestException("Study '"+identifier+"' is deactivated before.");
             }
             studyDao.deactivateStudy(existing.getIdentifier());
         } else {

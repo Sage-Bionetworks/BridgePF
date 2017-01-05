@@ -125,7 +125,7 @@ public class StudyServiceMockTest {
         verify(directoryDao).updateDirectoryForStudy(study);
     }
 
-    @Test(expected = EntityNotFoundException.class)
+    @Test(expected = BadRequestException.class)
     public void deactivateStudyAlreadyDeactivatedBefore() {
         Study study = getTestStudy();
         study.setActive(false);
