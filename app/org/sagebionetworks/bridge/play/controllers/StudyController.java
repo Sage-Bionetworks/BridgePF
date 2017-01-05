@@ -109,6 +109,7 @@ public class StudyController extends BaseController {
 
     // You can get a truncated view of studies with either format=summary or summary=true;
     // the latter allows us to make this a boolean flag in the Java client libraries.
+    // since only admin can call this method, no need to check if the return results should contain deactivated ones
     public Result getAllStudies(String format, String summary) throws Exception {
         List<Study> studies = studyService.getStudies();
         if ("summary".equals(format) || "true".equals(summary)) {
@@ -140,12 +141,15 @@ public class StudyController extends BaseController {
         return createdResult(new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
     }
 
-    public Result deleteStudy(String identifier) throws Exception {
+    // since only admin can delete study, no need to check if return results should contain deactivated ones
+    public Result deleteStudy(String identifier, String physical) throws Exception {
         getAuthenticatedSession(ADMIN);
         if (studyWhitelist.contains(identifier)) {
             return forbidden(Json.toJson(identifier + " is protected by whitelist."));
         }
-        studyService.deleteStudy(identifier);
+
+        studyService.deleteStudy(identifier, Boolean.valueOf(physical));
+
         return okResult("Study deleted.");
     }
 

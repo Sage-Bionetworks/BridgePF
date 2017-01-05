@@ -93,6 +93,17 @@ public class DynamoStudyDaoTest {
             // expected
         }
     }
+
+    @Test
+    public void deactivateStudy() {
+        Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
+        createStudy(study);
+
+        studyDao.deactivateStudy(study.getIdentifier());
+
+        // verify if that study still exist in dynamodb
+        assertTrue(studyDao.doesIdentifierExist(study.getIdentifier()));
+    }
     
     @Test
     public void stringSetsCanBeEmpty() throws Exception {

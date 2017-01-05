@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -32,6 +33,7 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -119,24 +121,37 @@ public class StudyService {
         this.synapseClient = synapseClient;
     }
 
-    public Study getStudy(String identifier) {
+    private Study getStudy(String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-        
+
         Study study = cacheProvider.getStudy(identifier);
         if (study == null) {
             study = studyDao.getStudy(identifier);
             cacheProvider.setStudy(study);
         }
+
+        if (study != null && !study.isActive() && !includeDeleted) {
+            throw new EntityNotFoundException(Study.class, "Study not found.");
+        }
+
         return study;
     }
+
+    // only return active study
+    public Study getStudy(String identifier) {
+        return getStudy(identifier, false);
+    }
+
     public Study getStudy(StudyIdentifier studyId) {
         checkNotNull(studyId, Validate.CANNOT_BE_NULL, "studyIdentifier");
         
         return getStudy(studyId.getIdentifier());
     }
+
     public List<Study> getStudies() {
         return studyDao.getStudies();
     }
+
     public Study createStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
@@ -223,19 +238,30 @@ public class StudyService {
 
     public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
-        sanitizeHTML(study);
 
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
-        study.setStormpathHref(originalStudy.getStormpathHref());
-        study.setActive(true);
-        // And this cannot be set unless you're an administrator. Regardless of what the 
+
+        // And this cannot be set unless you're an administrator. Regardless of what the
         // developer set, set these back to the original study.
         if (!isAdminUpdate) {
+            // prevent non-admins update a deactivated study
+            if (!originalStudy.isActive()) {
+                throw new EntityNotFoundException(Study.class, "Study '"+ study.getIdentifier() +"' not found.");
+            }
+
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
         }
+
+        // prevent anyone changing active to false -- it should be done by deactivateStudy() method
+        if (originalStudy.isActive() && !study.isActive()) {
+            throw new BadRequestException("Study cannot be deleted through an update.");
+        }
+
+        sanitizeHTML(study);
+
+        study.setStormpathHref(originalStudy.getStormpathHref());
         Validate.entityThrowingException(validator, study);
 
         // When the version is out of sync in the cache, then an exception is thrown and the study 
@@ -257,22 +283,34 @@ public class StudyService {
         
         return updatedStudy;
     }
-    
-    public void deleteStudy(String identifier) {
+
+    public void deleteStudy(String identifier, boolean physical) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
 
         if (studyWhitelist.contains(identifier)) {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
         }
 
-        // Verify the study exists before you do this.
-        Study existing = getStudy(identifier);
+        // Verify the study exists before you do this
+        // only admin can call this method, should contain deactivated ones.
+        Study existing = getStudy(identifier, true);
         if (existing == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
         }
-        studyDao.deleteStudy(existing);
-        directoryDao.deleteDirectoryForStudy(existing);
-        subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
+
+        if (!physical) {
+            // deactivate
+            if (!existing.isActive()) {
+                throw new BadRequestException("Study '"+identifier+"' is deactivated before.");
+            }
+            studyDao.deactivateStudy(existing.getIdentifier());
+        } else {
+            // actual delete
+            studyDao.deleteStudy(existing);
+            directoryDao.deleteDirectoryForStudy(existing);
+            subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
+        }
+
         cacheProvider.removeStudy(identifier);
     }
     

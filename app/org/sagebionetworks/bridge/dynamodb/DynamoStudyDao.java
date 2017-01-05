@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -23,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -65,8 +67,10 @@ public class DynamoStudyDao implements StudyDao {
     @Override
     public List<Study> getStudies() {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
-        
+
+        // get all studies including deactivated ones
         List<DynamoStudy> mappings = mapper.scan(DynamoStudy.class, scan);
+
         return new ArrayList<Study>(mappings);
     }
 
@@ -104,5 +108,19 @@ public class DynamoStudyDao implements StudyDao {
         }
 
         mapper.delete(study);
+    }
+
+    @Override
+    public void deactivateStudy(String studyId) {
+        checkNotNull(studyId, Validate.CANNOT_BE_BLANK, "study");
+
+        if (STUDY_WHITE_LIST.contains(studyId)) {
+            throw new UnauthorizedException(studyId + " is protected by whitelist.");
+        }
+
+        Study study = getStudy(studyId);
+        study.setActive(false);
+
+        updateStudy(study);
     }
 }

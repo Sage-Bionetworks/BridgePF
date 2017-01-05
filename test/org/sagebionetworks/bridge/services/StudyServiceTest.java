@@ -106,7 +106,7 @@ public class StudyServiceTest {
     @After
     public void after() throws SynapseException {
         if (study != null) {
-            studyService.deleteStudy(study.getIdentifier());
+            studyService.deleteStudy(study.getIdentifier(), true);
         }
         if (project != null) {
             synapseClient.deleteEntityById(project.getId());
@@ -272,7 +272,7 @@ public class StudyServiceTest {
         verifyNoMoreInteractions(mockCache);
         reset(mockCache);
 
-        studyService.deleteStudy(study.getIdentifier());
+        studyService.deleteStudy(study.getIdentifier(), true);
         verify(mockCache).getStudy(study.getIdentifier());
         verify(mockCache).setStudy(study);
         verify(mockCache).removeStudy(study.getIdentifier());
@@ -405,7 +405,7 @@ public class StudyServiceTest {
 
     @Test(expected = UnauthorizedException.class)
     public void cantDeleteApiStudy() {
-        studyService.deleteStudy("api");
+        studyService.deleteStudy("api", true);
     }
     
     @Test

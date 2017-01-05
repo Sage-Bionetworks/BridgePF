@@ -83,7 +83,6 @@ public class DynamoStudyTest {
         final String filteredJson = Study.STUDY_WRITER.writeValueAsString(study);
         final JsonNode filteredNode = BridgeObjectMapper.get().readTree(filteredJson);
         assertNull(filteredNode.get("stormpathHref"));
-        assertNull(filteredNode.get("active"));
 
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);

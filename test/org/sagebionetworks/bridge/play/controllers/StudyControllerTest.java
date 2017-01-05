@@ -10,6 +10,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -30,6 +31,8 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -89,7 +92,7 @@ public class StudyControllerTest {
         controller = spy(new StudyController());
         
         // mock session with study identifier
-        studyId = new StudyIdentifierImpl(TestConstants.TEST_STUDY_IDENTIFIER);
+        studyId = new StudyIdentifierImpl(TestConstants.TEST_STUDY_IDENTIFIER + "test");
         when(mockSession.getStudyIdentifier()).thenReturn(studyId);
         when(mockSession.isAuthenticated()).thenReturn(true);
         
@@ -98,6 +101,7 @@ public class StudyControllerTest {
         study.setIdentifier(studyId.getIdentifier());
         study.setSynapseProjectId(TEST_PROJECT_ID);
         study.setSynapseDataAccessTeamId(TEST_TEAM_ID);
+        study.setActive(true);
         
         when(mockStudyService.getStudy(studyId)).thenReturn(study);
         when(mockStudyService.getStudy(studyId.getIdentifier())).thenReturn(study);
@@ -144,6 +148,48 @@ public class StudyControllerTest {
         doReturn(session).when(controller).getSessionIfItExists();
 
         controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
+    }
+
+    @Test
+    public void canDeactivateForAdmin() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+
+        controller.deleteStudy(study.getIdentifier(), "false");
+
+        verify(mockStudyService).deleteStudy(study.getIdentifier(), false);
+        verifyNoMoreInteractions(mockStudyService);
+    }
+
+    @Test
+    public void canDeleteForAdmin() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+
+        controller.deleteStudy(study.getIdentifier(), "true");
+
+        verify(mockStudyService).deleteStudy(study.getIdentifier(), true);
+        verifyNoMoreInteractions(mockStudyService);
+    }
+
+    @Test(expected = NotAuthenticatedException.class)
+    public void cannotDeactivateForDeveloper() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+
+        controller.deleteStudy(study.getIdentifier(), "false");
+    }
+
+    @Test(expected = NotAuthenticatedException.class)
+    public void cannotDeleteForDeveloper() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+
+        controller.deleteStudy(study.getIdentifier(), "true");
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void deactivateStudyThrowsGoodException() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doThrow(new EntityNotFoundException(Study.class)).when(mockStudyService).deleteStudy(study.getIdentifier(), false);
+
+        controller.deleteStudy(study.getIdentifier(), "false");
     }
 
     @Test
