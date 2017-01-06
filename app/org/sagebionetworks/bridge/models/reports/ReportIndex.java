@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.reports;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -17,7 +18,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
  */
 @BridgeTypeName("ReportIndex")
 @JsonDeserialize(as=DynamoReportIndex.class)
-public interface ReportIndex {
+public interface ReportIndex extends BridgeEntity {
 
     static ReportIndex create() {
         return new DynamoReportIndex();
@@ -30,4 +31,6 @@ public interface ReportIndex {
     String getIdentifier();
     void setIdentifier(String identifier);
     
+    boolean isPublic();
+    void setPublic(boolean isPublic);
 }

@@ -50,6 +50,12 @@ public class ReportService {
         this.reportIndexDao = reportIndexDao;
     }
     
+    public ReportIndex getReportIndex(ReportDataKey key) {
+        checkNotNull(key);
+        
+        return reportIndexDao.getIndex(key);
+    }
+    
     public DateRangeResourceList<? extends ReportData> getStudyReport(StudyIdentifier studyId, String identifier,
             LocalDate startDate, LocalDate endDate) {
         // ReportDataKey validates all parameters to this method
@@ -177,12 +183,20 @@ public class ReportService {
     
     public void deleteParticipantReportIndex(StudyIdentifier studyId, String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
-                .withHealthCode("dummy-value")
+             // force INDEX key to be generated event for participant index (healthCode not relevant for this)
+                .withHealthCode("dummy-value") 
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
         
         reportIndexDao.removeIndex(key);
+    }
+    
+    public void updateReportIndex(ReportType reportType, ReportIndex index) {
+        if (reportType == ReportType.PARTICIPANT) {
+            index.setPublic(false);
+        }
+        reportIndexDao.updateIndex(index);
     }
 
     private void addToIndex(ReportDataKey key) {

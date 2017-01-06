@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -22,6 +24,7 @@ public class ReportTypeResourceListTest {
         ReportIndex index2 = ReportIndex.create();
         index2.setKey("doesn't matter what this is");
         index2.setIdentifier("bar");
+        index2.setPublic(true);
         
         ReportTypeResourceList<ReportIndex> list = new ReportTypeResourceList<>(
                 Lists.newArrayList(index1, index2), ReportType.PARTICIPANT);
@@ -31,7 +34,9 @@ public class ReportTypeResourceListTest {
         assertEquals(2, node.get("total").asInt());
         assertEquals("ReportTypeResourceList", node.get("type").asText());
         assertEquals("foo", node.get("items").get(0).get("identifier").asText());
+        assertFalse(node.get("items").get(0).get("public").asBoolean());
         assertEquals("bar", node.get("items").get(1).get("identifier").asText());
+        assertTrue(node.get("items").get(1).get("public").asBoolean());
         assertEquals(4, node.size());
         
         // We never deserialize this on the server side (only in the SDK).

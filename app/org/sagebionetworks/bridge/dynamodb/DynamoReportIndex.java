@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -12,6 +13,7 @@ public class DynamoReportIndex implements ReportIndex {
 
     private String key;
     private String identifier;
+    private boolean isPublic;
     
     @JsonIgnore
     @DynamoDBHashKey
@@ -35,5 +37,16 @@ public class DynamoReportIndex implements ReportIndex {
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
 
+    }
+    
+    @DynamoDBAttribute
+    @Override
+    public boolean isPublic() {
+        return isPublic;
+    }
+    
+    @Override
+    public void setPublic(boolean isPublic) {
+        this.isPublic = isPublic;
     }
 }
