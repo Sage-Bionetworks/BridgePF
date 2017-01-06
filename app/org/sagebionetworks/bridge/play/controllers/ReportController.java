@@ -90,7 +90,7 @@ public class ReportController extends BaseController {
         DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(
                 session.getStudyIdentifier(), identifier, session.getHealthCode(), startDate, endDate);
         
-        return ok((JsonNode)MAPPER.valueToTree(results));
+        return okResult(results);
     }
     
     public Result getParticipantReportForResearcher(String userId, String identifier, String startDateString,
@@ -106,7 +106,7 @@ public class ReportController extends BaseController {
         DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(
                 session.getStudyIdentifier(), identifier, account.getHealthCode(), startDate, endDate);
         
-        return ok((JsonNode)MAPPER.valueToTree(results));
+        return okResult(results);
     }
     
     /**
@@ -202,7 +202,7 @@ public class ReportController extends BaseController {
         DateRangeResourceList<? extends ReportData> results = reportService
                 .getStudyReport(session.getStudyIdentifier(), identifier, startDate, endDate);
         
-        return ok((JsonNode)MAPPER.valueToTree(results));
+        return okResult(results);
     }
     
     /**
@@ -220,7 +220,7 @@ public class ReportController extends BaseController {
         DateRangeResourceList<? extends ReportData> results = reportService.getStudyReport(
                 studyId, identifier, startDate, endDate);
         
-        return ok((JsonNode)MAPPER.valueToTree(results));
+        return okResult(results);
     }
     
     /**
