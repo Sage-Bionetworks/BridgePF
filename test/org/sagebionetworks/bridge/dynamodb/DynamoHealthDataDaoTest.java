@@ -10,16 +10,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
+import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
@@ -143,7 +145,7 @@ public class DynamoHealthDataDaoTest {
         record.setCreatedOn(TEST_CREATED_ON);
         record.setSchemaId(TEST_SCHEMA_ID);
 
-        List<DynamoHealthDataRecord> mockResult = Arrays.asList(record);
+        List<DynamoHealthDataRecord> mockResult = ImmutableList.of(record);
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
 
         // mock mapper
@@ -159,5 +161,48 @@ public class DynamoHealthDataDaoTest {
         List<HealthDataRecord> retVal = dao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID);
 
         assertEquals(mockResult, retVal);
+    }
+
+    @Test
+    public void getRecordsByHealthCodeCreatedOnSchemaIdMaxRecords() {
+        // mock result
+        List<DynamoHealthDataRecord> recordList = new ArrayList<>();
+
+        // For branch coverage, first record has the wrong schema ID.
+        DynamoHealthDataRecord wrongSchemaRecord = new DynamoHealthDataRecord();
+        wrongSchemaRecord.setId("wrong-schema-record");
+        wrongSchemaRecord.setSchemaId("wrong-" + TEST_SCHEMA_ID);
+        recordList.add(wrongSchemaRecord);
+
+        // The only thing we look for in the results is schema ID. Also add recordID so we can test our results.
+        // Make a list of 20 more records to test the max dupe records logic.
+        for (int i = 0; i < 20; i++) {
+            DynamoHealthDataRecord oneRecord = new DynamoHealthDataRecord();
+            oneRecord.setId("record-" + i);
+            oneRecord.setSchemaId(TEST_SCHEMA_ID);
+            recordList.add(oneRecord);
+        }
+
+        // mock DDB query
+        PaginatedQueryList<DynamoHealthDataRecord> mockGetResult = mock(PaginatedQueryList.class);
+        when(mockGetResult.isEmpty()).thenReturn(false);
+        when(mockGetResult.iterator()).thenReturn(recordList.iterator()); // mock iterator to handle foreach loop
+
+        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
+        when(mockMapper.query(eq(DynamoHealthDataRecord.class), any())).thenReturn(mockGetResult);
+
+        DynamoHealthDataDao dao = new DynamoHealthDataDao();
+        dao.setMapper(mockMapper);
+
+        // execute and validate
+        List<HealthDataRecord> resultRecordList = dao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE,
+                TEST_CREATED_ON, TEST_SCHEMA_ID);
+        assertEquals(BridgeConstants.DUPE_RECORDS_MAX_COUNT, resultRecordList.size());
+
+        for (int i = 0; i < BridgeConstants.DUPE_RECORDS_MAX_COUNT; i++) {
+            HealthDataRecord oneResultRecord = resultRecordList.get(i);
+            assertEquals("record-" + i, oneResultRecord.getId());
+            assertEquals(TEST_SCHEMA_ID, oneResultRecord.getSchemaId());
+        }
     }
 }
