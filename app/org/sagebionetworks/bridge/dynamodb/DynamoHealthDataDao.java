@@ -5,15 +5,15 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
@@ -121,19 +121,19 @@ public class DynamoHealthDataDao implements HealthDataDao {
         List<DynamoHealthDataRecord> recordList = mapper.query(DynamoHealthDataRecord.class, expression);
 
         List<HealthDataRecord> finalRecords = new ArrayList<>();
-        for (Object oneResult : recordList) {
-            if (!DynamoHealthDataRecord.class.isInstance(oneResult)) {
-                // This should never happen, but just in case.
-                throw new BridgeServiceException(String.format(
-                        "DynamoDB returned objects of type %s instead of %s",
-                        oneResult.getClass().getName(), DynamoHealthDataRecord.class.getName()));
-            }
+        int numDupes = 0;
+        for (DynamoHealthDataRecord oneResult : recordList) {
+            if (oneResult.getSchemaId().equals(schemaId)) {
+                finalRecords.add(oneResult);
+                numDupes++;
 
-            finalRecords.add((HealthDataRecord) oneResult);
+                if (numDupes >= BridgeConstants.DUPE_RECORDS_MAX_COUNT) {
+                    // Limit the number of dupes we get to prevent browning out DDB.
+                    break;
+                }
+            }
         }
 
-        return finalRecords.stream()
-                .filter(record -> record.getSchemaId().equals(schemaId))
-                .collect(Collectors.toList());
+        return finalRecords;
     }
 }

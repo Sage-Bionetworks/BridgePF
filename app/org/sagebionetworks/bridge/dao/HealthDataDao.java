@@ -54,7 +54,9 @@ public interface HealthDataDao {
     HealthDataRecordBuilder getRecordBuilder();
 
     /**
-     * Get a list of records by healthCode, creatdOn and SchemaId
+     * Get a list of records with the same healthCode and schemaId that are within an hour of the createdOn. For
+     * performance reasons, this caps the number of results returned to 10.
+     *
      * @param healthCode
      *      healthCode in String format
      * @param createdOn

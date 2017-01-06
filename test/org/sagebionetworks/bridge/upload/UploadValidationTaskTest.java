@@ -18,7 +18,6 @@ import javax.annotation.Nonnull;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.base.Strings;
@@ -27,6 +26,8 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -57,11 +58,6 @@ public class UploadValidationTaskTest {
 
     private HealthDataRecord testRecord;
 
-    private HealthDataRecord testRecordDupe;
-
-    private HealthDataRecord testRecordDupe2;
-
-    private List<HealthDataRecord> testRecordDupeListNormal;
     private List<HealthDataRecord> testRecordDupeListMulti;
 
     private final List<UploadValidationHandler> handlerList = ImmutableList.of(
@@ -94,7 +90,7 @@ public class UploadValidationTaskTest {
                 .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
                 .build();
 
-        testRecordDupe = new DynamoHealthDataRecord.Builder()
+        HealthDataRecord testRecordDupe = new DynamoHealthDataRecord.Builder()
                 .withCreatedOn(CREATED_ON)
                 .withHealthCode(HEALTH_CODE)
                 .withId(RECORD_ID_2)
@@ -111,7 +107,7 @@ public class UploadValidationTaskTest {
                 .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
                 .build();
 
-        testRecordDupe2 = new DynamoHealthDataRecord.Builder()
+        HealthDataRecord testRecordDupe2 = new DynamoHealthDataRecord.Builder()
                 .withCreatedOn(CREATED_ON)
                 .withHealthCode(HEALTH_CODE)
                 .withId(RECORD_ID_3)
@@ -128,12 +124,13 @@ public class UploadValidationTaskTest {
                 .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
                 .build();
 
-        testRecordDupeListNormal = Arrays.asList(testRecord, testRecordDupe);
-        testRecordDupeListMulti = Arrays.asList(testRecord, testRecordDupe, testRecordDupe2);
+        List<HealthDataRecord> testRecordDupeListNormal = ImmutableList.of(testRecord, testRecordDupe);
+        testRecordDupeListMulti = ImmutableList.of(testRecord, testRecordDupe, testRecordDupe2);
 
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(eq(RECORD_ID))).thenReturn(testRecord);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(testRecordDupeListNormal);
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
+                testRecordDupeListNormal);
     }
 
     @Test
@@ -306,7 +303,7 @@ public class UploadValidationTaskTest {
         task.run();
 
         // verify log helper was called
-        verify(task).logDuplicateUploadRecords(eq(testRecord), eq(testRecordDupeListNormal));
+        verify(task).logDuplicateUploadRecords(eq(testRecord), eq(ImmutableList.of(RECORD_ID_2)));
     }
 
     @Test
@@ -327,7 +324,8 @@ public class UploadValidationTaskTest {
         // only return one test record
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(Arrays.asList(testRecord));
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
+                ImmutableList.of(testRecord));
         task.setHealthDataService(healthDataService);
 
         // execute
@@ -378,7 +376,8 @@ public class UploadValidationTaskTest {
         // return an empty list
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(new ArrayList<HealthDataRecord>());
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
+                ImmutableList.of());
         task.setHealthDataService(healthDataService);
         task.run();
         verify(task, times(0)).logDuplicateUploadRecords(any(), any());
@@ -406,7 +405,53 @@ public class UploadValidationTaskTest {
         task.setHealthDataService(healthDataService);
 
         task.run();
-        verify(task).logDuplicateUploadRecords(eq(testRecord), eq(testRecordDupeListMulti));
+        verify(task).logDuplicateUploadRecords(eq(testRecord), eq(ImmutableList.of(RECORD_ID_2, RECORD_ID_3)));
+    }
+
+    @Test
+    public void dedupeMaxDupes() {
+        // input
+        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
+
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId("test-upload");
+
+        UploadValidationContext ctx = new UploadValidationContext();
+        ctx.setStudy(study);
+        ctx.setUpload(upload2);
+
+        // set up validation task
+        UploadValidationTask task = spy(new UploadValidationTask(ctx));
+        task.setHandlerList(handlerList);
+
+        healthDataService = mock(HealthDataService.class);
+        when(healthDataService.getRecordById(any())).thenReturn(testRecord);
+
+        // Create a list with 1 original and 11 dupes. Logging will max out at 10 dupes.
+        List<HealthDataRecord> dupeRecordList = new ArrayList<>();
+        dupeRecordList.add(testRecord);
+
+        for (int i = 0; i < 12; i++) {
+            // All we care about is record ID. Bypass the builder, so we don't have to validate and get stuck with
+            // quadratic updates when we make changes.
+            DynamoHealthDataRecord dupeRecord = new DynamoHealthDataRecord();
+            dupeRecord.setId(RECORD_ID + "-" + i);
+            dupeRecordList.add(dupeRecord);
+        }
+
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(eq(HEALTH_CODE), eq(CREATED_ON), eq(SCHEMA_ID)))
+                .thenReturn(dupeRecordList);
+        task.setHealthDataService(healthDataService);
+
+        // execute and verify
+        task.run();
+
+        List<String> expectedDupeRecordIdList = new ArrayList<>();
+        for (int i = 0; i < BridgeConstants.DUPE_RECORDS_MAX_COUNT; i++) {
+            expectedDupeRecordIdList.add(RECORD_ID + "-" + i);
+        }
+
+        verify(task).logDuplicateUploadRecords(testRecord, expectedDupeRecordIdList);
     }
 
     // Test handler that makes its presence known only by writing a message to the validation context.
