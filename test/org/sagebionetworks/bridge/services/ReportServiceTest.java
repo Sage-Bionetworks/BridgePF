@@ -144,8 +144,9 @@ public class ReportServiceTest {
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05T12:00:00.000Z").getMillis());
         try {
             LocalDate yesterday = LocalDate.parse("2015-05-04");
+            LocalDate today = LocalDate.parse("2015-05-05");
             
-            doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, yesterday, yesterday);
+            doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, yesterday, today);
             
             DateRangeResourceList<? extends ReportData> retrieved = service.getStudyReport(
                     TEST_STUDY, IDENTIFIER, null, null);
@@ -153,7 +154,7 @@ public class ReportServiceTest {
             verify(mockReportDataDao).getReportData(eq(STUDY_REPORT_DATA_KEY), localDateCaptor.capture(),
                     localDateCaptor.capture());
             assertEquals(yesterday, localDateCaptor.getAllValues().get(0));
-            assertEquals(yesterday, localDateCaptor.getAllValues().get(1));
+            assertEquals(today, localDateCaptor.getAllValues().get(1));
             assertEquals(results, retrieved);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
@@ -176,8 +177,9 @@ public class ReportServiceTest {
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05T12:00:00.000Z").getMillis());
         try {
             LocalDate yesterday = LocalDate.parse("2015-05-04");
+            LocalDate today = LocalDate.parse("2015-05-05");
             
-            doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, yesterday, yesterday);
+            doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, yesterday, today);
             
             DateRangeResourceList<? extends ReportData> retrieved = service.getParticipantReport(
                     TEST_STUDY, IDENTIFIER, HEALTH_CODE, null, null);
@@ -185,7 +187,7 @@ public class ReportServiceTest {
             verify(mockReportDataDao).getReportData(eq(PARTICIPANT_REPORT_DATA_KEY), localDateCaptor.capture(),
                     localDateCaptor.capture());
             assertEquals(yesterday, localDateCaptor.getAllValues().get(0));
-            assertEquals(yesterday, localDateCaptor.getAllValues().get(1));
+            assertEquals(today, localDateCaptor.getAllValues().get(1));
             assertEquals(results, retrieved);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
@@ -331,7 +333,7 @@ public class ReportServiceTest {
         try {
             service.getParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, null, null);
             
-            verify(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, LocalDate.parse("2016-02-07"), LocalDate.parse("2016-02-07"));
+            verify(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, LocalDate.parse("2016-02-07"), LocalDate.parse("2016-02-08"));
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }
