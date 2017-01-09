@@ -277,6 +277,20 @@ public class ReportController extends BaseController {
     }
     
     /**
+     * Get a single study report index
+     */
+    public Result getStudyReportIndex(String identifier) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(ReportType.STUDY)
+                .withStudyIdentifier(session.getStudyIdentifier()).build();
+        
+        ReportIndex index = reportService.getReportIndex(key);
+        return okResult(index);
+    }
+    
+    /**
      * Update a single study report index. 
      */
     public Result updateStudyReportIndex(String identifier) {

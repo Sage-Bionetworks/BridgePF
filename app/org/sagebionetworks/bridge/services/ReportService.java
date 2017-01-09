@@ -60,8 +60,8 @@ public class ReportService {
             LocalDate startDate, LocalDate endDate) {
         // ReportDataKey validates all parameters to this method
         
-        startDate = defaultValueToYesterday(startDate);
-        endDate = defaultValueToYesterday(endDate);
+        startDate = defaultValueToMinusDays(startDate, 1);
+        endDate = defaultValueToMinusDays(endDate, 0);
         validateDateRange(startDate, endDate);
 
         ReportDataKey key = new ReportDataKey.Builder()
@@ -75,8 +75,8 @@ public class ReportService {
     public DateRangeResourceList<? extends ReportData> getParticipantReport(StudyIdentifier studyId, String identifier, String healthCode, LocalDate startDate, LocalDate endDate) {
         // ReportDataKey validates all parameters to this method
         
-        startDate = defaultValueToYesterday(startDate);
-        endDate = defaultValueToYesterday(endDate);
+        startDate = defaultValueToMinusDays(startDate, 1);
+        endDate = defaultValueToMinusDays(endDate, 0);
         validateDateRange(startDate, endDate);
 
         ReportDataKey key = new ReportDataKey.Builder()
@@ -210,9 +210,9 @@ public class ReportService {
         }
     }
     
-    private LocalDate defaultValueToYesterday(LocalDate submittedValue) {
+    private LocalDate defaultValueToMinusDays(LocalDate submittedValue, int minusDays) {
         if (submittedValue == null) {
-            return DateUtils.getCurrentCalendarDateInLocalTime().minusDays(1);
+            return DateUtils.getCurrentCalendarDateInLocalTime().minusDays(minusDays);
         }
         return submittedValue;
     }

@@ -199,6 +199,50 @@ public class ReportControllerTest {
     }
     
     @Test
+    public void getStudyReportIndexAsDeveloper() throws Exception {
+        // Developer is set up in the @Before method, no further changes necessary
+        getStudyReportIndex();
+    }
+    
+    @Test
+    public void getStudyReportIndexAsResearcher() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER))
+                .build();
+        session.setParticipant(participant);
+        
+        getStudyReportIndex();
+    }
+    
+    @Test(expected = UnauthorizedException.class) 
+    public void cannotAccessAsUser() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
+        session.setParticipant(participant);
+        
+        getStudyReportIndex();
+    }
+
+    private void getStudyReportIndex() throws Exception {
+        ReportIndex index = ReportIndex.create();
+        index.setIdentifier(REPORT_ID);
+        index.setPublic(true);
+        index.setKey(REPORT_ID+":STUDY");
+        
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(REPORT_ID)
+                .withReportType(ReportType.STUDY)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        doReturn(index).when(mockReportService).getReportIndex(key);
+        
+        Result result = controller.getStudyReportIndex(REPORT_ID);
+        assertEquals(200, result.status());
+        ReportIndex deserIndex = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), ReportIndex.class);
+        assertEquals(REPORT_ID, deserIndex.getIdentifier());
+        assertTrue(deserIndex.isPublic());
+        assertNull(deserIndex.getKey()); // isn't returned in API
+    }
+
+    @Test
     public void getStudyReportData() throws Exception {
         setupContext();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
