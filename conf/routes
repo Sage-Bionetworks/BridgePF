@@ -85,7 +85,6 @@ POST   /v3/reports/:identifier/index                      @org.sagebionetworks.b
 DELETE /v3/reports/:identifier                            @org.sagebionetworks.bridge.play.controllers.ReportController.deleteStudyReport(identifier: String)
 DELETE /v3/reports/:identifier/:date                      @org.sagebionetworks.bridge.play.controllers.ReportController.deleteStudyReportRecord(identifier: String, date: String)
 POST   /v3/participants/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.saveParticipantReportForWorker(identifier: String)
-POST   /v3/participants/reports/:identifier/index         @org.sagebionetworks.bridge.play.controllers.ReportController.updateParticipantReportIndex(identifier: String)
 DELETE /v3/participants/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReportIndex(identifier: String)
 GET    /v3/participants/:userId/reports/:identifier       @org.sagebionetworks.bridge.play.controllers.ReportController.getParticipantReportForResearcher(userId: String, identifier: String, startDate: String ?= null, endDate: String ?= null)
 POST   /v3/participants/:userId/reports/:identifier       @org.sagebionetworks.bridge.play.controllers.ReportController.saveParticipantReport(userId: String, identifier: String)
