@@ -7,19 +7,14 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.*;
 
-import java.util.Map;
-
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.DateRange;
 
 public class UserDataDownloadViaSqsServiceTest {

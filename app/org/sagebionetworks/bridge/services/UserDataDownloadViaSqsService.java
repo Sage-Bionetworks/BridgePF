@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.Nonnull;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
@@ -15,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRange;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 

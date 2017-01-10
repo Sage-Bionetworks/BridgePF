@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface StudyDao {
 

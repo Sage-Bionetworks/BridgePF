@@ -43,7 +43,7 @@ public class DynamoStudyTest {
         
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
         final JsonNode node = BridgeObjectMapper.get().readTree(json);
-        
+
         assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
         assertEqualsAndNotNull(study.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());
@@ -69,6 +69,10 @@ public class DynamoStudyTest {
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
         assertTrue(node.get("externalIdValidationEnabled").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());
+        assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.IOS),
+                node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
+        assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
+                node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
         
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
         assertNotNull(supportedVersionsNode);
