@@ -310,26 +310,6 @@ public class ReportController extends BaseController {
         return okResult("Report index updated.");
     }
     
-    /**
-     * Update a single participant report index. 
-     */
-    public Result updateParticipantReportIndex(String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        
-        ReportIndex index = parseJson(request(), ReportIndex.class);
-        ReportDataKey key = new ReportDataKey.Builder()
-                .withHealthCode(session.getHealthCode())
-                .withReportType(ReportType.PARTICIPANT)
-                .withIdentifier(identifier)
-                .withStudyIdentifier(session.getStudyIdentifier()).build();
-        index.setKey(key.getIndexKeyString());
-        index.setIdentifier(identifier);
-        
-        reportService.updateReportIndex(ReportType.PARTICIPANT, index);
-        
-        return okResult("Report index updated.");
-    }
-    
     private void verifyIndex(final StudyIdentifier studyId, final String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)

@@ -479,21 +479,6 @@ public class ReportControllerTest {
         TestUtils.assertResult(result, 200, "Report index updated.");
     }
     
-    @Test
-    public void canUpdateParticipantReportIndex() throws Exception {
-        TestUtils.mockPlayContextWithJson("{\"public\":true}");
-        
-        Result result = controller.updateParticipantReportIndex(REPORT_ID);
-        
-        verify(mockReportService).updateReportIndex(eq(ReportType.PARTICIPANT), reportDataIndex.capture());
-        ReportIndex index = reportDataIndex.getValue();
-        assertTrue(index.isPublic());
-        assertEquals(REPORT_ID, index.getIdentifier());
-        assertEquals("api:PARTICIPANT", index.getKey());
-        
-        TestUtils.assertResult(result, 200, "Report index updated.");
-    }
-    
     private static final TypeReference<DateRangeResourceList<? extends ReportData>> REPORT_REF = new TypeReference<DateRangeResourceList<? extends ReportData>>() {
     };
     
