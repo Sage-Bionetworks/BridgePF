@@ -50,12 +50,14 @@ public final class DynamoStudy implements Study {
     private boolean emailVerificationEnabled;
     private boolean externalIdValidationEnabled;
     private Map<String, Integer> minSupportedAppVersions;
+    private Map<String, String> pushNotificationARNs;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
         dataGroups = new HashSet<>();
         minSupportedAppVersions = new HashMap<>();
+        pushNotificationARNs = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -343,6 +345,19 @@ public final class DynamoStudy implements Study {
     public void setMinSupportedAppVersions(Map<String,Integer> map) {
         this.minSupportedAppVersions = (map == null) ? new HashMap<>() : map;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Map<String,String> getPushNotificationARNs() {
+        return pushNotificationARNs;
+    }
+
+    @Override
+    public void setPushNotificationARNs(Map<String,String> map) {
+        this.pushNotificationARNs = (map == null) ? new HashMap<>() : map;
+    }
+    
+    
 
     @Override
     public int hashCode() {
@@ -351,7 +366,7 @@ public final class DynamoStudy implements Study {
                 dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
-                usesCustomExportSchedule);
+                usesCustomExportSchedule, pushNotificationARNs);
     }
 
     @Override
@@ -382,7 +397,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
                 && Objects.equals(externalIdValidationEnabled, other.externalIdValidationEnabled)
                 && Objects.equals(emailVerificationEnabled, other.emailVerificationEnabled)
-                && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions);
+                && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions)
+                && Objects.equals(pushNotificationARNs, other.pushNotificationARNs);
     }
 
     @Override
@@ -393,11 +409,12 @@ public final class DynamoStudy implements Study {
                             + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
                             + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
                             + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
-                            + "externalIdValidationEnabled=%s, minSupportedAppVersions=%s, usesCustomExportSchedule=%s]",
+                            + "externalIdValidationEnabled=%s, minSupportedAppVersions=%s, usesCustomExportSchedule=%s, "
+                            + "pushNotificationARNs=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail, synapseDataAccessTeamId, 
                 synapseProjectId, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
                 dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, minSupportedAppVersions, 
-                usesCustomExportSchedule);
+                usesCustomExportSchedule, pushNotificationARNs);
     }
 }

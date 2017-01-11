@@ -212,4 +212,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 	
 	/** @see #getMinSupportedVersion(); */
     void setMinSupportedAppVersions(Map<String, Integer> map);
+    
+    /**
+     * A map between operating system names, and the platform ARN necessary to register a device to 
+     * receive mobile push notifications for this study, on that platform.
+     */
+    Map<String, String> getPushNotificationARNs();
+
+    /** @see #getPushNotificationARNs(); */
+    void setPushNotificationARNs(Map<String, String> pushNotificationARNs);
 }

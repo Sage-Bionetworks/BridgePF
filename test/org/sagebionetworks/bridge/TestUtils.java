@@ -270,13 +270,19 @@ public class TestUtils {
     }
     
     public static DynamoStudy getValidStudy(Class<?> clazz) {
+        String id = TestUtils.randomName(clazz);
+        
+        Map<String,String> pushNotificationARNs = Maps.newHashMap();
+        pushNotificationARNs.put(OperatingSystem.IOS, "arn:ios:"+id);
+        pushNotificationARNs.put(OperatingSystem.ANDROID, "arn:android:"+id);
+        
         // This study will save without further modification.
         DynamoStudy study = new DynamoStudy();
         study.setName("Test Study ["+clazz.getSimpleName()+"]");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
-        study.setIdentifier(TestUtils.randomName(clazz));
+        study.setIdentifier(id);
         study.setMinAgeOfConsent(18);
         study.setSponsorName("The Council on Test Studies");
         study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
@@ -293,6 +299,7 @@ public class TestUtils {
         study.setEmailVerificationEnabled(true);
         study.setExternalIdValidationEnabled(true);
         study.setActive(true);
+        study.setPushNotificationARNs(pushNotificationARNs);
         return study;
     }
     
