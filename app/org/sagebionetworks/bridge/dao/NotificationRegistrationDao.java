@@ -13,7 +13,7 @@ public interface NotificationRegistrationDao {
     
     NotificationRegistration createRegistration(String platformARN, NotificationRegistration registration);
     
-    NotificationRegistration updateRegistration(String platformARN, NotificationRegistration registration);
+    NotificationRegistration updateRegistration(NotificationRegistration registration);
     
     void deleteRegistration(String healthCode, String guid);
     

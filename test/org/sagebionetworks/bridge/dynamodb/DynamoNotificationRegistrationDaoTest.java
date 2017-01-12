@@ -230,7 +230,7 @@ public class DynamoNotificationRegistrationDaoTest {
         doReturn(map).when(mockGetEndpointAttributesResult).getAttributes();
         doReturn(mockGetEndpointAttributesResult).when(mockSnsClient).getEndpointAttributes(any());
         
-        dao.updateRegistration(PLATFORM_ARN, registration);
+        dao.updateRegistration(registration);
         
         verify(mockSnsClient, never()).setEndpointAttributes(any());
         verify(mockMapper, never()).save(any());
@@ -248,7 +248,7 @@ public class DynamoNotificationRegistrationDaoTest {
         doReturn(map).when(mockGetEndpointAttributesResult).getAttributes();
         doReturn(mockGetEndpointAttributesResult).when(mockSnsClient).getEndpointAttributes(any());
         
-        dao.updateRegistration(PLATFORM_ARN, registration);
+        dao.updateRegistration(registration);
         
         verify(mockSnsClient).setEndpointAttributes(setEndpointAttributesRequestCaptor.capture());
         SetEndpointAttributesRequest request = setEndpointAttributesRequestCaptor.getValue();
@@ -276,7 +276,7 @@ public class DynamoNotificationRegistrationDaoTest {
         
         NotificationRegistration registration = getStubRegistration();
         try {
-            dao.updateRegistration(PLATFORM_ARN, registration);
+            dao.updateRegistration(registration);
             fail("Should not have thrown exception");
         } catch(EntityNotFoundException e) {
         }

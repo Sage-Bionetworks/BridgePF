@@ -121,8 +121,7 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
      * is the device token, but this is important to be able to update as it changes on some platforms.
      */
     @Override
-    public NotificationRegistration updateRegistration(String platformARN, NotificationRegistration registration) {
-        checkNotNull(platformARN);
+    public NotificationRegistration updateRegistration(NotificationRegistration registration) {
         checkNotNull(registration);
         checkNotNull(registration.getHealthCode());
         checkNotNull(registration.getGuid());
