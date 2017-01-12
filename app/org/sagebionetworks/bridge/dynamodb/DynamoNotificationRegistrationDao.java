@@ -117,8 +117,8 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
     }
     
     /**
-     * Update an endpoint using the GUID that was supplied on creation. The only thing you can actually update 
-     * is the device token, but this is important to be able to update as it changes on some platforms.
+     * Update an endpoint using the GUID that was supplied on creation. The only thing you can actually update is the
+     * device token, but this is important to be able to update as it changes on some platforms.
      */
     @Override
     public NotificationRegistration updateRegistration(NotificationRegistration registration) {
