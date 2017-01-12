@@ -70,7 +70,7 @@ public final class ClientInfo {
      * User-Agent string we send. To avoid confusion, recognize such synonyms/spelling errors and map them
      * to our two canonical platforms, "iPhone OS" and "Android". 
      */
-    private static final Map<String,String> PLATFORM_SYNONYMS = new ImmutableMap.Builder<String,String>()
+    public static final Map<String,String> PLATFORM_SYNONYMS = new ImmutableMap.Builder<String,String>()
             .put("iOS", "iPhone OS").build();
     
     /**
