@@ -65,12 +65,10 @@ public class NotificationsService {
         checkNotNull(registration);
         
         adjustToCanonicalOsNameIfNeeded(registration);
-        Study study = studyService.getStudy(studyId);
-        String platformARN = getPlatformARN(study, registration);
         
         Validate.entityThrowingException(NotificationRegistrationValidator.INSTANCE, registration);
         
-        return notificationRegistrationDao.updateRegistration(platformARN, registration);
+        return notificationRegistrationDao.updateRegistration(registration);
     }
     
     public void deleteRegistration(String healthCode, String guid) {

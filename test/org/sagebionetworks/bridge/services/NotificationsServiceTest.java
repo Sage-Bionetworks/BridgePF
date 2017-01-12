@@ -100,10 +100,10 @@ public class NotificationsServiceTest {
     @Test
     public void updateRegistration() {
         NotificationRegistration registration = createRegistrationObject();
-        doReturn(registration).when(mockRegistrationDao).updateRegistration(PLATFORM_ARN, registration);
+        doReturn(registration).when(mockRegistrationDao).updateRegistration(registration);
         
         NotificationRegistration result = service.updateRegistration(STUDY_ID, registration);
-        verify(mockRegistrationDao).updateRegistration(PLATFORM_ARN, registration);
+        verify(mockRegistrationDao).updateRegistration(registration);
         assertEquals(registration, result);
     }
     
@@ -128,7 +128,7 @@ public class NotificationsServiceTest {
     public void serviceFixesSynonymOsNamesOnUpdate() {
         NotificationRegistration registration = createRegistrationObject();
         registration.setOsName("iOS");
-        doReturn(registration).when(mockRegistrationDao).updateRegistration(PLATFORM_ARN, registration);
+        doReturn(registration).when(mockRegistrationDao).updateRegistration(registration);
         
         NotificationRegistration result = service.updateRegistration(STUDY_ID, registration);
         assertEquals(OperatingSystem.IOS, result.getOsName());
@@ -139,6 +139,6 @@ public class NotificationsServiceTest {
         NotificationRegistration registration = createRegistrationObject();
         registration.setOsName(OperatingSystem.ANDROID);
         
-        service.updateRegistration(STUDY_ID, registration);
+        service.createRegistration(STUDY_ID, registration);
     }
 }
