@@ -31,8 +31,8 @@ public interface NotificationRegistration extends BridgeEntity {
     public void setGuid(String guid);
     
     /**
-     * The platformEndpoint ARN generated when the user's device is registered 
-     * for a specific platform.
+     * The endpointARN generated when the user's device is registered for a specific 
+     * platform (using a platformARN).
      */
     public String getEndpointARN();
     
