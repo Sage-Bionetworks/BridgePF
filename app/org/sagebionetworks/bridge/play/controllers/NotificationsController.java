@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.models.GuidHolder;
@@ -16,6 +17,7 @@ public class NotificationsController extends BaseController {
     
     private NotificationsService notificationsService;
     
+    @Autowired
     final void setNotificationService(NotificationsService notificationsService) {
         this.notificationsService = notificationsService;
     }
