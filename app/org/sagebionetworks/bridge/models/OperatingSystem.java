@@ -20,8 +20,9 @@ public class OperatingSystem {
      * User-Agent string we send. To avoid confusion, recognize such synonyms/spelling errors and map them
      * to our two canonical platforms, "iPhone OS" and "Android". 
      */
-    public static final Map<String, String> PLATFORM_SYNONYMS = new ImmutableMap.Builder<String, String>()
+    public static final Map<String, String> SYNONYMS = new ImmutableMap.Builder<String, String>()
             .put("iOS", "iPhone OS").build();
     
-    public static final Set<String> ALL_OS_SYSTEMS = new ImmutableSet.Builder<String>().add(IOS).add(ANDROID).build();
+    public static final Set<String> ALL_OS_SYSTEMS = new ImmutableSet.Builder<String>()
+            .add(IOS).add(ANDROID).build();
 }

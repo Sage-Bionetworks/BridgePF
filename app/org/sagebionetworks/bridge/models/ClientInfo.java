@@ -233,8 +233,8 @@ public final class ClientInfo {
          * User-Agent header is not in our prescribed format.
          */
         public ClientInfo build() {
-            if (OperatingSystem.PLATFORM_SYNONYMS.containsKey(osName)) {
-                osName = OperatingSystem.PLATFORM_SYNONYMS.get(osName);
+            if (OperatingSystem.SYNONYMS.containsKey(osName)) {
+                osName = OperatingSystem.SYNONYMS.get(osName);
             }
             return new ClientInfo(appName, appVersion, deviceName, osName, osVersion, sdkName, sdkVersion);
         }
