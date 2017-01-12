@@ -181,7 +181,14 @@ public class DynamoNotificationRegistrationDaoTest {
         registration.setOsName(OperatingSystem.IOS);
         
         GuidHolder holder = dao.createRegistration(PLATFORM_ARN, HEALTH_CODE, registration);
+        
         assertEquals(GUID, holder.getGuid());
+        
+        // The save needs to use the same GUID and HEALTH_CODE or it'll be a duplicate
+        verify(mockMapper).save(notificationRegistrationCaptor.capture());
+        NotificationRegistration reg = notificationRegistrationCaptor.getValue();
+        assertEquals(HEALTH_CODE, reg.getHealthCode());
+        assertEquals(GUID, reg.getGuid());
     }
     
     @Test

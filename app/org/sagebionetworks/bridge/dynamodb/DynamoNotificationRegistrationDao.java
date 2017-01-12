@@ -154,8 +154,7 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         // Throws 404 if registration doesn't exist
         NotificationRegistration registration = getRegistration(healthCode, guid);
         
-        DeleteEndpointRequest request = new DeleteEndpointRequest()
-                .withEndpointArn(registration.getEndpointARN());
+        DeleteEndpointRequest request = new DeleteEndpointRequest().withEndpointArn(registration.getEndpointARN());
         snsClient.deleteEndpoint(request);
         
         mapper.delete(registration);
