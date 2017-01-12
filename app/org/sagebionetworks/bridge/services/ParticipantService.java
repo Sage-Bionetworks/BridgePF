@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -78,6 +79,8 @@ public class ParticipantService {
     private ScheduledActivityDao activityDao;
     
     private UploadService uploadService;
+    
+    private NotificationsService notificationsService;
     
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
@@ -117,6 +120,11 @@ public class ParticipantService {
     @Autowired
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
+    }
+    
+    @Autowired
+    final void setNotificationsService(NotificationsService notificationsService) {
+        this.notificationsService = notificationsService;
     }
 
     public StudyParticipant getParticipant(Study study, String id, boolean includeHistory) {
@@ -307,6 +315,15 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, userId);
         
         return uploadService.getUploads(account.getHealthCode(), startTime, endTime);
+    }
+    
+    public List<NotificationRegistration> listRegistrations(Study study, String userId) {
+        checkNotNull(study);
+        checkNotNull(userId);
+        
+        Account account = getAccountThrowingException(study, userId);
+        
+        return notificationsService.listRegistrations(account.getHealthCode());
     }
     
     private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,

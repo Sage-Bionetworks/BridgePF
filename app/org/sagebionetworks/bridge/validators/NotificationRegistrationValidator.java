@@ -5,10 +5,13 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
 public class NotificationRegistrationValidator implements Validator {
 
+    public static final NotificationRegistrationValidator INSTANCE = new NotificationRegistrationValidator();
+    
     public boolean supports(Class<?> clazz) {
         return NotificationRegistration.class.isAssignableFrom(clazz);
     }
@@ -24,9 +27,9 @@ public class NotificationRegistrationValidator implements Validator {
             errors.rejectValue("deviceId", "is required");
         }
         if (isBlank(registration.getOsName())) {
-            errors.rejectValue("deviceId", "is required");   
-        } else if () {
-            
+            errors.rejectValue("osName", "is required");   
+        } else if (!OperatingSystem.ALL_OS_SYSTEMS.contains(registration.getOsName())) {
+            errors.rejectValue("osName", "is not a supported platform");
         }
     }
 
