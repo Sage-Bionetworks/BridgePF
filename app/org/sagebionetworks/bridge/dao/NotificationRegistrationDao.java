@@ -11,9 +11,9 @@ public interface NotificationRegistrationDao {
     
     NotificationRegistration getRegistration(String healthCode, String guid);
     
-    GuidHolder createRegistration(String platformARN, String healthCode, NotificationRegistration registration);
+    NotificationRegistration createRegistration(String platformARN, NotificationRegistration registration);
     
-    GuidHolder updateRegistration(String platformARN, String healthCode, NotificationRegistration registration);
+    NotificationRegistration updateRegistration(String platformARN, NotificationRegistration registration);
     
     void deleteRegistration(String healthCode, String guid);
     

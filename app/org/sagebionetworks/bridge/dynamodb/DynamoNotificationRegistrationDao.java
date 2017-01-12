@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -85,23 +84,23 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
     }
 
     @Override
-    public GuidHolder createRegistration(String platformARN, String healthCode, NotificationRegistration registration) {
+    public NotificationRegistration createRegistration(String platformARN, NotificationRegistration registration) {
         checkNotNull(platformARN);
-        checkNotNull(healthCode);
         checkNotNull(registration);
+        checkNotNull(registration.getHealthCode());
         checkNotNull(registration.getDeviceId());
         checkNotNull(registration.getOsName());
         
         // (If the client is submitting same data a second time, SNS quietly ignores it, returns same endpointARN.) 
         CreatePlatformEndpointRequest request = new CreatePlatformEndpointRequest()
                 .withToken(registration.getDeviceId())
-                .withCustomUserData(healthCode)
+                .withCustomUserData(registration.getHealthCode())
                 .withPlatformApplicationArn(platformARN);
         CreatePlatformEndpointResult result = snsClient.createPlatformEndpoint(request);
         
         // If the data is the same and returns an existing endpointARN, we want to re-use the original record 
         // and GUID we provided to the client, not create a new record. Look for it.
-        NotificationRegistration existing = findExistingRecord(healthCode, result.getEndpointArn());
+        NotificationRegistration existing = findExistingRecord(registration.getHealthCode(), result.getEndpointArn());
         if (existing != null) {
             registration.setGuid(existing.getGuid());
             registration.setCreatedOn(existing.getCreatedOn());
@@ -109,12 +108,12 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
             registration.setGuid(BridgeUtils.generateGuid());    
             registration.setCreatedOn(DateTime.now().getMillis());
         }
-        registration.setHealthCode(healthCode);
+        registration.setHealthCode(registration.getHealthCode());
         registration.setModifiedOn(DateTime.now().getMillis());
         registration.setEndpointARN(result.getEndpointArn());
         
         mapper.save(registration);
-        return new GuidHolder(registration.getGuid());
+        return registration;
     }
     
     /**
@@ -122,9 +121,10 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
      * is the device token, but this is important to be able to update as it changes on some platforms.
      */
     @Override
-    public GuidHolder updateRegistration(String platformARN, String healthCode, NotificationRegistration registration) {
+    public NotificationRegistration updateRegistration(String platformARN, NotificationRegistration registration) {
         checkNotNull(platformARN);
-        checkNotNull(healthCode);
+        checkNotNull(registration);
+        checkNotNull(registration.getHealthCode());
         checkNotNull(registration.getGuid());
         checkNotNull(registration.getDeviceId());
         
@@ -132,18 +132,18 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         String deviceId = registration.getDeviceId();
         
         // Throws 404 if registration doesn't exist
-        NotificationRegistration existingRegistration = getRegistration(healthCode, guid);
+        NotificationRegistration existingRegistration = getRegistration(registration.getHealthCode(), guid);
         
         // Don't call update unless token has changed
         Map<String, String> attrs = getEndpointAttributes(existingRegistration.getEndpointARN());
         if (!attrs.get(TOKEN).equals(deviceId)) {
-            saveEndpointAttributes(healthCode, deviceId);
+            saveEndpointAttributes(registration.getHealthCode(), deviceId);
         
             existingRegistration.setModifiedOn(DateTime.now().getMillis());
             existingRegistration.setDeviceId(deviceId);
             mapper.save(existingRegistration);
         }
-        return new GuidHolder(existingRegistration.getGuid());
+        return existingRegistration;
     }
 
     @Override

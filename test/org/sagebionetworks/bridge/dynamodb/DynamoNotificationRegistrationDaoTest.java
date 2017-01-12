@@ -25,7 +25,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
@@ -138,10 +137,11 @@ public class DynamoNotificationRegistrationDaoTest {
         doReturn(mockCreatePlatformEndpointResult).when(mockSnsClient).createPlatformEndpoint(any());
         
         NotificationRegistration registration = NotificationRegistration.create();
+        registration.setHealthCode(HEALTH_CODE);
         registration.setDeviceId(DEVICE_ID);
         registration.setOsName(OperatingSystem.IOS);
         
-        GuidHolder holder = dao.createRegistration(PLATFORM_ARN, HEALTH_CODE, registration);
+        NotificationRegistration result = dao.createRegistration(PLATFORM_ARN, registration);
         
         verify(mockSnsClient).createPlatformEndpoint(createPlatformEndpointRequestCaptor.capture());
         
@@ -150,14 +150,14 @@ public class DynamoNotificationRegistrationDaoTest {
         assertEquals(DEVICE_ID, snsRequest.getToken());
         assertEquals(HEALTH_CODE, snsRequest.getCustomUserData());
         
-        assertNotNull(holder.getGuid());
-        assertNotEquals(GUID, holder.getGuid());
+        assertNotNull(result.getGuid());
+        assertNotEquals(GUID, result.getGuid());
         
         verify(mockMapper).save(notificationRegistrationCaptor.capture());
         
         NotificationRegistration reg = notificationRegistrationCaptor.getValue();
         assertEquals(HEALTH_CODE, reg.getHealthCode());
-        assertEquals(holder.getGuid(), reg.getGuid());
+        assertEquals(result.getGuid(), reg.getGuid());
         assertEquals(ENDPOINT_ARN, reg.getEndpointARN());
         assertEquals(DEVICE_ID, reg.getDeviceId());
         assertEquals(OperatingSystem.IOS, reg.getOsName());
@@ -177,12 +177,13 @@ public class DynamoNotificationRegistrationDaoTest {
         doReturn(mockCreatePlatformEndpointResult).when(mockSnsClient).createPlatformEndpoint(any());
         
         NotificationRegistration registration = NotificationRegistration.create();
+        registration.setHealthCode(HEALTH_CODE);
         registration.setDeviceId(DEVICE_ID);
         registration.setOsName(OperatingSystem.IOS);
         
-        GuidHolder holder = dao.createRegistration(PLATFORM_ARN, HEALTH_CODE, registration);
+        NotificationRegistration result = dao.createRegistration(PLATFORM_ARN, registration);
         
-        assertEquals(GUID, holder.getGuid());
+        assertEquals(GUID, result.getGuid());
         
         // The save needs to use the same GUID and HEALTH_CODE or it'll be a duplicate
         verify(mockMapper).save(notificationRegistrationCaptor.capture());
@@ -229,7 +230,7 @@ public class DynamoNotificationRegistrationDaoTest {
         doReturn(map).when(mockGetEndpointAttributesResult).getAttributes();
         doReturn(mockGetEndpointAttributesResult).when(mockSnsClient).getEndpointAttributes(any());
         
-        dao.updateRegistration(PLATFORM_ARN, HEALTH_CODE, registration);
+        dao.updateRegistration(PLATFORM_ARN, registration);
         
         verify(mockSnsClient, never()).setEndpointAttributes(any());
         verify(mockMapper, never()).save(any());
@@ -247,7 +248,7 @@ public class DynamoNotificationRegistrationDaoTest {
         doReturn(map).when(mockGetEndpointAttributesResult).getAttributes();
         doReturn(mockGetEndpointAttributesResult).when(mockSnsClient).getEndpointAttributes(any());
         
-        dao.updateRegistration(PLATFORM_ARN, HEALTH_CODE, registration);
+        dao.updateRegistration(PLATFORM_ARN, registration);
         
         verify(mockSnsClient).setEndpointAttributes(setEndpointAttributesRequestCaptor.capture());
         SetEndpointAttributesRequest request = setEndpointAttributesRequestCaptor.getValue();
@@ -275,7 +276,7 @@ public class DynamoNotificationRegistrationDaoTest {
         
         NotificationRegistration registration = getStubRegistration();
         try {
-            dao.updateRegistration(PLATFORM_ARN, HEALTH_CODE, registration);
+            dao.updateRegistration(PLATFORM_ARN, registration);
             fail("Should not have thrown exception");
         } catch(EntityNotFoundException e) {
         }
