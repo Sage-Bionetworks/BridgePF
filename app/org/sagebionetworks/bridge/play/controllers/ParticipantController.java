@@ -248,7 +248,7 @@ public class ParticipantController extends BaseController {
         return okResult(registrations);
     }
     
-    public Result sendMessage(String userId) {
+    public Result sendNotification(String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
