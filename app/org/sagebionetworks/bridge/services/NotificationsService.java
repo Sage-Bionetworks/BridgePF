@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.stream.Collectors.joining;
+import static org.sagebionetworks.bridge.BridgeUtils.SEMICOLON_SPACE_JOINER;
 
 import java.util.List;
 
@@ -160,8 +160,8 @@ public class NotificationsService {
             }
         }
         if (!errorMessages.isEmpty()) {
-            throw new BadRequestException(
-                "Error sending push notification: " + errorMessages.stream().collect(joining("; ")) + ".");
+            throw new BadRequestException("Error sending push notification: " + 
+                SEMICOLON_SPACE_JOINER.join(errorMessages) + ".");
         }
     }
 
