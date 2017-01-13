@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
 public interface NotificationRegistrationDao {

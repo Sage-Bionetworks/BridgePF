@@ -55,6 +55,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -123,6 +124,9 @@ public class ParticipantControllerTest {
     
     @Captor
     private ArgumentCaptor<DateTime> endTimeCaptor;
+    
+    @Captor
+    private ArgumentCaptor<NotificationMessage> messageCaptor;
     
     private UserSession session;
     
@@ -657,6 +661,20 @@ public class ParticipantControllerTest {
         assertEquals("ResourceList", node.get("type").asText());
         
         verify(participantService).listRegistrations(study, ID);
+    }
+    
+    @Test
+    public void sendMessage() throws Exception {
+        NotificationMessage message = TestUtils.getNotificationMessage();
+        
+        TestUtils.mockPlayContextWithJson(message);
+        controller.sendMessage(ID);
+        
+        verify(participantService).sendNotification(eq(study), eq(ID), messageCaptor.capture());
+        NotificationMessage captured = messageCaptor.getValue();
+        
+        assertEquals("a subject", captured.getSubject());
+        assertEquals("a message", captured.getMessage());
     }
     
     private PagedResourceList<ScheduledActivity> createActivityResults() {

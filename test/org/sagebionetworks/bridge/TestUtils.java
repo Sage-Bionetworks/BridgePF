@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -152,6 +153,11 @@ public class TestUtils {
         mockPlayContextWithJson(json, Maps.newHashMap());
     }
     
+    public static void mockPlayContextWithJson(Object object) throws Exception {
+        String json = BridgeObjectMapper.get().writeValueAsString(object);
+        mockPlayContextWithJson(json, Maps.newHashMap());
+    }
+    
     /**
      * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
      */
@@ -179,6 +185,11 @@ public class TestUtils {
     
     public static String randomName(Class<?> clazz) {
         return "test-" + clazz.getSimpleName().toLowerCase() + "-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
+    }
+    
+    public static final NotificationMessage getNotificationMessage() {
+        return new NotificationMessage.Builder()
+                .withSubject("a subject").withMessage("a message").build();
     }
     
     public static final StudyParticipant getStudyParticipant(Class<?> clazz) {

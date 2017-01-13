@@ -25,6 +25,7 @@ GET    /v3/participants/:userId/requestInfo                  @org.sagebionetwork
 GET    /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistory(userId: String, offsetKey: String ?= null, pageSize: String ?= null)
 DELETE /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteActivities(userId: String)
 GET    /v3/participants/:userId/notifications                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getNotificationRegistrations(userId: String)
+POST   /v3/participants/:userId/message                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.sendMessage(userId: String)
 POST   /v3/participants/:userId/signOut                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(userId: String)
 POST   /v3/participants/:userId/requestResetPassword         @org.sagebionetworks.bridge.play.controllers.ParticipantController.requestResetPassword(userId: String)
 POST   /v3/participants/:userId/resendEmailVerification      @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendEmailVerification(userId: String)

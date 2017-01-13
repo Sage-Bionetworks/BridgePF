@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -245,5 +246,16 @@ public class ParticipantController extends BaseController {
         List<NotificationRegistration> registrations = participantService.listRegistrations(study, userId);
         
         return okResult(registrations);
+    }
+    
+    public Result sendMessage(String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        NotificationMessage message = parseJson(request(), NotificationMessage.class);
+        
+        participantService.sendNotification(study, userId, message);
+        
+        return okResult("Message sent.");
     }
 }
