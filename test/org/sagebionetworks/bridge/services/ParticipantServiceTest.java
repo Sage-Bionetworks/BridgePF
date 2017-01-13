@@ -156,6 +156,9 @@ public class ParticipantServiceTest {
     @Mock
     private Subpopulation subpopulation;
     
+    @Mock
+    private NotificationsService notificationsService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -186,6 +189,7 @@ public class ParticipantServiceTest {
         participantService.setExternalIdService(externalIdService);
         participantService.setScheduledActivityDao(activityDao);
         participantService.setUploadService(uploadService);
+        participantService.setNotificationsService(notificationsService);
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
@@ -871,6 +875,15 @@ public class ParticipantServiceTest {
         participantService.getUploads(STUDY, ID, null, null);
         
         verify(uploadService).getUploads(HEALTH_CODE, null, null);
+    }
+    
+    @Test
+    public void listNotificationRegistrations() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.listRegistrations(STUDY, ID);
+        
+        verify(notificationsService).listRegistrations(HEALTH_CODE);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

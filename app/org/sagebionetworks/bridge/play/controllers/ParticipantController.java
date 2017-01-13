@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
@@ -25,6 +26,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -234,5 +236,14 @@ public class ParticipantController extends BaseController {
                 study, userId, startTime, endTime);
 
         return okResult(uploads);
+    }
+    
+    public Result getNotificationRegistrations(String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        List<NotificationRegistration> registrations = participantService.listRegistrations(study, userId);
+        
+        return okResult(registrations);
     }
 }

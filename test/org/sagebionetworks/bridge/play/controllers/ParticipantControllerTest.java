@@ -55,6 +55,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -642,6 +643,20 @@ public class ParticipantControllerTest {
         assertEquals(200, result.status());
         
         verify(participantService).getUploads(study, ID, null, null);
+    }
+    
+    @Test
+    public void getNotificationRegistrations() throws Exception {
+        List<NotificationRegistration> list = Lists.newArrayList();
+        doReturn(list).when(participantService).listRegistrations(study, ID);
+        
+        Result result = controller.getNotificationRegistrations(ID);
+        assertEquals(200, result.status());
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(0, node.get("total").asInt());
+        assertEquals("ResourceList", node.get("type").asText());
+        
+        verify(participantService).listRegistrations(study, ID);
     }
     
     private PagedResourceList<ScheduledActivity> createActivityResults() {
