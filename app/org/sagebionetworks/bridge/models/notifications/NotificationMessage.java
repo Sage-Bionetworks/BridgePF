@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.models.notifications;
 
 import java.util.Objects;
 
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
@@ -12,7 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
  * introduced a builder in anticipation of expanding this model.
  */
 @JsonDeserialize(builder=NotificationMessage.Builder.class)
-public final class NotificationMessage {
+public final class NotificationMessage implements BridgeEntity {
 
     /**
      * Very short rendition of the notification. For example, this value will be displayed on an Apple iWatch, where the

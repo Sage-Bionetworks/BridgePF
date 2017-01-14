@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
 import org.sagebionetworks.bridge.validators.NotificationRegistrationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -138,6 +139,8 @@ public class NotificationsService {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(message);
+        
+        Validate.entityThrowingException(NotificationMessageValidator.INSTANCE, message);
         
         List<NotificationRegistration> registrations = notificationRegistrationDao.listRegistrations(healthCode);
         if (registrations.isEmpty()) {
