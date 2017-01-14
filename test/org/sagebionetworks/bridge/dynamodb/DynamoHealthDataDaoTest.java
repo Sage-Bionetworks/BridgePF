@@ -10,18 +10,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
@@ -154,11 +152,11 @@ public class DynamoHealthDataDaoTest {
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
 
         // mock mapper
-        PaginatedQueryList<DynamoHealthDataRecord> mockGetResult = mock(PaginatedQueryList.class);
-        when(mockGetResult.stream()).thenReturn(mockResult.stream());
+        QueryResultPage<DynamoHealthDataRecord> resultPage = new QueryResultPage<>();
+        resultPage.setResults(mockResult);
 
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        when(mockMapper.query(eq(DynamoHealthDataRecord.class), any())).thenReturn(mockGetResult);
+        when(mockMapper.queryPage(eq(DynamoHealthDataRecord.class), any())).thenReturn(resultPage);
 
         dao.setMapper(mockMapper);
 

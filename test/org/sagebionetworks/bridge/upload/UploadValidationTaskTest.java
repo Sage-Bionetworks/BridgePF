@@ -17,7 +17,6 @@ import static org.mockito.Mockito.eq;
 import javax.annotation.Nonnull;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.base.Strings;
@@ -27,7 +26,6 @@ import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -273,6 +271,7 @@ public class UploadValidationTaskTest {
         UploadValidationTask task = spy(new UploadValidationTask(ctx));
         task.setHandlerList(nullRecordIdHandlerList);
         task.setHealthDataService(healthDataService);
+        task.setUploadDao(mock(UploadDao.class));
 
         // execute
         task.run();
@@ -298,6 +297,7 @@ public class UploadValidationTaskTest {
         UploadValidationTask task = spy(new UploadValidationTask(ctx));
         task.setHandlerList(handlerList);
         task.setHealthDataService(healthDataService);
+        task.setUploadDao(mock(UploadDao.class));
 
         // execute
         task.run();
@@ -321,6 +321,8 @@ public class UploadValidationTaskTest {
         // set up validation task
         UploadValidationTask task = spy(new UploadValidationTask(ctx));
         task.setHandlerList(handlerList);
+        task.setUploadDao(mock(UploadDao.class));
+
         // only return one test record
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
@@ -350,6 +352,8 @@ public class UploadValidationTaskTest {
         // set up validation task
         UploadValidationTask task = spy(new UploadValidationTask(ctx));
         task.setHandlerList(handlerList);
+        task.setUploadDao(mock(UploadDao.class));
+
         // return a null record
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(null);
@@ -373,6 +377,8 @@ public class UploadValidationTaskTest {
         // set up validation task
         UploadValidationTask task = spy(new UploadValidationTask(ctx));
         task.setHandlerList(handlerList);
+        task.setUploadDao(mock(UploadDao.class));
+
         // return an empty list
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
@@ -398,6 +404,7 @@ public class UploadValidationTaskTest {
         // set up validation task
         UploadValidationTask task = spy(new UploadValidationTask(ctx));
         task.setHandlerList(handlerList);
+        task.setUploadDao(mock(UploadDao.class));
 
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
@@ -406,52 +413,6 @@ public class UploadValidationTaskTest {
 
         task.run();
         verify(task).logDuplicateUploadRecords(eq(testRecord), eq(ImmutableList.of(RECORD_ID_2, RECORD_ID_3)));
-    }
-
-    @Test
-    public void dedupeMaxDupes() {
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
-        // set up validation task
-        UploadValidationTask task = spy(new UploadValidationTask(ctx));
-        task.setHandlerList(handlerList);
-
-        healthDataService = mock(HealthDataService.class);
-        when(healthDataService.getRecordById(any())).thenReturn(testRecord);
-
-        // Create a list with 1 original and 11 dupes. Logging will max out at 10 dupes.
-        List<HealthDataRecord> dupeRecordList = new ArrayList<>();
-        dupeRecordList.add(testRecord);
-
-        for (int i = 0; i < 12; i++) {
-            // All we care about is record ID. Bypass the builder, so we don't have to validate and get stuck with
-            // quadratic updates when we make changes.
-            DynamoHealthDataRecord dupeRecord = new DynamoHealthDataRecord();
-            dupeRecord.setId(RECORD_ID + "-" + i);
-            dupeRecordList.add(dupeRecord);
-        }
-
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(eq(HEALTH_CODE), eq(CREATED_ON), eq(SCHEMA_ID)))
-                .thenReturn(dupeRecordList);
-        task.setHealthDataService(healthDataService);
-
-        // execute and verify
-        task.run();
-
-        List<String> expectedDupeRecordIdList = new ArrayList<>();
-        for (int i = 0; i < BridgeConstants.DUPE_RECORDS_MAX_COUNT; i++) {
-            expectedDupeRecordIdList.add(RECORD_ID + "-" + i);
-        }
-
-        verify(task).logDuplicateUploadRecords(testRecord, expectedDupeRecordIdList);
     }
 
     // Test handler that makes its presence known only by writing a message to the validation context.

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -119,7 +120,8 @@ public class DynamoHealthDataDao implements HealthDataDao {
                 .withRangeKeyCondition("createdOn", rangeKeyCondition)
                 .withLimit(BridgeConstants.DUPE_RECORDS_MAX_COUNT);
 
-        List<DynamoHealthDataRecord> recordList = mapper.query(DynamoHealthDataRecord.class, expression);
+        QueryResultPage<DynamoHealthDataRecord> resultPage = mapper.queryPage(DynamoHealthDataRecord.class, expression);
+        List<DynamoHealthDataRecord> recordList = resultPage.getResults();
 
         // Filter out schemas that don't match and convert it to a list of the parent type.
         return recordList.stream().filter(record -> schemaId.equals(record.getSchemaId())).collect(
