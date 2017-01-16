@@ -1,13 +1,12 @@
 package org.sagebionetworks.bridge.upload;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Stopwatch;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -163,23 +162,10 @@ public class UploadValidationTask implements Runnable {
         String schemaId = record.getSchemaId();
 
         List<HealthDataRecord> retList = healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
-        List<String> dupeRecordIdList = new ArrayList<>();
-        int numDupes = 0;
-        for (HealthDataRecord oneDupeRecord : retList) {
-            String dupeRecordId = oneDupeRecord.getId();
-            if (!dupeRecordId.equals(healthRecordId)) {
-                dupeRecordIdList.add(dupeRecordId);
-                numDupes++;
-
-                if (numDupes >= BridgeConstants.DUPE_RECORDS_MAX_COUNT) {
-                    // HealthDataService shouldn't return more than MAX_COUNT, but in case it does, have an extra check
-                    // here to prevent quadratic logging.
-                    break;
-                }
-            }
-        }
-
-        if (numDupes > 0) {
+        // Convert to a list of recordIds, skip the current record ID because it's not really a dupe of itself.
+        List<String> dupeRecordIdList = retList.stream().map(HealthDataRecord::getId)
+                .filter(recordId -> !healthRecordId.equals(recordId)).collect(Collectors.toList());
+        if (dupeRecordIdList.size() > 0) {
             logDuplicateUploadRecords(record, dupeRecordIdList);
         }
         // else there is only one such record exists in ddb or no record exists yet, means no duplicate -- do nothing

@@ -16,6 +16,7 @@ import java.util.TreeSet;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.base.Preconditions;
@@ -576,7 +577,8 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // Get the latest revision. This is accomplished by scanning the range key backwards.
         DynamoDBQueryExpression<DynamoUploadSchema> ddbQuery = new DynamoDBQueryExpression<DynamoUploadSchema>()
                 .withHashKeyValues(key).withScanIndexForward(false).withLimit(1);
-        List<DynamoUploadSchema> schemaList = mapper.query(DynamoUploadSchema.class, ddbQuery);
+        QueryResultPage<DynamoUploadSchema> resultPage = mapper.queryPage(DynamoUploadSchema.class, ddbQuery);
+        List<DynamoUploadSchema> schemaList = resultPage.getResults();
         if (schemaList.isEmpty()) {
             return null;
         } else {

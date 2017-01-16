@@ -26,6 +26,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1321,22 +1322,19 @@ public class DynamoUploadSchemaDaoMockTest {
 
     private static DynamoDBMapper setupMockMapperWithSchema(DynamoUploadSchema schema) {
         // mock get result
-        PaginatedQueryList<DynamoUploadSchema> mockGetResult = mock(PaginatedQueryList.class);
+        List<DynamoUploadSchema> schemaList = new ArrayList<>();
         if (schema != null) {
-            // mock result should contain the old rev
-            when(mockGetResult.isEmpty()).thenReturn(false);
-            when(mockGetResult.get(0)).thenReturn(schema);
-        } else {
-            // no old rev means no old result
-            when(mockGetResult.isEmpty()).thenReturn(true);
+            schemaList.add(schema);
         }
+        QueryResultPage<DynamoUploadSchema> resultPage = new QueryResultPage<>();
+        resultPage.setResults(schemaList);
 
         // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        when(mockMapper.query(
+        when(mockMapper.queryPage(
             (Class<DynamoUploadSchema>)eq(DynamoUploadSchema.class), 
             (DynamoDBQueryExpression<DynamoUploadSchema>)notNull(DynamoDBQueryExpression.class)
-        )).thenReturn(mockGetResult);
+        )).thenReturn(resultPage);
         return mockMapper;
     }
     
