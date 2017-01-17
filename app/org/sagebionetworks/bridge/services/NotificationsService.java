@@ -29,7 +29,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 
 /**
  * Service for managing client registration to receive push notifications, integrated into the 
@@ -156,7 +156,8 @@ public class NotificationsService {
             
             try {
                 PublishResult result = snsClient.publish(request);
-                LOG.debug("Sent message to participant, study="+studyId.getIdentifier()+", endpointARN="+endpointARN+", message ID="+result.getMessageId());
+                LOG.debug("Sent message to participant, study=" + studyId.getIdentifier() + ", endpointARN="
+                        + endpointARN + ", message ID=" + result.getMessageId());
             } catch(AmazonServiceException e) {
                 LOG.warn("Error publishing SNS message to participant", e);
                 errorMessages.add(e.getErrorMessage());

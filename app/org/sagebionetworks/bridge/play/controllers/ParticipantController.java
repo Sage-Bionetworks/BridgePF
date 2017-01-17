@@ -256,6 +256,6 @@ public class ParticipantController extends BaseController {
         
         participantService.sendNotification(study, userId, message);
         
-        return okResult("Message sent.");
+        return acceptedResult("Message has been sent to external notification service.");
     }
 }

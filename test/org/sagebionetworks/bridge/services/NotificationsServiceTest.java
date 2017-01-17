@@ -51,16 +51,16 @@ public class NotificationsServiceTest {
     private StudyService mockStudyService;
     
     @Mock
-    private AmazonSNSClient snsClient;
+    private AmazonSNSClient mockSnsClient;
     
     @Mock
-    private PublishResult publishResult;
+    private PublishResult mockPublishResult;
     
     @Mock
     private NotificationRegistrationDao mockRegistrationDao;
     
     @Mock
-    private Study study;
+    private Study mockStudy;
     
     @Captor
     private ArgumentCaptor<PublishRequest> requestCaptor;
@@ -72,13 +72,13 @@ public class NotificationsServiceTest {
         service = new NotificationsService();
         service.setStudyService(mockStudyService);
         service.setNotificationRegistrationDao(mockRegistrationDao);
-        service.setSnsClient(snsClient);
+        service.setSnsClient(mockSnsClient);
         
         Map<String,String> map = Maps.newHashMap();
         map.put(OS_NAME, PLATFORM_ARN);
-        doReturn(map).when(study).getPushNotificationARNs();
+        doReturn(map).when(mockStudy).getPushNotificationARNs();
      
-        doReturn(study).when(mockStudyService).getStudy(STUDY_ID);
+        doReturn(mockStudy).when(mockStudyService).getStudy(STUDY_ID);
     }
     
     private NotificationRegistration createRegistrationObject() {
@@ -172,13 +172,13 @@ public class NotificationsServiceTest {
         List<NotificationRegistration> list = Lists.newArrayList(registration);
         doReturn(list).when(mockRegistrationDao).listRegistrations(HEALTH_CODE);
         
-        doReturn(publishResult).when(snsClient).publish(any());
+        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
         
         NotificationMessage message = TestUtils.getNotificationMessage();
         
         service.sendNotification(STUDY_ID, HEALTH_CODE, message);
         
-        verify(snsClient).publish(requestCaptor.capture());
+        verify(mockSnsClient).publish(requestCaptor.capture());
         
         PublishRequest request = requestCaptor.getValue();
         assertEquals(message.getSubject(), request.getSubject());
@@ -210,7 +210,7 @@ public class NotificationsServiceTest {
         List<NotificationRegistration> list = Lists.newArrayList(reg1, reg2);
         doReturn(list).when(mockRegistrationDao).listRegistrations(HEALTH_CODE);
         
-        doThrow(new InvalidParameterException("bad parameter")).when(snsClient).publish(any());
+        doThrow(new InvalidParameterException("bad parameter")).when(mockSnsClient).publish(any());
         
         NotificationMessage message = TestUtils.getNotificationMessage();
         try {
