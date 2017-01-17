@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.dao.NotificationTopicDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.services.NotificationsService;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -59,12 +58,10 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         
         DynamoNotificationTopic hashKey = new DynamoNotificationTopic();
         hashKey.setStudyId(studyId.getIdentifier());
-
         DynamoDBQueryExpression<DynamoNotificationTopic> query = new DynamoDBQueryExpression<DynamoNotificationTopic>()
                 .withConsistentRead(false).withHashKeyValues(hashKey);
 
         QueryResultPage<DynamoNotificationTopic> resultPage = mapper.queryPage(DynamoNotificationTopic.class, query);
-        
         return resultPage.getResults().stream().map(obj -> (NotificationTopic) obj).collect(toImmutableList());
     }
 
@@ -81,7 +78,6 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         if (topic == null) {
             throw new EntityNotFoundException(NotificationTopic.class);
         }
-        
         return topic;
     }
 
@@ -89,8 +85,9 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     public NotificationTopic createTopic(NotificationTopic topic) {
         checkNotNull(topic);
         
-        // Create SNS topic first, if DDB call fails, there's an orphaned topic 
-        // but Bridge isn't in an inconsistent state.
+        // Create SNS topic first. If SNS fails, an exception is thrown. If DDB call fails, the SNS topic is orphaned
+        // but that will not break the data integrity of Bridge data.
+        
         topic.setGuid(BridgeUtils.generateGuid());
         
         String snsTopicName = createSnsTopicName(topic);
@@ -122,26 +119,26 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         
         NotificationTopic existing = getTopic(studyId, guid);
         
-        // When deleting, get rid of DDB record first, if it succeeds but second fails, 
-        // that's not corrupted, there's just an orphaned SNS topic.
+        // Delete the DDB record first. If it fails an exception is thrown. If SNS fails, the SNS topic
+        // is not deleted, but the DDB record has successfully deleted, so suppress the exception (just 
+        // log it) because the topic has been deleted from Bridge without a referential integrity problem.
         DynamoNotificationTopic hashKey = new DynamoNotificationTopic();
         hashKey.setStudyId(studyId.getIdentifier());
         hashKey.setGuid(guid);
         
         mapper.delete(hashKey);
         
-        // If this fails, don't throw an error for the user. There's no DDB record so 
-        // it has been successfully deleted
         try {
             DeleteTopicRequest request = new DeleteTopicRequest().withTopicArn(existing.getTopicARN());
             snsClient.deleteTopic(request);
         } catch(AmazonServiceException e) {
-            LOG.info("Error deleting SNS topic; Bridge topic has been deleted", e);
+            LOG.warn("Bridge topic '" + existing.getName() + "' in study '" + existing.getStudyId()
+                    + "' deleted, but SNS topic deletion threw exception", e);
         }
     }
 
     /**
-     * So we can find these in the AWS console, we give these a speciall formatted name.
+     * So we can find these in the AWS console, we give these a specifically formatted name.
      */
     private String createSnsTopicName(NotificationTopic topic) {
         return topic.getStudyId() + "-" + config.getEnvironment().name().toLowerCase() + "-" + topic.getGuid();
