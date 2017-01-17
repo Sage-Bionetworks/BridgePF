@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "NotificationRegistration")
-@BridgeTypeName("NotificationRegistration")
 public class DynamoNotificationRegistration implements NotificationRegistration {
 
     private String healthCode;

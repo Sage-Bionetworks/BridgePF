@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.models.notifications;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+@BridgeTypeName("NotificationRegistration")
 @JsonDeserialize(as=DynamoNotificationRegistration.class)
 public interface NotificationRegistration extends BridgeEntity {
 

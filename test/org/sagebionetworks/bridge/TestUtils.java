@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
+import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -190,6 +191,15 @@ public class TestUtils {
     public static final NotificationMessage getNotificationMessage() {
         return new NotificationMessage.Builder()
                 .withSubject("a subject").withMessage("a message").build();
+    }
+    
+    public static final NotificationTopic getNotificationTopic() {
+        NotificationTopic topic = NotificationTopic.create();
+        topic.setGuid("ABC-DEF");
+        topic.setName("Test Topic Name");
+        topic.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        topic.setTopicARN("atopicArn");
+        return topic;
     }
     
     public static final StudyParticipant getStudyParticipant(Class<?> clazz) {

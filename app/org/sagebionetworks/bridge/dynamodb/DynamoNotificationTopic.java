@@ -4,8 +4,10 @@ import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+@DynamoDBTable(tableName = "NotificationTopic")
 public class DynamoNotificationTopic implements NotificationTopic {
 
     private String guid;
@@ -15,6 +17,7 @@ public class DynamoNotificationTopic implements NotificationTopic {
     
     @DynamoDBHashKey
     @Override
+    @JsonIgnore
     public String getStudyId() {
         return studyId;
     }
