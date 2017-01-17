@@ -60,6 +60,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -884,6 +885,16 @@ public class ParticipantServiceTest {
         participantService.listRegistrations(STUDY, ID);
         
         verify(notificationsService).listRegistrations(HEALTH_CODE);
+    }
+    
+    @Test
+    public void sendNotification() {
+        mockHealthCodeAndAccountRetrieval();
+        NotificationMessage message = TestUtils.getNotificationMessage();
+        
+        participantService.sendNotification(STUDY, ID, message);
+        
+        verify(notificationsService).sendNotification(STUDY.getStudyIdentifier(), HEALTH_CODE, message);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

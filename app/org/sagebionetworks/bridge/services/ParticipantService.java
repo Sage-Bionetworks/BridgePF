@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -324,6 +325,16 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, userId);
         
         return notificationsService.listRegistrations(account.getHealthCode());
+    }
+    
+    public void sendNotification(Study study, String userId, NotificationMessage message) {
+        checkNotNull(study);
+        checkNotNull(userId);
+        checkNotNull(message);
+        
+        Account account = getAccountThrowingException(study, userId);
+
+        notificationsService.sendNotification(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
     
     private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
