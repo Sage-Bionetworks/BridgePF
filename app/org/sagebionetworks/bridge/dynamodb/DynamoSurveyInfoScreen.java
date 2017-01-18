@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -96,7 +96,7 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     }
     
     @Override
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @DynamoDBAttribute
     @JsonIgnore
     public JsonNode getData() {

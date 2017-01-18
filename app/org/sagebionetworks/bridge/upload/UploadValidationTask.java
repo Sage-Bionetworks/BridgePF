@@ -3,9 +3,11 @@ package org.sagebionetworks.bridge.upload;
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Stopwatch;
-import org.apache.commons.lang3.StringUtils;
+
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
@@ -142,7 +144,6 @@ public class UploadValidationTask implements Runnable {
     /**
      * helper method: query healthdatarecord by healthcode, schema and createdOn from the upload just finished above,
      * if there are more than 1 such records in ddb, there are duplicates. log that information but not stop or delete anything right now
-     * @param healthRecordId
      */
     private void dedupeHelper(String healthRecordId) throws BadRequestException {
         if (healthRecordId == null) {
@@ -161,27 +162,21 @@ public class UploadValidationTask implements Runnable {
         String schemaId = record.getSchemaId();
 
         List<HealthDataRecord> retList = healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
-
-        if (retList.size() > 1) {
-            logger.info(String.format("Duplicate health data records for record id: %s, created on:  %s, schema id: %s, duplicate size: %s",
-                    healthRecordId, createdOn, schemaId, retList.size()));
-
-            logDuplicateUploadRecords(record, retList);
+        // Convert to a list of recordIds, skip the current record ID because it's not really a dupe of itself.
+        List<String> dupeRecordIdList = retList.stream().map(HealthDataRecord::getId)
+                .filter(recordId -> !healthRecordId.equals(recordId)).collect(Collectors.toList());
+        if (dupeRecordIdList.size() > 0) {
+            logDuplicateUploadRecords(record, dupeRecordIdList);
         }
         // else there is only one such record exists in ddb or no record exists yet, means no duplicate -- do nothing
     }
 
-    void logDuplicateUploadRecords(HealthDataRecord originRecord, List<HealthDataRecord> dupeRecords) {
-        for (HealthDataRecord dupeRecord: dupeRecords) {
-            if (!dupeRecord.getId().equals(originRecord.getId())) {
-                logger.info("Origin Record: " + "record id: " + originRecord.getId()
-                        + ", Duplicate HealthDataRecord: " + "record id: " + dupeRecord.getId()
-                        + ", createdOn: " + dupeRecord.getCreatedOn().toString()
-                        + ", schemaId: " + dupeRecord.getSchemaId()
-                        + ", studyId: " + dupeRecord.getStudyId() + ", uploadDate: " + dupeRecord.getUploadDate().toString()
-                        + ", uploadId: " + dupeRecord.getUploadId());
-            }
-        }
+    // Package-scoped so we can spy this and verify this is being called.
+    void logDuplicateUploadRecords(HealthDataRecord originRecord, List<String> dupeRecordIdList) {
+        logger.info("Duplicate health data records for record id: " + originRecord.getId() + ", created on: "
+                + originRecord.getCreatedOn() + ", schema id: " + originRecord.getSchemaId() + ", study: "
+                + originRecord.getStudyId() + ", duplicate size: " + dupeRecordIdList.size()
+                + ", duplicate record IDs: " + BridgeUtils.COMMA_SPACE_JOINER.join(dupeRecordIdList));
     }
 
     // Log helper. Unit tests will mock (spy) this, so we verify that we're catching and logging the exception.

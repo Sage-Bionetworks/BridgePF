@@ -10,12 +10,12 @@ public class LocalDateTimeMarshallerTest {
 
     @Test
     public void testMarshall() {
-        assertEquals("2014-12-25T10:12:37.022", MARSHALLER.marshall(new LocalDateTime(2014, 12, 25, 10, 12, 37, 22)));
+        assertEquals("2014-12-25T10:12:37.022", MARSHALLER.convert(new LocalDateTime(2014, 12, 25, 10, 12, 37, 22)));
     }
 
     @Test
     public void testUnmarshall() {
-        LocalDateTime dateTime = MARSHALLER.unmarshall(LocalDateTime.class, "2014-10-31T10:12:37.022");
+        LocalDateTime dateTime = MARSHALLER.unconvert("2014-10-31T10:12:37.022");
         assertEquals(2014, dateTime.getYear());
         assertEquals(10, dateTime.getMonthOfYear());
         assertEquals(31, dateTime.getDayOfMonth());
@@ -27,7 +27,7 @@ public class LocalDateTimeMarshallerTest {
     
     @Test
     public void testUnmarshallOfPartialLocalDateTime() {
-        LocalDateTime dateTime = MARSHALLER.unmarshall(LocalDateTime.class, "2014-10-31T10:12");
+        LocalDateTime dateTime = MARSHALLER.unconvert("2014-10-31T10:12");
         assertEquals(2014, dateTime.getYear());
         assertEquals(10, dateTime.getMonthOfYear());
         assertEquals(31, dateTime.getDayOfMonth());

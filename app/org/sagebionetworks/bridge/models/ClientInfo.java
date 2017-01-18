@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
@@ -15,7 +14,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
 
 /**
  * <p>
@@ -65,14 +63,6 @@ public final class ClientInfo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientInfo.class);
 
-    /**
-     * Apple has changed the name of the iOS platform from "iPhone OS" to "iOS" and this is reflected in the 
-     * User-Agent string we send. To avoid confusion, recognize such synonyms/spelling errors and map them
-     * to our two canonical platforms, "iPhone OS" and "Android". 
-     */
-    private static final Map<String,String> PLATFORM_SYNONYMS = new ImmutableMap.Builder<String,String>()
-            .put("iOS", "iPhone OS").build();
-    
     /**
      * A cache of ClientInfo objects that have already been parsed from user agent strings. 
      * We're using this, rather than ConcurrentHashMap, because external clients submit this string, 
@@ -241,8 +231,8 @@ public final class ClientInfo {
          * User-Agent header is not in our prescribed format.
          */
         public ClientInfo build() {
-            if (PLATFORM_SYNONYMS.containsKey(osName)) {
-                osName = PLATFORM_SYNONYMS.get(osName);
+            if (OperatingSystem.SYNONYMS.containsKey(osName)) {
+                osName = OperatingSystem.SYNONYMS.get(osName);
             }
             return new ClientInfo(appName, appVersion, deviceName, osName, osVersion, sdkName, sdkVersion);
         }

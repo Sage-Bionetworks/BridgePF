@@ -238,7 +238,7 @@ public class UploadSchemaTest {
         // Note that the first argument is supposed to be of type Class<List<UploadFileDefinition>>. Unfortunately,
         // there is no way to actually create a class of that type. Fortunately, the unmarshaller never uses that
         // object, so we just pass in null.
-        List<UploadFieldDefinition> fieldDefList = fieldDefListMarshaller.unmarshall(null, jsonText);
+        List<UploadFieldDefinition> fieldDefList = fieldDefListMarshaller.unconvert(jsonText);
         assertEquals(2, fieldDefList.size());
 
         UploadFieldDefinition fooFieldDef = fieldDefList.get(0);
@@ -252,7 +252,7 @@ public class UploadSchemaTest {
         assertEquals(UploadFieldType.STRING, barFieldDef.getType());
 
         // re-marshall
-        String marshalledJson = fieldDefListMarshaller.marshall(fieldDefList);
+        String marshalledJson = fieldDefListMarshaller.convert(fieldDefList);
 
         // then convert to a list so we can validate the raw JSON
         List<Map<String, Object>> fieldDefJsonList = BridgeObjectMapper.get().readValue(marshalledJson,

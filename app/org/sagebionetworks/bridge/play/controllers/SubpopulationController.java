@@ -5,12 +5,10 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -19,14 +17,10 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
-import com.google.common.collect.Sets;
-
 import play.mvc.Result;
 
 @Controller
 public class SubpopulationController extends BaseController {
-
-    private static final Set<Roles> DELETE_ROLES = Sets.newHashSet(ADMIN, DEVELOPER);
     
     private SubpopulationService subpopService;
     
@@ -69,10 +63,8 @@ public class SubpopulationController extends BaseController {
         return okResult(subpop);
     }
     public Result deleteSubpopulation(String guid, String physicalDeleteString) {
-        UserSession session = getAuthenticatedSession();
-        if (!session.isInRole(DELETE_ROLES)) {
-            throw new UnauthorizedException();
-        }
+        UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER);
+
         // Only admins can request a physical delete.
         boolean physicalDelete = ("true".equals(physicalDeleteString));
         if (physicalDelete && !session.isInRole(ADMIN)) {

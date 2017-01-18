@@ -81,25 +81,14 @@ public class UploadSchemaControllerTest {
     }
 
     @Test
-    public void deleteSchemaByIdAndRevSuccess() throws Exception {
-        // mock UploadSchemaService
-        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-
-        // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc);
-        Result result = controller.deleteUploadSchemaByIdAndRev("delete-schema", 1);
-        assertEquals(200, result.status());
-        verify(mockSvc).deleteUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "delete-schema", 1);
-    }
-
-    @Test
     public void deleteSchemaById() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
-        Result result = controller.deleteUploadSchemaById("delete-schema");
+        Result result = controller.deleteAllRevisionsOfUploadSchema(TestConstants.TEST_STUDY_IDENTIFIER,
+                "delete-schema");
         assertEquals(200, result.status());
         verify(mockSvc).deleteUploadSchemaById(TestConstants.TEST_STUDY, "delete-schema");
     }

@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import org.slf4j.Logger;
@@ -63,6 +64,13 @@ public class DynamoStudyDaoTest {
     @Test
     public void crudOneStudy() {
         Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
+        
+        // Verify these values are persisted in a map
+        String androidARN = study.getPushNotificationARNs().get(OperatingSystem.ANDROID);
+        String iosARN = study.getPushNotificationARNs().get(OperatingSystem.IOS);
+        assertNotNull(androidARN);
+        assertNotNull(iosARN);
+        
         study.setStormpathHref("http://url.com/");
         study.setUserProfileAttributes(USER_PROFILE_ATTRIBUTES);
         study.setTaskIdentifiers(TASK_IDENTIFIERS);
@@ -83,6 +91,8 @@ public class DynamoStudyDaoTest {
         assertTrue(study.getUsesCustomExportSchedule());
         assertEquals(TASK_IDENTIFIERS, study.getTaskIdentifiers());
         assertEquals(DATA_GROUPS, study.getDataGroups());
+        assertEquals(androidARN, study.getPushNotificationARNs().get(OperatingSystem.ANDROID));
+        assertEquals(iosARN, study.getPushNotificationARNs().get(OperatingSystem.IOS));
 
         String identifier = study.getIdentifier();
         studyDao.deleteStudy(study);

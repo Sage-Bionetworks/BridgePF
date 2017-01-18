@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.times;
@@ -24,7 +26,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
@@ -92,7 +93,7 @@ public class ReportServiceTest {
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
         results = new DateRangeResourceList<ReportData>(list, START_DATE, END_DATE);
         
-        DynamoReportIndex index = new DynamoReportIndex();
+        ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
     }
@@ -106,6 +107,22 @@ public class ReportServiceTest {
         report.setData(node);
         report.setDate(date);
         return report;
+    }
+    
+    @Test
+    public void getReportIndex() {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(IDENTIFIER).withReportType(ReportType.STUDY)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        ReportIndex index = ReportIndex.create();
+        index.setIdentifier(IDENTIFIER);
+        index.setIdentifier(IDENTIFIER);
+        doReturn(index).when(mockReportIndexDao).getIndex(key);
+        
+        ReportIndex retrievedKey = service.getReportIndex(key);
+        assertEquals(key.getIdentifier(), retrievedKey.getIdentifier());
+        verify(mockReportIndexDao).getIndex(key);
     }
     
     @Test
@@ -127,8 +144,9 @@ public class ReportServiceTest {
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05T12:00:00.000Z").getMillis());
         try {
             LocalDate yesterday = LocalDate.parse("2015-05-04");
+            LocalDate today = LocalDate.parse("2015-05-05");
             
-            doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, yesterday, yesterday);
+            doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, yesterday, today);
             
             DateRangeResourceList<? extends ReportData> retrieved = service.getStudyReport(
                     TEST_STUDY, IDENTIFIER, null, null);
@@ -136,7 +154,7 @@ public class ReportServiceTest {
             verify(mockReportDataDao).getReportData(eq(STUDY_REPORT_DATA_KEY), localDateCaptor.capture(),
                     localDateCaptor.capture());
             assertEquals(yesterday, localDateCaptor.getAllValues().get(0));
-            assertEquals(yesterday, localDateCaptor.getAllValues().get(1));
+            assertEquals(today, localDateCaptor.getAllValues().get(1));
             assertEquals(results, retrieved);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
@@ -159,8 +177,9 @@ public class ReportServiceTest {
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05T12:00:00.000Z").getMillis());
         try {
             LocalDate yesterday = LocalDate.parse("2015-05-04");
+            LocalDate today = LocalDate.parse("2015-05-05");
             
-            doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, yesterday, yesterday);
+            doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, yesterday, today);
             
             DateRangeResourceList<? extends ReportData> retrieved = service.getParticipantReport(
                     TEST_STUDY, IDENTIFIER, HEALTH_CODE, null, null);
@@ -168,7 +187,7 @@ public class ReportServiceTest {
             verify(mockReportDataDao).getReportData(eq(PARTICIPANT_REPORT_DATA_KEY), localDateCaptor.capture(),
                     localDateCaptor.capture());
             assertEquals(yesterday, localDateCaptor.getAllValues().get(0));
-            assertEquals(yesterday, localDateCaptor.getAllValues().get(1));
+            assertEquals(today, localDateCaptor.getAllValues().get(1));
             assertEquals(results, retrieved);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
@@ -314,7 +333,7 @@ public class ReportServiceTest {
         try {
             service.getParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, null, null);
             
-            verify(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, LocalDate.parse("2016-02-07"), LocalDate.parse("2016-02-07"));
+            verify(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, LocalDate.parse("2016-02-07"), LocalDate.parse("2016-02-08"));
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }
@@ -462,7 +481,7 @@ public class ReportServiceTest {
     @Test
     public void getParticipantIndices() {
         // Need to create an index list with ReportType.PARTICIPANT for this test
-        DynamoReportIndex index = new DynamoReportIndex();
+        ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
         
@@ -473,6 +492,50 @@ public class ReportServiceTest {
         assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
         assertEquals(ReportType.PARTICIPANT, indices.getReportType());
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
+    }
+    
+    @Test
+    public void updateIndex() {
+        ReportIndex index = ReportIndex.create();
+        index.setIdentifier(IDENTIFIER);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
+        doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
+        
+        // This is all that is needed. Everything else is actually inferred by the controller
+        ReportIndex updatedIndex = ReportIndex.create();
+        updatedIndex.setPublic(true);
+        updatedIndex.setIdentifier(IDENTIFIER);
+        updatedIndex.setKey(IDENTIFIER+":STUDY");
+        
+        service.updateReportIndex(ReportType.STUDY, updatedIndex);
+        
+        verify(mockReportIndexDao).updateIndex(reportIndexCaptor.capture());
+        
+        ReportIndex captured = reportIndexCaptor.getValue();
+        assertEquals(IDENTIFIER, captured.getIdentifier());
+        assertTrue(captured.isPublic());
+    }
+    
+    @Test
+    public void cannotMakeParticipantStudyPublic() {
+        ReportIndex index = ReportIndex.create();
+        index.setIdentifier(IDENTIFIER);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        
+        // This is all that is needed. Everything else is actually inferred by the controller
+        ReportIndex updatedIndex = ReportIndex.create();
+        updatedIndex.setPublic(true);
+        updatedIndex.setIdentifier(IDENTIFIER);
+        updatedIndex.setKey(IDENTIFIER+":STUDY");
+        
+        service.updateReportIndex(ReportType.PARTICIPANT, updatedIndex);
+        
+        verify(mockReportIndexDao).updateIndex(reportIndexCaptor.capture());
+        
+        ReportIndex captured = reportIndexCaptor.getValue();
+        assertEquals(IDENTIFIER, captured.getIdentifier());
+        assertFalse(captured.isPublic());
     }
     
     private void invalid(Runnable runnable, String fieldName, String message) {

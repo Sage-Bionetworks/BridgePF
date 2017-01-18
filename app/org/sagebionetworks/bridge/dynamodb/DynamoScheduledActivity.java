@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
@@ -20,9 +19,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -48,7 +47,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private Activity activity;
     private boolean persistent;
     private DateTimeZone timeZone;
-    private Schedule schedule;
 
     @Override
     @DynamoDBIgnore
@@ -94,17 +92,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     @Override
     @DynamoDBIgnore
-    @JsonIgnore
-    public Schedule getSchedule() {
-        return schedule;
-    }
-
-    public void setSchedule(Schedule schedule) {
-        this.schedule = schedule;
-    }
-
-    @Override
-    @DynamoDBIgnore
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getExpiresOn() {
         return getInstant(getLocalExpiresOn());
@@ -119,7 +106,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
      * localized using the caller's time zone.
      */
     @DynamoDBAttribute
-    @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
+    @DynamoDBTypeConverted(converter = LocalDateTimeMarshaller.class)
     @JsonIgnore
     public LocalDateTime getLocalScheduledOn() {
         return localScheduledOn;
@@ -135,7 +122,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
      * localized using the caller's time zone.
      */
     @DynamoDBAttribute
-    @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
+    @DynamoDBTypeConverted(converter = LocalDateTimeMarshaller.class)
     @JsonIgnore
     public LocalDateTime getLocalExpiresOn() {
         return localExpiresOn;
@@ -217,7 +204,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         this.finishedOn = finishedOn;
     }
 
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @JsonIgnore
     public ObjectNode getData() {
         ObjectNode node = JsonNodeFactory.instance.objectNode();

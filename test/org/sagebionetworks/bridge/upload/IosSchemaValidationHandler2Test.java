@@ -122,6 +122,8 @@ public class IosSchemaValidationHandler2Test {
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("empty_attachment").withRequired(false)
+                        .withType(UploadFieldType.ATTACHMENT_V2).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
@@ -459,6 +461,9 @@ public class IosSchemaValidationHandler2Test {
                 "   },{\n" +
                 "       \"filename\":\"nonJsonFile.txt\",\n" +
                 "       \"timestamp\":\"2015-04-13T18:58:21-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"empty_attachment\",\n" +
+                "       \"timestamp\":\"2015-04-13T18:58:18-07:00\"\n" +
                 "   }],\n" +
                 "   \"item\":\"non-json-data\"\n" +
                 "}";
@@ -474,6 +479,7 @@ public class IosSchemaValidationHandler2Test {
                 "jsonFile.json", jsonJsonNode));
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
                 .put("nonJsonFile.txt", "This is non-JSON data".getBytes(Charsets.UTF_8))
+                .put("empty_attachment", new byte[0])
                 .build());
 
         // execute

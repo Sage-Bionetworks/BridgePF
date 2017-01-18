@@ -51,6 +51,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import com.amazonaws.HttpMethod;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -194,7 +195,8 @@ public class UploadService {
         presignedUrlRequest.setExpiration(expiration);
 
         // Temporary session credentials
-        presignedUrlRequest.setRequestCredentials(uploadCredentailsService.getSessionCredentials());
+        AWSStaticCredentialsProvider credentialsProvider = new AWSStaticCredentialsProvider(uploadCredentailsService.getSessionCredentials());
+        presignedUrlRequest.setRequestCredentialsProvider(credentialsProvider);
 
         // Ask for server-side encryption
         presignedUrlRequest.addRequestParameter(SERVER_SIDE_ENCRYPTION, AES_256_SERVER_SIDE_ENCRYPTION);
@@ -281,9 +283,11 @@ public class UploadService {
             builder.withUpload(upload);
             if (upload.getRecordId() != null) {
                 HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
-                builder.withSchemaId(record.getSchemaId());
-                builder.withSchemaRevision(record.getSchemaRevision());
-                builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
+                if (record != null) {
+                    builder.withSchemaId(record.getSchemaId());
+                    builder.withSchemaRevision(record.getSchemaRevision());
+                    builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
+                }
             }
             return builder.build();
         }).collect(Collectors.toList());

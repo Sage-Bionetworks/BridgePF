@@ -13,8 +13,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
@@ -25,6 +26,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -147,6 +149,37 @@ public class DynamoHealthDataDaoDdbTest {
         assertEquals(1, metadataNode.size());
         assertEquals("dummy meta value", metadataNode.get("metadata").textValue());
 
+    }
+
+    @Test
+    public void getRecordsByHealthCodeCreatedOnSchemaIdWithLimit() {
+        List<DynamoHealthDataRecord> recordsToDelete = new ArrayList<>();
+        try {
+            // Create DUPE_RECORD_MAX_COUNT+2 additional records, so that there will be MAX_COUNT+3 records. We have a
+            // bunch of extra records just to make sure we have more than enough and aren't hitting any weird
+            // off-by-one errors in our test.
+            for (int i = 0; i < BridgeConstants.DUPE_RECORDS_MAX_COUNT+2; i++) {
+                // Should have the same healthCode, same schemaId, and similar createdOn, but different recordId.
+                DynamoHealthDataRecord record = new DynamoHealthDataRecord();
+                record.setId(recordId + i);
+                record.setHealthCode(healthCode);
+                record.setSchemaId(SCHEMA_ID);
+                record.setCreatedOn(CREATED_ON + i);
+                mapper.save(record);
+                recordsToDelete.add(record);
+            }
+
+            // query
+            List<HealthDataRecord> retList = dao.getRecordsByHealthCodeCreatedOnSchemaId(healthCode, CREATED_ON,
+                    SCHEMA_ID);
+
+            // Verify just the number of records. Everything else is tested elsewhere.
+            assertEquals(BridgeConstants.DUPE_RECORDS_MAX_COUNT, retList.size());
+        } finally {
+            for (DynamoHealthDataRecord oneRecord : recordsToDelete) {
+                mapper.delete(oneRecord);
+            }
+        }
     }
 
     @Test

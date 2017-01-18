@@ -34,7 +34,6 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 

@@ -2,18 +2,19 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
@@ -116,24 +117,14 @@ public class DynamoHealthDataDao implements HealthDataDao {
         DynamoDBQueryExpression<DynamoHealthDataRecord> expression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
                 .withConsistentRead(false)
                 .withHashKeyValues(queryRecord)
-                .withRangeKeyCondition("createdOn", rangeKeyCondition);
+                .withRangeKeyCondition("createdOn", rangeKeyCondition)
+                .withLimit(BridgeConstants.DUPE_RECORDS_MAX_COUNT);
 
-        List<DynamoHealthDataRecord> recordList = mapper.query(DynamoHealthDataRecord.class, expression);
+        QueryResultPage<DynamoHealthDataRecord> resultPage = mapper.queryPage(DynamoHealthDataRecord.class, expression);
+        List<DynamoHealthDataRecord> recordList = resultPage.getResults();
 
-        List<HealthDataRecord> finalRecords = new ArrayList<>();
-        for (Object oneResult : recordList) {
-            if (!DynamoHealthDataRecord.class.isInstance(oneResult)) {
-                // This should never happen, but just in case.
-                throw new BridgeServiceException(String.format(
-                        "DynamoDB returned objects of type %s instead of %s",
-                        oneResult.getClass().getName(), DynamoHealthDataRecord.class.getName()));
-            }
-
-            finalRecords.add((HealthDataRecord) oneResult);
-        }
-
-        return finalRecords.stream()
-                .filter(record -> record.getSchemaId().equals(schemaId))
-                .collect(Collectors.toList());
+        // Filter out schemas that don't match and convert it to a list of the parent type.
+        return recordList.stream().filter(record -> schemaId.equals(record.getSchemaId())).collect(
+                Collectors.toList());
     }
 }

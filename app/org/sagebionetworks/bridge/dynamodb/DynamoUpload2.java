@@ -18,8 +18,8 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -164,7 +164,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
     @Override
     public UploadStatus getStatus() {
         return status;
@@ -211,7 +211,7 @@ public class DynamoUpload2 implements Upload {
         this.completedOn = completedOn;
     }
     
-    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
     /** {@inheritDoc} */
     public UploadCompletionClient getCompletedBy() {
         return completedBy;
@@ -223,7 +223,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
+    @DynamoDBTypeConverted(converter = LocalDateMarshaller.class)
     @Override
     public LocalDate getUploadDate() {
         return uploadDate;

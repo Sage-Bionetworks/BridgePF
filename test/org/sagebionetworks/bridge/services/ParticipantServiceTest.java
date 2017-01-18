@@ -60,6 +60,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -156,6 +157,9 @@ public class ParticipantServiceTest {
     @Mock
     private Subpopulation subpopulation;
     
+    @Mock
+    private NotificationsService notificationsService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -186,6 +190,7 @@ public class ParticipantServiceTest {
         participantService.setExternalIdService(externalIdService);
         participantService.setScheduledActivityDao(activityDao);
         participantService.setUploadService(uploadService);
+        participantService.setNotificationsService(notificationsService);
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
@@ -871,6 +876,25 @@ public class ParticipantServiceTest {
         participantService.getUploads(STUDY, ID, null, null);
         
         verify(uploadService).getUploads(HEALTH_CODE, null, null);
+    }
+    
+    @Test
+    public void listNotificationRegistrations() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.listRegistrations(STUDY, ID);
+        
+        verify(notificationsService).listRegistrations(HEALTH_CODE);
+    }
+    
+    @Test
+    public void sendNotification() {
+        mockHealthCodeAndAccountRetrieval();
+        NotificationMessage message = TestUtils.getNotificationMessage();
+        
+        participantService.sendNotification(STUDY, ID, message);
+        
+        verify(notificationsService).sendNotification(STUDY.getStudyIdentifier(), HEALTH_CODE, message);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

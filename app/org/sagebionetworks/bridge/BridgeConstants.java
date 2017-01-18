@@ -20,7 +20,11 @@ public class BridgeConstants {
     
     public static final String BRIDGE_API_STATUS_HEADER = "Bridge-Api-Status";
 
-    public static final String BRIDGE_DEPRECATED_STATUS = "deprecated";
+    public static final String BRIDGE_DEPRECATED_STATUS = "you're calling a deprecated endpoint";
+
+    public static final String WARN_NO_USER_AGENT =  "we can't parse your User-Agent header, cannot filter by application version";
+
+    public static final String WARN_NO_ACCEPT_LANGUAGE = "you haven't included an Accept-Language header, cannot filter by language";
 
     public static final String SESSION_TOKEN_HEADER = "Bridge-Session";
 
@@ -38,7 +42,10 @@ public class BridgeConstants {
     public static final String CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
 
     public static final String CUSTOM_DATA_VERSION = "version";
-    
+
+    /** Used to cap the number of dupe records we fetch from DDB and the number of log messages we write. */
+    public static final int DUPE_RECORDS_MAX_COUNT = 10;
+
     public static final String STUDY_PROPERTY = "study";
 
     public static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");

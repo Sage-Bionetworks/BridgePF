@@ -50,12 +50,18 @@ public class ReportService {
         this.reportIndexDao = reportIndexDao;
     }
     
+    public ReportIndex getReportIndex(ReportDataKey key) {
+        checkNotNull(key);
+        
+        return reportIndexDao.getIndex(key);
+    }
+    
     public DateRangeResourceList<? extends ReportData> getStudyReport(StudyIdentifier studyId, String identifier,
             LocalDate startDate, LocalDate endDate) {
         // ReportDataKey validates all parameters to this method
         
-        startDate = defaultValueToYesterday(startDate);
-        endDate = defaultValueToYesterday(endDate);
+        startDate = defaultValueToMinusDays(startDate, 1);
+        endDate = defaultValueToMinusDays(endDate, 0);
         validateDateRange(startDate, endDate);
 
         ReportDataKey key = new ReportDataKey.Builder()
@@ -69,8 +75,8 @@ public class ReportService {
     public DateRangeResourceList<? extends ReportData> getParticipantReport(StudyIdentifier studyId, String identifier, String healthCode, LocalDate startDate, LocalDate endDate) {
         // ReportDataKey validates all parameters to this method
         
-        startDate = defaultValueToYesterday(startDate);
-        endDate = defaultValueToYesterday(endDate);
+        startDate = defaultValueToMinusDays(startDate, 1);
+        endDate = defaultValueToMinusDays(endDate, 0);
         validateDateRange(startDate, endDate);
 
         ReportDataKey key = new ReportDataKey.Builder()
@@ -177,12 +183,20 @@ public class ReportService {
     
     public void deleteParticipantReportIndex(StudyIdentifier studyId, String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
-                .withHealthCode("dummy-value")
+             // force INDEX key to be generated event for participant index (healthCode not relevant for this)
+                .withHealthCode("dummy-value") 
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
         
         reportIndexDao.removeIndex(key);
+    }
+    
+    public void updateReportIndex(ReportType reportType, ReportIndex index) {
+        if (reportType == ReportType.PARTICIPANT) {
+            index.setPublic(false);
+        }
+        reportIndexDao.updateIndex(index);
     }
 
     private void addToIndex(ReportDataKey key) {
@@ -196,9 +210,9 @@ public class ReportService {
         }
     }
     
-    private LocalDate defaultValueToYesterday(LocalDate submittedValue) {
+    private LocalDate defaultValueToMinusDays(LocalDate submittedValue, int minusDays) {
         if (submittedValue == null) {
-            return DateUtils.getCurrentCalendarDateInLocalTime().minusDays(1);
+            return DateUtils.getCurrentCalendarDateInLocalTime().minusDays(minusDays);
         }
         return submittedValue;
     }

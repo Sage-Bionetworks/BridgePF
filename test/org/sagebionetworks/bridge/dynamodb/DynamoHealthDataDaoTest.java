@@ -10,14 +10,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
+import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -137,28 +136,33 @@ public class DynamoHealthDataDaoTest {
 
     @Test
     public void getRecordsByHealthCodeCreatedOnSchemaId() {
-        // mock index helper
+        // For branch coverage, first record has the wrong schema ID.
+        DynamoHealthDataRecord wrongSchemaRecord = new DynamoHealthDataRecord();
+        wrongSchemaRecord.setId("wrong-schema-record");
+        wrongSchemaRecord.setSchemaId("wrong-" + TEST_SCHEMA_ID);
+
+        // Normal record, which will be returned by our mock.
         DynamoHealthDataRecord record = new DynamoHealthDataRecord();
         record.setHealthCode(TEST_HEALTH_CODE);
         record.setId("test ID");
         record.setCreatedOn(TEST_CREATED_ON);
         record.setSchemaId(TEST_SCHEMA_ID);
 
-        List<DynamoHealthDataRecord> mockResult = Arrays.asList(record);
+        List<DynamoHealthDataRecord> mockResult = ImmutableList.of(wrongSchemaRecord, record);
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
 
         // mock mapper
-        PaginatedQueryList<DynamoHealthDataRecord> mockGetResult = mock(PaginatedQueryList.class);
-        when(mockGetResult.isEmpty()).thenReturn(false);
-        when(mockGetResult.iterator()).thenReturn(mockResult.iterator()); // mock iterator to handle foreach loop
+        QueryResultPage<DynamoHealthDataRecord> resultPage = new QueryResultPage<>();
+        resultPage.setResults(mockResult);
+
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        when(mockMapper.query(eq(DynamoHealthDataRecord.class), any())).thenReturn(mockGetResult);
+        when(mockMapper.queryPage(eq(DynamoHealthDataRecord.class), any())).thenReturn(resultPage);
 
         dao.setMapper(mockMapper);
 
         // execute and validate
         List<HealthDataRecord> retVal = dao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID);
-
-        assertEquals(mockResult, retVal);
+        assertEquals(1, retVal.size());
+        assertSame(record, retVal.get(0));
     }
 }

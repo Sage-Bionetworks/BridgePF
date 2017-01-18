@@ -6,9 +6,9 @@ import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -32,7 +32,7 @@ public class DynamoReportData implements ReportData {
     public void setKey(String key) {
         this.key = key;
     }
-    @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
+    @DynamoDBTypeConverted(converter = LocalDateMarshaller.class)
     @DynamoDBRangeKey
     @JsonSerialize(using = LocalDateToStringSerializer.class)
     @Override
@@ -44,7 +44,7 @@ public class DynamoReportData implements ReportData {
     public void setDate(LocalDate date) {
         this.date = date;
     }
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @Override
     public JsonNode getData() {
         return data;
