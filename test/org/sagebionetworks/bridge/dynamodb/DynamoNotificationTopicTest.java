@@ -24,7 +24,7 @@ public class DynamoNotificationTopicTest {
         assertEquals("ABC", node.get("guid").asText());
         assertEquals("My Test Topic", node.get("name").asText());
         assertEquals("NotificationTopic", node.get("type").asText());
-        assertNull(node.get("studyId").asText());
+        assertNull(node.get("studyId"));
         assertNull(node.get("topicARN"));
         
         // The values that are not serialized are provided by the service, they aren't
