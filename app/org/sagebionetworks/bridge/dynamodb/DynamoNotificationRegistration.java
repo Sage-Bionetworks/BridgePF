@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -13,7 +12,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "NotificationRegistration")
-@BridgeTypeName("NotificationRegistration")
 public class DynamoNotificationRegistration implements NotificationRegistration {
 
     private String healthCode;
