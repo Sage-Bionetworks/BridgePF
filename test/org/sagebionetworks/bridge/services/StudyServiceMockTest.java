@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 import com.google.common.collect.Sets;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
+import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.repo.model.AccessControlList;
 import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
@@ -255,6 +256,20 @@ public class StudyServiceMockTest {
         assertEquals(retStudy.getName(), study.getName());
         assertEquals(retStudy.getSynapseProjectId(), TEST_PROJECT_ID);
         assertEquals(retStudy.getSynapseDataAccessTeamId().toString(), TEST_TEAM_ID);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseProjectTeamInvalidUserID() throws SynapseException {
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        // pre-setup
+        when(mockSynapseClient.getUserProfile(any())).thenThrow(SynapseNotFoundException.class);
+
+        // execute
+        service.createSynapseProjectTeam(TEST_USER_ID, study);
+
     }
 
     @Test

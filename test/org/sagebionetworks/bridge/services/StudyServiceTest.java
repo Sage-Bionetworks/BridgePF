@@ -100,11 +100,18 @@ public class StudyServiceTest {
     private Team team;
     
     @Before
-    public void before() {
+    public void before() throws SynapseException {
         mockCache = mock(CacheProvider.class);
         studyService.setCacheProvider(mockCache);
 
         studyService.setSynapseClient(synapseClient);
+
+        if (project != null) {
+            synapseClient.deleteEntityById(project.getId());
+        }
+        if (team != null) {
+            synapseClient.deleteTeam(team.getId());
+        }
     }
     
     @After
@@ -137,20 +144,20 @@ public class StudyServiceTest {
 
         // execute
         Study retStudy = studyService.createSynapseProjectTeam(TEST_USER_ID, study);
-
-        // verify study
-        assertEquals(retStudy.getIdentifier(), study.getIdentifier());
         String projectId = retStudy.getSynapseProjectId();
         Long teamId = retStudy.getSynapseDataAccessTeamId();
 
-        // verify if project and team exists
         Entity project = synapseClient.getEntityById(projectId);
-        assertNotNull(project);
-        assertEquals(project.getEntityType(), "org.sagebionetworks.repo.model.Project");
         this.project = (Project) project;
         Team team = synapseClient.getTeam(teamId.toString());
-        assertNotNull(team);
         this.team = team;
+
+        // verify
+        assertEquals(retStudy.getIdentifier(), study.getIdentifier());
+        assertNotNull(project);
+        assertEquals(project.getEntityType(), "org.sagebionetworks.repo.model.Project");
+        assertNotNull(team);
+
 
         // project acl
         AccessControlList projectAcl = synapseClient.getACL(projectId);

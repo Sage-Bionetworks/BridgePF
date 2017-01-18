@@ -345,6 +345,29 @@ public class StudyControllerTest {
         // Throw an exception if the code makes it this far.
         doThrow(new RuntimeException()).when(controller).getAuthenticatedSession(ADMIN);
     }
+
+    @Test
+    public void getSummaryStudiesWithInactiveOnes() throws Exception {
+        DynamoStudy testStudy1 = new DynamoStudy();
+        testStudy1.setName("test_study_1");
+        testStudy1.setActive(true);
+
+        DynamoStudy testStudy2 = new DynamoStudy();
+        testStudy2.setName("test_study_2");
+
+        List<Study> studies = Lists.newArrayList(testStudy1, testStudy2);
+        doReturn(studies).when(mockStudyService).getStudies();
+
+        Result result = controller.getAllStudies("summary", null);
+        assertEquals(200, result.status());
+        // only active studies will be returned
+        assertTrue(Helpers.contentAsString(result).contains("test_study_1"));
+        assertFalse(Helpers.contentAsString(result).contains("test_study_2"));
+        assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
+
+        // Throw an exception if the code makes it this far.
+        doThrow(new RuntimeException()).when(controller).getAuthenticatedSession(ADMIN);
+    }
     
     @Test
     public void getFullStudiesWorks() throws Exception {

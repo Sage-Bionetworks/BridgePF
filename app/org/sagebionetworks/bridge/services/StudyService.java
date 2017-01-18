@@ -40,11 +40,13 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
+import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.UserProfile;
 import org.sagebionetworks.repo.model.util.ModelConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -193,6 +195,13 @@ public class StudyService {
         // first check if study already has project and team ids
         checkNewEntity(study, study.getSynapseDataAccessTeamId(), "Study already has a team id.");
         checkNewEntity(study, study.getSynapseProjectId(), "Study already has a project id.");
+
+        // then check if the user id exists
+        try {
+            synapseClient.getUserProfile(userId.toString());
+        } catch (SynapseNotFoundException e) {
+            throw new BadRequestException("Synapse user Id is invalid.");
+        }
 
         // create synapse project and team
         Team team = new Team();
