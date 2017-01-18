@@ -136,6 +136,17 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
                     + "' deleted, but SNS topic deletion threw exception", e);
         }
     }
+    
+    @Override
+    public void deleteAllTopics(StudyIdentifier studyId) {
+        checkNotNull(studyId);
+        
+        List<NotificationTopic> topics = listTopics(studyId);
+        // Delete them individually. 
+        for (NotificationTopic topic : topics) {
+            deleteTopic(studyId, topic.getGuid());
+        }
+    }
 
     /**
      * So we can find these in the AWS console, we give these a specifically formatted name.

@@ -17,4 +17,6 @@ public interface NotificationTopicDao {
     
     void deleteTopic(StudyIdentifier studyId, String guid);
     
+    void deleteAllTopics(StudyIdentifier studyId);
+    
 }

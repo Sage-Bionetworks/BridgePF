@@ -13,7 +13,9 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 
@@ -34,6 +36,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.CreateTopicRequest;
@@ -58,6 +61,9 @@ public class DynamoNotificationTopicDaoTest {
     
     @Mock
     private QueryResultPage<DynamoNotificationTopic> mockQueryResultPage;
+    
+    @Mock
+    private PaginatedQueryList<DynamoNotificationTopic> mockPaginatedQueryList;
     
     @Captor
     private ArgumentCaptor<CreateTopicRequest> createTopicRequestCaptor;
@@ -188,6 +194,39 @@ public class DynamoNotificationTopicDaoTest {
         assertEquals(TEST_STUDY_IDENTIFIER, capturedTopic.getStudyId());
         assertEquals("anything", capturedTopic.getGuid());
     }
+    
+    @Test
+    public void deleteAllTopics() {
+        NotificationTopic topic1 = getNotificationTopic();
+        NotificationTopic topic2 = getNotificationTopic();
+        topic2.setGuid("GHI-JKL");
+        topic2.setTopicARN("other:topic:arn");
+        
+        when(mockMapper.load(any())).thenReturn(topic1, topic2);
+        
+        List<NotificationTopic> results = Lists.newArrayList(topic1, topic2);
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockMapper).queryPage(eq(DynamoNotificationTopic.class), any());
+        
+        dao.deleteAllTopics(TEST_STUDY);
+        
+        verify(mockMapper, times(2)).delete(topicCaptor.capture());
+        NotificationTopic captured = topicCaptor.getAllValues().get(0);
+        assertEquals(topic1.getStudyId(), captured.getStudyId());
+        assertEquals(topic1.getGuid(), captured.getGuid());
+        
+        captured = topicCaptor.getAllValues().get(1);
+        assertEquals(topic2.getStudyId(), captured.getStudyId());
+        assertEquals(topic2.getGuid(), captured.getGuid());
+        
+        verify(mockSnsClient, times(2)).deleteTopic(deleteTopicRequestCaptor.capture());
+        DeleteTopicRequest request = deleteTopicRequestCaptor.getAllValues().get(0);
+        assertEquals(topic1.getTopicARN(), request.getTopicArn());
+        
+        request = deleteTopicRequestCaptor.getAllValues().get(1);
+        assertEquals(topic2.getTopicARN(), request.getTopicArn());
+    }
+    
     
     // If the SNS topic creation fails, no DDB record will exist.
     // (okay if SNS topic exists, but DDB record doesn't, so don't need to test that path)
