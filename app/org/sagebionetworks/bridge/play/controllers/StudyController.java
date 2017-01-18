@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
@@ -206,16 +207,16 @@ public class StudyController extends BaseController {
      * @param endTimeString
      * @return
      */
-    public Result getUploadsForStudy(String studyId, String startTimeString, String endTimeString) throws EntityNotFoundException {
+    public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString) throws EntityNotFoundException {
         getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
 
-        Study study = studyService.getStudy(studyId);
+        StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
 
         DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
-                study.getStudyIdentifier(), startTime, endTime);
+                studyId, startTime, endTime);
 
         return okResult(uploads);
     }
