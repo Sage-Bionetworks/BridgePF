@@ -36,7 +36,7 @@ import play.mvc.Result;
 import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
-public class NotificationsControllerTest {
+public class NotificationControllerTest {
 
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
     private static final String OS_NAME = "Android";
@@ -53,7 +53,7 @@ public class NotificationsControllerTest {
     private UserSession session;
     
     @Spy
-    private NotificationsController controller;
+    private NotificationRegistrationController controller;
     
     @Captor
     private ArgumentCaptor<NotificationRegistration> registrationCaptor;

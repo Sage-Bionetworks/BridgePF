@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.dao.NotificationTopicDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -100,11 +101,11 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
 
     @Override
-    public NotificationTopic updateTopic(StudyIdentifier studyId, NotificationTopic topic) {
+    public NotificationTopic updateTopic(NotificationTopic topic) {
         checkNotNull(topic);
         checkNotNull(topic.getGuid());
 
-        NotificationTopic existing = getTopic(studyId, topic.getGuid());
+        NotificationTopic existing = getTopic(new StudyIdentifierImpl(topic.getStudyId()), topic.getGuid());
         existing.setName(topic.getName());
         
         mapper.save(existing);

@@ -1,16 +1,16 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.validation.Validator;
 
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
 public class NotificationRegistrationValidatorTest {
 
+    private static final Validator VALIDATOR = NotificationRegistrationValidator.INSTANCE;
     private static final String HEALTH_CODE = "ABC";
     private static final String DEVICE_ID = "MNO-PQR-STU-VWX";
     private static final String OS_NAME = "Android";
@@ -33,33 +33,24 @@ public class NotificationRegistrationValidatorTest {
     @Test
     public void healthCodeRequired() {
         registration.setHealthCode(null);
-        testError("healthCode", " is required");
+        assertValidatorMessage(VALIDATOR, registration, "healthCode", " is required");
     }
     
     @Test
     public void deviceIdRequired() {
         registration.setDeviceId(null);
-        testError("deviceId", " is required");
+        assertValidatorMessage(VALIDATOR, registration, "deviceId", " is required");
     }
     
     @Test
     public void osNameRequired() {
         registration.setOsName(null);
-        testError("osName", " is required");
+        assertValidatorMessage(VALIDATOR, registration, "osName", " is required");
     }
     
     @Test
     public void osNameUnknown() {
         registration.setOsName("Not good");
-        testError("osName", " is not a supported platform");
-    }
-    
-    private void testError(String fieldName, String error) {
-        try {
-            Validate.entityThrowingException(NotificationRegistrationValidator.INSTANCE, registration);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals(fieldName+error, e.getErrors().get(fieldName).get(0));
-        }
+        assertValidatorMessage(VALIDATOR, registration, "osName", " is not a supported platform");
     }
 }
