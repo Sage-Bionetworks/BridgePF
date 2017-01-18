@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.util.List;
 
@@ -26,6 +25,7 @@ import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.CreateTopicRequest;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.DeleteTopicRequest;
+import com.google.common.collect.ImmutableList;
 
 @Component
 public class DynamoNotificationTopicDao implements NotificationTopicDao {
@@ -62,7 +62,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
                 .withConsistentRead(false).withHashKeyValues(hashKey);
 
         QueryResultPage<DynamoNotificationTopic> resultPage = mapper.queryPage(DynamoNotificationTopic.class, query);
-        return resultPage.getResults().stream().map(obj -> (NotificationTopic) obj).collect(toImmutableList());
+        return ImmutableList.copyOf(resultPage.getResults());
     }
 
     @Override
