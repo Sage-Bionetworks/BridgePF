@@ -140,6 +140,9 @@ public class NotificationTopicControllerTest {
         verify(mockTopicService).deleteTopic(TEST_STUDY, GUID);
     }
     
+    // Test permissions of all the methods... DEVELOPER or DEVELOPER RESEARCHER. Do 
+    // something that 
+    
     private JsonNode getResultNode(Result result) throws Exception {
         return BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
     }
