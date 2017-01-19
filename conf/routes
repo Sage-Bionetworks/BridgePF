@@ -139,11 +139,11 @@ POST   /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.
 DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
 # Notifications
-GET    /v3/notifications        @org.sagebionetworks.bridge.play.controllers.NotificationsController.getAllRegistrations
-POST   /v3/notifications        @org.sagebionetworks.bridge.play.controllers.NotificationsController.createRegistration
-GET    /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationsController.getRegistration(guid: String)
-POST   /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationsController.updateRegistration(guid: String)
-DELETE /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationsController.deleteRegistration(guid: String) 
+GET    /v3/notifications        @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getAllRegistrations
+POST   /v3/notifications        @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.createRegistration
+GET    /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getRegistration(guid: String)
+POST   /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.updateRegistration(guid: String)
+DELETE /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.deleteRegistration(guid: String) 
 
 # Bridge Exporter
 POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus

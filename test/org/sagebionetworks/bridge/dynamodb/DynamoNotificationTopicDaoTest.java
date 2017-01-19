@@ -154,7 +154,7 @@ public class DynamoNotificationTopicDaoTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void updateTopicNotFound() {
-        dao.updateTopic(TEST_STUDY, getNotificationTopic());
+        dao.updateTopic(getNotificationTopic());
     }
     
     @Test
@@ -164,7 +164,7 @@ public class DynamoNotificationTopicDaoTest {
         NotificationTopic topic = getNotificationTopic();
         topic.setName("The updated name");
         
-        NotificationTopic updated = dao.updateTopic(TEST_STUDY, topic);
+        NotificationTopic updated = dao.updateTopic(topic);
         assertEquals("The updated name", updated.getName());
         
         verify(mockMapper).save(topicCaptor.capture());

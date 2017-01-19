@@ -13,7 +13,7 @@ public interface NotificationTopicDao {
     
     NotificationTopic createTopic(NotificationTopic topic);
     
-    NotificationTopic updateTopic(StudyIdentifier studyId, NotificationTopic topic);
+    NotificationTopic updateTopic(NotificationTopic topic);
     
     void deleteTopic(StudyIdentifier studyId, String guid);
     

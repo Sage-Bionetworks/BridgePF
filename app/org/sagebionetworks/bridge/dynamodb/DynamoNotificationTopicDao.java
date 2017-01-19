@@ -70,8 +70,12 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         checkNotNull(studyId);
         checkNotNull(guid);
         
+        return getTopicInternal(studyId.getIdentifier(), guid);
+    }
+
+    private NotificationTopic getTopicInternal(String studyId, String guid) {
         DynamoNotificationTopic hashKey = new DynamoNotificationTopic();
-        hashKey.setStudyId(studyId.getIdentifier());
+        hashKey.setStudyId(studyId);
         hashKey.setGuid(guid);
 
         DynamoNotificationTopic topic = mapper.load(hashKey);
@@ -80,7 +84,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         }
         return topic;
     }
-
+    
     @Override
     public NotificationTopic createTopic(NotificationTopic topic) {
         checkNotNull(topic);
@@ -100,11 +104,11 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
 
     @Override
-    public NotificationTopic updateTopic(StudyIdentifier studyId, NotificationTopic topic) {
+    public NotificationTopic updateTopic(NotificationTopic topic) {
         checkNotNull(topic);
         checkNotNull(topic.getGuid());
 
-        NotificationTopic existing = getTopic(studyId, topic.getGuid());
+        NotificationTopic existing = getTopicInternal(topic.getStudyId(), topic.getGuid());
         existing.setName(topic.getName());
         
         mapper.save(existing);
