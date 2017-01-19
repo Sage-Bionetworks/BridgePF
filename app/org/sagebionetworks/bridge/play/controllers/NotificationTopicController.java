@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class NotificationTopicController extends BaseController {
     }
     
     public Result getAllTopics() {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         List<NotificationTopic> list = topicService.listTopics(session.getStudyIdentifier());
         
@@ -44,7 +45,7 @@ public class NotificationTopicController extends BaseController {
     }
     
     public Result getTopic(String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
 
         NotificationTopic topic = topicService.getTopic(session.getStudyIdentifier(), guid);
         
