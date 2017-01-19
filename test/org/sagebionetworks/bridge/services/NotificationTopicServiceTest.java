@@ -64,7 +64,7 @@ public class NotificationTopicServiceTest {
         NotificationTopic topic = getNotificationTopic();
         doReturn(topic).when(topicDao).createTopic(topic);
         
-        NotificationTopic result = service.createTopic(TEST_STUDY, topic);
+        NotificationTopic result = service.createTopic(topic);
         assertEquals(topic, result);
         
         verify(topicDao).createTopic(topic);
@@ -75,7 +75,7 @@ public class NotificationTopicServiceTest {
         NotificationTopic topic = getNotificationTopic();
         topic.setName(null);
         try {
-            service.createTopic(TEST_STUDY, topic);
+            service.createTopic(topic);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             verify(topicDao, never()).createTopic(topic);
@@ -85,12 +85,12 @@ public class NotificationTopicServiceTest {
     @Test
     public void updateTopic() {
         NotificationTopic topic = getNotificationTopic();
-        doReturn(topic).when(topicDao).updateTopic(TEST_STUDY, topic);
+        doReturn(topic).when(topicDao).updateTopic(topic);
         
-        NotificationTopic result = service.updateTopic(TEST_STUDY, topic);
+        NotificationTopic result = service.updateTopic(topic);
         assertEquals(topic, result);
         
-        verify(topicDao).updateTopic(TEST_STUDY, topic);
+        verify(topicDao).updateTopic(topic);
     }
     
     @Test
@@ -98,10 +98,10 @@ public class NotificationTopicServiceTest {
         NotificationTopic topic = getNotificationTopic();
         topic.setName(null);
         try {
-            service.updateTopic(TEST_STUDY, topic);
+            service.updateTopic(topic);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            verify(topicDao, never()).updateTopic(TEST_STUDY, topic);
+            verify(topicDao, never()).updateTopic(topic);
         }        
     }
     
