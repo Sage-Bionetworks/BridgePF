@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
@@ -40,12 +39,10 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
-import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
-import org.sagebionetworks.repo.model.UserProfile;
 import org.sagebionetworks.repo.model.util.ModelConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -190,14 +187,18 @@ public class StudyService {
         return study;
     }
 
-    public Study createSynapseProjectTeam(Long userId, Study study) throws SynapseException {
+    public Study createSynapseProjectTeam(String synapseUserId, Study study) throws SynapseException {
+        if (StringUtils.isBlank(synapseUserId)) {
+            throw new BadRequestException("Synapse User ID is invalid.");
+        }
+
         // first check if study already has project and team ids
         checkNewEntity(study, study.getSynapseDataAccessTeamId(), "Study already has a team id.");
         checkNewEntity(study, study.getSynapseProjectId(), "Study already has a project id.");
 
         // then check if the user id exists
         try {
-            synapseClient.getUserProfile(userId.toString());
+            synapseClient.getUserProfile(synapseUserId);
         } catch (SynapseNotFoundException e) {
             throw new BadRequestException("Synapse user Id is invalid.");
         }
@@ -221,7 +222,7 @@ public class StudyService {
         acl.getResourceAccess().add(toSet);
         // add user as admin
         ResourceAccess toSetUser = new ResourceAccess();
-        toSetUser.setPrincipalId(userId); // passed by user as parameter
+        toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
         toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
         acl.getResourceAccess().add(toSetUser);
 
@@ -229,11 +230,11 @@ public class StudyService {
 
         // send invitation to target user for joining new team and grant admin permission to that user
         MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
-        teamMemberInvitation.setInviteeId(userId.toString());
+        teamMemberInvitation.setInviteeId(synapseUserId);
         teamMemberInvitation.setTeamId(newTeam.getId());
 
         synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
-        synapseClient.setTeamMemberPermissions(newTeam.getId(), userId.toString(), true);
+        synapseClient.setTeamMemberPermissions(newTeam.getId(), synapseUserId, true);
 
         String newTeamId = newTeam.getId();
         String newProjectId = newProject.getId();

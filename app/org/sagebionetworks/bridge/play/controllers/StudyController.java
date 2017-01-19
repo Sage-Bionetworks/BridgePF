@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
@@ -137,17 +139,12 @@ public class StudyController extends BaseController {
     }
 
     public Result createSynapse(String synapseUserId) throws Exception {
-        if (synapseUserId == null) {
-            return badRequest(Json.toJson("Synapse User ID cannot be null."));
-        }
-
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         // then create project and team and grant admin permission to current user and exporter
-        Long userIdNum = Long.parseLong(synapseUserId);
-        studyService.createSynapseProjectTeam(userIdNum, study);
+        studyService.createSynapseProjectTeam(synapseUserId, study);
 
         return createdResult(new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
     }
@@ -208,6 +205,10 @@ public class StudyController extends BaseController {
      * @return
      */
     public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString) throws EntityNotFoundException {
+        if (StringUtils.isBlank(studyIdString)) {
+            throw new BadRequestException("Invalid study Id.");
+        }
+
         getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);

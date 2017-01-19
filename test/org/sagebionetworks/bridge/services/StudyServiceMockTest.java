@@ -206,7 +206,7 @@ public class StudyServiceMockTest {
         when(mockSynapseClient.getTeamACL(any())).thenReturn(mockTeamAcl);
 
         // execute
-        Study retStudy = service.createSynapseProjectTeam(TEST_USER_ID, study);
+        Study retStudy = service.createSynapseProjectTeam(TEST_USER_ID.toString(), study);
 
         // verify
         // create project and team
@@ -258,7 +258,7 @@ public class StudyServiceMockTest {
     }
 
     @Test(expected = BadRequestException.class)
-    public void createSynapseProjectTeamInvalidUserID() throws SynapseException {
+    public void createSynapseProjectTeamNonExistUserID() throws SynapseException {
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
@@ -267,8 +267,37 @@ public class StudyServiceMockTest {
         when(mockSynapseClient.getUserProfile(any())).thenThrow(SynapseNotFoundException.class);
 
         // execute
-        service.createSynapseProjectTeam(TEST_USER_ID, study);
+        service.createSynapseProjectTeam(TEST_USER_ID.toString(), study);
+    }
 
+    @Test(expected = BadRequestException.class)
+    public void createSynapseProjectTeamNullUserID() throws SynapseException {
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        // execute
+        service.createSynapseProjectTeam(null, study);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseProjectTeamEmptyUserID() throws SynapseException {
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        // execute
+        service.createSynapseProjectTeam("", study);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseProjectTeamBlankUserID() throws SynapseException {
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        // execute
+        service.createSynapseProjectTeam(" ", study);
     }
 
     @Test

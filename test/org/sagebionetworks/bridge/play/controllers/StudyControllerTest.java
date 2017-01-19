@@ -31,10 +31,12 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DefaultObjectMapper;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -51,6 +53,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import play.core.j.JavaResultExtractor;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -201,7 +204,7 @@ public class StudyControllerTest {
 
         // verify
         verify(mockStudyService).getStudy(eq(studyId));
-        verify(mockStudyService).createSynapseProjectTeam(eq(Long.parseLong(TEST_USER_ID)), eq(study));
+        verify(mockStudyService).createSynapseProjectTeam(eq(TEST_USER_ID), eq(study));
 
         JsonNode synapse = BridgeObjectMapper.get().readTree(synapseIds);
         assertEquals(TEST_PROJECT_ID, synapse.get("projectId").asText());
@@ -296,6 +299,30 @@ public class StudyControllerTest {
         assertEquals(endTime, retrieved.getEndTime());
     }
 
+    @Test(expected = BadRequestException.class)
+    public void getUploadsForStudyWithNullStudyId() {
+        DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
+        DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
+
+        controller.getUploadsForStudy(null, startTime.toString(), endTime.toString());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getUploadsForStudyWitEmptyStudyId() {
+        DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
+        DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
+
+        controller.getUploadsForStudy("", startTime.toString(), endTime.toString());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getUploadsForStudyWithBlankStudyId() {
+        DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
+        DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
+
+        controller.getUploadsForStudy(" ", startTime.toString(), endTime.toString());
+    }
+
     @Test
     public void canGetUploadsForSpecifiedStudy() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
@@ -310,7 +337,6 @@ public class StudyControllerTest {
         Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
         assertEquals(200, result.status());
 
-        verify(mockStudyService).getStudy(studyId.getIdentifier());
         verify(mockUploadService).getStudyUploads(studyId, startTime, endTime);
 
         // in other words, it's the object we mocked out from the service, we were returned the value.
@@ -361,12 +387,13 @@ public class StudyControllerTest {
         Result result = controller.getAllStudies("summary", null);
         assertEquals(200, result.status());
         // only active studies will be returned
-        assertTrue(Helpers.contentAsString(result).contains("test_study_1"));
-        assertFalse(Helpers.contentAsString(result).contains("test_study_2"));
+        byte[] body = JavaResultExtractor.getBody(result, 0L);
+        JsonNode recordJsonNode = DefaultObjectMapper.INSTANCE.readTree(body);
+        JsonNode items = recordJsonNode.get("items");
+        assertTrue(items.size() == 1);
+        JsonNode study = items.get(0);
+        assertEquals("test_study_1", study.get("name").asText());
         assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
-
-        // Throw an exception if the code makes it this far.
-        doThrow(new RuntimeException()).when(controller).getAuthenticatedSession(ADMIN);
     }
     
     @Test
