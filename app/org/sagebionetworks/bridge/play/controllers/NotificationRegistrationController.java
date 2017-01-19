@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.services.NotificationsService;
 import play.mvc.Result;
 
 @Controller
-public class NotificationsController extends BaseController {
+public class NotificationRegistrationController extends BaseController {
     
     private NotificationsService notificationsService;
     
