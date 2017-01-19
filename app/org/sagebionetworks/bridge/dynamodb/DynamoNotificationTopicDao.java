@@ -72,7 +72,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         
         return getTopicInternal(studyId.getIdentifier(), guid);
     }
-    
+
     private NotificationTopic getTopicInternal(String studyId, String guid) {
         DynamoNotificationTopic hashKey = new DynamoNotificationTopic();
         hashKey.setStudyId(studyId);
@@ -84,7 +84,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         }
         return topic;
     }
-
+    
     @Override
     public NotificationTopic createTopic(NotificationTopic topic) {
         checkNotNull(topic);

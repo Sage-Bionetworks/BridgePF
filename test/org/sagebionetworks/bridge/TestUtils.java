@@ -73,7 +73,6 @@ public class TestUtils {
     
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
 
-    
     public static void assertValidatorMessage(Validator validator, Object object, String fieldName, String error) {
         try {
             Validate.entityThrowingException(validator, object);

@@ -1,16 +1,15 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.NotificationRegistrationValidator.INSTANCE;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
 public class NotificationRegistrationValidatorTest {
 
-    private static final Validator VALIDATOR = NotificationRegistrationValidator.INSTANCE;
     private static final String HEALTH_CODE = "ABC";
     private static final String DEVICE_ID = "MNO-PQR-STU-VWX";
     private static final String OS_NAME = "Android";
@@ -27,30 +26,30 @@ public class NotificationRegistrationValidatorTest {
     
     @Test
     public void isValid() {
-        Validate.entityThrowingException(NotificationRegistrationValidator.INSTANCE, registration);
+        Validate.entityThrowingException(INSTANCE, registration);
     }
     
     @Test
     public void healthCodeRequired() {
         registration.setHealthCode(null);
-        assertValidatorMessage(VALIDATOR, registration, "healthCode", " is required");
+        assertValidatorMessage(INSTANCE, registration, "healthCode", " is required");
     }
     
     @Test
     public void deviceIdRequired() {
         registration.setDeviceId(null);
-        assertValidatorMessage(VALIDATOR, registration, "deviceId", " is required");
+        assertValidatorMessage(INSTANCE, registration, "deviceId", " is required");
     }
     
     @Test
     public void osNameRequired() {
         registration.setOsName(null);
-        assertValidatorMessage(VALIDATOR, registration, "osName", " is required");
+        assertValidatorMessage(INSTANCE, registration, "osName", " is required");
     }
     
     @Test
     public void osNameUnknown() {
         registration.setOsName("Not good");
-        assertValidatorMessage(VALIDATOR, registration, "osName", " is not a supported platform");
+        assertValidatorMessage(INSTANCE, registration, "osName", " is not a supported platform");
     }
 }
