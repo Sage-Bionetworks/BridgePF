@@ -31,6 +31,7 @@ import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
+import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
 import org.sagebionetworks.client.SynapseAdminClientImpl;
 import org.sagebionetworks.client.SynapseClient;
@@ -250,6 +251,12 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoNamingHelper dynamoNamingHelper(BridgeConfig bridgeConfig) {
         return new DynamoNamingHelper(bridgeConfig);
+    }
+
+    @Bean(name = "compoundActivityDefinitionDdbMapper")
+    @Autowired
+    public DynamoDBMapper compoundActivityDefinitionDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoCompoundActivityDefinition.class);
     }
 
     @Bean(name = "healthDataAttachmentDdbMapper")
