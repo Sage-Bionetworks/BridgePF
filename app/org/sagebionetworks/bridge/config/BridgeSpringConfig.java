@@ -17,6 +17,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
@@ -33,6 +34,8 @@ import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
+import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.client.SynapseAdminClientImpl;
 import org.sagebionetworks.client.SynapseClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,6 +124,13 @@ public class BridgeSpringConfig {
                 bridgeConfig.getProperty("aws.secret.key"));
     }
 
+    @Bean(name = "snsCredentials")
+    public BasicAWSCredentials snsCredentials() {
+        BridgeConfig bridgeConfig = bridgeConfig();
+        return new BasicAWSCredentials(bridgeConfig.getProperty("sns.key"),
+                bridgeConfig.getProperty("sns.secret.key"));
+    }
+    
     @Bean(name = "s3UploadCredentials")
     @Resource(name = "bridgeConfig")
     public BasicAWSCredentials s3UploadCredentials(BridgeConfig bridgeConfig) {
@@ -142,6 +152,12 @@ public class BridgeSpringConfig {
         ClientConfiguration awsClientConfig = PredefinedClientConfigurations.dynamoDefault()
                 .withMaxErrorRetry(maxRetries);
         return new AmazonDynamoDBClient(awsCredentials(), awsClientConfig);
+    }
+    
+    @Bean(name = "snsClient")
+    @Resource(name = "snsCredentials")
+    public AmazonSNSClient snsClient() {
+        return new AmazonSNSClient(snsCredentials());
     }
 
     @Bean(name = "dataPipelineClient")
@@ -323,6 +339,18 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper schedulePlanMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoSchedulePlan.class);
+    }
+    
+    @Bean(name = "notificationRegistrationMapper")
+    @Autowired
+    public DynamoDBMapper notificationRegistrationMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoNotificationRegistration.class);
+    }
+    
+    @Bean(name = "notificationTopicMapper")
+    @Autowired
+    public DynamoDBMapper notificationTopicMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoNotificationTopic.class);
     }
     
     @Bean(name = "uploadHealthCodeRequestedOnIndex")

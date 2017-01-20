@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -46,7 +47,8 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false)
                 .withLimit(1);
-        PaginatedQueryList<DynamoStudyConsent1> page = mapper.query(DynamoStudyConsent1.class, queryExpression);
+        QueryResultPage<DynamoStudyConsent1> resultPage = mapper.queryPage(DynamoStudyConsent1.class, queryExpression);
+        List<DynamoStudyConsent1> page = resultPage.getResults();
         if (page.isEmpty()) {
             return null;
         }
