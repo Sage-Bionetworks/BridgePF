@@ -205,10 +205,6 @@ public class StudyController extends BaseController {
      * @return
      */
     public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString) throws EntityNotFoundException {
-        if (StringUtils.isBlank(studyIdString)) {
-            throw new BadRequestException("Invalid study Id.");
-        }
-
         getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);

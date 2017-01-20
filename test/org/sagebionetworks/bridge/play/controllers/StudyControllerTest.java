@@ -8,6 +8,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -16,6 +17,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import java.util.List;
@@ -291,7 +293,7 @@ public class StudyControllerTest {
         assertEquals(200, result.status());
         
         verify(mockUploadService).getStudyUploads(studyId, startTime, endTime);
-        
+        verify(mockStudyService, never()).getStudy(studyId.toString());
         // in other words, it's the object we mocked out from the service, we were returned the value.
         DateTimeRangeResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
@@ -301,6 +303,8 @@ public class StudyControllerTest {
 
     @Test(expected = BadRequestException.class)
     public void getUploadsForStudyWithNullStudyId() {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
+
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
@@ -309,6 +313,8 @@ public class StudyControllerTest {
 
     @Test(expected = BadRequestException.class)
     public void getUploadsForStudyWitEmptyStudyId() {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
+
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
@@ -317,6 +323,8 @@ public class StudyControllerTest {
 
     @Test(expected = BadRequestException.class)
     public void getUploadsForStudyWithBlankStudyId() {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
+
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
@@ -394,6 +402,8 @@ public class StudyControllerTest {
         JsonNode study = items.get(0);
         assertEquals("test_study_1", study.get("name").asText());
         assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
+
+        verify(controller, never()).getAuthenticatedSession(ADMIN);
     }
     
     @Test
