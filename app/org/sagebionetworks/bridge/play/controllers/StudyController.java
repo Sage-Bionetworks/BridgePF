@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.SynapseAccount;
+import org.sagebionetworks.bridge.models.SynapseUserIdHolder;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
@@ -136,6 +138,15 @@ public class StudyController extends BaseController {
         Study study = parseJson(request(), Study.class);
         study = studyService.createStudy(study);
         return okResult(new VersionHolder(study.getVersion()));
+    }
+
+    public Result createSynapseAccount() throws Exception{
+        getAuthenticatedSession(DEVELOPER);
+
+        SynapseAccount newAccount = parseJson(request(), SynapseAccount.class);
+        String userId = studyService.createSynapseAccount(newAccount);
+
+        return createdResult(new SynapseUserIdHolder(userId));
     }
 
     public Result createSynapse(String synapseUserId) throws Exception {
