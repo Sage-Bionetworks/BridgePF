@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.CompoundActivityDefinitionService;
 
 /** Play controller for managing Compound Activity Definitions. */
@@ -39,14 +38,11 @@ public class CompoundActivityDefinitionController extends BaseController {
         return created(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(createdDef));
     }
 
-    /**
-     * Deletes a compound activity definition. This is intended to be used by admin accounts to clean up after tests or
-     * other administrative tasks.
-     */
-    public Result deleteCompoundActivityDefinition(String studyId, String taskId) {
-        getAuthenticatedSession(ADMIN);
+    /** Deletes a compound activity definition. */
+    public Result deleteCompoundActivityDefinition(String taskId) {
+        UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
 
-        compoundActivityDefService.deleteCompoundActivityDefinition(new StudyIdentifierImpl(studyId), taskId);
+        compoundActivityDefService.deleteCompoundActivityDefinition(session.getStudyIdentifier(), taskId);
         return okResult("Compound activity definition has been deleted.");
     }
 

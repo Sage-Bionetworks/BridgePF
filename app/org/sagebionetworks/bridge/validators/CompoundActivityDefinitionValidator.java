@@ -43,6 +43,11 @@ public class CompoundActivityDefinitionValidator implements Validator {
         } else {
             CompoundActivityDefinition compoundActivityDef = (CompoundActivityDefinition) target;
 
+            // studyId must be specified
+            if (isBlank(compoundActivityDef.getStudyId())) {
+                errors.rejectValue("studyId", "must be specified");
+            }
+
             // taskIdentifier must be specified and must be in the Study's list
             String taskId = compoundActivityDef.getTaskId();
             if (isBlank(taskId)) {

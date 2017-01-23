@@ -28,27 +28,20 @@ public class CompoundActivityDefinitionService {
     /** Creates a compound activity definition. */
     public CompoundActivityDefinition createCompoundActivityDefinition(Study study,
             CompoundActivityDefinition compoundActivityDefinition) {
+        // Set study to prevent people from creating defs in other studies.
+        compoundActivityDefinition.setStudyId(study.getIdentifier());
+
         // validate def
         CompoundActivityDefinitionValidator validator = new CompoundActivityDefinitionValidator(
                 study.getTaskIdentifiers());
         Validate.entityThrowingException(validator, compoundActivityDefinition);
 
         // call through to dao
-        return compoundActivityDefDao.createCompoundActivityDefinition(study.getStudyIdentifier(),
-                compoundActivityDefinition);
+        return compoundActivityDefDao.createCompoundActivityDefinition(compoundActivityDefinition);
     }
 
-    /**
-     * Deletes a compound activity definition. This is intended to be used by admin accounts to clean up after tests or
-     * other administrative tasks.
-     */
+    /** Deletes a compound activity definition. */
     public void deleteCompoundActivityDefinition(StudyIdentifier studyId, String taskId) {
-        // This is an admin API, so the study ID is user input. The object itself is created by the controller and is
-        // not null, but the string inside might be blank. Validate that.
-        if (StringUtils.isBlank(studyId.getIdentifier())) {
-            throw new BadRequestException("studyId must be specified");
-        }
-
         // validate user input (taskId)
         if (StringUtils.isBlank(taskId)) {
             throw new BadRequestException("taskId must be specified");
@@ -56,6 +49,14 @@ public class CompoundActivityDefinitionService {
 
         // call through to dao
         compoundActivityDefDao.deleteCompoundActivityDefinition(studyId, taskId);
+    }
+
+    /** Deletes all compound activity definitions in the specified study. Used when we physically delete a study. */
+    public void deleteAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId) {
+        // no user input - study comes from controller
+
+        // call through to dao
+        compoundActivityDefDao.deleteAllCompoundActivityDefinitionsInStudy(studyId);
     }
 
     /** List all compound activity definitions in a study. */
@@ -85,13 +86,17 @@ public class CompoundActivityDefinitionService {
             throw new BadRequestException("taskId must be specified");
         }
 
+        // Set the studyId and taskId. This prevents people from updating the wrong def or updating a def in another
+        // study.
+        compoundActivityDefinition.setStudyId(study.getIdentifier());
+        compoundActivityDefinition.setTaskId(taskId);
+
         // validate def
         CompoundActivityDefinitionValidator validator = new CompoundActivityDefinitionValidator(
                 study.getTaskIdentifiers());
         Validate.entityThrowingException(validator, compoundActivityDefinition);
 
         // call through to dao
-        return compoundActivityDefDao.updateCompoundActivityDefinition(study.getStudyIdentifier(), taskId,
-                compoundActivityDefinition);
+        return compoundActivityDefDao.updateCompoundActivityDefinition(compoundActivityDefinition);
     }
 }

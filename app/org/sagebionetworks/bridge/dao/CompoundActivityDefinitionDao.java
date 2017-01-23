@@ -8,14 +8,13 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 /** DAO for basic CRUD and list operations for compound activity definitions. */
 public interface CompoundActivityDefinitionDao {
     /** Creates a compound activity definition. */
-    CompoundActivityDefinition createCompoundActivityDefinition(StudyIdentifier studyId,
-            CompoundActivityDefinition compoundActivityDefinition);
+    CompoundActivityDefinition createCompoundActivityDefinition(CompoundActivityDefinition compoundActivityDefinition);
 
-    /**
-     * Deletes a compound activity definition. This is intended to be used by admin accounts to clean up after tests or
-     * other administrative tasks.
-     */
+    /** Deletes a compound activity definition. */
     void deleteCompoundActivityDefinition(StudyIdentifier studyId, String taskId);
+
+    /** Deletes all compound activity definitions in the specified study. Used when we physically delete a study. */
+    void deleteAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId);
 
     /** List all compound activity definitions in a study. */
     List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId);
@@ -24,6 +23,5 @@ public interface CompoundActivityDefinitionDao {
     CompoundActivityDefinition getCompoundActivityDefinition(StudyIdentifier studyId, String taskId);
 
     /** Update a compound activity definition. */
-    CompoundActivityDefinition updateCompoundActivityDefinition(StudyIdentifier studyId, String taskId,
-            CompoundActivityDefinition compoundActivityDefinition);
+    CompoundActivityDefinition updateCompoundActivityDefinition(CompoundActivityDefinition compoundActivityDefinition);
 }

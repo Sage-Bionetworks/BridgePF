@@ -1,10 +1,13 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.After;
@@ -22,6 +25,8 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -52,9 +57,9 @@ public class DynamoCompoundActivityDefinitionDaoDdbTest {
 
     @Test
     public void crud() {
-        // Create a def with no studyId and version 3 to test that create fills these in correctly
+        // Create a def with version 3 to test that create fills these in correctly
         DynamoCompoundActivityDefinition defToCreate = new DynamoCompoundActivityDefinition();
-        defToCreate.setStudyId(null);
+        defToCreate.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         defToCreate.setTaskId(taskId);
         defToCreate.setVersion(3L);
         defToCreate.setSchemaList(SCHEMA_LIST);
@@ -62,7 +67,7 @@ public class DynamoCompoundActivityDefinitionDaoDdbTest {
 
         // create and validate
         DynamoCompoundActivityDefinition createdDef = (DynamoCompoundActivityDefinition)
-                dao.createCompoundActivityDefinition(TestConstants.TEST_STUDY, defToCreate);
+                dao.createCompoundActivityDefinition(defToCreate);
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, createdDef.getStudyId());
         assertEquals(taskId, createdDef.getTaskId());
         assertEquals(1, createdDef.getVersion().longValue());
@@ -78,18 +83,17 @@ public class DynamoCompoundActivityDefinitionDaoDdbTest {
         assertEquals(SCHEMA_LIST, gettedCreatedDef.getSchemaList());
         assertEquals(SURVEY_LIST, gettedCreatedDef.getSurveyList());
 
-        // Update def to have no surveys. Version 1 so we don't get concurrent modification. Also, use nonsense strings
-        // for Study ID and Task ID to make sure the DAO is correctly ignoring those.
+        // Update def to have no surveys. Version 1 so we don't get concurrent modification.
         DynamoCompoundActivityDefinition defToUpdate = new DynamoCompoundActivityDefinition();
-        defToUpdate.setStudyId("ignored-study");
-        defToUpdate.setTaskId("ignored-task");
+        defToUpdate.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        defToUpdate.setTaskId(taskId);
         defToUpdate.setVersion(1L);
         defToUpdate.setSchemaList(SCHEMA_LIST);
         defToUpdate.setSurveyList(ImmutableList.of());
 
         // update and validate
         DynamoCompoundActivityDefinition updatedDef = (DynamoCompoundActivityDefinition)
-                dao.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId, defToUpdate);
+                dao.updateCompoundActivityDefinition(defToUpdate);
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, updatedDef.getStudyId());
         assertEquals(taskId, updatedDef.getTaskId());
         assertEquals(2, updatedDef.getVersion().longValue());
@@ -108,10 +112,11 @@ public class DynamoCompoundActivityDefinitionDaoDdbTest {
         // Create a second def to test list.
         String taskId2 = taskId + "2";
         DynamoCompoundActivityDefinition defToCreate2 = new DynamoCompoundActivityDefinition();
+        defToCreate2.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         defToCreate2.setTaskId(taskId2);
         defToCreate2.setSchemaList(SCHEMA_LIST);
         defToCreate2.setSurveyList(SURVEY_LIST);
-        dao.createCompoundActivityDefinition(TestConstants.TEST_STUDY, defToCreate2);
+        dao.createCompoundActivityDefinition(defToCreate2);
 
         // Test list. Since there might be other defs from other tests, page through the defs to find the ones
         // corresponding to the test.
@@ -161,17 +166,68 @@ public class DynamoCompoundActivityDefinitionDaoDdbTest {
         }
     }
 
+    @Test
+    public void deleteAll() {
+        // Set up test: Create 1 def in TEST_STUDY and 2 defs in a new study. This is to test we can delete all defs in
+        // a study, but not affect other studies.
+        DynamoCompoundActivityDefinition originalStudyDef = new DynamoCompoundActivityDefinition();
+        originalStudyDef.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        originalStudyDef.setTaskId(taskId);
+        dao.createCompoundActivityDefinition(originalStudyDef);
+
+        String otherStudyIdStr = TestUtils.randomName(this.getClass());
+        StudyIdentifier otherStudyId = new StudyIdentifierImpl(otherStudyIdStr);
+
+        String otherStudyTaskId1 = "other-study-" + taskId + "1";
+        DynamoCompoundActivityDefinition otherStudyDef1 = new DynamoCompoundActivityDefinition();
+        otherStudyDef1.setStudyId(otherStudyIdStr);
+        otherStudyDef1.setTaskId(otherStudyTaskId1);
+        dao.createCompoundActivityDefinition(otherStudyDef1);
+
+        String otherStudyTaskId2 = "other-study-" + taskId + "2";
+        DynamoCompoundActivityDefinition otherStudyDef2 = new DynamoCompoundActivityDefinition();
+        otherStudyDef2.setStudyId(otherStudyIdStr);
+        otherStudyDef2.setTaskId(otherStudyTaskId2);
+        dao.createCompoundActivityDefinition(otherStudyDef2);
+
+        // verify the 2 defs in other study
+        List<CompoundActivityDefinition> otherStudyDefList = dao.getAllCompoundActivityDefinitionsInStudy(
+                otherStudyId);
+        assertEquals(2, otherStudyDefList.size());
+        Set<String> otherStudyTaskIdSet = otherStudyDefList.stream().map(CompoundActivityDefinition::getTaskId)
+                .collect(Collectors.toSet());
+        assertEquals(2, otherStudyTaskIdSet.size());
+        assertTrue(otherStudyTaskIdSet.contains(otherStudyTaskId1));
+        assertTrue(otherStudyTaskIdSet.contains(otherStudyTaskId2));
+
+        // delete all defs in other study
+        dao.deleteAllCompoundActivityDefinitionsInStudy(otherStudyId);
+
+        // verify no defs in other study
+        List<CompoundActivityDefinition> otherStudyDefList2 = dao.getAllCompoundActivityDefinitionsInStudy(
+                otherStudyId);
+        assertEquals(0, otherStudyDefList2.size());
+
+        // originalStudyDef is untouched
+        CompoundActivityDefinition gettedOriginalStudyDef = dao.getCompoundActivityDefinition(TestConstants.TEST_STUDY,
+                taskId);
+        assertNotNull(gettedOriginalStudyDef);
+
+        // cleanup() will take care of cleaning up originalStudyDef
+    }
+
     @Test(expected = ConcurrentModificationException.class)
     public void createConcurrentModification() {
         // create def
         DynamoCompoundActivityDefinition def = new DynamoCompoundActivityDefinition();
+        def.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         def.setTaskId(taskId);
         def.setSchemaList(SCHEMA_LIST);
         def.setSurveyList(SURVEY_LIST);
-        dao.createCompoundActivityDefinition(TestConstants.TEST_STUDY, def);
+        dao.createCompoundActivityDefinition(def);
 
         // create it again, will throw
-        dao.createCompoundActivityDefinition(TestConstants.TEST_STUDY, def);
+        dao.createCompoundActivityDefinition(def);
     }
 
     @Test(expected = EntityNotFoundException.class)
@@ -188,38 +244,42 @@ public class DynamoCompoundActivityDefinitionDaoDdbTest {
     public void updateNonExistentDef() {
         // dummy def, to make sure we aren't throwing for a reason other than non-existent def
         DynamoCompoundActivityDefinition def = new DynamoCompoundActivityDefinition();
+        def.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         def.setTaskId(taskId);
         def.setSchemaList(SCHEMA_LIST);
         def.setSurveyList(SURVEY_LIST);
 
         // update non-existent def, will throw
-        dao.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId, def);
+        dao.updateCompoundActivityDefinition(def);
     }
 
     @Test(expected = ConcurrentModificationException.class)
     public void updateConcurrentModification() {
         // create def
         DynamoCompoundActivityDefinition def = new DynamoCompoundActivityDefinition();
+        def.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         def.setTaskId(taskId);
         def.setSchemaList(SCHEMA_LIST);
         def.setSurveyList(SURVEY_LIST);
-        dao.createCompoundActivityDefinition(TestConstants.TEST_STUDY, def);
+        dao.createCompoundActivityDefinition(def);
 
         // update def to bump to version 2
         DynamoCompoundActivityDefinition goodUpdate = new DynamoCompoundActivityDefinition();
+        goodUpdate.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         goodUpdate.setTaskId(taskId);
         goodUpdate.setSchemaList(SCHEMA_LIST);
         goodUpdate.setSurveyList(SURVEY_LIST);
         goodUpdate.setVersion(1L);
-        dao.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId, goodUpdate);
+        dao.updateCompoundActivityDefinition(goodUpdate);
 
         // attempt to update version 1 again, this will throw - Note we need to create a new def instance object
         // because DDB Mapper modifies arguments
         DynamoCompoundActivityDefinition conflictUpdate = new DynamoCompoundActivityDefinition();
+        conflictUpdate.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         conflictUpdate.setTaskId(taskId);
         conflictUpdate.setSchemaList(SCHEMA_LIST);
         conflictUpdate.setSurveyList(SURVEY_LIST);
         conflictUpdate.setVersion(1L);
-        dao.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId, conflictUpdate);
+        dao.updateCompoundActivityDefinition(conflictUpdate);
     }
 }

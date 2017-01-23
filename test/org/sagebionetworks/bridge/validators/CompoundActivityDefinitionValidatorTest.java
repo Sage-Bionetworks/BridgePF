@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.springframework.validation.MapBindingResult;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
@@ -66,6 +67,33 @@ public class CompoundActivityDefinitionValidatorTest {
     @Test
     public void valid() {
         Validate.entityThrowingException(VALIDATOR, makeValidDef());
+    }
+
+    @Test
+    public void nullStudyId() {
+        blankStudyId(null);
+    }
+
+    @Test
+    public void emptyStudyId() {
+        blankStudyId("");
+    }
+
+    @Test
+    public void blankStudyId() {
+        blankStudyId("   ");
+    }
+
+    private static void blankStudyId(String studyId) {
+        CompoundActivityDefinition def = makeValidDef();
+        def.setStudyId(studyId);
+
+        try {
+            Validate.entityThrowingException(VALIDATOR, def);
+            fail("expected exception");
+        } catch (InvalidEntityException ex) {
+            assertTrue(ex.getMessage().contains("studyId must be specified"));
+        }
     }
 
     @Test
@@ -126,6 +154,7 @@ public class CompoundActivityDefinitionValidatorTest {
 
     private static CompoundActivityDefinition makeValidDef() {
         CompoundActivityDefinition def = CompoundActivityDefinition.create();
+        def.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         def.setTaskId(TASK_ID);
         def.setSchemaList(SCHEMA_LIST);
         def.setSurveyList(SURVEY_LIST);

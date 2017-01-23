@@ -56,6 +56,7 @@ public class StudyService {
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
+    private CompoundActivityDefinitionService compoundActivityDefinitionService;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
@@ -86,6 +87,14 @@ public class StudyService {
     final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
+
+    /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
+    @Autowired
+    final void setCompoundActivityDefinitionService(
+            CompoundActivityDefinitionService compoundActivityDefinitionService) {
+        this.compoundActivityDefinitionService = compoundActivityDefinitionService;
+    }
+
     @Resource(name="uploadCertificateService")
     final void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
@@ -307,6 +316,10 @@ public class StudyService {
             // actual delete
             studyDao.deleteStudy(existing);
             directoryDao.deleteDirectoryForStudy(existing);
+
+            // delete study data
+            compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
+                    existing.getStudyIdentifier());
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
         }
 

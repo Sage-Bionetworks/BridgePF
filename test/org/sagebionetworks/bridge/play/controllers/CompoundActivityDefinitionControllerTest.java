@@ -102,7 +102,7 @@ public class CompoundActivityDefinitionControllerTest {
     @Test
     public void delete() throws Exception {
         // execute and validate
-        Result result = controller.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY_IDENTIFIER, TASK_ID);
+        Result result = controller.deleteCompoundActivityDefinition(TASK_ID);
         assertEquals(200, result.status());
         String resultJsonText = Helpers.contentAsString(result);
         JsonNode resultJsonNode = BridgeObjectMapper.get().readTree(resultJsonText);
@@ -112,7 +112,7 @@ public class CompoundActivityDefinitionControllerTest {
         verify(defService).deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
 
         // verify ADMIN permissions
-        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
 
         // verify no call to StudyService
         verifyZeroInteractions(studyService);

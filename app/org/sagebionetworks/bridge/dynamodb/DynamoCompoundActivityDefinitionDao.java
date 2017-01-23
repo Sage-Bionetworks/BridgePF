@@ -1,19 +1,21 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.collect.ImmutableList;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.CompoundActivityDefinitionDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 /** DynamoDB implementation of CompoundActivityDefinitionDao. */
 @Component
@@ -28,13 +30,10 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public CompoundActivityDefinition createCompoundActivityDefinition(StudyIdentifier studyId,
+    public CompoundActivityDefinition createCompoundActivityDefinition(
             CompoundActivityDefinition compoundActivityDefinition) {
         // Currently, all CompoundActivityDefinitions are DynamoCompoundActivityDefinitions.
         DynamoCompoundActivityDefinition ddbDef = (DynamoCompoundActivityDefinition) compoundActivityDefinition;
-
-        // Set study to prevent people from creating defs in other studies.
-        ddbDef.setStudyId(studyId.getIdentifier());
 
         // Clear the version. This allows people to copy-paste defs.
         ddbDef.setVersion(null);
@@ -68,7 +67,27 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
+    public void deleteAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId) {
+        // First, query for all defs in a study.
+        List<DynamoCompoundActivityDefinition> ddbDefList = getAllHelper(studyId);
+
+        // Then, batch delete.
+        List<DynamoDBMapper.FailedBatch> failedBatchList = mapper.batchDelete(ddbDefList);
+        BridgeUtils.ifFailuresThrowException(failedBatchList);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId) {
+        List<DynamoCompoundActivityDefinition> ddbDefList = getAllHelper(studyId);
+
+        // because of generics wonkiness, we need to convert this to a list of parent class CompoundActivityDefinition
+        return ImmutableList.copyOf(ddbDefList);
+    }
+
+    // Helper method for getting all defs in a study. Returns the raw results using a list of the implementation type.
+    // This enables us to bulk load and batch delete.
+    private List<DynamoCompoundActivityDefinition> getAllHelper(StudyIdentifier studyId) {
         // query expression
         DynamoCompoundActivityDefinition ddbHashKey = new DynamoCompoundActivityDefinition();
         ddbHashKey.setStudyId(studyId.getIdentifier());
@@ -78,9 +97,7 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
         // execute query
         List<DynamoCompoundActivityDefinition> defList = mapper.query(DynamoCompoundActivityDefinition.class,
                 ddbQueryExpr);
-
-        // because of generics wonkiness, we need to convert this to a list of parent class CompoundActivityDefinition
-        return defList.stream().collect(Collectors.toList());
+        return defList;
     }
 
     /** {@inheritDoc} */
@@ -102,7 +119,7 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public CompoundActivityDefinition updateCompoundActivityDefinition(StudyIdentifier studyId, String taskId,
+    public CompoundActivityDefinition updateCompoundActivityDefinition(
             CompoundActivityDefinition compoundActivityDefinition) {
         // Currently, both a save expression and a mismatched version number will throw a
         // ConditionalCheckFailedException, so it's not possible to distinguish between an EntityNotFound and a
@@ -111,23 +128,17 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
         // already exists.
 
         // Call get() to verify the def exists. This will throw an EntityNotFoundException if it doesn't exist.
+        StudyIdentifier studyId = new StudyIdentifierImpl(compoundActivityDefinition.getStudyId());
+        String taskId = compoundActivityDefinition.getTaskId();
         getCompoundActivityDefinition(studyId, taskId);
-
-        // Currently, all CompoundActivityDefinitions are DynamoCompoundActivityDefinitions.
-        DynamoCompoundActivityDefinition ddbDef = (DynamoCompoundActivityDefinition) compoundActivityDefinition;
-
-        // Set the studyId and taskId. This prevents people from updating the wrong def or updating a def in another
-        // study.
-        ddbDef.setStudyId(studyId.getIdentifier());
-        ddbDef.setTaskId(taskId);
 
         // Call DDB mapper to save.
         try {
-            mapper.save(ddbDef);
+            mapper.save(compoundActivityDefinition);
         } catch (ConditionalCheckFailedException ex) {
-            throw new ConcurrentModificationException(ddbDef);
+            throw new ConcurrentModificationException(compoundActivityDefinition);
         }
 
-        return ddbDef;
+        return compoundActivityDefinition;
     }
 }
