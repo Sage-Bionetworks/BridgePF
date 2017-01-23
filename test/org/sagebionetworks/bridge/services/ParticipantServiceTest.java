@@ -894,7 +894,7 @@ public class ParticipantServiceTest {
         
         participantService.sendNotification(STUDY, ID, message);
         
-        verify(notificationsService).sendNotification(STUDY.getStudyIdentifier(), HEALTH_CODE, message);
+        verify(notificationsService).sendNotificationToUser(STUDY.getStudyIdentifier(), HEALTH_CODE, message);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

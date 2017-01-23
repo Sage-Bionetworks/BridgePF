@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
-import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -11,89 +11,76 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-@DynamoDBTable(tableName = "NotificationRegistration")
-public class DynamoNotificationRegistration implements NotificationRegistration {
+@DynamoDBTable(tableName = "NotificationTopic")
+public class DynamoNotificationTopic implements NotificationTopic {
 
-    private String healthCode;
     private String guid;
-    private String endpointARN;
-    private String deviceId;
-    private String osName;
+    private String studyId;
+    private String name;
+    private String description;
+    private String topicARN;
     private long createdOn;
     private long modifiedOn;
     
-    @Override
     @DynamoDBHashKey
+    @Override
     @JsonIgnore
-    public String getHealthCode() {
-        return healthCode;
+    public String getStudyId() {
+        return studyId;
     }
-
     @Override
-    public void setHealthCode(String healthCode) {
-        this.healthCode = healthCode;
+    public void setStudyId(String studyId) {
+        this.studyId = studyId;
     }
-
-    @Override
     @DynamoDBRangeKey
-    public String getGuid() {
+    @Override
+    public String getGuid() { 
         return guid;
     }
-
     @Override
     public void setGuid(String guid) {
         this.guid = guid;
     }
-
+    @Override
+    public String getName() {
+        return name;
+    }
+    @Override
+    public void setName(String name) {
+        this.name = name;
+    }
+    @Override
+    public String getDescription() {
+        return description;
+    }
+    @Override
+    public void setDescription(String description) {
+        this.description = description;
+    }
     @Override
     @JsonIgnore
-    public String getEndpointARN() {
-        return endpointARN;
+    public String getTopicARN() {
+        return topicARN;
     }
-
     @Override
-    public void setEndpointARN(String endpointARN) {
-        this.endpointARN = endpointARN;
+    public void setTopicARN(String topicARN) {
+        this.topicARN = topicARN;
     }
-
-    @Override
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    @Override
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
-    }
-
-    @Override
-    public String getOsName() {
-        return osName;
-    }
-
-    @Override
-    public void setOsName(String osName) {
-        this.osName = osName;
-    }
-    
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public long getCreatedOn() {
         return createdOn;
     }
-
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
     public void setCreatedOn(long createdOn) {
         this.createdOn = createdOn;
     }
-    
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public long getModifiedOn() {
         return modifiedOn;
     }
-
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
     public void setModifiedOn(long modifiedOn) {

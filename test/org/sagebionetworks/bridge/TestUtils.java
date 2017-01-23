@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -21,6 +21,7 @@ import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
+import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
+import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -52,6 +54,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.play.modules.BridgeProductionSpringContextModule;
 import org.sagebionetworks.bridge.play.modules.BridgeTestSpringContextModule;
 import org.sagebionetworks.bridge.runnable.FailableRunnable;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import play.Application;
 import play.inject.guice.GuiceApplicationBuilder;
@@ -70,11 +73,13 @@ public class TestUtils {
     
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
 
-    // Helper metod to extract and assert on validator error messages.
-    public static void assertValidatorMessage(InvalidEntityException e, String propName, String error) {
-        Map<String,List<String>> errors = e.getErrors();
-        List<String> messages = errors.get(propName);
-        assertTrue(messages.get(0).contains(propName + error));
+    public static void assertValidatorMessage(Validator validator, Object object, String fieldName, String error) {
+        try {
+            Validate.entityThrowingException(validator, object);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals(fieldName+error, e.getErrors().get(fieldName).get(0));
+        }
     }
     
     public static void assertResult(Result result, int statusCode, String message) throws Exception {
@@ -190,6 +195,16 @@ public class TestUtils {
     public static final NotificationMessage getNotificationMessage() {
         return new NotificationMessage.Builder()
                 .withSubject("a subject").withMessage("a message").build();
+    }
+    
+    public static final NotificationTopic getNotificationTopic() {
+        NotificationTopic topic = NotificationTopic.create();
+        topic.setGuid("ABC-DEF");
+        topic.setName("Test Topic Name");
+        topic.setDescription("Test Description");
+        topic.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        topic.setTopicARN("atopicArn");
+        return topic;
     }
     
     public static final StudyParticipant getStudyParticipant(Class<?> clazz) {

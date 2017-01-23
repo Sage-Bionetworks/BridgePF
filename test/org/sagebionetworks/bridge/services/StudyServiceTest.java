@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -79,6 +80,9 @@ public class StudyServiceTest {
     
     @Resource
     SubpopulationDao subpopDao;
+    
+    @Resource
+    NotificationTopicService topicService;
 
     @Autowired
     CacheProvider cache;
@@ -159,6 +163,12 @@ public class StudyServiceTest {
         StudyConsentView view = studyConsentService.getActiveConsent(subpop);
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
         
+        // Create an associated topic
+        NotificationTopic topic = TestUtils.getNotificationTopic();
+        topic.setStudyId(study.getIdentifier());
+        topicService.createTopic(topic);
+        assertEquals(1, topicService.listTopics(study.getStudyIdentifier()).size());
+        
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());
         assertTrue(newStudy.isStrictUploadValidationEnabled());
@@ -180,6 +190,9 @@ public class StudyServiceTest {
         verify(mockCache).getStudy(study.getIdentifier());
         verify(mockCache).setStudy(study);
         verify(mockCache).removeStudy(study.getIdentifier());
+        
+        assertEquals(0, topicService.listTopics(study.getStudyIdentifier()).size());
+        
         try {
             studyService.getStudy(study.getIdentifier());
             fail("Should have thrown an exception");
