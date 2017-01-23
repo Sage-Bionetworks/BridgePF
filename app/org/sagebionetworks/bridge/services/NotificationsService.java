@@ -135,7 +135,7 @@ public class NotificationsService {
      * to many accounts.</i> Create a topic, ask your users to subscribe to that topic in your application, and message 
      * them via that topic.
      */
-    public void sendNotification(StudyIdentifier studyId, String healthCode, NotificationMessage message) {
+    public void sendNotificationToUser(StudyIdentifier studyId, String healthCode, NotificationMessage message) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(message);

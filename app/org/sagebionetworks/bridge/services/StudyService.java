@@ -69,6 +69,7 @@ public class StudyService {
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
+    private NotificationTopicService topicService;
     private EmailVerificationService emailVerificationService;
     private SynapseClient synapseClient;
 
@@ -116,6 +117,10 @@ public class StudyService {
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
+    }
+    @Autowired
+    final void setNotificationTopicService(NotificationTopicService topicService) {
+        this.topicService = topicService;
     }
     @Autowired
     final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
@@ -353,6 +358,7 @@ public class StudyService {
             studyDao.deleteStudy(existing);
             directoryDao.deleteDirectoryForStudy(existing);
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
+            topicService.deleteAllTopics(existing.getStudyIdentifier());
         }
 
         cacheProvider.removeStudy(identifier);

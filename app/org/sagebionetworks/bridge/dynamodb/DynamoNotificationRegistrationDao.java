@@ -8,13 +8,13 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import org.joda.time.DateTime;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -101,15 +101,16 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         // If the data is the same and returns an existing endpointARN, we want to re-use the original record 
         // and GUID we provided to the client, not create a new record. Look for it.
         NotificationRegistration existing = findExistingRecord(registration.getHealthCode(), result.getEndpointArn());
+        long timestamp = DateUtils.getCurrentMillisFromEpoch();
         if (existing != null) {
             registration.setGuid(existing.getGuid());
             registration.setCreatedOn(existing.getCreatedOn());
         } else {
             registration.setGuid(BridgeUtils.generateGuid());    
-            registration.setCreatedOn(DateTime.now().getMillis());
+            registration.setCreatedOn(timestamp);
         }
         registration.setHealthCode(registration.getHealthCode());
-        registration.setModifiedOn(DateTime.now().getMillis());
+        registration.setModifiedOn(timestamp);
         registration.setEndpointARN(result.getEndpointArn());
         
         mapper.save(registration);
@@ -138,7 +139,7 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         if (!attrs.get(TOKEN).equals(deviceId)) {
             saveEndpointAttributes(registration.getHealthCode(), deviceId);
         
-            existingRegistration.setModifiedOn(DateTime.now().getMillis());
+            existingRegistration.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
             existingRegistration.setDeviceId(deviceId);
             mapper.save(existingRegistration);
         }

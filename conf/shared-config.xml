@@ -171,7 +171,11 @@
         <property name="targetName" value="healthDataController"/>
     </bean>
     
-    <bean id="NotificationsControllerProxied" parent="proxiedController">
-        <property name="targetName" value="notificationsController"/>
+    <bean id="NotificationRegistrationControllerProxied" parent="proxiedController">
+        <property name="targetName" value="notificationRegistrationController"/>
+    </bean>
+    
+    <bean id="NotificationTopicControllerProxied" parent="proxiedController">
+        <property name="targetName" value="notificationTopicController"/>
     </bean>
 </beans>

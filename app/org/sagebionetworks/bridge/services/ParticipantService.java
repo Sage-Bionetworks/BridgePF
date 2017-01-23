@@ -334,7 +334,7 @@ public class ParticipantService {
         
         Account account = getAccountThrowingException(study, userId);
 
-        notificationsService.sendNotification(study.getStudyIdentifier(), account.getHealthCode(), message);
+        notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
     
     private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
