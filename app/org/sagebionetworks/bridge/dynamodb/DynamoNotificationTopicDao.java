@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.NotificationTopicDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -98,6 +99,9 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         CreateTopicRequest request = new CreateTopicRequest().withName(snsTopicName);
         CreateTopicResult result = snsClient.createTopic(request);
         topic.setTopicARN(result.getTopicArn());
+        long timestamp = DateUtils.getCurrentMillisFromEpoch();
+        topic.setCreatedOn(timestamp);
+        topic.setModifiedOn(timestamp);
         
         mapper.save(topic);
         return topic;
@@ -110,6 +114,8 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
 
         NotificationTopic existing = getTopicInternal(topic.getStudyId(), topic.getGuid());
         existing.setName(topic.getName());
+        existing.setDescription(topic.getDescription());
+        existing.setModifiedOn( DateUtils.getCurrentMillisFromEpoch() );
         
         mapper.save(existing);
         
