@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.SynapseAccount;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -48,6 +49,8 @@ import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.auth.NewUser;
+import org.sagebionetworks.repo.model.principal.PrincipalAliasResponse;
 import org.sagebionetworks.repo.model.util.ModelConstants;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -61,6 +64,11 @@ public class StudyServiceMockTest {
     private static final String TEST_TEAM_NAME = TEST_USER_ID.toString() + "Team";
     private static final String TEST_TEAM_ID = "1234";
     private static final String TEST_PROJECT_ID = "synapseProjectId";
+
+    private static final String TEST_LAST_NAME = "last-name";
+    private static final String TEST_FIRST_NAME = "first-name";
+    private static final String TEST_EMAIL = "test-email@test.com";
+    private static final String TEST_USER_NAME = "test-user-name";
 
     @Mock
     private UploadCertificateService uploadCertService;
@@ -186,6 +194,73 @@ public class StudyServiceMockTest {
         service.updateStudy(study, true);
 
         verify(studyDao, never()).updateStudy(any());
+    }
+
+    @Test
+    public void createSynapseAccount() throws SynapseException {
+        // setup
+        SynapseAccount testAccount = new SynapseAccount();
+        testAccount.setLastName(TEST_LAST_NAME);
+        testAccount.setFirstName(TEST_FIRST_NAME);
+        testAccount.setEmail(TEST_EMAIL);
+        testAccount.setUsername(TEST_USER_NAME);
+
+        PrincipalAliasResponse response = new PrincipalAliasResponse();
+        response.setPrincipalId(TEST_USER_ID);
+        when(mockSynapseClient.getPrincipalAlias(any())).thenReturn(response);
+
+        // execute
+        String retId = service.createSynapseAccount(testAccount);
+
+        // verify
+        assertEquals(TEST_USER_ID.toString(), retId);
+        ArgumentCaptor<NewUser> newUserCap = ArgumentCaptor.forClass(NewUser.class);
+        verify(mockSynapseClient).createUser(newUserCap.capture());
+        NewUser retUser = newUserCap.getValue();
+        assertEquals(TEST_LAST_NAME, retUser.getLastName());
+        assertEquals(TEST_FIRST_NAME, retUser.getFirstName());
+        assertEquals(TEST_EMAIL, retUser.getEmail());
+        assertEquals(TEST_USER_NAME, retUser.getUserName());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseAccountWithEmptyUsername() throws SynapseException {
+        SynapseAccount testAccount = new SynapseAccount();
+        testAccount.setLastName(TEST_LAST_NAME);
+        testAccount.setFirstName(TEST_FIRST_NAME);
+        testAccount.setEmail(TEST_EMAIL);
+
+        service.createSynapseAccount(testAccount);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseAccountWithEmptyLastName() throws SynapseException {
+        SynapseAccount testAccount = new SynapseAccount();
+        testAccount.setFirstName(TEST_FIRST_NAME);
+        testAccount.setEmail(TEST_EMAIL);
+        testAccount.setUsername(TEST_USER_NAME);
+
+        service.createSynapseAccount(testAccount);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseAccountWithEmptyFirstname() throws SynapseException {
+        SynapseAccount testAccount = new SynapseAccount();
+        testAccount.setLastName(TEST_LAST_NAME);
+        testAccount.setEmail(TEST_EMAIL);
+        testAccount.setUsername(TEST_USER_NAME);
+
+        service.createSynapseAccount(testAccount);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseAccountWithEmptyEmail() throws SynapseException {
+        SynapseAccount testAccount = new SynapseAccount();
+        testAccount.setLastName(TEST_LAST_NAME);
+        testAccount.setFirstName(TEST_FIRST_NAME);
+        testAccount.setUsername(TEST_USER_NAME);
+
+        service.createSynapseAccount(testAccount);
     }
 
     @Test

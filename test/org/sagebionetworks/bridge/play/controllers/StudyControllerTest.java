@@ -31,6 +31,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -71,6 +72,15 @@ public class StudyControllerTest {
     private static final String TEST_PROJECT_ID = "synapseProjectId";
     private static final Long TEST_TEAM_ID = Long.parseLong("123");
     private static final String TEST_USER_ID = "1234";
+
+    private static final String TEST_SYNAPSE_USER_ID = "zaclintest";
+    private static final String TEST_SYNAPSE_ACCOUNT_JSON = "{\n" +
+            "   \"email\":\"test+test@test.com\",\n" +
+            "   \"username\":\"test-user-name\",\n" +
+            "   \"firstName\":\"test-first-name\",\n" +
+            "   \"lastName\":\"test-last-name\"\n" +
+            "}";
+
 
     private StudyController controller;
     private StudyIdentifier studyId;
@@ -195,6 +205,31 @@ public class StudyControllerTest {
         doThrow(new EntityNotFoundException(Study.class)).when(mockStudyService).deleteStudy(study.getIdentifier(), false);
 
         controller.deleteStudy(study.getIdentifier(), "false");
+    }
+
+    @Test
+    public void canCreateSynapseAccount() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        TestUtils.mockPlayContextWithJson(TEST_SYNAPSE_ACCOUNT_JSON);
+        when(mockStudyService.createSynapseAccount(any())).thenReturn(TEST_SYNAPSE_USER_ID);
+
+        controller.createSynapseAccount();
+
+        Result result = controller.createSynapseAccount();
+
+        // verify
+        assertEquals(201, result.status());
+        String resultJson = Helpers.contentAsString(result);
+        JsonNode resultNode = BridgeObjectMapper.get().readTree(resultJson);
+        assertEquals(TEST_SYNAPSE_USER_ID, resultNode.get("userId").textValue());
+        assertEquals("SynapseUserIdHolder", resultNode.get("type").textValue());
+    }
+
+    @Test(expected = NotAuthenticatedException.class)
+    public void createSynapseAccountWithoutDeveloper() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+
+        controller.createSynapseAccount();
     }
 
     @Test

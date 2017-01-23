@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.SynapseAccount;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -39,10 +40,15 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
+import org.sagebionetworks.client.exceptions.SynapseServerException;
 import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.auth.NewUser;
+import org.sagebionetworks.repo.model.principal.AliasType;
+import org.sagebionetworks.repo.model.principal.PrincipalAliasRequest;
+import org.sagebionetworks.repo.model.principal.PrincipalAliasResponse;
 import org.sagebionetworks.repo.model.util.ModelConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -185,6 +191,33 @@ public class StudyService {
         cacheProvider.setStudy(study);
 
         return study;
+    }
+
+    public String createSynapseAccount(SynapseAccount synapseAccount) throws SynapseException {
+        checkNotNull(synapseAccount, Validate.CANNOT_BE_NULL, "synapse account");
+        if (!synapseAccount.isValid()) {
+            throw new BadRequestException("Account information is not sufficient.");
+        }
+
+        NewUser newUser = new NewUser();
+        newUser.setEmail(synapseAccount.getEmail());
+        newUser.setFirstName(synapseAccount.getFirstName());
+        newUser.setLastName(synapseAccount.getLastName());
+        newUser.setUserName(synapseAccount.getUsername());
+
+        // if the validation failed, throw bad request exception
+        try {
+            synapseClient.createUser(newUser);
+        } catch (SynapseServerException e) {
+            throw new BadRequestException(e.getMessage());
+        }
+
+        // then fetch user id
+        PrincipalAliasRequest request = new PrincipalAliasRequest();
+        request.setAlias(synapseAccount.getUsername());
+        request.setType(AliasType.USER_NAME);
+        PrincipalAliasResponse response = synapseClient.getPrincipalAlias(request);
+        return response.getPrincipalId().toString();
     }
 
     public Study createSynapseProjectTeam(String synapseUserId, Study study) throws SynapseException {

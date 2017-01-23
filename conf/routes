@@ -158,6 +158,7 @@ GET    /v3/studies/self/emailStatus @org.sagebionetworks.bridge.play.controllers
 POST   /v3/studies/self/verifyEmail @org.sagebionetworks.bridge.play.controllers.StudyController.verifyEmail
 GET    /v3/studies/self/uploads     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploads(startTime: String ?= null, endTime: String ?= null)
 POST   /v3/studies/self             @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
+POST   /v3/studies/self/synapseAccount  @org.sagebionetworks.bridge.play.controllers.StudyController.createSynapseAccount
 POST   /v3/studies/self/synapseProject  @org.sagebionetworks.bridge.play.controllers.StudyController.createSynapse(synapseUserId: String ?= null)
 GET    /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
 POST   /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
