@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -21,9 +22,12 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 
@@ -50,6 +54,9 @@ public class NotificationTopicControllerTest {
     
     @Captor
     private ArgumentCaptor<NotificationTopic> topicCaptor;
+    
+    @Captor
+    private ArgumentCaptor<NotificationMessage> messageCaptor;
     
     @Before
     public void before() throws Exception {
@@ -138,6 +145,29 @@ public class NotificationTopicControllerTest {
         assertEquals(200, result.status());
         
         verify(mockTopicService).deleteTopic(TEST_STUDY, GUID);
+    }
+    
+    @Test(expected = NotAuthenticatedException.class)
+    public void cannotSendMessageAsDeveloper() throws Exception {
+        TestUtils.mockPlayContextWithJson(TestUtils.getNotificationMessage());
+        
+        controller.sendNotification(GUID);
+    }
+    
+    @Test
+    public void sendNotification() throws Exception {
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(RESEARCHER);
+        
+        NotificationMessage message = TestUtils.getNotificationMessage();
+        TestUtils.mockPlayContextWithJson(message);
+        
+        Result result = controller.sendNotification(GUID);
+        assertEquals(202, result.status());
+        
+        verify(mockTopicService).sendNotification(eq(TEST_STUDY), eq(GUID), messageCaptor.capture());
+        NotificationMessage captured = messageCaptor.getValue();
+        assertEquals("a subject", captured.getSubject());
+        assertEquals("a message", captured.getMessage());
     }
     
     // Test permissions of all the methods... DEVELOPER or DEVELOPER RESEARCHER. Do 

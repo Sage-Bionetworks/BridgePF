@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 
@@ -70,6 +71,16 @@ public class NotificationTopicController extends BaseController {
         topicService.deleteTopic(session.getStudyIdentifier(), guid);
         
         return okResult("Topic deleted.");
+    }
+    
+    public Result sendNotification(String guid) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        
+        NotificationMessage message = parseJson(request(), NotificationMessage.class);
+        
+        topicService.sendNotification(session.getStudyIdentifier(), guid, message);
+        
+        return acceptedResult("Message has been sent to external notification service.");
     }
 
 }
