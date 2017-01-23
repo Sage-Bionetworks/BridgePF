@@ -240,14 +240,14 @@ public class ReportController extends BaseController {
     /**
      * A similar method as above but specifying study id only for WORKER
      */
-    public Result saveStudyReportForSpecifiedStudy(String studyId, String identifier) throws Exception {
+    public Result saveStudyReportForSpecifiedStudy(String studyIdString, String identifier) throws Exception {
         getAuthenticatedSession(WORKER);
 
         ReportData reportData = parseJson(request(), ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
 
-        Study study = studyService.getStudy(studyId);
-        reportService.saveStudyReport(study.getStudyIdentifier(), identifier, reportData);
+        StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
+        reportService.saveStudyReport(studyId, identifier, reportData);
 
         return createdResult("Report data saved.");
     }

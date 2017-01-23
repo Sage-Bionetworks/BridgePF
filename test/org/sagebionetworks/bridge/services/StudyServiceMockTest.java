@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 import com.google.common.collect.Sets;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
+import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.repo.model.AccessControlList;
 import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
@@ -205,7 +206,7 @@ public class StudyServiceMockTest {
         when(mockSynapseClient.getTeamACL(any())).thenReturn(mockTeamAcl);
 
         // execute
-        Study retStudy = service.createSynapseProjectTeam(TEST_USER_ID, study);
+        Study retStudy = service.createSynapseProjectTeam(TEST_USER_ID.toString(), study);
 
         // verify
         // create project and team
@@ -254,6 +255,49 @@ public class StudyServiceMockTest {
         assertEquals(retStudy.getName(), study.getName());
         assertEquals(retStudy.getSynapseProjectId(), TEST_PROJECT_ID);
         assertEquals(retStudy.getSynapseDataAccessTeamId().toString(), TEST_TEAM_ID);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseProjectTeamNonExistUserID() throws SynapseException {
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        // pre-setup
+        when(mockSynapseClient.getUserProfile(any())).thenThrow(SynapseNotFoundException.class);
+
+        // execute
+        service.createSynapseProjectTeam(TEST_USER_ID.toString(), study);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseProjectTeamNullUserID() throws SynapseException {
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        // execute
+        service.createSynapseProjectTeam(null, study);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseProjectTeamEmptyUserID() throws SynapseException {
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        // execute
+        service.createSynapseProjectTeam("", study);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSynapseProjectTeamBlankUserID() throws SynapseException {
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        // execute
+        service.createSynapseProjectTeam(" ", study);
     }
 
     @Test
