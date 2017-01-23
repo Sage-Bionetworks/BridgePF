@@ -145,6 +145,13 @@ GET    /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.Not
 POST   /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.updateRegistration(guid: String)
 DELETE /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.deleteRegistration(guid: String) 
 
+# Topics
+GET    /v3/topics        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getAllTopics
+POST   /v3/topics        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.createTopic
+GET    /v3/topics/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getTopic(guid: String)
+POST   /v3/topics/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.updateTopic(guid: String)
+DELETE /v3/topics/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String) 
+
 # Bridge Exporter
 POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
 POST /v3/recordExportStatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
