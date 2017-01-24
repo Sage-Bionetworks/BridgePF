@@ -29,6 +29,11 @@ public interface Study extends BridgeEntity, StudyIdentifier {
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
 
+    /** Convenience method for creating a Study using a concrete implementation. */
+    static Study create() {
+        return new DynamoStudy();
+    }
+
     /**
      * The display name of the study (will be seen by participants in email). This name makes the 
      * most sense when it starts with "The".

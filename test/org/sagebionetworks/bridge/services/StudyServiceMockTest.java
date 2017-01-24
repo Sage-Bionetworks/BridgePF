@@ -62,6 +62,15 @@ public class StudyServiceMockTest {
     private static final String TEST_TEAM_ID = "1234";
     private static final String TEST_PROJECT_ID = "synapseProjectId";
 
+    // Don't use TestConstants.TEST_STUDY since this conflicts with the whitelist.
+    private static final String TEST_STUDY_ID = "test-study";
+
+    @Mock
+    private CompoundActivityDefinitionService compoundActivityDefinitionService;
+
+    @Mock
+    private NotificationTopicService topicService;
+
     @Mock
     private UploadCertificateService uploadCertService;
     @Mock
@@ -79,6 +88,7 @@ public class StudyServiceMockTest {
     private SynapseClient mockSynapseClient;
 
     private StudyService service;
+    private Study study;
     private Team mockTeam;
     private Project mockProject;
     private MembershipInvtnSubmission mockTeamMemberInvitation;
@@ -86,6 +96,8 @@ public class StudyServiceMockTest {
     @Before
     public void before() {
         service = new StudyService();
+        service.setCompoundActivityDefinitionService(compoundActivityDefinitionService);
+        service.setNotificationTopicService(topicService);
         service.setUploadCertificateService(uploadCertService);
         service.setStudyDao(studyDao);
         service.setDirectoryDao(directoryDao);
@@ -95,7 +107,8 @@ public class StudyServiceMockTest {
         service.setEmailVerificationService(emailVerificationService);
         service.setSynapseClient(mockSynapseClient);
 
-        when(studyDao.getStudy("test-study")).thenReturn(getTestStudy());
+        study = getTestStudy();
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // setup project and team
         mockTeam = new Team();
@@ -113,7 +126,7 @@ public class StudyServiceMockTest {
 
     private Study getTestStudy() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setIdentifier("test-study");
+        study.setIdentifier(TEST_STUDY_ID);
         study.setStormpathHref("http://foo");
         return study;
     }
@@ -123,6 +136,21 @@ public class StudyServiceMockTest {
         consumer.accept(study);
         service.updateStudy(study, true);
         verify(directoryDao).updateDirectoryForStudy(study);
+    }
+
+    @Test
+    public void physicallyDeleteStudy() {
+        // execute
+        service.deleteStudy(TEST_STUDY_ID, true);
+
+        // verify we called the correct dependent services
+        verify(studyDao).deleteStudy(study);
+        verify(directoryDao).deleteDirectoryForStudy(study);
+        verify(compoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInStudy(
+                study.getStudyIdentifier());
+        verify(subpopService).deleteAllSubpopulations(study.getStudyIdentifier());
+        verify(topicService).deleteAllTopics(study.getStudyIdentifier());
+        verify(cacheProvider).removeStudy(TEST_STUDY_ID);
     }
 
     @Test(expected = BadRequestException.class)
