@@ -201,6 +201,7 @@ public class TestUtils {
         NotificationTopic topic = NotificationTopic.create();
         topic.setGuid("ABC-DEF");
         topic.setName("Test Topic Name");
+        topic.setDescription("Test Description");
         topic.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         topic.setTopicARN("atopicArn");
         return topic;

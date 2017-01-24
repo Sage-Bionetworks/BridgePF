@@ -23,7 +23,15 @@ public interface NotificationTopic extends BridgeEntity {
     public String getName();
     public void setName(String name);
     
+    public String getDescription();
+    public void setDescription(String description);
+    
     public String getTopicARN();
     public void setTopicARN(String topicARN);
     
+    public long getCreatedOn();
+    public void setCreatedOn(long createdOn);
+
+    public long getModifiedOn();
+    public void setModifiedOn(long modifiedOn);
 }

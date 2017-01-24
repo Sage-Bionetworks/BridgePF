@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -356,7 +357,7 @@ public class ReportControllerTest {
         Result result = controller.saveStudyReportForSpecifiedStudy(TEST_STUDY.getIdentifier(), REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
 
-        verify(mockStudyService).getStudy(TEST_STUDY_IDENTIFIER);
+        verify(mockStudyService, never()).getStudy(TEST_STUDY_IDENTIFIER);
         verify(mockReportService).saveStudyReport(eq(TEST_STUDY), eq(REPORT_ID), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());

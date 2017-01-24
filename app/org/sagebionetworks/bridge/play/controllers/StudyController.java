@@ -5,8 +5,11 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
@@ -17,6 +20,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
@@ -25,6 +29,7 @@ import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -32,6 +37,7 @@ import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Result;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.Roles.*;
 
 @Controller
@@ -109,15 +115,18 @@ public class StudyController extends BaseController {
 
     // You can get a truncated view of studies with either format=summary or summary=true;
     // the latter allows us to make this a boolean flag in the Java client libraries.
-    // since only admin can call this method, no need to check if the return results should contain deactivated ones
     public Result getAllStudies(String format, String summary) throws Exception {
         List<Study> studies = studyService.getStudies();
         if ("summary".equals(format) || "true".equals(summary)) {
-            Collections.sort(studies, STUDY_COMPARATOR);
-            return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
+            // then only return active study as summary
+            List<Study> activeStudiesSummary = studies.stream()
+                    .filter(s -> s.isActive()).collect(Collectors.toList());
+            Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
+            return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(activeStudiesSummary)));
         }
         getAuthenticatedSession(ADMIN);
 
+        // otherwise, return all studies including deactivated ones
         return ok(Study.STUDY_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
     }
 
@@ -135,8 +144,7 @@ public class StudyController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         // then create project and team and grant admin permission to current user and exporter
-        Long userIdNum = Long.parseLong(synapseUserId);
-        studyService.createSynapseProjectTeam(userIdNum, study);
+        studyService.createSynapseProjectTeam(synapseUserId, study);
 
         return createdResult(new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
     }
@@ -196,16 +204,16 @@ public class StudyController extends BaseController {
      * @param endTimeString
      * @return
      */
-    public Result getUploadsForStudy(String studyId, String startTimeString, String endTimeString) throws EntityNotFoundException {
+    public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString) throws EntityNotFoundException {
         getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
 
-        Study study = studyService.getStudy(studyId);
+        StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
 
         DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
-                study.getStudyIdentifier(), startTime, endTime);
+                studyId, startTime, endTime);
 
         return okResult(uploads);
     }

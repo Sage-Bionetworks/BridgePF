@@ -176,7 +176,7 @@ public class NotificationsServiceTest {
         
         NotificationMessage message = TestUtils.getNotificationMessage();
         
-        service.sendNotification(STUDY_ID, HEALTH_CODE, message);
+        service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
         
         verify(mockSnsClient).publish(requestCaptor.capture());
         
@@ -192,7 +192,7 @@ public class NotificationsServiceTest {
         
         NotificationMessage message = TestUtils.getNotificationMessage();
         try {
-            service.sendNotification(STUDY_ID, HEALTH_CODE, message);
+            service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
             fail("Should have thrown exception.");
         } catch(BadRequestException e) {
             assertEquals("Participant has not registered to receive push notifications.", e.getMessage());
@@ -214,7 +214,7 @@ public class NotificationsServiceTest {
         
         NotificationMessage message = TestUtils.getNotificationMessage();
         try {
-            service.sendNotification(STUDY_ID, HEALTH_CODE, message);
+            service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
             fail("Should have thrown exception.");
         } catch(BadRequestException e) {
             assertEquals("Error sending push notification: bad parameter; bad parameter.", e.getMessage());

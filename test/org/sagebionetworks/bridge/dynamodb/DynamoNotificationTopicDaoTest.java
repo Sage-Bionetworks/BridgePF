@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -31,6 +32,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 
 import com.amazonaws.AmazonServiceException;
@@ -145,9 +147,12 @@ public class DynamoNotificationTopicDaoTest {
         verify(mockMapper).save(topicCaptor.capture());
         DynamoNotificationTopic captured = topicCaptor.getValue();
         assertEquals(topic.getName(), captured.getName());
+        assertEquals(topic.getDescription(), captured.getDescription());
         assertEquals(topic.getStudyId(), captured.getStudyId());
         assertEquals("new-topic-arm", captured.getTopicARN());
         assertEquals(topic.getGuid(), captured.getGuid());
+        assertTrue(topic.getCreatedOn() > 0);
+        assertTrue(topic.getModifiedOn() > 0);
         // This was set by the methods. Can't be set by the caller.
         assertNotEquals(getNotificationTopic().getGuid(), captured.getGuid());
     }
@@ -158,18 +163,30 @@ public class DynamoNotificationTopicDaoTest {
     }
     
     @Test
-    public void updateTopic() {
-        doReturn(getNotificationTopic()).when(mockMapper).load(any());
+    public void updateTopic() throws Exception {
+        long timestamp = DateUtils.getCurrentMillisFromEpoch();
+        
+        NotificationTopic persistedTopic = getNotificationTopic();
+        persistedTopic.setCreatedOn(timestamp);
+        persistedTopic.setModifiedOn(timestamp);
+        doReturn(persistedTopic).when(mockMapper).load(any());
         
         NotificationTopic topic = getNotificationTopic();
         topic.setName("The updated name");
+        topic.setDescription("The updated description");
+        
+        Thread.sleep(3); // forced modifiedOn to be different from timestamp
         
         NotificationTopic updated = dao.updateTopic(topic);
         assertEquals("The updated name", updated.getName());
+        assertEquals("The updated description", updated.getDescription());
+        assertEquals(timestamp, updated.getCreatedOn());
+        assertNotEquals(timestamp, updated.getModifiedOn());
         
         verify(mockMapper).save(topicCaptor.capture());
         NotificationTopic captured = topicCaptor.getValue();
         assertEquals("The updated name", captured.getName());
+        assertEquals("The updated description", captured.getDescription());
         assertEquals(topic.getTopicARN(), captured.getTopicARN());
     }
     

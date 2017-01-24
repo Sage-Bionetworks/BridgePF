@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -64,8 +65,6 @@ import java.util.stream.Collectors;
 public class StudyServiceTest {
 
     private static final Long TEST_USER_ID = Long.parseLong(BridgeConfigFactory.getConfig().getTestSynapseUserId()); // test user exists in synapse
-    private static final String TEST_PROJECT_ID = "testProjectId";
-    private static final Long TEST_TEAM_ID = 1234L;
 
     @Resource
     StudyService studyService;
@@ -81,9 +80,9 @@ public class StudyServiceTest {
     
     @Resource
     SubpopulationDao subpopDao;
-
+    
     @Resource
-    SynapseClient synapseClient;
+    NotificationTopicService topicService;
 
     @Autowired
     CacheProvider cache;
@@ -96,11 +95,9 @@ public class StudyServiceTest {
     private Team team;
     
     @Before
-    public void before() {
+    public void before() throws SynapseException {
         mockCache = mock(CacheProvider.class);
         studyService.setCacheProvider(mockCache);
-
-        studyService.setSynapseClient(synapseClient);
     }
     
     @After
@@ -108,100 +105,11 @@ public class StudyServiceTest {
         if (study != null) {
             studyService.deleteStudy(study.getIdentifier(), true);
         }
-        if (project != null) {
-            synapseClient.deleteEntityById(project.getId());
-        }
-        if (team != null) {
-            synapseClient.deleteTeam(team.getId());
-        }
     }
 
     @After
     public void resetCache() {
         studyService.setCacheProvider(cache);
-    }
-
-    @Test
-    public void createSynapseProjectTeam() throws SynapseException {
-        // integration test with synapseclient
-        // pre-setup
-        study = TestUtils.getValidStudy(StudyServiceTest.class);
-        // remove team and project id for succeed testing
-        study.setSynapseDataAccessTeamId(null);
-        study.setSynapseProjectId(null);
-        studyService.createStudy(study);
-
-        // execute
-        Study retStudy = studyService.createSynapseProjectTeam(TEST_USER_ID, study);
-
-        // verify study
-        assertEquals(retStudy.getIdentifier(), study.getIdentifier());
-        String projectId = retStudy.getSynapseProjectId();
-        Long teamId = retStudy.getSynapseDataAccessTeamId();
-
-        // verify if project and team exists
-        Entity project = synapseClient.getEntityById(projectId);
-        assertNotNull(project);
-        assertEquals(project.getEntityType(), "org.sagebionetworks.repo.model.Project");
-        this.project = (Project) project;
-        Team team = synapseClient.getTeam(teamId.toString());
-        assertNotNull(team);
-        this.team = team;
-
-        // project acl
-        AccessControlList projectAcl = synapseClient.getACL(projectId);
-        Set<ResourceAccess> projectRa =  projectAcl.getResourceAccess();
-        assertNotNull(projectRa);
-        assertEquals(projectRa.size(), 3); // target user, exporter and bridgepf itself
-        // first verify exporter
-        List<ResourceAccess> retListForExporter = projectRa.stream()
-                .filter(ra -> ra.getPrincipalId().equals(Long.parseLong(EXPORTER_SYNAPSE_USER_ID)))
-                .collect(Collectors.toList());
-
-        assertNotNull(retListForExporter);
-        assertEquals(retListForExporter.size(), 1); // should only have one exporter info
-        ResourceAccess exporterRa = retListForExporter.get(0);
-        assertNotNull(exporterRa);
-        assertEquals(exporterRa.getPrincipalId().toString(), EXPORTER_SYNAPSE_USER_ID);
-        assertEquals(exporterRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
-        // then verify target user
-        List<ResourceAccess> retListForUser = projectRa.stream()
-                .filter(ra -> ra.getPrincipalId().equals(TEST_USER_ID))
-                .collect(Collectors.toList());
-
-        assertNotNull(retListForUser);
-        assertEquals(retListForUser.size(), 1); // should only have target user info
-        ResourceAccess userRa = retListForUser.get(0);
-        assertNotNull(userRa);
-        assertEquals(userRa.getPrincipalId(), TEST_USER_ID);
-        assertEquals(userRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
-
-        // membership invitation to target user
-        // (teamId, inviteeId, limit, offset)
-        PaginatedResults<MembershipInvtnSubmission> retInvitations =  synapseClient.getOpenMembershipInvitationSubmissions(teamId.toString(), TEST_USER_ID.toString(), 1, 0);
-        List<MembershipInvtnSubmission> invitationList = retInvitations.getResults();
-        assertEquals(invitationList.size(), 1); // only one invitation submission from newly created team to target user
-        MembershipInvtnSubmission invtnSubmission = invitationList.get(0);
-        assertEquals(invtnSubmission.getInviteeId(), TEST_USER_ID.toString());
-        assertEquals(invtnSubmission.getTeamId(), teamId.toString());
-    }
-
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void studyHasProjectId() throws SynapseException {
-        Study testStudy = new DynamoStudy();
-        // remove team and project id for succeed testing
-        testStudy.setSynapseDataAccessTeamId(null);
-        testStudy.setSynapseProjectId(TEST_PROJECT_ID);
-        studyService.createSynapseProjectTeam(TEST_USER_ID, testStudy);
-    }
-
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void studyHasTeamId() throws SynapseException {
-        Study testStudy = new DynamoStudy();
-        // remove team and project id for succeed testing
-        testStudy.setSynapseDataAccessTeamId(TEST_TEAM_ID);
-        testStudy.setSynapseProjectId(null);
-        studyService.createSynapseProjectTeam(TEST_USER_ID, testStudy);
     }
 
     @Test(expected=InvalidEntityException.class)
@@ -255,6 +163,12 @@ public class StudyServiceTest {
         StudyConsentView view = studyConsentService.getActiveConsent(subpop);
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
         
+        // Create an associated topic
+        NotificationTopic topic = TestUtils.getNotificationTopic();
+        topic.setStudyId(study.getIdentifier());
+        topicService.createTopic(topic);
+        assertEquals(1, topicService.listTopics(study.getStudyIdentifier()).size());
+        
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());
         assertTrue(newStudy.isStrictUploadValidationEnabled());
@@ -276,6 +190,9 @@ public class StudyServiceTest {
         verify(mockCache).getStudy(study.getIdentifier());
         verify(mockCache).setStudy(study);
         verify(mockCache).removeStudy(study.getIdentifier());
+        
+        assertEquals(0, topicService.listTopics(study.getStudyIdentifier()).size());
+        
         try {
             studyService.getStudy(study.getIdentifier());
             fail("Should have thrown an exception");
