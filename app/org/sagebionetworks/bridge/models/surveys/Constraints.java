@@ -21,7 +21,7 @@ import com.google.common.collect.Lists;
     @Type(name="time", value=TimeConstraints.class),
     @Type(name="duration", value=DurationConstraints.class)
 })
-public abstract class Constraints {
+public class Constraints {
 
     private EnumSet<UIHint> hints;
     private List<SurveyRule> rules = Lists.newArrayList();
