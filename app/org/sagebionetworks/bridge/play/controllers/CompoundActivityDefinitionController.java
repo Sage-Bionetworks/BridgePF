@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
