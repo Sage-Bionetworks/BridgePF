@@ -36,7 +36,19 @@ public class DynamoSurveyQuestionTest {
         assertEquals("{\"surveyCompoundKey\":\"AAA:1444471810000\",\"guid\":\"AAA\",\"identifier\":\"identifier\",\"type\":\"type\",\"prompt\":\"Prompt\",\"promptDetail\":\"Prompt Detail\",\"fireEvent\":false,\"constraints\":{\"rules\":[],\"dataType\":\"integer\",\"unit\":\"days\",\"minValue\":2.0,\"maxValue\":6.0,\"step\":2.0,\"type\":\"IntegerConstraints\"},\"uiHint\":\"checkbox\"}", string);
         
         DynamoSurveyQuestion question2 = (DynamoSurveyQuestion)DynamoSurveyQuestion.fromJson(BridgeObjectMapper.get().readTree(string));
-        assertEquals(question, question2);
+        assertEquals(question.getPromptDetail(), question2.getPromptDetail());
+        assertEquals(question.getPrompt(), question2.getPrompt());
+        assertEquals(question.getIdentifier(), question2.getIdentifier());
+        assertEquals(question.getGuid(), question2.getGuid());
+        assertEquals(question.getOrder(), question2.getOrder());
+        assertEquals(question.getType(), question2.getType());
+        assertEquals(question.getUiHint(), question2.getUiHint());
+        
+        IntegerConstraints c2 = (IntegerConstraints)question2.getConstraints();
+        assertEquals(c.getMinValue(), c2.getMinValue());
+        assertEquals(c.getMaxValue(), c2.getMaxValue());
+        assertEquals(c.getStep(), c2.getStep());
+        assertEquals(c.getUnit(), c2.getUnit());
     }
     
 }

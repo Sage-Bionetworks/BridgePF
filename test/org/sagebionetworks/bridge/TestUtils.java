@@ -73,12 +73,24 @@ public class TestUtils {
     
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
 
+    /**
+     * Asserts that on validation, InvalidEntityException has been thrown with an error key that is the nested path to
+     * the object value that is invalid, and an error message that only uses the end of the key, and thus can be
+     * displayed in a UI for the user.
+     */
     public static void assertValidatorMessage(Validator validator, Object object, String fieldName, String error) {
+        String fieldNameAsLabel = fieldName;
+        if (fieldNameAsLabel.contains(".")) {
+            fieldNameAsLabel = fieldNameAsLabel.substring(fieldNameAsLabel.lastIndexOf(".")+1);
+        }
+        if (!error.startsWith(" ")) {
+            error = " " + error;
+        }
         try {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals(fieldName+error, e.getErrors().get(fieldName).get(0));
+            assertEquals(fieldNameAsLabel+error, e.getErrors().get(fieldName).get(0));
         }
     }
     
