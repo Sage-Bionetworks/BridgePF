@@ -15,17 +15,20 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 /** This class represents health data and associated metadata. */
 @BridgeTypeName("HealthData")
 @JsonDeserialize(as = DynamoHealthDataRecord.class)
 public interface HealthDataRecord extends BridgeEntity {
+    DateTimeFormatter TIME_ZONE_FORMATTER = DateTimeFormat.forPattern("Z");
     ObjectWriter PUBLIC_RECORD_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
                     SimpleBeanPropertyFilter.serializeAllExcept("healthCode")));
 
-    public enum ExporterStatus {
-        NOT_EXPORTED, SUCCEEDED;
+    enum ExporterStatus {
+        NOT_EXPORTED, SUCCEEDED
     }
 
     /**
@@ -33,6 +36,9 @@ public interface HealthDataRecord extends BridgeEntity {
      * (start of epoch).
      */
     Long getCreatedOn();
+
+    /** Time zone of the createdOn timestamp, expressed as a 4-digit string with sign. Examples: "-0800", "+0900" */
+    String getCreatedOnTimeZone();
 
     /** Health data, in JSON format. */
     JsonNode getData();

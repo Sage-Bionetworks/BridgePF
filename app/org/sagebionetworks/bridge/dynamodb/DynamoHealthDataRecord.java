@@ -29,6 +29,7 @@ import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
 @JsonFilter("filter")
 public class DynamoHealthDataRecord implements HealthDataRecord {
     private Long createdOn;
+    private String createdOnTimeZone;
     private JsonNode data;
     private String healthCode;
     private String id;
@@ -57,6 +58,17 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setCreatedOn(Long createdOn) {
         this.createdOn = createdOn;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getCreatedOnTimeZone() {
+        return createdOnTimeZone;
+    }
+
+    /** @see #getCreatedOnTimeZone */
+    public void setCreatedOnTimeZone(String createdOnTimeZone) {
+        this.createdOnTimeZone = createdOnTimeZone;
     }
 
     /** {@inheritDoc} */
@@ -245,6 +257,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
         protected HealthDataRecord buildUnvalidated() {
             DynamoHealthDataRecord record = new DynamoHealthDataRecord();
             record.setCreatedOn(getCreatedOn());
+            record.setCreatedOnTimeZone(getCreatedOnTimeZone());
             record.setData(getData());
             record.setHealthCode(getHealthCode());
             record.setId(getId());

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoHealthDataDaoDdbTest {
     private static final long CREATED_ON = 1424136378727L;
+    private static final String CREATED_ON_TIME_ZONE = "+0900";
     private static final String DATA_TEXT = "{\"data\":\"dummy value\"}";
     private static final String METADATA_TEXT = "{\"metadata\":\"dummy meta value\"}";
     private static final String SCHEMA_ID = "test-schema-id";
@@ -65,10 +66,12 @@ public class DynamoHealthDataDaoDdbTest {
         // create test record and save it
         testRecord = new DynamoHealthDataRecord();
         testRecord.setCreatedOn(CREATED_ON);
+        testRecord.setCreatedOnTimeZone(CREATED_ON_TIME_ZONE);
         testRecord.setHealthCode(healthCode);
         testRecord.setSchemaId(SCHEMA_ID);
         testRecord.setId(recordId);
         testRecord.setSchemaRevision(SCHEMA_REV);
+        testRecord.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.NOT_EXPORTED);
         testRecord.setUploadDate(UPLOAD_DATE);
         testRecord.setUploadedOn(UPLOADED_ON);
         testRecord.setUploadId(UPLOAD_ID);
@@ -93,11 +96,13 @@ public class DynamoHealthDataDaoDdbTest {
 
         // validate fields
         assertEquals(CREATED_ON, savedRecord.getCreatedOn().longValue());
+        assertEquals(CREATED_ON_TIME_ZONE, savedRecord.getCreatedOnTimeZone());
         assertEquals(healthCode, savedRecord.getHealthCode());
         assertEquals(recordId, savedRecord.getId());
         assertEquals(SCHEMA_ID, savedRecord.getSchemaId());
         assertEquals(SCHEMA_REV, savedRecord.getSchemaRevision());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, savedRecord.getStudyId());
+        assertEquals(HealthDataRecord.ExporterStatus.NOT_EXPORTED, savedRecord.getSynapseExporterStatus());
         assertEquals(UPLOAD_DATE, savedRecord.getUploadDate());
         assertEquals(UPLOAD_ID, savedRecord.getUploadId());
         assertEquals(UPLOADED_ON, savedRecord.getUploadedOn().longValue());
