@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -332,11 +333,14 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         }
 
         if (createdOn == null) {
-            // Recover by using current time.
+            // Recover by using current time. Don't set a timezone, since it's indeterminate.
             context.addMessage(String.format("upload ID %s has no timestamps, using current time", uploadId));
-            createdOn = DateUtils.getCurrentDateTime();
+            recordBuilder.withCreatedOn(DateUtils.getCurrentMillisFromEpoch());
+        } else {
+            // Use createdOn and timezone as specified in the upload.
+            recordBuilder.withCreatedOn(createdOn.getMillis());
+            recordBuilder.withCreatedOnTimeZone(HealthDataRecord.TIME_ZONE_FORMATTER.print(createdOn));
         }
-        recordBuilder.withCreatedOn(createdOn.getMillis());
     }
 
     private static <T> void removeTimestampsFromFilenames(Map<String, T> fileMap) {

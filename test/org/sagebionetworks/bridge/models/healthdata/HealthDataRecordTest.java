@@ -13,6 +13,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.Test;
@@ -74,8 +75,10 @@ public class HealthDataRecordTest {
 
         // build
         HealthDataRecord record = DAO.getRecordBuilder().withData(data).withHealthCode("required healthcode")
-                .withId("optional record ID").withCreatedOn(arbitraryTimestamp).withMetadata(metadata)
+                .withId("optional record ID").withCreatedOn(arbitraryTimestamp).withCreatedOnTimeZone("+0900")
+                .withMetadata(metadata)
                 .withSchemaId("required schema").withSchemaRevision(3).withStudyId("required study")
+                .withSynapseExporterStatus(HealthDataRecord.ExporterStatus.NOT_EXPORTED)
                 .withUploadDate(uploadDate).withUploadId("optional upload ID").withUploadedOn(uploadedOn)
                 .withUserExternalId("optional external ID")
                 .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
@@ -86,9 +89,11 @@ public class HealthDataRecordTest {
         assertEquals("required healthcode", record.getHealthCode());
         assertEquals("optional record ID", record.getId());
         assertEquals(arbitraryTimestamp, record.getCreatedOn().longValue());
+        assertEquals("+0900", record.getCreatedOnTimeZone());
         assertEquals("required schema", record.getSchemaId());
         assertEquals(3, record.getSchemaRevision());
         assertEquals("required study", record.getStudyId());
+        assertEquals(HealthDataRecord.ExporterStatus.NOT_EXPORTED, record.getSynapseExporterStatus());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("optional upload ID", record.getUploadId());
         assertEquals(uploadedOn, record.getUploadedOn().longValue());
@@ -108,9 +113,11 @@ public class HealthDataRecordTest {
         assertEquals("required healthcode", copyRecord.getHealthCode());
         assertEquals("optional record ID", copyRecord.getId());
         assertEquals(arbitraryTimestamp, copyRecord.getCreatedOn().longValue());
+        assertEquals("+0900", copyRecord.getCreatedOnTimeZone());
         assertEquals("required schema", copyRecord.getSchemaId());
         assertEquals(3, copyRecord.getSchemaRevision());
         assertEquals("required study", copyRecord.getStudyId());
+        assertEquals(HealthDataRecord.ExporterStatus.NOT_EXPORTED, copyRecord.getSynapseExporterStatus());
         assertEquals("2014-02-12", copyRecord.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("optional upload ID", copyRecord.getUploadId());
         assertEquals(uploadedOn, copyRecord.getUploadedOn().longValue());
@@ -299,6 +306,7 @@ public class HealthDataRecordTest {
         // start with JSON
         String jsonText = "{\n" +
                 "   \"createdOn\":\"2014-02-12T13:45-0800\",\n" +
+                "   \"createdOnTimeZone\":\"-0800\",\n" +
                 "   \"data\":{\"myData\":\"myDataValue\"},\n" +
                 "   \"healthCode\":\"json healthcode\",\n" +
                 "   \"id\":\"json record ID\",\n" +
@@ -306,6 +314,7 @@ public class HealthDataRecordTest {
                 "   \"schemaId\":\"json schema\",\n" +
                 "   \"schemaRevision\":3,\n" +
                 "   \"studyId\":\"json study\",\n" +
+                "   \"synapseExporterStatus\":\"not_exported\",\n" +
                 "   \"uploadDate\":\"2014-02-12\",\n" +
                 "   \"uploadId\":\"json upload\",\n" +
                 "   \"uploadedOn\":\"" + uploadedOnStr + "\",\n" +
@@ -318,11 +327,13 @@ public class HealthDataRecordTest {
         // convert to POJO
         HealthDataRecord record = BridgeObjectMapper.get().readValue(jsonText, HealthDataRecord.class);
         assertEquals(measuredTimeMillis, record.getCreatedOn().longValue());
+        assertEquals("-0800", record.getCreatedOnTimeZone());
         assertEquals("json healthcode", record.getHealthCode());
         assertEquals("json record ID", record.getId());
         assertEquals("json schema", record.getSchemaId());
         assertEquals(3, record.getSchemaRevision());
         assertEquals("json study", record.getStudyId());
+        assertEquals(HealthDataRecord.ExporterStatus.NOT_EXPORTED, record.getSynapseExporterStatus());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("json upload", record.getUploadId());
         assertEquals(uploadedOn, record.getUploadedOn().longValue());
@@ -341,12 +352,14 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(15, jsonMap.size());
+        assertEquals(17, jsonMap.size());
+        assertEquals("-0800", jsonMap.get("createdOnTimeZone"));
         assertEquals("json healthcode", jsonMap.get("healthCode"));
         assertEquals("json record ID", jsonMap.get("id"));
         assertEquals("json schema", jsonMap.get("schemaId"));
         assertEquals(3, jsonMap.get("schemaRevision"));
         assertEquals("json study", jsonMap.get("studyId"));
+        assertEquals("not_exported", jsonMap.get("synapseExporterStatus"));
         assertEquals("2014-02-12", jsonMap.get("uploadDate"));
         assertEquals("json upload", jsonMap.get("uploadId"));
         assertEquals(uploadedOn, DateTime.parse((String) jsonMap.get("uploadedOn")).getMillis());
@@ -371,8 +384,39 @@ public class HealthDataRecordTest {
 
         // Convert back to map again. Only validate a few key fields are present and the filtered fields are absent.
         Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(14, publicJsonMap.size());
+        assertEquals(16, publicJsonMap.size());
         assertFalse(publicJsonMap.containsKey("healthCode"));
         assertEquals("json record ID", publicJsonMap.get("id"));
+    }
+
+    @Test
+    public void testTimeZoneFormatter() {
+        testTimeZoneFormatter("+0000", DateTimeZone.UTC);
+        testTimeZoneFormatter("+0000", DateTimeZone.forOffsetHours(0));
+        testTimeZoneFormatter("+0900", DateTimeZone.forOffsetHours(+9));
+        testTimeZoneFormatter("-0800", DateTimeZone.forOffsetHours(-8));
+        testTimeZoneFormatter("+1345", DateTimeZone.forOffsetHoursMinutes(+13, +45));
+        testTimeZoneFormatter("-0330", DateTimeZone.forOffsetHoursMinutes(-3, -30));
+
+        testTimeZoneFormatterForString("+0000", "Z");
+        testTimeZoneFormatterForString("+0000", "+00:00");
+        testTimeZoneFormatterForString("+0900", "+09:00");
+        testTimeZoneFormatterForString("-0800", "-08:00");
+        testTimeZoneFormatterForString("+1345", "+13:45");
+        testTimeZoneFormatterForString("-0330", "-03:30");
+    }
+
+    private static void testTimeZoneFormatter(String expected, DateTimeZone timeZone) {
+        // The formatter only takes in DateTimes, not TimeZones. To test this, create a dummy DateTime with the given
+        // TimeZone
+        DateTime dateTime = new DateTime(2017, 1, 25, 2, 29, timeZone);
+        assertEquals(expected, HealthDataRecord.TIME_ZONE_FORMATTER.print(dateTime));
+    }
+
+    private static void testTimeZoneFormatterForString(String expected, String timeZoneStr) {
+        // DateTimeZone doesn't have an API to parse an ISO timezone representation, so we have to parse an entire date
+        // just to parse the timezone.
+        DateTime dateTime = DateTime.parse("2017-01-25T02:29" + timeZoneStr);
+        assertEquals(expected, HealthDataRecord.TIME_ZONE_FORMATTER.print(dateTime));
     }
 }
