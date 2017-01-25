@@ -397,12 +397,26 @@ public class HealthDataRecordTest {
         testTimeZoneFormatter("-0800", DateTimeZone.forOffsetHours(-8));
         testTimeZoneFormatter("+1345", DateTimeZone.forOffsetHoursMinutes(+13, +45));
         testTimeZoneFormatter("-0330", DateTimeZone.forOffsetHoursMinutes(-3, -30));
+
+        testTimeZoneFormatterForString("+0000", "Z");
+        testTimeZoneFormatterForString("+0000", "+00:00");
+        testTimeZoneFormatterForString("+0900", "+09:00");
+        testTimeZoneFormatterForString("-0800", "-08:00");
+        testTimeZoneFormatterForString("+1345", "+13:45");
+        testTimeZoneFormatterForString("-0330", "-03:30");
     }
 
     private static void testTimeZoneFormatter(String expected, DateTimeZone timeZone) {
         // The formatter only takes in DateTimes, not TimeZones. To test this, create a dummy DateTime with the given
         // TimeZone
         DateTime dateTime = new DateTime(2017, 1, 25, 2, 29, timeZone);
+        assertEquals(expected, HealthDataRecord.TIME_ZONE_FORMATTER.print(dateTime));
+    }
+
+    private static void testTimeZoneFormatterForString(String expected, String timeZoneStr) {
+        // DateTimeZone doesn't have an API to parse an ISO timezone representation, so we have to parse an entire date
+        // just to parse the timezone.
+        DateTime dateTime = DateTime.parse("2017-01-25T02:29" + timeZoneStr);
         assertEquals(expected, HealthDataRecord.TIME_ZONE_FORMATTER.print(dateTime));
     }
 }
