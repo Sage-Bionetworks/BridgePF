@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
+import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
@@ -56,6 +57,7 @@ public class StudyService {
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
+    private CompoundActivityDefinitionService compoundActivityDefinitionService;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
@@ -87,6 +89,14 @@ public class StudyService {
     final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
+
+    /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
+    @Autowired
+    final void setCompoundActivityDefinitionService(
+            CompoundActivityDefinitionService compoundActivityDefinitionService) {
+        this.compoundActivityDefinitionService = compoundActivityDefinitionService;
+    }
+
     @Resource(name="uploadCertificateService")
     final void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
@@ -191,10 +201,21 @@ public class StudyService {
         return study;
     }
 
-    public Study createSynapseProjectTeam(Long userId, Study study) throws SynapseException {
+    public Study createSynapseProjectTeam(String synapseUserId, Study study) throws SynapseException {
+        if (StringUtils.isBlank(synapseUserId)) {
+            throw new BadRequestException("Synapse User ID is invalid.");
+        }
+
         // first check if study already has project and team ids
         checkNewEntity(study, study.getSynapseDataAccessTeamId(), "Study already has a team id.");
         checkNewEntity(study, study.getSynapseProjectId(), "Study already has a project id.");
+
+        // then check if the user id exists
+        try {
+            synapseClient.getUserProfile(synapseUserId);
+        } catch (SynapseNotFoundException e) {
+            throw new BadRequestException("Synapse user Id is invalid.");
+        }
 
         // create synapse project and team
         Team team = new Team();
@@ -215,7 +236,7 @@ public class StudyService {
         acl.getResourceAccess().add(toSet);
         // add user as admin
         ResourceAccess toSetUser = new ResourceAccess();
-        toSetUser.setPrincipalId(userId); // passed by user as parameter
+        toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
         toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
         acl.getResourceAccess().add(toSetUser);
 
@@ -223,11 +244,11 @@ public class StudyService {
 
         // send invitation to target user for joining new team and grant admin permission to that user
         MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
-        teamMemberInvitation.setInviteeId(userId.toString());
+        teamMemberInvitation.setInviteeId(synapseUserId);
         teamMemberInvitation.setTeamId(newTeam.getId());
 
         synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
-        synapseClient.setTeamMemberPermissions(newTeam.getId(), userId.toString(), true);
+        synapseClient.setTeamMemberPermissions(newTeam.getId(), synapseUserId, true);
 
         String newTeamId = newTeam.getId();
         String newProjectId = newProject.getId();
@@ -312,6 +333,10 @@ public class StudyService {
             // actual delete
             studyDao.deleteStudy(existing);
             directoryDao.deleteDirectoryForStudy(existing);
+
+            // delete study data
+            compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
+                    existing.getStudyIdentifier());
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
             topicService.deleteAllTopics(existing.getStudyIdentifier());
         }

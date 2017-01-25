@@ -1,21 +1,17 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.io.IOException;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMappingException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -24,7 +20,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -216,28 +211,14 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** Custom DynamoDB marshaller for the field definition list. This uses Jackson to convert to and from JSON. */
-    public static class FieldDefinitionListMarshaller implements DynamoDBTypeConverter<String,List<UploadFieldDefinition>> {
-        
-        private static final TypeReference<List<UploadFieldDefinition>> FIELD_LIST_TYPE = new TypeReference<List<UploadFieldDefinition>>() {
-        };
-        
+    public static class FieldDefinitionListMarshaller extends ListMarshaller<UploadFieldDefinition> {
+        private static final TypeReference<List<UploadFieldDefinition>> FIELD_LIST_TYPE =
+                new TypeReference<List<UploadFieldDefinition>>() {};
+
         /** {@inheritDoc} */
         @Override
-        public String convert(List<UploadFieldDefinition> fieldDefList) {
-            try {
-                return BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(fieldDefList);
-            } catch (JsonProcessingException ex) {
-                throw new DynamoDBMappingException(ex);
-            }
-        }
-        /** {@inheritDoc} */
-        @Override
-        public List<UploadFieldDefinition> unconvert(String json) {
-            try {
-                return BridgeObjectMapper.get().readValue(json, FIELD_LIST_TYPE);
-            } catch (IOException ex) {
-                throw new DynamoDBMappingException(ex);
-            }
+        public TypeReference<List<UploadFieldDefinition>> getTypeReference() {
+            return FIELD_LIST_TYPE;
         }
     }
 }

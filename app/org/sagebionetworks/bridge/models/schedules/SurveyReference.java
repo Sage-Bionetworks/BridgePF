@@ -23,7 +23,7 @@ public final class SurveyReference {
     private final DateTime createdOn;
     
     @JsonCreator
-    SurveyReference(@JsonProperty("identifier") String identifier, @JsonProperty("guid") String guid,
+    public SurveyReference(@JsonProperty("identifier") String identifier, @JsonProperty("guid") String guid,
                     @JsonProperty("createdOn") DateTime createdOn) {
         this.identifier = identifier;
         this.guid = guid;
