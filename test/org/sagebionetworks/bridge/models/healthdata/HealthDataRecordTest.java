@@ -13,6 +13,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.Test;
@@ -386,5 +387,22 @@ public class HealthDataRecordTest {
         assertEquals(16, publicJsonMap.size());
         assertFalse(publicJsonMap.containsKey("healthCode"));
         assertEquals("json record ID", publicJsonMap.get("id"));
+    }
+
+    @Test
+    public void testTimeZoneFormatter() {
+        testTimeZoneFormatter("+0000", DateTimeZone.UTC);
+        testTimeZoneFormatter("+0000", DateTimeZone.forOffsetHours(0));
+        testTimeZoneFormatter("+0900", DateTimeZone.forOffsetHours(+9));
+        testTimeZoneFormatter("-0800", DateTimeZone.forOffsetHours(-8));
+        testTimeZoneFormatter("+1345", DateTimeZone.forOffsetHoursMinutes(+13, +45));
+        testTimeZoneFormatter("-0330", DateTimeZone.forOffsetHoursMinutes(-3, -30));
+    }
+
+    private static void testTimeZoneFormatter(String expected, DateTimeZone timeZone) {
+        // The formatter only takes in DateTimes, not TimeZones. To test this, create a dummy DateTime with the given
+        // TimeZone
+        DateTime dateTime = new DateTime(2017, 1, 25, 2, 29, timeZone);
+        assertEquals(expected, HealthDataRecord.TIME_ZONE_FORMATTER.print(dateTime));
     }
 }
