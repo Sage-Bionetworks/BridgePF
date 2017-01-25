@@ -5,6 +5,7 @@ import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -32,6 +33,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -236,12 +238,14 @@ public class UploadService {
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public DateTimeRangeResourceList<? extends UploadView> getUploads(@Nonnull String healthCode,
+    public PagedResourceList<? extends UploadView> getUploads(@Nonnull String healthCode,
             @Nullable DateTime startTime, @Nullable DateTime endTime) {
         checkNotNull(healthCode);
-        
+
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getUploads(healthCode, start, end);
+            List<? extends Upload> retList = uploadDao.getUploads(healthCode, start, end);
+//            return uploadDao.getUploads(healthCode, start, end);
+            return new PagedResourceList<>(retList, null, API_MAXIMUM_PAGE_SIZE, retList.size());
         });
     }
     
@@ -251,16 +255,16 @@ public class UploadService {
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public DateTimeRangeResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
-            @Nullable DateTime startTime, @Nullable DateTime endTime) {
+    public PagedResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
+            @Nullable DateTime startTime, @Nullable DateTime endTime, int pageSize, String offsetKey) {
         checkNotNull(studyId);
 
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getStudyUploads(studyId, start, end);
+            return uploadDao.getStudyUploads(studyId, start, end, pageSize, offsetKey);
         });
     }
     
-    private DateTimeRangeResourceList<? extends UploadView> getUploads(DateTime startTime, DateTime endTime, UploadSupplier supplier) {
+    private PagedResourceList<? extends UploadView> getUploads(DateTime startTime, DateTime endTime, UploadSupplier supplier) {
         checkNotNull(supplier);
         
         if (startTime == null && endTime == null) {
@@ -277,8 +281,12 @@ public class UploadService {
         if (startTime.plusDays(QUERY_WINDOW_IN_DAYS).isBefore(endTime)) {
             throw new BadRequestException("Query window cannot be longer than two days: " + startTime + "-" + endTime);
         }
-        
-        List<UploadView> views = supplier.get(startTime, endTime).stream().map(upload -> {
+
+        PagedResourceList<? extends Upload> list = supplier.get(startTime, endTime);
+
+        System.out.println("======== return list: " + list.toString());
+
+        List<UploadView> views = list.getItems().stream().map(upload -> {
             UploadView.Builder builder = new UploadView.Builder();
             builder.withUpload(upload);
             if (upload.getRecordId() != null) {
@@ -292,7 +300,9 @@ public class UploadService {
             return builder.build();
         }).collect(Collectors.toList());
         
-        return new DateTimeRangeResourceList<UploadView>(views, startTime, endTime);
+        return new PagedResourceList<>(views, list.getOffsetBy(), list.getPageSize(), list.getTotal())
+                .withFilter("startTime", startTime).withFilter("endTime", endTime)
+                .withOffsetKey(list.getOffsetKey());
     }
     
     /**
@@ -375,6 +385,6 @@ public class UploadService {
 
     @FunctionalInterface
     private static interface UploadSupplier {
-        List<? extends Upload> get(DateTime startTime, DateTime endTime);
+        PagedResourceList<? extends Upload> get(DateTime startTime, DateTime endTime);
     }
 }

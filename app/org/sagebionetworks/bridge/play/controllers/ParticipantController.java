@@ -232,8 +232,8 @@ public class ParticipantController extends BaseController {
         
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
-        
-        DateTimeRangeResourceList<? extends UploadView> uploads = participantService.getUploads(
+
+        PagedResourceList<? extends UploadView> uploads = participantService.getUploads(
                 study, userId, startTime, endTime);
 
         return okResult(uploads);

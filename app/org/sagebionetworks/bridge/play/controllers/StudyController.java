@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -178,14 +179,14 @@ public class StudyController extends BaseController {
         return okResult(new EmailVerificationStatusHolder(status));
     }
     
-    public Result getUploads(String startTimeString, String endTimeString) {
+    public Result getUploads(String startTimeString, String endTimeString, int pageSize, String offsetKey) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
-        
-        DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
-                session.getStudyIdentifier(), startTime, endTime);
+
+        PagedResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
+                session.getStudyIdentifier(), startTime, endTime, pageSize, offsetKey);
 
         return okResult(uploads);
     }
@@ -196,7 +197,7 @@ public class StudyController extends BaseController {
      * @param endTimeString
      * @return
      */
-    public Result getUploadsForStudy(String studyId, String startTimeString, String endTimeString) throws EntityNotFoundException {
+    public Result getUploadsForStudy(String studyId, String startTimeString, String endTimeString, int pageSize, String offsetKey) throws EntityNotFoundException {
         getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
@@ -204,8 +205,8 @@ public class StudyController extends BaseController {
 
         Study study = studyService.getStudy(studyId);
 
-        DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
-                study.getStudyIdentifier(), startTime, endTime);
+        PagedResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
+                study.getStudyIdentifier(), startTime, endTime, pageSize, offsetKey);
 
         return okResult(uploads);
     }

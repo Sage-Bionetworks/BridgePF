@@ -164,7 +164,7 @@ GET    /v3/studies/self             @org.sagebionetworks.bridge.play.controllers
 GET    /v3/studies/self/publicKey   @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyPublicKeyAsPem
 GET    /v3/studies/self/emailStatus @org.sagebionetworks.bridge.play.controllers.StudyController.getEmailStatus
 POST   /v3/studies/self/verifyEmail @org.sagebionetworks.bridge.play.controllers.StudyController.verifyEmail
-GET    /v3/studies/self/uploads     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploads(startTime: String ?= null, endTime: String ?= null)
+GET    /v3/studies/self/uploads     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploads(startTime: String ?= null, endTime: String ?= null, pageSize: Int, offsetKey: String ?= null)
 POST   /v3/studies/self             @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
 POST   /v3/studies/self/synapseProject  @org.sagebionetworks.bridge.play.controllers.StudyController.createSynapse(synapseUserId: String ?= null)
 GET    /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
@@ -181,7 +181,7 @@ GET    /v3/studies/:studyId/uploadschemas/:schemaId/revisions/:revision @org.sag
 DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchema(studyId: String, schemaId: String)
 GET    /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.getPublicStudyReport(studyId: String, identifier: String, startDate: String ?= null, endDate: String ?= null)
 POST   /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.saveStudyReportForSpecifiedStudy(studyId: String, identifier: String)
-GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null)
+GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null, pageSize: Int, offsetKey: String ?= null)
 
 # Backfills
 GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.BackfillController.backfill(name: String)

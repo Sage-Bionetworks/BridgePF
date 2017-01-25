@@ -309,7 +309,7 @@ public class ParticipantService {
         }).collect(BridgeCollectors.toImmutableList());
     }
 
-    public DateTimeRangeResourceList<? extends UploadView> getUploads(Study study, String userId, DateTime startTime, DateTime endTime) {
+    public PagedResourceList<? extends UploadView> getUploads(Study study, String userId, DateTime startTime, DateTime endTime) {
         checkNotNull(study);
         checkNotNull(userId);
         
