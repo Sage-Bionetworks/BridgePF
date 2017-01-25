@@ -65,7 +65,8 @@ public class TestSurvey extends DynamoSurvey {
             c.setMinLength(2);
             c.setMaxLength(255);
             c.setPattern("\\d{3}-\\d{3}-\\d{4}");
-            setPrompt("Please enter an emergency phone number (###-###-####)?");
+            c.setPatternErrorMessage("Provide phone number in format ###-###-####");
+            setPrompt("Please enter an emergency phone number");
             setPromptDetail("This should be for someone besides yourself.");
             setIdentifier("name");
             setUiHint(UIHint.TEXTFIELD);

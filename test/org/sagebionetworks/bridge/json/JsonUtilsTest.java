@@ -120,7 +120,11 @@ public class JsonUtilsTest {
         JsonNode node = mapper.readTree(esc("{'key':"+mapper.writeValueAsString(c)+"}"));
         assertNull(JsonUtils.asConstraints(node, null));
         assertNull(JsonUtils.asConstraints(node, "badProp"));
-        assertEquals(c, JsonUtils.asConstraints(node, "key"));
+        
+        IntegerConstraints copy = (IntegerConstraints)JsonUtils.asConstraints(node, "key");
+        assertEquals(c.getType(), copy.getType());
+        assertEquals(c.getMinValue(), copy.getMinValue());
+        assertEquals(c.getMaxValue(), copy.getMaxValue());
     }
 
     @Test

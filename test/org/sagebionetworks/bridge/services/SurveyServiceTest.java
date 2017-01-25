@@ -453,7 +453,7 @@ public class SurveyServiceTest {
             surveyService.createSurvey(survey);
             fail("Service should have thrown an exception");
         } catch(InvalidEntityException e) {
-            assertEquals("Survey is invalid: elements[0].identifier is required; elements[0].title is required; elements[0].prompt is required; elements[0].image.source must be a valid URL to an image; elements[0].image.width is required; elements[0].image.height is required", e.getMessage());
+            assertEquals("Survey is invalid: identifier is required; title is required; prompt is required; source must be a valid URL to an image; width is required; height is required", e.getMessage());
         }
     }
 

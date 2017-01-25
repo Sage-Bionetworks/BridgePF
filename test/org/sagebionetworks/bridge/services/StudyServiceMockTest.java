@@ -285,6 +285,7 @@ public class StudyServiceMockTest {
         assertEquals(retStudy.getSynapseDataAccessTeamId().toString(), TEST_TEAM_ID);
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expected = BadRequestException.class)
     public void createSynapseProjectTeamNonExistUserID() throws SynapseException {
         Study study = getTestStudy();
