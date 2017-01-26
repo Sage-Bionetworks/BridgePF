@@ -1,30 +1,15 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
-import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.annotation.Resource;
-
-import java.net.URL;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.HttpMethod;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Strings;
-
 import com.google.common.collect.ImmutableSet;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
@@ -32,7 +17,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -52,11 +36,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
-import com.amazonaws.HttpMethod;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.Resource;
+import java.net.URL;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
+import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 
 @Component
 public class UploadService {
@@ -244,7 +238,6 @@ public class UploadService {
 
         return getUploads(startTime, endTime, (start, end)-> {
             List<? extends Upload> retList = uploadDao.getUploads(healthCode, start, end);
-//            return uploadDao.getUploads(healthCode, start, end);
             return new PagedResourceList<>(retList, null, API_MAXIMUM_PAGE_SIZE, retList.size());
         });
     }
@@ -283,8 +276,6 @@ public class UploadService {
         }
 
         PagedResourceList<? extends Upload> list = supplier.get(startTime, endTime);
-
-        System.out.println("======== return list: " + list.toString());
 
         List<UploadView> views = list.getItems().stream().map(upload -> {
             UploadView.Builder builder = new UploadView.Builder();
