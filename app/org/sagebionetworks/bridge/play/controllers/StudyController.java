@@ -1,5 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -7,11 +12,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import play.libs.Json;
+import play.mvc.BodyParser;
+import play.mvc.Result;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -25,16 +36,6 @@ import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
-
-import org.joda.time.DateTime;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-
-import play.libs.Json;
-import play.mvc.BodyParser;
-import play.mvc.Result;
-
-import static org.sagebionetworks.bridge.Roles.*;
 
 @Controller
 public class StudyController extends BaseController {
@@ -182,14 +183,14 @@ public class StudyController extends BaseController {
         return okResult(new EmailVerificationStatusHolder(status));
     }
     
-    public Result getUploads(String startTimeString, String endTimeString) {
+    public Result getUploads(String startTimeString, String endTimeString, int pageSize, String offsetKey) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
-        
-        DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
-                session.getStudyIdentifier(), startTime, endTime);
+
+        PagedResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
+                session.getStudyIdentifier(), startTime, endTime, pageSize, offsetKey);
 
         return okResult(uploads);
     }
@@ -200,7 +201,7 @@ public class StudyController extends BaseController {
      * @param endTimeString
      * @return
      */
-    public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString) throws EntityNotFoundException {
+    public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString, int pageSize, String offsetKey) throws EntityNotFoundException {
         getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
@@ -208,8 +209,8 @@ public class StudyController extends BaseController {
 
         StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
 
-        DateTimeRangeResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
-                studyId, startTime, endTime);
+        PagedResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
+                studyId, startTime, endTime, pageSize, offsetKey);
 
         return okResult(uploads);
     }

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -21,12 +23,19 @@ import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import java.util.List;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import play.core.j.JavaResultExtractor;
+import play.mvc.Result;
+import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -38,25 +47,20 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.*;
+import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
-import play.core.j.JavaResultExtractor;
-import play.mvc.Result;
-import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StudyControllerTest {
@@ -65,7 +69,7 @@ public class StudyControllerTest {
 
     private static final String PEM_TEXT = "-----BEGIN CERTIFICATE-----\nMIIExDCCA6ygAwIBAgIGBhCnnOuXMA0GCSqGSIb3DQEBBQUAMIGeMQswCQYDVQQG\nEwJVUzELMAkGA1UECAwCV0ExEDAOBgNVBAcMB1NlYXR0bGUxGTAXBgNVBAoMEFNh\nVlOwuuAxumMyIq5W4Dqk8SBcH9Y4qlk7\nEND CERTIFICATE-----";
 
-    private static final TypeReference<DateTimeRangeResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<DateTimeRangeResourceList<? extends Upload>>(){};
+    private static final TypeReference<PagedResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<PagedResourceList<? extends Upload>>(){};
 
     private static final String TEST_PROJECT_ID = "synapseProjectId";
     private static final Long TEST_TEAM_ID = Long.parseLong("123");
@@ -151,7 +155,7 @@ public class StudyControllerTest {
 
         doReturn(session).when(controller).getSessionIfItExists();
 
-        controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
+        controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test
@@ -283,21 +287,26 @@ public class StudyControllerTest {
         
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
+
+        PagedResourceList uploads = new PagedResourceList<>(Lists.newArrayList(), null, API_MAXIMUM_PAGE_SIZE, 0)
+                .withFilter("startTime", startTime)
+                .withFilter("endTime", endTime);
+        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         
-        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
-                startTime, endTime);
-        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime);
-        
-        Result result = controller.getUploads(startTime.toString(), endTime.toString());
+        Result result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
         assertEquals(200, result.status());
         
-        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime);
+        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         verify(mockStudyService, never()).getStudy(studyId.toString());
         // in other words, it's the object we mocked out from the service, we were returned the value.
-        DateTimeRangeResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+        PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertEquals(startTime, retrieved.getStartTime());
-        assertEquals(endTime, retrieved.getEndTime());
+        assertNull(retrieved.getOffsetBy());
+        assertNull(retrieved.getOffsetKey());
+        assertEquals(0, retrieved.getTotal());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
+        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
     }
 
     @Test(expected = BadRequestException.class)
@@ -307,7 +316,7 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy(null, startTime.toString(), endTime.toString());
+        controller.getUploadsForStudy(null, startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test(expected = BadRequestException.class)
@@ -317,7 +326,7 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy("", startTime.toString(), endTime.toString());
+        controller.getUploadsForStudy("", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test(expected = BadRequestException.class)
@@ -327,7 +336,7 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy(" ", startTime.toString(), endTime.toString());
+        controller.getUploadsForStudy(" ", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test
@@ -337,20 +346,25 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
-                startTime, endTime);
-        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime);
+        PagedResourceList uploads = new PagedResourceList<>(Lists.newArrayList(), null, API_MAXIMUM_PAGE_SIZE, 0)
+                .withFilter("startTime", startTime)
+                .withFilter("endTime", endTime);
+        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
 
-        Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
+        Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
         assertEquals(200, result.status());
 
-        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime);
+        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
 
         // in other words, it's the object we mocked out from the service, we were returned the value.
-        DateTimeRangeResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+        PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertEquals(startTime, retrieved.getStartTime());
-        assertEquals(endTime, retrieved.getEndTime());
+        assertNull(retrieved.getOffsetBy());
+        assertNull(retrieved.getOffsetKey());
+        assertEquals(0, retrieved.getTotal());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
+        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
     }
     
     @Test
