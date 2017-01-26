@@ -1,27 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import com.google.common.collect.ImmutableList;
-import org.joda.time.DateTime;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
-import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.upload.Upload;
-import org.sagebionetworks.bridge.models.upload.UploadStatus;
-import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
-import org.sagebionetworks.bridge.models.upload.UploadView;
-
-import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -35,6 +13,29 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
+import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
+import org.sagebionetworks.bridge.models.upload.UploadView;
 
 @SuppressWarnings("unchecked")
 @RunWith(MockitoJUnitRunner.class)

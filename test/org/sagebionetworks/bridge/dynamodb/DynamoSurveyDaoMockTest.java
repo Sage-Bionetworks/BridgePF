@@ -1,16 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.UploadSchemaDao;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-import org.sagebionetworks.bridge.models.surveys.Survey;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.same;
@@ -19,6 +8,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dao.UploadSchemaDao;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 
 public class DynamoSurveyDaoMockTest {
     private static final DateTime MOCK_NOW = DateTime.parse("2016-08-24T15:23:57.123-0700");
