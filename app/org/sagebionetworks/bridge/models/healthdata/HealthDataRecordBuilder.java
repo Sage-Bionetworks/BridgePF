@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.validators.Validate;
  */
 public abstract class HealthDataRecordBuilder {
     private Long createdOn;
+    private String createdOnTimeZone;
     private JsonNode data;
     private String healthCode;
     private String id;
@@ -35,10 +36,10 @@ public abstract class HealthDataRecordBuilder {
     private Long version;
     private HealthDataRecord.ExporterStatus synapseExporterStatus;
 
-
     /** Copies all fields from the specified record into the builder. This is useful for updating records. */
     public HealthDataRecordBuilder copyOf(HealthDataRecord record) {
         createdOn = record.getCreatedOn();
+        createdOnTimeZone = record.getCreatedOnTimeZone();
         data = record.getData();
         healthCode = record.getHealthCode();
         id = record.getId();
@@ -65,6 +66,17 @@ public abstract class HealthDataRecordBuilder {
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getCreatedOn */
     public HealthDataRecordBuilder withCreatedOn(Long createdOn) {
         this.createdOn = createdOn;
+        return this;
+    }
+
+    /** @see HealthDataRecord#getCreatedOnTimeZone */
+    public String getCreatedOnTimeZone() {
+        return createdOnTimeZone;
+    }
+
+    /** @see HealthDataRecord#getCreatedOnTimeZone */
+    public HealthDataRecordBuilder withCreatedOnTimeZone(String createdOnTimeZone) {
+        this.createdOnTimeZone = createdOnTimeZone;
         return this;
     }
 
