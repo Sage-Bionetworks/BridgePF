@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
-import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopicSubscription;
+import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
 import org.sagebionetworks.client.SynapseAdminClientImpl;
 import org.sagebionetworks.client.SynapseClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -347,10 +347,10 @@ public class BridgeSpringConfig {
         return dynamoUtils.getMapper(DynamoNotificationTopic.class);
     }
     
-    @Bean(name = "notificationTopicSubscriptionMapper")
+    @Bean(name = "topicSubscriptionMapper")
     @Autowired
-    public DynamoDBMapper notificationTopicSubscriptionMapper(DynamoUtils dynamoUtils) {
-        return dynamoUtils.getMapper(DynamoNotificationTopicSubscription.class);
+    public DynamoDBMapper topicSubscriptionMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoTopicSubscription.class);
     }
     
     @Bean(name = "uploadHealthCodeRequestedOnIndex")

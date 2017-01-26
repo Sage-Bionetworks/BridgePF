@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
+import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -195,6 +196,10 @@ public class TestUtils {
     public static final NotificationMessage getNotificationMessage() {
         return new NotificationMessage.Builder()
                 .withSubject("a subject").withMessage("a message").build();
+    }
+    
+    public static final SubscriptionRequest getSubscriptionRequest() {
+        return new SubscriptionRequest("registrationGuid", Sets.newHashSet("topicA", "topicB"));
     }
     
     public static final NotificationTopic getNotificationTopic() {

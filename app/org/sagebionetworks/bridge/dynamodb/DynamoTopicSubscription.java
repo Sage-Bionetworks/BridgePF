@@ -1,22 +1,19 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.models.notifications.NotificationTopicSubscription;
+import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
 
-public class DynamoNotificationTopicSubscription implements NotificationTopicSubscription {
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
-    private String healthCode;
+@DynamoDBTable(tableName = "NotificationTopicSubscription")
+public class DynamoTopicSubscription implements TopicSubscription {
+
     private String registrationGuid;
     private String topicGuid;
     private String subscriptionARN;
 
-    @Override
-    public String getHealthCode() {
-        return healthCode;
-    }
-    @Override
-    public void setHealthCode(String healthCode) {
-        this.healthCode = healthCode;
-    }
+    @DynamoDBHashKey
     @Override
     public String getRegistrationGuid() {
         return registrationGuid;
@@ -25,6 +22,7 @@ public class DynamoNotificationTopicSubscription implements NotificationTopicSub
     public void setRegistrationGuid(String registrationGuid) {
         this.registrationGuid = registrationGuid;
     }
+    @DynamoDBRangeKey
     @Override
     public String getTopicGuid() {
         return topicGuid;

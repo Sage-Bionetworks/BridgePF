@@ -148,6 +148,8 @@ DELETE /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.Not
 # Topics
 GET    /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getAllTopics
 POST   /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.createTopic
+GET    /v3/topics/subscriptions          @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getSubscriptionStatuses
+POST   /v3/topics/subscriptions          @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.subscribe
 GET    /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getTopic(guid: String)
 POST   /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.updateTopic(guid: String)
 DELETE /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String)

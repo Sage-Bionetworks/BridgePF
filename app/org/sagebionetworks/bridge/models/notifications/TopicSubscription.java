@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.notifications;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopicSubscription;
+import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
@@ -17,16 +17,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
  * they also match the Criteria. In other words, this subscription will only note their preference 
  * to subscribe or not, separate from whether they are subscribed with SNS.
  */
-@BridgeTypeName("NotificationTopicSubscription")
-@JsonDeserialize(as=DynamoNotificationTopicSubscription.class)
-public interface NotificationTopicSubscription extends BridgeEntity {
+@BridgeTypeName("TopicSubscription")
+@JsonDeserialize(as=DynamoTopicSubscription.class)
+public interface TopicSubscription extends BridgeEntity {
 
-    static NotificationTopicSubscription create() {
-        return new DynamoNotificationTopicSubscription();
+    static TopicSubscription create() {
+        return new DynamoTopicSubscription();
     }
-    
-    String getHealthCode();
-    void setHealthCode(String healthCode);
     
     String getRegistrationGuid();
     void setRegistrationGuid(String registrationGuid);

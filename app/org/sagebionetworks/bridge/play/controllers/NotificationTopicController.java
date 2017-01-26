@@ -11,7 +11,9 @@ import org.springframework.stereotype.Controller;
 import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
+import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
+import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 
 import play.mvc.Result;
@@ -83,4 +85,23 @@ public class NotificationTopicController extends BaseController {
         return acceptedResult("Message has been sent to external notification service.");
     }
 
+    public Result getSubscriptionStatuses() {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        SubscriptionRequest request = parseJson(request(), SubscriptionRequest.class);
+        
+        List<SubscriptionStatus> statuses = topicService.currentSubscriptionStatuses(session.getStudyIdentifier(),
+                session.getHealthCode(), request.getRegistrationGuid());
+        return okResult(statuses);
+    }
+    
+    public Result subscribe() {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        SubscriptionRequest request = parseJson(request(), SubscriptionRequest.class);
+        
+        List<SubscriptionStatus> statuses = topicService.subscribe(session.getStudyIdentifier(),
+                session.getHealthCode(), request);
+        return okResult(statuses);
+    }
 }
