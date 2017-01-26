@@ -5,6 +5,7 @@ import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 
 import java.net.URL;
@@ -250,11 +251,12 @@ public class UploadService {
      * of uploads (though those days can be any period in time). </p>
      */
     public PagedResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
-            @Nullable DateTime startTime, @Nullable DateTime endTime, int pageSize, String offsetKey) {
+            @Nullable DateTime startTime, @Nullable DateTime endTime, Integer pageSize, String offsetKey) {
         checkNotNull(studyId);
 
+        // in case clients didn't set page size up
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getStudyUploads(studyId, start, end, pageSize, offsetKey);
+            return uploadDao.getStudyUploads(studyId, start, end, pageSize == null? API_DEFAULT_PAGE_SIZE : pageSize, offsetKey);
         });
     }
     
