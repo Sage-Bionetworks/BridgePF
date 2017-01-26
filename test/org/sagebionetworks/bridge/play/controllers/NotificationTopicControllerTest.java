@@ -2,10 +2,9 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -29,7 +28,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
-import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
@@ -37,7 +35,6 @@ import org.sagebionetworks.bridge.services.NotificationTopicService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import play.mvc.Result;
 import play.test.Helpers;
@@ -46,7 +43,6 @@ import play.test.Helpers;
 public class NotificationTopicControllerTest {
 
     private static final String GUID = "DEF-GHI";
-    private static final String HEALTH_CODE = "healthCode";
 
     @Spy
     private NotificationTopicController controller;
@@ -176,53 +172,6 @@ public class NotificationTopicControllerTest {
         NotificationMessage captured = messageCaptor.getValue();
         assertEquals("a subject", captured.getSubject());
         assertEquals("a message", captured.getMessage());
-    }
-
-    @Test
-    public void getSubscriptionStatuses() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(HEALTH_CODE).when(mockUserSession).getHealthCode();
-        SubscriptionStatus status = new SubscriptionStatus("topicGuid","topicName",true);
-        doReturn(Lists.newArrayList(status)).when(mockTopicService)
-                .currentSubscriptionStatuses(TEST_STUDY, HEALTH_CODE, "registrationGuid");
-        TestUtils.mockPlayContextWithJson(TestUtils.getSubscriptionRequest());
-
-        Result result = controller.getSubscriptionStatuses();
-        assertEquals(200, result.status());
-        
-        ResourceList<SubscriptionStatus> statuses = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
-                new TypeReference<ResourceList<SubscriptionStatus>>() {});
-        assertEquals(1, statuses.getTotal());
-        SubscriptionStatus retrievedStatus = statuses.getItems().get(0);
-        assertEquals("topicGuid", retrievedStatus.getTopicGuid());
-        assertEquals("topicName", retrievedStatus.getTopicName());
-        assertTrue(retrievedStatus.isSubscribed());
-    }
-
-    @Test
-    public void subscribe() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(HEALTH_CODE).when(mockUserSession).getHealthCode();
-        SubscriptionStatus status = new SubscriptionStatus("topicGuid","topicName",true);
-        doReturn(Lists.newArrayList(status)).when(mockTopicService).subscribe(eq(TEST_STUDY), eq(HEALTH_CODE), any());
-        TestUtils.mockPlayContextWithJson(TestUtils.getSubscriptionRequest());
-        
-        Result result = controller.subscribe();
-        assertEquals(200, result.status());
-        
-        ResourceList<SubscriptionStatus> statuses = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
-                new TypeReference<ResourceList<SubscriptionStatus>>() {});
-        assertEquals(1, statuses.getTotal());
-        SubscriptionStatus retrievedStatus = statuses.getItems().get(0);
-        assertEquals("topicGuid", retrievedStatus.getTopicGuid());
-        assertEquals("topicName", retrievedStatus.getTopicName());
-        assertTrue(retrievedStatus.isSubscribed());
-        
-        verify(mockTopicService).subscribe(eq(TEST_STUDY), eq(HEALTH_CODE), subRequestCaptor.capture());
-        
-        SubscriptionRequest request = subRequestCaptor.getValue();
-        assertEquals("registrationGuid", request.getRegistrationGuid());
-        assertEquals(Sets.newHashSet("topicA", "topicB"), request.getTopicGuids());
     }
 
     // Test permissions of all the methods... DEVELOPER or DEVELOPER RESEARCHER. Do

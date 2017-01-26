@@ -6,12 +6,16 @@ import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
 
+/**
+ * The TopicSubscriptionDao attempts to keep SNS and DynamoDB records in sync; there is also 
+ * integrity checking of the records in the TopicSubscriptionService.
+ */
 public interface TopicSubscriptionDao {
 
     /**
      * Get a user's subscriptions for a specific device registration.
      */
-    List<TopicSubscription> listSubscriptions(NotificationRegistration registration);
+    List<? extends TopicSubscription> listSubscriptions(NotificationRegistration registration);
     
     /**
      * Subscribe to a notification topic.

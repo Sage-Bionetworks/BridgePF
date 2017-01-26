@@ -16,11 +16,9 @@ import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.SubscribeRequest;
 import com.amazonaws.services.sns.model.SubscribeResult;
-import com.google.common.collect.ImmutableList;
 
 @Component
 public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
@@ -39,7 +37,7 @@ public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
         this.snsClient = snsClient;
     }
     
-    public List<TopicSubscription> listSubscriptions(NotificationRegistration registration) {
+    public List<? extends TopicSubscription> listSubscriptions(NotificationRegistration registration) {
         checkNotNull(registration);
         
         DynamoTopicSubscription hashKey = new DynamoTopicSubscription();
@@ -48,8 +46,7 @@ public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
         DynamoDBQueryExpression<DynamoTopicSubscription> query = new DynamoDBQueryExpression<DynamoTopicSubscription>()
                 .withConsistentRead(false).withHashKeyValues(hashKey);
 
-        QueryResultPage<DynamoTopicSubscription> resultPage = mapper.queryPage(DynamoTopicSubscription.class, query);
-        return ImmutableList.copyOf(resultPage.getResults());
+        return mapper.queryPage(DynamoTopicSubscription.class, query).getResults();
     }
     
     public TopicSubscription subscribe(NotificationRegistration registration, NotificationTopic topic) {
@@ -70,6 +67,9 @@ public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
         String subscriptionARN = result.getSubscriptionArn();
         subscription.setSubscriptionARN(subscriptionARN);
         
+        // The integrity issue we want to avoid is where SNS has registered the user to receive
+        // a topic, but we have no DDB record. We cannot unsubscribe them at that point until 
+        // they re-subscribe, then try again.
         try {
             
             mapper.save(subscription);
@@ -96,9 +96,8 @@ public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
         
         snsClient.unsubscribe(subscription.getSubscriptionARN());
         
-        // If this fails, user is told there was an error, and they are still subscribed. This is okay, they can try 
-        // and unsubscribe again and that will work (and my finally succeed). We will also fix this during reconciliation
-        // in the service
+        // If this fails, user is told there was an error, and there is an orphaned DDB record. They can try and 
+        // unsubscribe again and that will work. We also attempt to reconcile the records in the service.
         mapper.delete(subscription);
     }
 

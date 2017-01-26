@@ -20,7 +20,6 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
-import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
@@ -29,6 +28,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.model.GetSubscriptionAttributesResult;
 import com.amazonaws.services.sns.model.NotFoundException;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.google.common.collect.Sets;
@@ -125,6 +125,10 @@ public class NotificationTopicService {
     }
     
     public List<SubscriptionStatus> currentSubscriptionStatuses(StudyIdentifier studyId, String healthCode, String registrationGuid) {
+        checkNotNull(studyId);
+        checkNotNull(healthCode);
+        checkNotNull(registrationGuid);
+        
         NotificationRegistration registration = registrationDao.getRegistration(healthCode, registrationGuid);
         
         Set<String> subscribedTopicGuids = subscriptionDao.listSubscriptions(registration)
@@ -140,8 +144,12 @@ public class NotificationTopicService {
         return statuses;
     }
     
-    public List<SubscriptionStatus> subscribe(StudyIdentifier studyId, String healthCode, SubscriptionRequest request) {
-        String registrationGuid = request.getRegistrationGuid();
+    public List<SubscriptionStatus> subscribe(StudyIdentifier studyId, String healthCode, String registrationGuid, Set<String> topicGuids) {
+        checkNotNull(studyId);
+        checkNotNull(healthCode);
+        checkNotNull(registrationGuid);
+        checkNotNull(topicGuids);
+        
         NotificationRegistration registration = registrationDao.getRegistration(healthCode, registrationGuid);
         
         Set<String> subscribedTopicGuids = cleanupSubscriptions(registration);
@@ -150,7 +158,7 @@ public class NotificationTopicService {
         List<SubscriptionStatus> statuses = Lists.newArrayListWithCapacity(topics.size());
         
         for (NotificationTopic topic : topics) {
-            boolean wantsSubscription = request.getTopicGuids().contains(topic.getGuid());
+            boolean wantsSubscription = topicGuids.contains(topic.getGuid());
             boolean isCurrentlySubscribed = subscribedTopicGuids.contains(topic.getGuid());
             
             Boolean isSubscribed = null; 
@@ -174,8 +182,8 @@ public class NotificationTopicService {
             subscriptionDao.subscribe(registration, topic);
             return Boolean.TRUE;
         } catch(Throwable throwable) {
-            // Any exception is most likely to indicate the subscription did not succeed.
-            LOG.warn("Error subscribing to topic " + topic.getName() + " (" + topic.getGuid() + ")", throwable);
+            // Any exception most likely indicates the subscription did not succeed.
+            LOG.error("Error subscribing to topic " + topic.getName() + " (" + topic.getGuid() + ")", throwable);
         }
         return Boolean.FALSE;
     }
@@ -185,8 +193,8 @@ public class NotificationTopicService {
             subscriptionDao.unsubscribe(registration, topic);
             return Boolean.FALSE;
         } catch(Throwable throwable) {
-            // Will have to assume the user is still subscribed, though that's not 100% certain.
-            LOG.warn("Error unsubscribing to topic " + topic.getName() + " (" + topic.getGuid() + ")", throwable);
+            // Will have to assume the user is still subscribed.
+            LOG.error("Error unsubscribing to topic " + topic.getName() + " (" + topic.getGuid() + ")", throwable);
         }
         return Boolean.TRUE;
     }
@@ -197,17 +205,27 @@ public class NotificationTopicService {
      * and we're trying here again to finish them.
      */
     private Set<String> cleanupSubscriptions(NotificationRegistration registration) {
+        System.out.println("--> cleanupSubscriptions");
         Set<String> subscribedTopicGuids = Sets.newHashSet();
         
-        List<TopicSubscription> subscriptions = subscriptionDao.listSubscriptions(registration);
+        List<? extends TopicSubscription> subscriptions = subscriptionDao.listSubscriptions(registration);
         for (TopicSubscription subscription : subscriptions) {
+            System.out.println("subscription: " + subscription.getTopicGuid());
             try {
-                snsClient.getSubscriptionAttributes(subscription.getSubscriptionARN());
-                subscribedTopicGuids.add(subscription.getTopicGuid());
+                GetSubscriptionAttributesResult result = snsClient.getSubscriptionAttributes(subscription.getSubscriptionARN());
+                if (!result.getAttributes().isEmpty()) {
+                    subscribedTopicGuids.add(subscription.getTopicGuid());    
+                } else {
+                    System.out.println("This was not found (does return normally), and should be replace.");
+                    subscriptionDao.delete(subscription);
+                }
             } catch(NotFoundException e) {
+                System.out.println("This was not found, and should be replace.");
                 subscriptionDao.delete(subscription);
             } catch(AmazonServiceException e) {
                 LOG.warn("Error cleaning up subscriptions", e);
+                // However, it is there, so include it in the list of subscriptions.
+                subscribedTopicGuids.add(subscription.getTopicGuid());
             }
         }
         return subscribedTopicGuids;

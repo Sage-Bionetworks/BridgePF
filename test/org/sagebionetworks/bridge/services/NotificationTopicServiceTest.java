@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
-import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
@@ -228,9 +227,8 @@ public class NotificationTopicServiceTest {
         doReturn(subscribedTopicsStartOfTest).when(mockSubscriptionDao).listSubscriptions(mockNotificationRegistration);
         doReturn(allTopics).when(mockTopicDao).listTopics(TEST_STUDY);
         
-        SubscriptionRequest request = new SubscriptionRequest("registrationGuid", Sets.newHashSet("topicA", "topicB"));
-        
-        List<SubscriptionStatus> statuses = service.subscribe(TEST_STUDY, "healthCode", request);
+        List<SubscriptionStatus> statuses = service.subscribe(TEST_STUDY, "healthCode", "registrationGuid",
+                Sets.newHashSet("topicA", "topicB"));
         
         ImmutableMap<String,SubscriptionStatus> statusesByTopicId = Maps.uniqueIndex(statuses, SubscriptionStatus::getTopicGuid);
         assertTrue(statusesByTopicId.get("topicA").isSubscribed());

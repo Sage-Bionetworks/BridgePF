@@ -199,7 +199,7 @@ public class TestUtils {
     }
     
     public static final SubscriptionRequest getSubscriptionRequest() {
-        return new SubscriptionRequest("registrationGuid", Sets.newHashSet("topicA", "topicB"));
+        return new SubscriptionRequest(Sets.newHashSet("topicA", "topicB"));
     }
     
     public static final NotificationTopic getNotificationTopic() {

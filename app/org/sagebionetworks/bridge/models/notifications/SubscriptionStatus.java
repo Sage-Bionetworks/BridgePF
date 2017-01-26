@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.models.notifications;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Simple value object for communicating the status of a subscription back to the client. 
+ */
 public class SubscriptionStatus {
 
     private final String topicGuid;

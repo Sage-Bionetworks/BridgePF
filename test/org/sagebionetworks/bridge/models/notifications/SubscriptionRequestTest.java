@@ -17,17 +17,15 @@ public class SubscriptionRequestTest {
     public void canSerialize() throws Exception {
         Set<String> topicGuids = Sets.newHashSet("topicA", "topicB");
         
-        SubscriptionRequest request = new SubscriptionRequest("registrationGuid", topicGuids);
+        SubscriptionRequest request = new SubscriptionRequest(topicGuids);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(request);
         Set<String> serializedTopicGuids = Sets.newHashSet(node.get("topicGuids").get(0).asText(), node.get("topicGuids").get(1).asText());
         
-        assertEquals("registrationGuid", request.getRegistrationGuid());
         assertEquals(topicGuids, serializedTopicGuids);
         assertEquals("SubscriptionRequest", node.get("type").asText());
         
         SubscriptionRequest deser = BridgeObjectMapper.get().readValue(node.toString(), SubscriptionRequest.class);
-        assertEquals("registrationGuid", deser.getRegistrationGuid());
         assertEquals(topicGuids, deser.getTopicGuids());
     }
 }
