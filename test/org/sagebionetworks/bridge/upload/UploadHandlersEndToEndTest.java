@@ -74,6 +74,7 @@ public class UploadHandlersEndToEndTest {
 
     private static final String CREATED_ON_STRING = "2015-04-02T03:26:59.456-07:00";
     private static final long CREATED_ON_MILLIS = DateTime.parse(CREATED_ON_STRING).getMillis();
+    private static final String CREATED_ON_TIME_ZONE = "-0700";
 
     private static final DateTime MOCK_NOW = DateTime.parse("2016-06-03T11:33:55.777-0700");
     private static final long MOCK_NOW_MILLIS = MOCK_NOW.getMillis();
@@ -241,6 +242,7 @@ public class UploadHandlersEndToEndTest {
         // Ignore version - That's internal.
         // Data, metadata, and schema fields are specific to individual tests.
         assertEquals(CREATED_ON_MILLIS, record.getCreatedOn().longValue());
+        assertEquals(CREATED_ON_TIME_ZONE, record.getCreatedOnTimeZone());
         assertEquals(HEALTH_CODE, record.getHealthCode());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, record.getStudyId());
         assertEquals(MOCK_TODAY, record.getUploadDate());

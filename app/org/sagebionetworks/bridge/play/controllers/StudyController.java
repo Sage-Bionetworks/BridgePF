@@ -18,7 +18,6 @@ import org.springframework.stereotype.Controller;
 import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Result;
-
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;

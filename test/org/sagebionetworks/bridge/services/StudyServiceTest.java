@@ -71,7 +71,7 @@ public class StudyServiceTest {
     private CacheProvider mockCache;
     
     private Study study;
-    
+
     @Before
     public void before() throws SynapseException {
         mockCache = mock(CacheProvider.class);
