@@ -1,19 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.PAGE_SIZE_ERROR;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.annotation.Resource;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -23,26 +9,37 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.PAGE_SIZE_ERROR;
 
 @Component
 public class DynamoUploadDao implements UploadDao {
@@ -53,6 +50,7 @@ public class DynamoUploadDao implements UploadDao {
     private static final String UPLOAD_ID = "uploadId";
     private static final String STUDY_ID = "studyId";
     private static final String REQUESTED_ON = "requestedOn";
+    private static final String STUDY_ID_REQUESTED_ON_INDEX = "studyId-requestedOn-index";
     
     /**
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
@@ -195,11 +193,11 @@ public class DynamoUploadDao implements UploadDao {
         upload.setStudyId(studyId);
 
         DynamoDBQueryExpression<DynamoUpload2> query = new DynamoDBQueryExpression<>();
-        query.withIndexName("studyId-requestedOn-index");
+        query.withIndexName(STUDY_ID_REQUESTED_ON_INDEX);
         query.withHashKeyValues(upload);
         query.withConsistentRead(false);
         query.setScanIndexForward(false);
-        query.withRangeKeyCondition("requestedOn", rangeKeyCondition);
+        query.withRangeKeyCondition(REQUESTED_ON, rangeKeyCondition);
         return query;
     }
 
