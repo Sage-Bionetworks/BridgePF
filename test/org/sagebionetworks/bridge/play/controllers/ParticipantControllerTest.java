@@ -12,6 +12,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
@@ -22,6 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
@@ -33,6 +39,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import play.mvc.Result;
+import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -46,7 +54,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -66,15 +73,6 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.StudyService;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-
-import play.mvc.Result;
-import play.test.Helpers;
-
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
 
@@ -84,7 +82,7 @@ public class ParticipantControllerTest {
 
     private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
     
-    private static final TypeReference<DateTimeRangeResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<DateTimeRangeResourceList<? extends Upload>>(){};
+    private static final TypeReference<PagedResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<PagedResourceList<? extends Upload>>(){};
     
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
@@ -620,9 +618,10 @@ public class ParticipantControllerTest {
     public void getUploads() throws Exception {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z").withZone(DateTimeZone.UTC);
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z").withZone(DateTimeZone.UTC);
-        
-        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
-                startTime, endTime);
+
+        PagedResourceList uploads = new PagedResourceList<>(Lists.newArrayList(), null, API_MAXIMUM_PAGE_SIZE, 0)
+                .withFilter("startTime", startTime)
+                .withFilter("endTime", endTime);
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime);
         
         Result result = controller.getUploads(ID, startTime.toString(), endTime.toString());
@@ -631,16 +630,16 @@ public class ParticipantControllerTest {
         verify(mockParticipantService).getUploads(study, ID, startTime, endTime);
         
         // in other words, it's the object we mocked out from the service, we were returned the value.
-        DateTimeRangeResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+        PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertEquals(startTime, retrieved.getStartTime());
-        assertEquals(endTime, retrieved.getEndTime());
+        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
     }
     
     @Test
     public void getUploadsNullsDateRange() throws Exception {
-        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
-                null, null);
+        PagedResourceList uploads = new PagedResourceList<>(Lists.newArrayList(),
+                null, API_MAXIMUM_PAGE_SIZE, 0);
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null);
         
         Result result = controller.getUploads(ID, null, null);
