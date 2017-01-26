@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.TestUtils.getNotificationMessage;
+import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
@@ -17,8 +20,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.openqa.selenium.Platform;
 
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
@@ -43,7 +46,6 @@ public class NotificationsServiceTest {
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
     private static final String HEALTH_CODE = "ABC";
     private static final String GUID = "ABC-DEF-GHI-JKL";
-    private static final String DEVICE_ID = "MNO-PQR-STU-VWX";
     private static final String OS_NAME = "iPhone OS";
     private static final String PLATFORM_ARN = "arn:platform";
     
@@ -81,17 +83,9 @@ public class NotificationsServiceTest {
         doReturn(mockStudy).when(mockStudyService).getStudy(STUDY_ID);
     }
     
-    private NotificationRegistration createRegistrationObject() {
-        NotificationRegistration registration = NotificationRegistration.create();
-        registration.setDeviceId(DEVICE_ID);
-        registration.setOsName(OS_NAME);
-        registration.setHealthCode(HEALTH_CODE);
-        return registration;
-    }
-    
     @Test
     public void listRegistrations() {
-        List<NotificationRegistration> list = Lists.newArrayList(createRegistrationObject());
+        List<NotificationRegistration> list = Lists.newArrayList(getNotificationRegistration());
         doReturn(list).when(mockRegistrationDao).listRegistrations(HEALTH_CODE);
         
         List<NotificationRegistration> result = service.listRegistrations(HEALTH_CODE);
@@ -102,7 +96,7 @@ public class NotificationsServiceTest {
     
     @Test
     public void getRegistration() {
-        NotificationRegistration registration = createRegistrationObject();
+        NotificationRegistration registration = getNotificationRegistration();
         doReturn(registration).when(mockRegistrationDao).getRegistration(HEALTH_CODE, GUID);
         
         NotificationRegistration result = service.getRegistration(HEALTH_CODE, GUID);
@@ -112,7 +106,8 @@ public class NotificationsServiceTest {
     
     @Test
     public void createRegistration() {
-        NotificationRegistration registration = createRegistrationObject();
+        NotificationRegistration registration = getNotificationRegistration();
+        registration.setOsName(OS_NAME);
         doReturn(registration).when(mockRegistrationDao).createRegistration(PLATFORM_ARN, registration);
         
         NotificationRegistration result = service.createRegistration(STUDY_ID, registration);
@@ -122,7 +117,8 @@ public class NotificationsServiceTest {
     
     @Test
     public void updateRegistration() {
-        NotificationRegistration registration = createRegistrationObject();
+        NotificationRegistration registration = getNotificationRegistration();
+        registration.setOsName(OS_NAME);
         doReturn(registration).when(mockRegistrationDao).updateRegistration(registration);
         
         NotificationRegistration result = service.updateRegistration(STUDY_ID, registration);
@@ -139,7 +135,7 @@ public class NotificationsServiceTest {
     
     @Test
     public void serviceFixesSynonymOsNamesOnCreate() {
-        NotificationRegistration registration = createRegistrationObject();
+        NotificationRegistration registration = getNotificationRegistration();
         registration.setOsName("iOS");
         doReturn(registration).when(mockRegistrationDao).createRegistration(PLATFORM_ARN, registration);
         
@@ -149,7 +145,7 @@ public class NotificationsServiceTest {
     
     @Test
     public void serviceFixesSynonymOsNamesOnUpdate() {
-        NotificationRegistration registration = createRegistrationObject();
+        NotificationRegistration registration = getNotificationRegistration();
         registration.setOsName("iOS");
         doReturn(registration).when(mockRegistrationDao).updateRegistration(registration);
         
@@ -159,7 +155,7 @@ public class NotificationsServiceTest {
     
     @Test(expected = NotImplementedException.class)
     public void throwsUnimplementedExceptionIfPlatformHasNoARN() {
-        NotificationRegistration registration = createRegistrationObject();
+        NotificationRegistration registration = getNotificationRegistration();
         registration.setOsName(OperatingSystem.ANDROID);
         
         service.createRegistration(STUDY_ID, registration);
@@ -167,14 +163,14 @@ public class NotificationsServiceTest {
 
     @Test
     public void sendNotificationOK() {
-        NotificationRegistration registration = createRegistrationObject();
+        NotificationRegistration registration = getNotificationRegistration();
         registration.setEndpointARN("endpointARN");
         List<NotificationRegistration> list = Lists.newArrayList(registration);
         doReturn(list).when(mockRegistrationDao).listRegistrations(HEALTH_CODE);
         
         doReturn(mockPublishResult).when(mockSnsClient).publish(any());
         
-        NotificationMessage message = TestUtils.getNotificationMessage();
+        NotificationMessage message = getNotificationMessage();
         
         service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
         
@@ -190,7 +186,7 @@ public class NotificationsServiceTest {
     public void sendNotificationNoRegistration() {
         doReturn(Lists.newArrayList()).when(mockRegistrationDao).listRegistrations(HEALTH_CODE);
         
-        NotificationMessage message = TestUtils.getNotificationMessage();
+        NotificationMessage message = getNotificationMessage();
         try {
             service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
             fail("Should have thrown exception.");
@@ -205,14 +201,14 @@ public class NotificationsServiceTest {
     // data, like an invalid device token. 
     @Test
     public void sendNotificationAmazonExceptionConverted() {
-        NotificationRegistration reg1 = createRegistrationObject();
-        NotificationRegistration reg2 = createRegistrationObject();
+        NotificationRegistration reg1 = getNotificationRegistration();
+        NotificationRegistration reg2 = getNotificationRegistration();
         List<NotificationRegistration> list = Lists.newArrayList(reg1, reg2);
         doReturn(list).when(mockRegistrationDao).listRegistrations(HEALTH_CODE);
         
         doThrow(new InvalidParameterException("bad parameter")).when(mockSnsClient).publish(any());
         
-        NotificationMessage message = TestUtils.getNotificationMessage();
+        NotificationMessage message = getNotificationMessage();
         try {
             service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
             fail("Should have thrown exception.");

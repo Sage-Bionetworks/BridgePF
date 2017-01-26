@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
+import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -67,15 +70,15 @@ public class DynamoTopicSubscriptionDaoTest {
         doReturn("subscriptionARN").when(mockSubscribeResult).getSubscriptionArn();
         doReturn(mockSubscribeResult).when(mockSnsClient).subscribe(any());
         
-        NotificationRegistration registration = createRegistration();
-        NotificationTopic topic = createTopic();
+        NotificationRegistration registration = getNotificationRegistration();
+        NotificationTopic topic = getNotificationTopic();
 
         TopicSubscription sub = subDao.subscribe(registration, topic);
 
         verify(mockSnsClient).subscribe(subscribeRequestCaptor.capture());
         
         SubscribeRequest request = subscribeRequestCaptor.getValue();
-        assertEquals("topicARN", request.getTopicArn());
+        assertEquals("atopicArn", request.getTopicArn());
         assertEquals("endpointARN", request.getEndpoint());
         
         verify(mockMapper).save(subscriptionCaptor.capture());
@@ -97,8 +100,8 @@ public class DynamoTopicSubscriptionDaoTest {
         
         doThrow(EXCEPTION).when(mockSnsClient).subscribe(any(SubscribeRequest.class));
         
-        NotificationRegistration registration = createRegistration();
-        NotificationTopic topic = createTopic();
+        NotificationRegistration registration = getNotificationRegistration();
+        NotificationTopic topic = getNotificationTopic();
 
         try {
             subDao.subscribe(registration, topic);
@@ -114,8 +117,8 @@ public class DynamoTopicSubscriptionDaoTest {
         
         doThrow(EXCEPTION).when(mockMapper).save(any());
         
-        NotificationRegistration registration = createRegistration();
-        NotificationTopic topic = createTopic();
+        NotificationRegistration registration = getNotificationRegistration();
+        NotificationTopic topic = getNotificationTopic();
         
         try {
             subDao.subscribe(registration, topic);
@@ -142,8 +145,8 @@ public class DynamoTopicSubscriptionDaoTest {
         doReturn("registrationGuid").when(mockSubscription).getRegistrationGuid();
         doReturn("topicGuid").when(mockSubscription).getTopicGuid();
         
-        NotificationRegistration registration = createRegistration();
-        NotificationTopic topic = createTopic();
+        NotificationRegistration registration = getNotificationRegistration();
+        NotificationTopic topic = getNotificationTopic();
         
         subDao.unsubscribe(registration, topic);
         
@@ -172,8 +175,8 @@ public class DynamoTopicSubscriptionDaoTest {
         
         doThrow(EXCEPTION).when(mockSnsClient).unsubscribe(any(String.class));
         
-        NotificationRegistration registration = createRegistration();
-        NotificationTopic topic = createTopic();
+        NotificationRegistration registration = getNotificationRegistration();
+        NotificationTopic topic = getNotificationTopic();
         
         // Do not delete DDB record if the unsubscribe call fails for any reason.
         try {
@@ -203,8 +206,8 @@ public class DynamoTopicSubscriptionDaoTest {
         
         doThrow(EXCEPTION).when(mockMapper).delete(any());
         
-        NotificationRegistration registration = createRegistration();
-        NotificationTopic topic = createTopic();
+        NotificationRegistration registration = getNotificationRegistration();
+        NotificationTopic topic = getNotificationTopic();
         
         try {
             subDao.unsubscribe(registration, topic);
@@ -226,7 +229,7 @@ public class DynamoTopicSubscriptionDaoTest {
         assertEquals("registrationGuid", deleteObj.getRegistrationGuid());
         
         // This leaves no SNS topic subscription, but a record in DDB. This is okay and we will
-        // attempt to clean this up from the service any time the user retrieves the records.
+        // attempt to clean this up from the service any time the user updates their subscriptions.
     }
     
     @Test
@@ -264,22 +267,5 @@ public class DynamoTopicSubscriptionDaoTest {
         verify(mockMapper).delete(subscriptionCaptor.capture());
         DynamoTopicSubscription capturedSub = subscriptionCaptor.getValue();
         assertEquals(subscription, capturedSub);
-    }
-
-    private NotificationTopic createTopic() {
-        NotificationTopic topic = NotificationTopic.create();
-        topic.setGuid("topicGuid");
-        topic.setTopicARN("topicARN");
-        return topic;
-    }
-
-    private NotificationRegistration createRegistration() {
-        NotificationRegistration registration = NotificationRegistration.create();
-        registration.setDeviceId("deviceId");
-        registration.setEndpointARN("endpointARN");
-        registration.setGuid("registrationGuid");
-        registration.setHealthCode("healthCode");
-        registration.setOsName("osName");
-        return registration;
     }
 }

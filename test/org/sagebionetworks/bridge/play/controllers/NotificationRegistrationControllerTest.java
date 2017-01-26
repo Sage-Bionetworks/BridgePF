@@ -7,12 +7,10 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 import java.util.Set;
 
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,12 +44,10 @@ import play.test.Helpers;
 public class NotificationRegistrationControllerTest {
 
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
-    private static final String OS_NAME = "Android";
+    private static final String OS_NAME = "osName";
     private static final String DEVICE_ID = "deviceId";
     private static final String HEALTH_CODE = "healthCode";
-    private static final String GUID = "ABC-DEF";
-    private static final DateTime CREATED_ON = DateTime.now();
-    private static final DateTime MODIFIED_ON = DateTime.now();
+    private static final String GUID = "registrationGuid";
     
     @Mock
     private NotificationsService mockNotificationService;
@@ -89,16 +85,7 @@ public class NotificationRegistrationControllerTest {
     }
     
     private List<NotificationRegistration> createRegList() {
-        NotificationRegistration reg = NotificationRegistration.create();
-        reg.setOsName(OS_NAME);
-        reg.setGuid(GUID);
-        reg.setHealthCode(HEALTH_CODE);
-        reg.setEndpointARN("endpointARN");
-        reg.setDeviceId(DEVICE_ID);
-        reg.setCreatedOn(CREATED_ON.getMillis());
-        reg.setModifiedOn(MODIFIED_ON.getMillis());
-        
-        return Lists.newArrayList(reg);
+        return Lists.newArrayList(TestUtils.getNotificationRegistration());
     }
     
     @Test
@@ -117,7 +104,6 @@ public class NotificationRegistrationControllerTest {
         assertEquals(1, list.getItems().size());
         
         NotificationRegistration registration = list.getItems().get(0);
-        verifyRegistration(registration);
     }
         
     @Test
@@ -214,7 +200,7 @@ public class NotificationRegistrationControllerTest {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(HEALTH_CODE).when(session).getHealthCode();
         SubscriptionStatus status = new SubscriptionStatus("topicGuid","topicName",true);
-        doReturn(Lists.newArrayList(status)).when(mockTopicService).subscribe(eq(STUDY_ID), eq(HEALTH_CODE), eq("registrationgGuid"), any());
+        doReturn(Lists.newArrayList(status)).when(mockTopicService).subscribe(eq(STUDY_ID), eq(HEALTH_CODE), eq(GUID), any());
         TestUtils.mockPlayContextWithJson(TestUtils.getSubscriptionRequest());
         
         Result result = controller.subscribe(GUID);
@@ -228,7 +214,7 @@ public class NotificationRegistrationControllerTest {
         assertEquals("topicName", retrievedStatus.getTopicName());
         assertTrue(retrievedStatus.isSubscribed());
         
-        verify(mockTopicService).subscribe(eq(TEST_STUDY), eq(HEALTH_CODE), stringCaptor.capture(), stringSetCaptor.capture());
+        verify(mockTopicService).subscribe(eq(STUDY_ID), eq(HEALTH_CODE), stringCaptor.capture(), stringSetCaptor.capture());
         
         assertEquals("registrationGuid", stringCaptor.getValue());
         assertEquals(Sets.newHashSet("topicA", "topicB"), stringSetCaptor.getValue());
@@ -241,7 +227,6 @@ public class NotificationRegistrationControllerTest {
         assertEquals(OS_NAME, reg.getOsName());
         assertEquals(GUID, reg.getGuid());
         assertEquals(DEVICE_ID, reg.getDeviceId());
-        assertEquals(CREATED_ON.getMillis(), reg.getCreatedOn());
-        assertEquals(MODIFIED_ON.getMillis(), reg.getModifiedOn());
+        assertEquals(TestUtils.getNotificationRegistration().getCreatedOn(), reg.getCreatedOn());
     }
 }

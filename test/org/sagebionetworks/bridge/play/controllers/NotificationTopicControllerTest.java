@@ -100,7 +100,7 @@ public class NotificationTopicControllerTest {
 
         JsonNode node = getResultNode(result);
         assertEquals(201, result.status());
-        assertEquals("ABC-DEF", node.get("guid").asText());
+        assertEquals("topicGuid", node.get("guid").asText());
         assertEquals("GuidHolder", node.get("type").asText());
 
         verify(mockTopicService).createTopic(topicCaptor.capture());
@@ -121,7 +121,7 @@ public class NotificationTopicControllerTest {
 
         NotificationTopic returned = getTopic(result);
         assertEquals("Test Topic Name", returned.getName());
-        assertEquals("ABC-DEF", returned.getGuid());
+        assertEquals("topicGuid", returned.getGuid());
         assertNull(returned.getStudyId());
         assertNull(returned.getTopicARN());
     }

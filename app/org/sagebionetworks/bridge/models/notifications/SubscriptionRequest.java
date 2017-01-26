@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
+/**
+ * The JSON payload that is submitted by a client to update the list of their subscriptions.
+ */
 public class SubscriptionRequest {
 
     private Set<String> topicGuids;

@@ -155,12 +155,12 @@ GET    /v3/notifications/:guid/subscriptions  @org.sagebionetworks.bridge.play.c
 POST   /v3/notifications/:guid/subscriptions  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.subscribe(guid: String)
  
 # Topics
-GET    /v3/topics                                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getAllTopics
-POST   /v3/topics                                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.createTopic
-GET    /v3/topics/:guid                            @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getTopic(guid: String)
-POST   /v3/topics/:guid                            @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.updateTopic(guid: String)
-DELETE /v3/topics/:guid                            @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String)
-POST   /v3/topics/:guid/sendNotification           @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.sendNotification(guid: String)
+GET    /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getAllTopics
+POST   /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.createTopic
+GET    /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getTopic(guid: String)
+POST   /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.updateTopic(guid: String)
+DELETE /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String)
+POST   /v3/topics/:guid/sendNotification @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.sendNotification(guid: String)
 
 # Bridge Exporter
 POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus

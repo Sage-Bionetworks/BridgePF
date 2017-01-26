@@ -205,20 +205,13 @@ public class NotificationTopicService {
      * and we're trying here again to finish them.
      */
     private Set<String> cleanupSubscriptions(NotificationRegistration registration) {
-        System.out.println("--> cleanupSubscriptions");
         Set<String> subscribedTopicGuids = Sets.newHashSet();
         
         List<? extends TopicSubscription> subscriptions = subscriptionDao.listSubscriptions(registration);
         for (TopicSubscription subscription : subscriptions) {
-            System.out.println("subscription: " + subscription.getTopicGuid());
             try {
-                GetSubscriptionAttributesResult result = snsClient.getSubscriptionAttributes(subscription.getSubscriptionARN());
-                if (!result.getAttributes().isEmpty()) {
-                    subscribedTopicGuids.add(subscription.getTopicGuid());    
-                } else {
-                    System.out.println("This was not found (does return normally), and should be replace.");
-                    subscriptionDao.delete(subscription);
-                }
+                snsClient.getSubscriptionAttributes(subscription.getSubscriptionARN());
+                subscribedTopicGuids.add(subscription.getTopicGuid());    
             } catch(NotFoundException e) {
                 System.out.println("This was not found, and should be replace.");
                 subscriptionDao.delete(subscription);

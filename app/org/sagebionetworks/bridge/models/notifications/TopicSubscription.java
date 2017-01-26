@@ -24,12 +24,23 @@ public interface TopicSubscription extends BridgeEntity {
         return new DynamoTopicSubscription();
     }
 
+    /**
+     * The registration GUID representing the device that was registered for notifications, which is 
+     * not being subscribed to a topic.
+     */
     String getRegistrationGuid();
     void setRegistrationGuid(String registrationGuid);
     
+    /**
+     * The GUID of the topic to which the user is being subscribed.
+     */
     String getTopicGuid();
     void setTopicGuid(String topicGuid);
     
+    /**
+     * Once added to an SNS topic, we receive back a subscription ARN which we must track in order 
+     * to unsubscribe the user later.
+     */
     String getSubscriptionARN();
     void setSubscriptionARN(String subscriptionARN);
     
