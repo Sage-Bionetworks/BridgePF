@@ -1,5 +1,45 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DefaultObjectMapper;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
+import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.services.EmailVerificationService;
+import org.sagebionetworks.bridge.services.EmailVerificationStatus;
+import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.UploadCertificateService;
+import org.sagebionetworks.bridge.services.UploadService;
+import play.core.j.JavaResultExtractor;
+import play.mvc.Result;
+import play.test.Helpers;
+
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -20,45 +60,6 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
-
-import java.util.List;
-
-import org.joda.time.DateTime;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.DefaultObjectMapper;
-import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.*;
-import org.sagebionetworks.bridge.models.upload.Upload;
-import org.sagebionetworks.bridge.services.EmailVerificationService;
-import org.sagebionetworks.bridge.services.EmailVerificationStatus;
-import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.services.UploadCertificateService;
-import org.sagebionetworks.bridge.services.UploadService;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
-import play.core.j.JavaResultExtractor;
-import play.mvc.Result;
-import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StudyControllerTest {
