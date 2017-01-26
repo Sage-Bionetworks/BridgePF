@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -169,6 +170,16 @@ public class IosSchemaValidationHandler2Test {
                 new DynamoUploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
                         .build()));
 
+        DynamoUploadSchema simpleAttachmentSchema = new DynamoUploadSchema();
+        simpleAttachmentSchema.setStudyId(TEST_STUDY_ID);
+        simpleAttachmentSchema.setSchemaId("simple-attachment-schema");
+        simpleAttachmentSchema.setRevision(1);
+        simpleAttachmentSchema.setName("Simple Attachment Schema");
+        simpleAttachmentSchema.setSchemaType(UploadSchemaType.IOS_DATA);
+        simpleAttachmentSchema.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
+                new DynamoUploadFieldDefinition.Builder().withName("attachment")
+                        .withType(UploadFieldType.ATTACHMENT_V2).withMimeType("text/plain").build()));
+
         // mock upload schema service
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
         when(mockSchemaService.getUploadSchemaByIdAndRev(study, "test-survey", 1)).thenReturn(surveySchema);
@@ -177,6 +188,8 @@ public class IosSchemaValidationHandler2Test {
         when(mockSchemaService.getUploadSchemaByIdAndRev(study, "mixed-data", 1)).thenReturn(mixedSchema);
         when(mockSchemaService.getUploadSchemaByIdAndRev(study, "schema-rev-test", 2)).thenReturn(schemaRevTest2);
         when(mockSchemaService.getUploadSchemaByIdAndRev(study, "schema-rev-test", 3)).thenReturn(schemaRevTest3);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "simple-attachment-schema", 1)).thenReturn(
+                simpleAttachmentSchema);
 
         // set up handler
         handler = new IosSchemaValidationHandler2();
@@ -257,6 +270,7 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         assertEquals(DateTime.parse("2015-04-02T03:27:09-07:00").getMillis(),
                 recordBuilder.getCreatedOn().longValue());
+        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
         assertEquals("test-survey", recordBuilder.getSchemaId());
         assertEquals(1, recordBuilder.getSchemaRevision());
 
@@ -355,6 +369,7 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         assertEquals(DateTime.parse("2015-08-22T03:27:09-07:00").getMillis(),
                 recordBuilder.getCreatedOn().longValue());
+        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
         assertEquals("test-survey", recordBuilder.getSchemaId());
         assertEquals(1, recordBuilder.getSchemaRevision());
 
@@ -427,6 +442,7 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         assertEquals(DateTime.parse("2015-04-13T18:48:02-07:00").getMillis(),
                 recordBuilder.getCreatedOn().longValue());
+        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
         assertEquals("json-data", recordBuilder.getSchemaId());
         assertEquals(1, recordBuilder.getSchemaRevision());
 
@@ -491,6 +507,7 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         assertEquals(DateTime.parse("2015-04-13T18:58:21-07:00").getMillis(),
                 recordBuilder.getCreatedOn().longValue());
+        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
         assertEquals("non-json-data", recordBuilder.getSchemaId());
         assertEquals(1, recordBuilder.getSchemaRevision());
 
@@ -564,6 +581,7 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         assertEquals(DateTime.parse("2015-04-22T18:39:44-07:00").getMillis(),
                 recordBuilder.getCreatedOn().longValue());
+        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
         assertEquals("mixed-data", recordBuilder.getSchemaId());
         assertEquals(1, recordBuilder.getSchemaRevision());
 
@@ -625,6 +643,7 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         assertEquals(DateTime.parse("2015-07-21T15:24:57-07:00").getMillis(),
                 recordBuilder.getCreatedOn().longValue());
+        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
         assertEquals("schema-rev-test", recordBuilder.getSchemaId());
         assertEquals(2, recordBuilder.getSchemaRevision());
 
@@ -671,6 +690,7 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         assertEquals(DateTime.parse("2015-07-21T15:24:57-07:00").getMillis(),
                 recordBuilder.getCreatedOn().longValue());
+        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
         assertEquals("schema-rev-test", recordBuilder.getSchemaId());
         assertEquals(3, recordBuilder.getSchemaRevision());
 
@@ -683,6 +703,37 @@ public class IosSchemaValidationHandler2Test {
 
         // We should have no messages.
         assertTrue(context.getMessageList().isEmpty());
+    }
+
+    @Test
+    public void noCreatedOn() throws Exception {
+        // Just test defaults for created on. Minimal test. Everything else has been tested elsewhere.
+
+        // fill in context
+        String infoJsonText = "{\n" +
+                "   \"files\":[{\n" +
+                "       \"filename\":\"attachment\"\n" +
+                "   }],\n" +
+                "   \"item\":\"simple-attachment-schema\",\n" +
+                "   \"schemaRevision\":1\n" +
+                "}";
+        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+
+        context.setJsonDataMap(ImmutableMap.of(
+                "info.json", infoJsonNode));
+        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
+                .put("attachment", "This is an attachment.".getBytes(Charsets.UTF_8))
+                .build());
+
+        // execute
+        handler.handle(context);
+
+        // validate
+        validateCommonProps(context);
+
+        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        assertEquals(MOCK_NOW.getMillis(), recordBuilder.getCreatedOn().longValue());
+        assertNull(recordBuilder.getCreatedOnTimeZone());
     }
 
     private static void validateCommonProps(UploadValidationContext ctx) {

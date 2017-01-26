@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
@@ -29,7 +27,6 @@ import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -37,7 +34,6 @@ import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Result;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.Roles.*;
 
 @Controller
