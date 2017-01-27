@@ -5,14 +5,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 public enum ParticipantOption {
 
@@ -91,7 +91,7 @@ public enum ParticipantOption {
     private final String defaultValue;
     private final String fieldName;
     
-    private ParticipantOption(String defaultValue, String fieldName) {
+    ParticipantOption(String defaultValue, String fieldName) {
         this.defaultValue = defaultValue;
         this.fieldName = fieldName;
     }
@@ -126,7 +126,7 @@ public enum ParticipantOption {
         
         private final String label;
         
-        private SharingScope(String label) {
+        SharingScope(String label) {
             this.label = label;
         }
         public String getLabel() {

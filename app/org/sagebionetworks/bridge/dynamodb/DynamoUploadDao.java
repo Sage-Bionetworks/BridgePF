@@ -46,7 +46,6 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 public class DynamoUploadDao implements UploadDao {
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeRequestedOnIndex;
-    private DynamoIndexHelper studyIdRequestedOnIndex;
 
     private static final String UPLOAD_ID = "uploadId";
     private static final String STUDY_ID = "studyId";
@@ -63,19 +62,11 @@ public class DynamoUploadDao implements UploadDao {
     }
 
     /**
-     * DynamoDB Index reference for the healthCode-requestedOn index. 
+     * DynamoDB Index reference for the healthCode-requestedOn index.
      */
     @Resource(name = "uploadHealthCodeRequestedOnIndex")
     final void setHealthCodeRequestedOnIndex(DynamoIndexHelper healthCodeRequestedOnIndex) {
         this.healthCodeRequestedOnIndex = healthCodeRequestedOnIndex;
-    }
-    
-    /**
-     * DynamoDB Index reference for the studyId-requestedOn index. 
-     */
-    @Resource(name = "uploadStudyIdRequestedOnIndex")
-    final void setStudyIdRequestedOnIndex(DynamoIndexHelper studyIdRequestedOnIndex) {
-        this.studyIdRequestedOnIndex = studyIdRequestedOnIndex;
     }
     
     /** {@inheritDoc} */

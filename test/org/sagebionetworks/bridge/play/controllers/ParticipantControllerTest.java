@@ -619,7 +619,9 @@ public class ParticipantControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z").withZone(DateTimeZone.UTC);
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z").withZone(DateTimeZone.UTC);
 
-        PagedResourceList uploads = new PagedResourceList<>(Lists.newArrayList(), null, API_MAXIMUM_PAGE_SIZE, 0)
+        List<? extends Upload> list = Lists.newArrayList();
+
+        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
                 .withFilter("startTime", startTime)
                 .withFilter("endTime", endTime);
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime);
@@ -638,7 +640,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void getUploadsNullsDateRange() throws Exception {
-        PagedResourceList uploads = new PagedResourceList<>(Lists.newArrayList(),
+        List<? extends Upload> list = Lists.newArrayList();
+
+        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list,
                 null, API_MAXIMUM_PAGE_SIZE, 0);
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null);
         
