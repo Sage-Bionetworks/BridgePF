@@ -10,28 +10,28 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoNotificationTopic.class)
 public interface NotificationTopic extends BridgeEntity {
 
-    public static NotificationTopic create() {
+    static NotificationTopic create() {
         return new DynamoNotificationTopic();
     }
     
-    public String getGuid();
-    public void setGuid(String guid);
+    String getGuid();
+    void setGuid(String guid);
     
-    public String getStudyId();
-    public void setStudyId(String studyId);
+    String getStudyId();
+    void setStudyId(String studyId);
     
-    public String getName();
-    public void setName(String name);
+    String getName();
+    void setName(String name);
     
-    public String getDescription();
-    public void setDescription(String description);
+    String getDescription();
+    void setDescription(String description);
     
-    public String getTopicARN();
-    public void setTopicARN(String topicARN);
+    String getTopicARN();
+    void setTopicARN(String topicARN);
     
-    public long getCreatedOn();
-    public void setCreatedOn(long createdOn);
+    long getCreatedOn();
+    void setCreatedOn(long createdOn);
 
-    public long getModifiedOn();
-    public void setModifiedOn(long modifiedOn);
+    long getModifiedOn();
+    void setModifiedOn(long modifiedOn);
 }
