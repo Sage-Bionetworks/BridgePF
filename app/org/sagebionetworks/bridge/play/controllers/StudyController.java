@@ -183,7 +183,7 @@ public class StudyController extends BaseController {
         return okResult(new EmailVerificationStatusHolder(status));
     }
     
-    public Result getUploads(String startTimeString, String endTimeString, int pageSize, String offsetKey) {
+    public Result getUploads(String startTimeString, String endTimeString, Integer pageSize, String offsetKey) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
@@ -201,7 +201,7 @@ public class StudyController extends BaseController {
      * @param endTimeString
      * @return
      */
-    public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString, int pageSize, String offsetKey) throws EntityNotFoundException {
+    public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString, Integer pageSize, String offsetKey) throws EntityNotFoundException {
         getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
