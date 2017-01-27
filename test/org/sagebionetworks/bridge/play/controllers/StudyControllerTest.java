@@ -288,7 +288,9 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        PagedResourceList uploads = new PagedResourceList<>(Lists.newArrayList(), null, API_MAXIMUM_PAGE_SIZE, 0)
+        List<? extends Upload> list = Lists.newArrayList();
+
+        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
                 .withFilter("startTime", startTime)
                 .withFilter("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
@@ -346,7 +348,9 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        PagedResourceList uploads = new PagedResourceList<>(Lists.newArrayList(), null, API_MAXIMUM_PAGE_SIZE, 0)
+        List<? extends Upload> list = Lists.newArrayList();
+
+        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
                 .withFilter("startTime", startTime)
                 .withFilter("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
