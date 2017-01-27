@@ -251,12 +251,12 @@ public class UploadService {
      * of uploads (though those days can be any period in time). </p>
      */
     public PagedResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
-            @Nullable DateTime startTime, @Nullable DateTime endTime, Integer pageSize, String offsetKey) {
+            @Nullable DateTime startTime, @Nullable DateTime endTime, @Nullable Integer pageSize, @Nullable String offsetKey) {
         checkNotNull(studyId);
 
         // in case clients didn't set page size up
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getStudyUploads(studyId, start, end, pageSize == null? API_DEFAULT_PAGE_SIZE : pageSize, offsetKey);
+            return uploadDao.getStudyUploads(studyId, start, end, (pageSize == null? API_DEFAULT_PAGE_SIZE : pageSize.intValue()), offsetKey);
         });
     }
     

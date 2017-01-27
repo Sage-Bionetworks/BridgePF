@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 
 import java.util.List;
@@ -201,6 +202,7 @@ public class UploadServiceMockTest {
                 .withOffsetKey(MOCK_OFFSET_KEY);
         doReturn(results).when(mockDao).getUploads("ABC", START_TIME, END_TIME);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
+        doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
         doReturn(mockUpload).when(mockDao).getUpload("upload-id");
         doReturn(mockFailedUpload).when(mockDao).getUpload("failed-upload-id");
         
@@ -236,6 +238,15 @@ public class UploadServiceMockTest {
         verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         validateUploadMocks(returned);
         assertEquals(MOCK_OFFSET_KEY, returned.getOffsetKey());
+    }
+
+    @Test
+    public void canGetStudyUploadsWithoutPageSize() throws Exception {
+        setupUploadMocks();
+
+        svc.getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, null, null);
+
+        verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
     }
 
     private void validateUploadMocks(PagedResourceList<? extends UploadView> returned) {
