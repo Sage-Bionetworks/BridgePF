@@ -7,12 +7,12 @@ import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import org.sagebionetworks.bridge.BridgeUtils;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -21,21 +21,20 @@ public class DynamoHealthIdDaoTest {
     @Resource
     private DynamoHealthIdDao healthIdDao;
 
-    @Before
-    public void before() {
-        DynamoTestUtil.clearTable(DynamoHealthId.class);
-    }
-
-    @After
-    public void after() {
-        DynamoTestUtil.clearTable(DynamoHealthId.class);
-    }
-
     @Test
     public void test() {
-        assertTrue(healthIdDao.setIfNotExist("123", "789"));
-        assertEquals("789", healthIdDao.getCode("123"));
-        assertFalse(healthIdDao.setIfNotExist("123", "456"));
-        assertNull(healthIdDao.getCode("321"));
+        String healthId = generateTestGuid();
+        String healthCode = generateTestGuid();
+        String key1 = generateTestGuid();
+        String key2 = generateTestGuid();
+        
+        assertTrue(healthIdDao.setIfNotExist(healthId, healthCode));
+        assertEquals(healthCode, healthIdDao.getCode(healthId));
+        assertFalse(healthIdDao.setIfNotExist(healthId, key1));
+        assertNull(healthIdDao.getCode(key2));
+    }
+    
+    private String generateTestGuid() {
+        return "DynamoHealthIdDaoTest-" + BridgeUtils.generateGuid();
     }
 }
