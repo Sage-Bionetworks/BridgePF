@@ -263,11 +263,9 @@ public class SurveyValidator implements Validator {
             } catch (PatternSyntaxException exception) {
                 rejectField(errors, "pattern", "is not a valid regular expression: %s", con.getPattern());
             }
-            /* disabled until we can provide SDK/integration test support.
             if (StringUtils.isBlank(con.getPatternErrorMessage())) {
                 rejectField(errors, "patternErrorMessage", "is required if pattern is defined");
             }
-            */
         }
         // It's okay to provide the error message without a pattern... it's not useful, but it's allowed
         Integer min = con.getMinLength();
