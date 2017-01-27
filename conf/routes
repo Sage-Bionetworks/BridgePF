@@ -187,7 +187,7 @@ GET    /v3/studies/:studyId/surveys/published                           @org.sag
 GET    /v3/studies/:studyId/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByStudyAndSchemaAndRev(studyId: String, schemaId: String, revision: Int)
 GET    /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.getPublicStudyReport(studyId: String, identifier: String, startDate: String ?= null, endDate: String ?= null)
 POST   /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.saveStudyReportForSpecifiedStudy(studyId: String, identifier: String)
-GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null, pageSize: Int, offsetKey: String ?= null)
+GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null, pageSize: java.lang.Integer ?= null, offsetKey: String ?= null)
 
 # Admin APIs for deleting entities across studies
 DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchema(studyId: String, schemaId: String)
