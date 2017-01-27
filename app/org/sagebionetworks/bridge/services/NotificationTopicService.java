@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.model.GetSubscriptionAttributesResult;
 import com.amazonaws.services.sns.model.NotFoundException;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.google.common.collect.Sets;

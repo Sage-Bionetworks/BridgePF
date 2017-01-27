@@ -104,6 +104,11 @@ public class NotificationRegistrationControllerTest {
         assertEquals(1, list.getItems().size());
         
         NotificationRegistration registration = list.getItems().get(0);
+        assertEquals("deviceId", registration.getDeviceId());
+        assertEquals("registrationGuid", registration.getGuid());
+        assertEquals("osName", registration.getOsName());
+        assertNull(registration.getEndpointARN());
+        assertNull(registration.getHealthCode());
     }
         
     @Test
