@@ -2,18 +2,26 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.PAGE_SIZE_ERROR;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -22,9 +30,12 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -35,7 +46,11 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 public class DynamoUploadDao implements UploadDao {
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeRequestedOnIndex;
-    private DynamoIndexHelper studyIdRequestedOnIndex;
+
+    private static final String UPLOAD_ID = "uploadId";
+    private static final String STUDY_ID = "studyId";
+    private static final String REQUESTED_ON = "requestedOn";
+    private static final String STUDY_ID_REQUESTED_ON_INDEX = "studyId-requestedOn-index";
     
     /**
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
@@ -47,19 +62,11 @@ public class DynamoUploadDao implements UploadDao {
     }
 
     /**
-     * DynamoDB Index reference for the healthCode-requestedOn index. 
+     * DynamoDB Index reference for the healthCode-requestedOn index.
      */
     @Resource(name = "uploadHealthCodeRequestedOnIndex")
     final void setHealthCodeRequestedOnIndex(DynamoIndexHelper healthCodeRequestedOnIndex) {
         this.healthCodeRequestedOnIndex = healthCodeRequestedOnIndex;
-    }
-    
-    /**
-     * DynamoDB Index reference for the studyId-requestedOn index. 
-     */
-    @Resource(name = "uploadStudyIdRequestedOnIndex")
-    final void setStudyIdRequestedOnIndex(DynamoIndexHelper studyIdRequestedOnIndex) {
-        this.studyIdRequestedOnIndex = studyIdRequestedOnIndex;
     }
     
     /** {@inheritDoc} */
@@ -112,13 +119,80 @@ public class DynamoUploadDao implements UploadDao {
 
     /** {@inheritDoc} */
     @Override
-    public List<? extends Upload> getStudyUploads(StudyIdentifier studyId, DateTime startTime, DateTime endTime) {
-        RangeKeyCondition condition = new RangeKeyCondition("requestedOn").between(
-                startTime.getMillis(), endTime.getMillis());
-        
-        return studyIdRequestedOnIndex.query(DynamoUpload2.class, "studyId", studyId.getIdentifier(), condition);
+    public PagedResourceList<? extends Upload> getStudyUploads(StudyIdentifier studyId, DateTime startTime, DateTime endTime, int pageSize, String offsetKey) {
+        checkNotNull(studyId);
+
+        // Just set a sane upper limit on this.
+        if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+
+        // only query one page each time client calling this method
+        QueryResultPage<DynamoUpload2> page = mapper.queryPage(DynamoUpload2.class,
+                createGetQuery(studyId, startTime, endTime, offsetKey, pageSize));
+
+        Map<String, List<Object>> resultMap = mapper.batchLoad(page.getResults());
+        List<DynamoUpload2> uploadList = new ArrayList<>();
+        for (List<Object> resultList : resultMap.values()) {
+            for (Object oneResult : resultList) {
+                if (!DynamoUpload2.class.isInstance(oneResult)) {
+                    // This should never happen, but just in case.
+                    throw new BridgeServiceException(String.format(
+                            "DynamoDB returned objects of type %s instead of %s",
+                            oneResult.getClass().getName(), DynamoUpload2.class.getName()));
+                }
+
+                uploadList.add((DynamoUpload2) oneResult);
+            }
+        }
+
+        String nextPageOffsetKey = (page.getLastEvaluatedKey() != null) ? page.getLastEvaluatedKey().get(UPLOAD_ID).getS() : null;
+
+        int total = mapper.count(DynamoUpload2.class, createCountQuery(studyId.getIdentifier(), startTime, endTime));
+
+        return new PagedResourceList<>(uploadList, null, pageSize, total)
+                .withOffsetKey(nextPageOffsetKey);
     }
-    
+
+    private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(StudyIdentifier studyId, DateTime startTime, DateTime endTime,
+                                                                             String offsetKey, int pageSize) {
+
+        DynamoDBQueryExpression<DynamoUpload2> query = createCountQuery(studyId.getIdentifier(), startTime, endTime);
+        if (offsetKey != null) {
+            // load table again to get the one last evaluated upload
+            DynamoUpload2 retLastEvaluatedUpload = mapper.load(DynamoUpload2.class, offsetKey);
+
+            Map<String,AttributeValue> map = new HashMap<>();
+            map.put(UPLOAD_ID, new AttributeValue().withS(offsetKey));
+            map.put(REQUESTED_ON, new AttributeValue().withN(String.valueOf(retLastEvaluatedUpload.getRequestedOn())));
+            map.put(STUDY_ID, new AttributeValue().withS(studyId.getIdentifier()));
+            query.withExclusiveStartKey(map);
+        }
+        query.withLimit(pageSize);
+        return query;
+    }
+
+    /**
+     * Create a query for records applying the filter values if they exist.
+     */
+    private DynamoDBQueryExpression<DynamoUpload2> createCountQuery(String studyId, DateTime startTime, DateTime endTime) {
+        Condition rangeKeyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.BETWEEN.toString())
+                .withAttributeValueList(new AttributeValue().withN(String.valueOf(startTime.getMillis())),
+                        new AttributeValue().withN(String.valueOf(endTime.getMillis())));
+
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId(studyId);
+
+        DynamoDBQueryExpression<DynamoUpload2> query = new DynamoDBQueryExpression<>();
+        query.withIndexName(STUDY_ID_REQUESTED_ON_INDEX);
+        query.withHashKeyValues(upload);
+        query.withConsistentRead(false);
+        query.setScanIndexForward(false);
+        query.withRangeKeyCondition(REQUESTED_ON, rangeKeyCondition);
+        return query;
+    }
+
     /** {@inheritDoc} */
     @Override
     public void uploadComplete(@Nonnull UploadCompletionClient completedBy, @Nonnull Upload upload) {

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
@@ -26,6 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -162,7 +164,6 @@ public class DynamoUploadDaoTest {
 
         // GSIs are eventually consistent. Try sleeping here.
         Thread.sleep(2000);
-
         DateTime now = DateTime.now();
 
         List<? extends Upload> uploads = dao.getUploads("code0", now.minusMinutes(1), now);
@@ -174,7 +175,7 @@ public class DynamoUploadDaoTest {
         assertEquals(0, uploads.size());
         
         // Now verify you can get this through the study-based call
-        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(1), now);
+        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(1), now, API_MAXIMUM_PAGE_SIZE, null).getItems();
         assertEquals(numUploads, uploads.size());
 
         // DDB can return uploads in any order. This is true, regardless of mocking DateTime.now().
@@ -192,18 +193,78 @@ public class DynamoUploadDaoTest {
         assertEquals(numUploads, foundUploadIdSet.size());
         assertTrue(foundUploadIdSet.containsAll(healthcodeToUploadId.values()));
 
-        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now.minusMinutes(2));
+        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now.minusMinutes(2), API_MAXIMUM_PAGE_SIZE, null).getItems();
         assertTrue(uploads.isEmpty());
         
         // Now delete all the uploads, and a query within the correct time range should return no results
         for (String healthCode : healthcodeToUploadId.keySet()) {
             dao.deleteUploadsForHealthCode(healthCode);
         }
-        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now);
+        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now, API_MAXIMUM_PAGE_SIZE, null).getItems();
         assertTrue(uploads.isEmpty());
         
         // We do not need to delete these uploads to clean up the test, we just did it.
         uploadIds.clear();
+    }
+
+    @Test
+    public void canPaginateUploads() throws Exception {
+        int numUploads = 2;
+        Map<String, String> healthcodeToUploadId = new HashMap<>();
+        for (int i = 0; i < numUploads; i++) {
+            String healthcode = "code" + i;
+            UploadRequest uploadRequest = createRequest();
+            Upload upload = dao.createUpload(uploadRequest, TEST_STUDY, healthcode, null);
+            String uploadId = upload.getUploadId();
+
+            uploadIds.add(uploadId);
+            healthcodeToUploadId.put(healthcode, uploadId);
+        }
+
+        // GSIs are eventually consistent. Try sleeping here.
+        Thread.sleep(2000);
+        DateTime now = DateTime.now();
+
+        // set page size to 1 to test pagination
+        PagedResourceList<? extends Upload> paginatedList = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(1), now, 1, null);
+
+        // verify
+        List<? extends Upload> items = paginatedList.getItems();
+        assertEquals(1, items.size()); // only return 1 upload in each page
+        assertEquals(1, paginatedList.getPageSize());
+        assertEquals(2, paginatedList.getTotal());
+
+        String offsetKey = paginatedList.getOffsetKey();
+        assertNotNull(offsetKey); // we shall have an offset key to start next time
+        Upload firstUpload = items.get(0);
+        String firstUploadHealthCode = firstUpload.getHealthCode();
+        assertEquals(healthcodeToUploadId.get(firstUploadHealthCode), firstUpload.getUploadId());
+
+        // then fetch again using offsetkey obtained above
+        paginatedList = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(1), now, 1, offsetKey);
+
+        // verify
+        List<? extends Upload> nextPage = paginatedList.getItems();
+        assertEquals(1, nextPage.size()); // only return 1 upload in each page
+        assertEquals(1, paginatedList.getPageSize());
+        assertEquals(2, paginatedList.getTotal());
+
+        offsetKey = paginatedList.getOffsetKey();
+        assertNotNull(offsetKey);
+        Upload secondUpload = items.get(0);
+        String secondUploadHealthCode = secondUpload.getHealthCode();
+        assertEquals(healthcodeToUploadId.get(secondUploadHealthCode), secondUpload.getUploadId());
+
+        paginatedList = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(1), now, 1, offsetKey);
+
+        // verify
+        List<? extends Upload> finalPage = paginatedList.getItems();
+        assertEquals(0, finalPage.size());
+        assertEquals(1, paginatedList.getPageSize());
+        assertEquals(2, paginatedList.getTotal());
+
+        offsetKey = paginatedList.getOffsetKey();
+        assertNull(offsetKey);
     }
     
     @Test
