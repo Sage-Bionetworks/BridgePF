@@ -106,7 +106,8 @@ public class StudyController extends BaseController {
     public Result getStudy(String identifier) throws Exception {
         getAuthenticatedSession(ADMIN);
 
-        Study study = studyService.getStudy(identifier);
+        // since only admin can call this method, we need to return all studies including deactivated ones
+        Study study = studyService.getStudy(identifier, true);
         return ok(Study.STUDY_WRITER.writeValueAsString(study));
     }
 
