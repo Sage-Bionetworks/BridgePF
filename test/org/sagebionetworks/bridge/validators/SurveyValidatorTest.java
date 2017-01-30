@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
@@ -335,9 +334,7 @@ public class SurveyValidatorTest {
         Validate.entityThrowingException(validator, survey);
     }
     
-    // Ignore until we have time to provide SDK and integration test support.
     @Test
-    @Ignore
     public void whenPatternIsSetPatternErrorMessageMustBeSet() {
         survey = new TestSurvey(SurveyValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
