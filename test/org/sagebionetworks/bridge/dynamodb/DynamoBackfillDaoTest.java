@@ -13,34 +13,58 @@ import javax.annotation.Resource;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
 import org.sagebionetworks.bridge.models.backfill.BackfillStatus;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoBackfillDaoTest {
 
+    private DynamoDBMapper taskMapper;
+    private DynamoDBMapper recordMapper;
+
+    @Autowired
+    public void setDynamoDbClient(AmazonDynamoDB client, DynamoNamingHelper dynamoNamingHelper) {
+        DynamoDBMapperConfig taskMapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(dynamoNamingHelper.getTableNameOverride(DynamoBackfillTask.class)).build();
+        taskMapper = new DynamoDBMapper(client, taskMapperConfig);
+        DynamoDBMapperConfig recordMapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(dynamoNamingHelper.getTableNameOverride(DynamoBackfillRecord.class)).build();
+        recordMapper = new DynamoDBMapper(client, recordMapperConfig);
+    }
+    
     @Resource
     private DynamoBackfillDao backfillDao;
-
-    @Before
-    public void before() {
-        DynamoTestUtil.clearTable(DynamoBackfillTask.class);
-        DynamoTestUtil.clearTable(DynamoBackfillRecord.class);
-    }
+    
+    private List<BackfillTask> tasksToDelete = Lists.newArrayList();
+    
+    private List<BackfillRecord> recordsToDelete = Lists.newArrayList();
 
     @After
     public void after() {
-        DynamoTestUtil.clearTable(DynamoBackfillTask.class);
-        DynamoTestUtil.clearTable(DynamoBackfillRecord.class);
+        for (BackfillTask task : tasksToDelete) {
+            taskMapper.delete(task);
+        }
+        for (BackfillRecord record : recordsToDelete) {
+            recordMapper.delete(record);
+        }
     }
 
     @Test
@@ -64,7 +88,9 @@ public class DynamoBackfillDaoTest {
         assertTrue(task.getId().startsWith("name:"));
         assertEquals(BackfillStatus.SUBMITTED.name(), task.getStatus());
         // Get list
-        backfillDao.createTask("name", "user2");
+        BackfillTask secondTask = backfillDao.createTask("name", "user2");
+        tasksToDelete.add(secondTask);
+        
         List<? extends BackfillTask> tasks = backfillDao.getTasks("name",
                 DateTime.now(DateTimeZone.UTC).getMillis() - 1000L);
         assertNotNull(tasks);
@@ -75,6 +101,7 @@ public class DynamoBackfillDaoTest {
         // Update
         backfillDao.updateTaskStatus(task.getId(), BackfillStatus.COMPLETED);
         task = backfillDao.getTask(task.getId());
+        tasksToDelete.add(task);
         assertEquals(BackfillStatus.COMPLETED.name(), task.getStatus());
     }
 
@@ -84,6 +111,8 @@ public class DynamoBackfillDaoTest {
         final long timestamp = DateTime.now(DateTimeZone.UTC).getMillis();
         assertEquals(0, backfillDao.getRecordCount("task1"));
         BackfillRecord record = backfillDao.createRecord("task1", "study1", "account1", "op1");
+        recordsToDelete.add(record);
+        
         assertEquals(1, backfillDao.getRecordCount("task1"));
         assertEquals("task1", record.getTaskId());
         assertTrue(record.getTimestamp() >= timestamp);
@@ -92,10 +121,14 @@ public class DynamoBackfillDaoTest {
         assertEquals("account1", json.get("account").asText());
         assertEquals("op1", json.get("operation").asText());
         // Create a 2nd record
-        backfillDao.createRecord("task1", "study1", "account2", "op2");
+        BackfillRecord secondRecord = backfillDao.createRecord("task1", "study1", "account2", "op2");
+        recordsToDelete.add(secondRecord);
+        
         assertEquals(2, backfillDao.getRecordCount("task1"));
         // Create record in a different study
-        backfillDao.createRecord("task3", "study3", "account3", "op3");
+        BackfillRecord thirdRecord = backfillDao.createRecord("task3", "study3", "account3", "op3");
+        recordsToDelete.add(thirdRecord);
+        
         assertEquals(2, backfillDao.getRecordCount("task1"));
         assertEquals(1, backfillDao.getRecordCount("task3"));
         // Test iterator
