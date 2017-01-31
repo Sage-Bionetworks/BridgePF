@@ -29,7 +29,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
