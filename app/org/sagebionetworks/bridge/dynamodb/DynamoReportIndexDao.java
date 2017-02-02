@@ -6,6 +6,8 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
@@ -26,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 
 @Component
 public class DynamoReportIndexDao implements ReportIndexDao {
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoReportIndexDao.class);
 
     private static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
             .withExpected(new ImmutableMap.Builder<String,ExpectedAttributeValue>()
@@ -63,6 +66,7 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         } catch(ConditionalCheckFailedException e) {
             // Do not throw an exception if the index already exists. This is called as a side
             // effect of saving a report, and can be called multiple times for a report.
+            LOG.debug("Error saving index in DynamoReportIndexDao.addIndex(): " + e.getMessage());
         }
     }
 
