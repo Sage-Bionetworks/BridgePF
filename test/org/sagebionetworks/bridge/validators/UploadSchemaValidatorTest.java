@@ -13,6 +13,8 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -147,6 +149,52 @@ public class UploadSchemaValidatorTest {
 
         // validate
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
+    @Test
+    public void validateMinMaxAppVersionsValid() {
+        // test cases: { minAppVersion, maxAppVersion }
+        Integer[][] testCaseArray = {
+                { null, null },
+                { null, 10 },
+                { 10, null },
+                { 10, 20 },
+                { 15, 15 },
+        };
+
+        for (Integer[] oneTestCase : testCaseArray) {
+            Integer minAppVersion = oneTestCase[0];
+            Integer maxAppVersion = oneTestCase[1];
+
+            // make valid schema
+            UploadSchema schema = UploadSchema.create();
+            schema.setFieldDefinitions(ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
+                    .withName("test-field").withType(UploadFieldType.INT).build()));
+            schema.setMaxAppVersion("unit-test", maxAppVersion);
+            schema.setMinAppVersion("unit-test", minAppVersion);
+            schema.setName("Test Schema");
+            schema.setSchemaId("test-schema");
+            schema.setSchemaType(UploadSchemaType.IOS_DATA);
+
+            // validate, should succeed
+            Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+        }
+    }
+
+    @Test
+    public void validateMinMaxAppVersionsInvalid() {
+        // make valid schema, except with invalid min/maxAppVersions
+        UploadSchema schema = UploadSchema.create();
+        schema.setFieldDefinitions(ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
+                .withName("test-field").withType(UploadFieldType.INT).build()));
+        schema.setMaxAppVersion("unit-test", 10);
+        schema.setMinAppVersion("unit-test", 20);
+        schema.setName("Test Schema");
+        schema.setSchemaId("test-schema");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+
+        TestUtils.assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "minAppVersions{unit-test}",
+                "can't be greater than maxAppVersion");
     }
 
     @Test(expected = InvalidEntityException.class)

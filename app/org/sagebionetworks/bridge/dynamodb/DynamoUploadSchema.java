@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
@@ -18,7 +22,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
@@ -37,6 +44,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 @JsonFilter("filter")
 public class DynamoUploadSchema implements UploadSchema {
     private List<UploadFieldDefinition> fieldDefList;
+    private Map<String, Integer> maxAppVersions = new HashMap<>();
+    private Map<String, Integer> minAppVersions = new HashMap<>();
     private String name;
     private int rev;
     private String schemaId;
@@ -45,7 +54,16 @@ public class DynamoUploadSchema implements UploadSchema {
     private Long surveyCreatedOn;
     private String studyId;
     private Long version;
-    
+
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @JsonIgnore
+    @Override
+    public Set<String> getAppVersionOperatingSystems() {
+        return new ImmutableSet.Builder<String>().addAll(minAppVersions.keySet()).addAll(maxAppVersions.keySet())
+                .build();
+    }
+
     /** {@inheritDoc} */
     @DynamoDBTypeConverted(converter = FieldDefinitionListMarshaller.class)
     @Override
@@ -54,6 +72,7 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getFieldDefinitions */
+    @Override
     public void setFieldDefinitions(List<UploadFieldDefinition> fieldDefList) {
         this.fieldDefList = ImmutableList.copyOf(fieldDefList);
     }
@@ -95,6 +114,70 @@ public class DynamoUploadSchema implements UploadSchema {
         this.schemaId = parts[1];
     }
 
+    /**
+     * The map-based getter and setter supports DynamoDB persistence and the return of a JSON object/map in the API. In
+     * the Java interface for Schema, convenience methods to get/put values for an OS are exposed and the map is not
+     * directly accessible.
+     */
+    @DynamoDBAttribute
+    public Map<String, Integer> getMaxAppVersions() {
+        return ImmutableMap.copyOf(maxAppVersions);
+    }
+
+    /** @see #getMaxAppVersions */
+    public void setMaxAppVersions(Map<String, Integer> maxAppVersions) {
+        this.maxAppVersions = (maxAppVersions == null) ? new HashMap<>() :
+                BridgeUtils.withoutNullEntries(maxAppVersions);
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @JsonIgnore
+    @Override
+    public Integer getMaxAppVersion(String osName) {
+        return maxAppVersions.get(osName);
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @JsonIgnore
+    @Override
+    public void setMaxAppVersion(String osName, Integer maxAppVersion) {
+        BridgeUtils.putOrRemove(maxAppVersions, osName, maxAppVersion);
+    }
+
+    /**
+     * The map-based getter and setter supports DynamoDB persistence and the return of a JSON object/map in the API. In
+     * the Java interface for Schema, convenience methods to get/put values for an OS are exposed and the map is not
+     * directly accessible.
+     */
+    @DynamoDBAttribute
+    public Map<String, Integer> getMinAppVersions() {
+        return ImmutableMap.copyOf(minAppVersions);
+    }
+
+    /** @see #getMaxAppVersions */
+    public void setMinAppVersions(Map<String, Integer> minAppVersions) {
+        this.minAppVersions = (minAppVersions == null) ? new HashMap<>() :
+                BridgeUtils.withoutNullEntries(minAppVersions);
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @JsonIgnore
+    @Override
+    public Integer getMinAppVersion(String osName) {
+        return minAppVersions.get(osName);
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @JsonIgnore
+    @Override
+    public void setMinAppVersion(String osName, Integer minAppVersion) {
+        BridgeUtils.putOrRemove(minAppVersions, osName, minAppVersion);
+    }
+
     /** {@inheritDoc} */
     @Override
     public String getName() {
@@ -102,6 +185,7 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getName */
+    @Override
     public void setName(String name) {
         this.name = name;
     }
@@ -117,6 +201,7 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getRevision */
+    @Override
     public void setRevision(int rev) {
         this.rev = rev;
     }
@@ -129,6 +214,7 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getSchemaId */
+    @Override
     public void setSchemaId(String schemaId) {
         this.schemaId = schemaId;
     }
@@ -149,6 +235,7 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getSchemaType */
+    @Override
     public void setSchemaType(UploadSchemaType schemaType) {
         this.schemaType = schemaType;
     }
@@ -160,6 +247,7 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** @see #getSurveyGuid */
+    @Override
     public void setSurveyGuid(String surveyGuid) {
         this.surveyGuid = surveyGuid;
     }
@@ -173,6 +261,7 @@ public class DynamoUploadSchema implements UploadSchema {
 
     /** @see #getSurveyCreatedOn */
     @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
+    @Override
     public void setSurveyCreatedOn(Long surveyCreatedOn) {
         this.surveyCreatedOn = surveyCreatedOn;
     }
@@ -194,13 +283,22 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** @see #getStudyId */
+    @Override
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * <p>
+     * Version number of a particular schema revision. This is used to detect concurrent modification. Callers should
+     * not modify this value. This will be automatically incremented by Bridge.
+     * </p>
+     * <p>
+     * This is currently ignored by the Schema v3 API, which manages its own versioning via revision. However, the
+     * Schema v4 API needs this as revision and versions are now independent of each other.
+     * </p>
+     */
     @DynamoDBVersionAttribute
-    @Override
     public Long getVersion() {
         return version;
     }

@@ -242,5 +242,25 @@ public class BridgeUtils {
             throw new BadRequestException(value + " is not an integer");
         }
     }
-    
+
+    /**
+     * Creates a new copy of the map, removing any entries that have a null value (particularly easy to do this in
+     * JSON).
+     */
+    public static <K,V> Map<K,V> withoutNullEntries(Map<K,V> map) {
+        checkNotNull(map);
+        return map.entrySet().stream().filter(e -> e.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey,
+                Map.Entry::getValue));
+    }
+
+    /** Helper method which puts something to a map, or removes it from the map if the value is null. */
+    public static <K,V> void putOrRemove(Map<K,V> map, K key, V value) {
+        checkNotNull(map);
+        checkNotNull(key);
+        if (value != null) {
+            map.put(key, value);
+        } else {
+            map.remove(key);
+        }
+    }
 }

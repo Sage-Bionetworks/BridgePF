@@ -3,9 +3,15 @@ package org.sagebionetworks.bridge;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -191,7 +197,72 @@ public class BridgeUtilsTest {
     public void parseIntegerOrDefaultThrowsException() {
         BridgeUtils.getIntOrDefault("asdf", 3);
     }
-    
+
+    @Test(expected = NullPointerException.class)
+    public void withoutNullEntriesNullMap() {
+        BridgeUtils.withoutNullEntries(null);
+    }
+
+    @Test
+    public void withoutNullEntriesEmptyMap() {
+        Map<String, String> outputMap = BridgeUtils.withoutNullEntries(ImmutableMap.of());
+        assertTrue(outputMap.isEmpty());
+    }
+
+    @Test
+    public void withoutNullEntries() {
+        Map<String, String> inputMap = new HashMap<>();
+        inputMap.put("AAA", "111");
+        inputMap.put("BBB", null);
+        inputMap.put("CCC", "333");
+
+        Map<String, String> outputMap = BridgeUtils.withoutNullEntries(inputMap);
+        assertEquals(2, outputMap.size());
+        assertEquals("111", outputMap.get("AAA"));
+        assertEquals("333", outputMap.get("CCC"));
+
+        // validate that modifying the input map doesn't affect the output map
+        inputMap.put("new key", "new value");
+        assertEquals(2, outputMap.size());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void putOrRemoveNullMap() {
+        BridgeUtils.putOrRemove(null, "key", "value");
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void putOrRemoveNullKey() {
+        BridgeUtils.putOrRemove(new HashMap<>(), null, "value");
+    }
+
+    @Test
+    public void putOrRemove() {
+        Map<String, String> map = new HashMap<>();
+
+        // put some values and verify
+        BridgeUtils.putOrRemove(map, "AAA", "111");
+        BridgeUtils.putOrRemove(map, "BBB", "222");
+        BridgeUtils.putOrRemove(map, "CCC", "333");
+        assertEquals(3, map.size());
+        assertEquals("111", map.get("AAA"));
+        assertEquals("222", map.get("BBB"));
+        assertEquals("333", map.get("CCC"));
+
+        // replace a value and verify
+        BridgeUtils.putOrRemove(map, "CCC", "not 333");
+        assertEquals(3, map.size());
+        assertEquals("111", map.get("AAA"));
+        assertEquals("222", map.get("BBB"));
+        assertEquals("not 333", map.get("CCC"));
+
+        // remove a value and verify
+        BridgeUtils.putOrRemove(map, "BBB", null);
+        assertEquals(2, map.size());
+        assertEquals("111", map.get("AAA"));
+        assertEquals("not 333", map.get("CCC"));
+    }
+
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(first.size(), second.size());
