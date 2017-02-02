@@ -298,7 +298,7 @@ public class IosSchemaValidationHandler2Test {
                 "   \"questionType\":0,\n" +
                 "   \"dateAnswer\":\"2017-01-31T16:42:52.256-0800\",\n" +
                 "   \"startDate\":\"2015-04-02T03:23:59-07:00\",\n" +
-                "   \"questionTypeName\":\"DateAndTime\",\n" +
+                "   \"questionTypeName\":\"Date\",\n" +
                 "   \"item\":\"legacy-date-time\",\n" +
                 "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "}";
