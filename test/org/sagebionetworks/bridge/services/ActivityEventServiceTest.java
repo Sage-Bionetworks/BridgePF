@@ -22,9 +22,7 @@ import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class ActivityEventServiceTest {
@@ -121,26 +119,6 @@ public class ActivityEventServiceTest {
         assertEquals("enrollment", argument.getValue().getEventId());
         assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
         assertEquals("AAA-BBB-CCC", argument.getValue().getHealthCode());
-    }
-    
-    
-    @Test
-    public void canPublishSurveyAnswer() {
-        DateTime now = DateTime.now();
-        
-        SurveyAnswer answer = new SurveyAnswer();
-        answer.setAnsweredOn(now.getMillis());
-        answer.setQuestionGuid("BBB-CCC-DDD");
-        answer.setAnswers(Lists.newArrayList("belgium"));
-        
-        service.publishQuestionAnsweredEvent("healthCode", answer);
-        
-        ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
-        verify(activityEventDao).publishEvent(argument.capture());
-        
-        assertEquals("question:BBB-CCC-DDD:answered", argument.getValue().getEventId());
-        assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
-        assertEquals("healthCode", argument.getValue().getHealthCode());
     }
     
     @Test

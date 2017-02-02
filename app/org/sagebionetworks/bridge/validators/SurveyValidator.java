@@ -18,6 +18,7 @@ import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
+import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.NumericalConstraints;
@@ -29,6 +30,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.models.surveys.Unit;
 import org.sagebionetworks.bridge.upload.UploadUtil;
 
 import org.springframework.stereotype.Component;
@@ -41,6 +43,8 @@ import com.google.common.collect.Sets;
 public class SurveyValidator implements Validator {
 
     private static final Object[] EMPTY_OBJ_ARG = new Object[]{};
+    private static final Set<Unit> HEIGHT_MEASURES = Sets.newHashSet(Unit.METERS, Unit.FEET);
+    private static final Set<Unit> WEIGHT_MEASURES = Sets.newHashSet(Unit.POUNDS, Unit.KILOGRAMS);
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -199,6 +203,9 @@ public class SurveyValidator implements Validator {
             doValidateConstraintsType(errors, hint, (DateTimeConstraints)con);
         } else if (con instanceof NumericalConstraints) {
             doValidateConstraintsType(errors, hint, (NumericalConstraints)con);
+            if (con instanceof DecimalConstraints) {
+                doValidateConstraintsType(errors, hint, (DecimalConstraints)con);
+            }
         }
     }
     
@@ -308,6 +315,14 @@ public class SurveyValidator implements Validator {
             if (con.getStep() != null && con.getStep() > diff) {
                 rejectField(errors, "step", "is larger than the range of allowable values");
             }
+        }
+    }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, DecimalConstraints con) {
+        if (hint == UIHint.HEIGHT && !HEIGHT_MEASURES.contains(con.getUnit())) {
+            rejectField(errors, "unit", "must be meters or feet for height UI hint");
+        } else if (hint == UIHint.WEIGHT && !WEIGHT_MEASURES.contains(con.getUnit())) {
+            rejectField(errors, "unit", "must be pounds or kilograms for weight UI hint");
         }
     }
     

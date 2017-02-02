@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.surveys;
 
 public enum UIHint {
     
+    // Common form controls across platforms
     CHECKBOX,
     COMBOBOX,
     DATEPICKER,
@@ -14,6 +15,9 @@ public enum UIHint {
     SLIDER,
     TEXTFIELD,
     TIMEPICKER,
-    TOGGLE;
-    
+    TOGGLE,
+    // Some common medical measurements for which we have custom, one-screen UIs
+    BLOODPRESSURE,
+    HEIGHT,
+    WEIGHT;
 }

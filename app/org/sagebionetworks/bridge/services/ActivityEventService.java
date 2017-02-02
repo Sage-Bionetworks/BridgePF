@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 
 import java.util.Map;
 
@@ -13,7 +12,6 @@ import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,20 +33,6 @@ public class ActivityEventService {
             .withTimestamp(signature.getSignedOn())
             .withObjectType(ActivityEventObjectType.ENROLLMENT).build();
         activityEventDao.publishEvent(event);    
-    }
-    
-    public void publishQuestionAnsweredEvent(String healthCode, SurveyAnswer answer) {
-        checkNotNull(healthCode);
-        checkNotNull(answer);
-        
-        ActivityEvent event = new DynamoActivityEvent.Builder()
-            .withHealthCode(healthCode)
-            .withTimestamp(answer.getAnsweredOn())
-            .withObjectType(ActivityEventObjectType.QUESTION)
-            .withObjectId(answer.getQuestionGuid())
-            .withEventType(ActivityEventType.ANSWERED)
-            .withAnswerValue(COMMA_JOINER.join(answer.getAnswers())).build();
-        activityEventDao.publishEvent(event);
     }
     
     public void publishActivityFinishedEvent(ScheduledActivity schActivity) {
