@@ -83,6 +83,14 @@ public class IosSchemaValidationHandler2Test {
                         .build(),
                 new DynamoUploadFieldDefinition.Builder().withName("baz")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("calendar-date")
+                        .withType(UploadFieldType.CALENDAR_DATE).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("time-without-date")
+                        .withType(UploadFieldType.TIME_V2).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("legacy-date-time")
+                        .withType(UploadFieldType.TIMESTAMP).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("new-date-time")
+                        .withType(UploadFieldType.TIMESTAMP).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
@@ -218,6 +226,18 @@ public class IosSchemaValidationHandler2Test {
                 "   },{\n" +
                 "       \"filename\":\"baz.json\",\n" +
                 "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"calendar-date.json\",\n" +
+                "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"time-without-date.json\",\n" +
+                "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"legacy-date-time.json\",\n" +
+                "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"new-date-time.json\",\n" +
+                "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "   }],\n" +
                 "   \"item\":\"test-survey\"\n" +
                 "}";
@@ -254,11 +274,56 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode bazAnswerJsonNode = BridgeObjectMapper.get().readTree(bazAnswerJsonText);
 
-        context.setJsonDataMap(ImmutableMap.of(
-                "info.json", infoJsonNode,
-                "foo.json", fooAnswerJsonNode,
-                "bar.json", barAnswerJsonNode,
-                "baz.json", bazAnswerJsonNode));
+        String calendarDateAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"dateAnswer\":\"2017-01-31\",\n" +
+                "   \"startDate\":\"2015-04-02T03:23:59-07:00\",\n" +
+                "   \"questionTypeName\":\"Date\",\n" +
+                "   \"item\":\"calendar-date\",\n" +
+                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "}";
+        JsonNode calendarDateAnswerJsonNode = BridgeObjectMapper.get().readTree(calendarDateAnswerJsonText);
+
+        String timeWithoutDateAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"dateComponentsAnswer\":\"16:42:52.256\",\n" +
+                "   \"startDate\":\"2015-04-02T03:23:59-07:00\",\n" +
+                "   \"questionTypeName\":\"TimeOfDay\",\n" +
+                "   \"item\":\"time-without-date\",\n" +
+                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "}";
+        JsonNode timeWithoutDateAnswerJsonNode = BridgeObjectMapper.get().readTree(timeWithoutDateAnswerJsonText);
+
+        String legacyDateTimeAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"dateAnswer\":\"2017-01-31T16:42:52.256-0800\",\n" +
+                "   \"startDate\":\"2015-04-02T03:23:59-07:00\",\n" +
+                "   \"questionTypeName\":\"DateAndTime\",\n" +
+                "   \"item\":\"legacy-date-time\",\n" +
+                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "}";
+        JsonNode legacyDateTimeAnswerJsonNode = BridgeObjectMapper.get().readTree(legacyDateTimeAnswerJsonText);
+
+        String newDateTimeAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"dateAnswer\":\"2017-02-02T09:13:27.212-0800\",\n" +
+                "   \"startDate\":\"2015-04-02T03:23:59-07:00\",\n" +
+                "   \"questionTypeName\":\"DateAndTime\",\n" +
+                "   \"item\":\"new-date-time\",\n" +
+                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "}";
+        JsonNode newDateTimeAnswerJsonNode = BridgeObjectMapper.get().readTree(newDateTimeAnswerJsonText);
+
+        context.setJsonDataMap(ImmutableMap.<String, JsonNode>builder()
+                .put("info.json", infoJsonNode)
+                .put("foo.json", fooAnswerJsonNode)
+                .put("bar.json", barAnswerJsonNode)
+                .put("baz.json", bazAnswerJsonNode)
+                .put("calendar-date.json", calendarDateAnswerJsonNode)
+                .put("time-without-date.json", timeWithoutDateAnswerJsonNode)
+                .put("legacy-date-time.json", legacyDateTimeAnswerJsonNode)
+                .put("new-date-time.json", newDateTimeAnswerJsonNode)
+                .build());
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
 
         // execute
@@ -275,10 +340,14 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(3, dataNode.size());
+        assertEquals(7, dataNode.size());
         assertEquals("foo answer", dataNode.get("foo").textValue());
         assertEquals(42, dataNode.get("bar").intValue());
         assertEquals("lb", dataNode.get("bar_unit").textValue());
+        assertEquals("2017-01-31", dataNode.get("calendar-date").textValue());
+        assertEquals("16:42:52.256", dataNode.get("time-without-date").textValue());
+        assertEquals("2017-01-31T16:42:52.256-0800", dataNode.get("legacy-date-time").textValue());
+        assertEquals("2017-02-02T09:13:27.212-0800", dataNode.get("new-date-time").textValue());
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
         assertEquals(1, attachmentMap.size());
