@@ -212,8 +212,8 @@ public class NotificationTopicService {
                 snsClient.getSubscriptionAttributes(subscription.getSubscriptionARN());
                 subscribedTopicGuids.add(subscription.getTopicGuid());    
             } catch(NotFoundException e) {
-                System.out.println("This was not found, and should be replace.");
-                subscriptionDao.delete(subscription);
+                LOG.warn("SNS topic " + subscription.getTopicGuid() + " not found, deleting DDB record", e);
+                subscriptionDao.removeOrphanedSubscription(subscription);
             } catch(AmazonServiceException e) {
                 LOG.warn("Error cleaning up subscriptions", e);
                 // However, it is there, so include it in the list of subscriptions.

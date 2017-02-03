@@ -237,7 +237,7 @@ public class DynamoTopicSubscriptionDaoTest {
         TopicSubscription subscription = TopicSubscription.create();
         subscription.setSubscriptionARN("subscriptionARN");
         
-        subDao.delete(subscription);
+        subDao.removeOrphanedSubscription(subscription);
         
         verify(mockSnsClient).unsubscribe(unsubscribeStringCaptor.capture());
         String subscriptionARN = unsubscribeStringCaptor.getValue();
@@ -256,7 +256,7 @@ public class DynamoTopicSubscriptionDaoTest {
         doThrow(EXCEPTION).when(mockSnsClient).unsubscribe(any(UnsubscribeRequest.class));
         
         try {
-            subDao.delete(subscription);    
+            subDao.removeOrphanedSubscription(subscription);    
         } catch(AmazonServiceException e) {
         }
         

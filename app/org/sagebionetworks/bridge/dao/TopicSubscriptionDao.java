@@ -28,7 +28,8 @@ public interface TopicSubscriptionDao {
     void unsubscribe(NotificationRegistration registration, NotificationTopic topic);
     
     /**
-     * Delete a subscription. 
+     * In a case whee we have a record of a subscription, but no paired SNS topic subscription, 
+     * remove our record. 
      */
-    void delete(TopicSubscription subscription);
+    void removeOrphanedSubscription(TopicSubscription subscription);
 }

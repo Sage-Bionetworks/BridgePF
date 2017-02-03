@@ -101,11 +101,13 @@ public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
         mapper.delete(subscription);
     }
 
+    /**
+     * Subscription is in DDB but we could not find it in SNS. Try and delete both just to be sure, 
+     * but definitely delete the DDB record.
+     */
     @Override
-    public void delete(TopicSubscription subscription) {
+    public void removeOrphanedSubscription(TopicSubscription subscription) {
         checkNotNull(subscription);
-        // No exception is caught here, so user will see errors, but nevertheless we will
-        // try and clean up both data stores.
         try {
             snsClient.unsubscribe(subscription.getSubscriptionARN());
         } finally {
