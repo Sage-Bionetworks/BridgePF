@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.HashMap;
@@ -9,8 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Criteria;
 
@@ -120,7 +118,8 @@ public final class DynamoCriteria implements Criteria {
         return ImmutableMap.copyOf(minAppVersions);
     }
     public void setMinAppVersions(Map<String, Integer> minAppVersions) {
-        this.minAppVersions = (minAppVersions == null) ? new HashMap<>() : withoutNullEntries(minAppVersions);
+        this.minAppVersions = (minAppVersions == null) ? new HashMap<>() :
+                BridgeUtils.withoutNullEntries(minAppVersions);
     }
     @DynamoDBIgnore
     @Override
@@ -130,7 +129,7 @@ public final class DynamoCriteria implements Criteria {
     @DynamoDBIgnore
     @Override
     public void setMinAppVersion(String osName, Integer minAppVersion) {
-        putOrRemove(minAppVersions, osName, minAppVersion);
+        BridgeUtils.putOrRemove(minAppVersions, osName, minAppVersion);
     }
     
     /**
@@ -144,7 +143,8 @@ public final class DynamoCriteria implements Criteria {
         return ImmutableMap.copyOf(maxAppVersions);
     }
     public void setMaxAppVersions(Map<String, Integer> maxAppVersions) {
-        this.maxAppVersions = (minAppVersions == null) ? new HashMap<>() : withoutNullEntries(maxAppVersions);
+        this.maxAppVersions = (maxAppVersions == null) ? new HashMap<>() :
+                BridgeUtils.withoutNullEntries(maxAppVersions);
     }
     @DynamoDBIgnore
     @Override
@@ -154,7 +154,7 @@ public final class DynamoCriteria implements Criteria {
     @DynamoDBIgnore
     @Override
     public void setMaxAppVersion(String osName, Integer maxAppVersion) {
-        putOrRemove(maxAppVersions, osName, maxAppVersion);
+        BridgeUtils.putOrRemove(maxAppVersions, osName, maxAppVersion);
     }
     @DynamoDBIgnore
     @JsonIgnore
@@ -164,22 +164,7 @@ public final class DynamoCriteria implements Criteria {
                 .addAll(minAppVersions.keySet())
                 .addAll(maxAppVersions.keySet()).build();
     }
-    /**
-     * Creates a new copy of the map, removing any entries that have a null value (particularly easy to do this in JSON).
-     */
-    private Map<String,Integer> withoutNullEntries(Map<String, Integer> map) {
-        return map.entrySet().stream().filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
-    }
-    private void putOrRemove(Map<String,Integer> map, String osName, Integer version) {
-        checkArgument(isNotBlank(osName));
-        if (version != null) {
-            map.put(osName, version);    
-        } else {
-            map.remove(osName);
-        }
-    }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(key, language, maxAppVersions, minAppVersions, allOfGroups, noneOfGroups);

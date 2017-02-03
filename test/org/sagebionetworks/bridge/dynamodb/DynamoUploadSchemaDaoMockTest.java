@@ -508,7 +508,7 @@ public class DynamoUploadSchemaDaoMockTest {
                 updatedSchemaCaptor.capture());
 
         // validate schema - Don't need to validate everything, just the essentials.
-        UploadSchema updatedSchema = updatedSchemaCaptor.getValue();
+        DynamoUploadSchema updatedSchema = (DynamoUploadSchema) updatedSchemaCaptor.getValue();
         assertEquals(SURVEY_ID, updatedSchema.getSchemaId());
         assertEquals(SURVEY_SCHEMA_DDB_VERSION, updatedSchema.getVersion().longValue());
 

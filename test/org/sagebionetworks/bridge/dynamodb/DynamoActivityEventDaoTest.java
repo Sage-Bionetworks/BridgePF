@@ -13,6 +13,8 @@ import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
@@ -24,12 +26,14 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoActivityEventDaoTest {
 
+    private String healthCode;
+    
     @Resource
     ActivityEventDao activityEventDao;
     
     @Before
     public void before() {
-        DynamoTestUtil.clearTable(DynamoActivityEvent.class);
+        healthCode = TestUtils.randomName(DynamoActivityEventDaoTest.class);
     }
     
     @Test
@@ -54,7 +58,7 @@ public class DynamoActivityEventDaoTest {
         event = getScheduledActivityFinishedEvent(time6);
         activityEventDao.publishEvent(event);
         
-        Map<String,DateTime> map = activityEventDao.getActivityEventMap("BBB");
+        Map<String,DateTime> map = activityEventDao.getActivityEventMap(healthCode);
         assertEquals(6, map.size());
         assertEquals(time1.withZone(DateTimeZone.UTC), map.get("enrollment"));
         assertEquals(time1.withZone(DateTimeZone.UTC).minusWeeks(2), map.get("two_weeks_before_enrollment"));
@@ -67,7 +71,7 @@ public class DynamoActivityEventDaoTest {
         event = getQuestionAnsweredEvent(time4, "someValue");
         activityEventDao.publishEvent(event);
         
-        map = activityEventDao.getActivityEventMap("BBB");
+        map = activityEventDao.getActivityEventMap(healthCode);
         assertEquals(time4.withZone(DateTimeZone.UTC), map.get("question:DDD-EEE-FFF:answered=someValue"));
         
         // Update answer event with different answer and later timestamp
@@ -75,16 +79,16 @@ public class DynamoActivityEventDaoTest {
         activityEventDao.publishEvent(event);
         
         // Creates a different key in activity event map. Researchers schedule against specific answers.
-        map = activityEventDao.getActivityEventMap("BBB");
+        map = activityEventDao.getActivityEventMap(healthCode);
         assertEquals(time5.withZone(DateTimeZone.UTC), map.get("question:DDD-EEE-FFF:answered=anotherAnswer"));
         // The key point here is that the other answer is no longer in the map, so there can't be 
         // an "either or" scheduling conflict. The user can only answer one way or another on a 
         // given question, even if the answer is updated.
         assertNull(map.get("question:DDD-EEE-FFF:answered=someAnswer"));
         
-        activityEventDao.deleteActivityEvents("BBB");
+        activityEventDao.deleteActivityEvents(healthCode);
         
-        map = activityEventDao.getActivityEventMap("BBB");
+        map = activityEventDao.getActivityEventMap(healthCode);
         assertEquals(0, map.size());
     }
     
@@ -105,28 +109,29 @@ public class DynamoActivityEventDaoTest {
         event = getEnrollmentEvent(firstEvent.plusHours(2));
         activityEventDao.publishEvent(event);
         
-        Map<String,DateTime> eventMap = activityEventDao.getActivityEventMap("BBB");
+        Map<String,DateTime> eventMap = activityEventDao.getActivityEventMap(healthCode);
         assertEquals(firstEvent.withZone(DateTimeZone.UTC), eventMap.get("enrollment"));
     }
     
     private DynamoActivityEvent getEnrollmentEvent(DateTime timestamp) {
-        return new DynamoActivityEvent.Builder().withHealthCode("BBB")
+        return new DynamoActivityEvent.Builder().withHealthCode(healthCode)
             .withObjectType(ActivityEventObjectType.ENROLLMENT).withTimestamp(timestamp).build();
     }
     
     private DynamoActivityEvent getSurveyFinishedEvent(DateTime timestamp) {
-        return new DynamoActivityEvent.Builder().withHealthCode("BBB").withObjectType(ActivityEventObjectType.SURVEY)
-            .withEventType(ActivityEventType.FINISHED).withTimestamp(timestamp).withObjectId("AAA-BBB-CCC").build();
+        return new DynamoActivityEvent.Builder().withHealthCode(healthCode)
+                .withObjectType(ActivityEventObjectType.SURVEY).withEventType(ActivityEventType.FINISHED)
+                .withTimestamp(timestamp).withObjectId("AAA-BBB-CCC").build();
     }
     
     private DynamoActivityEvent getQuestionAnsweredEvent(DateTime timestamp, String answer) {
-        return new DynamoActivityEvent.Builder().withHealthCode("BBB")
-            .withObjectType(ActivityEventObjectType.QUESTION).withObjectId("DDD-EEE-FFF")
-            .withEventType(ActivityEventType.ANSWERED).withAnswerValue(answer).withTimestamp(timestamp).build();
+        return new DynamoActivityEvent.Builder().withHealthCode(healthCode)
+                .withObjectType(ActivityEventObjectType.QUESTION).withObjectId("DDD-EEE-FFF")
+                .withEventType(ActivityEventType.ANSWERED).withAnswerValue(answer).withTimestamp(timestamp).build();
     }
     
     private DynamoActivityEvent getScheduledActivityFinishedEvent(DateTime timestamp) {
-        return new DynamoActivityEvent.Builder().withHealthCode("BBB").withObjectType(ActivityEventObjectType.ACTIVITY)
+        return new DynamoActivityEvent.Builder().withHealthCode(healthCode).withObjectType(ActivityEventObjectType.ACTIVITY)
                 .withObjectId("AAA-BBB-CCC").withEventType(ActivityEventType.FINISHED).withTimestamp(timestamp).build();
     }
 }
