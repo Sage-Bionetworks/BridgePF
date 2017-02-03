@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
+import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -58,6 +59,9 @@ public class NotificationTopicControllerTest {
     @Captor
     private ArgumentCaptor<NotificationMessage> messageCaptor;
     
+    @Captor
+    private ArgumentCaptor<SubscriptionRequest> subRequestCaptor; 
+
     @Before
     public void before() throws Exception {
         this.controller.setNotificationTopicService(mockTopicService);
@@ -96,7 +100,7 @@ public class NotificationTopicControllerTest {
 
         JsonNode node = getResultNode(result);
         assertEquals(201, result.status());
-        assertEquals("ABC-DEF", node.get("guid").asText());
+        assertEquals("topicGuid", node.get("guid").asText());
         assertEquals("GuidHolder", node.get("type").asText());
 
         verify(mockTopicService).createTopic(topicCaptor.capture());
@@ -117,7 +121,7 @@ public class NotificationTopicControllerTest {
 
         NotificationTopic returned = getTopic(result);
         assertEquals("Test Topic Name", returned.getName());
-        assertEquals("ABC-DEF", returned.getGuid());
+        assertEquals("topicGuid", returned.getGuid());
         assertNull(returned.getStudyId());
         assertNull(returned.getTopicARN());
     }
@@ -183,6 +187,7 @@ public class NotificationTopicControllerTest {
 
     private ResourceList<NotificationTopic> getTopicList(Result result) throws Exception {
         return BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
-                new TypeReference<ResourceList<NotificationTopic>>(){});
+                new TypeReference<ResourceList<NotificationTopic>>() {
+                });
     }
 }
