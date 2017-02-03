@@ -230,6 +230,7 @@ public class DynamoUploadDaoTest {
         List<? extends Upload> items = paginatedList.getItems();
         assertEquals(1, items.size()); // only return 1 upload in each page
         assertEquals(1, paginatedList.getPageSize());
+        assertEquals(1, paginatedList.getTotal());
 
         String offsetKey = paginatedList.getOffsetKey();
         assertNotNull(offsetKey); // we shall have an offset key to start next time
@@ -244,6 +245,7 @@ public class DynamoUploadDaoTest {
         List<? extends Upload> nextPage = paginatedList.getItems();
         assertEquals(1, nextPage.size()); // only return 1 upload in each page
         assertEquals(1, paginatedList.getPageSize());
+        assertEquals(1, paginatedList.getTotal());
 
         offsetKey = paginatedList.getOffsetKey();
         assertNotNull(offsetKey);
@@ -257,6 +259,7 @@ public class DynamoUploadDaoTest {
         List<? extends Upload> finalPage = paginatedList.getItems();
         assertEquals(0, finalPage.size());
         assertEquals(1, paginatedList.getPageSize());
+        assertEquals(0, paginatedList.getTotal());
 
         offsetKey = paginatedList.getOffsetKey();
         assertNull(offsetKey);
