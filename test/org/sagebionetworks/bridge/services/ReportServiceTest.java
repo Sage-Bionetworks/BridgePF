@@ -6,7 +6,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -91,7 +90,7 @@ public class ReportServiceTest {
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
-        results = new DateRangeResourceList<ReportData>(list, START_DATE, END_DATE);
+        results = new DateRangeResourceList<>(list, START_DATE, END_DATE);
         
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
@@ -116,7 +115,6 @@ public class ReportServiceTest {
                 .withStudyIdentifier(TEST_STUDY).build();
         
         ReportIndex index = ReportIndex.create();
-        index.setIdentifier(IDENTIFIER);
         index.setIdentifier(IDENTIFIER);
         doReturn(index).when(mockReportIndexDao).getIndex(key);
         
@@ -197,13 +195,9 @@ public class ReportServiceTest {
     @Test
     public void saveStudyReportData() {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
-        
-        // Calling twice, the report DAO will be called twice, but the index DAO will be 
-        // called once (it caches for a minute)
-        service.saveStudyReport(TEST_STUDY, IDENTIFIER, someData);
         service.saveStudyReport(TEST_STUDY, IDENTIFIER, someData);
         
-        verify(mockReportDataDao, times(2)).saveReportData(reportDataCaptor.capture());
+        verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
         assertEquals(STUDY_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
@@ -211,7 +205,7 @@ public class ReportServiceTest {
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
         
-        verify(mockReportIndexDao, times(1)).addIndex(new ReportDataKey.Builder()
+        verify(mockReportIndexDao).addIndex(new ReportDataKey.Builder()
                 .withStudyIdentifier(TEST_STUDY)
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(IDENTIFIER).build());
@@ -220,13 +214,9 @@ public class ReportServiceTest {
     @Test
     public void saveParticipantReportData() throws Exception {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
-        
-        // Calling twice, the report DAO will be called twice, but the index DAO will be 
-        // called once (it caches for a minute)
-        service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, someData);
         service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, someData);
 
-        verify(mockReportDataDao, times(2)).saveReportData(reportDataCaptor.capture());
+        verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
         assertEquals(PARTICIPANT_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
@@ -234,7 +224,7 @@ public class ReportServiceTest {
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
         
-        verify(mockReportIndexDao, times(1)).addIndex(new ReportDataKey.Builder()
+        verify(mockReportIndexDao).addIndex(new ReportDataKey.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withStudyIdentifier(TEST_STUDY)
                 .withReportType(ReportType.PARTICIPANT)
@@ -292,7 +282,7 @@ public class ReportServiceTest {
     public void deleteStudyReportRecord() {
         LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
         LocalDate endDate = LocalDate.parse("2015-05-05");
-        DateRangeResourceList<ReportData> emptyResults = new DateRangeResourceList<ReportData>(Lists.newArrayList(), START_DATE, END_DATE);
+        DateRangeResourceList<ReportData> emptyResults = new DateRangeResourceList<>(Lists.newArrayList(), START_DATE, END_DATE);
         doReturn(emptyResults).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
         
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
