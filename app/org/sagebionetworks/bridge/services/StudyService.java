@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +24,9 @@ import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.util.ModelConstants;
+
+import com.google.common.collect.ImmutableMap;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -166,7 +168,10 @@ public class StudyService {
 
     public Study createStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
+        if (study.getVersion() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study has a version value; it may already exist",
+                new ImmutableMap.Builder<String,String>().put("identifier", study.getIdentifier()).build());
+        }
 
         study.setActive(true);
         study.setStrictUploadValidationEnabled(true);
@@ -177,7 +182,7 @@ public class StudyService {
         Validate.entityThrowingException(validator, study);
 
         if (studyDao.doesIdentifierExist(study.getIdentifier())) {
-            throw new EntityAlreadyExistsException(study);
+            throw new EntityAlreadyExistsException(Study.class, "identifier", study.getIdentifier());
         }
         
         subpopService.createDefaultSubpopulation(study);
@@ -203,10 +208,15 @@ public class StudyService {
         if (StringUtils.isBlank(synapseUserId)) {
             throw new BadRequestException("Synapse User ID is invalid.");
         }
-
         // first check if study already has project and team ids
-        checkNewEntity(study, study.getSynapseDataAccessTeamId(), "Study already has a team id.");
-        checkNewEntity(study, study.getSynapseProjectId(), "Study already has a project id.");
+        if (study.getSynapseDataAccessTeamId() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study already has a team ID.",
+                new ImmutableMap.Builder<String,String>().put("identifier", study.getIdentifier()).build());
+        }
+        if (study.getSynapseProjectId() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study already has a project ID.",
+                new ImmutableMap.Builder<String,String>().put("identifier", study.getIdentifier()).build());
+        }
 
         // then check if the user id exists
         try {

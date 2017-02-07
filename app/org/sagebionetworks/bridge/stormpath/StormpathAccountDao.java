@@ -20,6 +20,7 @@ import java.util.SortedMap;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.config.Environment;
@@ -362,7 +363,10 @@ public class StormpathAccountDao implements AccountDao {
             updateGroups(account);
             ((StormpathAccount)account).setAccount(acct);
         } catch(ResourceException e) {
-            rethrowResourceException(e, account);
+            if (e.getCode() == 2001) { // account exists, but we don't have the userId, load the account
+                account = getAccountWithEmail(study, account.getEmail());
+            }
+            rethrowResourceException(e, account.getId());
         }
     }
     
@@ -393,7 +397,7 @@ public class StormpathAccountDao implements AccountDao {
                 acct.save();
             }
         } catch(ResourceException e) {
-            rethrowResourceException(e, account);
+            rethrowResourceException(e, account.getId());
         }
 
         // validate custom data
@@ -501,11 +505,11 @@ public class StormpathAccountDao implements AccountDao {
         return null;
     }
     
-    private void rethrowResourceException(ResourceException e, Account account) {
+    private void rethrowResourceException(ResourceException e, String userId) {
         logger.info(String.format("Stormpath error: %s: %s", e.getCode(), e.getMessage()));
         switch(e.getCode()) {
         case 2001: // must be unique (email isn't unique)
-            throw new EntityAlreadyExistsException(account, "Account already exists.");
+            throw new EntityAlreadyExistsException(Account.class, "userId", userId);
         // These are validation errors, like "password doesn't include an upper-case character"
         case 400:
         case 2007:

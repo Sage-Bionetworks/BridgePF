@@ -122,7 +122,7 @@ public class AuthenticationControllerTest {
                 request = WS.url(TEST_BASE_URL + STUDIES_URL + secondStudy.getIdentifier());
                 request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
                 response = request.get().get(TIMEOUT);
-                assertEquals("{\"message\":\"Caller does not have permission to access this service.\"}",
+                assertEquals("{\"statusCode\":403,\"message\":\"Caller does not have permission to access this service.\",\"type\":\"UnauthorizedException\"}",
                         response.getBody());
             } finally {
                 if (secondStudy != null) {

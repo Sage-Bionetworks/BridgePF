@@ -246,7 +246,7 @@ public class ParticipantServiceTest {
     public void createParticipantWithAssignedId() {
         STUDY.setExternalIdValidationEnabled(true);
         
-        doThrow(new EntityAlreadyExistsException(ExternalIdentifier.create(STUDY, "AAA")))
+        doThrow(new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", "AAA"))
             .when(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
         
         try {

@@ -1,32 +1,48 @@
 package org.sagebionetworks.bridge.exceptions;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.util.Map;
 
 import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+
 @SuppressWarnings("serial")
 @NoStackTraceException
 public class EntityAlreadyExistsException extends BridgeServiceException {
 
-    private BridgeEntity entity;
+    private final Map<String,String> entityKeys;
+    private final Class<? extends BridgeEntity> entityClass;
     
-    public EntityAlreadyExistsException(BridgeEntity entity) {
-        this(entity, BridgeUtils.getTypeName(entity.getClass()) + " already exists.");
-    }
-    
-    public EntityAlreadyExistsException(BridgeEntity entity, String message) {
+    public EntityAlreadyExistsException(Class<? extends BridgeEntity> entityClass, String message, Map<String,String> entityKeys) {
         super(message, HttpStatus.SC_CONFLICT);
-        this.entity = checkNotNull(entity);
+        this.entityClass = entityClass;
+        this.entityKeys = (entityKeys == null) ? Maps.newHashMap() : entityKeys;
     }
     
-    public Class<? extends BridgeEntity> getEntityClass() {
-        return entity.getClass();
+    public EntityAlreadyExistsException(Class<? extends BridgeEntity> entityClass, Map<String,String> entityKeys) {
+        this(entityClass, BridgeUtils.getTypeName(entityClass) + " already exists.", entityKeys);
     }
     
-    public BridgeEntity getEntity() {
-        return entity;
+    public EntityAlreadyExistsException(Class<? extends BridgeEntity> entityClass, String entityKey, String entityValue) {
+        this(entityClass, new ImmutableMap.Builder<String,String>().put(entityKey, entityValue).build());
+    }
+    
+    public String getEntityClass() {
+        return BridgeUtils.getTypeName(entityClass);
     }
 
+    public Map<String, String> getEntityKeys() {
+        return entityKeys;
+    }
+    
+    /**
+     * This originally returned a JSONified version of the entity, but will no return just the keys. No known case where
+     * this is currently being used.
+     */
+    public Map<String, String> getEntity() {
+        return entityKeys;
+    }
 }
