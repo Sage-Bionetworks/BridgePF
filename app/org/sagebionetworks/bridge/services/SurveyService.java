@@ -31,11 +31,11 @@ import org.springframework.validation.Validator;
 
 @Component
 public class SurveyService {
-    
+
     /**
      * The survey is referenced in an activity by exact guid/createdOn version
      */
-    private static final BiPredicate<Activity,GuidCreatedOnVersionHolder> EXACT_MATCH = (activity, keys) -> {
+    private static final BiPredicate<Activity, GuidCreatedOnVersionHolder> EXACT_MATCH = (activity, keys) -> {
         if (activity.getSurvey() != null) {
             return activity.getSurvey().equalsSurvey(keys);
         } else if (activity.getCompoundActivity() != null) {
@@ -50,10 +50,10 @@ public class SurveyService {
     };
 
     /**
-     * The survey is referenced in an activity that wants the most recently published version. If there
-     * is a match, we verify that there is more than one published version to fall back on.
+     * The survey is referenced in an activity that wants the most recently published version. If there is a match, we
+     * verify that there is more than one published version to fall back on.
      */
-    private static final BiPredicate<Activity,GuidCreatedOnVersionHolder> PUBLISHED_MATCH = (activity, keys)-> {
+    private static final BiPredicate<Activity, GuidCreatedOnVersionHolder> PUBLISHED_MATCH = (activity, keys) -> {
         if (activity.getSurvey() != null) {
             return activity.getSurvey().getGuid().equals(keys.getGuid());
         } else if (activity.getCompoundActivity() != null) {
@@ -70,28 +70,26 @@ public class SurveyService {
     private Validator validator;
     private SurveyDao surveyDao;
     private SchedulePlanService schedulePlanService;
-    
+
     @Autowired
     public void setSurveyDao(SurveyDao surveyDao) {
         this.surveyDao = surveyDao;
     }
-    
+
     @Autowired
     public void setValidator(SurveyValidator validator) {
         this.validator = validator;
     }
-    
+
     @Autowired
     public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
     }
 
     /**
-     * Get a list of all published surveys in this study, using the most
-     * recently published version of each survey. These surveys will include
-     * questions (not other element types, such as info screens). Most
-     * properties beyond identifiers will be removed from these surveys as they
-     * are returned in the API.
+     * Get a list of all published surveys in this study, using the most recently published version of each survey.
+     * These surveys will include questions (not other element types, such as info screens). Most properties beyond
+     * identifiers will be removed from these surveys as they are returned in the API.
      * 
      * @param studyIdentifier
      * @return
@@ -99,7 +97,7 @@ public class SurveyService {
     public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-        
+
         return surveyDao.getSurvey(keys);
     }
 
@@ -111,7 +109,7 @@ public class SurveyService {
      */
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
-        
+
         survey.setGuid(BridgeUtils.generateGuid());
         for (SurveyElement element : survey.getElements()) {
             element.setGuid(BridgeUtils.generateGuid());
@@ -129,32 +127,31 @@ public class SurveyService {
      */
     public Survey updateSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
-        
+
         Validate.entityThrowingException(validator, survey);
         return surveyDao.updateSurvey(survey);
     }
 
     /**
-     * Make this version of this survey available for scheduling. One scheduled
-     * for publishing, a survey version can no longer be changed (it can still
-     * be the source of a new version). There can be more than one published
-     * version of a survey.
+     * Make this version of this survey available for scheduling. One scheduled for publishing, a survey version can no
+     * longer be changed (it can still be the source of a new version). There can be more than one published version of
+     * a survey.
      * 
      * @param study
      *            study ID of study to publish the survey to
      * @param keys
      *            survey keys (guid, created on timestamp)
      * @param newSchemaRev
-     *         true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
+     *            true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
      * @return published survey
      */
     public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-        
+
         return surveyDao.publishSurvey(study, keys, newSchemaRev);
     }
-    
+
     /**
      * Copy the survey and return a new version of it.
      * 
@@ -164,44 +161,40 @@ public class SurveyService {
     public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-        
+
         return surveyDao.versionSurvey(keys);
     }
-    
+
     /**
-     * Delete this survey. Survey still exists in system and can be retrieved by
-     * direct reference (URLs that directly reference the GUID and createdOn
-     * timestamp of the survey), put cannot be retrieved in any list of surveys,
-     * and is no longer considered when finding the most recently published
-     * version of the survey.
+     * Delete this survey. Survey still exists in system and can be retrieved by direct reference (URLs that directly
+     * reference the GUID and createdOn timestamp of the survey), put cannot be retrieved in any list of surveys, and is
+     * no longer considered when finding the most recently published version of the survey.
      */
     public void deleteSurvey(StudyIdentifier studyId, GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-        
+
         checkDeleteConstraints(studyId, keys);
-        
+
         surveyDao.deleteSurvey(keys);
     }
 
     /**
-     * Admin API to remove the survey from the backing store. This exists to
-     * clean up surveys from tests. This will remove the survey regardless of
-     * publish status, whether it has responses. This will delete all survey
-     * elements as well.
+     * Admin API to remove the survey from the backing store. This exists to clean up surveys from tests. This will
+     * remove the survey regardless of publish status, whether it has responses. This will delete all survey elements as
+     * well.
      */
     public void deleteSurveyPermanently(StudyIdentifier studyId, GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
         checkDeleteConstraints(studyId, keys);
-        
+
         surveyDao.deleteSurveyPermanently(keys);
     }
 
     /**
-     * Get all versions of a specific survey, ordered by most recent version
-     * first in the list.
+     * Get all versions of a specific survey, ordered by most recent version first in the list.
      * 
      * @param studyIdentifier
      * @param guid
@@ -215,8 +208,7 @@ public class SurveyService {
     }
 
     /**
-     * Get the most recent version of a survey, regardless of whether it is
-     * published or not.
+     * Get the most recent version of a survey, regardless of whether it is published or not.
      * 
      * @param studyIdentifier
      * @param guid
@@ -230,8 +222,8 @@ public class SurveyService {
     }
 
     /**
-     * Get the most recent version of a survey that is published. More recent,
-     * unpublished versions of the survey will be ignored.
+     * Get the most recent version of a survey that is published. More recent, unpublished versions of the survey will
+     * be ignored.
      * 
      * @param studyIdentifier
      * @param guid
@@ -245,8 +237,8 @@ public class SurveyService {
     }
 
     /**
-     * Get the most recent version of each survey in the study that has been
-     * published. If a survey has not been published, nothing is returned.
+     * Get the most recent version of each survey in the study that has been published. If a survey has not been
+     * published, nothing is returned.
      * 
      * @param studyIdentifier
      * @return
@@ -258,8 +250,7 @@ public class SurveyService {
     }
 
     /**
-     * Get the most recent version of each survey in the study, whether
-     * published or not.
+     * Get the most recent version of each survey in the study, whether published or not.
      * 
      * @param studyIdentifier
      * @return
@@ -269,22 +260,37 @@ public class SurveyService {
 
         return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
     }
-
+    
+    /**
+     * You cannot delete a survey that is referenced in a schedule. In the normal case, you cannot 
+     * delete the last published version of a study for this reason, but there are a couple of other 
+     * edge cases:
+     * 
+     *   1. A logical survey delete may still be referenced from scheduled activities. Do not allow 
+     *      a survey to be deleted that's referenced specifically in a schedule plan. Note though that 
+     *      the Bridge Study Manager does not currently create these.
+     *      
+     *   2. A physical survey delete ignores constraints on publication, to clean up after tests. If 
+     *      the survey is referenced from a schedule, do not allow the last published version to be 
+     *      physically deleted. Tests need to delete schedule plans first if they reference real 
+     *      published surveys.
+     */
     private void checkDeleteConstraints(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
-        
+
         // Cannot be referenced in a schedule
         SchedulePlan match = findFirstMatchingPlan(plans, keys, EXACT_MATCH);
         if (match != null) {
             throwConstraintViolation(match, keys);
         }
-        
-        // if any schedule has a "published" reference, verify this isn't the last published survey
+
+        // Cannot be the last published version if there's a referenced to the most recently published 
+        // version of the survey
         match = findFirstMatchingPlan(plans, keys, PUBLISHED_MATCH);
         if (match != null) {
-            long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid())
-                    .stream().filter(Survey::isPublished).collect(Collectors.counting());
-            
+            long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid()).stream()
+                    .filter(Survey::isPublished).collect(Collectors.counting());
+
             if (publishedSurveys == 1L) {
                 throwConstraintViolation(match, keys);
             }
@@ -294,12 +300,10 @@ public class SurveyService {
     private void throwConstraintViolation(SchedulePlan match, final GuidCreatedOnVersionHolder keys) {
         // It's a little absurd to provide type=Survey, but in a UI that's orchestrating
         // several calls, it might not be obvious.
-        throw new ConstraintViolationException.Builder()
-            .withEntityKey("guid", keys.getGuid())
-            .withEntityKey("createdOn", DateUtils.convertToISODateTime(keys.getCreatedOn()))
-            .withEntityKey("type", "Survey") 
-            .withReferrerKey("guid", match.getGuid())
-            .withReferrerKey("type", "SchedulePlan").build();
+        throw new ConstraintViolationException.Builder().withEntityKey("guid", keys.getGuid())
+                .withEntityKey("createdOn", DateUtils.convertToISODateTime(keys.getCreatedOn()))
+                .withEntityKey("type", "Survey").withReferrerKey("guid", match.getGuid())
+                .withReferrerKey("type", "SchedulePlan").build();
     }
 
     private SchedulePlan findFirstMatchingPlan(List<SchedulePlan> plans, GuidCreatedOnVersionHolder keys,
@@ -316,5 +320,5 @@ public class SurveyService {
         }
         return null;
     }
-    
+
 }
