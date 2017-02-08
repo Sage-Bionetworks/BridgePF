@@ -42,7 +42,7 @@ public class EntityAlreadyExistsExceptionTest {
     
     @Test
     public void exceptionWithEntityKeys() throws Exception {
-        Map<String,String> map = new ImmutableMap.Builder<String,String>().put("key", "value").build();
+        Map<String,Object> map = new ImmutableMap.Builder<String,Object>().put("key", "value").build();
         EntityAlreadyExistsException e = new EntityAlreadyExistsException(ExternalIdentifier.class, map);
         
         assertEquals("ExternalIdentifier already exists.", e.getMessage());

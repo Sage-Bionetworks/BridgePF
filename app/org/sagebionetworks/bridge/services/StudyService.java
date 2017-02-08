@@ -170,7 +170,7 @@ public class StudyService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         if (study.getVersion() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study has a version value; it may already exist",
-                new ImmutableMap.Builder<String,String>().put("identifier", study.getIdentifier()).build());
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier()).build());
         }
 
         study.setActive(true);
@@ -211,11 +211,13 @@ public class StudyService {
         // first check if study already has project and team ids
         if (study.getSynapseDataAccessTeamId() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study already has a team ID.",
-                new ImmutableMap.Builder<String,String>().put("identifier", study.getIdentifier()).build());
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier())
+                    .put("synapseDataAccessTeamId", study.getSynapseDataAccessTeamId()).build());
         }
         if (study.getSynapseProjectId() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study already has a project ID.",
-                new ImmutableMap.Builder<String,String>().put("identifier", study.getIdentifier()).build());
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier())
+                .put("synapseProjectId", study.getSynapseProjectId()).build());
         }
 
         // then check if the user id exists
