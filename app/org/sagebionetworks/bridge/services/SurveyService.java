@@ -5,11 +5,21 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
+import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
+import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -21,9 +31,45 @@ import org.springframework.validation.Validator;
 
 @Component
 public class SurveyService {
+    
+    /**
+     * The survey is referenced in an activity by exact guid/createdOn version
+     */
+    private static final BiPredicate<Activity,GuidCreatedOnVersionHolder> EXACT_MATCH = (activity, keys) -> {
+        if (activity.getSurvey() != null) {
+            return activity.getSurvey().equalsSurvey(keys);
+        } else if (activity.getCompoundActivity() != null) {
+            CompoundActivity compoundActivity = activity.getCompoundActivity();
+            for (SurveyReference aSurveyRef : compoundActivity.getSurveyList()) {
+                if (aSurveyRef.equalsSurvey(keys)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    /**
+     * The survey is referenced in an activity that wants the most recently published version. If there
+     * is a match, we verify that there is more than one published version to fall back on.
+     */
+    private static final BiPredicate<Activity,GuidCreatedOnVersionHolder> PUBLISHED_MATCH = (activity, keys)-> {
+        if (activity.getSurvey() != null) {
+            return activity.getSurvey().getGuid().equals(keys.getGuid());
+        } else if (activity.getCompoundActivity() != null) {
+            CompoundActivity compoundActivity = activity.getCompoundActivity();
+            for (SurveyReference aSurveyRef : compoundActivity.getSurveyList()) {
+                if (aSurveyRef.getGuid().equals(keys.getGuid())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
 
     private Validator validator;
     private SurveyDao surveyDao;
+    private SchedulePlanService schedulePlanService;
     
     @Autowired
     public void setSurveyDao(SurveyDao surveyDao) {
@@ -33,6 +79,11 @@ public class SurveyService {
     @Autowired
     public void setValidator(SurveyValidator validator) {
         this.validator = validator;
+    }
+    
+    @Autowired
+    public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
+        this.schedulePlanService = schedulePlanService;
     }
 
     /**
@@ -123,13 +174,13 @@ public class SurveyService {
      * timestamp of the survey), put cannot be retrieved in any list of surveys,
      * and is no longer considered when finding the most recently published
      * version of the survey.
-     * 
-     * @param keys
      */
-    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
+    public void deleteSurvey(StudyIdentifier studyId, GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-
+        
+        checkDeleteConstraints(studyId, keys);
+        
         surveyDao.deleteSurvey(keys);
     }
 
@@ -138,14 +189,13 @@ public class SurveyService {
      * clean up surveys from tests. This will remove the survey regardless of
      * publish status, whether it has responses. This will delete all survey
      * elements as well.
-     *
-     * @param keys
-     *            survey keys (guid, created-on timestamp)
      */
-    public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
+    public void deleteSurveyPermanently(StudyIdentifier studyId, GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
+        checkDeleteConstraints(studyId, keys);
+        
         surveyDao.deleteSurveyPermanently(keys);
     }
 
@@ -218,6 +268,53 @@ public class SurveyService {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
 
         return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
+    }
+
+    private void checkDeleteConstraints(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
+        
+        // Cannot be referenced in a schedule
+        SchedulePlan match = findFirstMatchingPlan(plans, keys, EXACT_MATCH);
+        if (match != null) {
+            throwConstraintViolation(match, keys);
+        }
+        
+        // if any schedule has a "published" reference, verify this isn't the last published survey
+        match = findFirstMatchingPlan(plans, keys, PUBLISHED_MATCH);
+        if (match != null) {
+            long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid())
+                    .stream().filter(Survey::isPublished).collect(Collectors.counting());
+            
+            if (publishedSurveys == 1L) {
+                throwConstraintViolation(match, keys);
+            }
+        }
+    }
+
+    private void throwConstraintViolation(SchedulePlan match, final GuidCreatedOnVersionHolder keys) {
+        // It's a little absurd to provide type=Survey, but in a UI that's orchestrating
+        // several calls, it might not be obvious.
+        throw new ConstraintViolationException.Builder()
+            .withEntityKey("guid", keys.getGuid())
+            .withEntityKey("createdOn", DateUtils.convertToISODateTime(keys.getCreatedOn()))
+            .withEntityKey("type", "Survey") 
+            .withReferrerKey("guid", match.getGuid())
+            .withReferrerKey("type", "SchedulePlan").build();
+    }
+
+    private SchedulePlan findFirstMatchingPlan(List<SchedulePlan> plans, GuidCreatedOnVersionHolder keys,
+            BiPredicate<Activity, GuidCreatedOnVersionHolder> predicate) {
+        for (SchedulePlan plan : plans) {
+            List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
+            for (Schedule schedule : schedules) {
+                for (Activity activity : schedule.getActivities()) {
+                    if (predicate.test(activity, keys)) {
+                        return plan;
+                    }
+                }
+            }
+        }
+        return null;
     }
     
 }

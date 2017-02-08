@@ -18,6 +18,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -70,7 +71,7 @@ public class SurveyServiceTest {
         // clean up surveys
         for (GuidCreatedOnVersionHolder oneSurvey : surveysToDelete) {
             try {
-                surveyService.deleteSurveyPermanently(oneSurvey);
+                surveyService.deleteSurveyPermanently(TEST_STUDY, oneSurvey);
             } catch (Exception ex) {
                 logger.error(ex.getMessage(), ex);
             }
@@ -135,7 +136,7 @@ public class SurveyServiceTest {
         survey = surveyService.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
         assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
-        surveyService.deleteSurvey(survey);
+        surveyService.deleteSurvey(TEST_STUDY, survey);
 
         try {
             surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
