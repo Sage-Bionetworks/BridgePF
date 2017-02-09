@@ -306,6 +306,7 @@ public class DynamoSurveyDao implements SurveyDao {
         deleteAllElements(existing.getGuid(), existing.getCreatedOn());
         surveyMapper.delete(existing);
         
+        // Delete the schemas as well, or they accumulate.
         try {
             StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
             uploadSchemaDao.deleteUploadSchemaById(studyId, existing.getIdentifier());
