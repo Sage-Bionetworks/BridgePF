@@ -12,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -166,29 +168,43 @@ public class SurveyService {
     }
 
     /**
-     * Delete this survey. Survey still exists in system and can be retrieved by direct reference (URLs that directly
-     * reference the GUID and createdOn timestamp of the survey), put cannot be retrieved in any list of surveys, and is
-     * no longer considered when finding the most recently published version of the survey.
+     * Logically delete this survey (mark it deleted and do not return it from any list-based APIs; continue 
+     * to provide it when the version is specifically referenced). Once a survey is published, you cannot 
+     * delete it, because we do not know if it has already been dereferenced in scheduled activities. Any 
+     * survey version that could have been sent to users will remain in the API so you can look at its 
+     * schema, etc. This is how study developers should delete surveys. 
      */
     public void deleteSurvey(StudyIdentifier studyId, GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        checkDeleteConstraints(studyId, keys);
-
+        Survey existing = surveyDao.getSurvey(keys);
+        if (existing.isDeleted()) {
+            throw new EntityNotFoundException(Survey.class);
+        }
+        if (existing.isPublished()) {
+            throw new PublishedSurveyException(existing);
+        }
         surveyDao.deleteSurvey(keys);
     }
 
     /**
-     * Admin API to remove the survey from the backing store. This exists to clean up surveys from tests. This will
-     * remove the survey regardless of publish status, whether it has responses. This will delete all survey elements as
-     * well.
+     * <p>Physically remove the survey from the database. This API is mostly for test and early development 
+     * clean up, so it ignores the publication flag, however, we do enforce some constraints:</p>
+     * <ol>
+     *  <li>if a schedule references a specific survey version, don't allow it to be deleted. You can't 
+     *      make these through the Bridge Study Manager, but they're allowable in the API;</li>
+     *      
+     *  <li>if a schedule references the most-recently published version of a survey, verify this delete 
+     *      is not removing the last published instance of the survey. This is the more common case 
+     *      right now.</li>
+     * </ol>
      */
     public void deleteSurveyPermanently(StudyIdentifier studyId, GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        checkDeleteConstraints(studyId, keys);
+        checkConstraintsBeforePhysicalDelete(studyId, keys);
 
         surveyDao.deleteSurveyPermanently(keys);
     }
@@ -261,31 +277,16 @@ public class SurveyService {
         return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
     }
     
-    /**
-     * You cannot delete a survey that is referenced in a schedule. In the normal case, you cannot 
-     * delete the last published version of a study for this reason, but there are a couple of other 
-     * edge cases:
-     * 
-     *   1. A logical survey delete may still be referenced from scheduled activities. Do not allow 
-     *      a survey to be deleted that's referenced specifically in a schedule plan. Note though that 
-     *      the Bridge Study Manager does not currently create these.
-     *      
-     *   2. A physical survey delete ignores constraints on publication, to clean up after tests. If 
-     *      the survey is referenced from a schedule, do not allow the last published version to be 
-     *      physically deleted. Tests need to delete schedule plans first if they reference real 
-     *      published surveys.
-     */
-    private void checkDeleteConstraints(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
+    private void checkConstraintsBeforePhysicalDelete(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
 
-        // Cannot be referenced in a schedule
+        // If a schedule points to this specific survey, don't allow the physical delete.
         SchedulePlan match = findFirstMatchingPlan(plans, keys, EXACT_MATCH);
         if (match != null) {
             throwConstraintViolation(match, keys);
         }
 
-        // Cannot be the last published version if there's a referenced to the most recently published 
-        // version of the survey
+        // If there's a pointer to the published version of this study, make sure this is not the last one.
         match = findFirstMatchingPlan(plans, keys, PUBLISHED_MATCH);
         if (match != null) {
             long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid()).stream()

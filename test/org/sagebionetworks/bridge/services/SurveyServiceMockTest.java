@@ -4,7 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
@@ -15,6 +18,8 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -22,6 +27,8 @@ import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -47,6 +54,9 @@ public class SurveyServiceMockTest {
     
     @Mock
     SchedulePlanService mockSchedulePlanService;
+    
+    @Captor
+    ArgumentCaptor<GuidCreatedOnVersionHolder> keysCaptor;
     
     SurveyService service;
     
@@ -82,8 +92,12 @@ public class SurveyServiceMockTest {
         
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         Survey survey = createSurvey();
+        doReturn(survey).when(mockSurveyDao).getSurvey(any());
         
         service.deleteSurvey(TEST_STUDY, survey);
+        
+        verify(mockSurveyDao).deleteSurvey(keysCaptor.capture());
+        assertEquals(survey, keysCaptor.getValue());
     }
     
     @Test
@@ -98,24 +112,38 @@ public class SurveyServiceMockTest {
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         Survey survey = createSurvey();
         
-        service.deleteSurveyPermanently(TEST_STUDY, survey);    }
+        service.deleteSurveyPermanently(TEST_STUDY, survey);
+        
+        verify(mockSurveyDao).deleteSurveyPermanently(keysCaptor.capture());
+        assertEquals(survey, keysCaptor.getValue());
+    }
     
     @Test
-    public void deleteSurveyConstrainedBySchedule() {
-        List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(false);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+    public void deleteSurveyFailsOnPublishedSurvey() {
         Survey survey = createSurvey();
+        survey.setPublished(true);
+        doReturn(survey).when(mockSurveyDao).getSurvey(any());
         
         try {
             service.deleteSurvey(TEST_STUDY, survey);
             fail("Should have thrown exception");
-        } catch(ConstraintViolationException e) {
-            assertTrue(e.getMessage().contains("Operation not permitted because entity"));
-            assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
-            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
-            assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));
-            assertEquals(SURVEY_CREATED_ON.toString(), e.getEntityKeys().get("createdOn"));
-            assertEquals("Survey", e.getEntityKeys().get("type"));
+        } catch(PublishedSurveyException e) {
+            verify(mockSurveyDao, never()).deleteSurvey(any());
+        }
+    }
+    
+    @Test
+    public void deleteSurveyFailsOnLogicallyDeletedSurvey() {
+        Survey survey = createSurvey();
+        survey.setPublished(false);
+        survey.setDeleted(true);
+        doReturn(survey).when(mockSurveyDao).getSurvey(any());
+        
+        try {
+            service.deleteSurvey(TEST_STUDY, survey);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            verify(mockSurveyDao, never()).deleteSurvey(any());
         }
     }
     
@@ -139,36 +167,13 @@ public class SurveyServiceMockTest {
     }
     
     @Test
-    public void deleteSurveyConstrainedByScheduleWithPublishedSurvey() {
-        List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
-        
-        // One published survey, should throw exception
-        Survey survey = createSurvey();
-        Survey unpubSurvey = createSurvey();
-        unpubSurvey.setPublished(false);
-        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
-        
-        try {
-            service.deleteSurvey(TEST_STUDY, survey);
-            fail("Should have thrown exception");
-        } catch(ConstraintViolationException e) {
-            assertTrue(e.getMessage().contains("Operation not permitted because entity"));
-            assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
-            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
-            assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));
-            assertEquals(SURVEY_CREATED_ON.toString(), e.getEntityKeys().get("createdOn"));
-            assertEquals("Survey", e.getEntityKeys().get("type"));
-        }
-    }
-    
-    @Test
     public void deleteSurveyPermanentlyConstrainedByScheduleWithPublishedSurvey() {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         
         // One published survey, should throw exception
         Survey survey = createSurvey();
+        survey.setPublished(true);
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
         doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
@@ -185,18 +190,6 @@ public class SurveyServiceMockTest {
             assertEquals("Survey", e.getEntityKeys().get("type"));
         }
     }
-    
-    @Test
-    public void deleteSurveyNotConstrainedByScheduleWithMultiplePublishedSurveys() {
-        List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
-        
-        // Two published surveys in the list, no exception thrown
-        Survey survey = createSurvey();
-        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
-        
-        service.deleteSurvey(TEST_STUDY, survey);
-    }
 
     @Test
     public void deleteSurveyPermanentlyNotConstrainedByScheduleWithMultiplePublishedSurveys() {
@@ -208,25 +201,6 @@ public class SurveyServiceMockTest {
         doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
-    }
-    
-    @Test
-    public void deleteSurveyConstrainedByCompoundSchedule() {
-        List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(false);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
-        Survey survey = createSurvey();
-        
-        try {
-            service.deleteSurvey(TEST_STUDY, survey);
-            fail("Should have thrown exception");
-        } catch(ConstraintViolationException e) {
-            assertTrue(e.getMessage().contains("Operation not permitted because entity"));
-            assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
-            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
-            assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));
-            assertEquals(SURVEY_CREATED_ON.toString(), e.getEntityKeys().get("createdOn"));
-            assertEquals("Survey", e.getEntityKeys().get("type"));
-        }
     }
     
     @Test
@@ -249,36 +223,13 @@ public class SurveyServiceMockTest {
     }
     
     @Test
-    public void deleteSurveyConstrainedByCompoundScheduleWithPublishedSurvey() {
-        List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
-        
-        // One published survey, should throw exception
-        Survey survey = createSurvey();
-        Survey unpubSurvey = createSurvey();
-        unpubSurvey.setPublished(false);
-        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
-        
-        try {
-            service.deleteSurvey(TEST_STUDY, survey);
-            fail("Should have thrown exception");
-        } catch(ConstraintViolationException e) {
-            assertTrue(e.getMessage().contains("Operation not permitted because entity"));
-            assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
-            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
-            assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));
-            assertEquals(SURVEY_CREATED_ON.toString(), e.getEntityKeys().get("createdOn"));
-            assertEquals("Survey", e.getEntityKeys().get("type"));
-        }
-    }
-    
-    @Test
     public void deleteSurveyPermanentlyConstrainedByCompoundScheduleWithPublishedSurvey() {
         List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         
         // One published survey, should throw exception
         Survey survey = createSurvey();
+        survey.setPublished(true);
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
         doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
@@ -296,18 +247,6 @@ public class SurveyServiceMockTest {
         }
     }
     
-    @Test
-    public void deleteSurveyNotConstrainedByCompoundScheduleWithMultiplePublishedSurveys() {
-        List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
-        
-        // Two published surveys in the list, no exception thrown
-        Survey survey = createSurvey();
-        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
-        
-        service.deleteSurvey(TEST_STUDY, survey);
-    }
-
     @Test
     public void deleteSurveyPermanentlyNotConstrainedByCompoundScheduleWithMultiplePublishedSurveys() {
         List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
@@ -328,7 +267,7 @@ public class SurveyServiceMockTest {
         Survey survey = new DynamoSurvey();
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON.getMillis());
-        survey.setPublished(true);
+        survey.setPublished(false);
         return survey;
     }
 

@@ -296,13 +296,6 @@ public class DynamoSurveyDao implements SurveyDao {
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }
-        // If a survey has been published, you can't delete the last published version of that survey.
-        if (existing.isPublished()) {
-            int publishedVersionCount = new QueryBuilder().setSurvey(keys.getGuid()).isPublished().isNotDeleted().getCount();
-            if (publishedVersionCount < 2) {
-                throw new PublishedSurveyException(existing, "You cannot delete the last published version of a published survey.");
-            }
-        }
         existing.setDeleted(true);
         saveSurvey(existing);
     }
@@ -313,7 +306,6 @@ public class DynamoSurveyDao implements SurveyDao {
         deleteAllElements(existing.getGuid(), existing.getCreatedOn());
         surveyMapper.delete(existing);
         
-        // Delete the schemas as well, or they accumulate.
         try {
             StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
             uploadSchemaDao.deleteUploadSchemaById(studyId, existing.getIdentifier());
