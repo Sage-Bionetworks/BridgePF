@@ -148,9 +148,7 @@ public class DynamoUploadDao implements UploadDao {
 
         String nextPageOffsetKey = (page.getLastEvaluatedKey() != null) ? page.getLastEvaluatedKey().get(UPLOAD_ID).getS() : null;
 
-        int total = mapper.count(DynamoUpload2.class, createCountQuery(studyId.getIdentifier(), startTime, endTime));
-
-        return new PagedResourceList<>(uploadList, null, pageSize, total)
+        return new PagedResourceList<>(uploadList, null, pageSize, uploadList.size())
                 .withOffsetKey(nextPageOffsetKey);
     }
 
