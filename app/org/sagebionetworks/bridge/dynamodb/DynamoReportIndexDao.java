@@ -6,6 +6,8 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
@@ -26,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 
 @Component
 public class DynamoReportIndexDao implements ReportIndexDao {
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoReportIndexDao.class);
 
     private static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
             .withExpected(new ImmutableMap.Builder<String,ExpectedAttributeValue>()
@@ -58,11 +61,20 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(key.getIdentifier());
 
+        // Optimization: Reads are significantly cheaper than writes. Check to see if the index already exists. If it
+        // does, don't bother writing it.
+        DynamoReportIndex loadedIndex = mapper.load(index);
+        if (loadedIndex != null) {
+            return;
+        }
+
         try {
             mapper.save(index, DOES_NOT_EXIST_EXPRESSION);    
         } catch(ConditionalCheckFailedException e) {
-            // Do not throw an exception if the index already exists. This is called as a side
-            // effect of saving a report, and can be called multiple times for a report.
+            // Read-before-write is not atomic. There's a possible race condition where two machines are creating the
+            // index at the same time. It's rare, but possible that one of these machines may have also updated the
+            // metadata before we save. So we still need this SaveExpression to prevent clobbering the index metadata.
+            LOG.warn("Race condition creating index for " + key.toString() + ": " + e.getMessage(), e);
         }
     }
 

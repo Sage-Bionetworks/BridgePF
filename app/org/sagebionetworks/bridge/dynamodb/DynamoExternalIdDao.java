@@ -159,7 +159,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             
         } catch(ConditionalCheckFailedException e) {
             // The timeout is in effect or the healthCode is set, either way, code is "taken"
-            throw new EntityAlreadyExistsException(identifier);
+            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier());
         }
     }
 
@@ -185,7 +185,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                 
             } catch(ConditionalCheckFailedException e) {
                 // The timeout is in effect or the healthCode is set, either way, code is "taken"
-                throw new EntityAlreadyExistsException(identifier);
+                throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier());
             }        
         }
     }

@@ -7,8 +7,11 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.AppVersionHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -109,6 +112,11 @@ public class UploadSchemaTest {
     }
 
     @Test
+    public void getSetMinMaxAppVersions() throws Exception {
+        AppVersionHelper.testAppVersionHelper(DynamoUploadSchema.class);
+    }
+
+    @Test
     public void schemaKeyObject() {
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setStudyId("test-study");
@@ -126,6 +134,8 @@ public class UploadSchemaTest {
         // so leave this test string as it is. We know from other tests that lower-case 
         // strings work.
         String jsonText = "{\n" +
+                "   \"maxAppVersions\":{\"iOS\":37, \"Android\":42},\n" +
+                "   \"minAppVersions\":{\"iOS\":13, \"Android\":23},\n" +
                 "   \"name\":\"Test Schema\",\n" +
                 "   \"revision\":3,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
@@ -157,7 +167,13 @@ public class UploadSchemaTest {
         assertEquals("test-study", uploadSchema.getStudyId());
         assertEquals("survey-guid", uploadSchema.getSurveyGuid());
         assertEquals(surveyCreatedOnMillis, uploadSchema.getSurveyCreatedOn().longValue());
-        assertEquals(6, uploadSchema.getVersion().longValue());
+        assertEquals(6, ((DynamoUploadSchema) uploadSchema).getVersion().longValue());
+
+        assertEquals(ImmutableSet.of("iOS", "Android"), uploadSchema.getAppVersionOperatingSystems());
+        assertEquals(13, uploadSchema.getMinAppVersion("iOS").intValue());
+        assertEquals(37, uploadSchema.getMaxAppVersion("iOS").intValue());
+        assertEquals(23, uploadSchema.getMinAppVersion("Android").intValue());
+        assertEquals(42, uploadSchema.getMaxAppVersion("Android").intValue());
 
         UploadFieldDefinition fooFieldDef = uploadSchema.getFieldDefinitions().get(0);
         assertEquals("foo", fooFieldDef.getName());
@@ -170,14 +186,14 @@ public class UploadSchemaTest {
         assertEquals(UploadFieldType.STRING, barFieldDef.getType());
 
         // Add study ID and verify that it doesn't get leaked into the JSON
-        ((DynamoUploadSchema) uploadSchema).setStudyId("test-study");
+        uploadSchema.setStudyId("test-study");
 
         // convert back to JSON
         String convertedJson = BridgeObjectMapper.get().writeValueAsString(uploadSchema);
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(10, jsonMap.size());
+        assertEquals(12, jsonMap.size());
         assertEquals("Test Schema", jsonMap.get("name"));
         assertEquals(3, jsonMap.get("revision"));
         assertEquals("test-schema", jsonMap.get("schemaId"));
@@ -186,6 +202,16 @@ public class UploadSchemaTest {
         assertEquals("survey-guid", jsonMap.get("surveyGuid"));
         assertEquals("UploadSchema", jsonMap.get("type"));
         assertEquals(6,  jsonMap.get("version"));
+
+        Map<String, Integer> maxAppVersionMap = (Map<String, Integer>) jsonMap.get("maxAppVersions");
+        assertEquals(2, maxAppVersionMap.size());
+        assertEquals(37, maxAppVersionMap.get("iOS").intValue());
+        assertEquals(42, maxAppVersionMap.get("Android").intValue());
+
+        Map<String, Integer> minAppVersionMap = (Map<String, Integer>) jsonMap.get("minAppVersions");
+        assertEquals(2, minAppVersionMap.size());
+        assertEquals(13, minAppVersionMap.get("iOS").intValue());
+        assertEquals(23, minAppVersionMap.get("Android").intValue());
 
         // The createdOn time is converted into ISO timestamp, but might be in a different timezone. Ensure that it
         // still refers to the correct instant in time, down to the millisecond.

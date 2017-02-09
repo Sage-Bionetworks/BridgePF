@@ -146,12 +146,14 @@ POST   /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.
 DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
 # Notifications
-GET    /v3/notifications        @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getAllRegistrations
-POST   /v3/notifications        @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.createRegistration
-GET    /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getRegistration(guid: String)
-POST   /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.updateRegistration(guid: String)
-DELETE /v3/notifications/:guid  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.deleteRegistration(guid: String) 
-
+GET    /v3/notifications                      @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getAllRegistrations
+POST   /v3/notifications                      @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.createRegistration
+GET    /v3/notifications/:guid                @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getRegistration(guid: String)
+POST   /v3/notifications/:guid                @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.updateRegistration(guid: String)
+DELETE /v3/notifications/:guid                @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.deleteRegistration(guid: String)
+GET    /v3/notifications/:guid/subscriptions  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getSubscriptionStatuses(guid: String)
+POST   /v3/notifications/:guid/subscriptions  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.subscribe(guid: String)
+ 
 # Topics
 GET    /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getAllTopics
 POST   /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.createTopic

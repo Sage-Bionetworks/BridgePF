@@ -78,6 +78,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private static final Map<String, String> SURVEY_TYPE_TO_ANSWER_KEY_MAP = ImmutableMap.<String, String>builder()
             .put("Boolean", "booleanAnswer")
             .put("Date", "dateAnswer")
+            .put("DateAndTime", "dateAnswer")
             .put("Decimal", "numericAnswer")
             .put("Integer", "numericAnswer")
             .put("MultipleChoice", "choiceAnswers")

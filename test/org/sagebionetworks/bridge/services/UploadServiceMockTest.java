@@ -197,8 +197,8 @@ public class UploadServiceMockTest {
         when(mockUploadWithNoRecord.getRecordId()).thenReturn("missing-record-id");
 
         // Mock getUploads/getUpload calls
-        List<? extends Upload> results = ImmutableList.of(mockUpload, mockFailedUpload, mockUploadWithNoRecord);
-        PagedResourceList<? extends UploadView> pagedList = new PagedResourceList(results, null, API_MAXIMUM_PAGE_SIZE, results.size())
+        List<Upload> results = ImmutableList.of(mockUpload, mockFailedUpload, mockUploadWithNoRecord);
+        PagedResourceList<Upload> pagedList = new PagedResourceList<Upload>(results, null, API_MAXIMUM_PAGE_SIZE, results.size())
                 .withOffsetKey(MOCK_OFFSET_KEY);
         doReturn(results).when(mockDao).getUploads("ABC", START_TIME, END_TIME);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);

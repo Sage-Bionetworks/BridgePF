@@ -9,6 +9,7 @@ import javax.annotation.Resource;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,6 +75,11 @@ public class DynamoUploadSchemaDaoDdbTest {
                 .withType(UploadFieldType.STRING).build();
         schema.setFieldDefinitions(ImmutableList.of(fieldDef));
 
+        schema.setMinAppVersion("iOS", 13);
+        schema.setMaxAppVersion("iOS", 37);
+        schema.setMinAppVersion("Android", 23);
+        schema.setMaxAppVersion("Android", 42);
+
         // Save it to DDB, then read it back and make sure it has the same fields. (Can't use .equals(), even if we
         // implemented it, because the mapper functions modify the object we pass in.)
         mapper.save(schema);
@@ -94,6 +100,12 @@ public class DynamoUploadSchemaDaoDdbTest {
         UploadFieldDefinition returnedFieldDef = returnedFieldDefList.get(0);
         assertEquals("test-field", returnedFieldDef.getName());
         assertEquals(UploadFieldType.STRING, returnedFieldDef.getType());
+
+        assertEquals(ImmutableSet.of("iOS", "Android"), savedSchema.getAppVersionOperatingSystems());
+        assertEquals(13, savedSchema.getMinAppVersion("iOS").intValue());
+        assertEquals(37, savedSchema.getMaxAppVersion("iOS").intValue());
+        assertEquals(23, savedSchema.getMinAppVersion("Android").intValue());
+        assertEquals(42, savedSchema.getMaxAppVersion("Android").intValue());
     }
 
     @Test
@@ -156,10 +168,11 @@ public class DynamoUploadSchemaDaoDdbTest {
         updatingSchema4.setRevision(13);
 
         // Update and validate. Validate that study, schema ID, and rev were set. Version should now be version 2.
-        UploadSchema updatedSchema4 = dao.updateSchemaRevisionV4(TestConstants.TEST_STUDY, schemaId, 4,
-                updatingSchema4);
+        DynamoUploadSchema updatedSchema4 = (DynamoUploadSchema) dao.updateSchemaRevisionV4(TestConstants.TEST_STUDY,
+                schemaId, 4, updatingSchema4);
         assertSimpleSchema(updatedSchema4, "rev4 v2", 4, TestConstants.TEST_STUDY_IDENTIFIER, 2L);
-        UploadSchema fetchedSchema4v2 = dao.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schemaId, 4);
+        DynamoUploadSchema fetchedSchema4v2 = (DynamoUploadSchema) dao.getUploadSchemaByIdAndRev(
+                TestConstants.TEST_STUDY, schemaId, 4);
         assertSimpleSchema(fetchedSchema4v2, "rev4 v2", 4, TestConstants.TEST_STUDY_IDENTIFIER, 2L);
 
         // Update rev4 v1 again, get a ConcurrentModificationException.
@@ -188,9 +201,11 @@ public class DynamoUploadSchemaDaoDdbTest {
         UploadSchema schema = makeSimpleSchema(name, createdRev, null, 1L);
 
         // Created schema has version 1 and has study ID set.
-        UploadSchema createdSchema = dao.createSchemaRevisionV4(TestConstants.TEST_STUDY, schema);
+        DynamoUploadSchema createdSchema = (DynamoUploadSchema) dao.createSchemaRevisionV4(TestConstants.TEST_STUDY,
+                schema);
         assertSimpleSchema(createdSchema, name, expectedRev, TestConstants.TEST_STUDY_IDENTIFIER, 1L);
-        UploadSchema fetchedSchema = dao.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schemaId, expectedRev);
+        DynamoUploadSchema fetchedSchema = (DynamoUploadSchema) dao.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY,
+                schemaId, expectedRev);
         assertSimpleSchema(fetchedSchema, name, expectedRev, TestConstants.TEST_STUDY_IDENTIFIER, 1L);
     }
 
@@ -210,7 +225,7 @@ public class DynamoUploadSchemaDaoDdbTest {
         return schema;
     }
 
-    private void assertSimpleSchema(UploadSchema schema, String name, int rev, String studyId, Long version) {
+    private void assertSimpleSchema(DynamoUploadSchema schema, String name, int rev, String studyId, Long version) {
         assertEquals(FIELD_DEF_LIST, schema.getFieldDefinitions());
         assertEquals(name, schema.getName());
         assertEquals(rev, schema.getRevision());

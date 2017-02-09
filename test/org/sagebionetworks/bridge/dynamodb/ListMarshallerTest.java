@@ -19,10 +19,6 @@ public class ListMarshallerTest {
         public String getValue() {
             return value;
         }
-
-        public void setValue(String value) {
-            this.value = value;
-        }
     }
 
     private static class TestListMarshaller extends ListMarshaller<TestObject> {

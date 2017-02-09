@@ -6,11 +6,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
 
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -50,10 +51,11 @@ import com.newrelic.agent.deps.com.google.common.collect.Lists;
 public class DynamoNotificationRegistrationDaoTest {
 
     private static final String PLATFORM_ARN = "platformARN";
-    private static final String GUID = BridgeUtils.generateGuid();
+    private static final String GUID = "registrationGuid";
     private static final String HEALTH_CODE = "healthCode";
     private static final String ENDPOINT_ARN = "endpointARN";
     private static final String DEVICE_ID = "deviceId";
+    private static final String OS_NAME = "osName";
     private static final long CREATED_ON = 1484173675648L;
     private static final long MODIFIED_ON = 1484173687607L;
     
@@ -99,7 +101,7 @@ public class DynamoNotificationRegistrationDaoTest {
     @Test
     public void list() {
         List<NotificationRegistration> registrations = Lists.newArrayList(
-                getStubRegistration(), getStubRegistration());
+                TestUtils.getNotificationRegistration(), TestUtils.getNotificationRegistration());
         
         doReturn(paginatedQueryList).when(mockMapper).query(eq(DynamoNotificationRegistration.class), queryCaptor.capture());
         doReturn(registrations.stream()).when(paginatedQueryList).stream();
@@ -169,7 +171,7 @@ public class DynamoNotificationRegistrationDaoTest {
     // that's the only part that's additional to the createNotifications() test when new.
     @Test
     public void createWhenItExists() {
-        List<NotificationRegistration> registrations = Lists.newArrayList(getStubRegistration());
+        List<NotificationRegistration> registrations = Lists.newArrayList(getNotificationRegistration());
         doReturn(paginatedQueryList).when(mockMapper).query(eq(DynamoNotificationRegistration.class), queryCaptor.capture());
         doReturn(registrations.stream()).when(paginatedQueryList).stream();
 
@@ -194,7 +196,7 @@ public class DynamoNotificationRegistrationDaoTest {
     
     @Test
     public void get() {
-        NotificationRegistration registration = getStubRegistration();
+        NotificationRegistration registration = getNotificationRegistration();
         doReturn(registration).when(mockMapper).load(any());
         
         NotificationRegistration returned = dao.getRegistration(HEALTH_CODE, GUID);
@@ -220,7 +222,7 @@ public class DynamoNotificationRegistrationDaoTest {
     
     @Test
     public void updateNoChange() {
-        NotificationRegistration registration = getStubRegistration();
+        NotificationRegistration registration = getNotificationRegistration();
         doReturn(registration).when(mockMapper).load(any());
         
         Map<String,String> map = Maps.newHashMap();
@@ -238,7 +240,7 @@ public class DynamoNotificationRegistrationDaoTest {
     
     @Test
     public void updateWhenTokenHasChanged() {
-        NotificationRegistration registration = getStubRegistration();
+        NotificationRegistration registration = getNotificationRegistration();
         doReturn(registration).when(mockMapper).load(any());
         
         Map<String,String> map = Maps.newHashMap();
@@ -263,7 +265,7 @@ public class DynamoNotificationRegistrationDaoTest {
         assertEquals(HEALTH_CODE, persisted.getHealthCode());
         assertEquals(ENDPOINT_ARN, persisted.getEndpointARN());
         assertEquals(DEVICE_ID, persisted.getDeviceId());
-        assertEquals(OperatingSystem.IOS, persisted.getOsName());
+        assertEquals(OS_NAME, persisted.getOsName());
         assertEquals(CREATED_ON, persisted.getCreatedOn());
         assertNotEquals(MODIFIED_ON, persisted.getModifiedOn()); // modified is changed
         assertTrue(persisted.getModifiedOn() > 0L);
@@ -274,7 +276,7 @@ public class DynamoNotificationRegistrationDaoTest {
         doReturn(null).when(mockMapper).load(any());
         doThrow(new NotFoundException("Error")).when(mockSnsClient).getEndpointAttributes(any());
         
-        NotificationRegistration registration = getStubRegistration();
+        NotificationRegistration registration = getNotificationRegistration();
         try {
             dao.updateRegistration(registration);
             fail("Should not have thrown exception");
@@ -286,7 +288,7 @@ public class DynamoNotificationRegistrationDaoTest {
     
     @Test
     public void delete() {
-        NotificationRegistration registration = getStubRegistration();
+        NotificationRegistration registration = getNotificationRegistration();
         doReturn(registration).when(mockMapper).load(any());
         
         dao.deleteRegistration(HEALTH_CODE, GUID);
@@ -313,17 +315,5 @@ public class DynamoNotificationRegistrationDaoTest {
         }
         verify(mockMapper, never()).save(any());
         verify(mockSnsClient, never()).setEndpointAttributes(any());
-    }
-    
-    private NotificationRegistration getStubRegistration() {
-        NotificationRegistration registration = NotificationRegistration.create();
-        registration.setGuid(GUID);
-        registration.setHealthCode(HEALTH_CODE);
-        registration.setEndpointARN(ENDPOINT_ARN);
-        registration.setDeviceId(DEVICE_ID);
-        registration.setOsName(OperatingSystem.IOS);
-        registration.setCreatedOn(CREATED_ON);
-        registration.setModifiedOn(MODIFIED_ON);
-        return registration;
     }
 }
