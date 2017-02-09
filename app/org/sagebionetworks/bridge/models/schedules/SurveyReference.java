@@ -69,6 +69,9 @@ public final class SurveyReference {
     }
 
     public boolean equalsSurvey(GuidCreatedOnVersionHolder keys) {
+        if (keys == null) {
+            return false;
+        }
         return (keys.getGuid().equals(guid) && createdOn != null && keys.getCreatedOn() == createdOn.getMillis());
     }
     

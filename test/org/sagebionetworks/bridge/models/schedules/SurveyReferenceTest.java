@@ -35,6 +35,8 @@ public class SurveyReferenceTest {
         ref = new SurveyReference(IDENTIFIER, GUID, null);
         assertFalse(ref.equalsSurvey(keys1));
         assertFalse(ref.equalsSurvey(keys2));
+        
+        assertFalse(ref.equalsSurvey(null));
     }
     
 }
