@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -25,12 +26,15 @@ import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import play.core.j.JavaResultExtractor;
@@ -39,6 +43,7 @@ import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -52,6 +57,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyAndUserHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
@@ -74,6 +80,12 @@ public class StudyControllerTest {
     private static final String TEST_PROJECT_ID = "synapseProjectId";
     private static final Long TEST_TEAM_ID = Long.parseLong("123");
     private static final String TEST_USER_ID = "1234";
+    private static final String TEST_USER_EMAIL = "test+user@email.com";
+    private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
+    private static final String TEST_USER_FIRST_NAME = "test_user_first_name";
+    private static final String TEST_USER_LAST_NAME = "test_user_last_name";
+    private static final String TEST_USER_PASSWORD = "test_user_password";
+    private static final String TEST_IDENTIFIER = "test_identifier";
 
     private StudyController controller;
     private StudyIdentifier studyId;
@@ -199,6 +211,50 @@ public class StudyControllerTest {
 
         controller.deleteStudy(study.getIdentifier(), "false");
     }
+
+    @Test
+    public void canCreateStudyAndUser() throws Exception {
+        // mock
+        Study study = TestUtils.getValidStudy(StudyControllerTest.class);
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+
+        StudyParticipant mockUser1 = new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL)
+                .withFirstName(TEST_USER_FIRST_NAME)
+                .withLastName(TEST_USER_LAST_NAME)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
+                .withPassword(TEST_USER_PASSWORD)
+                .build();
+
+        StudyParticipant mockUser2 = new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL_2)
+                .withFirstName(TEST_USER_FIRST_NAME)
+                .withLastName(TEST_USER_LAST_NAME)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
+                .withPassword(TEST_USER_PASSWORD)
+                .build();
+
+        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(study, mockUsers);
+        String json = BridgeObjectMapper.get().writeValueAsString(mockStudyAndUserHolder);
+        TestUtils.mockPlayContextWithJson(json);
+
+        // stub
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        ArgumentCaptor<StudyAndUserHolder> argumentCaptor = ArgumentCaptor.forClass(StudyAndUserHolder.class);
+        when(mockStudyService.createStudyAndUser(argumentCaptor.capture())).thenReturn(study);
+
+        // execute
+        controller.createStudyAndUser();
+
+        // verify
+        verify(mockStudyService, times(1)).createStudyAndUser(any());
+        StudyAndUserHolder capObj = argumentCaptor.getValue();
+        assertEquals(study, capObj.getStudy());
+        assertEquals(mockUsers, capObj.getUsers());
+    }
+
 
     @Test
     public void canCreateSynapse() throws Exception {

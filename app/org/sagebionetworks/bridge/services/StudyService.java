@@ -39,10 +39,13 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyAndUserHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -51,6 +54,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class StudyService {
 
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
+    static final String ADMIN_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getAdminSynapseUserId();  // official account to bootstrap synapse project and team
 
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
@@ -65,6 +69,7 @@ public class StudyService {
     private NotificationTopicService topicService;
     private EmailVerificationService emailVerificationService;
     private SynapseClient synapseClient;
+    private ParticipantService participantService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -128,6 +133,11 @@ public class StudyService {
         this.emailVerificationService = emailVerificationService;
     }
     @Autowired
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
+    }
+
+    @Autowired
     @Qualifier("bridgePFSynapseClient")
     public final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
@@ -162,6 +172,40 @@ public class StudyService {
 
     public List<Study> getStudies() {
         return studyDao.getStudies();
+    }
+
+    public Study createStudyAndUser(StudyAndUserHolder studyAndUserHolder) throws SynapseException {
+        checkNotNull(studyAndUserHolder, Validate.CANNOT_BE_NULL, "study and users");
+        if (studyAndUserHolder.getUsers() == null) {
+            throw new BadRequestException("User list cannot be null.");
+        }
+        if (studyAndUserHolder.getStudy() == null) {
+            throw new BadRequestException("Study cannot be null.");
+        }
+
+        List<StudyParticipant> users = studyAndUserHolder.getUsers();
+        if (users.isEmpty()) {
+            throw new BadRequestException("User list should not be empty.");
+        }
+
+        Study study = studyAndUserHolder.getStudy();
+
+        // first create study
+        study = createStudy(study);
+
+        // then create users for that study
+        // send verification email as well
+        for (StudyParticipant user: users) {
+            IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), user,true);
+
+            // send resetting password email as well
+            participantService.requestResetPassword(study, identifierHolder.getIdentifier());
+        }
+
+        // finally create synapse project and team
+        createSynapseProjectTeam(ADMIN_SYNAPSE_USER_ID, study);
+
+        return study;
     }
 
     public Study createStudy(Study study) {
@@ -237,6 +281,11 @@ public class StudyService {
         toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
         toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
         acl.getResourceAccess().add(toSetUser);
+        // add team in project as well
+        ResourceAccess toSetTeam = new ResourceAccess();
+        toSetTeam.setPrincipalId(Long.parseLong(newTeam.getId())); // passed by user as parameter
+        toSetTeam.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        acl.getResourceAccess().add(toSetTeam);
 
         synapseClient.updateACL(acl);
 

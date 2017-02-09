@@ -18,6 +18,7 @@ import org.springframework.stereotype.Controller;
 import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Result;
+
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -28,6 +29,7 @@ import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyAndUserHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
@@ -50,21 +52,21 @@ public class StudyController extends BaseController {
             .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
     private UploadCertificateService uploadCertificateService;
-    
+
     private EmailVerificationService emailVerificationService;
-    
+
     private UploadService uploadService;
 
     @Autowired
     final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
         this.uploadCertificateService = uploadCertificateService;
     }
-    
+
     @Autowired
     final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
         this.emailVerificationService = emailVerificationService;
     }
-    
+
     @Autowired
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
@@ -136,6 +138,15 @@ public class StudyController extends BaseController {
         return okResult(new VersionHolder(study.getVersion()));
     }
 
+    public Result createStudyAndUser() throws Exception {
+        getAuthenticatedSession(ADMIN);
+
+        StudyAndUserHolder studyAndUserHolder = parseJson(request(), StudyAndUserHolder.class);
+        Study study = studyService.createStudyAndUser(studyAndUserHolder);
+
+        return okResult(new VersionHolder(study.getVersion()));
+    }
+
     public Result createSynapse(String synapseUserId) throws Exception {
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -166,15 +177,15 @@ public class StudyController extends BaseController {
 
         return okResult(new CmsPublicKey(pem));
     }
-    
+
     public Result getEmailStatus() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+
         EmailVerificationStatus status = emailVerificationService.getEmailStatus(study.getSupportEmail());
         return okResult(new EmailVerificationStatusHolder(status));
     }
-    
+
     @BodyParser.Of(BodyParser.Empty.class)
     public Result verifyEmail() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -183,10 +194,10 @@ public class StudyController extends BaseController {
         EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
         return okResult(new EmailVerificationStatusHolder(status));
     }
-    
+
     public Result getUploads(String startTimeString, String endTimeString, Integer pageSize, String offsetKey) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        
+
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
 
