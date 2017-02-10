@@ -211,10 +211,9 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     /** 
      * True if the external ID must be provided when the user signs up. If validation is also 
-     * enabled, this study uses lab codes. In the lab code scenario, the external ID is used 
-     * in an email and a password, so it must be provided and cannot have been used before. 
-     * If this is false, the external ID must still be unique and unused when provided, but it 
-     * is not used to generate credentials.
+     * enabled, this study is configured to use lab codes if desired (username and password auto-
+     * generated from the external ID). If this is false, the external ID is not required when 
+     * submitting a sign up. 
      */
     boolean isExternalIdRequiredOnSignup();
     
