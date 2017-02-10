@@ -284,9 +284,10 @@ public class StudyService {
             if (!originalStudy.isActive()) {
                 throw new EntityNotFoundException(Study.class, "Study '"+ study.getIdentifier() +"' not found.");
             }
-
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
+            study.setExternalIdValidationEnabled(originalStudy.isExternalIdRequiredOnSignup());
+            study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method

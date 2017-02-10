@@ -49,6 +49,7 @@ public final class DynamoStudy implements Study {
     private boolean healthCodeExportEnabled;
     private boolean emailVerificationEnabled;
     private boolean externalIdValidationEnabled;
+    private boolean externalIdRequiredOnSignup;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
 
@@ -356,16 +357,24 @@ public final class DynamoStudy implements Study {
     public void setPushNotificationARNs(Map<String,String> map) {
         this.pushNotificationARNs = (map == null) ? new HashMap<>() : map;
     }
-    
-    
+
+    @Override
+    public boolean isExternalIdRequiredOnSignup() {
+        return externalIdRequiredOnSignup;
+    }
+
+    @Override
+    public void setExternalIdRequiredOnSignup(boolean externalIdRequiredOnSignup) {
+        this.externalIdRequiredOnSignup = externalIdRequiredOnSignup;
+    }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, minAgeOfConsent, name, sponsorName, supportEmail,
-                technicalEmail, consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers,
-                dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active,
-                strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
-                externalIdValidationEnabled, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
+        return Objects.hash(identifier, minAgeOfConsent, name, sponsorName, supportEmail, technicalEmail,
+                consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers, dataGroups,
+                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active, strictUploadValidationEnabled,
+                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
+                externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
                 usesCustomExportSchedule, pushNotificationARNs);
     }
 
@@ -397,6 +406,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
                 && Objects.equals(externalIdValidationEnabled, other.externalIdValidationEnabled)
                 && Objects.equals(emailVerificationEnabled, other.emailVerificationEnabled)
+                && Objects.equals(externalIdRequiredOnSignup, other.externalIdRequiredOnSignup)
                 && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions)
                 && Objects.equals(pushNotificationARNs, other.pushNotificationARNs);
     }
@@ -405,16 +415,16 @@ public final class DynamoStudy implements Study {
     public String toString() {
         return String.format(
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
-                            + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
-                            + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
-                            + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
-                            + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
-                            + "externalIdValidationEnabled=%s, minSupportedAppVersions=%s, usesCustomExportSchedule=%s, "
-                            + "pushNotificationARNs=%s]",
+                        + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
+                        + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
+                        + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
+                        + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
+                        + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
+                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail, synapseDataAccessTeamId, 
                 synapseProjectId, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
                 dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
-                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, minSupportedAppVersions, 
-                usesCustomExportSchedule, pushNotificationARNs);
+                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, externalIdRequiredOnSignup, 
+                minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs);
     }
 }

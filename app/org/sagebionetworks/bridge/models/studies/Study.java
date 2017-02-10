@@ -209,6 +209,18 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** @see #isExternalIdValidationEnabled(); */
     void setExternalIdValidationEnabled(boolean externalIdValidationEnabled);
     
+    /** 
+     * True if the external ID must be provided when the user signs up. If validation is also 
+     * enabled, this study uses lab codes. In the lab code scenario, the external ID is used 
+     * in an email and a password, so it must be provided and cannot have been used before. 
+     * If this is false, the external ID must still be unique and unused when provided, but it 
+     * is not used to generate credentials.
+     */
+    boolean isExternalIdRequiredOnSignup();
+    
+    /** @see #isExternalIdRequiredOnSignup(); */
+    void setExternalIdRequiredOnSignup(boolean externalIdRequiredOnSignup);
+    
     /**
      * Minimum supported app version number. If set, user app clients pointing to an older version will 
      * fail with an httpResponse status code of 410.
