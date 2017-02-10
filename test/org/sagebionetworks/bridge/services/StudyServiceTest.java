@@ -272,21 +272,31 @@ public class StudyServiceTest {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setHealthCodeExportEnabled(false);
         study.setEmailVerificationEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
+        study.setExternalIdValidationEnabled(true);
         study = studyService.createStudy(study);
         
         // Okay, now that these are set, researchers cannot change them
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setExternalIdValidationEnabled(false);
         study = studyService.updateStudy(study, false); // nope
         assertFalse("isHealthCodeExportEnabled should be false", study.isHealthCodeExportEnabled());
         assertTrue("isEmailVerificationEnabled should be true", study.isEmailVerificationEnabled());
-        
+        assertTrue("isExternalIdRequiredOnSignup should be true", study.isExternalIdRequiredOnSignup());
+        assertTrue("isExternalIdValidationEnabled should be true", study.isExternalIdValidationEnabled());
+
         // But administrators can
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setExternalIdValidationEnabled(false);
         study = studyService.updateStudy(study, true); // yep
         assertTrue(study.isHealthCodeExportEnabled());
         assertFalse(study.isEmailVerificationEnabled());
+        assertFalse(study.isExternalIdRequiredOnSignup());
+        assertFalse(study.isExternalIdValidationEnabled());
     }
     
     @Test(expected=InvalidEntityException.class)
