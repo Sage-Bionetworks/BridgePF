@@ -286,7 +286,7 @@ public class StudyService {
             }
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
-            study.setExternalIdValidationEnabled(originalStudy.isExternalIdRequiredOnSignup());
+            study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
         }
 
@@ -337,7 +337,7 @@ public class StudyService {
         if (!physical) {
             // deactivate
             if (!existing.isActive()) {
-                throw new BadRequestException("Study '"+identifier+"' is deactivated before.");
+                throw new BadRequestException("Study '"+identifier+"' already deactivated.");
             }
             studyDao.deactivateStudy(existing.getIdentifier());
         } else {
