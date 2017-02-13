@@ -7,7 +7,9 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -114,7 +116,7 @@ public class StudyServiceMockTest {
 
     @Before
     public void before() {
-        service = new StudyService();
+        service = spy(new StudyService());
         service.setCompoundActivityDefinitionService(compoundActivityDefinitionService);
         service.setNotificationTopicService(topicService);
         service.setUploadCertificateService(uploadCertService);
@@ -243,6 +245,7 @@ public class StudyServiceMockTest {
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
         study.setExternalIdValidationEnabled(false);
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
@@ -264,21 +267,12 @@ public class StudyServiceMockTest {
         StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(TEST_ADMIN_IDS, study, mockUsers);
         IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
 
-        AccessControlList mockAcl = new AccessControlList();
-        AccessControlList mockTeamAcl = new AccessControlList();
-        mockAcl.setResourceAccess(new HashSet<ResourceAccess>());
-        mockTeamAcl.setResourceAccess(new HashSet<ResourceAccess>());
+        // spy
+        doReturn(study).when(service).createStudy(any());
+        doReturn(study).when(service).createSynapseProjectTeam(any(), any());
 
         // stub
         when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
-        when(emailVerificationService.verifyEmailAddress(study.getSupportEmail()))
-                .thenReturn(EmailVerificationStatus.PENDING);
-        when(studyDao.createStudy(study)).thenReturn(study);
-
-        when(mockSynapseClient.createTeam(any())).thenReturn(mockTeam);
-        when(mockSynapseClient.createEntity(any())).thenReturn(mockProject);
-        when(mockSynapseClient.getACL(any())).thenReturn(mockAcl);
-        when(mockSynapseClient.getTeamACL(any())).thenReturn(mockTeamAcl);
 
         // execute
         service.createStudyAndUser(mockStudyAndUserHolder);
@@ -288,6 +282,8 @@ public class StudyServiceMockTest {
         verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(true));
         verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(true));
         verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
+        verify(service).createStudy(study);
+        verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
     }
 
     @Test (expected = BadRequestException.class)
@@ -506,6 +502,17 @@ public class StudyServiceMockTest {
         assertNotNull(capturedUserRa);
         assertEquals(capturedUserRa.getPrincipalId(), TEST_USER_ID);
         assertEquals(capturedUserRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        // then verify team
+        List<ResourceAccess> retListForTeam = capturedProjectAclSet.stream()
+                .filter(ra -> ra.getPrincipalId().equals(Long.parseLong(TEST_TEAM_ID)))
+                .collect(Collectors.toList());
+
+        assertNotNull(retListForTeam);
+        assertEquals(retListForTeam.size(), 1); // should only have one team info
+        ResourceAccess capturedTeamRa = retListForTeam.get(0);
+        assertNotNull(capturedTeamRa);
+        assertEquals(capturedTeamRa.getPrincipalId().toString(), TEST_TEAM_ID);
+        assertEquals(capturedTeamRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
 
         // invite user to team
         verify(mockSynapseClient).createMembershipInvitation(eq(mockTeamMemberInvitation), any(), any());
