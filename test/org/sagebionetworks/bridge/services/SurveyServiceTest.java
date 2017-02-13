@@ -136,7 +136,7 @@ public class SurveyServiceTest {
         survey = surveyService.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
         assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
-        surveyService.deleteSurvey(TEST_STUDY, survey);
+        surveyService.deleteSurvey(survey);
 
         try {
             surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());

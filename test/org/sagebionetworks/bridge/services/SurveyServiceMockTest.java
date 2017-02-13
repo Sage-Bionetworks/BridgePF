@@ -58,6 +58,9 @@ public class SurveyServiceMockTest {
     @Captor
     ArgumentCaptor<GuidCreatedOnVersionHolder> keysCaptor;
     
+    @Captor
+    ArgumentCaptor<Survey> surveyCaptor;
+    
     SurveyService service;
     
     @Before
@@ -94,10 +97,10 @@ public class SurveyServiceMockTest {
         Survey survey = createSurvey();
         doReturn(survey).when(mockSurveyDao).getSurvey(any());
         
-        service.deleteSurvey(TEST_STUDY, survey);
+        service.deleteSurvey(survey);
         
-        verify(mockSurveyDao).deleteSurvey(keysCaptor.capture());
-        assertEquals(survey, keysCaptor.getValue());
+        verify(mockSurveyDao).deleteSurvey(surveyCaptor.capture());
+        assertEquals(survey, surveyCaptor.getValue());
     }
     
     @Test
@@ -125,7 +128,7 @@ public class SurveyServiceMockTest {
         doReturn(survey).when(mockSurveyDao).getSurvey(any());
         
         try {
-            service.deleteSurvey(TEST_STUDY, survey);
+            service.deleteSurvey(survey);
             fail("Should have thrown exception");
         } catch(PublishedSurveyException e) {
             verify(mockSurveyDao, never()).deleteSurvey(any());
@@ -140,7 +143,7 @@ public class SurveyServiceMockTest {
         doReturn(survey).when(mockSurveyDao).getSurvey(any());
         
         try {
-            service.deleteSurvey(TEST_STUDY, survey);
+            service.deleteSurvey(survey);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             verify(mockSurveyDao, never()).deleteSurvey(any());

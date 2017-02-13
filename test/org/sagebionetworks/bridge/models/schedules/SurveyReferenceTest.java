@@ -37,6 +37,11 @@ public class SurveyReferenceTest {
         assertFalse(ref.equalsSurvey(keys2));
         
         assertFalse(ref.equalsSurvey(null));
+        
+        // Same guid, different createdOn
+        GuidCreatedOnVersionHolder keys3 = new GuidCreatedOnVersionHolderImpl("def", DateTime.now().getMillis());
+        assertFalse(ref.equalsSurvey(keys3));
+        
     }
     
 }

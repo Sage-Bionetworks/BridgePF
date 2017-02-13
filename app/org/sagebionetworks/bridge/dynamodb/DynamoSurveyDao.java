@@ -291,13 +291,11 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys);
-        if (existing.isDeleted()) {
-            throw new EntityNotFoundException(Survey.class);
-        }
-        existing.setDeleted(true);
-        saveSurvey(existing);
+    public void deleteSurvey(Survey survey) {
+        checkNotNull(survey);
+
+        survey.setDeleted(true);
+        saveSurvey(survey);
     }
 
     @Override

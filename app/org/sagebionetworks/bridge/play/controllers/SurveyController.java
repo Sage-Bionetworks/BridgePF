@@ -164,7 +164,7 @@ public class SurveyController extends BaseController {
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             surveyService.deleteSurveyPermanently(studyId, survey);
         } else if (session.isInRole(DEVELOPER)) {
-            surveyService.deleteSurvey(studyId, survey);    
+            surveyService.deleteSurvey(survey);    
         } else {
             // An admin calling for a logical delete. That wasn't allowed before so we don't allow it now.
             throw new UnauthorizedException();

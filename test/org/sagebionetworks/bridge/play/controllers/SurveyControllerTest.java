@@ -411,7 +411,7 @@ public class SurveyControllerTest {
         controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
 
         verify(service).getSurvey(KEYS);
-        verify(service).deleteSurvey(API_STUDY_ID, survey);
+        verify(service).deleteSurvey(survey);
         verifyNoMoreInteractions(service);
     }
     
@@ -425,7 +425,7 @@ public class SurveyControllerTest {
         controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
         
         verify(service).getSurvey(KEYS);
-        verify(service).deleteSurvey(API_STUDY_ID, survey);
+        verify(service).deleteSurvey(survey);
         verifyNoMoreInteractions(service);
     }
     

@@ -34,57 +34,22 @@ import org.springframework.validation.Validator;
 @Component
 public class SurveyService {
 
-    /**
-     * The survey is referenced in an activity by exact guid/createdOn version
-     */
-    private static final BiPredicate<Activity, GuidCreatedOnVersionHolder> EXACT_MATCH = (activity, keys) -> {
-        if (activity.getSurvey() != null) {
-            return activity.getSurvey().equalsSurvey(keys);
-        } else if (activity.getCompoundActivity() != null) {
-            CompoundActivity compoundActivity = activity.getCompoundActivity();
-            for (SurveyReference aSurveyRef : compoundActivity.getSurveyList()) {
-                if (aSurveyRef.equalsSurvey(keys)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
-    /**
-     * The survey is referenced in an activity that wants the most recently published version. If there is a match, we
-     * verify that there is more than one published version to fall back on.
-     */
-    private static final BiPredicate<Activity, GuidCreatedOnVersionHolder> PUBLISHED_MATCH = (activity, keys) -> {
-        if (activity.getSurvey() != null) {
-            return activity.getSurvey().getGuid().equals(keys.getGuid());
-        } else if (activity.getCompoundActivity() != null) {
-            CompoundActivity compoundActivity = activity.getCompoundActivity();
-            for (SurveyReference aSurveyRef : compoundActivity.getSurveyList()) {
-                if (aSurveyRef.getGuid().equals(keys.getGuid())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
     private Validator validator;
     private SurveyDao surveyDao;
     private SchedulePlanService schedulePlanService;
 
     @Autowired
-    public void setSurveyDao(SurveyDao surveyDao) {
+    final void setSurveyDao(SurveyDao surveyDao) {
         this.surveyDao = surveyDao;
     }
 
     @Autowired
-    public void setValidator(SurveyValidator validator) {
+    final void setValidator(SurveyValidator validator) {
         this.validator = validator;
     }
 
     @Autowired
-    public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
+    final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
     }
 
@@ -174,7 +139,7 @@ public class SurveyService {
      * survey version that could have been sent to users will remain in the API so you can look at its 
      * schema, etc. This is how study developers should delete surveys. 
      */
-    public void deleteSurvey(StudyIdentifier studyId, GuidCreatedOnVersionHolder keys) {
+    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
@@ -185,7 +150,7 @@ public class SurveyService {
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
         }
-        surveyDao.deleteSurvey(keys);
+        surveyDao.deleteSurvey(existing);
     }
 
     /**
@@ -281,13 +246,17 @@ public class SurveyService {
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
 
         // If a schedule points to this specific survey, don't allow the physical delete.
-        SchedulePlan match = findFirstMatchingPlan(plans, keys, EXACT_MATCH);
+        SchedulePlan match = findFirstMatchingPlan(plans, keys, (surveyReference, theseKeys) -> {
+            return surveyReference.equalsSurvey(theseKeys);
+        });
         if (match != null) {
             throwConstraintViolation(match, keys);
         }
 
         // If there's a pointer to the published version of this study, make sure this is not the last one.
-        match = findFirstMatchingPlan(plans, keys, PUBLISHED_MATCH);
+        match = findFirstMatchingPlan(plans, keys, (surveyReference, theseKeys) -> {
+            return surveyReference.getGuid().equals(theseKeys.getGuid());
+        });
         if (match != null) {
             long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid()).stream()
                     .filter(Survey::isPublished).collect(Collectors.counting());
@@ -308,13 +277,23 @@ public class SurveyService {
     }
 
     private SchedulePlan findFirstMatchingPlan(List<SchedulePlan> plans, GuidCreatedOnVersionHolder keys,
-            BiPredicate<Activity, GuidCreatedOnVersionHolder> predicate) {
+            BiPredicate<SurveyReference, GuidCreatedOnVersionHolder> predicate) {
         for (SchedulePlan plan : plans) {
             List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
             for (Schedule schedule : schedules) {
                 for (Activity activity : schedule.getActivities()) {
-                    if (predicate.test(activity, keys)) {
-                        return plan;
+                    if (activity.getSurvey() != null) {
+                        if (predicate.test(activity.getSurvey(), keys)) {
+                            return plan;
+                        }
+                    } else if (activity.getCompoundActivity() != null) {
+                        CompoundActivity compoundActivity = activity.getCompoundActivity();
+                        for (SurveyReference aSurveyRef : compoundActivity.getSurveyList()) {
+                            
+                            if (predicate.test(aSurveyRef, keys)) {
+                                return plan;
+                            }
+                        }
                     }
                 }
             }
