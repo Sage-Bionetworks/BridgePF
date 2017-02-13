@@ -47,6 +47,7 @@ public class StudyParticipantValidatorTest {
     public void validatesNew() throws Exception {
         validator = new StudyParticipantValidator(study, true);
         study.setExternalIdValidationEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
         
         Map<String,String> attrs = Maps.newHashMap();
         attrs.put("badValue", "value");
@@ -61,7 +62,7 @@ public class StudyParticipantValidatorTest {
             Validate.entityThrowingException(validator, participant);
         } catch(InvalidEntityException e) {
             assertError(e, "email", 0, " is required");
-            assertError(e, "externalId", 0, " cannot be null or blank");
+            assertError(e, "externalId", 0, " is required");
             assertError(e, "dataGroups", 0, " 'badGroup' is not defined for study (use group1, group2, bluebell)");
             assertError(e, "attributes", 0, " 'badValue' is not defined for study (use attr1, attr2, phone)");
             assertError(e, "password", 0, " must be at least 8 characters");

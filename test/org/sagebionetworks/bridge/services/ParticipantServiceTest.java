@@ -87,7 +87,6 @@ public class ParticipantServiceTest {
         STUDY.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         STUDY.getUserProfileAttributes().add(PHONE);
     }
-    private static final String USERS_HEALTH_CODE = "POWERS";
     private static final String EXTERNAL_ID = "externalId";
     private static final String HEALTH_CODE = "healthCode";
     private static final String LAST_NAME = "lastName";
@@ -113,11 +112,15 @@ public class ParticipantServiceTest {
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
             .withStatus(AccountStatus.DISABLED)
-            .withExternalId(USERS_HEALTH_CODE).build();
+            .withExternalId(EXTERNAL_ID).build();
             
     private static final StudyParticipant NO_ID_PARTICIPANT = new StudyParticipant.Builder()
             .copyOf(PARTICIPANT)
             .withExternalId(null).build();
+    
+    private static final StudyParticipant NEW_ID_PARTICIPANT = new StudyParticipant.Builder()
+            .copyOf(PARTICIPANT)
+            .withExternalId("newExternalId").build();
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
@@ -181,6 +184,7 @@ public class ParticipantServiceTest {
     @Before
     public void before() {
         STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(false);
         participantService = new ParticipantService();
         participantService.setAccountDao(accountDao);
         participantService.setParticipantOptionsService(optionsService);
@@ -194,12 +198,12 @@ public class ParticipantServiceTest {
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
-        doReturn(ID).when(account).getId();
-        doReturn(account).when(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
-        doReturn(account).when(accountDao).getAccount(STUDY, ID);
-        doReturn(HEALTH_CODE).when(account).getHealthCode();
-        doReturn(EMAIL).when(account).getEmail();
-        doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
+        when(account.getId()).thenReturn(ID);
+        when(accountDao.constructAccount(STUDY, EMAIL, PASSWORD)).thenReturn(account);
+        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
+        when(account.getHealthCode()).thenReturn(HEALTH_CODE);
+        when(account.getEmail()).thenReturn(EMAIL);
+        when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
     }
     
     @Test
@@ -210,8 +214,8 @@ public class ParticipantServiceTest {
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         assertEquals(ID, idHolder.getIdentifier());
         
-        verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
-        verify(externalIdService).assignExternalId(STUDY, USERS_HEALTH_CODE, HEALTH_CODE);
+        verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID);
+        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
         // suppress email (true) == sendEmail (false)
@@ -247,14 +251,14 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         
         doThrow(new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", "AAA"))
-            .when(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
+            .when(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID);
         
         try {
             participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
         }
-        verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
+        verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID);
         verifyNoMoreInteractions(accountDao);
         verifyNoMoreInteractions(optionsService);
     }
@@ -265,12 +269,12 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
-        verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
+        verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID);
         // Do not set the externalId with the other options, go through the externalIdService
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption,String> options = optionsCaptor.getValue();
         assertNull(options.get(EXTERNAL_IDENTIFIER));
-        verify(externalIdService).assignExternalId(STUDY, USERS_HEALTH_CODE, HEALTH_CODE);
+        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
     }
     
     @Test
@@ -286,21 +290,6 @@ public class ParticipantServiceTest {
         verifyNoMoreInteractions(accountDao);
         verifyNoMoreInteractions(optionsService);
         verifyNoMoreInteractions(externalIdService);
-    }
-    
-    @Test
-    public void createParticipantWithNoExternalIdValidation() {
-        STUDY.setExternalIdValidationEnabled(false);
-        mockHealthCodeAndAccountRetrieval();
-        
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
-
-        verify(externalIdService).reserveExternalId(STUDY, USERS_HEALTH_CODE);
-        // set externalId like any other option, we're not using externalIdService
-        verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
-        Map<ParticipantOption,String> options = optionsCaptor.getValue();
-        assertEquals(USERS_HEALTH_CODE, options.get(EXTERNAL_IDENTIFIER));
-        verify(externalIdService).assignExternalId(STUDY, USERS_HEALTH_CODE, HEALTH_CODE);
     }
     
     @Test
@@ -478,53 +467,6 @@ public class ParticipantServiceTest {
         verify(account).setAttribute(PHONE, "123456789");
     }
     
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantWithExternalIdValidationChangingId() {
-        STUDY.setExternalIdValidationEnabled(true);
-        mockHealthCodeAndAccountRetrieval();
-        
-        doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
-        doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
-        
-        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantWithExternalIdValidationRemovingId() {
-        STUDY.setExternalIdValidationEnabled(true);
-        mockHealthCodeAndAccountRetrieval();
-        
-        doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
-        doReturn("BBB").when(lookup).getString(EXTERNAL_IDENTIFIER);
-        
-        participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
-    }
-    
-    @Test
-    public void updateParticipantWithExternalIdValidationNoIdChange() {
-        STUDY.setExternalIdValidationEnabled(true);
-        mockHealthCodeAndAccountRetrieval();
-        
-        doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
-        doReturn(USERS_HEALTH_CODE).when(lookup).getString(EXTERNAL_IDENTIFIER);
-        
-        // This just succeeds because the IDs are the same, and we'll verify no attempt was made to update it.
-        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
-        
-        verifyNoMoreInteractions(externalIdService);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void updateParticipantWithExternalIdValidationIdMissing() {
-        STUDY.setExternalIdValidationEnabled(true);
-        mockHealthCodeAndAccountRetrieval();   
-        
-        doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
-        doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
-        
-        participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
-    }
-    
     @Test(expected = InvalidEntityException.class)
     public void updateParticipantWithInvalidParticipant() {
         mockHealthCodeAndAccountRetrieval();
@@ -546,30 +488,6 @@ public class ParticipantServiceTest {
         verify(accountDao, never()).updateAccount(any());
         verifyNoMoreInteractions(optionsService);
         verifyNoMoreInteractions(externalIdService);
-    }
-    
-    @Test
-    public void updateParticipantWithNoExternalIdValidation() {
-        STUDY.setExternalIdValidationEnabled(false);
-        mockHealthCodeAndAccountRetrieval();
-        
-        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
-        
-        verifyNoMoreInteractions(externalIdService);
-        verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
-        Map<ParticipantOption, String> options = optionsCaptor.getValue();
-        assertEquals(USERS_HEALTH_CODE, options.get(EXTERNAL_IDENTIFIER));
-    }
-    
-    @Test
-    public void createParticipantWithoutExternalIdAndNoValidation() {
-        STUDY.setExternalIdValidationEnabled(false);
-        mockHealthCodeAndAccountRetrieval();
-
-        // These are the minimal credentials and they should work.
-        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
-        assertEquals(ID, idHolder.getIdentifier());
-        verifyNoMoreInteractions(externalIdService); // no ID, no calls to this service
     }
     
     @Test
@@ -897,6 +815,215 @@ public class ParticipantServiceTest {
         verify(notificationsService).sendNotificationToUser(STUDY.getStudyIdentifier(), HEALTH_CODE, message);
     }
     
+    @Test
+    public void createValidatedAndRequiredExternalId() { 
+        STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setExternalIdRequiredOnSignup(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verifyIdReservation(EXTERNAL_ID);
+        verifyNotSetAsOption();
+    }
+    
+    @Test
+    public void updateValidatedAndRequiredExternalId() { 
+        STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setExternalIdRequiredOnSignup(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
+        
+        verifyNotSetAsReservation();
+        verifyNotSetAsOption();
+    }
+
+    @Test
+    public void createValidatedExternalId() {
+        STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setExternalIdRequiredOnSignup(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verifyIdReservation(EXTERNAL_ID);
+        verifyNotSetAsOption();
+    }
+    
+    @Test
+    public void updateValidatedExternalId() {
+        STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setExternalIdRequiredOnSignup(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
+        
+        verifyIdAssignedWithoutReservation(NEW_ID_PARTICIPANT.getExternalId());
+        verifySetAsOption(null);
+    }
+    
+    @Test
+    public void createRequiredExternalId() {
+        STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verifyIdReservation(EXTERNAL_ID);
+        verifyNotSetAsOption();
+    }
+    
+    @Test
+    public void updateRequiredExternalId() {
+        STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
+        
+        verifyNotSetAsReservation();
+        verifyNotSetAsOption();
+    }
+    
+    @Test
+    public void createExternalId() {
+        STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verifyNotSetAsReservation();
+        verifySetAsOption(EXTERNAL_ID);
+    }
+    
+    @Test
+    public void updateExternalId() {
+        STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
+        
+        verifyNotSetAsReservation();
+        verifySetAsOption("newExternalId");
+    }
+
+    @Test
+    public void createValidatedAndRequiredIdNoValue() {
+        try {
+            STUDY.setExternalIdValidationEnabled(true);
+            STUDY.setExternalIdRequiredOnSignup(true);
+            mockHealthCodeAndAccountRetrieval();
+
+            participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("StudyParticipant is invalid: externalId is required", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void updateValidatedAndRequiredId() {
+        STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setExternalIdRequiredOnSignup(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        
+        verifyNotSetAsReservation();
+        verifyNotSetAsOption();
+    }
+    
+    @Test
+    public void createValidatedIdNoValue() {
+        STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setExternalIdRequiredOnSignup(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
+        
+        verifyNotSetAsReservation();
+        verifyNotSetAsOption();
+    }
+    
+    @Test
+    public void createRequiredIdNoValue() {
+        STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        try {
+            participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("StudyParticipant is invalid: externalId is required", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void createIdNoValue() {
+        STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
+        
+        verifyNotSetAsReservation();
+        verifySetAsOption(null);
+    }
+    
+    @Test
+    public void updateValidatedAndRequiredIdNoValue() {
+        STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setExternalIdRequiredOnSignup(true);
+        mockHealthCodeAndAccountRetrieval();
+            
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
+            
+        verifyNotSetAsReservation();
+        verifyNotSetAsOption();
+    }
+    
+    @Test
+    public void updateValidatedIdNoValue() {
+        STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setExternalIdRequiredOnSignup(false);
+        mockHealthCodeAndAccountRetrieval();
+        try {
+            participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+            assertEquals("External ID cannot be changed, removed after assignment, or left unassigned.", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void updateRequiredIdNoValue() {
+        STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
+        
+        verifyNotSetAsReservation();
+        verifyNotSetAsOption();
+    }
+    
+    @Test
+    public void updateIdNoValue() {
+        STUDY.setExternalIdValidationEnabled(false);
+        STUDY.setExternalIdRequiredOnSignup(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
+        
+        verifyNotSetAsReservation();
+        verifySetAsOption(null);
+    }
+
     private void verifyStatusCreate(Set<Roles> callerRoles) {
         mockHealthCodeAndAccountRetrieval();
         
@@ -972,5 +1099,33 @@ public class ParticipantServiceTest {
     
     private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> expected) {
         verifyRoleUpdate(callerRoles, Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER), expected);
+    }
+    
+    private void verifyIdReservation(String withId) {
+        verify(externalIdService).reserveExternalId(STUDY, withId);
+        verify(externalIdService).assignExternalId(STUDY, withId, HEALTH_CODE);
+    }
+    
+    private void verifyIdAssignedWithoutReservation(String withId) {
+        verify(externalIdService, never()).reserveExternalId(STUDY, withId);
+        verify(externalIdService).assignExternalId(STUDY, withId, HEALTH_CODE);
+        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+    }
+    
+    private void verifyNotSetAsReservation() {
+        verify(externalIdService, never()).reserveExternalId(STUDY, EXTERNAL_ID);
+        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+    }
+    
+    private void verifyNotSetAsOption() {
+        verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
+        for (Map<ParticipantOption,String> optionsLookup : optionsCaptor.getAllValues()) {
+            assertNull(optionsLookup.get(EXTERNAL_IDENTIFIER));
+        }
+    }
+    
+    private void verifySetAsOption(String withId) {
+        verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
+        assertEquals(withId, optionsCaptor.getValue().get(EXTERNAL_IDENTIFIER));
     }
 }
