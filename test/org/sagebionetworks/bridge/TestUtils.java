@@ -353,6 +353,7 @@ public class TestUtils {
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(true);
         study.setExternalIdValidationEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
         study.setActive(true);
         study.setPushNotificationARNs(pushNotificationARNs);
         return study;

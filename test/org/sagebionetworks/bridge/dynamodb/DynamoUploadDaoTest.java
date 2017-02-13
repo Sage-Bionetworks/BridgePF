@@ -14,26 +14,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -232,7 +230,6 @@ public class DynamoUploadDaoTest {
         List<? extends Upload> items = paginatedList.getItems();
         assertEquals(1, items.size()); // only return 1 upload in each page
         assertEquals(1, paginatedList.getPageSize());
-        assertEquals(2, paginatedList.getTotal());
 
         String offsetKey = paginatedList.getOffsetKey();
         assertNotNull(offsetKey); // we shall have an offset key to start next time
@@ -247,7 +244,6 @@ public class DynamoUploadDaoTest {
         List<? extends Upload> nextPage = paginatedList.getItems();
         assertEquals(1, nextPage.size()); // only return 1 upload in each page
         assertEquals(1, paginatedList.getPageSize());
-        assertEquals(2, paginatedList.getTotal());
 
         offsetKey = paginatedList.getOffsetKey();
         assertNotNull(offsetKey);
@@ -261,7 +257,6 @@ public class DynamoUploadDaoTest {
         List<? extends Upload> finalPage = paginatedList.getItems();
         assertEquals(0, finalPage.size());
         assertEquals(1, paginatedList.getPageSize());
-        assertEquals(2, paginatedList.getTotal());
 
         offsetKey = paginatedList.getOffsetKey();
         assertNull(offsetKey);

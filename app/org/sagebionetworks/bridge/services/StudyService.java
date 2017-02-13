@@ -284,9 +284,10 @@ public class StudyService {
             if (!originalStudy.isActive()) {
                 throw new EntityNotFoundException(Study.class, "Study '"+ study.getIdentifier() +"' not found.");
             }
-
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
+            study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
+            study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method
@@ -336,7 +337,7 @@ public class StudyService {
         if (!physical) {
             // deactivate
             if (!existing.isActive()) {
-                throw new BadRequestException("Study '"+identifier+"' is deactivated before.");
+                throw new BadRequestException("Study '"+identifier+"' already deactivated.");
             }
             studyDao.deactivateStudy(existing.getIdentifier());
         } else {
