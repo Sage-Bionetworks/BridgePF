@@ -56,7 +56,7 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyAndUserHolder;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -264,7 +264,7 @@ public class StudyServiceMockTest {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(TEST_ADMIN_IDS, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
         IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
 
         // spy
@@ -275,7 +275,7 @@ public class StudyServiceMockTest {
         when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
 
         // execute
-        service.createStudyAndUser(mockStudyAndUserHolder);
+        service.createStudyAndUsers(mockStudyAndUsers);
 
         // verify
         verify(participantService, times(2)).createParticipant(any(), any(), any(), anyBoolean());
@@ -302,10 +302,10 @@ public class StudyServiceMockTest {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1);
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(null, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, study, mockUsers);
 
         // execute
-        service.createStudyAndUser(mockStudyAndUserHolder);
+        service.createStudyAndUsers(mockStudyAndUsers);
     }
 
     @Test (expected = BadRequestException.class)
@@ -332,10 +332,10 @@ public class StudyServiceMockTest {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(null, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, study, mockUsers);
 
         // execute
-        service.createStudyAndUser(mockStudyAndUserHolder);
+        service.createStudyAndUsers(mockStudyAndUsers);
     }
 
     @Test (expected = BadRequestException.class)
@@ -354,10 +354,10 @@ public class StudyServiceMockTest {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1);
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(null, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, study, mockUsers);
 
         // execute
-        service.createStudyAndUser(mockStudyAndUserHolder);
+        service.createStudyAndUsers(mockStudyAndUsers);
     }
 
     @Test (expected = BadRequestException.class)
@@ -384,10 +384,10 @@ public class StudyServiceMockTest {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(ImmutableList.of(), study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of(), study, mockUsers);
 
         // execute
-        service.createStudyAndUser(mockStudyAndUserHolder);
+        service.createStudyAndUsers(mockStudyAndUsers);
     }
 
     @Test (expected = BadRequestException.class)
@@ -398,10 +398,10 @@ public class StudyServiceMockTest {
         study.setSynapseDataAccessTeamId(null);
 
         List<StudyParticipant> mockUsers = new ArrayList<>();
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(TEST_ADMIN_IDS, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
 
         // execute
-        service.createStudyAndUser(mockStudyAndUserHolder);
+        service.createStudyAndUsers(mockStudyAndUsers);
     }
 
     @Test (expected = BadRequestException.class)
@@ -410,10 +410,10 @@ public class StudyServiceMockTest {
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(TEST_ADMIN_IDS, study, null);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, null);
 
         // execute
-        service.createStudyAndUser(mockStudyAndUserHolder);
+        service.createStudyAndUsers(mockStudyAndUsers);
     }
 
     @Test (expected = BadRequestException.class)
@@ -440,10 +440,10 @@ public class StudyServiceMockTest {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(TEST_ADMIN_IDS, null, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, null, mockUsers);
 
         // execute
-        service.createStudyAndUser(mockStudyAndUserHolder);
+        service.createStudyAndUsers(mockStudyAndUsers);
     }
 
     @Test

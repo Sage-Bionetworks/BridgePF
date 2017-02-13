@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
-public class StudyAndUserHolderTest {
+public class StudyAndUsersTest {
     private static final String TEST_STUDY_ID = "test-study-id";
     private static final String TEST_STUDY_NAME = "test=study-name";
     private static final String TEST_USER_EMAIL = "test+user@email.com";
@@ -42,14 +42,14 @@ public class StudyAndUserHolderTest {
                 "\t\t\t\"lastName\": \"test_user_last_name\",\n" +
                 "\t\t\t\"email\": \"test+user@email.com\",\n" +
                 "\t\t\t\"password\": \"test_user_password\",\n" +
-                "\t\t\t\"roles\": [\"DEVELOPER\",\"RESEARCHER\"]\n" +
+                "\t\t\t\"roles\": [\"developer\",\"researcher\"]\n" +
                 "\t\t},\n" +
                 "\t\t{\n" +
                 "\t\t\t\"firstName\": \"test_user_first_name\",\n" +
                 "\t\t\t\"lastName\": \"test_user_last_name\",\n" +
                 "\t\t\t\"email\": \"test+user+2@email.com\",\n" +
                 "\t\t\t\"password\": \"test_user_password\",\n" +
-                "\t\t\t\"roles\": [\"RESEARCHER\"]\n" +
+                "\t\t\t\"roles\": [\"researcher\"]\n" +
                 "\t\t}\n" +
                 "\t]\n" +
                 "}";
@@ -84,10 +84,10 @@ public class StudyAndUserHolderTest {
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
-        StudyAndUserHolder retStudyAndUserHolder = BridgeObjectMapper.get().readValue(json, StudyAndUserHolder.class);
-        List<String> retAdminIds = retStudyAndUserHolder.getAdminIds();
-        Study retStudy = retStudyAndUserHolder.getStudy();
-        List<StudyParticipant> userList = retStudyAndUserHolder.getUsers();
+        StudyAndUsers retStudyAndUsers = BridgeObjectMapper.get().readValue(json, StudyAndUsers.class);
+        List<String> retAdminIds = retStudyAndUsers.getAdminIds();
+        Study retStudy = retStudyAndUsers.getStudy();
+        List<StudyParticipant> userList = retStudyAndUsers.getUsers();
 
         // verify
         assertEquals(adminIds, retAdminIds);

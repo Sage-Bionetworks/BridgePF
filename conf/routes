@@ -169,7 +169,7 @@ POST /v3/recordExportStatuses      @org.sagebionetworks.bridge.play.controllers.
 # Studies
 GET    /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null, summary: String ?= null)
 POST   /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy
-POST   /v3/studies/createStudyAndUser   @org.sagebionetworks.bridge.play.controllers.StudyController.createStudyAndUser
+POST   /v3/studies/init             @org.sagebionetworks.bridge.play.controllers.StudyController.createStudyAndUsers
 GET    /v3/studies/self             @org.sagebionetworks.bridge.play.controllers.StudyController.getCurrentStudy
 GET    /v3/studies/self/publicKey   @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyPublicKeyAsPem
 GET    /v3/studies/self/emailStatus @org.sagebionetworks.bridge.play.controllers.StudyController.getEmailStatus

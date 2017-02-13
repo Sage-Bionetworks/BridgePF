@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyAndUserHolder;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
@@ -140,11 +140,11 @@ public class StudyController extends BaseController {
         return okResult(new VersionHolder(study.getVersion()));
     }
 
-    public Result createStudyAndUser() throws Exception {
+    public Result createStudyAndUsers() throws Exception {
         getAuthenticatedSession(ADMIN);
 
-        StudyAndUserHolder studyAndUserHolder = parseJson(request(), StudyAndUserHolder.class);
-        Study study = studyService.createStudyAndUser(studyAndUserHolder);
+        StudyAndUsers studyAndUsers = parseJson(request(), StudyAndUsers.class);
+        Study study = studyService.createStudyAndUsers(studyAndUsers);
 
         return createdResult(new VersionHolder(study.getVersion()));
     }

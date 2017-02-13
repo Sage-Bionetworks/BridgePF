@@ -47,7 +47,7 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyAndUserHolder;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
@@ -176,15 +176,12 @@ public class StudyService {
         return studyDao.getStudies();
     }
 
-    public Study createStudyAndUser(StudyAndUserHolder studyAndUserHolder) throws SynapseException {
-        checkNotNull(studyAndUserHolder, Validate.CANNOT_BE_NULL, "study and users");
-        if (studyAndUserHolder.getAdminIds() == null) {
-            throw new BadRequestException("Admin Ids cannot be null.");
-        }
+    public Study createStudyAndUsers(StudyAndUsers studyAndUsers) throws SynapseException {
+        checkNotNull(studyAndUsers, Validate.CANNOT_BE_NULL, "study and users");
 
-        List<String> adminIds = studyAndUserHolder.getAdminIds();
-        if (adminIds.isEmpty()) {
-            throw new BadRequestException("Admin Ids cannot be empty.");
+        List<String> adminIds = studyAndUsers.getAdminIds();
+        if (adminIds == null || adminIds.isEmpty()) {
+            throw new BadRequestException("Admin Ids cannot be null or empty.");
         }
         // validate if each admin id is a valid synapse id in synapse
         for (String adminId : adminIds) {
@@ -195,19 +192,19 @@ public class StudyService {
             }
         }
 
-        if (studyAndUserHolder.getUsers() == null) {
+        if (studyAndUsers.getUsers() == null) {
             throw new BadRequestException("User list cannot be null.");
         }
-        if (studyAndUserHolder.getStudy() == null) {
+        if (studyAndUsers.getStudy() == null) {
             throw new BadRequestException("Study cannot be null.");
         }
-        Study study = studyAndUserHolder.getStudy();
+        Study study = studyAndUsers.getStudy();
         // prevent NPE in participant validation
         if (study.getPasswordPolicy() == null) {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
 
-        List<StudyParticipant> users = studyAndUserHolder.getUsers();
+        List<StudyParticipant> users = studyAndUsers.getUsers();
 
         // validate participants at first
         if (users.isEmpty()) {
@@ -240,7 +237,7 @@ public class StudyService {
         }
 
         // finally create synapse project and team
-        createSynapseProjectTeam(studyAndUserHolder.getAdminIds(), study);
+        createSynapseProjectTeam(studyAndUsers.getAdminIds(), study);
 
         return study;
     }

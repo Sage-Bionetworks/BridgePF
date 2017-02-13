@@ -6,12 +6,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
-public final class StudyAndUserHolder implements BridgeEntity {
+public final class StudyAndUsers implements BridgeEntity {
     private final List<String> adminIds;
     private final Study study;
     private final List<StudyParticipant> users;
 
-    public StudyAndUserHolder(@JsonProperty("adminIds")List<String> adminIds, @JsonProperty("study")Study study, @JsonProperty("users")List<StudyParticipant> users) {
+    public StudyAndUsers(@JsonProperty("adminIds")List<String> adminIds, @JsonProperty("study")Study study, @JsonProperty("users")List<StudyParticipant> users) {
         this.adminIds = adminIds;
         this.study = study;
         this.users = users;

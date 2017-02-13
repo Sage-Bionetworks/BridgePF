@@ -58,7 +58,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyAndUserHolder;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
@@ -242,23 +242,23 @@ public class StudyControllerTest {
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(adminIds, study, mockUsers);
-        String json = BridgeObjectMapper.get().writeValueAsString(mockStudyAndUserHolder);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(adminIds, study, mockUsers);
+        String json = BridgeObjectMapper.get().writeValueAsString(mockStudyAndUsers);
         TestUtils.mockPlayContextWithJson(json);
 
         // stub
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
-        ArgumentCaptor<StudyAndUserHolder> argumentCaptor = ArgumentCaptor.forClass(StudyAndUserHolder.class);
-        when(mockStudyService.createStudyAndUser(argumentCaptor.capture())).thenReturn(study);
+        ArgumentCaptor<StudyAndUsers> argumentCaptor = ArgumentCaptor.forClass(StudyAndUsers.class);
+        when(mockStudyService.createStudyAndUsers(argumentCaptor.capture())).thenReturn(study);
 
         // execute
-        Result result = controller.createStudyAndUser();
+        Result result = controller.createStudyAndUsers();
         String versionHolderStr = Helpers.contentAsString(result);
         VersionHolder versionHolder = BridgeObjectMapper.get().readValue(versionHolderStr, VersionHolder.class);
 
         // verify
-        verify(mockStudyService, times(1)).createStudyAndUser(any());
-        StudyAndUserHolder capObj = argumentCaptor.getValue();
+        verify(mockStudyService, times(1)).createStudyAndUsers(any());
+        StudyAndUsers capObj = argumentCaptor.getValue();
         assertEquals(study, capObj.getStudy());
         assertEquals(mockUsers, capObj.getUsers());
         assertEquals(adminIds, capObj.getAdminIds());
