@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
@@ -86,6 +87,8 @@ public class StudyControllerTest {
     private static final String TEST_USER_LAST_NAME = "test_user_last_name";
     private static final String TEST_USER_PASSWORD = "test_user_password";
     private static final String TEST_IDENTIFIER = "test_identifier";
+    private static final String TEST_ADMIN_ID_1 = "3346407";
+    private static final String TEST_ADMIN_ID_2 = "3348228";
 
     private StudyController controller;
     private StudyIdentifier studyId;
@@ -218,6 +221,7 @@ public class StudyControllerTest {
         Study study = TestUtils.getValidStudy(StudyControllerTest.class);
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
+        study.setVersion(1L);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
@@ -236,7 +240,9 @@ public class StudyControllerTest {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(study, mockUsers);
+        List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
+
+        StudyAndUserHolder mockStudyAndUserHolder = new StudyAndUserHolder(adminIds, study, mockUsers);
         String json = BridgeObjectMapper.get().writeValueAsString(mockStudyAndUserHolder);
         TestUtils.mockPlayContextWithJson(json);
 
@@ -246,26 +252,37 @@ public class StudyControllerTest {
         when(mockStudyService.createStudyAndUser(argumentCaptor.capture())).thenReturn(study);
 
         // execute
-        controller.createStudyAndUser();
+        Result result = controller.createStudyAndUser();
+        String versionHolderStr = Helpers.contentAsString(result);
+        VersionHolder versionHolder = BridgeObjectMapper.get().readValue(versionHolderStr, VersionHolder.class);
 
         // verify
         verify(mockStudyService, times(1)).createStudyAndUser(any());
         StudyAndUserHolder capObj = argumentCaptor.getValue();
         assertEquals(study, capObj.getStudy());
         assertEquals(mockUsers, capObj.getUsers());
+        assertEquals(adminIds, capObj.getAdminIds());
+        assertEquals(study.getVersion(), versionHolder.getVersion());
+        assertEquals(201, result.status());
     }
 
 
     @Test
     public void canCreateSynapse() throws Exception {
+        // mock
+        List<String> mockUserIds = ImmutableList.of(TEST_USER_ID);
+        String json = BridgeObjectMapper.get().writeValueAsString(mockUserIds);
+        TestUtils.mockPlayContextWithJson(json);
+
+        // stub
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
 
-        Result result = controller.createSynapse(TEST_USER_ID);
+        Result result = controller.createSynapse();
         String synapseIds = Helpers.contentAsString(result);
 
         // verify
         verify(mockStudyService).getStudy(eq(studyId));
-        verify(mockStudyService).createSynapseProjectTeam(eq(TEST_USER_ID), eq(study));
+        verify(mockStudyService).createSynapseProjectTeam(eq(mockUserIds), eq(study));
 
         JsonNode synapse = BridgeObjectMapper.get().readTree(synapseIds);
         assertEquals(TEST_PROJECT_ID, synapse.get("projectId").asText());

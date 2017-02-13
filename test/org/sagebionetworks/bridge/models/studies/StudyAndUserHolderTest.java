@@ -5,8 +5,6 @@ import static org.junit.Assert.assertEquals;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
@@ -24,10 +22,38 @@ public class StudyAndUserHolderTest {
     private static final String TEST_USER_FIRST_NAME = "test_user_first_name";
     private static final String TEST_USER_LAST_NAME = "test_user_last_name";
     private static final String TEST_USER_PASSWORD = "test_user_password";
+    private static final String TEST_ADMIN_ID_1 = "3346407";
+    private static final String TEST_ADMIN_ID_2 = "3348228";
 
     @Test
     public void deserializeCorrectly() throws Exception {
         // mock
+        String json = "{\n" +
+                "\t\"adminIds\": [\"3346407\", \"3348228\"],\n" +
+                "\t\"study\": {\n" +
+                "\t  \"identifier\": \"test-study-id\",\n" +
+                "\t  \"supportEmail\": \"test+user@email.com\",\n" +
+                "\t  \"name\": \"test=study-name\",\n" +
+                "\t  \"active\": \"true\"\n" +
+                "\t},\n" +
+                "\t\"users\": [\n" +
+                "\t\t{\n" +
+                "\t\t\t\"firstName\": \"test_user_first_name\",\n" +
+                "\t\t\t\"lastName\": \"test_user_last_name\",\n" +
+                "\t\t\t\"email\": \"test+user@email.com\",\n" +
+                "\t\t\t\"password\": \"test_user_password\",\n" +
+                "\t\t\t\"roles\": [\"DEVELOPER\",\"RESEARCHER\"]\n" +
+                "\t\t},\n" +
+                "\t\t{\n" +
+                "\t\t\t\"firstName\": \"test_user_first_name\",\n" +
+                "\t\t\t\"lastName\": \"test_user_last_name\",\n" +
+                "\t\t\t\"email\": \"test+user+2@email.com\",\n" +
+                "\t\t\t\"password\": \"test_user_password\",\n" +
+                "\t\t\t\"roles\": [\"RESEARCHER\"]\n" +
+                "\t\t}\n" +
+                "\t]\n" +
+                "}";
+
         Study study = new DynamoStudy();
         study.setActive(true);
         study.setIdentifier(TEST_STUDY_ID);
@@ -56,37 +82,16 @@ public class StudyAndUserHolderTest {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
-        StudyAndUserHolder holder = new StudyAndUserHolder(study, mockUsers);
-
-        String studyAndUserString = BridgeObjectMapper.get().writeValueAsString(holder);
-        JsonNode studyAndUserNode = BridgeObjectMapper.get().readTree(studyAndUserString);
-        JsonNode studyNode = studyAndUserNode.get("study");
-        ArrayNode users = (ArrayNode) studyAndUserNode.get("users");
+        StudyAndUserHolder retStudyAndUserHolder = BridgeObjectMapper.get().readValue(json, StudyAndUserHolder.class);
+        List<String> retAdminIds = retStudyAndUserHolder.getAdminIds();
+        Study retStudy = retStudyAndUserHolder.getStudy();
+        List<StudyParticipant> userList = retStudyAndUserHolder.getUsers();
 
         // verify
-        assertEquals(TEST_STUDY_ID, studyNode.get("identifier").asText());
-        assertEquals(TEST_STUDY_NAME, studyNode.get("name").asText());
-        assertEquals(TEST_USER_EMAIL, studyNode.get("supportEmail").asText());
-        assertEquals(true, studyNode.get("active").asBoolean());
-
-        JsonNode user1 = users.get(0);
-
-        assertEquals(TEST_USER_EMAIL, user1.get("email").asText());
-        assertEquals(TEST_USER_FIRST_NAME, user1.get("firstName").asText());
-        assertEquals(TEST_USER_LAST_NAME, user1.get("lastName").asText());
-        assertEquals(TEST_USER_PASSWORD, user1.get("password").asText());
-        ArrayNode rolesUser1 = (ArrayNode) user1.get("roles");
-        assertEquals(Roles.DEVELOPER.toString(), rolesUser1.get(0).asText().toUpperCase());
-        assertEquals(Roles.RESEARCHER.toString(), rolesUser1.get(1).asText().toUpperCase());
-
-        JsonNode user2 = users.get(1);
-
-        assertEquals(TEST_USER_EMAIL_2, user2.get("email").asText());
-        assertEquals(TEST_USER_FIRST_NAME, user2.get("firstName").asText());
-        assertEquals(TEST_USER_LAST_NAME, user2.get("lastName").asText());
-        assertEquals(TEST_USER_PASSWORD, user2.get("password").asText());
-        ArrayNode rolesUser2 = (ArrayNode) user2.get("roles");
-        assertEquals(Roles.RESEARCHER.toString(), rolesUser2.get(0).asText().toUpperCase());
+        assertEquals(adminIds, retAdminIds);
+        assertEquals(study, retStudy);
+        assertEquals(mockUsers, userList);
     }
 }

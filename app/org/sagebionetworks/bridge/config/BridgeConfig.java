@@ -32,7 +32,6 @@ public class BridgeConfig implements Config {
 
     private static final String EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
     private static final String TEST_SYNAPSE_USER_ID = "test.synapse.user.id";
-    private static final String ADMIN_SYNAPSE_USER_ID = "admin.synapse.user.id";
 
     private final Config config;
 
@@ -146,9 +145,5 @@ public class BridgeConfig implements Config {
 
     public String getTestSynapseUserId() {
         return config.get(TEST_SYNAPSE_USER_ID);
-    }
-
-    public String getAdminSynapseUserId() {
-        return config.get(ADMIN_SYNAPSE_USER_ID);
     }
 }

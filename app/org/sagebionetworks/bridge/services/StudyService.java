@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Set;
 import javax.annotation.Resource;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -24,15 +26,13 @@ import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.util.ModelConstants;
-
-import com.google.common.collect.ImmutableMap;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUserHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -56,7 +57,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class StudyService {
 
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
-    static final String ADMIN_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getAdminSynapseUserId();  // official account to bootstrap synapse project and team
 
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
@@ -178,21 +178,56 @@ public class StudyService {
 
     public Study createStudyAndUser(StudyAndUserHolder studyAndUserHolder) throws SynapseException {
         checkNotNull(studyAndUserHolder, Validate.CANNOT_BE_NULL, "study and users");
+        if (studyAndUserHolder.getAdminIds() == null) {
+            throw new BadRequestException("Admin Ids cannot be null.");
+        }
+
+        List<String> adminIds = studyAndUserHolder.getAdminIds();
+        if (adminIds.isEmpty()) {
+            throw new BadRequestException("Admin Ids cannot be empty.");
+        }
+        // validate if each admin id is a valid synapse id in synapse
+        for (String adminId : adminIds) {
+            try {
+                synapseClient.getUserProfile(adminId);
+            } catch (SynapseNotFoundException e) {
+                throw new BadRequestException("Admin Id is invalid.");
+            }
+        }
+
         if (studyAndUserHolder.getUsers() == null) {
             throw new BadRequestException("User list cannot be null.");
         }
         if (studyAndUserHolder.getStudy() == null) {
             throw new BadRequestException("Study cannot be null.");
         }
+        Study study = studyAndUserHolder.getStudy();
+        // prevent NPE in participant validation
+        if (study.getPasswordPolicy() == null) {
+            study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        }
 
         List<StudyParticipant> users = studyAndUserHolder.getUsers();
+
+        // validate participants at first
         if (users.isEmpty()) {
             throw new BadRequestException("User list should not be empty.");
         }
+        for (StudyParticipant user : users) {
+            Validate.entityThrowingException(new StudyParticipantValidator(study, true), user);
+        }
 
-        Study study = studyAndUserHolder.getStudy();
+        // validate roles for each user
+        for (StudyParticipant user: users) {
+            if (!Collections.disjoint(user.getRoles(), ImmutableSet.of(Roles.ADMIN, Roles.TEST_USERS, Roles.WORKER))) {
+                throw new BadRequestException("User can only have roles developer and/or researcher.");
+            }
+            if (user.getRoles().isEmpty()) {
+                throw new BadRequestException("User should have at least one role.");
+            }
+        }
 
-        // first create study
+        // then create and validate study
         study = createStudy(study);
 
         // then create users for that study
@@ -205,7 +240,7 @@ public class StudyService {
         }
 
         // finally create synapse project and team
-        createSynapseProjectTeam(ADMIN_SYNAPSE_USER_ID, study);
+        createSynapseProjectTeam(studyAndUserHolder.getAdminIds(), study);
 
         return study;
     }
@@ -248,10 +283,15 @@ public class StudyService {
         return study;
     }
 
-    public Study createSynapseProjectTeam(String synapseUserId, Study study) throws SynapseException {
-        if (StringUtils.isBlank(synapseUserId)) {
-            throw new BadRequestException("Synapse User ID is invalid.");
+    public Study createSynapseProjectTeam(List<String> synapseUserIds, Study study) throws SynapseException {
+        if (synapseUserIds == null) {
+            throw new BadRequestException("Synapse User IDs cannot be null.");
         }
+
+        if (synapseUserIds.isEmpty()) {
+            throw new BadRequestException("Synapse User IDs cannot be empty.");
+        }
+
         // first check if study already has project and team ids
         if (study.getSynapseDataAccessTeamId() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study already has a team ID.",
@@ -265,10 +305,12 @@ public class StudyService {
         }
 
         // then check if the user id exists
-        try {
-            synapseClient.getUserProfile(synapseUserId);
-        } catch (SynapseNotFoundException e) {
-            throw new BadRequestException("Synapse user Id is invalid.");
+        for (String userId : synapseUserIds) {
+            try {
+                synapseClient.getUserProfile(userId);
+            } catch (SynapseNotFoundException e) {
+                throw new BadRequestException("Synapse user Id is invalid.");
+            }
         }
 
         // create synapse project and team
@@ -288,11 +330,13 @@ public class StudyService {
         toSet.setPrincipalId(Long.parseLong(EXPORTER_SYNAPSE_USER_ID));
         toSet.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
         acl.getResourceAccess().add(toSet);
-        // add user as admin
-        ResourceAccess toSetUser = new ResourceAccess();
-        toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
-        toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
-        acl.getResourceAccess().add(toSetUser);
+        // add users as admins
+        for (String synapseUserId : synapseUserIds) {
+            ResourceAccess toSetUser = new ResourceAccess();
+            toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
+            toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+            acl.getResourceAccess().add(toSetUser);
+        }
         // add team in project as well
         ResourceAccess toSetTeam = new ResourceAccess();
         toSetTeam.setPrincipalId(Long.parseLong(newTeam.getId())); // passed by user as parameter
@@ -301,13 +345,14 @@ public class StudyService {
 
         synapseClient.updateACL(acl);
 
-        // send invitation to target user for joining new team and grant admin permission to that user
-        MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
-        teamMemberInvitation.setInviteeId(synapseUserId);
-        teamMemberInvitation.setTeamId(newTeam.getId());
-
-        synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
-        synapseClient.setTeamMemberPermissions(newTeam.getId(), synapseUserId, true);
+        for (String synapseUserId : synapseUserIds) {
+            // send invitation to target user for joining new team and grant admin permission to that user
+            MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
+            teamMemberInvitation.setInviteeId(synapseUserId);
+            teamMemberInvitation.setTeamId(newTeam.getId());
+            synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
+            synapseClient.setTeamMemberPermissions(newTeam.getId(), synapseUserId, true);
+        }
 
         String newTeamId = newTeam.getId();
         String newProjectId = newProject.getId();

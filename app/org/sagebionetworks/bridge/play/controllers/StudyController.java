@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -144,16 +146,17 @@ public class StudyController extends BaseController {
         StudyAndUserHolder studyAndUserHolder = parseJson(request(), StudyAndUserHolder.class);
         Study study = studyService.createStudyAndUser(studyAndUserHolder);
 
-        return okResult(new VersionHolder(study.getVersion()));
+        return createdResult(new VersionHolder(study.getVersion()));
     }
 
-    public Result createSynapse(String synapseUserId) throws Exception {
+    public Result createSynapse() throws Exception {
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         // then create project and team and grant admin permission to current user and exporter
-        studyService.createSynapseProjectTeam(synapseUserId, study);
+        List<String> userIds = Arrays.asList(parseJson(request(), String[].class));
+        studyService.createSynapseProjectTeam(ImmutableList.copyOf(userIds), study);
 
         return createdResult(new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
     }
