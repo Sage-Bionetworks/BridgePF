@@ -306,7 +306,7 @@ public class StudyService {
             try {
                 synapseClient.getUserProfile(userId);
             } catch (SynapseNotFoundException e) {
-                throw new BadRequestException("Synapse user Id is invalid.");
+                throw new BadRequestException("Synapse User Id: " + userId + " is invalid.");
             }
         }
 
