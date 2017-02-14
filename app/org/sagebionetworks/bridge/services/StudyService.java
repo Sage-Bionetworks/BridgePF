@@ -25,6 +25,7 @@ import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.auth.NewUser;
 import org.sagebionetworks.repo.model.util.ModelConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -57,7 +58,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class StudyService {
 
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
-
+    static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
@@ -228,9 +229,12 @@ public class StudyService {
         study = createStudy(study);
 
         // then create users for that study
-        // send verification email as well
+        // send verification email from both Bridge and Synapse as well
         for (StudyParticipant user: users) {
             IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), user,true);
+            NewUser synapseUser = new NewUser();
+            synapseUser.setEmail(user.getEmail());
+            synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
 
             // send resetting password email as well
             participantService.requestResetPassword(study, identifierHolder.getIdentifier());

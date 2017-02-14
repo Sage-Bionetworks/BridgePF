@@ -7,6 +7,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.services.StudyService.EXPORTER_SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.services.StudyService.SYNAPSE_REGISTER_END_POINT;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -273,6 +275,7 @@ public class StudyServiceMockTest {
 
         // stub
         when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
+        doNothing().when(mockSynapseClient).newAccountEmailValidation(any(), any());
 
         // execute
         service.createStudyAndUsers(mockStudyAndUsers);
@@ -282,6 +285,7 @@ public class StudyServiceMockTest {
         verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(true));
         verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(true));
         verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
+        verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
         verify(service).createStudy(study);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
     }
