@@ -293,7 +293,7 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public void deleteSurvey(Survey survey) {
         checkNotNull(survey);
-
+        
         survey.setDeleted(true);
         saveSurvey(survey);
     }

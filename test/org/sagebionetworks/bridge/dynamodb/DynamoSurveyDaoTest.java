@@ -165,6 +165,7 @@ public class DynamoSurveyDaoTest {
         assertNotEquals(originalModifiedOn, updatedSurvey.getModifiedOn());
         assertNull(updatedSurvey.getSchemaRevision());
 
+        survey.setVersion(updatedSurvey.getVersion());
         surveyDao.deleteSurvey(survey);
 
         try {
