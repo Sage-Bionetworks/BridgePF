@@ -346,8 +346,8 @@ public class ParticipantService {
 
         Validate.entityThrowingException(new StudyParticipantValidator(study, isNew), participant);
         
-        boolean newAccountAssigningId = isNotBlank(participant.getExternalId()) && 
-                (study.isExternalIdValidationEnabled() || study.isExternalIdRequiredOnSignup());
+        boolean newAccountAssigningId = isNew && study.isExternalIdValidationEnabled()
+                && isNotBlank(participant.getExternalId());
         Account account = null;
         if (isNew) {
             // Don't set it yet. Create the user first, and only assign it if that's successful.
@@ -398,7 +398,7 @@ public class ParticipantService {
         for (ParticipantOption option : ParticipantOption.values()) {
             options.put(option, option.fromParticipant(participant));
         }
-        if (study.isExternalIdRequiredOnSignup() || study.isExternalIdValidationEnabled()) {
+        if (study.isExternalIdValidationEnabled()) {
             options.remove(EXTERNAL_IDENTIFIER);
         }
         return options;
@@ -441,7 +441,7 @@ public class ParticipantService {
      */
     private void updateValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
         // If not enabled, we'll update the value like any other ParticipantOption
-        if (study.isExternalIdValidationEnabled() && !study.isExternalIdRequiredOnSignup()) {
+        if (study.isExternalIdValidationEnabled()) {
             ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
             String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
 
