@@ -86,7 +86,6 @@ public class StudyControllerTest {
     private static final String TEST_USER_FIRST_NAME = "test_user_first_name";
     private static final String TEST_USER_LAST_NAME = "test_user_last_name";
     private static final String TEST_USER_PASSWORD = "test_user_password";
-    private static final String TEST_IDENTIFIER = "test_identifier";
     private static final String TEST_ADMIN_ID_1 = "3346407";
     private static final String TEST_ADMIN_ID_2 = "3348228";
 

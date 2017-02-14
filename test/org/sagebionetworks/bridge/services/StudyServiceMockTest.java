@@ -245,6 +245,7 @@ public class StudyServiceMockTest {
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
         study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()

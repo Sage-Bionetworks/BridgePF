@@ -6,7 +6,7 @@ public class VersionHolder {
 
     private final Long version;
     
-    public VersionHolder(@JsonProperty("version")Long version) {
+    public VersionHolder(@JsonProperty("version") Long version) {
         this.version = version;
     }
 
