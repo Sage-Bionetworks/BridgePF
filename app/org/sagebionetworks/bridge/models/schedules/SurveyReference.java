@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -67,6 +68,13 @@ public final class SurveyReference {
             Objects.equals(identifier, other.identifier));
     }
 
+    public boolean equalsSurvey(GuidCreatedOnVersionHolder keys) {
+        if (keys == null) {
+            return false;
+        }
+        return (keys.getGuid().equals(guid) && createdOn != null && keys.getCreatedOn() == createdOn.getMillis());
+    }
+    
     @Override
     public String toString() {
         return String.format("SurveyReference [identifier=%s, guid=%s, createdOn=%s, href=%s]",
