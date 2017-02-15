@@ -173,9 +173,14 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     @Override
     public @Nonnull UploadSchema createUploadSchemaFromSurvey(@Nonnull StudyIdentifier studyIdentifier,
             @Nonnull Survey survey, boolean newSchemaRev) {
+        List<SurveyQuestion> surveyQuestionList = survey.getUnmodifiableQuestionList();
+        if (surveyQuestionList.isEmpty()) {
+            throw new BadRequestException("Can't create a schema from a survey with no questions");
+        }
+
         // create upload field definitions from survey questions
         List<UploadFieldDefinition> newFieldDefList = new ArrayList<>();
-        for (SurveyQuestion oneQuestion : survey.getUnmodifiableQuestionList()) {
+        for (SurveyQuestion oneQuestion : surveyQuestionList) {
             addFieldDefsForSurveyQuestion(newFieldDefList, oneQuestion);
         }
 
