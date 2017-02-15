@@ -362,7 +362,9 @@ public class ParticipantService {
             updateValidatedExternalId(study, participant, account.getHealthCode());
         }
 
-        // Save all participant options except for the external ID, if we are going to use the registration service
+        // Collect options to save them, however, remove EXTERNAL_IDENTIFIER key if the external ID is being 
+        // validated; in that case, it's not saved here, it's saved through the externalIdService, where it is 
+        // saved to the options table if it is valid.
         Map<ParticipantOption, String> options = getAllOptionsButExternalId(study, participant);
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
 

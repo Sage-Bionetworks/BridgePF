@@ -823,6 +823,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
+        // Validated and required, use reservation service and don't set as option
         verifyIdReservation(EXTERNAL_ID);
         verifyNotSetAsOption();
     }
@@ -833,6 +834,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
+        // Required but not validated, save as an option
         verifyNotSetAsReservation();
         verifySetAsOption(EXTERNAL_ID);
     }
@@ -843,6 +845,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
+        // Validated and supplied but not required, use reservation system and don't set as option
         verifyIdReservation(EXTERNAL_ID);
         verifyNotSetAsOption();
     }
@@ -853,6 +856,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
+        // Not validated or required, don't use reservation system and set as option
         verifyNotSetAsReservation();
         verifySetAsOption(EXTERNAL_ID);
     }
@@ -864,6 +868,8 @@ public class ParticipantServiceTest {
         setupExternalIdTest(true, true);
         
         participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
+        
+        // It's an exception if the value is required but it's not supplied on creation
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -871,6 +877,8 @@ public class ParticipantServiceTest {
         setupExternalIdTest(false, true);
         
         participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
+        
+        // It's an exception if the value is required but it's not supplied on creation
     }
 
     @Test
@@ -879,6 +887,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
         
+        // If not required and not supplied, nothing happens
         verifyNotSetAsReservation();
         verifyNotSetAsOption();
     }
@@ -889,6 +898,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT, false);
         
+        // If not required and supplied (and not validated), nothing happens
         verifyNotSetAsReservation();
         verifyNotSetAsOption();
     }
@@ -903,6 +913,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
+        // Submitting same value again with validation does nothing
         verifyNotSetAsReservation();
         verifyNotSetAsOption();
     }
@@ -915,8 +926,9 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
+        // Submitting same value again without validation saves same option value (which is okay)
         verifyNotSetAsReservation();
-        verifySetAsOption(EXTERNAL_ID); // okay
+        verifySetAsOption(EXTERNAL_ID);
     }
 
     @Test
@@ -927,6 +939,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
+        // Submitting same value with validation does nothing
         verifyNotSetAsReservation();
         verifyNotSetAsOption();
     }
@@ -939,8 +952,9 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
+        // Submitting same value again without validation saves same option value (which is okay)
         verifyNotSetAsReservation();
-        verifySetAsOption(EXTERNAL_ID); // okay
+        verifySetAsOption(EXTERNAL_ID);
     }
     
     // Updating the participant with a different external ID than already recorded
@@ -951,6 +965,7 @@ public class ParticipantServiceTest {
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
+        // Updating a validated ID throws an exception
         participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
     }
 
@@ -962,6 +977,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
 
+        // Updating a non-validated ID sets it as the new option
         verifyNotSetAsReservation();
         verifySetAsOption("newExternalId");
     }
@@ -972,6 +988,7 @@ public class ParticipantServiceTest {
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
+        // Updating a validated ID throws an exception
         participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
     }
 
@@ -983,6 +1000,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
         
+        // Updating a non-validated ID sets it as the new option
         verifyNotSetAsReservation();
         verifySetAsOption("newExternalId");
     }
@@ -995,6 +1013,7 @@ public class ParticipantServiceTest {
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
+        // Updating a validated value (with null) throws an exception
         participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
     }
 
@@ -1006,6 +1025,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
         
+        // Updating a non-validated value (with null) updates it to null as an option
         verifyNotSetAsReservation();
         verifySetAsOption(null);
     }
@@ -1016,6 +1036,7 @@ public class ParticipantServiceTest {
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
+        // Updating a validated value (with null) throws an exception
         participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
     }
     
@@ -1027,6 +1048,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
         
+        // Updating a non-validated value (with null) updates it to null as an option
         verifyNotSetAsReservation();
         verifySetAsOption(null);
     }
@@ -1034,15 +1056,16 @@ public class ParticipantServiceTest {
     // Updating the participant with an external ID when one was not provided on creation
     // (even if that would have been prevented by the code, just in case)
     
-    // It's after creation so we just don't do it... of all the tests, this one is 
-    // debatable. If the value is supplied and its correct, even though it was required
-    // at sign up and should be there, we should probably add it now.
     @Test
     public void updateExternalIdValidatedRequiredNewValue() {
         setupExternalIdTest(true, true);
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
         
+        // It's after creation so we just don't do it... of all the tests, this one is 
+        // debatable. If the value is supplied and its correct, and it hasn't been set 
+        // despite the fact it was required at sign up, we could arguably set it at this 
+        // time.
         verifyNotSetAsReservation();
         verifyNotSetAsOption();
     }
@@ -1053,6 +1076,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
         
+        // Updating participant with non-validated ID sets it as an option
         verifyNotSetAsReservation();
         verifySetAsOption("newExternalId");
     }
@@ -1063,6 +1087,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
         
+        // Updating participant with validated ID uses the externalIdService
         verifyIdAssignedWithoutReservation("newExternalId");
         verifyNotSetAsOption();
     }
@@ -1073,6 +1098,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, NEW_ID_PARTICIPANT);
         
+        // Updating participant with non-validated ID sets it as an option
         verifyNotSetAsReservation();
         verifySetAsOption("newExternalId");
     }    
