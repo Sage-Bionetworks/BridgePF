@@ -52,8 +52,6 @@ public class ExternalIdServiceTest {
         Config config = mock(Config.class);
         when(config.getInt(ExternalIdDao.CONFIG_KEY_ADD_LIMIT)).thenReturn(10);
         
-        STUDY.setExternalIdValidationEnabled(true);
-        
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
         externalIdService.setParticipantOptionsService(optionsService);
@@ -83,12 +81,13 @@ public class ExternalIdServiceTest {
     
     @Test
     public void reserveExternalIdWithVerification() {
+        STUDY.setExternalIdValidationEnabled(true);
         externalIdService.reserveExternalId(STUDY, EXT_ID);
         
         verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
         verifyNoMoreInteractions(optionsService);
     }
-
+    
     @Test
     public void reserveExternalIdWithoutVerification() {
         STUDY.setExternalIdValidationEnabled(false);
@@ -100,22 +99,25 @@ public class ExternalIdServiceTest {
     
     @Test
     public void assignExternalIdWithVerification() {
+        STUDY.setExternalIdValidationEnabled(true);
         externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
         
         verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
+        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, EXT_ID);
     }
     
     @Test
     public void assignExternalIdWithoutVerification() {
         STUDY.setExternalIdValidationEnabled(false);
         externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-
+        
         verify(externalIdDao, never()).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
         verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, EXT_ID);
     }
     
     @Test
     public void assignExternalIdFailsVerification() {
+        STUDY.setExternalIdValidationEnabled(true);
         doThrow(new EntityNotFoundException(ExternalIdentifier.class)).when(externalIdDao)
                 .assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
         
@@ -146,6 +148,7 @@ public class ExternalIdServiceTest {
     
     @Test
     public void deleteExternalIdsWithValidationEnabled() {
+        STUDY.setExternalIdValidationEnabled(true);
         try {
             externalIdService.deleteExternalIds(STUDY, EXT_IDS);
             fail("Should have thrown exception");
