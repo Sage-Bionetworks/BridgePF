@@ -75,7 +75,7 @@ public class ConstraintViolationExceptionTest {
     }
     
     @Test
-    public void collectionsExistEvenIfEntiy() throws Throwable {
+    public void collectionsExistEvenIfEmpty() throws Throwable {
         ConstraintViolationException e = new ConstraintViolationException.Builder()
                 .withMessage("Referenced in survey").build();
         

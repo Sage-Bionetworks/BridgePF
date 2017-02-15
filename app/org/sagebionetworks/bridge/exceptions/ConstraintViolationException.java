@@ -11,7 +11,9 @@ import com.google.common.collect.ImmutableMap;
 /**
  * For other data store constraint issues besides concurrent modification (most notably, foreign 
  * key constraint violations). The exception only provides information about the first object that 
- * references the entity that cannot be changed.
+ * references the entity that cannot be changed. As a general rule, provide the "type" of the 
+ * entity as we expose it in the API for both the entity and the referrer, so callers can trace 
+ * back the entities involved when there are multiple calls being made.
  */
 @SuppressWarnings("serial")
 @NoStackTraceException

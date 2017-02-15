@@ -294,21 +294,11 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys);
-        if (existing.isDeleted()) {
-            throw new EntityNotFoundException(Survey.class);
-        }
-        // If a survey has been published, you can't delete the last published version of that survey.
-        // This is going to create a lot of test errors.
-        if (existing.isPublished()) {
-            int publishedVersionCount = new QueryBuilder().setSurvey(keys.getGuid()).isPublished().isNotDeleted().getCount();
-            if (publishedVersionCount < 2) {
-                throw new PublishedSurveyException(existing, "You cannot delete the last published version of a published survey.");
-            }
-        }
-        existing.setDeleted(true);
-        saveSurvey(existing);
+    public void deleteSurvey(Survey survey) {
+        checkNotNull(survey);
+        
+        survey.setDeleted(true);
+        saveSurvey(survey);
     }
 
     @Override

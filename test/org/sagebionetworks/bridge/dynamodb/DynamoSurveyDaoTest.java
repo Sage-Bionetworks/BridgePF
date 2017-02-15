@@ -165,6 +165,7 @@ public class DynamoSurveyDaoTest {
         assertNotEquals(originalModifiedOn, updatedSurvey.getModifiedOn());
         assertNull(updatedSurvey.getSchemaRevision());
 
+        survey.setVersion(updatedSurvey.getVersion());
         surveyDao.deleteSurvey(survey);
 
         try {
@@ -583,6 +584,20 @@ public class DynamoSurveyDaoTest {
         assertNotNull(survey);
     }
 
+    @Test
+    public void canDeleteSurveyPermanently() {
+        Survey survey = createSurvey(testSurvey);
+
+        Survey savedSurvey = surveyDao.createSurvey(survey);
+        surveyDao.deleteSurveyPermanently(savedSurvey);
+        
+        try {
+            surveyDao.getSurvey(survey);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+    }
+    
     private static void assertContainsAllKeys(Set<GuidCreatedOnVersionHolderImpl> expected, List<Survey> actual) {
         for (GuidCreatedOnVersionHolder oneExpected : expected) {
             boolean found = false;
