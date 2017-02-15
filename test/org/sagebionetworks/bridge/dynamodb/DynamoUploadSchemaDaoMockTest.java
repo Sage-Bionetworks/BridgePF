@@ -51,6 +51,7 @@ import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
@@ -136,6 +137,34 @@ public class DynamoUploadSchemaDaoMockTest {
         survey.setName(SURVEY_NAME);
         survey.setElements(surveyElementList);
         return survey;
+    }
+
+    @Test
+    public void schemaFromSurveyWithInfoScreensOnly() {
+        // create a survey with an info screen and no questions
+        SurveyInfoScreen infoScreen = new DynamoSurveyInfoScreen();
+        infoScreen.setIdentifier("test-info-screen");
+        infoScreen.setTitle("Test Info Screen");
+        infoScreen.setPrompt("This info screen doesn't do anything, other than not being a question.");
+
+        Survey survey = makeSurveyWithElements(ImmutableList.of(infoScreen));
+
+        // Similarly, spy getUploadSchemaNoThrow(), createSchemaV4() and updateSchemaV4().
+        DynamoUploadSchemaDao dao = spy(new DynamoUploadSchemaDao());
+
+        // set up test dao and execute - Most of this stuff is tested elsewhere, so just test result specific to this
+        // test
+        try {
+            dao.createUploadSchemaFromSurvey(TestConstants.TEST_STUDY, survey, false);
+            fail("expected exception");
+        } catch (BadRequestException ex) {
+            assertEquals("Can't create a schema from a survey with no questions", ex.getMessage());
+        }
+
+        // We never attempt to create, get, or update any schemas.
+        verify(dao, never()).createSchemaRevisionV4(any(), any());
+        verify(dao, never()).getUploadSchemaNoThrow(any(), any());
+        verify(dao, never()).updateSchemaRevisionV4(any(), any(), anyInt(), any());
     }
 
     @Test

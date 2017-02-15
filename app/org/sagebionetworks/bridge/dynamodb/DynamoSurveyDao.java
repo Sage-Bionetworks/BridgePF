@@ -229,13 +229,16 @@ public class DynamoSurveyDao implements SurveyDao {
             throw new EntityNotFoundException(Survey.class);
         }
         if (!survey.isPublished()) {
-            // make schema from survey
-            UploadSchema schema = uploadSchemaDao.createUploadSchemaFromSurvey(study, survey, newSchemaRev);
-
             // update survey
             survey.setPublished(true);
             survey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-            survey.setSchemaRevision(schema.getRevision());
+
+            // make schema from survey
+            if (!survey.getUnmodifiableQuestionList().isEmpty()) {
+                UploadSchema schema = uploadSchemaDao.createUploadSchemaFromSurvey(study, survey, newSchemaRev);
+                survey.setSchemaRevision(schema.getRevision());
+            }
+
             try {
                 surveyMapper.save(survey);
             } catch(ConditionalCheckFailedException e) {

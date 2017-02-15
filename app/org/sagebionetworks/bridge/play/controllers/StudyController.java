@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -12,12 +13,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Result;
+
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -28,6 +31,7 @@ import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
@@ -50,21 +54,21 @@ public class StudyController extends BaseController {
             .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
     private UploadCertificateService uploadCertificateService;
-    
+
     private EmailVerificationService emailVerificationService;
-    
+
     private UploadService uploadService;
 
     @Autowired
     final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
         this.uploadCertificateService = uploadCertificateService;
     }
-    
+
     @Autowired
     final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
         this.emailVerificationService = emailVerificationService;
     }
-    
+
     @Autowired
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
@@ -136,13 +140,23 @@ public class StudyController extends BaseController {
         return okResult(new VersionHolder(study.getVersion()));
     }
 
-    public Result createSynapse(String synapseUserId) throws Exception {
+    public Result createStudyAndUsers() throws Exception {
+        getAuthenticatedSession(ADMIN);
+
+        StudyAndUsers studyAndUsers = parseJson(request(), StudyAndUsers.class);
+        Study study = studyService.createStudyAndUsers(studyAndUsers);
+
+        return createdResult(new VersionHolder(study.getVersion()));
+    }
+
+    public Result createSynapse() throws Exception {
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         // then create project and team and grant admin permission to current user and exporter
-        studyService.createSynapseProjectTeam(synapseUserId, study);
+        List<String> userIds = Arrays.asList(parseJson(request(), String[].class));
+        studyService.createSynapseProjectTeam(ImmutableList.copyOf(userIds), study);
 
         return createdResult(new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId()));
     }
@@ -166,15 +180,15 @@ public class StudyController extends BaseController {
 
         return okResult(new CmsPublicKey(pem));
     }
-    
+
     public Result getEmailStatus() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+
         EmailVerificationStatus status = emailVerificationService.getEmailStatus(study.getSupportEmail());
         return okResult(new EmailVerificationStatusHolder(status));
     }
-    
+
     @BodyParser.Of(BodyParser.Empty.class)
     public Result verifyEmail() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -183,10 +197,10 @@ public class StudyController extends BaseController {
         EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
         return okResult(new EmailVerificationStatusHolder(status));
     }
-    
+
     public Result getUploads(String startTimeString, String endTimeString, Integer pageSize, String offsetKey) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        
+
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
 
