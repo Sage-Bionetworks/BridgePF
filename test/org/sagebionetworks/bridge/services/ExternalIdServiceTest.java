@@ -88,12 +88,30 @@ public class ExternalIdServiceTest {
         verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
         verifyNoMoreInteractions(optionsService);
     }
+
+    @Test
+    public void reserveExternalIdWithoutVerification() {
+        STUDY.setExternalIdValidationEnabled(false);
+        externalIdService.reserveExternalId(STUDY, EXT_ID);
+        
+        verify(externalIdDao, never()).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
+        verifyNoMoreInteractions(optionsService);
+    }
     
     @Test
     public void assignExternalIdWithVerification() {
         externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
         
         verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
+    }
+    
+    @Test
+    public void assignExternalIdWithoutVerification() {
+        STUDY.setExternalIdValidationEnabled(false);
+        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
+
+        verify(externalIdDao, never()).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
+        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, EXT_ID);
     }
     
     @Test
