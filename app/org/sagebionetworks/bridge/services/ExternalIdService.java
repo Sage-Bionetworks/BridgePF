@@ -75,7 +75,7 @@ public class ExternalIdService {
 
         if (study.isExternalIdValidationEnabled()) {
             externalIdDao.reserveExternalId(study.getStudyIdentifier(), externalIdentifier);
-        }        
+        }
     }
     
     public void assignExternalId(Study study, String externalIdentifier, String healthCode) {
@@ -85,7 +85,7 @@ public class ExternalIdService {
         
         if (study.isExternalIdValidationEnabled()) {
             externalIdDao.assignExternalId(study.getStudyIdentifier(), externalIdentifier, healthCode);
-        }        
+        }
         optionsService.setString(study.getStudyIdentifier(), healthCode, EXTERNAL_IDENTIFIER, externalIdentifier);
     }
     
