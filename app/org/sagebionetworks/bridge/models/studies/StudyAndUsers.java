@@ -11,7 +11,8 @@ public final class StudyAndUsers implements BridgeEntity {
     private final Study study;
     private final List<StudyParticipant> users;
 
-    public StudyAndUsers(@JsonProperty("adminIds")List<String> adminIds, @JsonProperty("study")Study study, @JsonProperty("users")List<StudyParticipant> users) {
+    public StudyAndUsers(@JsonProperty("adminIds") List<String> adminIds, @JsonProperty("study") Study study,
+            @JsonProperty("users") List<StudyParticipant> users) {
         this.adminIds = adminIds;
         this.study = study;
         this.users = users;

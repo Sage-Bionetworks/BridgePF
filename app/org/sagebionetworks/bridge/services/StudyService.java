@@ -182,19 +182,20 @@ public class StudyService {
 
         List<String> adminIds = studyAndUsers.getAdminIds();
         if (adminIds == null || adminIds.isEmpty()) {
-            throw new BadRequestException("Admin Ids cannot be null or empty.");
+            throw new BadRequestException("Admin IDs are required.");
         }
         // validate if each admin id is a valid synapse id in synapse
         for (String adminId : adminIds) {
             try {
                 synapseClient.getUserProfile(adminId);
             } catch (SynapseNotFoundException e) {
-                throw new BadRequestException("Admin Id is invalid.");
+                throw new BadRequestException("Admin ID is invalid.");
             }
         }
 
-        if (studyAndUsers.getUsers() == null) {
-            throw new BadRequestException("User list cannot be null.");
+        List<StudyParticipant> users = studyAndUsers.getUsers();
+        if (users == null || users.isEmpty()) {
+            throw new BadRequestException("User list is required.");
         }
         if (studyAndUsers.getStudy() == null) {
             throw new BadRequestException("Study cannot be null.");
@@ -205,12 +206,7 @@ public class StudyService {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
 
-        List<StudyParticipant> users = studyAndUsers.getUsers();
-
         // validate participants at first
-        if (users.isEmpty()) {
-            throw new BadRequestException("User list should not be empty.");
-        }
         for (StudyParticipant user : users) {
             Validate.entityThrowingException(new StudyParticipantValidator(study, true), user);
         }
@@ -285,14 +281,9 @@ public class StudyService {
     }
 
     public Study createSynapseProjectTeam(List<String> synapseUserIds, Study study) throws SynapseException {
-        if (synapseUserIds == null) {
-            throw new BadRequestException("Synapse User IDs cannot be null.");
+        if (synapseUserIds == null || synapseUserIds.isEmpty()) {
+            throw new BadRequestException("Synapse User IDs are required.");
         }
-
-        if (synapseUserIds.isEmpty()) {
-            throw new BadRequestException("Synapse User IDs cannot be empty.");
-        }
-
         // first check if study already has project and team ids
         if (study.getSynapseDataAccessTeamId() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study already has a team ID.",

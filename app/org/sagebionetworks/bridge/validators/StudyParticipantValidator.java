@@ -1,8 +1,9 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -33,22 +34,20 @@ public class StudyParticipantValidator implements Validator {
         StudyParticipant participant = (StudyParticipant)object;
         
         if (isNew) {
-            if (StringUtils.isBlank(participant.getEmail())) {
+            if (isBlank(participant.getEmail())) {
                 errors.rejectValue("email", "is required");
             } else if (!emailValidator.isValid(participant.getEmail())){
                 errors.rejectValue("email", "must be a valid email address");
             }
         } else {
-            if (StringUtils.isBlank(participant.getId())) {
+            if (isBlank(participant.getId())) {
                 errors.rejectValue("id", "is required");
             }
         }
-        if (study.isExternalIdValidationEnabled() && isNew) {
-            if (StringUtils.isBlank(participant.getExternalId())) {
-                errors.rejectValue("externalId", "cannot be null or blank");
-                // TODO: When current PR is merged, there's further validation of the string that can occur
-            }
+        if (isNew && study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
+            errors.rejectValue("externalId", "is required");
         }
+        // if external ID validation is enabled, it's not covered by the validator.
         for (String dataGroup : participant.getDataGroups()) {
             if (!study.getDataGroups().contains(dataGroup)) {
                 errors.rejectValue("dataGroups", messageForSet(study.getDataGroups(), dataGroup));
