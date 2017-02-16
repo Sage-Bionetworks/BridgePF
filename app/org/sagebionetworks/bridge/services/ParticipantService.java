@@ -447,7 +447,11 @@ public class ParticipantService {
             ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
             String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
 
-            if (idsDontExistOrAreNotEqual(existingExternalId, participant.getExternalId())) {
+            if (isBlank(existingExternalId) && isBlank(participant.getExternalId())) {
+                return;
+            }
+            String newId = participant.getExternalId();
+            if (isBlank(existingExternalId) || isBlank(newId) || !existingExternalId.equals(newId)) {
                 if (isBlank(existingExternalId) && isNotBlank(participant.getExternalId())) {
                     externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
                 } else {
@@ -456,13 +460,6 @@ public class ParticipantService {
                 }
             }
         }
-    }
-
-    private boolean idsDontExistOrAreNotEqual(String id1, String id2) {
-        if (isBlank(id1) && isBlank(id2)) {
-            return false;
-        }
-        return (isBlank(id1) || isBlank(id2) || !id1.equals(id2));
     }
 
     private Account getAccountThrowingException(Study study, String id) {
