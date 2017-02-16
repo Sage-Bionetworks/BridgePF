@@ -1041,6 +1041,19 @@ public class ParticipantServiceTest {
     }
     
     @Test
+    public void doNotFailIfValidatingButNullValueIsUpdatedWithNullValue() {
+        setupExternalIdTest(true, false);
+        when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(null);
+        when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        
+        // Updating a validated value (with null) throws an exception
+        participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
+        
+        verifyNotSetAsReservation();
+        verifySetAsOption(null);
+    }
+    
+    @Test
     public void updateExternalIdNotValidatedNotRequiredNoValue() {
         setupExternalIdTest(false, false);
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);

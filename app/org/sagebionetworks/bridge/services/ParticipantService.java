@@ -459,6 +459,9 @@ public class ParticipantService {
     }
 
     private boolean idsDontExistOrAreNotEqual(String id1, String id2) {
+        if (isBlank(id1) && isBlank(id2)) {
+            return false;
+        }
         return (isBlank(id1) || isBlank(id2) || !id1.equals(id2));
     }
 
