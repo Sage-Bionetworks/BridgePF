@@ -451,11 +451,9 @@ public class ParticipantService {
                 if (isNotBlank(participant.getExternalId())) {
                     externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
                 }
-            } else {
-                if (!existingExternalId.equals(participant.getExternalId())) {
-                    throw new BadRequestException(
-                            "External ID cannot be changed or removed after assignment.");
-                }
+            } else if (!existingExternalId.equals(participant.getExternalId())) {
+                throw new BadRequestException(
+                        "External ID cannot be changed or removed after assignment.");
             }
         }
     }
