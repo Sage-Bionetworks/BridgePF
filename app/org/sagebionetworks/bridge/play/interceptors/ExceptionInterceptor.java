@@ -1,12 +1,14 @@
 package org.sagebionetworks.bridge.play.interceptors;
 
+import java.util.Set;
+
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NoStackTraceException;
-import org.sagebionetworks.bridge.models.ExceptionMessage;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +16,9 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
 
-import play.libs.Json;
 import play.mvc.Http;
 import play.mvc.Http.Request;
 import play.mvc.Result;
@@ -25,6 +28,11 @@ import play.mvc.Results;
 public class ExceptionInterceptor implements MethodInterceptor {
 
     private final Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);
+    
+    // We serialize exceptions to JSON, but do not want any of the root properties of Throwable 
+    // to be exposed, so these are removed;
+    private static final Set<String> UNEXPOSED_FIELD_NAMES = Sets.newHashSet("stackTrace", "localizedMessage",
+            "suppressed", "cause");
     
     @Override
     public Object invoke(MethodInvocation method) throws Throwable {
@@ -60,8 +68,12 @@ public class ExceptionInterceptor implements MethodInterceptor {
             return Results.status(cre.getStatusCode(), info.toString());
         }
         String message = getMessage(throwable, status);
-        final ExceptionMessage exceptionMessage = new ExceptionMessage(throwable, message);
-        return Results.status(status, Json.toJson(exceptionMessage));
+        
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(throwable);
+        node.put("message", message);
+        node.remove(UNEXPOSED_FIELD_NAMES);
+        
+        return Results.status(status, node);
     }
 
     private int getStatusCode(final Throwable throwable) {

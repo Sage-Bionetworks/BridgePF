@@ -60,67 +60,68 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class ParticipantService {
     private static Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
 
-    private static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
+    private static final String PAGE_SIZE_ERROR = "pageSize must be from " + API_MINIMUM_PAGE_SIZE + "-"
+            + API_MAXIMUM_PAGE_SIZE + " records";
     private static final String DATE_RANGE_ERROR = "startDate should be before endDate";
-    
+
     private AccountDao accountDao;
-    
+
     private ParticipantOptionsService optionsService;
-    
+
     private SubpopulationService subpopService;
-    
+
     private ConsentService consentService;
-    
+
     private ExternalIdService externalIdService;
-    
+
     private CacheProvider cacheProvider;
-    
+
     private ScheduledActivityDao activityDao;
-    
+
     private UploadService uploadService;
-    
+
     private NotificationsService notificationsService;
-    
+
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-    
+
     @Autowired
     final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
-    
+
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
-    
+
     @Autowired
     final void setUserConsent(ConsentService consentService) {
         this.consentService = consentService;
     }
-    
+
     @Autowired
     final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
-    
+
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
-    
+
     @Autowired
     final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
         this.activityDao = activityDao;
     }
-    
+
     @Autowired
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
     }
-    
+
     @Autowired
     final void setNotificationsService(NotificationsService notificationsService) {
         this.notificationsService = notificationsService;
@@ -130,7 +131,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, id);
         return getParticipant(study, account, includeHistory);
     }
-    
+
     public StudyParticipant getParticipant(Study study, Account account, boolean includeHistory) {
         if (account == null) {
             // This should never happen. However, it occasionally does happen, generally only during integration tests.
@@ -162,14 +163,14 @@ public class ParticipantService {
         builder.withRoles(account.getRoles());
         builder.withId(account.getId());
         builder.withHealthCode(account.getHealthCode());
-        
-        Map<String,String> attributes = Maps.newHashMap();
+
+        Map<String, String> attributes = Maps.newHashMap();
         for (String attribute : study.getUserProfileAttributes()) {
             String value = account.getAttribute(attribute);
             attributes.put(attribute, value);
         }
         builder.withAttributes(attributes);
-        
+
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
             List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
@@ -178,11 +179,11 @@ public class ParticipantService {
                 List<UserConsentHistory> history = getUserConsentHistory(account, subpop.getGuid());
                 consentHistories.put(subpop.getGuidString(), history);
             }
-            builder.withConsentHistories(consentHistories);    
+            builder.withConsentHistories(consentHistories);
         }
         return builder.build();
     }
-    
+
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
             String emailFilter, DateTime startDate, DateTime endDate) {
         checkNotNull(study);
@@ -198,39 +199,40 @@ public class ParticipantService {
         }
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, startDate, endDate);
     }
-    
+
     public void signUserOut(Study study, String email) {
         checkNotNull(study);
         checkArgument(isNotBlank(email));
-        
+
         Account account = getAccountThrowingException(study, email);
         cacheProvider.removeSessionByUserId(account.getId());
     }
 
     /**
-     * Create a study participant. A password must be provided, even if it is added on behalf of a 
-     * user before triggering a reset password request.  
+     * Create a study participant. A password must be provided, even if it is added on behalf of a user before
+     * triggering a reset password request.
      */
     public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
             boolean sendVerifyEmail) {
         return saveParticipant(study, callerRoles, participant, true, sendVerifyEmail);
     }
-    
+
     public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
         saveParticipant(study, callerRoles, participant, false, false);
     }
-    
+
     public void requestResetPassword(Study study, String userId) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
-        
+
         Account account = getAccountThrowingException(study, userId);
-        
+
         Email email = new Email(study.getIdentifier(), account.getEmail());
         accountDao.requestResetPassword(study, email);
     }
-    
-    public PagedResourceList<? extends ScheduledActivity> getActivityHistory(Study study, String userId, String offsetKey, Integer pageSize) {
+
+    public PagedResourceList<? extends ScheduledActivity> getActivityHistory(Study study, String userId,
+            String offsetKey, Integer pageSize) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
         if (pageSize == null) {
@@ -240,50 +242,50 @@ public class ParticipantService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         Account account = getAccountThrowingException(study, userId);
-        
+
         return activityDao.getActivityHistory(account.getHealthCode(), offsetKey, pageSize);
     }
-    
+
     public void deleteActivities(Study study, String userId) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
-        
+
         Account account = getAccountThrowingException(study, userId);
-        
+
         activityDao.deleteActivitiesForUser(account.getHealthCode());
     }
-    
+
     public void resendEmailVerification(Study study, String userId) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
-        
+
         StudyParticipant participant = getParticipant(study, userId, false);
         Email email = new Email(study.getIdentifier(), participant.getEmail());
         accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), email);
     }
-    
+
     public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(userId);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
-        
+
         Account account = getAccountThrowingException(study, userId);
-        
+
         consentService.withdrawAllConsents(study, account, withdrawal, withdrewOn);
     }
-    
+
     public void resendConsentAgreement(Study study, SubpopulationGuid subpopGuid, String userId) {
         checkNotNull(study);
         checkNotNull(subpopGuid);
         checkArgument(isNotBlank(userId));
-        
+
         StudyParticipant participant = getParticipant(study, userId, false);
         consentService.emailConsentAgreement(study, subpopGuid, participant);
     }
-    
+
     /**
-     * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not. 
+     * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not.
      * 
      * @param account
      * @param subpopGuid
@@ -292,7 +294,7 @@ public class ParticipantService {
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
             Subpopulation subpop = subpopService.getSubpopulation(account.getStudyIdentifier(), subpopGuid);
             boolean hasSignedActiveConsent = (signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
-            
+
             return new UserConsentHistory.Builder()
                 .withName(signature.getName())
                 .withSubpopulationGuid(subpopGuid)
@@ -307,102 +309,115 @@ public class ParticipantService {
         }).collect(BridgeCollectors.toImmutableList());
     }
 
-    public PagedResourceList<? extends UploadView> getUploads(Study study, String userId, DateTime startTime, DateTime endTime) {
+    public PagedResourceList<? extends UploadView> getUploads(Study study, String userId, DateTime startTime,
+            DateTime endTime) {
         checkNotNull(study);
         checkNotNull(userId);
-        
+
         Account account = getAccountThrowingException(study, userId);
-        
+
         return uploadService.getUploads(account.getHealthCode(), startTime, endTime);
     }
-    
+
     public List<NotificationRegistration> listRegistrations(Study study, String userId) {
         checkNotNull(study);
         checkNotNull(userId);
-        
+
         Account account = getAccountThrowingException(study, userId);
-        
+
         return notificationsService.listRegistrations(account.getHealthCode());
     }
-    
+
     public void sendNotification(Study study, String userId, NotificationMessage message) {
         checkNotNull(study);
         checkNotNull(userId);
         checkNotNull(message);
-        
+
         Account account = getAccountThrowingException(study, userId);
 
         notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
-    
+
     private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
             boolean isNew, boolean sendVerifyEmail) {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkNotNull(participant);
-        
+
         Validate.entityThrowingException(new StudyParticipantValidator(study, isNew), participant);
+        
+        boolean newAccountAssigningId = isNew && study.isExternalIdValidationEnabled()
+                && isNotBlank(participant.getExternalId());
         Account account = null;
         if (isNew) {
             // Don't set it yet. Create the user first, and only assign it if that's successful.
             // Allows us to assure that credentials and ID will be related or not created at all.
-            if (isNotBlank(participant.getExternalId())) {
-                externalIdService.reserveExternalId(study, participant.getExternalId());    
+            if (newAccountAssigningId) {
+                externalIdService.reserveExternalId(study, participant.getExternalId());
             }
             account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
         } else {
             account = getAccountThrowingException(study, participant.getId());
-            
-            addValidatedExternalId(study, participant, account.getHealthCode());
+
+            updateValidatedExternalId(study, participant, account.getHealthCode());
         }
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        for (ParticipantOption option : ParticipantOption.values()) {
-            options.put(option, option.fromParticipant(participant));
-        }
-        // If we're validating the ID, we do this through the externalIdService, which writes to the participant options
-        // table when its appropriate to do so
-        if (study.isExternalIdValidationEnabled()) {
-            options.remove(EXTERNAL_IDENTIFIER);
-        }
+
+        // Collect options to save them, however, remove EXTERNAL_IDENTIFIER key if the external ID is being 
+        // validated; in that case, it's not saved here, it's saved through the externalIdService, where it is 
+        // saved to the options table if it is valid.
+        Map<ParticipantOption, String> options = getAllOptionsButExternalId(study, participant);
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
-        
+
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
-        for(String attribute : study.getUserProfileAttributes()) {
+        for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.setAttribute(attribute, value);
         }
-        
+
         // Only admin roles can change status, after participant is created
-        if (!isNew && participant.getStatus() != null && callerIsAdmin(callerRoles)) {
-            account.setStatus(participant.getStatus());
-        }
         if (callerIsAdmin(callerRoles)) {
-            updateRoles(callerRoles, participant, account);    
+            if (!isNew && participant.getStatus() != null) {
+                account.setStatus(participant.getStatus());
+            }
+            updateRoles(callerRoles, participant, account);
         }
         if (isNew) {
             accountDao.createAccount(study, account, sendVerifyEmail && study.isEmailVerificationEnabled());
-            if (isNotBlank(participant.getExternalId())) {
-                externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
+            if (newAccountAssigningId) {
+                externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
             }
+            optionsService.setString(study.getStudyIdentifier(), account.getHealthCode(), EXTERNAL_IDENTIFIER,
+                    participant.getExternalId());
         } else {
-            accountDao.updateAccount(account);  
+            accountDao.updateAccount(account);
         }
         return new IdentifierHolder(account.getId());
     }
-    
+
+    private Map<ParticipantOption, String> getAllOptionsButExternalId(Study study, StudyParticipant participant) {
+        Map<ParticipantOption, String> options = Maps.newHashMap();
+        for (ParticipantOption option : ParticipantOption.values()) {
+            options.put(option, option.fromParticipant(participant));
+        }
+        if (study.isExternalIdValidationEnabled()) {
+            options.remove(EXTERNAL_IDENTIFIER);
+        }
+        return options;
+    }
+
     private boolean callerIsAdmin(Set<Roles> callerRoles) {
         return !Collections.disjoint(callerRoles, ADMINISTRATIVE_ROLES);
     }
-    
+
     private boolean callerCanEditRole(Set<Roles> callerRoles, Roles targetRole) {
         return !Collections.disjoint(callerRoles, CAN_BE_EDITED_BY.get(targetRole));
     }
 
     /**
-     * For each role added, the caller must have the right to add the role. Then for every role 
-     * currently assigned, we check and if the caller doesn't have the right to remove that role, 
-     * we'll add it back. Then we save those results.
+     * For each role added, the caller must have the right to add the role. Then for every role currently assigned, we
+     * check and if the caller doesn't have the right to remove that role, we'll add it back. Then we save those
+     * results.
      */
     private void updateRoles(Set<Roles> callerRoles, StudyParticipant participant, Account account) {
         Set<Roles> newRoleSet = Sets.newHashSet();
@@ -420,27 +435,33 @@ public class ParticipantService {
         }
         account.setRoles(newRoleSet);
     }
-    
-    private void addValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
+
+    /**
+     * If updating an account in a study with validated IDs, if the ID is not required at sign up, check first
+     * that the user has not been assigned an ID, before assigning the supplied ID. After assignment, sending 
+     * any value other than the user's current value (or no value) generates an exception.
+     */
+    private void updateValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
         // If not enabled, we'll update the value like any other ParticipantOption
         if (study.isExternalIdValidationEnabled()) {
             ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
             String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
-            
+
             if (idsDontExistOrAreNotEqual(existingExternalId, participant.getExternalId())) {
                 if (isBlank(existingExternalId) && isNotBlank(participant.getExternalId())) {
                     externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
                 } else {
-                    throw new BadRequestException("External ID cannot be changed, removed after assignment, or left unassigned.");
+                    throw new BadRequestException(
+                            "External ID cannot be changed, removed after assignment, or left unassigned.");
                 }
             }
         }
     }
-    
+
     private boolean idsDontExistOrAreNotEqual(String id1, String id2) {
         return (isBlank(id1) || isBlank(id2) || !id1.equals(id2));
     }
-    
+
     private Account getAccountThrowingException(Study study, String id) {
         Account account = accountDao.getAccount(study, id);
         if (account == null) {
@@ -448,5 +469,5 @@ public class ParticipantService {
         }
         return account;
     }
-    
+
 }

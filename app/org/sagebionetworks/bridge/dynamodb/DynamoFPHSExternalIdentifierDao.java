@@ -118,7 +118,7 @@ public class DynamoFPHSExternalIdentifierDao implements FPHSExternalIdentifierDa
                 throw new EntityNotFoundException(FPHSExternalIdentifier.class);
             }
             if (record.isRegistered()) {
-                throw new EntityAlreadyExistsException(record);
+                throw new EntityAlreadyExistsException(FPHSExternalIdentifier.class, "externalId", record.getExternalId());
             }
         }
         return record;

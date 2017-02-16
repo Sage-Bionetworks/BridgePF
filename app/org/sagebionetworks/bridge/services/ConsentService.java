@@ -153,7 +153,7 @@ public class ConsentService {
         Account account = accountDao.getAccount(study, participant.getId());
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
         if (active != null && active.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
-            throw new EntityAlreadyExistsException(consentSignature);
+            throw new EntityAlreadyExistsException(ConsentSignature.class, null);
         }
 
         // Add the consent creation timestamp and clear the withdrewOn timestamp, as some tests copy signatures

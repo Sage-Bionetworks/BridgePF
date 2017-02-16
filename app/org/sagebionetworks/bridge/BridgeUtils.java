@@ -20,9 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -126,18 +124,6 @@ public class BridgeUtils {
             return Long.parseLong(value);
         } catch(NumberFormatException e) {
             throw new RuntimeException("'" + value + "' is not a valid integer");
-        }
-    }
-    
-    public static void checkNewEntity(BridgeEntity entity, String field, String message) {
-        if (StringUtils.isNotBlank(field)) {
-            throw new EntityAlreadyExistsException(entity, message);
-        }
-    }
-    
-    public static void checkNewEntity(BridgeEntity entity, Long field, String message) {
-        if (field != null) {
-            throw new EntityAlreadyExistsException(entity, message);
         }
     }
 
