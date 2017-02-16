@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
@@ -214,11 +213,61 @@ public class ParticipantService {
      */
     public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
             boolean sendVerifyEmail) {
-        return saveParticipant(study, callerRoles, participant, true, sendVerifyEmail);
+        checkNotNull(study);
+        checkNotNull(callerRoles);
+        checkNotNull(participant);
+
+        Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
+        
+        Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
+        
+        externalIdService.reserveExternalId(study, participant.getExternalId(), account.getHealthCode());
+
+        saveParticipant(study, callerRoles, account, participant);
+        accountDao.createAccount(study, account, sendVerifyEmail && study.isEmailVerificationEnabled());
+        
+        externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
+
+        return new IdentifierHolder(account.getId());
     }
 
     public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
-        saveParticipant(study, callerRoles, participant, false, false);
+        checkNotNull(study);
+        checkNotNull(callerRoles);
+        checkNotNull(participant);
+        
+        Validate.entityThrowingException(new StudyParticipantValidator(study, false), participant);
+        
+        Account account = getAccountThrowingException(study, participant.getId());
+
+        externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
+
+        saveParticipant(study, callerRoles, account, participant);
+        
+        // Only admin roles can change status, after participant is created
+        if (callerIsAdmin(callerRoles) && participant.getStatus() != null) {
+            account.setStatus(participant.getStatus());
+        }
+        accountDao.updateAccount(account);
+    }
+
+    private void saveParticipant(Study study, Set<Roles> callerRoles, Account account, StudyParticipant participant) {
+        // Collect options to save them, however, remove EXTERNAL_IDENTIFIER key if the external ID is being 
+        // validated; in that case, it's not saved here, it's saved through the externalIdService, where it is 
+        // saved to the options table if it is valid.
+        Map<ParticipantOption, String> options = getAllOptionsButExternalId(study, participant);
+        optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
+
+        account.setFirstName(participant.getFirstName());
+        account.setLastName(participant.getLastName());
+        for (String attribute : study.getUserProfileAttributes()) {
+            String value = participant.getAttributes().get(attribute);
+            account.setAttribute(attribute, value);
+        }
+        
+        if (callerIsAdmin(callerRoles)) {
+            updateRoles(callerRoles, participant, account);
+        }
     }
 
     public void requestResetPassword(Study study, String userId) {
@@ -338,68 +387,12 @@ public class ParticipantService {
         notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
 
-    private IdentifierHolder saveParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
-            boolean isNew, boolean sendVerifyEmail) {
-        checkNotNull(study);
-        checkNotNull(callerRoles);
-        checkNotNull(participant);
-
-        Validate.entityThrowingException(new StudyParticipantValidator(study, isNew), participant);
-        
-        boolean newAccountAssigningId = isNew && study.isExternalIdValidationEnabled()
-                && isNotBlank(participant.getExternalId());
-        Account account = null;
-        if (isNew) {
-            // Don't set it yet. Create the user first, and only assign it if that's successful.
-            // Allows us to assure that credentials and ID will be related or not created at all.
-            if (newAccountAssigningId) {
-                externalIdService.reserveExternalId(study, participant.getExternalId());
-            }
-            account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
-        } else {
-            account = getAccountThrowingException(study, participant.getId());
-
-            updateValidatedExternalId(study, participant, account.getHealthCode());
-        }
-
-        // Collect options to save them, however, remove EXTERNAL_IDENTIFIER key if the external ID is being 
-        // validated; in that case, it's not saved here, it's saved through the externalIdService, where it is 
-        // saved to the options table if it is valid.
-        Map<ParticipantOption, String> options = getAllOptionsButExternalId(study, participant);
-        optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
-
-        account.setFirstName(participant.getFirstName());
-        account.setLastName(participant.getLastName());
-        for (String attribute : study.getUserProfileAttributes()) {
-            String value = participant.getAttributes().get(attribute);
-            account.setAttribute(attribute, value);
-        }
-
-        // Only admin roles can change status, after participant is created
-        if (callerIsAdmin(callerRoles)) {
-            if (!isNew && participant.getStatus() != null) {
-                account.setStatus(participant.getStatus());
-            }
-            updateRoles(callerRoles, participant, account);
-        }
-        if (isNew) {
-            accountDao.createAccount(study, account, sendVerifyEmail && study.isEmailVerificationEnabled());
-            if (newAccountAssigningId) {
-                externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
-            }
-            optionsService.setString(study.getStudyIdentifier(), account.getHealthCode(), EXTERNAL_IDENTIFIER,
-                    participant.getExternalId());
-        } else {
-            accountDao.updateAccount(account);
-        }
-        return new IdentifierHolder(account.getId());
-    }
-
     private Map<ParticipantOption, String> getAllOptionsButExternalId(Study study, StudyParticipant participant) {
         Map<ParticipantOption, String> options = Maps.newHashMap();
         for (ParticipantOption option : ParticipantOption.values()) {
             options.put(option, option.fromParticipant(participant));
         }
+        // If validation is enabled, don't just save this like any other option, regardless of what it is.
         if (study.isExternalIdValidationEnabled()) {
             options.remove(EXTERNAL_IDENTIFIER);
         }
@@ -434,32 +427,6 @@ public class ParticipantService {
             }
         }
         account.setRoles(newRoleSet);
-    }
-
-    /**
-     * If updating an account in a study with validated IDs, if the ID is not required at sign up, check first
-     * that the user has not been assigned an ID, before assigning the supplied ID. After assignment, sending 
-     * any value other than the user's current value (or no value) generates an exception.
-     */
-    private void updateValidatedExternalId(Study study, StudyParticipant participant, String healthCode) {
-        // If not enabled, we'll update the value like any other ParticipantOption
-        if (study.isExternalIdValidationEnabled()) {
-            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-            String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
-
-            if (idsDontExistOrAreNotEqual(existingExternalId, participant.getExternalId())) {
-                if (isBlank(existingExternalId) && isNotBlank(participant.getExternalId())) {
-                    externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
-                } else {
-                    throw new BadRequestException(
-                            "External ID cannot be changed, removed after assignment, or left unassigned.");
-                }
-            }
-        }
-    }
-
-    private boolean idsDontExistOrAreNotEqual(String id1, String id2) {
-        return (isBlank(id1) || isBlank(id2) || !id1.equals(id2));
     }
 
     private Account getAccountThrowingException(Study study, String id) {
