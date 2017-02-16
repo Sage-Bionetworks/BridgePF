@@ -447,18 +447,16 @@ public class ParticipantService {
             ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
             String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
 
-            if (isBlank(existingExternalId) && isBlank(participant.getExternalId())) { 
-                return;
+            if (isBlank(existingExternalId)) {
+                if (isNotBlank(participant.getExternalId())) {
+                    externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
+                }
+            } else {
+                if (!existingExternalId.equals(participant.getExternalId())) {
+                    throw new BadRequestException(
+                            "External ID cannot be changed or removed after assignment.");
+                }
             }
-            if (isBlank(existingExternalId) && isNotBlank(participant.getExternalId())) {
-                externalIdService.assignExternalId(study, participant.getExternalId(), healthCode);
-                return;
-            }
-            if (existingExternalId.equals(participant.getExternalId())) {
-                return;
-            }
-            throw new BadRequestException(
-                    "External ID cannot be changed or removed after assignment.");
         }
     }
 
