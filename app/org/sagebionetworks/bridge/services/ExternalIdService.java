@@ -86,15 +86,17 @@ public class ExternalIdService {
         checkNotNull(study);
         checkArgument(isNotBlank(healthCode));
         
-        ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-        String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
-        
-        if (study.isExternalIdValidationEnabled() && oneIdBlankOrTheyAreNotEqual(existingExternalId, externalIdentifier)) {
-            if (isBlank(existingExternalId) && isNotBlank(externalIdentifier)) {
-                externalIdDao.assignExternalId(study.getStudyIdentifier(), externalIdentifier, healthCode);
-            } else {
+        if (study.isExternalIdValidationEnabled()) {
+            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
+
+            if (isBlank(existingExternalId)) {
+                if (isNotBlank(externalIdentifier)) {
+                    externalIdDao.assignExternalId(study.getStudyIdentifier(), externalIdentifier, healthCode);
+                }
+            } else if (!existingExternalId.equals(externalIdentifier)) {
                 throw new BadRequestException(
-                        "External ID cannot be changed, removed after assignment, or left unassigned.");
+                        "External ID cannot be changed or removed after assignment.");
             }
         }
         optionsService.setString(study.getStudyIdentifier(), healthCode, EXTERNAL_IDENTIFIER, externalIdentifier);
