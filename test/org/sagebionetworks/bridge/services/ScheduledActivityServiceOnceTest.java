@@ -1,14 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 
 import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalTime;
 import org.junit.After;
@@ -21,6 +19,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -54,19 +53,20 @@ public class ScheduledActivityServiceOnceTest {
     private SchedulePlanService schedulePlanService;
     
     private Schedule schedule;
-    
     private SchedulePlan schedulePlan;
-    
     private Study study;
-    
     private TestUser testUser;
     
     @Before
     public void before() {
-        study = studyService.getStudy(TEST_STUDY.getIdentifier());
-        study.setTaskIdentifiers(Sets.newHashSet("taskId"));
-        testUser = helper.getBuilder(ScheduledActivityServiceRecurringTest.class).build();
-        
+        // api study is frequently used for manual tests. To get clean tests, create a new study.
+        Study studyToCreate = TestUtils.getValidStudy(this.getClass());
+        studyToCreate.setExternalIdValidationEnabled(false);
+        studyToCreate.setTaskIdentifiers(Sets.newHashSet("taskId"));
+        study = studyService.createStudy(studyToCreate);
+
+        testUser = helper.getBuilder(this.getClass()).build();
+
         schedule = new Schedule();
         schedule.setLabel("Schedule Label");
         schedule.setScheduleType(ScheduleType.ONCE);
@@ -77,17 +77,19 @@ public class ScheduledActivityServiceOnceTest {
         
         schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setLabel("Label");
-        schedulePlan.setStudyKey(TEST_STUDY.getIdentifier());
+        schedulePlan.setStudyKey(study.getIdentifier());
         schedulePlan.setStrategy(strategy);
         schedulePlan = schedulePlanService.createSchedulePlan(study, schedulePlan);
     }
 
     @After
     public void after() {
-        DateTimeUtils.setCurrentMillisSystem();
-        schedulePlanService.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
+        schedulePlanService.deleteSchedulePlan(study.getStudyIdentifier(), schedulePlan.getGuid());
         if (testUser != null) {
             helper.deleteUser(study, testUser.getId());
+        }
+        if (study != null) {
+            studyService.deleteStudy(study.getIdentifier(), true);
         }
     }
 
@@ -127,7 +129,7 @@ public class ScheduledActivityServiceOnceTest {
     
     private ScheduleContext getContextWith2DayAdvance(DateTimeZone zone) {
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withStudyIdentifier(study.getStudyIdentifier())
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(zone)
             .withAccountCreatedOn(DateTime.now())

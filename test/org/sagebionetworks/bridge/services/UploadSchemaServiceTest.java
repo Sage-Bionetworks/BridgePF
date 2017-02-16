@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -17,6 +19,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -28,6 +31,7 @@ public class UploadSchemaServiceTest {
     private static final UploadFieldDefinition FIELD_DEF = new DynamoUploadFieldDefinition.Builder().withName("field")
             .withType(UploadFieldType.STRING).build();
     private static final List<UploadFieldDefinition> FIELD_DEF_LIST = ImmutableList.of(FIELD_DEF);
+    private static final String OS_NAME = "unit-test-os";
     private static final String SCHEMA_ID = "test-schema";
     private static final String SCHEMA_NAME = "My Schema";
     private static final int SCHEMA_REV = 1;
@@ -157,6 +161,108 @@ public class UploadSchemaServiceTest {
         StudyIdentifier studyIdentifier = makeTestStudy();
         svc.deleteUploadSchemaById(studyIdentifier, "delete-schema");
         verify(mockDao).deleteUploadSchemaById(studyIdentifier, "delete-schema");
+    }
+
+    @Test
+    public void getLatestMatchMultiple() {
+        // Setup dao and service.
+        UploadSchemaDao mockDao = setupDaoForGetLatest();
+        UploadSchemaService service = new UploadSchemaService();
+        service.setUploadSchemaDao(mockDao);
+
+        // make client info
+        ClientInfo clientInfo = new ClientInfo.Builder().withOsName(OS_NAME).withAppVersion(25).build();
+
+        // execute and validate
+        UploadSchema retval = service.getLatestUploadSchemaRevisionForAppVersion(TestConstants.TEST_STUDY, SCHEMA_ID,
+                clientInfo);
+        assertEquals(2, retval.getRevision());
+    }
+
+    @Test
+    public void getLatestMatchOld() {
+        // Setup dao and service.
+        UploadSchemaDao mockDao = setupDaoForGetLatest();
+        UploadSchemaService service = new UploadSchemaService();
+        service.setUploadSchemaDao(mockDao);
+
+        // make client info
+        ClientInfo clientInfo = new ClientInfo.Builder().withOsName(OS_NAME).withAppVersion(15).build();
+
+        // execute and validate
+        UploadSchema retval = service.getLatestUploadSchemaRevisionForAppVersion(TestConstants.TEST_STUDY, SCHEMA_ID,
+                clientInfo);
+        assertEquals(1, retval.getRevision());
+    }
+
+    @Test
+    public void getLatestMatchNone() {
+        // Setup dao and service.
+        UploadSchemaDao mockDao = setupDaoForGetLatest();
+        UploadSchemaService service = new UploadSchemaService();
+        service.setUploadSchemaDao(mockDao);
+
+        // make client info
+        ClientInfo clientInfo = new ClientInfo.Builder().withOsName(OS_NAME).withAppVersion(5).build();
+
+        // execute and validate
+        UploadSchema retval = service.getLatestUploadSchemaRevisionForAppVersion(TestConstants.TEST_STUDY, SCHEMA_ID,
+                clientInfo);
+        assertNull(retval);
+    }
+
+    private static UploadSchemaDao setupDaoForGetLatest() {
+        // Two schemas, rev 1 has min=10. Rev 2 has min=20.
+        UploadSchema schemaRev1 = makeSimpleSchema();
+        schemaRev1.setRevision(1);
+        schemaRev1.setMinAppVersion(OS_NAME, 10);
+
+        UploadSchema schemaRev2 = makeSimpleSchema();
+        schemaRev2.setRevision(2);
+        schemaRev2.setMinAppVersion(OS_NAME, 20);
+
+        // mock dao
+        UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
+        when(mockDao.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(ImmutableList.of(
+                schemaRev1, schemaRev2));
+        return mockDao;
+    }
+
+    @Test
+    public void isSchemaAvailableForClientInfo() {
+        // test cases: { clientInfoAppVersion, minAppVersion, maxAppVersion, expected }
+        Object[][] testCaseArray = {
+                { null, null, null, true },
+                { null, 10, 20, true },
+                { 15, null, null, true },
+                { 5, 10, null, false },
+                { 15, 10, null, true },
+                { 15, null, 20, true },
+                { 25, null, 20, false },
+                { 5, 10, 20, false },
+                { 15, 10, 20, true },
+                { 25, 10, 20, false },
+        };
+
+        for (Object[] oneTestCase : testCaseArray) {
+            // test args
+            Integer clientInfoAppVersion = (Integer) oneTestCase[0];
+            Integer minAppVersion = (Integer) oneTestCase[1];
+            Integer maxAppVersion = (Integer) oneTestCase[2];
+            boolean expected = (boolean) oneTestCase[3];
+
+            // set up test
+            ClientInfo clientInfo = new ClientInfo.Builder().withOsName(OS_NAME).withAppVersion(clientInfoAppVersion)
+                    .build();
+
+            UploadSchema schema = makeSimpleSchema();
+            schema.setMinAppVersion(OS_NAME, minAppVersion);
+            schema.setMaxAppVersion(OS_NAME, maxAppVersion);
+
+            // execute and validate
+            boolean retval = UploadSchemaService.isSchemaAvailableForClientInfo(schema, clientInfo);
+            assertEquals(expected, retval);
+        }
     }
 
     @Test(expected = BadRequestException.class)
