@@ -1046,7 +1046,7 @@ public class ParticipantServiceTest {
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(null);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
-        // Updating a validated value (with null) throws an exception
+        // Updating a validated null value (with null) does nothing
         participantService.updateParticipant(STUDY, CALLER_ROLES, NO_ID_PARTICIPANT);
         
         verifyNotSetAsReservation();
