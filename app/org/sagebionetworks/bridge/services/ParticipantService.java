@@ -458,7 +458,7 @@ public class ParticipantService {
                 return;
             }
             throw new BadRequestException(
-                    "External ID cannot be changed, removed after assignment, or left unassigned.");
+                    "External ID cannot be changed or removed after assignment.");
         }
     }
 
