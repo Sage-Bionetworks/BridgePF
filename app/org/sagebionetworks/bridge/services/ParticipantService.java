@@ -220,14 +220,15 @@ public class ParticipantService {
         Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
+        Map<ParticipantOption, String> options = Maps.newHashMap();
         
         externalIdService.reserveExternalId(study, participant.getExternalId(), account.getHealthCode());
 
-        saveParticipant(study, callerRoles, account, participant);
-        accountDao.createAccount(study, account, sendVerifyEmail && study.isEmailVerificationEnabled());
+        updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
+        accountDao.createAccount(study, account, sendVerifyEmail && study.isEmailVerificationEnabled());
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
-
+        optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
         return new IdentifierHolder(account.getId());
     }
 
@@ -239,24 +240,30 @@ public class ParticipantService {
         Validate.entityThrowingException(new StudyParticipantValidator(study, false), participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
+        Map<ParticipantOption, String> options = Maps.newHashMap();
 
+        // Do this first because if the ID has been taken or is invalid, we do not want to update anything else.
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
 
-        saveParticipant(study, callerRoles, account, participant);
+        updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
         // Only admin roles can change status, after participant is created
         if (callerIsAdmin(callerRoles) && participant.getStatus() != null) {
             account.setStatus(participant.getStatus());
         }
         accountDao.updateAccount(account);
+        optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
     }
 
-    private void saveParticipant(Study study, Set<Roles> callerRoles, Account account, StudyParticipant participant) {
-        // Collect options to save them, however, remove EXTERNAL_IDENTIFIER key if the external ID is being 
-        // validated; in that case, it's not saved here, it's saved through the externalIdService, where it is 
-        // saved to the options table if it is valid.
-        Map<ParticipantOption, String> options = getAllOptionsButExternalId(study, participant);
-        optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
+    private void updateAccountOptionsAndRoles(Study study, Set<Roles> callerRoles, Map<ParticipantOption, String> options,
+            Account account, StudyParticipant participant) {
+        for (ParticipantOption option : ParticipantOption.values()) {
+            options.put(option, option.fromParticipant(participant));
+        }
+        // If validation is enabled, don't just save this like any other option, regardless of what it is.
+        if (study.isExternalIdValidationEnabled()) {
+            options.remove(EXTERNAL_IDENTIFIER);
+        }
 
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
@@ -385,18 +392,6 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, userId);
 
         notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
-    }
-
-    private Map<ParticipantOption, String> getAllOptionsButExternalId(Study study, StudyParticipant participant) {
-        Map<ParticipantOption, String> options = Maps.newHashMap();
-        for (ParticipantOption option : ParticipantOption.values()) {
-            options.put(option, option.fromParticipant(participant));
-        }
-        // If validation is enabled, don't just save this like any other option, regardless of what it is.
-        if (study.isExternalIdValidationEnabled()) {
-            options.remove(EXTERNAL_IDENTIFIER);
-        }
-        return options;
     }
 
     private boolean callerIsAdmin(Set<Roles> callerRoles) {

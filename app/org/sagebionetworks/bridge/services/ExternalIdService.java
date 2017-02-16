@@ -73,18 +73,21 @@ public class ExternalIdService {
     
     public void reserveExternalId(Study study, String externalIdentifier, String healthCode) {
         checkNotNull(study);
+        checkNotNull(healthCode);
         
-        ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-        String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
+        if (study.isExternalIdValidationEnabled() && externalIdentifier != null) {
+            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            String existingId = lookup.getString(EXTERNAL_IDENTIFIER);
 
-        if (study.isExternalIdValidationEnabled() && oneIdBlankOrTheyAreNotEqual(existingExternalId, externalIdentifier)) {
-            externalIdDao.reserveExternalId(study.getStudyIdentifier(), externalIdentifier);
+            if (!externalIdentifier.equals(existingId)) {
+                externalIdDao.reserveExternalId(study.getStudyIdentifier(), externalIdentifier);    
+            }
         }
     }
     
     public void assignExternalId(Study study, String externalIdentifier, String healthCode) {
         checkNotNull(study);
-        checkArgument(isNotBlank(healthCode));
+        checkNotNull(healthCode);
         
         if (study.isExternalIdValidationEnabled()) {
             ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
@@ -100,13 +103,6 @@ public class ExternalIdService {
             }
         }
         optionsService.setString(study.getStudyIdentifier(), healthCode, EXTERNAL_IDENTIFIER, externalIdentifier);
-    }
-    
-    private boolean oneIdBlankOrTheyAreNotEqual(String id1, String id2) {
-        if (isBlank(id1) && isBlank(id2)) {
-            return false;
-        }
-        return (isBlank(id1) || isBlank(id2) || !id1.equals(id2));
     }
     
     public void unassignExternalId(Study study, String externalIdentifier, String healthCode) {
