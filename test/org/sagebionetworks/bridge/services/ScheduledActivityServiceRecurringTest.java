@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 
@@ -17,6 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -60,9 +60,13 @@ public class ScheduledActivityServiceRecurringTest {
     
     @Before
     public void before() {
-        study = studyService.getStudy(TEST_STUDY.getIdentifier());
-        study.setTaskIdentifiers(Sets.newHashSet("taskId"));
-        
+        // api study is frequently used for manual tests. To get clean tests, create a new study.
+        Study studyToCreate = TestUtils.getValidStudy(this.getClass());
+        studyToCreate.setExternalIdRequiredOnSignup(false);
+        studyToCreate.setExternalIdValidationEnabled(false);
+        studyToCreate.setTaskIdentifiers(Sets.newHashSet("taskId"));
+        study = studyService.createStudy(studyToCreate);
+
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule Label");
         schedule.setScheduleType(ScheduleType.RECURRING);
@@ -76,7 +80,7 @@ public class ScheduledActivityServiceRecurringTest {
         
         schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setLabel("Label");
-        schedulePlan.setStudyKey(TEST_STUDY.getIdentifier());
+        schedulePlan.setStudyKey(study.getIdentifier());
         schedulePlan.setStrategy(strategy);
         schedulePlan = schedulePlanService.createSchedulePlan(study, schedulePlan);
     }
@@ -84,9 +88,12 @@ public class ScheduledActivityServiceRecurringTest {
     @After
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
-        schedulePlanService.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
+        schedulePlanService.deleteSchedulePlan(study.getStudyIdentifier(), schedulePlan.getGuid());
         if (testUser != null) {
             helper.deleteUser(study, testUser.getId());
+        }
+        if (study != null) {
+            studyService.deleteStudy(study.getIdentifier(), true);
         }
     }
     
@@ -199,7 +206,7 @@ public class ScheduledActivityServiceRecurringTest {
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
         // Setting the endsOn value to the end of the day, as we do in the controller.
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withStudyIdentifier(study.getStudyIdentifier())
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withTimeZone(zone)
             .withAccountCreatedOn(DateTime.now())

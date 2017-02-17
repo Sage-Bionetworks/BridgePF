@@ -8,10 +8,12 @@ import static org.junit.Assert.fail;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -19,8 +21,26 @@ import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 public class DynamoCompoundActivityDefinitionTest {
     private static final SchemaReference FOO_SCHEMA = new SchemaReference("foo", 2);
     private static final SchemaReference BAR_SCHEMA = new SchemaReference("bar", 3);
+    private static final List<SchemaReference> SCHEMA_LIST = ImmutableList.of(FOO_SCHEMA, BAR_SCHEMA);
+
     private static final SurveyReference ASDF_SURVEY = new SurveyReference("asdf", "asdf-guid", null);
     private static final SurveyReference JKL_SURVEY = new SurveyReference("jkl", "jkl-guid", null);
+    private static final List<SurveyReference> SURVEY_LIST = ImmutableList.of(ASDF_SURVEY, JKL_SURVEY);
+
+    private static final String TASK_ID = "test-task";
+
+    @Test
+    public void getCompoundActivity() {
+        DynamoCompoundActivityDefinition def = new DynamoCompoundActivityDefinition();
+        def.setSchemaList(SCHEMA_LIST);
+        def.setSurveyList(SURVEY_LIST);
+        def.setTaskId(TASK_ID);
+
+        CompoundActivity compoundActivity = def.getCompoundActivity();
+        assertEquals(SCHEMA_LIST, compoundActivity.getSchemaList());
+        assertEquals(SURVEY_LIST, compoundActivity.getSurveyList());
+        assertEquals(TASK_ID, compoundActivity.getTaskIdentifier());
+    }
 
     @Test
     public void immutableLists() {

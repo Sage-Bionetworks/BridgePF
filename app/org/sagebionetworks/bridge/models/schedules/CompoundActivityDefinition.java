@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -25,6 +26,13 @@ public interface CompoundActivityDefinition extends BridgeEntity {
     /** Convenience method for creating a CompoundActivityDefinition using a concrete implementation. */
     static CompoundActivityDefinition create() {
         return new DynamoCompoundActivityDefinition();
+    }
+
+    /** Helper method which constructs a Compound Activity instance from its definition. */
+    @JsonIgnore
+    default CompoundActivity getCompoundActivity() {
+        return new CompoundActivity.Builder().withSchemaList(getSchemaList()).withSurveyList(getSurveyList())
+                .withTaskIdentifier(getTaskId()).build();
     }
 
     /** List of schemas in this activity definition. */
