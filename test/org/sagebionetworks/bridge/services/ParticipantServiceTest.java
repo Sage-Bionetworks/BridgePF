@@ -182,11 +182,6 @@ public class ParticipantServiceTest {
     
     @Before
     public void before() {
-        // Spying on actual external ID service to determine final behavior is correct, because of the 
-        // difficulty of testing the calls to externalIdService alone.
-        //externalIdService.setExternalIdDao(externalIdDao);
-        //externalIdService.setParticipantOptionsService(optionsService);
-        
         STUDY.setExternalIdValidationEnabled(false);
         STUDY.setExternalIdRequiredOnSignup(false);
         participantService = new ParticipantService();
