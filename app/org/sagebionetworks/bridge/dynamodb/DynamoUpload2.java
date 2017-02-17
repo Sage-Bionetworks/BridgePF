@@ -153,7 +153,6 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @Override
-    @JsonIgnore
     public String getRecordId() {
         return recordId;
     }
