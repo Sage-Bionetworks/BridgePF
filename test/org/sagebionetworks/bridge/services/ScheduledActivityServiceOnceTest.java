@@ -61,6 +61,7 @@ public class ScheduledActivityServiceOnceTest {
     public void before() {
         // api study is frequently used for manual tests. To get clean tests, create a new study.
         Study studyToCreate = TestUtils.getValidStudy(this.getClass());
+        studyToCreate.setExternalIdRequiredOnSignup(false);
         studyToCreate.setExternalIdValidationEnabled(false);
         studyToCreate.setTaskIdentifiers(Sets.newHashSet("taskId"));
         study = studyService.createStudy(studyToCreate);
