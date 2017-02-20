@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.config;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,17 +30,30 @@ public class BridgeConfig implements Config {
 
     private static final String WEBSERVICES_URL = "webservices.url";
 
+    private static final String EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
+    private static final String TEST_SYNAPSE_USER_ID = "test.synapse.user.id";
+
     private final Config config;
 
     BridgeConfig() {
         final ClassLoader classLoader = BridgeConfig.class.getClassLoader();
-        final Path templateConfig = Paths.get(classLoader.getResource(TEMPLATE_CONFIG).getPath());
+
+        final Path templateConfig;
+        try {
+            // URL -> URI -> Path is safer, and Windows doesn't work without it
+            // see http://stackoverflow.com/questions/6164448/convert-url-to-normal-windows-filename-java
+            templateConfig =
+                    Paths.get(classLoader.getResource(TEMPLATE_CONFIG).toURI());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Error loading config from classpath resource: " + CONFIG_FILE, e);
+        }
+
         final Path localConfig = Paths.get(LOCAL_CONFIG);
         try {
             config = Files.exists(localConfig) ? new PropertiesConfig(templateConfig, localConfig)
                     : new PropertiesConfig(templateConfig);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error loading config from local file: " + localConfig, e);
         }
     }
 
@@ -123,5 +137,13 @@ public class BridgeConfig implements Config {
     public String getHostnameWithPostfix(String identifier) {
         checkNotNull(identifier);
         return identifier + config.get(HOST_POSTFIX);
+    }
+
+    public String getExporterSynapseId() {
+        return config.get(EXPORTER_SYNAPSE_ID);
+    }
+
+    public String getTestSynapseUserId() {
+        return config.get(TEST_SYNAPSE_USER_ID);
     }
 }

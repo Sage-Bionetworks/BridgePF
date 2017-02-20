@@ -65,8 +65,10 @@ public class DynamoStudyDao implements StudyDao {
     @Override
     public List<Study> getStudies() {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
-        
+
+        // get all studies including deactivated ones
         List<DynamoStudy> mappings = mapper.scan(DynamoStudy.class, scan);
+
         return new ArrayList<Study>(mappings);
     }
 
@@ -77,7 +79,7 @@ public class DynamoStudyDao implements StudyDao {
         try {
             mapper.save(study);
         } catch(ConditionalCheckFailedException e) { // in the create scenario, this should be a hash key clash.
-            throw new EntityAlreadyExistsException(study);
+            throw new EntityAlreadyExistsException(Study.class, "identifier", study.getIdentifier());
         }
         return study;
     }
@@ -104,5 +106,19 @@ public class DynamoStudyDao implements StudyDao {
         }
 
         mapper.delete(study);
+    }
+
+    @Override
+    public void deactivateStudy(String studyId) {
+        checkNotNull(studyId, Validate.CANNOT_BE_BLANK, "study");
+
+        if (STUDY_WHITE_LIST.contains(studyId)) {
+            throw new UnauthorizedException(studyId + " is protected by whitelist.");
+        }
+
+        Study study = getStudy(studyId);
+        study.setActive(false);
+
+        updateStudy(study);
     }
 }

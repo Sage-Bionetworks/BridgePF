@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
@@ -61,37 +62,18 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
-     * Play controller for DELETE /researcher/v1/uploadSchema/byIdAndRev/:schemaId/:rev. This API deletes an upload
-     * schema with the specified schema ID and revision. If the schema doesn't exist, this API throws a 404 exception.
+     * Admin API to delete all revisions of a schema with the given schema ID in the given study. If the schema doesn't
+     * exist, this API throws a 404 exception.
      *
+     * @param studyId
+     *         study ID that the schema lives in
      * @param schemaId
-     *         schema ID of the upload schema to delete
-     * @param rev
-     *         revision number of the upload schema to delete, must be positive
+     *         schema to delete
      * @return Play result with the OK message
      */
-    public Result deleteUploadSchemaByIdAndRev(String schemaId, int rev) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyIdentifier = session.getStudyIdentifier();
-
-        uploadSchemaService.deleteUploadSchemaByIdAndRev(studyIdentifier, schemaId, rev);
-        return okResult("Schema has been deleted.");
-    }
-
-    /**
-     * Play controller for DELETE /researcher/v1/uploadSchema/byId/:schemaId. This API deletes all revisions of the
-     * upload schema with the specified schema ID. If there are no schemas with this schema ID, this API throws a 404
-     * exception.
-     *
-     * @param schemaId
-     *         schema ID of the upload schemas to delete, must be non-null and non-empty
-     * @return Play result with the OK message
-     */
-    public Result deleteUploadSchemaById(String schemaId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyIdentifier = session.getStudyIdentifier();
-
-        uploadSchemaService.deleteUploadSchemaById(studyIdentifier, schemaId);
+    public Result deleteAllRevisionsOfUploadSchema(String studyId, String schemaId) {
+        getAuthenticatedSession(ADMIN);
+        uploadSchemaService.deleteUploadSchemaById(new StudyIdentifierImpl(studyId), schemaId);
         return okResult("Schemas have been deleted.");
     }
 

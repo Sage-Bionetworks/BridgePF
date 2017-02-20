@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class ConsentSignatureTest {
     private static final long CONSENT_CREATED_ON_TIMESTAMP = DateTime.now().minusDays(1).getMillis();
@@ -37,6 +38,30 @@ public class ConsentSignatureTest {
     @After
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
+    }
+    
+    @Test
+    public void allDatesSuppressed() throws Exception {
+        ConsentSignature signature = new ConsentSignature.Builder()
+            .withBirthdate("1970-01-01")
+            .withName("Dave Test")
+            .withWithdrewOn(SIGNED_ON_TIMESTAMP)
+            .withConsentCreatedOn(SIGNED_ON_TIMESTAMP)
+            .withSignedOn(SIGNED_ON_TIMESTAMP).build();
+        
+        String json = ConsentSignature.SIGNATURE_WRITER.writeValueAsString(signature);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        assertNull(node.get("signedOn"));
+        assertNull(node.get("consentCreatedOn"));
+        assertNull(node.get("withdrewOn"));
+        assertEquals("ConsentSignature", node.get("type").asText());
+        
+        ConsentSignature deser = ConsentSignature.fromJSON(node);
+        assertEquals("Dave Test", deser.getName());
+        assertEquals("1970-01-01", deser.getBirthdate());
+        assertTrue(deser.getSignedOn() > 0L); // this is set in the builder
+        assertEquals(0L, deser.getConsentCreatedOn());
+        assertNull(deser.getWithdrewOn());
     }
     
     @Test

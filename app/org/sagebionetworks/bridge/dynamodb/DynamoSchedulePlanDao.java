@@ -105,6 +105,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        plan.setVersion(null);
         
         forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
         mapper.save(plan);

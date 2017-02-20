@@ -15,8 +15,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -48,13 +49,16 @@ public final class DynamoStudy implements Study {
     private boolean healthCodeExportEnabled;
     private boolean emailVerificationEnabled;
     private boolean externalIdValidationEnabled;
+    private boolean externalIdRequiredOnSignup;
     private Map<String, Integer> minSupportedAppVersions;
+    private Map<String, String> pushNotificationARNs;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
         dataGroups = new HashSet<>();
         minSupportedAppVersions = new HashMap<>();
+        pushNotificationARNs = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -202,7 +206,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
     public Set<String> getUserProfileAttributes() {
         return profileAttributes;
@@ -214,7 +218,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
     public Set<String> getTaskIdentifiers() {
         return taskIdentifiers;
@@ -226,7 +230,7 @@ public final class DynamoStudy implements Study {
     }
     
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
     public Set<String> getDataGroups() {
         return dataGroups;
@@ -238,7 +242,7 @@ public final class DynamoStudy implements Study {
     }
     
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = PasswordPolicyMarshaller.class)
+    @DynamoDBTypeConvertedJson
     @Override
     public PasswordPolicy getPasswordPolicy() {
         return passwordPolicy;
@@ -250,7 +254,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = EmailTemplateMarshaller.class)
+    @DynamoDBTypeConvertedJson
     @Override
     public EmailTemplate getVerifyEmailTemplate() {
         return verifyEmailTemplate;
@@ -262,7 +266,7 @@ public final class DynamoStudy implements Study {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = EmailTemplateMarshaller.class)
+    @DynamoDBTypeConvertedJson
     @Override
     public EmailTemplate getResetPasswordTemplate() {
         return resetPasswordTemplate;
@@ -342,15 +346,36 @@ public final class DynamoStudy implements Study {
     public void setMinSupportedAppVersions(Map<String,Integer> map) {
         this.minSupportedAppVersions = (map == null) ? new HashMap<>() : map;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Map<String,String> getPushNotificationARNs() {
+        return pushNotificationARNs;
+    }
+
+    @Override
+    public void setPushNotificationARNs(Map<String,String> map) {
+        this.pushNotificationARNs = (map == null) ? new HashMap<>() : map;
+    }
+
+    @Override
+    public boolean isExternalIdRequiredOnSignup() {
+        return externalIdRequiredOnSignup;
+    }
+
+    @Override
+    public void setExternalIdRequiredOnSignup(boolean externalIdRequiredOnSignup) {
+        this.externalIdRequiredOnSignup = externalIdRequiredOnSignup;
+    }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, minAgeOfConsent, name, sponsorName, supportEmail,
-                technicalEmail, consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers,
-                dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active,
-                strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
-                externalIdValidationEnabled, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
-                usesCustomExportSchedule);
+        return Objects.hash(identifier, minAgeOfConsent, name, sponsorName, supportEmail, technicalEmail,
+                consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers, dataGroups,
+                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active, strictUploadValidationEnabled,
+                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
+                externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
+                usesCustomExportSchedule, pushNotificationARNs);
     }
 
     @Override
@@ -381,22 +406,25 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
                 && Objects.equals(externalIdValidationEnabled, other.externalIdValidationEnabled)
                 && Objects.equals(emailVerificationEnabled, other.emailVerificationEnabled)
-                && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions);
+                && Objects.equals(externalIdRequiredOnSignup, other.externalIdRequiredOnSignup)
+                && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions)
+                && Objects.equals(pushNotificationARNs, other.pushNotificationARNs);
     }
 
     @Override
     public String toString() {
         return String.format(
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
-                            + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
-                            + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
-                            + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
-                            + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
-                            + "externalIdValidationEnabled=%s, minSupportedAppVersions=%s, usesCustomExportSchedule=%s]",
+                        + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
+                        + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
+                        + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
+                        + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
+                        + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
+                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail, synapseDataAccessTeamId, 
                 synapseProjectId, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
                 dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
-                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, minSupportedAppVersions, 
-                usesCustomExportSchedule);
+                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, externalIdRequiredOnSignup, 
+                minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs);
     }
 }

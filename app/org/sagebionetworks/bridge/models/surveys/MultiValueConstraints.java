@@ -63,34 +63,4 @@ public class MultiValueConstraints extends Constraints {
     public void setAllowMultiple(boolean allowMultiple) {
         this.allowMultiple = allowMultiple;
     }
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + (allowMultiple ? 1231 : 1237);
-        result = prime * result + (allowOther ? 1231 : 1237);
-        result = prime * result + ((enumeration == null) ? 0 : enumeration.hashCode());
-        return result;
-    }
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (!super.equals(obj))
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        MultiValueConstraints other = (MultiValueConstraints) obj;
-        if (allowMultiple != other.allowMultiple)
-            return false;
-        if (allowOther != other.allowOther)
-            return false;
-        if (enumeration == null) {
-            if (other.enumeration != null)
-                return false;
-        } else if (!enumeration.equals(other.enumeration))
-            return false;
-        return true;
-    }
-
 }

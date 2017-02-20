@@ -13,6 +13,13 @@ POST   /v3/auth/signUp                  @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/verifyEmail             @org.sagebionetworks.bridge.play.controllers.AuthenticationController.verifyEmail
 POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resendEmailVerification
 
+# Compound Activity Definitions
+GET    /v3/compoundactivitydefinitions @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.getAllCompoundActivityDefinitionsInStudy
+POST   /v3/compoundactivitydefinitions @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.createCompoundActivityDefinition
+GET    /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.getCompoundActivityDefinition(taskId: String)
+DELETE /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.deleteCompoundActivityDefinition(taskId: String)
+POST   /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.updateCompoundActivityDefinition(taskId: String)
+
 # Participants Researcher APIs
 GET    /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, startDate: String ?= null, endDate: String ?= null)
 POST   /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant(verifyEmail: String ?= "true")
@@ -24,6 +31,8 @@ GET    /v3/participants/:userId/uploads                      @org.sagebionetwork
 GET    /v3/participants/:userId/requestInfo                  @org.sagebionetworks.bridge.play.controllers.ParticipantController.getRequestInfo(userId: String)
 GET    /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistory(userId: String, offsetKey: String ?= null, pageSize: String ?= null)
 DELETE /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteActivities(userId: String)
+GET    /v3/participants/:userId/notifications                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getNotificationRegistrations(userId: String)
+POST   /v3/participants/:userId/sendNotification             @org.sagebionetworks.bridge.play.controllers.ParticipantController.sendNotification(userId: String)
 POST   /v3/participants/:userId/signOut                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(userId: String)
 POST   /v3/participants/:userId/requestResetPassword         @org.sagebionetworks.bridge.play.controllers.ParticipantController.requestResetPassword(userId: String)
 POST   /v3/participants/:userId/resendEmailVerification      @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendEmailVerification(userId: String)
@@ -80,14 +89,16 @@ GET    /v3/users/self/reports/:identifier @org.sagebionetworks.bridge.play.contr
 GET    /v3/reports                                        @org.sagebionetworks.bridge.play.controllers.ReportController.getReportIndices(type: String)
 GET    /v3/reports/:identifier                            @org.sagebionetworks.bridge.play.controllers.ReportController.getStudyReport(identifier: String, startDate: String ?= null, endDate: String ?= null)
 POST   /v3/reports/:identifier                            @org.sagebionetworks.bridge.play.controllers.ReportController.saveStudyReport(identifier: String)
+GET    /v3/reports/:identifier/index                      @org.sagebionetworks.bridge.play.controllers.ReportController.getStudyReportIndex(identifier: String)
+POST   /v3/reports/:identifier/index                      @org.sagebionetworks.bridge.play.controllers.ReportController.updateStudyReportIndex(identifier: String)
 DELETE /v3/reports/:identifier                            @org.sagebionetworks.bridge.play.controllers.ReportController.deleteStudyReport(identifier: String)
 DELETE /v3/reports/:identifier/:date                      @org.sagebionetworks.bridge.play.controllers.ReportController.deleteStudyReportRecord(identifier: String, date: String)
+POST   /v3/participants/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.saveParticipantReportForWorker(identifier: String)
+DELETE /v3/participants/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReportIndex(identifier: String)
 GET    /v3/participants/:userId/reports/:identifier       @org.sagebionetworks.bridge.play.controllers.ReportController.getParticipantReportForResearcher(userId: String, identifier: String, startDate: String ?= null, endDate: String ?= null)
 POST   /v3/participants/:userId/reports/:identifier       @org.sagebionetworks.bridge.play.controllers.ReportController.saveParticipantReport(userId: String, identifier: String)
 DELETE /v3/participants/:userId/reports/:identifier       @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReport(userId: String, identifier: String)
 DELETE /v3/participants/:userId/reports/:identifier/:date @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReportRecord(userId: String, identifier: String, date: String)
-POST   /v3/participants/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.saveParticipantReportForWorker(identifier: String)
-DELETE /v3/participants/reports/:identifier               @org.sagebionetworks.bridge.play.controllers.ReportController.deleteParticipantReportIndex(identifier: String)
 
 # Surveys
 GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion
@@ -126,8 +137,6 @@ POST   /v4/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.brid
 GET    /v3/uploadschemas/:schemaId                 @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaAllRevisions(schemaId: String)
 GET    /v3/uploadschemas/:schemaId/recent          @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchema(schemaId: String)
 GET    /v3/uploadschemas/:schemaId/revisions/:rev  @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByIdAndRev(schemaId: String, rev: Int)
-DELETE /v3/uploadschemas/:schemaId                 @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteUploadSchemaById(schemaId: String)
-DELETE /v3/uploadschemas/:schemaId/revisions/:rev  @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteUploadSchemaByIdAndRev(schemaId: String, rev: Int)
 
 # Schedule Plans
 GET    /v3/scheduleplans           @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans
@@ -136,32 +145,55 @@ GET    /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.
 POST   /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.updateSchedulePlan(guid: String)
 DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
+# Notifications
+GET    /v3/notifications                      @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getAllRegistrations
+POST   /v3/notifications                      @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.createRegistration
+GET    /v3/notifications/:guid                @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getRegistration(guid: String)
+POST   /v3/notifications/:guid                @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.updateRegistration(guid: String)
+DELETE /v3/notifications/:guid                @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.deleteRegistration(guid: String)
+GET    /v3/notifications/:guid/subscriptions  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getSubscriptionStatuses(guid: String)
+POST   /v3/notifications/:guid/subscriptions  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.subscribe(guid: String)
+ 
+# Topics
+GET    /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getAllTopics
+POST   /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.createTopic
+GET    /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getTopic(guid: String)
+POST   /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.updateTopic(guid: String)
+DELETE /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String)
+POST   /v3/topics/:guid/sendNotification @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.sendNotification(guid: String)
+
 # Bridge Exporter
 POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
 POST /v3/recordExportStatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
 
 # Studies
 GET    /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null, summary: String ?= null)
-POST   /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy 
+POST   /v3/studies                  @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy
+POST   /v3/studies/init             @org.sagebionetworks.bridge.play.controllers.StudyController.createStudyAndUsers
 GET    /v3/studies/self             @org.sagebionetworks.bridge.play.controllers.StudyController.getCurrentStudy
 GET    /v3/studies/self/publicKey   @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyPublicKeyAsPem
 GET    /v3/studies/self/emailStatus @org.sagebionetworks.bridge.play.controllers.StudyController.getEmailStatus
 POST   /v3/studies/self/verifyEmail @org.sagebionetworks.bridge.play.controllers.StudyController.verifyEmail
-GET    /v3/studies/self/uploads     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploads(startTime: String ?= null, endTime: String ?= null)
+GET    /v3/studies/self/uploads     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploads(startTime: String ?= null, endTime: String ?= null, pageSize: java.lang.Integer ?= null, offsetKey: String ?= null)
 POST   /v3/studies/self             @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
+POST   /v3/studies/self/synapseProject  @org.sagebionetworks.bridge.play.controllers.StudyController.createSynapse
 GET    /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
 POST   /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
-DELETE /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String)
+DELETE /v3/studies/:identifier      @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String, physical: String ?= "true")
 
 GET    /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.getExternalIds(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
 POST   /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.addExternalIds
 DELETE /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.deleteExternalIds
 
-# APIs for getting entities across studies
-GET    /v3/studies/:studyId/surveys/published @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)
+# Worker APIs for getting entities across studies
+GET    /v3/studies/:studyId/surveys/published                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)
 GET    /v3/studies/:studyId/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByStudyAndSchemaAndRev(studyId: String, schemaId: String, revision: Int)
-POST   /v3/studies/:studyId/reports/:identifier           @org.sagebionetworks.bridge.play.controllers.ReportController.saveStudyReportForSpecifiedStudy(studyId: String, identifier: String)
-GET    /v3/studies/:studyId/uploads @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null)
+GET    /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.getPublicStudyReport(studyId: String, identifier: String, startDate: String ?= null, endDate: String ?= null)
+POST   /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.ReportController.saveStudyReportForSpecifiedStudy(studyId: String, identifier: String)
+GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null, pageSize: java.lang.Integer ?= null, offsetKey: String ?= null)
+
+# Admin APIs for deleting entities across studies
+DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchema(studyId: String, schemaId: String)
 
 # Backfills
 GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.BackfillController.backfill(name: String)

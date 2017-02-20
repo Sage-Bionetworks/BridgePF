@@ -68,7 +68,12 @@ public class DynamoStudyTest {
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
         assertTrue(node.get("externalIdValidationEnabled").asBoolean());
+        assertTrue(node.get("externalIdRequiredOnSignup").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());
+        assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.IOS),
+                node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
+        assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
+                node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
         
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
         assertNotNull(supportedVersionsNode);
@@ -83,7 +88,6 @@ public class DynamoStudyTest {
         final String filteredJson = Study.STUDY_WRITER.writeValueAsString(study);
         final JsonNode filteredNode = BridgeObjectMapper.get().readTree(filteredJson);
         assertNull(filteredNode.get("stormpathHref"));
-        assertNull(filteredNode.get("active"));
 
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);

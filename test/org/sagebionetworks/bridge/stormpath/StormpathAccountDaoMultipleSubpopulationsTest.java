@@ -49,7 +49,7 @@ public class StormpathAccountDaoMultipleSubpopulationsTest {
     @After
     public void after() {
         if (study != null) {
-            studyService.deleteStudy(study.getIdentifier());
+            studyService.deleteStudy(study.getIdentifier(), true);
         }
     }
 

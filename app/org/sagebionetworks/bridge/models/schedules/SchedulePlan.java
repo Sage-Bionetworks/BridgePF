@@ -9,6 +9,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @BridgeTypeName("SchedulePlan")
 @JsonDeserialize(as = DynamoSchedulePlan.class)
 public interface SchedulePlan extends BridgeEntity {
+    /** Convenience method for creating an instance of SchedulePlan using a concrete implementation. */
+    static SchedulePlan create() {
+        return new DynamoSchedulePlan();
+    }
 
     String getGuid();
     void setGuid(String guid);

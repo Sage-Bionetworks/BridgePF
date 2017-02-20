@@ -40,6 +40,7 @@ public class UploadSchemaValidator implements Validator {
      *     <li>value is null or not an UploadSchema</li>
      *     <li>fieldDefinitions is null or empty</li>
      *     <li>fieldDefinitions contains null or invalid entries</li>
+     *     <li>minAppVersion is greater than maxAppVersion</li>
      *     <li>name is null or empty</li>
      *     <li>revision is negative</li>
      *     <li>schemaId is null or empty</li>
@@ -57,6 +58,15 @@ public class UploadSchemaValidator implements Validator {
             errors.rejectValue("uploadSchema", "is the wrong type");
         } else {
             UploadSchema uploadSchema = (UploadSchema) target;
+
+            // min/maxAppVersion
+            for (String osName : uploadSchema.getAppVersionOperatingSystems()) {
+                Integer minAppVersion = uploadSchema.getMinAppVersion(osName);
+                Integer maxAppVersion = uploadSchema.getMaxAppVersion(osName);
+                if (minAppVersion != null && maxAppVersion != null && minAppVersion > maxAppVersion) {
+                    errors.rejectValue("minAppVersions{" + osName + "}", "can't be greater than maxAppVersion");
+                }
+            }
 
             // name
             if (Strings.isNullOrEmpty(uploadSchema.getName())) {

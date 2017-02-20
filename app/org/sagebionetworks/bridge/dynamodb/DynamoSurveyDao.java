@@ -218,6 +218,7 @@ public class DynamoSurveyDao implements SurveyDao {
         survey.setSchemaRevision(null);
         survey.setPublished(false);
         survey.setDeleted(false);
+        survey.setVersion(null);
         return saveSurvey(survey);
     }
 
@@ -228,13 +229,16 @@ public class DynamoSurveyDao implements SurveyDao {
             throw new EntityNotFoundException(Survey.class);
         }
         if (!survey.isPublished()) {
-            // make schema from survey
-            UploadSchema schema = uploadSchemaDao.createUploadSchemaFromSurvey(study, survey, newSchemaRev);
-
             // update survey
             survey.setPublished(true);
             survey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-            survey.setSchemaRevision(schema.getRevision());
+
+            // make schema from survey
+            if (!survey.getUnmodifiableQuestionList().isEmpty()) {
+                UploadSchema schema = uploadSchemaDao.createUploadSchemaFromSurvey(study, survey, newSchemaRev);
+                survey.setSchemaRevision(schema.getRevision());
+            }
+
             try {
                 surveyMapper.save(survey);
             } catch(ConditionalCheckFailedException e) {
@@ -290,21 +294,11 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys);
-        if (existing.isDeleted()) {
-            throw new EntityNotFoundException(Survey.class);
-        }
-        // If a survey has been published, you can't delete the last published version of that survey.
-        // This is going to create a lot of test errors.
-        if (existing.isPublished()) {
-            int publishedVersionCount = new QueryBuilder().setSurvey(keys.getGuid()).isPublished().isNotDeleted().getCount();
-            if (publishedVersionCount < 2) {
-                throw new PublishedSurveyException(existing, "You cannot delete the last published version of a published survey.");
-            }
-        }
-        existing.setDeleted(true);
-        saveSurvey(existing);
+    public void deleteSurvey(Survey survey) {
+        checkNotNull(survey);
+        
+        survey.setDeleted(true);
+        saveSurvey(survey);
     }
 
     @Override

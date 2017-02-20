@@ -56,21 +56,17 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public Subpopulation createSubpopulation(Subpopulation subpop) {
         checkNotNull(subpop);
-        checkNotNull(subpop.getGuidString());
         checkNotNull(subpop.getStudyIdentifier());
-
-        // guid should always be set in service, so it's okay to check with a checkNotNull (returns 500). 
-        // But if version is present, that's a bad submission from the service user, return a 400
-        if (subpop.getVersion() != null) { 
-            throw new BadRequestException("Subpopulation does not appear to be new (includes version number).");
-        }
         
-        Criteria criteria = persistCriteria(subpop);
-        subpop.setCriteria(criteria);
-        
-        // these are ignored if submitted. delete remains what it was
+        subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setDeleted(false); 
         subpop.setDefaultGroup(false);
+        subpop.setVersion(null);
+        subpop.setPublishedConsentCreatedOn(0L);
+
+        Criteria criteria = persistCriteria(subpop);
+        subpop.setCriteria(criteria);
+
         mapper.save(subpop);
         return subpop;
     }

@@ -103,6 +103,7 @@ public class ConsentServiceTest {
     public void before() {
         study = TestUtils.getValidStudy(ConsentServiceTest.class);
         study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
         study = studyService.createStudy(study);
         
         // Default is always created, so use it for this test.
@@ -122,7 +123,7 @@ public class ConsentServiceTest {
         try {
             helper.deleteUser(testUser);    
         } finally {
-            studyService.deleteStudy(study.getIdentifier());    
+            studyService.deleteStudy(study.getIdentifier(), true);
         }
     }
 

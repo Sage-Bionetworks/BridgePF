@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 
@@ -21,6 +22,15 @@ public final class CompoundActivity {
         this.schemaList = schemaList;
         this.surveyList = surveyList;
         this.taskIdentifier = taskIdentifier;
+    }
+
+    /**
+     * Returns true if this compound activity is a reference. That is, if this compound activity contains no schemas
+     * and no surveys and needs to be resolved using the task ID before it can be used.
+     */
+    @JsonIgnore
+    public boolean isReference() {
+        return schemaList.isEmpty() && surveyList.isEmpty();
     }
 
     /** List of references to schemas associated with this activity. */
@@ -43,6 +53,14 @@ public final class CompoundActivity {
         private List<SchemaReference> schemaList;
         private List<SurveyReference> surveyList;
         private String taskIdentifier;
+
+        /** Copy constructor. */
+        public Builder copyOf(CompoundActivity other) {
+            this.schemaList = other.getSchemaList();
+            this.surveyList = other.getSurveyList();
+            this.taskIdentifier = other.getTaskIdentifier();
+            return this;
+        }
 
         /** @see #getSchemaList */
         public Builder withSchemaList(List<SchemaReference> schemaList) {

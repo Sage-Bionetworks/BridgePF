@@ -162,7 +162,7 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        final ConsentSignature consentSignature = parseJson(request(), ConsentSignature.class);
+        final ConsentSignature consentSignature = ConsentSignature.fromJSON(requestToJSON(request()));
         final SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), version);
 
         ConsentStatus status = session.getConsentStatuses().get(subpopGuid);

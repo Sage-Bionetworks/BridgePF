@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -275,7 +277,7 @@ public class ConsentControllerMockedTest {
     @Test
     public void consentSignatureHasServerGeneratedSignedOnValue() throws Exception {
         // This signedOn property should be ignored, it is always set on the server
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":0,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":1000,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         
         TestUtils.mockPlayContextWithJson(json);
         
@@ -385,6 +387,28 @@ public class ConsentControllerMockedTest {
         verify(consentService).withdrawConsent(study, SubpopulationGuid.create("test-subpop"), participant,
                 new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
+    }
+    
+    // Current behavior is to document signedOn as a DateTime field, though all these tests assume a 
+    // long is sent. Not only does this lead to conversion errors, but we set the signedOn value ourselves 
+    // on the server. This test verifies that even if you send a date & time string, you do not receive an 
+    // error, and it is still ignored. 
+    @Test
+    public void submittingDateTimeStringsDoesNotCauseException() throws Exception {
+        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":\"2016-12-19T17:40:33.812Z\",\"scope\":\"no_sharing\"}";
+        
+        TestUtils.mockPlayContextWithJson(json);
+        
+        Result result = controller.giveV3(SUBPOP_GUID.getGuid());
+        assertResult(result, 201, "Consent to research has been recorded.");
+        
+        verify(consentService).consentToResearch(eq(study), eq(SUBPOP_GUID), eq(participant),
+                signatureCaptor.capture(), eq(SharingScope.NO_SHARING), eq(true));
+        
+        ConsentSignature sig = signatureCaptor.getValue();
+        assertNotEquals(DateTime.parse("2016-12-19T17:40:33.812Z").getMillis(), sig.getSignedOn());
+        assertEquals("Jack Aubrey", sig.getName());
+        assertEquals("1970-10-10", sig.getBirthdate());
     }
     
     private void validateSignature(ConsentSignature signature) {

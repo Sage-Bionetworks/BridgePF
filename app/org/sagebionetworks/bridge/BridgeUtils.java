@@ -20,9 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -128,18 +126,6 @@ public class BridgeUtils {
             throw new RuntimeException("'" + value + "' is not a valid integer");
         }
     }
-    
-    public static void checkNewEntity(BridgeEntity entity, String field, String message) {
-        if (StringUtils.isNotBlank(field)) {
-            throw new EntityAlreadyExistsException(entity, message);
-        }
-    }
-    
-    public static void checkNewEntity(BridgeEntity entity, Long field, String message) {
-        if (field != null) {
-            throw new EntityAlreadyExistsException(entity, message);
-        }
-    }
 
     public static Set<Roles> convertRolesQuietly(GroupList groups) {
         Set<Roles> roleSet = new HashSet<>();
@@ -242,5 +228,25 @@ public class BridgeUtils {
             throw new BadRequestException(value + " is not an integer");
         }
     }
-    
+
+    /**
+     * Creates a new copy of the map, removing any entries that have a null value (particularly easy to do this in
+     * JSON).
+     */
+    public static <K,V> Map<K,V> withoutNullEntries(Map<K,V> map) {
+        checkNotNull(map);
+        return map.entrySet().stream().filter(e -> e.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey,
+                Map.Entry::getValue));
+    }
+
+    /** Helper method which puts something to a map, or removes it from the map if the value is null. */
+    public static <K,V> void putOrRemove(Map<K,V> map, K key, V value) {
+        checkNotNull(map);
+        checkNotNull(key);
+        if (value != null) {
+            map.put(key, value);
+        } else {
+            map.remove(key);
+        }
+    }
 }

@@ -26,6 +26,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -50,6 +51,7 @@ import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
@@ -135,6 +137,34 @@ public class DynamoUploadSchemaDaoMockTest {
         survey.setName(SURVEY_NAME);
         survey.setElements(surveyElementList);
         return survey;
+    }
+
+    @Test
+    public void schemaFromSurveyWithInfoScreensOnly() {
+        // create a survey with an info screen and no questions
+        SurveyInfoScreen infoScreen = new DynamoSurveyInfoScreen();
+        infoScreen.setIdentifier("test-info-screen");
+        infoScreen.setTitle("Test Info Screen");
+        infoScreen.setPrompt("This info screen doesn't do anything, other than not being a question.");
+
+        Survey survey = makeSurveyWithElements(ImmutableList.of(infoScreen));
+
+        // Similarly, spy getUploadSchemaNoThrow(), createSchemaV4() and updateSchemaV4().
+        DynamoUploadSchemaDao dao = spy(new DynamoUploadSchemaDao());
+
+        // set up test dao and execute - Most of this stuff is tested elsewhere, so just test result specific to this
+        // test
+        try {
+            dao.createUploadSchemaFromSurvey(TestConstants.TEST_STUDY, survey, false);
+            fail("expected exception");
+        } catch (BadRequestException ex) {
+            assertEquals("Can't create a schema from a survey with no questions", ex.getMessage());
+        }
+
+        // We never attempt to create, get, or update any schemas.
+        verify(dao, never()).createSchemaRevisionV4(any(), any());
+        verify(dao, never()).getUploadSchemaNoThrow(any(), any());
+        verify(dao, never()).updateSchemaRevisionV4(any(), any(), anyInt(), any());
     }
 
     @Test
@@ -507,7 +537,7 @@ public class DynamoUploadSchemaDaoMockTest {
                 updatedSchemaCaptor.capture());
 
         // validate schema - Don't need to validate everything, just the essentials.
-        UploadSchema updatedSchema = updatedSchemaCaptor.getValue();
+        DynamoUploadSchema updatedSchema = (DynamoUploadSchema) updatedSchemaCaptor.getValue();
         assertEquals(SURVEY_ID, updatedSchema.getSchemaId());
         assertEquals(SURVEY_SCHEMA_DDB_VERSION, updatedSchema.getVersion().longValue());
 
@@ -1321,22 +1351,19 @@ public class DynamoUploadSchemaDaoMockTest {
 
     private static DynamoDBMapper setupMockMapperWithSchema(DynamoUploadSchema schema) {
         // mock get result
-        PaginatedQueryList<DynamoUploadSchema> mockGetResult = mock(PaginatedQueryList.class);
+        List<DynamoUploadSchema> schemaList = new ArrayList<>();
         if (schema != null) {
-            // mock result should contain the old rev
-            when(mockGetResult.isEmpty()).thenReturn(false);
-            when(mockGetResult.get(0)).thenReturn(schema);
-        } else {
-            // no old rev means no old result
-            when(mockGetResult.isEmpty()).thenReturn(true);
+            schemaList.add(schema);
         }
+        QueryResultPage<DynamoUploadSchema> resultPage = new QueryResultPage<>();
+        resultPage.setResults(schemaList);
 
         // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        when(mockMapper.query(
+        when(mockMapper.queryPage(
             (Class<DynamoUploadSchema>)eq(DynamoUploadSchema.class), 
             (DynamoDBQueryExpression<DynamoUploadSchema>)notNull(DynamoDBQueryExpression.class)
-        )).thenReturn(mockGetResult);
+        )).thenReturn(resultPage);
         return mockMapper;
     }
     

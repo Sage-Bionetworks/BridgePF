@@ -1,28 +1,37 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshaller;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 
 /**
  * <p>
- * Enum marshaller for DynamoDB, since DynamoDB doesn't have one natively.
+ * Enum marshaller for DynamoDB, since DynamoDB doesn't have one natively. The 
+ * specific enumeration type is passed in during construction by DynamoDB, when 
+ * this converter is discovered through the @DynamoDBTypeConverted annotation. 
  * </p>
  * <p>
- * We use raw Enum type rather than the proper T extends Enum, because the DynamoDBMarshalling annotation makes it
- * impossible to specify generics.
+ * These converters are supposed to be "null-safe", see:
+ * http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/dynamodbv2/datamodeling/DynamoDBTypeConverted.html
  * </p>
  */
 @SuppressWarnings("rawtypes")
-public class EnumMarshaller implements DynamoDBMarshaller<Enum> {
+public class EnumMarshaller implements DynamoDBTypeConverter<String,Enum> {
+    
+    private final Class<? extends Enum> enumType;
+    
+    public EnumMarshaller(Class<? extends Enum> enumType) {
+        this.enumType = enumType;
+    }
+
     /** {@inheritDoc} */
     @Override
-    public String marshall(Enum enumVal) {
-        return enumVal.name();
+    public String convert(Enum enumValue) {
+        return enumValue.name();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override
-    public Enum unmarshall(Class<Enum> clazz, String obj) {
-        return Enum.valueOf(clazz, obj);
+    public Enum unconvert(String string) {
+        return Enum.valueOf(enumType, string);
     }
 }

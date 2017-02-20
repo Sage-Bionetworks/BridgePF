@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -14,10 +14,15 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import javax.annotation.Resource;
 
+import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.client.exceptions.SynapseException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -29,6 +34,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -36,12 +42,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -61,6 +61,9 @@ public class StudyServiceTest {
     
     @Resource
     SubpopulationDao subpopDao;
+    
+    @Resource
+    NotificationTopicService topicService;
 
     @Autowired
     CacheProvider cache;
@@ -68,17 +71,17 @@ public class StudyServiceTest {
     private CacheProvider mockCache;
     
     private Study study;
-    
+
     @Before
-    public void before() {
+    public void before() throws SynapseException {
         mockCache = mock(CacheProvider.class);
         studyService.setCacheProvider(mockCache);
     }
     
     @After
-    public void after() {
+    public void after() throws SynapseException {
         if (study != null) {
-            studyService.deleteStudy(study.getIdentifier());
+            studyService.deleteStudy(study.getIdentifier(), true);
         }
     }
 
@@ -138,6 +141,12 @@ public class StudyServiceTest {
         StudyConsentView view = studyConsentService.getActiveConsent(subpop);
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
         
+        // Create an associated topic
+        NotificationTopic topic = TestUtils.getNotificationTopic();
+        topic.setStudyId(study.getIdentifier());
+        topicService.createTopic(topic);
+        assertEquals(1, topicService.listTopics(study.getStudyIdentifier()).size());
+        
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());
         assertTrue(newStudy.isStrictUploadValidationEnabled());
@@ -155,10 +164,13 @@ public class StudyServiceTest {
         verifyNoMoreInteractions(mockCache);
         reset(mockCache);
 
-        studyService.deleteStudy(study.getIdentifier());
+        studyService.deleteStudy(study.getIdentifier(), true);
         verify(mockCache).getStudy(study.getIdentifier());
         verify(mockCache).setStudy(study);
         verify(mockCache).removeStudy(study.getIdentifier());
+        
+        assertEquals(0, topicService.listTopics(study.getStudyIdentifier()).size());
+        
         try {
             studyService.getStudy(study.getIdentifier());
             fail("Should have thrown an exception");
@@ -260,21 +272,31 @@ public class StudyServiceTest {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setHealthCodeExportEnabled(false);
         study.setEmailVerificationEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
+        study.setExternalIdValidationEnabled(true);
         study = studyService.createStudy(study);
         
         // Okay, now that these are set, researchers cannot change them
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setExternalIdValidationEnabled(false);
         study = studyService.updateStudy(study, false); // nope
         assertFalse("isHealthCodeExportEnabled should be false", study.isHealthCodeExportEnabled());
         assertTrue("isEmailVerificationEnabled should be true", study.isEmailVerificationEnabled());
-        
+        assertTrue("isExternalIdRequiredOnSignup should be true", study.isExternalIdRequiredOnSignup());
+        assertTrue("isExternalIdValidationEnabled should be true", study.isExternalIdValidationEnabled());
+
         // But administrators can
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setExternalIdValidationEnabled(false);
         study = studyService.updateStudy(study, true); // yep
         assertTrue(study.isHealthCodeExportEnabled());
         assertFalse(study.isEmailVerificationEnabled());
+        assertFalse(study.isExternalIdRequiredOnSignup());
+        assertFalse(study.isExternalIdValidationEnabled());
     }
     
     @Test(expected=InvalidEntityException.class)
@@ -288,7 +310,7 @@ public class StudyServiceTest {
 
     @Test(expected = UnauthorizedException.class)
     public void cantDeleteApiStudy() {
-        studyService.deleteStudy("api");
+        studyService.deleteStudy("api", true);
     }
     
     @Test

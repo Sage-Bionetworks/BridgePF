@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -11,47 +10,69 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.annotation.Resource;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
+import org.sagebionetworks.client.SynapseClient;
+import org.sagebionetworks.client.exceptions.SynapseException;
+import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
+import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
+import org.sagebionetworks.repo.model.Project;
+import org.sagebionetworks.repo.model.ResourceAccess;
+import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.auth.NewUser;
+import org.sagebionetworks.repo.model.util.ModelConstants;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 @Component("studyService")
 public class StudyService {
-    
+
+    static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
+    static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
+    private CompoundActivityDefinitionService compoundActivityDefinitionService;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
+    private NotificationTopicService topicService;
     private EmailVerificationService emailVerificationService;
+    private SynapseClient synapseClient;
+    private ParticipantService participantService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -74,6 +95,14 @@ public class StudyService {
     final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
+
+    /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
+    @Autowired
+    final void setCompoundActivityDefinitionService(
+            CompoundActivityDefinitionService compoundActivityDefinitionService) {
+        this.compoundActivityDefinitionService = compoundActivityDefinitionService;
+    }
+
     @Resource(name="uploadCertificateService")
     final void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
@@ -99,31 +128,126 @@ public class StudyService {
         this.subpopService = subpopService;
     }
     @Autowired
+    final void setNotificationTopicService(NotificationTopicService topicService) {
+        this.topicService = topicService;
+    }
+    @Autowired
     final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
         this.emailVerificationService = emailVerificationService;
     }
-    
-    public Study getStudy(String identifier) {
+    @Autowired
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
+    }
+
+    @Autowired
+    @Qualifier("bridgePFSynapseClient")
+    public final void setSynapseClient(SynapseClient synapseClient) {
+        this.synapseClient = synapseClient;
+    }
+
+    public Study getStudy(String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-        
+
         Study study = cacheProvider.getStudy(identifier);
         if (study == null) {
             study = studyDao.getStudy(identifier);
             cacheProvider.setStudy(study);
         }
+
+        if (study != null && !study.isActive() && !includeDeleted) {
+            throw new EntityNotFoundException(Study.class, "Study not found.");
+        }
+
         return study;
     }
+
+    // only return active study
+    public Study getStudy(String identifier) {
+        return getStudy(identifier, false);
+    }
+
     public Study getStudy(StudyIdentifier studyId) {
         checkNotNull(studyId, Validate.CANNOT_BE_NULL, "studyIdentifier");
         
         return getStudy(studyId.getIdentifier());
     }
+
     public List<Study> getStudies() {
         return studyDao.getStudies();
     }
+
+    public Study createStudyAndUsers(StudyAndUsers studyAndUsers) throws SynapseException {
+        checkNotNull(studyAndUsers, Validate.CANNOT_BE_NULL, "study and users");
+
+        List<String> adminIds = studyAndUsers.getAdminIds();
+        if (adminIds == null || adminIds.isEmpty()) {
+            throw new BadRequestException("Admin IDs are required.");
+        }
+        // validate if each admin id is a valid synapse id in synapse
+        for (String adminId : adminIds) {
+            try {
+                synapseClient.getUserProfile(adminId);
+            } catch (SynapseNotFoundException e) {
+                throw new BadRequestException("Admin ID is invalid.");
+            }
+        }
+
+        List<StudyParticipant> users = studyAndUsers.getUsers();
+        if (users == null || users.isEmpty()) {
+            throw new BadRequestException("User list is required.");
+        }
+        if (studyAndUsers.getStudy() == null) {
+            throw new BadRequestException("Study cannot be null.");
+        }
+        Study study = studyAndUsers.getStudy();
+        // prevent NPE in participant validation
+        if (study.getPasswordPolicy() == null) {
+            study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        }
+
+        // validate participants at first
+        for (StudyParticipant user : users) {
+            Validate.entityThrowingException(new StudyParticipantValidator(study, true), user);
+        }
+
+        // validate roles for each user
+        for (StudyParticipant user: users) {
+            if (!Collections.disjoint(user.getRoles(), ImmutableSet.of(Roles.ADMIN, Roles.TEST_USERS, Roles.WORKER))) {
+                throw new BadRequestException("User can only have roles developer and/or researcher.");
+            }
+            if (user.getRoles().isEmpty()) {
+                throw new BadRequestException("User should have at least one role.");
+            }
+        }
+
+        // then create and validate study
+        study = createStudy(study);
+
+        // then create users for that study
+        // send verification email from both Bridge and Synapse as well
+        for (StudyParticipant user: users) {
+            IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), user,true);
+            NewUser synapseUser = new NewUser();
+            synapseUser.setEmail(user.getEmail());
+            synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
+
+            // send resetting password email as well
+            participantService.requestResetPassword(study, identifierHolder.getIdentifier());
+        }
+
+        // finally create synapse project and team
+        createSynapseProjectTeam(studyAndUsers.getAdminIds(), study);
+
+        return study;
+    }
+
     public Study createStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
+        if (study.getVersion() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study has a version value; it may already exist",
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier()).build());
+        }
 
         study.setActive(true);
         study.setStrictUploadValidationEnabled(true);
@@ -134,7 +258,7 @@ public class StudyService {
         Validate.entityThrowingException(validator, study);
 
         if (studyDao.doesIdentifierExist(study.getIdentifier())) {
-            throw new EntityAlreadyExistsException(study);
+            throw new EntityAlreadyExistsException(Study.class, "identifier", study.getIdentifier());
         }
         
         subpopService.createDefaultSubpopulation(study);
@@ -155,21 +279,111 @@ public class StudyService {
 
         return study;
     }
+
+    public Study createSynapseProjectTeam(List<String> synapseUserIds, Study study) throws SynapseException {
+        if (synapseUserIds == null || synapseUserIds.isEmpty()) {
+            throw new BadRequestException("Synapse User IDs are required.");
+        }
+        // first check if study already has project and team ids
+        if (study.getSynapseDataAccessTeamId() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study already has a team ID.",
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier())
+                    .put("synapseDataAccessTeamId", study.getSynapseDataAccessTeamId()).build());
+        }
+        if (study.getSynapseProjectId() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study already has a project ID.",
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier())
+                .put("synapseProjectId", study.getSynapseProjectId()).build());
+        }
+
+        // then check if the user id exists
+        for (String userId : synapseUserIds) {
+            try {
+                synapseClient.getUserProfile(userId);
+            } catch (SynapseNotFoundException e) {
+                throw new BadRequestException("Synapse User Id: " + userId + " is invalid.");
+            }
+        }
+
+        // create synapse project and team
+        Team team = new Team();
+        team.setName(study.getName().trim().replaceAll("[\\s\\[\\]]", "_") + "AccessTeam");
+        Project project = new Project();
+        project.setName(study.getName().trim().replaceAll("[\\s\\[\\]]", "_") + "Project");
+
+        Team newTeam = synapseClient.createTeam(team);
+
+        Project newProject = synapseClient.createEntity(project);
+
+        // modify project acl
+        org.sagebionetworks.repo.model.AccessControlList acl = synapseClient.getACL(newProject.getId());
+        // add exporter as admin
+        ResourceAccess toSet = new ResourceAccess();
+        toSet.setPrincipalId(Long.parseLong(EXPORTER_SYNAPSE_USER_ID));
+        toSet.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        acl.getResourceAccess().add(toSet);
+        // add users as admins
+        for (String synapseUserId : synapseUserIds) {
+            ResourceAccess toSetUser = new ResourceAccess();
+            toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
+            toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+            acl.getResourceAccess().add(toSetUser);
+        }
+        // add team in project as well
+        ResourceAccess toSetTeam = new ResourceAccess();
+        toSetTeam.setPrincipalId(Long.parseLong(newTeam.getId())); // passed by user as parameter
+        toSetTeam.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        acl.getResourceAccess().add(toSetTeam);
+
+        synapseClient.updateACL(acl);
+
+        for (String synapseUserId : synapseUserIds) {
+            // send invitation to target user for joining new team and grant admin permission to that user
+            MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
+            teamMemberInvitation.setInviteeId(synapseUserId);
+            teamMemberInvitation.setTeamId(newTeam.getId());
+            synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
+            synapseClient.setTeamMemberPermissions(newTeam.getId(), synapseUserId, true);
+        }
+
+        String newTeamId = newTeam.getId();
+        String newProjectId = newProject.getId();
+
+        // finally, update study
+        study.setSynapseProjectId(newProjectId);
+        study.setSynapseDataAccessTeamId(Long.parseLong(newTeamId));
+        updateStudy(study, false);
+
+        return study;
+    }
+
     public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
-        sanitizeHTML(study);
 
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
-        study.setStormpathHref(originalStudy.getStormpathHref());
-        study.setActive(true);
-        // And this cannot be set unless you're an administrator. Regardless of what the 
+
+        // And this cannot be set unless you're an administrator. Regardless of what the
         // developer set, set these back to the original study.
         if (!isAdminUpdate) {
+            // prevent non-admins update a deactivated study
+            if (!originalStudy.isActive()) {
+                throw new EntityNotFoundException(Study.class, "Study '"+ study.getIdentifier() +"' not found.");
+            }
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
+            study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
+            study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
         }
+
+        // prevent anyone changing active to false -- it should be done by deactivateStudy() method
+        if (originalStudy.isActive() && !study.isActive()) {
+            throw new BadRequestException("Study cannot be deleted through an update.");
+        }
+
+        sanitizeHTML(study);
+
+        study.setStormpathHref(originalStudy.getStormpathHref());
         Validate.entityThrowingException(validator, study);
 
         // When the version is out of sync in the cache, then an exception is thrown and the study 
@@ -191,22 +405,39 @@ public class StudyService {
         
         return updatedStudy;
     }
-    
-    public void deleteStudy(String identifier) {
+
+    public void deleteStudy(String identifier, boolean physical) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
 
         if (studyWhitelist.contains(identifier)) {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
         }
 
-        // Verify the study exists before you do this.
-        Study existing = getStudy(identifier);
+        // Verify the study exists before you do this
+        // only admin can call this method, should contain deactivated ones.
+        Study existing = getStudy(identifier, true);
         if (existing == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
         }
-        studyDao.deleteStudy(existing);
-        directoryDao.deleteDirectoryForStudy(existing);
-        subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
+
+        if (!physical) {
+            // deactivate
+            if (!existing.isActive()) {
+                throw new BadRequestException("Study '"+identifier+"' already deactivated.");
+            }
+            studyDao.deactivateStudy(existing.getIdentifier());
+        } else {
+            // actual delete
+            studyDao.deleteStudy(existing);
+            directoryDao.deleteDirectoryForStudy(existing);
+
+            // delete study data
+            compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
+                    existing.getStudyIdentifier());
+            subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
+            topicService.deleteAllTopics(existing.getStudyIdentifier());
+        }
+
         cacheProvider.removeStudy(identifier);
     }
     

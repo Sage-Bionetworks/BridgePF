@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -77,6 +78,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private static final Map<String, String> SURVEY_TYPE_TO_ANSWER_KEY_MAP = ImmutableMap.<String, String>builder()
             .put("Boolean", "booleanAnswer")
             .put("Date", "dateAnswer")
+            .put("DateAndTime", "dateAnswer")
             .put("Decimal", "numericAnswer")
             .put("Integer", "numericAnswer")
             .put("MultipleChoice", "choiceAnswers")
@@ -332,11 +334,14 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         }
 
         if (createdOn == null) {
-            // Recover by using current time.
+            // Recover by using current time. Don't set a timezone, since it's indeterminate.
             context.addMessage(String.format("upload ID %s has no timestamps, using current time", uploadId));
-            createdOn = DateUtils.getCurrentDateTime();
+            recordBuilder.withCreatedOn(DateUtils.getCurrentMillisFromEpoch());
+        } else {
+            // Use createdOn and timezone as specified in the upload.
+            recordBuilder.withCreatedOn(createdOn.getMillis());
+            recordBuilder.withCreatedOnTimeZone(HealthDataRecord.TIME_ZONE_FORMATTER.print(createdOn));
         }
-        recordBuilder.withCreatedOn(createdOn.getMillis());
     }
 
     private static <T> void removeTimestampsFromFilenames(Map<String, T> fileMap) {
@@ -451,7 +456,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             String fieldName = oneFieldDef.getName();
 
             if (sanitizedUnzippedDataMap.containsKey(fieldName)) {
-                attachmentMap.put(fieldName, sanitizedUnzippedDataMap.get(fieldName));
+                addAttachment(attachmentMap, fieldName, sanitizedUnzippedDataMap.get(fieldName));
             } else if (sanitizedFlattenedJsonDataMap.containsKey(fieldName)) {
                 copyJsonField(context, uploadId, sanitizedFlattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
                         attachmentMap);
@@ -506,7 +511,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldDef.getType())) {
             try {
-                attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
+                addAttachment(attachmentMap, fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
             } catch (JsonProcessingException ex) {
                 context.addMessage(String.format(
                         "Upload ID %s field %s could not be converted from JSON: %s", uploadId, fieldName,
@@ -532,6 +537,14 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             dataMap.put(fieldName, fieldValue.toString());
         } else {
             dataMap.set(fieldName, fieldValue);
+        }
+    }
+
+    // Helper method which encapsulates validating an upload before adding it to the attachment map. Right now, all it
+    // does is filter out empty attachments.
+    private static void addAttachment(Map<String, byte[]> attachmentMap, String fieldName, byte[] data) {
+        if (data.length != 0) {
+            attachmentMap.put(fieldName, data);
         }
     }
 }

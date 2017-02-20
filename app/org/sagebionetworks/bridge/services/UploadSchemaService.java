@@ -1,14 +1,17 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 
-import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.validators.UploadSchemaValidator;
@@ -39,8 +42,8 @@ public class UploadSchemaService {
      */
     public UploadSchema createSchemaRevisionV4(StudyIdentifier studyId, UploadSchema uploadSchema) {
         // Controller guarantees valid studyId and non-null uploadSchema
-        Preconditions.checkNotNull(studyId, "studyId must be non-null");
-        Preconditions.checkNotNull(uploadSchema, "uploadSchema must be non-null");
+        checkNotNull(studyId, "studyId must be non-null");
+        checkNotNull(uploadSchema, "uploadSchema must be non-null");
 
         // validate schema
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
@@ -120,6 +123,51 @@ public class UploadSchemaService {
             throw new BadRequestException(String.format("Invalid schema ID %s", schemaId));
         }
         uploadSchemaDao.deleteUploadSchemaById(studyIdentifier, schemaId);
+    }
+
+    /**
+     * Gets the latest available revision of the specified schema for the specified client. This API fetches every
+     * schema revision for the specified schema ID, then checks the schema's min/maxAppVersion against the clientInfo.
+     * If multiple schema revisions match, it returns the latest one.
+     */
+    public UploadSchema getLatestUploadSchemaRevisionForAppVersion(StudyIdentifier studyId, String schemaId,
+            ClientInfo clientInfo) {
+        // validate args - For now, this is an internal API. A simple Preconditions.checkNotNull() and/or
+        // Preconditions.checkArgument() will suffice. Will need further validation if this becomes a public facing API
+        // with user input.
+        checkNotNull(studyId, "Study ID must be specified");
+        checkArgument(StringUtils.isNotBlank(schemaId), "Schema ID must be specified");
+        checkNotNull(clientInfo, "Client Info must be specified");
+
+        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
+        return schemaList.stream().filter(schema -> isSchemaAvailableForClientInfo(schema, clientInfo))
+                .max((schema1, schema2) -> Integer.compare(schema1.getRevision(), schema2.getRevision())).orElse(null);
+    }
+
+    // Helper method which checks if a schema is available for a client, by checking the schema's min/maxAppVersion
+    // against the client's OS and appVersion.
+    //
+    // This filter is permissive. If neither the ClientInfo nor the constraints in the schema exclude this schema,
+    // then the schema is available.
+    //
+    // Package-scoped to facilitate unit tests.
+    static boolean isSchemaAvailableForClientInfo(UploadSchema schema, ClientInfo clientInfo) {
+        String osName = clientInfo.getOsName();
+        Integer appVersion = clientInfo.getAppVersion();
+        if (osName != null && appVersion != null) {
+            Integer minAppVersion = schema.getMinAppVersion(osName);
+            if (minAppVersion != null && appVersion < minAppVersion) {
+                return false;
+            }
+
+            Integer maxAppVersion = schema.getMaxAppVersion(osName);
+            if (maxAppVersion != null && appVersion > maxAppVersion) {
+                return false;
+            }
+        }
+
+        // Permissive filter defaults to true.
+        return true;
     }
 
     /**
@@ -228,8 +276,8 @@ public class UploadSchemaService {
     public UploadSchema updateSchemaRevisionV4(StudyIdentifier studyId, String schemaId, int schemaRevision,
             UploadSchema uploadSchema) {
         // Controller guarantees valid studyId and non-null uploadSchema
-        Preconditions.checkNotNull(studyId, "studyId must be non-null");
-        Preconditions.checkNotNull(uploadSchema, "uploadSchema must be non-null");
+        checkNotNull(studyId, "studyId must be non-null");
+        checkNotNull(uploadSchema, "uploadSchema must be non-null");
 
         // Validate user inputs.
         if (StringUtils.isBlank(schemaId)) {

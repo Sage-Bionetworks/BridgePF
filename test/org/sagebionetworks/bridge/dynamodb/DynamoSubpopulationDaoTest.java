@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -21,6 +22,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -123,15 +125,41 @@ public class DynamoSubpopulationDaoTest {
         // However, the subpopulation has not been physically deleted and can be retrieved as part of the list
         allSubpops = dao.getSubpopulations(studyId, false, true);
         assertEquals(1, allSubpops.size());
-        assertEquals(deletedSubpop.getGuid(), allSubpops.get(0).getGuid());
     }
     
-    @Test(expected = BadRequestException.class)
-    public void cannotRecreateExistingObject() {
-        Subpopulation subpop = createSubpop("Name", null, null, null);
-        dao.createSubpopulation(subpop);
-    }
+    @Test
+    public void copySubpopulation() throws Exception {
+        DynamoSubpopulation subpop = new DynamoSubpopulation();
+        subpop.setStudyIdentifier(studyId.getIdentifier());
+        subpop.setGuidString(BridgeUtils.generateGuid());
+        subpop.setName("Name");
+        subpop.setDescription("Description");
+        subpop.setRequired(true);
+        
+        Criteria criteria = TestUtils.createCriteria(2, 10, null, null);
+        subpop.setCriteria(criteria);
+        
+        // CREATE
+        Subpopulation savedSubpop = dao.createSubpopulation(subpop);
 
+        String json = BridgeObjectMapper.get().writeValueAsString(savedSubpop);
+        Subpopulation subpop2 = BridgeObjectMapper.get().readValue(json, Subpopulation.class);
+        // This is JsonIgnored, so add it back.
+        subpop2.setStudyIdentifier(savedSubpop.getStudyIdentifier());
+        // And mess with the fields
+        subpop2.setDeleted(true);
+        subpop2.setDefaultGroup(true);
+        subpop2.setPublishedConsentCreatedOn(100L);
+        
+        Subpopulation copy = dao.createSubpopulation(subpop2);
+        assertNotEquals(savedSubpop.getGuid(), copy.getGuid());
+        assertFalse(copy.isDeleted());
+        assertFalse(copy.isDefaultGroup());
+        assertEquals((Long)1L, savedSubpop.getVersion());
+        assertEquals((Long)1L, copy.getVersion());
+        assertEquals(0L, copy.getPublishedConsentCreatedOn());
+    }
+    
     @Test
     public void getSubpopulationsWillNotCreateDefault() {
         List<Subpopulation> subpops = dao.getSubpopulations(studyId, false, true);

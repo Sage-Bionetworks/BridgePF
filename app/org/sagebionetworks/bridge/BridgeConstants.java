@@ -42,7 +42,10 @@ public class BridgeConstants {
     public static final String CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
 
     public static final String CUSTOM_DATA_VERSION = "version";
-    
+
+    /** Used to cap the number of dupe records we fetch from DDB and the number of log messages we write. */
+    public static final int DUPE_RECORDS_MAX_COUNT = 10;
+
     public static final String STUDY_PROPERTY = "study";
 
     public static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");

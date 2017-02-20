@@ -5,24 +5,33 @@ import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.annotation.Resource;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.Resource;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.HttpMethod;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Strings;
-
 import com.google.common.collect.ImmutableSet;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
@@ -31,7 +40,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -44,16 +53,6 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.Validator;
-
-import com.amazonaws.HttpMethod;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 
 @Component
 public class UploadService {
@@ -194,7 +193,8 @@ public class UploadService {
         presignedUrlRequest.setExpiration(expiration);
 
         // Temporary session credentials
-        presignedUrlRequest.setRequestCredentials(uploadCredentailsService.getSessionCredentials());
+        AWSStaticCredentialsProvider credentialsProvider = new AWSStaticCredentialsProvider(uploadCredentailsService.getSessionCredentials());
+        presignedUrlRequest.setRequestCredentialsProvider(credentialsProvider);
 
         // Ask for server-side encryption
         presignedUrlRequest.addRequestParameter(SERVER_SIDE_ENCRYPTION, AES_256_SERVER_SIDE_ENCRYPTION);
@@ -234,12 +234,13 @@ public class UploadService {
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public DateTimeRangeResourceList<? extends UploadView> getUploads(@Nonnull String healthCode,
+    public PagedResourceList<? extends UploadView> getUploads(@Nonnull String healthCode,
             @Nullable DateTime startTime, @Nullable DateTime endTime) {
         checkNotNull(healthCode);
-        
+
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getUploads(healthCode, start, end);
+            List<? extends Upload> retList = uploadDao.getUploads(healthCode, start, end);
+            return new PagedResourceList<>(retList, null, API_MAXIMUM_PAGE_SIZE, retList.size());
         });
     }
     
@@ -249,16 +250,17 @@ public class UploadService {
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public DateTimeRangeResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
-            @Nullable DateTime startTime, @Nullable DateTime endTime) {
+    public PagedResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
+            @Nullable DateTime startTime, @Nullable DateTime endTime, @Nullable Integer pageSize, @Nullable String offsetKey) {
         checkNotNull(studyId);
 
+        // in case clients didn't set page size up
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getStudyUploads(studyId, start, end);
+            return uploadDao.getStudyUploads(studyId, start, end, (pageSize == null? API_DEFAULT_PAGE_SIZE : pageSize.intValue()), offsetKey);
         });
     }
     
-    private DateTimeRangeResourceList<? extends UploadView> getUploads(DateTime startTime, DateTime endTime, UploadSupplier supplier) {
+    private PagedResourceList<? extends UploadView> getUploads(DateTime startTime, DateTime endTime, UploadSupplier supplier) {
         checkNotNull(supplier);
         
         if (startTime == null && endTime == null) {
@@ -275,8 +277,10 @@ public class UploadService {
         if (startTime.plusDays(QUERY_WINDOW_IN_DAYS).isBefore(endTime)) {
             throw new BadRequestException("Query window cannot be longer than two days: " + startTime + "-" + endTime);
         }
-        
-        List<UploadView> views = supplier.get(startTime, endTime).stream().map(upload -> {
+
+        PagedResourceList<? extends Upload> list = supplier.get(startTime, endTime);
+
+        List<UploadView> views = list.getItems().stream().map(upload -> {
             UploadView.Builder builder = new UploadView.Builder();
             builder.withUpload(upload);
             if (upload.getRecordId() != null) {
@@ -290,7 +294,9 @@ public class UploadService {
             return builder.build();
         }).collect(Collectors.toList());
         
-        return new DateTimeRangeResourceList<UploadView>(views, startTime, endTime);
+        return new PagedResourceList<>(views, list.getOffsetBy(), list.getPageSize(), list.getTotal())
+                .withFilter("startTime", startTime).withFilter("endTime", endTime)
+                .withOffsetKey(list.getOffsetKey());
     }
     
     /**
@@ -373,6 +379,6 @@ public class UploadService {
 
     @FunctionalInterface
     private static interface UploadSupplier {
-        List<? extends Upload> get(DateTime startTime, DateTime endTime);
+        PagedResourceList<? extends Upload> get(DateTime startTime, DateTime endTime);
     }
 }

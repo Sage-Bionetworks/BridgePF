@@ -12,7 +12,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoSurvey.class)
 @BridgeTypeName("Survey")
 public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
-    
+    /** Convenience method for creating an instance of Survey using a concrete implementation. */
+    static Survey create() {
+        return new DynamoSurvey();
+    }
+
     String getStudyIdentifier();
     void setStudyIdentifier(String studyIdentifier);
     

@@ -15,8 +15,8 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -29,6 +29,7 @@ import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
 @JsonFilter("filter")
 public class DynamoHealthDataRecord implements HealthDataRecord {
     private Long createdOn;
+    private String createdOnTimeZone;
     private JsonNode data;
     private String healthCode;
     private String id;
@@ -60,7 +61,18 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @Override
+    public String getCreatedOnTimeZone() {
+        return createdOnTimeZone;
+    }
+
+    /** @see #getCreatedOnTimeZone */
+    public void setCreatedOnTimeZone(String createdOnTimeZone) {
+        this.createdOnTimeZone = createdOnTimeZone;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @Override
     public JsonNode getData() {
         return data;
@@ -96,7 +108,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @Override
     public JsonNode getMetadata() {
         return metadata;
@@ -143,7 +155,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
 
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "uploadDate", globalSecondaryIndexName = "uploadDate-index")
-    @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
+    @DynamoDBTypeConverted(converter = LocalDateMarshaller.class)
     @JsonSerialize(using = LocalDateToStringSerializer.class)
     @Override
     public LocalDate getUploadDate() {
@@ -182,7 +194,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
     @Override
     public ParticipantOption.SharingScope getUserSharingScope() {
         return userSharingScope;
@@ -228,7 +240,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
     public ExporterStatus getSynapseExporterStatus() {
         return synapseExporterStatus;
     }
@@ -245,6 +257,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
         protected HealthDataRecord buildUnvalidated() {
             DynamoHealthDataRecord record = new DynamoHealthDataRecord();
             record.setCreatedOn(getCreatedOn());
+            record.setCreatedOnTimeZone(getCreatedOnTimeZone());
             record.setData(getData());
             record.setHealthCode(getHealthCode());
             record.setId(getId());

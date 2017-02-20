@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.models.studies;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 
 public final class StudyIdentifierImpl implements StudyIdentifier {
 
@@ -13,7 +14,9 @@ public final class StudyIdentifierImpl implements StudyIdentifier {
     
     @JsonCreator
     public StudyIdentifierImpl(@JsonProperty("identifier") String identifier) {
-        checkNotNull(identifier);
+        if (isBlank(identifier)) {
+            throw new BadRequestException("Study Id is invalid.");
+        }
         this.identifier = identifier;
     }
     

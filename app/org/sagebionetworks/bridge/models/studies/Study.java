@@ -23,11 +23,16 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
-        SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref", "active")));
+        SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref")));
 
     ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
+
+    /** Convenience method for creating a Study using a concrete implementation. */
+    static Study create() {
+        return new DynamoStudy();
+    }
 
     /**
      * The display name of the study (will be seen by participants in email). This name makes the 
@@ -204,6 +209,17 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** @see #isExternalIdValidationEnabled(); */
     void setExternalIdValidationEnabled(boolean externalIdValidationEnabled);
     
+    /** 
+     * True if the external ID must be provided when the user signs up. If validation is also 
+     * enabled, this study is configured to use lab codes if desired (username and password auto-
+     * generated from the external ID). If this is false, the external ID is not required when 
+     * submitting a sign up. 
+     */
+    boolean isExternalIdRequiredOnSignup();
+    
+    /** @see #isExternalIdRequiredOnSignup(); */
+    void setExternalIdRequiredOnSignup(boolean externalIdRequiredOnSignup);
+    
     /**
      * Minimum supported app version number. If set, user app clients pointing to an older version will 
      * fail with an httpResponse status code of 410.
@@ -212,4 +228,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 	
 	/** @see #getMinSupportedVersion(); */
     void setMinSupportedAppVersions(Map<String, Integer> map);
+    
+    /**
+     * A map between operating system names, and the platform ARN necessary to register a device to 
+     * receive mobile push notifications for this study, on that platform.
+     */
+    Map<String, String> getPushNotificationARNs();
+
+    /** @see #getPushNotificationARNs(); */
+    void setPushNotificationARNs(Map<String, String> pushNotificationARNs);
 }

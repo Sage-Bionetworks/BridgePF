@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.config;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,6 +17,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
@@ -30,7 +32,13 @@ import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
+import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
+import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
+import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
+import org.sagebionetworks.client.SynapseAdminClientImpl;
+import org.sagebionetworks.client.SynapseClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -117,6 +125,13 @@ public class BridgeSpringConfig {
                 bridgeConfig.getProperty("aws.secret.key"));
     }
 
+    @Bean(name = "snsCredentials")
+    public BasicAWSCredentials snsCredentials() {
+        BridgeConfig bridgeConfig = bridgeConfig();
+        return new BasicAWSCredentials(bridgeConfig.getProperty("sns.key"),
+                bridgeConfig.getProperty("sns.secret.key"));
+    }
+    
     @Bean(name = "s3UploadCredentials")
     @Resource(name = "bridgeConfig")
     public BasicAWSCredentials s3UploadCredentials(BridgeConfig bridgeConfig) {
@@ -138,6 +153,12 @@ public class BridgeSpringConfig {
         ClientConfiguration awsClientConfig = PredefinedClientConfigurations.dynamoDefault()
                 .withMaxErrorRetry(maxRetries);
         return new AmazonDynamoDBClient(awsCredentials(), awsClientConfig);
+    }
+    
+    @Bean(name = "snsClient")
+    @Resource(name = "snsCredentials")
+    public AmazonSNSClient snsClient() {
+        return new AmazonSNSClient(snsCredentials());
     }
 
     @Bean(name = "dataPipelineClient")
@@ -249,6 +270,12 @@ public class BridgeSpringConfig {
         return new DynamoNamingHelper(bridgeConfig);
     }
 
+    @Bean(name = "compoundActivityDefinitionDdbMapper")
+    @Autowired
+    public DynamoDBMapper compoundActivityDefinitionDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoCompoundActivityDefinition.class);
+    }
+
     @Bean(name = "healthDataAttachmentDdbMapper")
     @Autowired
     public DynamoDBMapper healthDataAttachmentDdbMapper(DynamoUtils dynamoUtils) {
@@ -313,6 +340,24 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper schedulePlanMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoSchedulePlan.class);
+    }
+    
+    @Bean(name = "notificationRegistrationMapper")
+    @Autowired
+    public DynamoDBMapper notificationRegistrationMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoNotificationRegistration.class);
+    }
+    
+    @Bean(name = "notificationTopicMapper")
+    @Autowired
+    public DynamoDBMapper notificationTopicMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoNotificationTopic.class);
+    }
+    
+    @Bean(name = "topicSubscriptionMapper")
+    @Autowired
+    public DynamoDBMapper topicSubscriptionMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoTopicSubscription.class);
     }
     
     @Bean(name = "uploadHealthCodeRequestedOnIndex")
@@ -447,4 +492,11 @@ public class BridgeSpringConfig {
         return BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
     }
 
+    @Bean(name="bridgePFSynapseClient")
+    public SynapseClient synapseClient() throws IOException {
+        SynapseClient synapseClient = new SynapseAdminClientImpl();
+        synapseClient.setUserName(bridgeConfig().get("synapse.user"));
+        synapseClient.setApiKey(bridgeConfig().get("synapse.api.key"));
+        return synapseClient;
+    }
 }
