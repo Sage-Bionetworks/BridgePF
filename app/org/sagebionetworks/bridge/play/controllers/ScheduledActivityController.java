@@ -84,8 +84,12 @@ public class ScheduledActivityController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         ScheduleContext.Builder builder = new ScheduleContext.Builder();
+        // This zone is the zone of the request and the endsOn is scheduled relative to the user's
+        // time zone at the time of a request.
         DateTimeZone zone = addEndsOnWithZone(builder, untilString, offset, daysAhead);
 
+        // This zone is the first zone used to schedule for the user, ever. If we don't have that:
+        // this request is the first contact from the user with a time zone, so save that.
         DateTimeZone timeZone = session.getParticipant().getTimeZone();
         if (timeZone == null) {
             timeZone = persistTimeZone(session, zone);
@@ -121,9 +125,9 @@ public class ScheduledActivityController extends BaseController {
         optionsService.setDateTimeZone(session.getStudyIdentifier(), session.getHealthCode(),
                 ParticipantOption.TIME_ZONE, timeZone);
         
-        StudyParticipant updatedParticipant = session.getParticipant();
+        StudyParticipant participant = session.getParticipant();
         session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(updatedParticipant)
+                .copyOf(participant)
                 .withTimeZone(timeZone).build());
         updateSession(session);
         

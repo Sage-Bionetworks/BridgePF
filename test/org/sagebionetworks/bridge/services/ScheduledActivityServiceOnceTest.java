@@ -92,22 +92,6 @@ public class ScheduledActivityServiceOnceTest {
             studyService.deleteStudy(study.getIdentifier(), true);
         }
     }
-
-    @Test // BRIDGE-1589. This test becomes moot when the user's time zone can't change. Once you pass 
-    // the same time zone into getContextWith2DayAdvance(PST), of course this passes.
-    // Again, this doesn't work and we'll fix it with a PR that fixes the time zone
-    public void onetimeTasksScheduleCorrectlyThroughTimezoneChange() {
-        List<ScheduledActivity> first = service.getScheduledActivities(getContextWith2DayAdvance(PST));
-        List<ScheduledActivity> second = service.getScheduledActivities(getContextWith2DayAdvance(PST));
-        assertEquals(1, first.size());
-        assertEquals(1, second.size());
-        
-        DynamoScheduledActivity dynAct1 = (DynamoScheduledActivity)first.get(0);
-        DynamoScheduledActivity dynAct2 = (DynamoScheduledActivity)second.get(0);
-        
-        // The time portion should be midnight, regardless of time zone
-        assertEquals(dynAct1.getLocalScheduledOn().toLocalTime(), dynAct2.getLocalScheduledOn().toLocalTime());
-    }
     
     @Test
     public void onetimeTasksScheduledCorrectlyWithTimePortionThroughTimezoneChange() {

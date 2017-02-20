@@ -409,7 +409,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void complexCriteriaBasedScheduleWorksThroughService() throws Exception {
         // As long as time zone is consistent, the right number of tasks will be generated on 
-        // the day of the request, regardless of the hour of the day.s
+        // the day of the request, regardless of the hour of the day.
         executeComplexTestInTimeZone("06", DateTimeZone.forOffsetHours(-7));
         executeComplexTestInTimeZone("20", DateTimeZone.forOffsetHours(-7));
         executeComplexTestInTimeZone("06", DateTimeZone.forOffsetHours(3));

@@ -324,7 +324,7 @@ public class ActivitySchedulerTest {
         
         // User is in Moscow, however.
         DateTimeZone zone = DateTimeZone.forOffsetHours(3);
-        List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, getContext(zone, DateTime.now().plusDays(1)));
+        List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, getContext(zone, DateTime.now(zone).plusDays(1)));
         assertEquals("2015-04-06T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals("2015-04-07T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
         
@@ -387,7 +387,7 @@ public class ActivitySchedulerTest {
         strategy.setSchedule(schedule);
         plan.setStrategy(strategy);
         
-        ScheduleContext noMinContext = getContext(PST, ENROLLMENT.plusDays(10));
+        ScheduleContext noMinContext = getContext(PST, ENROLLMENT.withZone(PST).plusDays(10));
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, noMinContext);
         // There are none on the monthly schedule
