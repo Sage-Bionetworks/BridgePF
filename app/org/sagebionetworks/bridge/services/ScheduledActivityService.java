@@ -104,7 +104,7 @@ public class ScheduledActivityService {
         
         // Get scheduled activities, persisted activities, and compare them
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
-        List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
+        List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getEndsOn().getZone(), scheduledActivities);
         
         List<ScheduledActivity> saves = updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
         activityDao.saveActivities(saves);
@@ -127,7 +127,7 @@ public class ScheduledActivityService {
             }
             if (schActivity.getStartedOn() != null || schActivity.getFinishedOn() != null) {
                 // We do not need to add the time zone here. Not returning these to the user.
-                ScheduledActivity dbActivity = activityDao.getActivity(null, healthCode, schActivity.getGuid());
+                ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
                 if (schActivity.getStartedOn() != null) {
                     dbActivity.setStartedOn(schActivity.getStartedOn());
                 }

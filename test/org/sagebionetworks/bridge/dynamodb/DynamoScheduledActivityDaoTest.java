@@ -139,7 +139,7 @@ public class DynamoScheduledActivityDaoTest {
         // Let's use an interesting time zone so we can verify it is being used.
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         
-        DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
+        DateTime endsOn = DateTime.now(MSK).plus(Period.parse("P4D"));
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withHealthCode(healthCode)
@@ -152,7 +152,7 @@ public class DynamoScheduledActivityDaoTest {
         List<ScheduledActivity> activitiesToSchedule = TestUtils.runSchedulerForActivities(context);
         activityDao.saveActivities(activitiesToSchedule);
         
-        List<ScheduledActivity> savedActivities = activityDao.getActivities(context.getZone(), activitiesToSchedule);
+        List<ScheduledActivity> savedActivities = activityDao.getActivities(endsOn.getZone(), activitiesToSchedule);
         
         assertEquals("activities were created", activitiesToSchedule, savedActivities);
         
@@ -161,8 +161,9 @@ public class DynamoScheduledActivityDaoTest {
         assertEquals(MSK, ((DynamoScheduledActivity)savedActivities.get(0)).getTimeZone());
         
         // Verify getActivity() works
-        ScheduledActivity savedActivity = activityDao.getActivity(context.getZone(),
-                context.getCriteriaContext().getHealthCode(), savedActivities.get(0).getGuid());
+        ScheduledActivity savedActivity = activityDao.getActivity(context.getCriteriaContext().getHealthCode(),
+                savedActivities.get(0).getGuid());
+        savedActivity.setTimeZone(MSK); // for equality check
         assertEquals(savedActivities.get(0), savedActivity);
         assertEquals(context.getZone(), savedActivity.getTimeZone());
         assertEquals(MSK, savedActivity.getScheduledOn().getZone());

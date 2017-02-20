@@ -111,11 +111,11 @@ public class ScheduledActivityServiceMockTest {
         ScheduleContext context = createScheduleContext(endsOn);
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
-        when(activityDao.getActivity(any(), anyString(), anyString())).thenAnswer(invocation -> {
+        when(activityDao.getActivity(anyString(), anyString())).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
-            schActivity.setHealthCode((String)args[1]);
-            schActivity.setGuid((String)args[2]);
+            schActivity.setHealthCode((String)args[0]);
+            schActivity.setGuid((String)args[1]);
             return schActivity;
         });
         when(activityDao.getActivities(context.getZone(), scheduledActivities)).thenReturn(scheduledActivities);
@@ -212,9 +212,7 @@ public class ScheduledActivityServiceMockTest {
         ScheduleContext context = createScheduleContext(endsOn);
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
-        // 4-5 activities (depending on time of day), finish two, these should publish events, 
-        // the third with a startedOn timestamp will be saved, so 3 activities sent to the DAO
-        assertTrue(scheduledActivities.size() >= 3);
+        assertEquals(5, scheduledActivities.size());
         scheduledActivities.get(0).setStartedOn(DateTime.now().getMillis());
         scheduledActivities.get(1).setFinishedOn(DateTime.now().getMillis());
         scheduledActivities.get(2).setFinishedOn(DateTime.now().getMillis());
@@ -226,7 +224,7 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
-        verify(activityDao, times(3)).getActivity(eq(null), anyString(), anyString());
+        verify(activityDao, times(3)).getActivity(anyString(), anyString());
         // Two activities have been finished and generate activity finished events
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         
