@@ -23,7 +23,11 @@ public enum ParticipantOption {
         }
         public String deserialize(JsonNode node) {
             checkNotNull(node);
-            return DateUtils.parseZoneFromOffsetString(node.asText()).toString();
+            try {
+                return DateUtils.parseZoneFromOffsetString(node.asText()).toString();    
+            } catch(IllegalArgumentException e) {
+                throw new BadRequestException("timeZone is an invalid time zone offset");
+            }
         }        
     },
     SHARING_SCOPE(SharingScope.NO_SHARING.name(), "sharingScope") {

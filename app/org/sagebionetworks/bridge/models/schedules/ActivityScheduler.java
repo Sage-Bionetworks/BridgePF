@@ -64,7 +64,6 @@ public abstract class ActivityScheduler {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
                     schActivity.setSchedulePlanGuid(plan.getGuid());
-                    //schActivity.setTimeZone(context.getZone());
                     // Use the time zone of the request, not the time zone we've been sequencing against. 
                     schActivity.setTimeZone(context.getEndsOn().getZone());
                     schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());

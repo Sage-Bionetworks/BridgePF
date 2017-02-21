@@ -39,6 +39,9 @@ import com.google.common.collect.Sets;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ScheduledActivityServiceRecurringTest {
+    private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+    private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+    private static final DateTimeZone EST = DateTimeZone.forOffsetHours(-3);
 
     @Resource
     private ScheduledActivityService service;
@@ -100,21 +103,16 @@ public class ScheduledActivityServiceRecurringTest {
     @Test
     public void retrievalActivitiesAcrossTimeAndTimeZones() throws Exception {
         int year = DateTime.now().getYear();
-        DateTime targetDateTime = DateTime.parse((year+1)+"-09-23T03:39:57.779+03:00");
+        DateTime targetDateTime = DateTime.parse((year+1)+"-09-23T03:39:57.779-03:00"); // created account EST
                 
-        // Start a couple of days ago when creating the account. enrollment is at a fixed time.
+        // Start a couple of days ago when creating the account. enrollment is at a fixed time two days
+        // in the past so it doesn't screw up the test.
         DateTimeUtils.setCurrentMillisFixed(targetDateTime.minusDays(2).getMillis());
         
         testUser = helper.getBuilder(ScheduledActivityServiceRecurringTest.class).build();
         
-        // We start this test in the early morning in Russia, in the future so the new user's
-        // enrollment doesn't screw up the test.
-        DateTimeUtils.setCurrentMillisFixed(targetDateTime.getMillis());
-
-        // These time zones are far apart and for our chosen time, Dave will be teleporting to the 
-        // previous day. Our scheduler must do something rational.
-        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
-        DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+        // We start this test in the early morning in Russia
+        DateTimeUtils.setCurrentMillisFixed(targetDateTime.withZone(MSK).getMillis());
 
         // Anticipated schedule times in Russia (exact seconds not important)
         String msk0 = DateTime.now(MSK).minusDays(1).toLocalDate().toString(); // this is yesterdays activity, not expired yet 
@@ -127,7 +125,7 @@ public class ScheduledActivityServiceRecurringTest {
         String pst1 = DateTime.now(PST).toLocalDate().toString();
         String pst2 = DateTime.now(PST).plusDays(1).toLocalDate().toString();
         String pst3 = DateTime.now(PST).plusDays(2).toLocalDate().toString();
-        //String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
+        String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
         
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
@@ -135,7 +133,7 @@ public class ScheduledActivityServiceRecurringTest {
         ScheduleContext context = getContextWith2DayWindow(MSK);
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         
-        assertEquals(4, activities.size());//4
+        assertEquals(4, activities.size());
         assertEquals(msk0+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
         assertEquals(msk2+"T10:00:00.000+03:00", activities.get(2).getScheduledOn().toString());
@@ -146,11 +144,11 @@ public class ScheduledActivityServiceRecurringTest {
         // the window, over in Moscow... that is not returned because although it exists, we 
         // filter it out from the persisted activities retrieved from the db.
         activities = service.getScheduledActivities(getContextWith2DayWindow(PST));
-        assertEquals(3, activities.size());
+        assertEquals(4, activities.size());
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
         assertEquals(pst3+"T10:00:00.000-07:00", activities.get(2).getScheduledOn().toString());
-        //assertEquals(pst4+"T10:00:00.000-07:00", activities.get(3).getScheduledOn().toString());
+        assertEquals(pst4+"T10:00:00.000-07:00", activities.get(3).getScheduledOn().toString());
         
         // Dave returns to the Moscow and we move time forward a day.
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse((year+1)+"-09-24T03:39:57.779+03:00").getMillis());
@@ -172,7 +170,7 @@ public class ScheduledActivityServiceRecurringTest {
         // This is easy, Dave has the later activities and that's it, at this point.
         activities = service.getScheduledActivities(getContextWith2DayWindow(MSK));
         
-        assertEquals(2, activities.size());
+        assertEquals(2, activities.size()); //2
         assertEquals(msk3+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk4+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
     }
@@ -196,16 +194,16 @@ public class ScheduledActivityServiceRecurringTest {
         assertTrue(activities2.size() < activities.size());
     }
     
-    private ScheduleContext getContextWith2DayWindow(DateTimeZone zone) {
-        return getContext(zone, DateTime.now(zone).plusDays(2));
+    private ScheduleContext getContextWith2DayWindow(DateTimeZone requestZone) {
+        return getContext(EST, DateTime.now(requestZone).plusDays(2));
     }
     
-    private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
+    private ScheduleContext getContext(DateTimeZone persistedZone, DateTime endsOn) {
         // Setting the endsOn value to the end of the day, as we do in the controller.
         return new ScheduleContext.Builder()
             .withStudyIdentifier(study.getStudyIdentifier())
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(zone)
+            .withTimeZone(persistedZone)
             .withAccountCreatedOn(DateTime.now())
             // Setting the endsOn value to the end of the day, as we do in the controller.
             .withEndsOn(endsOn.withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))

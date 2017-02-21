@@ -465,7 +465,6 @@ public class ParticipantServiceTest {
         assertTrue(options.get(LANGUAGES).contains("de"));
         assertTrue(options.get(LANGUAGES).contains("fr"));
         assertNull(options.get(EXTERNAL_IDENTIFIER)); // can't set this
-        assertNull(options.get(TIME_ZONE)); // can't set this
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
@@ -473,6 +472,28 @@ public class ParticipantServiceTest {
         verify(account).setLastName(LAST_NAME);
         verify(account).setStatus(AccountStatus.DISABLED);
         verify(account).setAttribute(PHONE, "123456789");
+    }
+    
+    @Test
+    public void canSetTimeZoneOnCreate() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
+        Map<ParticipantOption, String> options = optionsCaptor.getValue();
+        
+        assertEquals(USER_TIME_ZONE, options.get(TIME_ZONE));
+    }
+    
+    @Test
+    public void cannotSetTimeZoneOnUpdate() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
+        Map<ParticipantOption, String> options = optionsCaptor.getValue();
+        
+        assertNull(options.get(TIME_ZONE));
     }
     
     @Test(expected = InvalidEntityException.class)
