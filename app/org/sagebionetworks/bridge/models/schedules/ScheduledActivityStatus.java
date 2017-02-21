@@ -32,15 +32,14 @@ public enum ScheduledActivityStatus {
      * without being started.
      */
     DELETED;
-    
+
     /**
-     * If a scheduled activity has not been started by the user, it can be deleted. However, if it is finished, 
-     * or deleted, it shouldn't be visible and we won't delete so that a trivial change to a schedule plan 
-     * won't cause the activity to appear again in the interface. 
+     * Activities that have been scheduled or are available can be updated (such as with updated definitions, schema
+     * revisions, or surveys). Once a user has interacted with an activity, we shouldn't update it anymore.
      */
-    public static final Set<ScheduledActivityStatus> DELETABLE_STATUSES = EnumSet.of(ScheduledActivityStatus.SCHEDULED,
-            ScheduledActivityStatus.AVAILABLE, ScheduledActivityStatus.EXPIRED);
-    
+    public static final Set<ScheduledActivityStatus> UPDATABLE_STATUSES = EnumSet.of(ScheduledActivityStatus.SCHEDULED,
+            ScheduledActivityStatus.AVAILABLE);
+
     /**
      * Activities that should be seen by users. Expired, deleted and finished tasks are no longer visible.
      */

@@ -254,7 +254,7 @@ public class ActivityTest {
 
     @Test
     public void taskActivityByRef() {
-        TaskReference task = new TaskReference("my-task");
+        TaskReference task = new TaskReference("my-task", null);
         Activity activity = new Activity.Builder().withTask(task).build();
         assertEquals(task, activity.getTask());
         assertEquals(ActivityType.TASK, activity.getActivityType());
@@ -273,7 +273,7 @@ public class ActivityTest {
     public void taskActivityById() {
         // This is already mostly tested above. Just test passing in task ID sets the task correctly.
         Activity activity = new Activity.Builder().withTask("my-task").build();
-        assertEquals(new TaskReference("my-task"), activity.getTask());
+        assertEquals(new TaskReference("my-task", null), activity.getTask());
     }
 
     @Test

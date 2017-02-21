@@ -136,7 +136,7 @@ public final class Activity implements BridgeEntity {
             return this;
         }
         public Builder withTask(String taskId) {
-            this.task = new TaskReference(taskId);
+            this.task = new TaskReference(taskId, null);
             return this;
         }
         public Builder withPublishedSurvey(String identifier, String guid) {
