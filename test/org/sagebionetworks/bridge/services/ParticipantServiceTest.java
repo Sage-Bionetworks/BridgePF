@@ -42,7 +42,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
@@ -143,9 +142,6 @@ public class ParticipantServiceTest {
     
     @Mock
     private CacheProvider cacheProvider;
-    
-    @Mock 
-    private ExternalIdDao externalIdDao;
     
     @Mock
     private UploadService uploadService;
@@ -837,7 +833,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
         // Submitting same value again with validation does nothing
-        verifyNotSetAsReservation(EXTERNAL_ID, true);
+        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         verifyNotSetAsOption();
     }
     
@@ -929,14 +925,6 @@ public class ParticipantServiceTest {
         verify(externalIdService).assignExternalId(studyCaptor.capture(), eq(withId), eq(HEALTH_CODE));
         assertTrue(studyCaptor.getAllValues().get(0).isExternalIdValidationEnabled());
         assertTrue(studyCaptor.getAllValues().get(1).isExternalIdValidationEnabled());
-    }
-    
-    private void verifyNotSetAsReservation(String externalId, boolean isUpdate) {
-        // This is now always called, so it's not so easy to verify.
-        if (!isUpdate) {
-            verify(externalIdService).reserveExternalId(STUDY, externalId, HEALTH_CODE);    
-        }
-        verify(externalIdService).assignExternalId(STUDY, externalId, HEALTH_CODE);
     }
     
     private void verifyNotSetAsOption() {

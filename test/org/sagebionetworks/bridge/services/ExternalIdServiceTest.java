@@ -85,28 +85,6 @@ public class ExternalIdServiceTest {
     }
     
     @Test
-    public void assignExternalIdWithVerification() {
-        doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
-        
-        STUDY.setExternalIdValidationEnabled(true);
-        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        
-        verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
-        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, EXT_ID);
-    }
-    
-    @Test
-    public void assignExternalIdWithoutVerification() {
-        doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
-
-        STUDY.setExternalIdValidationEnabled(false);
-        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        
-        verify(externalIdDao, never()).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
-        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, EXT_ID);
-    }
-    
-    @Test
     public void assignExternalIdFailsVerification() {
         STUDY.setExternalIdValidationEnabled(true);
         doThrow(new EntityNotFoundException(ExternalIdentifier.class)).when(externalIdDao)
@@ -157,7 +135,10 @@ public class ExternalIdServiceTest {
         externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
         
         // Adding validated ID, reserve it
-        verifySetAsReservation(EXT_ID);
+        verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
+        verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
+        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, EXT_ID);
+        
     }
 
     @Test
@@ -200,8 +181,8 @@ public class ExternalIdServiceTest {
         externalIdService.reserveExternalId(STUDY, EXT_ID, HEALTH_CODE);
         externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
         
-        // Submitting same value again with validation just resets option (noop)
-        verifySetAsOption(EXT_ID);
+        // Submitting same value again with validation reserves but doesn't update
+        verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
     }
 
     @Test
@@ -254,28 +235,6 @@ public class ExternalIdServiceTest {
         // Nulling a non-validated value sets the option to null
         verifySetAsOption(null);
     }
-    
-    @Test(expected = BadRequestException.class)
-    public void updateExternalIdValidatedNewValue() {
-        setupExternalIdTest(true, EXT_ID);
-        
-        externalIdService.reserveExternalId(STUDY, "newExternalId", HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
-        
-        // Updating validated value with new value throws exception
-        verifySetAsReservation("newExternalId");
-    }
-
-    @Test
-    public void updateExternalIdNotValidatedNewValue() {
-        setupExternalIdTest(false, EXT_ID);
-        
-        externalIdService.reserveExternalId(STUDY, "newExternalId", HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
-        
-        // Updating unvalidated value with new value changes the option
-        verifySetAsOption("newExternalId");
-    }
 
     private void setupExternalIdTest(boolean withValidation, String existingValue) {
         STUDY.setExternalIdValidationEnabled(withValidation);
@@ -286,12 +245,6 @@ public class ExternalIdServiceTest {
     private void verifySetAsOption(String externalId) {
         verify(externalIdDao, never()).reserveExternalId(STUDY.getStudyIdentifier(), externalId);
         verify(externalIdDao, never()).assignExternalId(STUDY.getStudyIdentifier(), externalId, HEALTH_CODE);
-        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, externalId);
-    }
-    
-    private void verifySetAsReservation(String externalId) {
-        verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), externalId);
-        verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), externalId, HEALTH_CODE);
         verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, externalId);
     }
 }

@@ -75,13 +75,8 @@ public class ExternalIdService {
         checkNotNull(study);
         checkNotNull(healthCode);
         
-        if (study.isExternalIdValidationEnabled() && externalIdentifier != null) {
-            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
-            String existingId = lookup.getString(EXTERNAL_IDENTIFIER);
-
-            if (!externalIdentifier.equals(existingId)) {
-                externalIdDao.reserveExternalId(study.getStudyIdentifier(), externalIdentifier);    
-            }
+        if (study.isExternalIdValidationEnabled() && isNotBlank(externalIdentifier)) {
+            externalIdDao.reserveExternalId(study.getStudyIdentifier(), externalIdentifier);    
         }
     }
     

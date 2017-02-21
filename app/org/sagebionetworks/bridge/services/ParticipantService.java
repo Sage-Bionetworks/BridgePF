@@ -260,10 +260,8 @@ public class ParticipantService {
         for (ParticipantOption option : ParticipantOption.values()) {
             options.put(option, option.fromParticipant(participant));
         }
-        // If validation is enabled, don't just save this like any other option, regardless of what it is.
-        if (study.isExternalIdValidationEnabled()) {
-            options.remove(EXTERNAL_IDENTIFIER);
-        }
+        // External identifier is handled by the ExternalIdService
+        options.remove(EXTERNAL_IDENTIFIER);
 
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
