@@ -686,12 +686,6 @@ public class IntervalActivitySchedulerTest {
         
         return scheduledActivities.get(0).getScheduledOn().toString();
     }
-    
-    /*
-        Local times having timezone correctly applied. Examples:
-        Enrollment=1487552400000 (2017-02-20T01:00Z), timeZone=-08:00, endsOnTimeZone=+09:00, schedule=one hour after enrollment, expected=2017-02-19T18:00+0900 (Should this be the 19th or the 20th?)
-        Enrollment=1487552400000 (2017-02-20T01:00Z), timeZone=+09:00, endsOnTimeZone=-08:00, schedule=one hour after enrollment, expected=2017-02-20T11:00-0800
-     */
 
     private ScheduleContext getContext(DateTime endsOn) {
         return getContext(DateTimeZone.UTC, endsOn);
