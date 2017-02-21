@@ -142,8 +142,8 @@ public class ExternalIdServiceTest {
     }
 
     @Test
-    public void createExternalIdNotValidatedWithValue() {
-        setupExternalIdTest(false, null);
+    public void externalIdNotValidatedWithValue() {
+        setupExternalIdTest(false, "someInitialValue");
         
         externalIdService.reserveExternalId(STUDY, EXT_ID, HEALTH_CODE);
         externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
@@ -164,17 +164,6 @@ public class ExternalIdServiceTest {
     }
 
     @Test
-    public void createExternalIdNotValidatedNoValue() {
-        setupExternalIdTest(false, null);
-        
-        externalIdService.reserveExternalId(STUDY, null, HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, null, HEALTH_CODE);
-        
-        // Not validated, set as a null option
-        verifySetAsOption(null);
-    }
-    
-    @Test
     public void updateExternalIdValidatedWithSameValue() {
         setupExternalIdTest(true, EXT_ID);
         
@@ -183,17 +172,6 @@ public class ExternalIdServiceTest {
         
         // Submitting same value again with validation reserves but doesn't update
         verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
-    }
-
-    @Test
-    public void updateExternalIdNotValidatedWithSameValue() {
-        setupExternalIdTest(false, EXT_ID);
-        
-        externalIdService.reserveExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        
-        // Submitting same value again without validation saves same option value (noop)
-        verifySetAsOption(EXT_ID);
     }
 
     @Test(expected = BadRequestException.class)
@@ -205,17 +183,6 @@ public class ExternalIdServiceTest {
         externalIdService.assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
     }
 
-    @Test
-    public void updateExternalIdNotValidatedWithChangedValue() {
-        setupExternalIdTest(false, EXT_ID);
-        
-        externalIdService.reserveExternalId(STUDY, "newExternalId", HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
-
-        // Updating a non-validated ID sets it as the new option
-        verifySetAsOption("newExternalId");
-    }
-
     @Test(expected = BadRequestException.class)
     public void updateExternalIdValidatedNoValue() {
         setupExternalIdTest(true, EXT_ID);
@@ -223,17 +190,6 @@ public class ExternalIdServiceTest {
         // Nulling a validated value throws an exception
         externalIdService.reserveExternalId(STUDY, null, HEALTH_CODE);
         externalIdService.assignExternalId(STUDY, null, HEALTH_CODE);
-    }
-
-    @Test
-    public void updateExternalIdNotValidatedNoValue() {
-        setupExternalIdTest(false, EXT_ID);
-        
-        externalIdService.reserveExternalId(STUDY, null, HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, null, HEALTH_CODE);
-        
-        // Nulling a non-validated value sets the option to null
-        verifySetAsOption(null);
     }
 
     private void setupExternalIdTest(boolean withValidation, String existingValue) {
