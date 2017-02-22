@@ -99,7 +99,7 @@ public class ScheduledActivityServiceMockTest {
         DateTime testNow = DateTime.parse(DateTime.now().toLocalDate() + "T14:25:51.195-08:00");
         DateTimeUtils.setCurrentMillisFixed(testNow.getMillis());
         
-        endsOn = DateTime.now().plusDays(2);
+        endsOn = testNow.plusDays(2);
         
         service = new ScheduledActivityService();
         
@@ -212,7 +212,7 @@ public class ScheduledActivityServiceMockTest {
         ScheduleContext context = createScheduleContext(endsOn);
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
-        assertEquals(5, scheduledActivities.size());
+        int count = scheduledActivities.size();
         scheduledActivities.get(0).setStartedOn(DateTime.now().getMillis());
         scheduledActivities.get(1).setFinishedOn(DateTime.now().getMillis());
         scheduledActivities.get(2).setFinishedOn(DateTime.now().getMillis());
@@ -229,7 +229,7 @@ public class ScheduledActivityServiceMockTest {
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         
         List<DynamoScheduledActivity> dbActivities = (List<DynamoScheduledActivity>)updateCapture.getValue();
-        assertEquals(3, dbActivities.size());
+        assertEquals(count-3, dbActivities.size());
         // Correct saved activities
         assertEquals(scheduledActivities.get(0).getGuid(), dbActivities.get(0).getGuid());
         assertEquals(scheduledActivities.get(1).getGuid(), dbActivities.get(1).getGuid());
@@ -409,13 +409,13 @@ public class ScheduledActivityServiceMockTest {
         // As long as time zone is consistent, the right number of tasks will be generated on 
         // the day of the request, regardless of the hour of the day.
         executeComplexTestInTimeZone("06", DateTimeZone.forOffsetHours(-7));
-        executeComplexTestInTimeZone("20", DateTimeZone.forOffsetHours(-7));
+        executeComplexTestInTimeZone("23", DateTimeZone.forOffsetHours(-7));
         executeComplexTestInTimeZone("06", DateTimeZone.forOffsetHours(3));
-        executeComplexTestInTimeZone("20", DateTimeZone.forOffsetHours(3));
+        executeComplexTestInTimeZone("23", DateTimeZone.forOffsetHours(3));
     }
     
-    private void executeComplexTestInTimeZone(String hourOfDay, DateTimeZone timeZone) throws Exception {
-        DateTime now = DateTime.parse("2017-02-"+hourOfDay+"T22:00:00.000").withZone(timeZone);
+    private void executeComplexTestInTimeZone(String dayOfMonth, DateTimeZone timeZone) throws Exception {
+        DateTime now = DateTime.parse("2017-02-"+dayOfMonth+"T22:00:00.000").withZone(timeZone);
         DateTimeUtils.setCurrentMillisFixed(now.getMillis());
         try {
             String json = TestUtils.createJson("{"+  

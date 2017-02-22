@@ -115,17 +115,17 @@ public class ScheduledActivityServiceRecurringTest {
         DateTimeUtils.setCurrentMillisFixed(targetDateTime.withZone(MSK).getMillis());
 
         // Anticipated schedule times in Russia (exact seconds not important)
-        String msk0 = DateTime.now(MSK).minusDays(1).toLocalDate().toString(); // this is yesterdays activity, not expired yet 
-        String msk1 = DateTime.now(MSK).toLocalDate().toString();
-        String msk2 = DateTime.now(MSK).plusDays(1).toLocalDate().toString();
-        String msk3 = DateTime.now(MSK).plusDays(2).toLocalDate().toString();
-        String msk4 = DateTime.now(MSK).plusDays(3).toLocalDate().toString();
+        String msk0 = targetDateTime.withZone(MSK).minusDays(1).toLocalDate().toString(); // this is yesterdays activity, not expired yet 
+        String msk1 = targetDateTime.withZone(MSK).toLocalDate().toString();
+        String msk2 = targetDateTime.withZone(MSK).plusDays(1).toLocalDate().toString();
+        String msk3 = targetDateTime.withZone(MSK).plusDays(2).toLocalDate().toString();
+        String msk4 = targetDateTime.withZone(MSK).plusDays(3).toLocalDate().toString();
         
         // Anticipated schedule times in California (exact seconds not important)
-        String pst1 = DateTime.now(PST).toLocalDate().toString();
-        String pst2 = DateTime.now(PST).plusDays(1).toLocalDate().toString();
-        String pst3 = DateTime.now(PST).plusDays(2).toLocalDate().toString();
-        String pst4 = DateTime.now(PST).plusDays(3).toLocalDate().toString();
+        String pst1 = targetDateTime.withZone(PST).toLocalDate().toString();
+        String pst2 = targetDateTime.withZone(PST).plusDays(1).toLocalDate().toString();
+        String pst3 = targetDateTime.withZone(PST).plusDays(2).toLocalDate().toString();
+        String pst4 = targetDateTime.withZone(PST).plusDays(3).toLocalDate().toString();
         
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
@@ -144,6 +144,7 @@ public class ScheduledActivityServiceRecurringTest {
         // the window, over in Moscow... that is not returned because although it exists, we 
         // filter it out from the persisted activities retrieved from the db.
         activities = service.getScheduledActivities(getContextWith2DayWindow(PST));
+
         assertEquals(4, activities.size());
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
         assertEquals(pst2+"T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());

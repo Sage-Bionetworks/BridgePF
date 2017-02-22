@@ -482,7 +482,7 @@ public class ParticipantServiceTest {
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
         
-        assertEquals(USER_TIME_ZONE, options.get(TIME_ZONE));
+        assertEquals(USER_TIME_ZONE.toString(), options.get(TIME_ZONE));
     }
     
     @Test
