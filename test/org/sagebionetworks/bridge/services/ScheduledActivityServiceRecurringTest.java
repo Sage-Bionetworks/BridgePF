@@ -197,7 +197,6 @@ public class ScheduledActivityServiceRecurringTest {
     }
     
     private ScheduleContext getContext(DateTime now, DateTimeZone persistedZone, DateTime endsOn) {
-        // Setting the endsOn value to the end of the day, as we do in the controller.
         return new ScheduleContext.Builder()
             .withStudyIdentifier(study.getStudyIdentifier())
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
