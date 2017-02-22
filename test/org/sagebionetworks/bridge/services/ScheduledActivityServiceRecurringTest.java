@@ -107,7 +107,6 @@ public class ScheduledActivityServiceRecurringTest {
         // Use DateTimeUtils to create the user two days in the past, then restore the time
         DateTimeUtils.setCurrentMillisFixed(now.minusDays(2).getMillis());
         testUser = helper.getBuilder(ScheduledActivityServiceRecurringTest.class).build();
-        
         DateTimeUtils.setCurrentMillisSystem();
 
         // We start this test in the early morning in Russia

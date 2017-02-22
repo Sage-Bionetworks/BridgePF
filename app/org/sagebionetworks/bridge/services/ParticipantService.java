@@ -264,9 +264,7 @@ public class ParticipantService {
         }
         // External identifier is handled by the ExternalIdService
         options.remove(EXTERNAL_IDENTIFIER);
-        if (isUpdate) {
-            options.remove(TIME_ZONE);
-        }
+        options.remove(TIME_ZONE);
 
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());

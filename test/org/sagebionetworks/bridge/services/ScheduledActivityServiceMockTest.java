@@ -412,13 +412,13 @@ public class ScheduledActivityServiceMockTest {
         // As long as time zone is consistent, the right number of tasks will be generated on 
         // the day of the request, regardless of the hour of the day.
         executeComplexTestInTimeZone(3, DateTimeZone.forOffsetHours(-7));
-        executeComplexTestInTimeZone(3, DateTimeZone.forOffsetHours(-7));
-        executeComplexTestInTimeZone(23, DateTimeZone.forOffsetHours(8));
+        executeComplexTestInTimeZone(23, DateTimeZone.forOffsetHours(-7));
+        executeComplexTestInTimeZone(3, DateTimeZone.forOffsetHours(8));
         executeComplexTestInTimeZone(23, DateTimeZone.forOffsetHours(8));
     }
     
     private void executeComplexTestInTimeZone(int hourOfDay, DateTimeZone timeZone) throws Exception {
-        DateTime now = NOW.withHourOfDay(hourOfDay).withZone(timeZone);
+        DateTime now = NOW.withZone(timeZone).withHourOfDay(hourOfDay);
         DateTimeUtils.setCurrentMillisFixed(now.getMillis());
         try {
             String json = TestUtils.createJson("{"+  
