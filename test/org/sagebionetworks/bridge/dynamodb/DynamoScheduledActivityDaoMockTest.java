@@ -131,14 +131,14 @@ public class DynamoScheduledActivityDaoMockTest {
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(PACIFIC_TIME_ZONE)
+            .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         mockMapperResults(activities);
-        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
+        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getInitialTimeZone(), activities);
 
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
         // Expired activities are not returned, so this starts on the 12th
@@ -160,7 +160,7 @@ public class DynamoScheduledActivityDaoMockTest {
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(PACIFIC_TIME_ZONE)
+            .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
@@ -169,7 +169,7 @@ public class DynamoScheduledActivityDaoMockTest {
         // Only mock the return of one of these activities
         mockMapperResults(Lists.newArrayList(activities.get(0)));
         
-        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
+        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getInitialTimeZone(), activities);
 
         // Regardless of the requested activities, only the ones in the db are returned (in this case, there's 1).
         assertEquals(1, activities2.size());

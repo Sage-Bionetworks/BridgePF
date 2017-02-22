@@ -187,10 +187,10 @@ public class ScheduledActivityService {
 
         ImmutableMap.Builder<String,DateTime> builder = new ImmutableMap.Builder<String, DateTime>();
         if (!events.containsKey(ENROLLMENT)) {
-            builder.put(ENROLLMENT, context.getAccountCreatedOn().withZone(context.getZone()));
+            builder.put(ENROLLMENT, context.getAccountCreatedOn().withZone(context.getInitialTimeZone()));
         }
         for(Map.Entry<String, DateTime> entry : events.entrySet()) {
-            builder.put(entry.getKey(), entry.getValue().withZone(context.getZone()));
+            builder.put(entry.getKey(), entry.getValue().withZone(context.getInitialTimeZone()));
         }
         return builder.build();
     }

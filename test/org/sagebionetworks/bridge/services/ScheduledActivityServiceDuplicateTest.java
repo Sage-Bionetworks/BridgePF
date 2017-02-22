@@ -242,7 +242,7 @@ public class ScheduledActivityServiceDuplicateTest {
             .put("activity:bea8fd5d-7622-451f-a727-f9e37f00e1be:finished", new DateTime(1471742129501L, DateTimeZone.UTC)).build();
         doReturn(events).when(activityEventService).getActivityEventMap(HEALTH_CODE);
         contextBuilder.withAccountCreatedOn(enrollment.minusDays(3));
-        contextBuilder.withTimeZone(zone);
+        contextBuilder.withInitialTimeZone(zone);
         return contextBuilder.build();
     }
     
@@ -264,14 +264,14 @@ public class ScheduledActivityServiceDuplicateTest {
         
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         
-        // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
         
         allWithinQueryWindow(activities, context);
-        assertEquals(0, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T12:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T12:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T12:43:07.951").size());
+        // With persisted tasks included, this finished task is not returned.
+        assertEquals(0, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size());
+        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size());
+        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size());
         assertNotNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
     }
     
@@ -297,9 +297,9 @@ public class ScheduledActivityServiceDuplicateTest {
         verify(schedulePlanService).getSchedulePlans(any(), any());
         
         allWithinQueryWindow(activities, context);
-        assertEquals(0, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T12:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T12:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T12:43:07.951").size());
+        assertEquals(0, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size());
+        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size());
+        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size());
         assertNotNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
     }
     
@@ -320,9 +320,9 @@ public class ScheduledActivityServiceDuplicateTest {
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
         // This one is there...
-        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T12:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T12:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T12:43:07.951").size());
+        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size());
+        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size());
+        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size());
         // This one hasn't been started, obviously
         assertNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
     }
@@ -343,9 +343,9 @@ public class ScheduledActivityServiceDuplicateTest {
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
-        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T12:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T12:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T12:43:07.951").size());
+        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size());
+        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size());
+        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size());
         
         // It's adjusted, magically it's still 6/30 I haven't figured out why yet.
         List<ScheduledActivity> list = filterByLabel(activities, "Do Persistent Activity");

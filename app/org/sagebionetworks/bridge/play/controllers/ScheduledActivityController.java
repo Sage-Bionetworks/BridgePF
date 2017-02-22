@@ -84,18 +84,21 @@ public class ScheduledActivityController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         ScheduleContext.Builder builder = new ScheduleContext.Builder();
-        // This zone is the zone of the request and the endsOn is scheduled relative to the user's
-        // time zone at the time of a request.
-        DateTimeZone zone = addEndsOnWithZone(builder, untilString, offset, daysAhead);
+        // This time zone is the zone of the request, and scheduled activities with local time portions in 
+        // their schedules are returned in this time zone, ensuring a date and time are expressed in what 
+        // is effectively local time.
+        DateTimeZone requestTimeZone = addEndsOnInRequestTimeZone(builder, untilString, offset, daysAhead);
 
-        // This zone is the first zone used to schedule for the user, ever. If we don't have that:
-        // this request is the first contact from the user with a time zone, so save that.
-        DateTimeZone timeZone = session.getParticipant().getTimeZone();
-        if (timeZone == null) {
-            timeZone = persistTimeZone(session, zone);
+        // This time zone is the time zone of the user upon first contacting the server for activities, and
+        // ensures that events are scheduled in this time zone. This ensures that a user will receive activities 
+        // on the day they contact the server. If it has not yet been captured, this is the first request, 
+        // capture and persist it.
+        DateTimeZone initialTimeZone = session.getParticipant().getTimeZone();
+        if (initialTimeZone == null) {
+            initialTimeZone = persistTimeZone(session, requestTimeZone);
         }
 
-        builder.withTimeZone(timeZone);
+        builder.withInitialTimeZone(initialTimeZone);
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
         builder.withHealthCode(session.getHealthCode());
         builder.withUserId(session.getId());
@@ -114,7 +117,7 @@ public class ScheduledActivityController extends BaseController {
                 .withLanguages(context.getCriteriaContext().getLanguages())
                 .withUserDataGroups(context.getCriteriaContext().getUserDataGroups())
                 .withActivitiesAccessedOn(context.getNow())
-                .withTimeZone(context.getZone())
+                .withTimeZone(context.getInitialTimeZone())
                 .withStudyIdentifier(context.getCriteriaContext().getStudyIdentifier()).build();
         cacheProvider.updateRequestInfo(requestInfo);
 
@@ -134,23 +137,23 @@ public class ScheduledActivityController extends BaseController {
         return timeZone;
     }
     
-    private DateTimeZone addEndsOnWithZone(ScheduleContext.Builder builder, String untilString, String offset, String daysAhead) {
+    private DateTimeZone addEndsOnInRequestTimeZone(ScheduleContext.Builder builder, String untilString, String offset, String daysAhead) {
         DateTime endsOn = null;
-        DateTimeZone zone = null;
+        DateTimeZone requestTimeZone = null;
 
         if (StringUtils.isNotBlank(untilString)) {
             // Old API, infer time zone from the until parameter. This is not ideal.
             endsOn = DateTime.parse(untilString);
-            zone = endsOn.getZone();
+            requestTimeZone = endsOn.getZone();
         } else if (StringUtils.isNotBlank(daysAhead) && StringUtils.isNotBlank(offset)) {
             int numDays = Integer.parseInt(daysAhead);
-            zone = DateUtils.parseZoneFromOffsetString(offset);
+            requestTimeZone = DateUtils.parseZoneFromOffsetString(offset);
             // When querying for days, we ignore the time of day of the request and query to then end of the day.
-            endsOn = DateTime.now(zone).plusDays(numDays).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
+            endsOn = DateTime.now(requestTimeZone).plusDays(numDays).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
         } else {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' parameter.");
         }
         builder.withEndsOn(endsOn);
-        return zone;
+        return requestTimeZone;
     }
 }

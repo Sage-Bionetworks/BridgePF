@@ -126,7 +126,7 @@ public class PersistentActivitySchedulerTest {
     private ScheduleContext getContext(DateTime endsOn) {
         return new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(DateTimeZone.UTC)
+            .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn)
             .withHealthCode("AAA")
             .withEvents(events).build();

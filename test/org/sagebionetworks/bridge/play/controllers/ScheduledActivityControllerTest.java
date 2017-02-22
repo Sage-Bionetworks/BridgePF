@@ -141,7 +141,7 @@ public class ScheduledActivityControllerTest {
         
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
-        assertEquals(MSK, context.getZone());
+        assertEquals(MSK, context.getInitialTimeZone());
     }
     
     @Test
@@ -156,7 +156,7 @@ public class ScheduledActivityControllerTest {
         
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
-        assertEquals(UNK, context.getZone());
+        assertEquals(UNK, context.getInitialTimeZone());
     }
     
     @Test
@@ -171,7 +171,7 @@ public class ScheduledActivityControllerTest {
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         
         ScheduleContext context = contextCaptor.getValue();
-        assertEquals(DateTimeZone.forOffsetHours(3), context.getZone());
+        assertEquals(DateTimeZone.forOffsetHours(3), context.getInitialTimeZone());
         assertEquals(Sets.newHashSet("group1"), context.getCriteriaContext().getUserDataGroups());
         assertEquals(5, context.getMinimumPerSchedule());
         
@@ -235,7 +235,7 @@ public class ScheduledActivityControllerTest {
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(now, contextCaptor.getValue().getEndsOn());
-        assertEquals(now.getZone(), contextCaptor.getValue().getZone());
+        assertEquals(now.getZone(), contextCaptor.getValue().getInitialTimeZone());
     }
     
     @Test
@@ -250,7 +250,7 @@ public class ScheduledActivityControllerTest {
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(expectedEndsOn, contextCaptor.getValue().getEndsOn().withMillisOfSecond(0));
-        assertEquals(expectedEndsOn.getZone(), contextCaptor.getValue().getZone());
+        assertEquals(expectedEndsOn.getZone(), contextCaptor.getValue().getInitialTimeZone());
         assertEquals(0, contextCaptor.getValue().getMinimumPerSchedule());
         assertEquals(clientInfo, contextCaptor.getValue().getCriteriaContext().getClientInfo());
     }

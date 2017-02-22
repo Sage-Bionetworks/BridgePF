@@ -44,7 +44,7 @@ public abstract class ActivityScheduler {
             ScheduleContext context, DateTime dateTime) {
 
         if (schedule.getTimes().isEmpty()) {
-            DateTime localDateTime = dateTime.withZone(context.getZone());
+            DateTime localDateTime = dateTime.withZone(context.getInitialTimeZone());
             addScheduledActivityAtTime(scheduledActivities, plan, context, localDateTime.toLocalDate(), localDateTime.toLocalTime());
         } else {
             for (LocalTime localTime : schedule.getTimes()) {
@@ -56,7 +56,7 @@ public abstract class ActivityScheduler {
     protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
             ScheduleContext context, LocalDate localDate, LocalTime localTime) {
         
-        DateTime localDateTime = localDate.toDateTime(localTime, context.getZone());
+        DateTime localDateTime = localDate.toDateTime(localTime, context.getInitialTimeZone());
         if (isInWindow(localDateTime)) {
             // As long at the activities are not already expired, add them.
             LocalDateTime expiresOn = getExpiresOn(localDate, localTime);
@@ -64,7 +64,7 @@ public abstract class ActivityScheduler {
                 for (Activity activity : schedule.getActivities()) {
                     ScheduledActivity schActivity = ScheduledActivity.create();
                     schActivity.setSchedulePlanGuid(plan.getGuid());
-                    // Use the time zone of the request, not the time zone we've been sequencing against. 
+                    // Use the time zone of the request, not the initial time zone that is used for event dates
                     schActivity.setTimeZone(context.getEndsOn().getZone());
                     schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());
                     schActivity.setActivity(activity);

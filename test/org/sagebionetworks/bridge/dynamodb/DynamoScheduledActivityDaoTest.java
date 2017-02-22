@@ -101,7 +101,7 @@ public class DynamoScheduledActivityDaoTest {
             .withHealthCode(healthCode)
             .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(MSK)
+            .withInitialTimeZone(MSK)
             .withEndsOn(endsOn)
             .withEvents(eventMap()).build();
         
@@ -145,7 +145,7 @@ public class DynamoScheduledActivityDaoTest {
             .withHealthCode(healthCode)
             .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(MSK)
+            .withInitialTimeZone(MSK)
             .withEndsOn(endsOn)
             .withEvents(eventMap()).build();
         
@@ -165,7 +165,7 @@ public class DynamoScheduledActivityDaoTest {
                 savedActivities.get(0).getGuid());
         savedActivity.setTimeZone(MSK); // for equality check
         assertEquals(savedActivities.get(0), savedActivity);
-        assertEquals(context.getZone(), savedActivity.getTimeZone());
+        assertEquals(context.getInitialTimeZone(), savedActivity.getTimeZone());
         assertEquals(MSK, savedActivity.getScheduledOn().getZone());
         
         // Create a new list of activities removing some that are saved, and adding new ones.
@@ -174,7 +174,7 @@ public class DynamoScheduledActivityDaoTest {
         anotherSet.addAll(reducedSet);
         
         // You get back the intersection of activities that have been saved, only.
-        List<ScheduledActivity> intersection = activityDao.getActivities(context.getZone(), anotherSet);
+        List<ScheduledActivity> intersection = activityDao.getActivities(context.getInitialTimeZone(), anotherSet);
         assertEquals(reducedSet, intersection);
         
         // Finish and delete
@@ -186,12 +186,12 @@ public class DynamoScheduledActivityDaoTest {
         activityDao.updateActivities(healthCode, Lists.newArrayList(activity));
         
         // This does not remove it from the database, however.
-        List<ScheduledActivity> newActivities = activityDao.getActivities(context.getZone(), savedActivities);
+        List<ScheduledActivity> newActivities = activityDao.getActivities(context.getInitialTimeZone(), savedActivities);
         assertEquals(savedActivities.size(), newActivities.size());
         
         // This is a physical delete, and the activities will be gone.
         activityDao.deleteActivitiesForUser(healthCode);
-        savedActivities = activityDao.getActivities(context.getZone(), savedActivities);
+        savedActivities = activityDao.getActivities(context.getInitialTimeZone(), savedActivities);
         assertEquals("all activities deleted", 0, savedActivities.size());
     }
     

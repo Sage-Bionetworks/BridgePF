@@ -15,7 +15,6 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Period;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,7 +73,7 @@ public class IntervalActivitySchedulerTest {
         
         ScheduleContext context= new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
-                .withTimeZone(DateTimeZone.forOffsetHours(-7))
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withEndsOn(ENROLLMENT.plusDays(2)) // in UTC
                 .withHealthCode("AAA")
                 .withEvents(events).build();
@@ -578,7 +577,7 @@ public class IntervalActivitySchedulerTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withContext(getContext(DateTime.parse("2015-04-10T13:00:00.000Z")))
-                .withTimeZone(DateTimeZone.forOffsetHours(-7)).build();
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-7)).build();
 
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         
@@ -604,87 +603,10 @@ public class IntervalActivitySchedulerTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withContext(getContext(DateTime.parse("2015-04-10T13:00:00.000Z")))
-                .withTimeZone(DateTimeZone.forOffsetHours(-7)).build();
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-7)).build();
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         assertEquals(4, scheduledActivities.size());
-    }
-    
-    // These cases suggested by Dwayne, there all good to verify further we don't have a date change
-    
-    // Scheduler is interpreting the event to the correct date. Examples:
-    // Enrollment=1487552400000 (2017-02-20T01:00Z), timeZone=-08:00, endsOnTimeZone=-08:00, schedule=daily at 11pm, expected=2017-02-19T23:00-0800
-    // Enrollment=1487552400000 (2017-02-20T01:00Z), timeZone=+09:00, endsOnTimeZone=+09:00, schedule=daily at 11pm, expected=2017-02-20T23:00+0900
-    @Test
-    public void schedulerInterpretsEventToCorrectDate() {
-        Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
-        schedule.setScheduleType(ScheduleType.RECURRING);
-        schedule.setExpires("P1D");
-        schedule.setInterval("P1D");
-        schedule.addTimes("23:00");
-        
-        String timestamp = firstTimeStampFor(-8, -8, schedule);
-        assertEquals("2017-02-19T23:00:00.000-08:00", timestamp);
-        
-        timestamp = firstTimeStampFor(9, 9, schedule);
-        assertEquals("2017-02-20T23:00:00.000+09:00", timestamp);
-    }
-    
-    // Scheduler is interpreting the event to the right local time. Examples:
-    // Enrollment=1487552400000 (2017-02-20T01:00Z), timeZone=-08:00, endsOnTimeZone=-08:00, schedule=one hour after enrollment, expected=2017-02-19T18:00-0800
-    // Enrollment=1487552400000 (2017-02-20T01:00Z), timeZone=+09:00, endsOnTimeZone=+09:00, schedule=one hour after enrollment, expected=2017-02-20T11:00+0900
-    @Test
-    public void schedulerInterpetsEventToRightLocalTime() {
-        Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
-        schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.setDelay(Period.parse("PT1H"));
-        schedule.setExpires("P1D");
-        
-        String timestamp = firstTimeStampFor(-8, -8, schedule);
-        assertEquals("2017-02-19T18:00:00.000-08:00", timestamp);
-        
-        timestamp = firstTimeStampFor(9, 9, schedule);
-        assertEquals("2017-02-20T11:00:00.000+09:00", timestamp);
-    }
-
-    // Local times having timezone correctly applied. Examples:
-    // Enrollment=1487552400000 (2017-02-20T01:00Z), timeZone=-08:00, endsOnTimeZone=+09:00, schedule=one hour after enrollment, expected=2017-02-19T18:00+0900 (Should this be the 19th or the 20th?)
-    // Enrollment=1487552400000 (2017-02-20T01:00Z), timeZone=+09:00, endsOnTimeZone=-08:00, schedule=one hour after enrollment, expected=2017-02-20T11:00-0800
-    @Test
-    public void localTimeZonesCorrectlyApplied() {
-        Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
-        schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.setDelay(Period.parse("PT1H"));
-        schedule.setExpires("P1D");
-        
-        String timestamp = firstTimeStampFor(-8, +9, schedule);
-        assertEquals("2017-02-19T18:00:00.000+09:00", timestamp);
-        
-        timestamp = firstTimeStampFor(9, -8, schedule);
-        assertEquals("2017-02-20T11:00:00.000-08:00", timestamp);
-    }
-    
-    private String firstTimeStampFor(int initialTZOffset, int requestTZOffset, Schedule schedule) {
-        DateTime enrollment = new DateTime(1487552400000L); // 2017-02-20T01:00Z
-        DateTimeZone initialTimeZone = DateTimeZone.forOffsetHours(initialTZOffset);
-        DateTimeZone requestTimeZone = DateTimeZone.forOffsetHours(requestTZOffset);
-        
-        // NOTE: The events map is adjusted to initial time zone in the service, we must do that
-        // here for this test to pass. Just calling scheduler without a "localized" event map will fail.
-        events.put("enrollment", enrollment.withZone(initialTimeZone));
-        
-        ScheduleContext context = getContext(initialTimeZone, enrollment.plusDays(4).withZone(requestTimeZone));
-        
-        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
-        strategy.setSchedule(schedule);
-        plan.setStrategy(strategy);
-        
-        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
-        
-        return scheduledActivities.get(0).getScheduledOn().toString();
     }
 
     private ScheduleContext getContext(DateTime endsOn) {
@@ -694,7 +616,7 @@ public class IntervalActivitySchedulerTest {
     private ScheduleContext getContext(DateTimeZone timeZone, DateTime endsOn) {
         return new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(timeZone)
+            .withInitialTimeZone(timeZone)
             .withEndsOn(endsOn)
             .withHealthCode("AAA")
             .withEvents(events).build();

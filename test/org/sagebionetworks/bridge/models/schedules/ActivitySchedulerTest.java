@@ -52,7 +52,7 @@ public class ActivitySchedulerTest {
     public void before() {
         plan.setGuid("BBB");
         
-        // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
+        // Day of tests is 2015-03-26T14:40:00-07:00 for purpose of calculating expiration
         DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
 
         events = Maps.newHashMap();
@@ -78,7 +78,7 @@ public class ActivitySchedulerTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(PST)
+            .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1))
             .withEvents(empty).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
@@ -86,7 +86,7 @@ public class ActivitySchedulerTest {
         
         context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(PST)
+            .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1)).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         assertEquals(0, scheduledActivities.size());
@@ -440,7 +440,7 @@ public class ActivitySchedulerTest {
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
         return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
+            .withInitialTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
     }
     
 }
