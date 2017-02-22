@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
@@ -17,6 +18,7 @@ import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.ExternalIdsValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -69,22 +71,31 @@ public class ExternalIdService {
         externalIdDao.addExternalIds(study.getStudyIdentifier(), externalIdentifiers);
     }
     
-    public void reserveExternalId(Study study, String externalIdentifier) {
+    public void reserveExternalId(Study study, String externalIdentifier, String healthCode) {
         checkNotNull(study);
-        checkArgument(isNotBlank(externalIdentifier));
-
-        if (study.isExternalIdValidationEnabled()) {
-            externalIdDao.reserveExternalId(study.getStudyIdentifier(), externalIdentifier);
+        checkNotNull(healthCode);
+        
+        if (study.isExternalIdValidationEnabled() && isNotBlank(externalIdentifier)) {
+            externalIdDao.reserveExternalId(study.getStudyIdentifier(), externalIdentifier);    
         }
     }
     
     public void assignExternalId(Study study, String externalIdentifier, String healthCode) {
         checkNotNull(study);
-        checkArgument(isNotBlank(externalIdentifier));
-        checkArgument(isNotBlank(healthCode));
+        checkNotNull(healthCode);
         
         if (study.isExternalIdValidationEnabled()) {
-            externalIdDao.assignExternalId(study.getStudyIdentifier(), externalIdentifier, healthCode);
+            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
+
+            if (isBlank(existingExternalId)) {
+                if (isNotBlank(externalIdentifier)) {
+                    externalIdDao.assignExternalId(study.getStudyIdentifier(), externalIdentifier, healthCode);
+                }
+            } else if (!existingExternalId.equals(externalIdentifier)) {
+                throw new BadRequestException(
+                        "External ID cannot be changed or removed after assignment.");
+            }
         }
         optionsService.setString(study.getStudyIdentifier(), healthCode, EXTERNAL_IDENTIFIER, externalIdentifier);
     }
