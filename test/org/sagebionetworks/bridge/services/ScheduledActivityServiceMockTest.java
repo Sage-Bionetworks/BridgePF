@@ -419,145 +419,141 @@ public class ScheduledActivityServiceMockTest {
     
     private void executeComplexTestInTimeZone(int hourOfDay, DateTimeZone timeZone) throws Exception {
         DateTime now = NOW.withZone(timeZone).withHourOfDay(hourOfDay);
-        DateTimeUtils.setCurrentMillisFixed(now.getMillis());
-        try {
-            String json = TestUtils.createJson("{"+  
-                    "'guid':'5fe9029e-beb6-4163-ac35-23d048deeefe',"+
-                    "'label':'Voice Activity',"+
-                    "'version':4,"+
-                    "'modifiedOn':'2016-03-04T20:21:10.487Z',"+
-                    "'strategy':{  "+
-                        "'type':'CriteriaScheduleStrategy',"+
-                        "'scheduleCriteria':[  "+
-                            "{  "+
-                                "'schedule':{"+  
-                                    "'scheduleType':'recurring',"+
-                                    "'eventId':'enrollment',"+
-                                    "'activities':[  "+
-                                        "{  "+
-                                            "'label':'Voice Activity',"+
-                                            "'labelDetail':'20 Seconds',"+
-                                            "'guid':'33669208-1d07-4b89-8ec5-1eb5aad6dd75',"+
-                                            "'task':{  "+
-                                                "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
-                                                "'type':'TaskReference'"+
-                                            "},"+
-                                            "'activityType':'task',"+
-                                            "'type':'Activity'"+
+        String json = TestUtils.createJson("{"+  
+                "'guid':'5fe9029e-beb6-4163-ac35-23d048deeefe',"+
+                "'label':'Voice Activity',"+
+                "'version':4,"+
+                "'modifiedOn':'2016-03-04T20:21:10.487Z',"+
+                "'strategy':{  "+
+                    "'type':'CriteriaScheduleStrategy',"+
+                    "'scheduleCriteria':[  "+
+                        "{  "+
+                            "'schedule':{"+  
+                                "'scheduleType':'recurring',"+
+                                "'eventId':'enrollment',"+
+                                "'activities':[  "+
+                                    "{  "+
+                                        "'label':'Voice Activity',"+
+                                        "'labelDetail':'20 Seconds',"+
+                                        "'guid':'33669208-1d07-4b89-8ec5-1eb5aad6dd75',"+
+                                        "'task':{  "+
+                                            "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
+                                            "'type':'TaskReference'"+
                                         "},"+
-                                        "{  "+
-                                            "'label':'Voice Activity',"+
-                                            "'labelDetail':'20 Seconds',"+
-                                            "'guid':'822f7666-ce7b-4854-98ec-8a6fffa708d9',"+
-                                            "'task':{  "+
-                                                "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
-                                                "'type':'TaskReference'"+
-                                            "},"+
-                                            "'activityType':'task',"+
-                                            "'type':'Activity'"+
+                                        "'activityType':'task',"+
+                                        "'type':'Activity'"+
+                                    "},"+
+                                    "{  "+
+                                        "'label':'Voice Activity',"+
+                                        "'labelDetail':'20 Seconds',"+
+                                        "'guid':'822f7666-ce7b-4854-98ec-8a6fffa708d9',"+
+                                        "'task':{  "+
+                                            "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
+                                            "'type':'TaskReference'"+
                                         "},"+
-                                        "{  "+
-                                            "'label':'Voice Activity',"+
-                                            "'labelDetail':'20 Seconds',"+
-                                            "'guid':'644dfee6-eb88-49b4-9472-a8ef79d9865f',"+
-                                            "'task':{  "+
-                                                "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
-                                                "'type':'TaskReference'"+
-                                            "},"+
-                                            "'activityType':'task',"+
-                                            "'type':'Activity'"+
-                                        "}"+
-                                    "],"+
-                                    "'persistent':false,"+
-                                    "'interval':'P1D',"+
-                                    "'expires':'PT24H',"+
-                                    "'times':[  "+
-                                        "'00:00:00.000'"+
-                                    "],"+
-                                    "'type':'Schedule'"+
-                                "},"+
-                                "'criteria':{  "+
-                                    "'allOfGroups':['parkinson'],"+
-                                    "'noneOfGroups':[],"+
-                                    "'type':'Criteria'"+
-                                "},"+
-                                "'type':'ScheduleCriteria'"+
+                                        "'activityType':'task',"+
+                                        "'type':'Activity'"+
+                                    "},"+
+                                    "{  "+
+                                        "'label':'Voice Activity',"+
+                                        "'labelDetail':'20 Seconds',"+
+                                        "'guid':'644dfee6-eb88-49b4-9472-a8ef79d9865f',"+
+                                        "'task':{  "+
+                                            "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
+                                            "'type':'TaskReference'"+
+                                        "},"+
+                                        "'activityType':'task',"+
+                                        "'type':'Activity'"+
+                                    "}"+
+                                "],"+
+                                "'persistent':false,"+
+                                "'interval':'P1D',"+
+                                "'expires':'PT24H',"+
+                                "'times':[  "+
+                                    "'00:00:00.000'"+
+                                "],"+
+                                "'type':'Schedule'"+
                             "},"+
-                            "{  "+
-                                "'schedule':{"+  
-                                    "'scheduleType':'recurring',"+
-                                    "'eventId':'enrollment',"+
-                                    "'activities':[  "+
-                                        "{  "+
-                                            "'label':'Voice Activity',"+
-                                            "'labelDetail':'20 Seconds',"+
-                                            "'guid':'7e9514ba-b32d-4124-8977-38cb227ad285',"+
-                                            "'task':{  "+
-                                                "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
-                                                "'type':'TaskReference'"+
-                                            "},"+
-                                            "'activityType':'task',"+
-                                            "'type':'Activity'"+
-                                        "}"+
-                                    "],"+
-                                    "'persistent':false,"+
-                                    "'interval':'P1D',"+
-                                    "'expires':'PT24H',"+
-                                    "'times':[  "+
-                                        "'00:00:00.000'"+
-                                    "],"+
-                                    "'type':'Schedule'"+
-                                "},"+
-                                "'criteria':{"+  
-                                    "'allOfGroups':[],"+
-                                    "'noneOfGroups':[],"+
-                                    "'type':'Criteria'"+
-                                "},"+
-                                "'type':'ScheduleCriteria'"+
-                            "}"+
-                        "]"+
-                    "},"+
-                    "'minAppVersion':36,"+
-                    "'type':'SchedulePlan'"+
-                "}");
-                
-                Map<String,DateTime> events = Maps.newHashMap();
-                events.put("enrollment", NOW.withZone(DateTimeZone.UTC).minusDays(3));
-                when(activityEventService.getActivityEventMap("AAA")).thenReturn(events);
-                
-                ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
-                
-                SchedulePlan voiceActivityPlan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
-                List<SchedulePlan> schedulePlans = Lists.newArrayList(voiceActivityPlan);
-                when(schedulePlanService.getSchedulePlans(info, new StudyIdentifierImpl("test-study"))).thenReturn(schedulePlans);
-                
-                ScheduleContext context = new ScheduleContext.Builder()
-                    .withClientInfo(info)
-                    .withStudyIdentifier("test-study")
-                    .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
-                        .withEndsOn(NOW.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
-                        .withInitialTimeZone(timeZone)
-                    .withHealthCode("AAA")
-                    .withUserId(USER_ID)
-                    .withAccountCreatedOn(NOW.minusDays(4))
-                    .build();
-                
-                // Is a parkinson patient, gets 3 tasks (or 6 tasks late in the day, see BRIDGE-1603
-                List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
+                            "'criteria':{  "+
+                                "'allOfGroups':['parkinson'],"+
+                                "'noneOfGroups':[],"+
+                                "'type':'Criteria'"+
+                            "},"+
+                            "'type':'ScheduleCriteria'"+
+                        "},"+
+                        "{  "+
+                            "'schedule':{"+  
+                                "'scheduleType':'recurring',"+
+                                "'eventId':'enrollment',"+
+                                "'activities':[  "+
+                                    "{  "+
+                                        "'label':'Voice Activity',"+
+                                        "'labelDetail':'20 Seconds',"+
+                                        "'guid':'7e9514ba-b32d-4124-8977-38cb227ad285',"+
+                                        "'task':{  "+
+                                            "'identifier':'3-APHPhonation-C614A231-A7B7-4173-BDC8-098309354292',"+
+                                            "'type':'TaskReference'"+
+                                        "},"+
+                                        "'activityType':'task',"+
+                                        "'type':'Activity'"+
+                                    "}"+
+                                "],"+
+                                "'persistent':false,"+
+                                "'interval':'P1D',"+
+                                "'expires':'PT24H',"+
+                                "'times':[  "+
+                                    "'00:00:00.000'"+
+                                "],"+
+                                "'type':'Schedule'"+
+                            "},"+
+                            "'criteria':{"+  
+                                "'allOfGroups':[],"+
+                                "'noneOfGroups':[],"+
+                                "'type':'Criteria'"+
+                            "},"+
+                            "'type':'ScheduleCriteria'"+
+                        "}"+
+                    "]"+
+                "},"+
+                "'minAppVersion':36,"+
+                "'type':'SchedulePlan'"+
+            "}");
+            
+        Map<String,DateTime> events = Maps.newHashMap();
+        events.put("enrollment", now.withZone(DateTimeZone.UTC).minusDays(3));
+        when(activityEventService.getActivityEventMap("AAA")).thenReturn(events);
+        
+        ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
+        
+        SchedulePlan voiceActivityPlan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
+        List<SchedulePlan> schedulePlans = Lists.newArrayList(voiceActivityPlan);
+        when(schedulePlanService.getSchedulePlans(info, new StudyIdentifierImpl("test-study"))).thenReturn(schedulePlans);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withClientInfo(info)
+            .withStudyIdentifier("test-study")
+            .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
+                .withEndsOn(now.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
+                .withInitialTimeZone(timeZone)
+            .withHealthCode("AAA")
+            .withUserId(USER_ID)
+            .withNow(now)
+            .withAccountCreatedOn(now.minusDays(4))
+            .build();
+        
+        // Is a parkinson patient, gets 3 tasks (or 6 tasks late in the day, see BRIDGE-1603
+        List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
 
-                // See BRIDGE-1603
-                assertEquals(6, schActivities.size());
-                
-                // Not a parkinson patient, get 1 task
-                context = new ScheduleContext.Builder()
-                        .withContext(context)
-                        .withUserDataGroups(Sets.newHashSet("test_user")).build();
-                schActivities = service.getScheduledActivities(context);
-                // See BRIDGE-1603
-                assertEquals(2, schActivities.size());
-        } finally {
-            DateTimeUtils.setCurrentMillisSystem();
-        }
+        // See BRIDGE-1603
+        assertEquals(6, schActivities.size());
+        
+        // Not a parkinson patient, get 1 task
+        context = new ScheduleContext.Builder()
+                .withContext(context)
+                .withUserDataGroups(Sets.newHashSet("test_user")).build();
+        schActivities = service.getScheduledActivities(context);
+        // See BRIDGE-1603
+        assertEquals(2, schActivities.size());
     }
     
     @Test
