@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.util.Collections;
 import java.util.List;
@@ -154,6 +155,7 @@ public class ParticipantService {
         builder.withExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
         builder.withDataGroups(lookup.getStringSet(DATA_GROUPS));
         builder.withLanguages(lookup.getOrderedStringSet(LANGUAGES));
+        builder.withTimeZone(lookup.getTimeZone(TIME_ZONE));
         builder.withFirstName(account.getFirstName());
         builder.withLastName(account.getLastName());
         builder.withEmail(account.getEmail());
@@ -262,6 +264,7 @@ public class ParticipantService {
         }
         // External identifier is handled by the ExternalIdService
         options.remove(EXTERNAL_IDENTIFIER);
+        options.remove(TIME_ZONE);
 
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());

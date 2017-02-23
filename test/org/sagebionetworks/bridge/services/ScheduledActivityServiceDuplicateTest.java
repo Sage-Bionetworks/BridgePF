@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
@@ -17,7 +18,6 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -45,7 +45,6 @@ import com.google.common.collect.Lists;
  * a standard time and midnight seems to work regardless of when the timestamp is).
  */
 @RunWith(MockitoJUnitRunner.class)
-@Ignore // The current code does not prevent duplicates.
 public class ScheduledActivityServiceDuplicateTest {
     //"studyKey (S)","guid (S)","label (S)","modifiedOn (N)","strategy (S)","version (N)"
     private static final String[][] SCHEDULE_PLAN_RECORDS = new String[][] {
@@ -137,8 +136,8 @@ public class ScheduledActivityServiceDuplicateTest {
     private static final DateTime ENROLLMENT = DateTime.parse("2016-06-30T19:43:07.951Z");
     private static final DateTime ENROLLMENT_AFTER_DAY_ROLLS = DateTime.parse("2016-07-01T03:13:07.951Z");
     private static final DateTime ACTIVITIES_LAST_RETRIEVED_ON = DateTime.parse("2016-11-07T18:32:31.000Z");
-    private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-8);
-    private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(4);
+    private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+    private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
     
     @Mock
     ScheduledActivityDao activityDao;
@@ -167,7 +166,7 @@ public class ScheduledActivityServiceDuplicateTest {
                 .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))
                 .withNow(ACTIVITIES_LAST_RETRIEVED_ON)
                 .withStudyIdentifier("test-study")
-                .withEndsOn(DateTime.now().plusDays(4))
+                .withEndsOn(DateTime.now(MSK).plusDays(4))
                 .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f")
                 .withUserId("6m7Yj31Pp41yjvoyU5y6RE");
     }
@@ -243,7 +242,7 @@ public class ScheduledActivityServiceDuplicateTest {
             .put("activity:bea8fd5d-7622-451f-a727-f9e37f00e1be:finished", new DateTime(1471742129501L, DateTimeZone.UTC)).build();
         doReturn(events).when(activityEventService).getActivityEventMap(HEALTH_CODE);
         contextBuilder.withAccountCreatedOn(enrollment.minusDays(3));
-        contextBuilder.withTimeZone(zone);
+        contextBuilder.withInitialTimeZone(zone);
         return contextBuilder.build();
     }
     
@@ -265,29 +264,27 @@ public class ScheduledActivityServiceDuplicateTest {
         
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         
-        // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
         
         allWithinQueryWindow(activities, context);
-        //assertEquals(16, activities.size());
-        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T19:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T19:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T19:43:07.951").size());
-        // NOTE: this task has reset because the timestamp is different
-        // assertNotNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
+        // With persisted tasks included, this finished task is not returned.
+        assertEquals(0, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size());
+        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size());
+        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size());
+        assertNotNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
     }
     
     @Test
     public void settingEnrollmetToNextDayUTCWorks() throws Exception {
         // Mock activityEventService
-        ScheduleContext context = mockEventsAndContext(ENROLLMENT_AFTER_DAY_ROLLS, MSK);
+        ScheduleContext context = mockEventsAndContext(ENROLLMENT_AFTER_DAY_ROLLS, PST);
         
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         
         // Duplicated persisted activities.
-        List<ScheduledActivity> dbActivities = makeResultSet(MSK);
+        List<ScheduledActivity> dbActivities = makeResultSet(PST);
         doReturn(dbActivities).when(activityDao).getActivities(any(), any());
         
         // Correctly scheduled one-time tasks coming from scheduler
@@ -300,13 +297,12 @@ public class ScheduledActivityServiceDuplicateTest {
         verify(schedulePlanService).getSchedulePlans(any(), any());
         
         allWithinQueryWindow(activities, context);
-        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T19:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T19:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T19:43:07.951").size());
-        // NOTE: this task has reset because the timestamp is different
-        //assertNotNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
+        assertEquals(0, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size());
+        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size());
+        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size());
+        assertNotNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
     }
-
+    
     @Test
     public void withNoPersistedTasksItWorks() throws Exception {
         // Mock activityEventService
@@ -324,9 +320,9 @@ public class ScheduledActivityServiceDuplicateTest {
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
         // This one is there...
-        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T19:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T19:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T19:43:07.951").size());
+        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size());
+        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size());
+        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size());
         // This one hasn't been started, obviously
         assertNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
     }
@@ -334,7 +330,7 @@ public class ScheduledActivityServiceDuplicateTest {
     @Test
     public void withNoPersistedTasksItWorksEvenOnNextDayUTC() throws Exception {
         // Mock activityEventService
-        ScheduleContext context = mockEventsAndContext(ENROLLMENT_AFTER_DAY_ROLLS, MSK);
+        ScheduleContext context = mockEventsAndContext(ENROLLMENT_AFTER_DAY_ROLLS, PST);
         
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
@@ -347,9 +343,9 @@ public class ScheduledActivityServiceDuplicateTest {
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any());
-        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be:2016-06-30T19:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2:2016-06-30T19:43:07.951").size());
-        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7:2016-06-30T19:43:07.951").size());
+        assertEquals(1, filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size());
+        assertEquals(1, filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size());
+        assertEquals(1, filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size());
         
         // It's adjusted, magically it's still 6/30 I haven't figured out why yet.
         List<ScheduledActivity> list = filterByLabel(activities, "Do Persistent Activity");

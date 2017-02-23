@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -103,6 +104,14 @@ public class ParticipantOptionsService {
         checkNotNull(option);
         
         setStringSet(studyIdentifier, healthCode, option, value);
+    }
+    
+    public void setDateTimeZone(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, DateTimeZone zone) {
+        checkNotNull(studyIdentifier);
+        checkArgument(isNotBlank(healthCode));
+        checkNotNull(option);
+
+        optionsDao.setOption(studyIdentifier, healthCode, option, zone.toString());
     }
     
     public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, Map<ParticipantOption,String> options) {

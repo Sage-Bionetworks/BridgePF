@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -101,6 +103,15 @@ public class ParticipantOptionsServiceTest {
     }
     
     @Test
+    public void setTimeZone() {
+        DateTimeZone zone = DateTimeZone.forOffsetHours(-8);
+        
+        service.setDateTimeZone(TEST_STUDY, HEALTH_CODE, TIME_ZONE, zone);
+        verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, TIME_ZONE, "-08:00");
+        verifyNoMoreInteractions(mockDao);
+    }
+    
+    @Test
     public void setAllOptions() {
         Map<ParticipantOption,String> options = Maps.newHashMap();
         service.setAllOptions(TEST_STUDY, HEALTH_CODE, options);
@@ -151,6 +162,15 @@ public class ParticipantOptionsServiceTest {
                 new ParticipantOptionsLookup(map(DATA_GROUPS, null)));
         
         assertEquals(Sets.newHashSet(), service.getOptions(HEALTH_CODE).getStringSet(DATA_GROUPS));
+    }
+    
+    @
+    Test
+    public void getTimeZone() {
+        when(mockDao.getOptions(HEALTH_CODE)).thenReturn(
+                new ParticipantOptionsLookup(map(TIME_ZONE, "-08:00")));
+        
+        assertEquals(DateTimeZone.forOffsetHours(-8), service.getOptions(HEALTH_CODE).getTimeZone(TIME_ZONE));
     }
 
     @Test

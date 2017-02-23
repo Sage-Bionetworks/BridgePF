@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
@@ -36,6 +37,10 @@ public class ParticipantOptionTest {
         result = ParticipantOption.LANGUAGES.deserialize(node);
         assertEquals("ja,en", result);
         
+        node = BridgeObjectMapper.get().readTree(TestUtils.createJson("'3'"));
+        result = ParticipantOption.TIME_ZONE.deserialize(node);
+        assertEquals("+03:00", result);
+        
         node = BridgeObjectMapper.get().readTree(TestUtils.createJson("'sponsors_and_partners'"));
         result = ParticipantOption.SHARING_SCOPE.deserialize(node);
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), result);
@@ -49,6 +54,7 @@ public class ParticipantOptionTest {
                 .withExternalId("testExternalID")
                 .withLanguages(TestUtils.newLinkedHashSet("en","de"))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withTimeZone(DateTimeZone.forOffsetHours(-7))
                 .build();
         
         String result = ParticipantOption.DATA_GROUPS.fromParticipant(participant);
@@ -66,6 +72,9 @@ public class ParticipantOptionTest {
         
         result = ParticipantOption.SHARING_SCOPE.fromParticipant(participant);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), result);
+        
+        result = ParticipantOption.TIME_ZONE.fromParticipant(participant);
+        assertEquals("-07:00", result);
     }
     
     @Test
@@ -76,6 +85,7 @@ public class ParticipantOptionTest {
         assertNull(ParticipantOption.EXTERNAL_IDENTIFIER.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.LANGUAGES.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.SHARING_SCOPE.fromParticipant(emptyParticipant));
+        assertNull(ParticipantOption.TIME_ZONE.fromParticipant(emptyParticipant));
     }
     
     @Test
@@ -136,5 +146,11 @@ public class ParticipantOptionTest {
     public void invalidSharingScopeTypeThrowsBadRequest() throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("3"));
         ParticipantOption.SHARING_SCOPE.deserialize(node);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void invalidTimeZoneThrowsBadRequest() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("'as'"));
+        ParticipantOption.TIME_ZONE.deserialize(node);
     }
 }

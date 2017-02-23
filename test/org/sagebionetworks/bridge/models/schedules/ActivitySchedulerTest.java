@@ -52,8 +52,8 @@ public class ActivitySchedulerTest {
     public void before() {
         plan.setGuid("BBB");
         
-        // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
-        DateTimeUtils.setCurrentMillisFixed(1428340210000L);
+        // Day of tests is 2015-03-26T14:40:00-07:00 for purpose of calculating expiration
+        DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
 
         events = Maps.newHashMap();
         // Enrolled on March 23, 2015 @ 10am GST
@@ -78,7 +78,7 @@ public class ActivitySchedulerTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(PST)
+            .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1))
             .withEvents(empty).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
@@ -86,7 +86,7 @@ public class ActivitySchedulerTest {
         
         context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(PST)
+            .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1)).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         assertEquals(0, scheduledActivities.size());
@@ -324,15 +324,15 @@ public class ActivitySchedulerTest {
         
         // User is in Moscow, however.
         DateTimeZone zone = DateTimeZone.forOffsetHours(3);
-        List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, getContext(zone, DateTime.now().plusDays(1)));
-        assertEquals("2015-04-06T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
-        assertEquals("2015-04-07T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
+        List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, getContext(zone, NOW.withZone(zone).plusDays(1)));
+        assertEquals("2015-03-26T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
+        assertEquals("2015-03-27T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
         
         // Now the user flies across the planet, and retrieves the tasks again, they are in the new timezone
         zone = DateTimeZone.forOffsetHours(-7);
-        activities = schedule.getScheduler().getScheduledActivities(plan, getContext(zone, DateTime.now().plusDays(1)));
-        assertEquals("2015-04-06T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
-        assertEquals("2015-04-07T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
+        activities = schedule.getScheduler().getScheduledActivities(plan, getContext(zone, NOW.withZone(zone).plusDays(1)));
+        assertEquals("2015-03-26T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
+        assertEquals("2015-03-27T10:00:00.000-07:00", activities.get(1).getScheduledOn().toString());
     }
     
     @Test
@@ -345,7 +345,7 @@ public class ActivitySchedulerTest {
         schedule.addActivity(new Activity.Builder().withLabel("Foo").withTask("foo").build());
         Validate.entityThrowingException(new ScheduleValidator(Sets.newHashSet("foo")), schedule);
         
-        List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, getContext(PST, DateTime.now().plusDays(4)));
+        List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, getContext(PST, NOW.plusDays(4)));
         Set<String> allGuids = Sets.newHashSet();
         for (ScheduledActivity schActivity : activities) {
             String activityGuidInScheduledActivity = schActivity.getGuid().split(":")[0];
@@ -387,9 +387,13 @@ public class ActivitySchedulerTest {
         strategy.setSchedule(schedule);
         plan.setStrategy(strategy);
         
-        ScheduleContext noMinContext = getContext(PST, ENROLLMENT.plusDays(10));
+        // Going out 1 week into the future, with a day day expiration winow, the old task will be 
+        // expired and the new task will not be generated. Without a minimum, nothing will be returned
+        ScheduleContext noMinContext = getContext(PST, NOW.withZone(PST).plusDays(10));
+        noMinContext = new ScheduleContext.Builder().withContext(noMinContext).withNow(NOW.plusDays(10)).build();
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, noMinContext);
+
         // There are none on the monthly schedule
         assertEquals(0, scheduledActivities.size());
         
@@ -436,7 +440,7 @@ public class ActivitySchedulerTest {
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
         return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
+            .withInitialTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
     }
     
 }

@@ -73,14 +73,15 @@ public class IntervalActivitySchedulerTest {
         
         ScheduleContext context= new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
-                .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withEndsOn(ENROLLMENT.plusDays(2))
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-7))
+                .withEndsOn(ENROLLMENT.plusDays(2)) // in UTC
                 .withHealthCode("AAA")
                 .withEvents(events).build();
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         
-        assertDates(scheduledActivities, DateTimeZone.forOffsetHours(-07), "2015-03-23T03:00");
+        // Date is expressed in local time UTC, because that's the endsOn time zone.
+        assertDates(scheduledActivities, DateTimeZone.UTC, "2015-03-23T03:00");
     }
     
     @Test
@@ -576,7 +577,7 @@ public class IntervalActivitySchedulerTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withContext(getContext(DateTime.parse("2015-04-10T13:00:00.000Z")))
-                .withTimeZone(DateTimeZone.forOffsetHours(-7)).build();
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-7)).build();
 
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         
@@ -602,16 +603,20 @@ public class IntervalActivitySchedulerTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withContext(getContext(DateTime.parse("2015-04-10T13:00:00.000Z")))
-                .withTimeZone(DateTimeZone.forOffsetHours(-7)).build();
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-7)).build();
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         assertEquals(4, scheduledActivities.size());
     }
-    
+
     private ScheduleContext getContext(DateTime endsOn) {
+        return getContext(DateTimeZone.UTC, endsOn);
+    }
+    
+    private ScheduleContext getContext(DateTimeZone timeZone, DateTime endsOn) {
         return new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withTimeZone(DateTimeZone.UTC)
+            .withInitialTimeZone(timeZone)
             .withEndsOn(endsOn)
             .withHealthCode("AAA")
             .withEvents(events).build();

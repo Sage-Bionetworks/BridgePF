@@ -104,7 +104,7 @@ public class ScheduledActivityService {
         
         // Get scheduled activities, persisted activities, and compare them
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
-        List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getZone(), scheduledActivities);
+        List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getEndsOn().getZone(), scheduledActivities);
         
         List<ScheduledActivity> saves = updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
         activityDao.saveActivities(saves);
@@ -127,7 +127,7 @@ public class ScheduledActivityService {
             }
             if (schActivity.getStartedOn() != null || schActivity.getFinishedOn() != null) {
                 // We do not need to add the time zone here. Not returning these to the user.
-                ScheduledActivity dbActivity = activityDao.getActivity(null, healthCode, schActivity.getGuid());
+                ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
                 if (schActivity.getStartedOn() != null) {
                     dbActivity.setStartedOn(schActivity.getStartedOn());
                 }
@@ -184,11 +184,15 @@ public class ScheduledActivityService {
     
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
         Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getHealthCode());
+
+        ImmutableMap.Builder<String,DateTime> builder = new ImmutableMap.Builder<String, DateTime>();
         if (!events.containsKey(ENROLLMENT)) {
-            events = new ImmutableMap.Builder<String, DateTime>().putAll(events)
-                    .put(ENROLLMENT, context.getAccountCreatedOn()).build();
+            builder.put(ENROLLMENT, context.getAccountCreatedOn().withZone(context.getInitialTimeZone()));
         }
-        return events;
+        for(Map.Entry<String, DateTime> entry : events.entrySet()) {
+            builder.put(entry.getKey(), entry.getValue().withZone(context.getInitialTimeZone()));
+        }
+        return builder.build();
     }
     
     protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {

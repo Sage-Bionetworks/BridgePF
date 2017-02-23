@@ -103,7 +103,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     /** {@inheritDoc} */
     @Override
-    public ScheduledActivity getActivity(DateTimeZone timeZone, String healthCode, String guid) {
+    public ScheduledActivity getActivity(String healthCode, String guid) {
         DynamoScheduledActivity hashKey = new DynamoScheduledActivity();
         hashKey.setHealthCode(healthCode);
         hashKey.setGuid(guid);
@@ -112,7 +112,6 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         if (dbActivity == null) {
             throw new EntityNotFoundException(ScheduledActivity.class);
         }
-        dbActivity.setTimeZone(timeZone);
         return dbActivity;
     }
     
