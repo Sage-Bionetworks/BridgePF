@@ -226,7 +226,7 @@ public class ParticipantService {
         
         externalIdService.reserveExternalId(study, participant.getExternalId(), account.getHealthCode());
 
-        updateAccountOptionsAndRoles(study, callerRoles, options, account, participant, false);
+        updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
         accountDao.createAccount(study, account, sendVerifyEmail && study.isEmailVerificationEnabled());
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
@@ -247,7 +247,7 @@ public class ParticipantService {
         // Do this first because if the ID has been taken or is invalid, we do not want to update anything else.
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
 
-        updateAccountOptionsAndRoles(study, callerRoles, options, account, participant, true);
+        updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
         // Only admin roles can change status, after participant is created
         if (callerIsAdmin(callerRoles) && participant.getStatus() != null) {
@@ -258,7 +258,7 @@ public class ParticipantService {
     }
 
     private void updateAccountOptionsAndRoles(Study study, Set<Roles> callerRoles, Map<ParticipantOption, String> options,
-            Account account, StudyParticipant participant, boolean isUpdate) {
+            Account account, StudyParticipant participant) {
         for (ParticipantOption option : ParticipantOption.values()) {
             options.put(option, option.fromParticipant(participant));
         }
