@@ -21,23 +21,13 @@ public enum ParticipantOption {
 
     TIME_ZONE(null, "timeZone") {
         public String fromParticipant(StudyParticipant participant) {
-            if (participant.getTimeZone() == null) {
-                return null;
-            } else if (participant.getTimeZone() == DateTimeZone.UTC) {
-                // Joda represents +00:00 as the string "UTC", so special case it
-                return "+00:00";
-            }
-            return participant.getTimeZone().toString();
+            return DateUtils.timeZoneToOffsetString(participant.getTimeZone());
         }
         public String deserialize(JsonNode node) {
             checkNotNull(node);
             try {
                 DateTimeZone zone = DateUtils.parseZoneFromOffsetString(node.asText());
-                if (zone == DateTimeZone.UTC) {
-                    // Joda represents +00:00 as the string "UTC", so special case it
-                    return "+00:00";
-                }
-                return zone.toString();
+                return DateUtils.timeZoneToOffsetString(zone);
             } catch(IllegalArgumentException e) {
                 throw new BadRequestException("timeZone is an invalid time zone offset");
             }

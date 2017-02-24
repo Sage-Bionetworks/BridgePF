@@ -200,6 +200,17 @@ public final class DateUtils {
         return zone;
     }
     
+    public static String timeZoneToOffsetString(DateTimeZone timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+        String zoneString = timeZone.toString();
+        if ("UTC".equals(zoneString)) {
+            return "+00:00";
+        }
+        return zoneString;
+    }
+    
     /**
      * If no value is provided, returns the default datetime value. Otherwise, returns the datetime 
      * of the string if it can be parsed or an exception if it's not a valid ISO 8601 timestamp.
