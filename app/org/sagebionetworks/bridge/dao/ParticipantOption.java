@@ -5,6 +5,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -19,12 +21,23 @@ public enum ParticipantOption {
 
     TIME_ZONE(null, "timeZone") {
         public String fromParticipant(StudyParticipant participant) {
-            return (participant.getTimeZone() == null) ? null : participant.getTimeZone().toString();
+            if (participant.getTimeZone() == null) {
+                return null;
+            } else if (participant.getTimeZone() == DateTimeZone.UTC) {
+                // Joda represents +00:00 as the string "UTC", so special case it
+                return "+00:00";
+            }
+            return participant.getTimeZone().toString();
         }
         public String deserialize(JsonNode node) {
             checkNotNull(node);
             try {
-                return DateUtils.parseZoneFromOffsetString(node.asText()).toString();    
+                DateTimeZone zone = DateUtils.parseZoneFromOffsetString(node.asText());
+                if (zone == DateTimeZone.UTC) {
+                    // Joda represents +00:00 as the string "UTC", so special case it
+                    return "+00:00";
+                }
+                return zone.toString();
             } catch(IllegalArgumentException e) {
                 throw new BadRequestException("timeZone is an invalid time zone offset");
             }

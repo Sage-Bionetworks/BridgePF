@@ -169,7 +169,8 @@ public final class DateUtils {
 
     /**
      * Convert at 8601 time zone offset string (e.g. "-07:00") to a DateTimeZone 
-     * object. 
+     * object. Can also catch "UTC" which is the string returned by a DateTimeZone 
+     * instance that was originally parsed from "+00:00"
      * @param offsetString
      * @return
      */
@@ -177,7 +178,9 @@ public final class DateUtils {
         DateTimeZone zone = null;
         if (StringUtils.isNotBlank(offsetString)) {
             try {
-                if (OFFSET_PATTERN_HOURS_ONLY.matcher(offsetString).matches()) {
+                if (DateTimeZone.UTC.toString().equals(offsetString)) {
+                    zone = DateTimeZone.UTC;
+                } else if (OFFSET_PATTERN_HOURS_ONLY.matcher(offsetString).matches()) {
                     int hours = Integer.parseInt(offsetString);
                     zone = DateTimeZone.forOffsetHours(hours);
                 } else if (OFFSET_PATTERN.matcher(offsetString).matches()) {

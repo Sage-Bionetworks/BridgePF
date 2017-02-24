@@ -156,6 +156,17 @@ public class DateUtilsTest {
     }
     
     @Test
+    public void canParseSpecialValueUTC() {
+        // When you parse an offset of 0 and get a time zone, that time zone expressed as a string
+        // will be "UTC", not "+00:00". The parser should correctly handle this special case.
+        DateTimeZone zone = DateUtils.parseZoneFromOffsetString("UTC");
+        assertEquals(DateTimeZone.UTC, zone);
+        
+        zone = DateUtils.parseZoneFromOffsetString("+00:00");
+        assertEquals(DateTimeZone.UTC, zone);
+    }
+    
+    @Test
     public void emptyOrNullReturnNull() {
         DateTimeZone zone = DateUtils.parseZoneFromOffsetString(null);
         assertNull(zone);

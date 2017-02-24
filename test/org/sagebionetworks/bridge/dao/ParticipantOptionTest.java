@@ -41,6 +41,10 @@ public class ParticipantOptionTest {
         result = ParticipantOption.TIME_ZONE.deserialize(node);
         assertEquals("+03:00", result);
         
+        node = BridgeObjectMapper.get().readTree(TestUtils.createJson("'+0:00'"));
+        result = ParticipantOption.TIME_ZONE.deserialize(node);
+        assertEquals("+00:00", result);
+        
         node = BridgeObjectMapper.get().readTree(TestUtils.createJson("'sponsors_and_partners'"));
         result = ParticipantOption.SHARING_SCOPE.deserialize(node);
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS.name(), result);
@@ -75,6 +79,16 @@ public class ParticipantOptionTest {
         
         result = ParticipantOption.TIME_ZONE.fromParticipant(participant);
         assertEquals("-07:00", result);
+    }
+    
+    @Test
+    public void canRetrieveUTCFromParticipant() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withTimeZone(DateTimeZone.forOffsetHours(0))
+                .build();
+        
+        assertEquals("UTC", participant.getTimeZone().toString());
+        assertEquals("+00:00", ParticipantOption.TIME_ZONE.fromParticipant(participant));
     }
     
     @Test
