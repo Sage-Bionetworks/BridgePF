@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.springframework.validation.MapBindingResult;
 
@@ -25,25 +24,23 @@ public class CompoundActivityDefinitionValidatorTest {
     private static final List<SurveyReference> SURVEY_LIST = ImmutableList.of(new SurveyReference("test-survey",
             "test-survey-guid", null));
     private static final String TASK_ID = "test-task";
-    private static final CompoundActivityDefinitionValidator VALIDATOR = new CompoundActivityDefinitionValidator(
-            ImmutableSet.of(TASK_ID));
 
     // branch coverage
     @Test
     public void validatorSupportsClass() {
-        assertTrue(VALIDATOR.supports(CompoundActivityDefinition.class));
+        assertTrue(CompoundActivityDefinitionValidator.INSTANCE.supports(CompoundActivityDefinition.class));
     }
 
     // branch coverage
     @Test
     public void validatorSupportsSubclass() {
-        assertTrue(VALIDATOR.supports(DynamoCompoundActivityDefinition.class));
+        assertTrue(CompoundActivityDefinitionValidator.INSTANCE.supports(DynamoCompoundActivityDefinition.class));
     }
 
     // branch coverage
     @Test
     public void validatorDoesntSupportClass() {
-        assertFalse(VALIDATOR.supports(String.class));
+        assertFalse(CompoundActivityDefinitionValidator.INSTANCE.supports(String.class));
     }
 
     // branch coverage
@@ -51,7 +48,7 @@ public class CompoundActivityDefinitionValidatorTest {
     @Test
     public void validateNull() {
         MapBindingResult errors = new MapBindingResult(new HashMap<>(), "CompoundActivityDefinition");
-        VALIDATOR.validate(null, errors);
+        CompoundActivityDefinitionValidator.INSTANCE.validate(null, errors);
         assertTrue(errors.hasErrors());
     }
 
@@ -60,13 +57,13 @@ public class CompoundActivityDefinitionValidatorTest {
     @Test
     public void validateWrongClass() {
         MapBindingResult errors = new MapBindingResult(new HashMap<>(), "CompoundActivityDefinition");
-        VALIDATOR.validate("wrong class", errors);
+        CompoundActivityDefinitionValidator.INSTANCE.validate("wrong class", errors);
         assertTrue(errors.hasErrors());
     }
 
     @Test
     public void valid() {
-        Validate.entityThrowingException(VALIDATOR, makeValidDef());
+        Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, makeValidDef());
     }
 
     @Test
@@ -89,7 +86,7 @@ public class CompoundActivityDefinitionValidatorTest {
         def.setStudyId(studyId);
 
         try {
-            Validate.entityThrowingException(VALIDATOR, def);
+            Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             assertTrue(ex.getMessage().contains("studyId must be specified"));
@@ -116,23 +113,10 @@ public class CompoundActivityDefinitionValidatorTest {
         def.setTaskId(taskId);
 
         try {
-            Validate.entityThrowingException(VALIDATOR, def);
+            Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             assertTrue(ex.getMessage().contains("taskId must be specified"));
-        }
-    }
-
-    @Test
-    public void taskIdNotInStudy() {
-        CompoundActivityDefinition def = makeValidDef();
-        def.setTaskId("not-a-task");
-
-        try {
-            Validate.entityThrowingException(VALIDATOR, def);
-            fail("expected exception");
-        } catch (InvalidEntityException ex) {
-            assertTrue(ex.getMessage().contains("taskId not-a-task not in enumeration: " + TASK_ID));
         }
     }
 
@@ -144,7 +128,7 @@ public class CompoundActivityDefinitionValidatorTest {
         def.setSurveyList(null);
 
         try {
-            Validate.entityThrowingException(VALIDATOR, def);
+            Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             assertTrue(ex.getMessage().contains("compoundActivityDefinition must have at least one schema or at least "
