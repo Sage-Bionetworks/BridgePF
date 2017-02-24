@@ -160,6 +160,16 @@ public class ScheduledActivityControllerTest {
     }
     
     @Test
+    public void utcTimeZoneParsedCorrectly() throws Exception {
+        controller.getScheduledActivities(null, "+0:00", "3", "5");
+        
+        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        ScheduleContext context = contextCaptor.getValue();
+        assertEquals("+00:00", context.getInitialTimeZone().toString());
+        
+    }
+    
+    @Test
     public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
         List<ScheduledActivity> list = Lists.newArrayList();
         scheduledActivityService = mock(ScheduledActivityService.class);
