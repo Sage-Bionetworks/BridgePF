@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.CompoundActivityDefinitionService;
 
 /** Play controller for managing Compound Activity Definitions. */
@@ -28,11 +27,10 @@ public class CompoundActivityDefinitionController extends BaseController {
     /** Creates a compound activity definition. */
     public Result createCompoundActivityDefinition() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
 
         CompoundActivityDefinition requestDef = parseJson(request(), CompoundActivityDefinition.class);
-        CompoundActivityDefinition createdDef = compoundActivityDefService.createCompoundActivityDefinition(study,
-                requestDef);
+        CompoundActivityDefinition createdDef = compoundActivityDefService.createCompoundActivityDefinition(
+                session.getStudyIdentifier(), requestDef);
         return created(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(createdDef));
     }
 
@@ -66,11 +64,10 @@ public class CompoundActivityDefinitionController extends BaseController {
     /** Update a compound activity definition. */
     public Result updateCompoundActivityDefinition(String taskId) throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
 
         CompoundActivityDefinition requestDef = parseJson(request(), CompoundActivityDefinition.class);
-        CompoundActivityDefinition updatedDef = compoundActivityDefService.updateCompoundActivityDefinition(study,
-                taskId, requestDef);
+        CompoundActivityDefinition updatedDef = compoundActivityDefService.updateCompoundActivityDefinition(
+                session.getStudyIdentifier(), taskId, requestDef);
         return ok(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(updatedDef));
     }
 }

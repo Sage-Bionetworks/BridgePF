@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.CompoundActivityDefinitionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.CompoundActivityDefinitionValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -26,15 +25,13 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Creates a compound activity definition. */
-    public CompoundActivityDefinition createCompoundActivityDefinition(Study study,
+    public CompoundActivityDefinition createCompoundActivityDefinition(StudyIdentifier studyId,
             CompoundActivityDefinition compoundActivityDefinition) {
         // Set study to prevent people from creating defs in other studies.
-        compoundActivityDefinition.setStudyId(study.getIdentifier());
+        compoundActivityDefinition.setStudyId(studyId.getIdentifier());
 
         // validate def
-        CompoundActivityDefinitionValidator validator = new CompoundActivityDefinitionValidator(
-                study.getTaskIdentifiers());
-        Validate.entityThrowingException(validator, compoundActivityDefinition);
+        Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, compoundActivityDefinition);
 
         // call through to dao
         return compoundActivityDefDao.createCompoundActivityDefinition(compoundActivityDefinition);
@@ -79,7 +76,7 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Update a compound activity definition. */
-    public CompoundActivityDefinition updateCompoundActivityDefinition(Study study, String taskId,
+    public CompoundActivityDefinition updateCompoundActivityDefinition(StudyIdentifier studyId, String taskId,
             CompoundActivityDefinition compoundActivityDefinition) {
         // validate user input (taskId)
         if (StringUtils.isBlank(taskId)) {
@@ -88,13 +85,11 @@ public class CompoundActivityDefinitionService {
 
         // Set the studyId and taskId. This prevents people from updating the wrong def or updating a def in another
         // study.
-        compoundActivityDefinition.setStudyId(study.getIdentifier());
+        compoundActivityDefinition.setStudyId(studyId.getIdentifier());
         compoundActivityDefinition.setTaskId(taskId);
 
         // validate def
-        CompoundActivityDefinitionValidator validator = new CompoundActivityDefinitionValidator(
-                study.getTaskIdentifiers());
-        Validate.entityThrowingException(validator, compoundActivityDefinition);
+        Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, compoundActivityDefinition);
 
         // call through to dao
         return compoundActivityDefDao.updateCompoundActivityDefinition(compoundActivityDefinition);

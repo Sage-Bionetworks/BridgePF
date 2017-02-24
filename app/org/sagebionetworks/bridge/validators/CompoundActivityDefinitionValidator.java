@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import java.util.Set;
-
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -12,12 +10,8 @@ import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 
 /** Validator for CompoundActivityDefinition. */
 public class CompoundActivityDefinitionValidator implements Validator {
-    private final Set<String> taskIdSet;
-
-    /** Constructor for validator. Takes set of valid task IDs from the study. */
-    public CompoundActivityDefinitionValidator(Set<String> taskIdSet) {
-        this.taskIdSet = taskIdSet;
-    }
+    /** Singleton instance. */
+    public static final CompoundActivityDefinitionValidator INSTANCE = new CompoundActivityDefinitionValidator();
 
     /** {@inheritDoc} */
     @Override
@@ -52,9 +46,6 @@ public class CompoundActivityDefinitionValidator implements Validator {
             String taskId = compoundActivityDef.getTaskId();
             if (isBlank(taskId)) {
                 errors.rejectValue("taskId", "must be specified");
-            } else if (!taskIdSet.contains(taskId)) {
-                errors.rejectValue("taskId", taskId + " not in enumeration: " +
-                        BridgeUtils.COMMA_SPACE_JOINER.join(taskIdSet));
             }
 
             // must have at least one item in surveys and/or schemas

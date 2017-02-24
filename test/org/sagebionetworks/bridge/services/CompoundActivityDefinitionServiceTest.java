@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -23,7 +22,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.Study;
 
 public class CompoundActivityDefinitionServiceTest {
     private static final List<SchemaReference> SCHEMA_LIST = ImmutableList.of(new SchemaReference("test-schema",
@@ -31,13 +29,6 @@ public class CompoundActivityDefinitionServiceTest {
     private static final List<SurveyReference> SURVEY_LIST = ImmutableList.of(new SurveyReference("test-survey",
             "test-survey-guid", null));
     private static final String TASK_ID = "test-task";
-    private static final Study STUDY;
-    static {
-        // The only things we care about in the study are the study ID and the task ID set.
-        STUDY = Study.create();
-        STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        STUDY.setTaskIdentifiers(ImmutableSet.of(TASK_ID));
-    }
 
     private CompoundActivityDefinitionDao dao;
     private CompoundActivityDefinitionService service;
@@ -61,7 +52,8 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute
         CompoundActivityDefinition serviceInput = makeValidDef();
-        CompoundActivityDefinition serviceResult = service.createCompoundActivityDefinition(STUDY, serviceInput);
+        CompoundActivityDefinition serviceResult = service.createCompoundActivityDefinition(TestConstants.TEST_STUDY,
+                serviceInput);
 
         // validate dao input - It's the same as the service input, but we also set the study ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
@@ -80,7 +72,7 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute, will throw
         try {
-            service.createCompoundActivityDefinition(STUDY, def);
+            service.createCompoundActivityDefinition(TestConstants.TEST_STUDY, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             // expected exception
@@ -214,8 +206,8 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute
         CompoundActivityDefinition serviceInput = makeValidDef();
-        CompoundActivityDefinition serviceResult = service.updateCompoundActivityDefinition(STUDY, TASK_ID,
-                serviceInput);
+        CompoundActivityDefinition serviceResult = service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY,
+                TASK_ID, serviceInput);
 
         // validate dao input - It's the same as the service input, but we also set the study ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
@@ -236,7 +228,7 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute, will throw
         try {
-            service.updateCompoundActivityDefinition(STUDY, TASK_ID, def);
+            service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             // expected exception
@@ -264,7 +256,7 @@ public class CompoundActivityDefinitionServiceTest {
     private void updateBadRequest(String taskId) {
         // execute, will throw
         try {
-            service.updateCompoundActivityDefinition(STUDY, taskId, makeValidDef());
+            service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId, makeValidDef());
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals("taskId must be specified", ex.getMessage());
