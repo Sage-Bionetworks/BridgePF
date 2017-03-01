@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,15 +52,22 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -106,6 +115,8 @@ public class StudyServiceMockTest {
     private EmailVerificationService emailVerificationService;
     @Mock
     private ParticipantService participantService;
+    @Mock
+    private SchedulePlanService schedulePlanService;
 
     @Mock
     private SynapseClient mockSynapseClient;
@@ -130,6 +141,7 @@ public class StudyServiceMockTest {
         service.setEmailVerificationService(emailVerificationService);
         service.setSynapseClient(mockSynapseClient);
         service.setParticipantService(participantService);
+        service.setSchedulePlanService(schedulePlanService);
 
         study = getTestStudy();
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
@@ -176,7 +188,71 @@ public class StudyServiceMockTest {
         verify(topicService).deleteAllTopics(study.getStudyIdentifier());
         verify(cacheProvider).removeStudy(TEST_STUDY_ID);
     }
+    
+    @Test
+    public void cannotRemoveTaskIdentifierInUse() {
+        String taskId = study.getTaskIdentifiers().iterator().next();
+        study.getTaskIdentifiers().remove(taskId);
 
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(new StudyIdentifierImpl(TEST_STUDY_ID));
+        Activity newActivity = new Activity.Builder().withTask(new TaskReference(taskId, null)).build();
+        plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, newActivity);
+        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
+        
+        try {
+            service.updateStudy(study, true);
+            fail("Should have thrown exception");
+        } catch(ConstraintViolationException e) {
+            assertEquals("test-study", e.getEntityKeys().get("identifier"));
+            assertEquals("Study", e.getEntityKeys().get("type"));
+            assertEquals("GGG", e.getReferrerKeys().get("guid"));
+            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
+        }
+    }
+    
+    @Test
+    public void cannotRemoveDataGroupInUseInSubpopulation() {
+        String taskId = study.getTaskIdentifiers().iterator().next();
+        study.getTaskIdentifiers().remove(taskId);
+        
+        Criteria criteria = Criteria.create();
+        criteria.getAllOfGroups().add(taskId);
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setCriteria(criteria);
+        subpop.setGuidString("guidString");
+        
+        when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpop));
+        
+        try {
+            service.updateStudy(study, true);
+            fail("Should have thrown exception");
+        } catch(ConstraintViolationException e) {
+            assertEquals("test-study", e.getEntityKeys().get("identifier"));
+            assertEquals("Study", e.getEntityKeys().get("type"));
+            assertEquals("guidString", e.getReferrerKeys().get("guid"));
+            assertEquals("Subpopulation", e.getReferrerKeys().get("type"));
+        }
+    }
+
+    @Test
+    public void cannotRemoveDataGroupInUseInSchedulePlan() {
+        String taskId = study.getTaskIdentifiers().iterator().next();
+        study.getTaskIdentifiers().remove(taskId);
+
+        SchedulePlan plan = TestUtils.getCriteriaSchedulePlan(new StudyIdentifierImpl(TEST_STUDY_ID));
+        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
+        
+        try {
+            service.updateStudy(study, true);
+            fail("Should have thrown exception");
+        } catch(ConstraintViolationException e) {
+            assertEquals("test-study", e.getEntityKeys().get("identifier"));
+            assertEquals("Study", e.getEntityKeys().get("type"));
+            assertEquals("GGG", e.getReferrerKeys().get("guid"));
+            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
+        }
+    }
+    
     @Test(expected = BadRequestException.class)
     public void deactivateStudyAlreadyDeactivatedBefore() {
         Study study = getTestStudy();
