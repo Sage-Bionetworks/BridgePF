@@ -109,7 +109,6 @@ public class CompoundActivityDefinitionService {
         return compoundActivityDefDao.updateCompoundActivityDefinition(compoundActivityDefinition);
     }
     
-    
     private void checkConstraintViolations(StudyIdentifier studyId, String taskId) {
         // Cannot delete a definition if it is referenced in any schedule plan.
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
