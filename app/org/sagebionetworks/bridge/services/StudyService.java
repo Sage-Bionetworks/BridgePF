@@ -10,10 +10,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -39,17 +41,26 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -73,6 +84,7 @@ public class StudyService {
     private EmailVerificationService emailVerificationService;
     private SynapseClient synapseClient;
     private ParticipantService participantService;
+    private SchedulePlanService schedulePlanService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -139,7 +151,11 @@ public class StudyService {
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
     }
-
+    @Autowired
+    final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
+        this.schedulePlanService = schedulePlanService;
+    }
+    
     @Autowired
     @Qualifier("bridgePFSynapseClient")
     public final void setSynapseClient(SynapseClient synapseClient) {
@@ -362,7 +378,9 @@ public class StudyService {
 
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
-
+        
+        checkViolationConstraints(study);
+        
         // And this cannot be set unless you're an administrator. Regardless of what the
         // developer set, set these back to the original study.
         if (!isAdminUpdate) {
@@ -419,7 +437,7 @@ public class StudyService {
         if (existing == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
         }
-
+        
         if (!physical) {
             // deactivate
             if (!existing.isActive()) {
@@ -439,6 +457,65 @@ public class StudyService {
         }
 
         cacheProvider.removeStudy(identifier);
+    }
+    
+    /**
+     * The user cannot remove data groups already used by criteria, or task identifiers already used in schedules. If
+     * these entities contain data groups or identifiers that are not in the updated version of the study, this is a
+     * constraint violation.
+     */
+    private void checkViolationConstraints(Study study) {
+        final Set<String> taskIds = study.getTaskIdentifiers();
+        final Set<String> dataGroups = study.getDataGroups();
+        
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, study);
+
+        // If the study is *missing* a task identifier or a data group that is currently in use in a plan, 
+        // that's a constraint error.
+        for (SchedulePlan plan : plans) {
+            for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
+                for (Activity activity : schedule.getActivities()) {
+                    if (activity.getTask() != null && !taskIds.contains(activity.getTask().getIdentifier())) {
+                        throwConstraintViolation(plan, study);
+                    }
+                }
+            }
+            if (plan.getStrategy() instanceof CriteriaScheduleStrategy) {
+                CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
+                for (ScheduleCriteria scheduleCriteria : strategy.getScheduleCriteria()) {
+                    if (!studyHasCriteriaDataGroups(dataGroups, scheduleCriteria.getCriteria())) {
+                        throwConstraintViolation(plan, study);
+                    }
+                }
+                
+            }
+        }
+
+        // If the study is missing a dataGroup that is used by a subpopulation, that's a constraint error
+        // This does not include logically deleted subpopulations, so these may be corrupted when restored.  
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(study);
+        for (Subpopulation subpop : subpopulations) {
+            if (!subpop.isDeleted() && !studyHasCriteriaDataGroups(study.getDataGroups(), subpop.getCriteria())) {
+                throwConstraintViolation(subpop, study);
+            }
+        }
+    }
+    
+    private boolean studyHasCriteriaDataGroups(Set<String> studyDataGroups, Criteria criteria) {
+        return studyDataGroups.containsAll(criteria.getAllOfGroups()) &&
+                studyDataGroups.containsAll(criteria.getNoneOfGroups());
+    }
+    
+    private void throwConstraintViolation(SchedulePlan match, Study study) {
+        throw new ConstraintViolationException.Builder().withEntityKey("identifier", study.getIdentifier())
+                .withEntityKey("type", "Study").withReferrerKey("guid", match.getGuid())
+                .withReferrerKey("type", "SchedulePlan").build();
+    }
+    
+    private void throwConstraintViolation(Subpopulation match, Study study) {
+        throw new ConstraintViolationException.Builder().withEntityKey("identifier", study.getIdentifier())
+                .withEntityKey("type", "Study").withReferrerKey("guid", match.getGuidString())
+                .withReferrerKey("type", "Subpopulation").build();
     }
     
     /**
