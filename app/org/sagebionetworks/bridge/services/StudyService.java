@@ -492,10 +492,10 @@ public class StudyService {
         }
 
         // If the study is missing a dataGroup that is used by a subpopulation, that's a constraint error
+        // This does not include logically deleted subpopulations, so these may be corrupted when restored.  
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(study);
-
         for (Subpopulation subpop : subpopulations) {
-            if (!studyHasCriteriaDataGroups(study.getDataGroups(), subpop.getCriteria())) {
+            if (!subpop.isDeleted() && !studyHasCriteriaDataGroups(study.getDataGroups(), subpop.getCriteria())) {
                 throwConstraintViolation(subpop, study);
             }
         }

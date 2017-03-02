@@ -203,11 +203,31 @@ public class StudyServiceMockTest {
             service.updateStudy(study, true);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
+            verify(studyDao, never()).updateStudy(study);
             assertEquals("test-study", e.getEntityKeys().get("identifier"));
             assertEquals("Study", e.getEntityKeys().get("type"));
             assertEquals("GGG", e.getReferrerKeys().get("guid"));
             assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
         }
+    }
+    
+    @Test
+    public void canRemoveDataGroupIfSubpopulationDeleted() {
+        String taskId = study.getTaskIdentifiers().iterator().next();
+        study.getTaskIdentifiers().remove(taskId);
+        
+        Criteria criteria = Criteria.create();
+        criteria.getAllOfGroups().add(taskId);
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setCriteria(criteria);
+        subpop.setGuidString("guidString");
+        subpop.setDeleted(true);
+        
+        when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpop));
+        
+        service.updateStudy(study, true);
+        
+        verify(studyDao).updateStudy(study);
     }
     
     @Test
@@ -227,6 +247,7 @@ public class StudyServiceMockTest {
             service.updateStudy(study, true);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
+            verify(studyDao, never()).updateStudy(study);
             assertEquals("test-study", e.getEntityKeys().get("identifier"));
             assertEquals("Study", e.getEntityKeys().get("type"));
             assertEquals("guidString", e.getReferrerKeys().get("guid"));
@@ -246,6 +267,7 @@ public class StudyServiceMockTest {
             service.updateStudy(study, true);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
+            verify(studyDao, never()).updateStudy(study);
             assertEquals("test-study", e.getEntityKeys().get("identifier"));
             assertEquals("Study", e.getEntityKeys().get("type"));
             assertEquals("GGG", e.getReferrerKeys().get("guid"));
