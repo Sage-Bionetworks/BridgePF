@@ -52,8 +52,10 @@ import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
+import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -300,6 +302,29 @@ public class TestUtils {
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
+        
+        DynamoSchedulePlan plan = new DynamoSchedulePlan();
+        plan.setGuid("GGG");
+        plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        plan.setStudyKey(studyId.getIdentifier());
+        plan.setStrategy(strategy);
+        return plan;
+    }
+    
+    public static SchedulePlan getCriteriaSchedulePlan(StudyIdentifier studyId) {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 0 8 ? * TUE *");
+        schedule.addActivity(new Activity.Builder().withLabel("Do task CCC").withTask("CCC").build());
+        schedule.setExpires(Period.parse("PT60S"));
+        schedule.setLabel("Test label for the user");
+        
+        Criteria criteria = createCriteria(0, 1, Sets.newHashSet("task1"), null);
+        
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
+        
+        CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
+        strategy.getScheduleCriteria().add(scheduleCriteria);
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("GGG");

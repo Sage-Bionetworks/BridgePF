@@ -112,6 +112,13 @@ public class ParticipantOptionsServiceTest {
     }
     
     @Test
+    public void setTimeZoneUTC() {
+        service.setDateTimeZone(TEST_STUDY, HEALTH_CODE, TIME_ZONE, DateTimeZone.UTC);
+        verify(mockDao).setOption(TEST_STUDY, HEALTH_CODE, TIME_ZONE, "+00:00");
+        verifyNoMoreInteractions(mockDao);
+    }
+    
+    @Test
     public void setAllOptions() {
         Map<ParticipantOption,String> options = Maps.newHashMap();
         service.setAllOptions(TEST_STUDY, HEALTH_CODE, options);

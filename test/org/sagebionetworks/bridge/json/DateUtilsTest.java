@@ -156,6 +156,17 @@ public class DateUtilsTest {
     }
     
     @Test
+    public void canParseSpecialValueUTC() {
+        // When you parse an offset of 0 and get a time zone, that time zone expressed as a string
+        // will be "UTC", not "+00:00". The parser should correctly handle this special case.
+        DateTimeZone zone = DateUtils.parseZoneFromOffsetString("UTC");
+        assertEquals(DateTimeZone.UTC, zone);
+        
+        zone = DateUtils.parseZoneFromOffsetString("+00:00");
+        assertEquals(DateTimeZone.UTC, zone);
+    }
+    
+    @Test
     public void emptyOrNullReturnNull() {
         DateTimeZone zone = DateUtils.parseZoneFromOffsetString(null);
         assertNull(zone);
@@ -192,6 +203,15 @@ public class DateUtilsTest {
     }
     
     @Test
+    public void canParseHalfOffsets() {
+        DateTimeZone timeZone = DateUtils.parseZoneFromOffsetString("-07:30");
+        assertEquals("-07:30", timeZone.toString());
+        
+        timeZone = DateUtils.parseZoneFromOffsetString("+05:45");
+        assertEquals("+05:45", timeZone.toString());
+    }
+    
+    @Test
     public void getDateTimeOrDefaultReturnsDefaultOnNull() {
         DateTime timestamp = DateTime.now();
         
@@ -210,6 +230,16 @@ public class DateUtilsTest {
     @Test(expected = BadRequestException.class)
     public void getDateTimeOrDefaultThrowsException() {
         DateUtils.getDateTimeOrDefault("6/7/2016", null);
+    }
+    
+    @Test
+    public void testTimeZoneToOffsetString() {
+        assertEquals("+00:00", DateUtils.timeZoneToOffsetString(DateTimeZone.forOffsetHours(0)));
+        assertEquals("+00:00", DateUtils.timeZoneToOffsetString(DateTimeZone.UTC));
+        assertEquals("+07:00", DateUtils.timeZoneToOffsetString(DateTimeZone.forOffsetHours(7)));
+        assertEquals("-05:00", DateUtils.timeZoneToOffsetString(DateTimeZone.forOffsetHours(-5)));
+        assertEquals("-05:30", DateUtils.timeZoneToOffsetString(DateTimeZone.forOffsetHoursMinutes(-5, 30)));
+        assertEquals("+02:30", DateUtils.timeZoneToOffsetString(DateTimeZone.forOffsetHoursMinutes(2, 30)));
     }
     
     // This method is dealing with local time, but we're casting to UTC so that 

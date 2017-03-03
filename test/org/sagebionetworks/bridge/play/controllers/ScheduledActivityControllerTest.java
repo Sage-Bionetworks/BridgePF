@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -43,7 +44,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.play.controllers.ScheduledActivityController;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -157,6 +157,16 @@ public class ScheduledActivityControllerTest {
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(UNK, context.getInitialTimeZone());
+    }
+    
+    @Test
+    public void utcTimeZoneParsedCorrectly() throws Exception {
+        controller.getScheduledActivities(null, "+0:00", "3", "5");
+        
+        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        ScheduleContext context = contextCaptor.getValue();
+        assertEquals("+00:00", DateUtils.timeZoneToOffsetString(context.getInitialTimeZone()));
+        
     }
     
     @Test
