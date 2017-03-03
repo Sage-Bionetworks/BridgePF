@@ -624,7 +624,17 @@ public class StudyServiceMockTest {
     public void changingEmailVerificationEnabledUpdatesDirectory() {
         assertDirectoryUpdated(study -> study.setEmailVerificationEnabled(false));
     }
-    
+
+    @Test
+    public void changingDisableExportUpdatesDirectory() {
+        assertDirectoryUpdated(study -> study.setDisableExport(true));
+    }
+
+    @Test (expected = NullPointerException.class)
+    public void disableExportWithNullStudy () {
+        service.disableExport(null, true);
+    }
+
     @Test
     public void newStudyVerifiesSupportEmail() {
         Study study = getTestStudy();

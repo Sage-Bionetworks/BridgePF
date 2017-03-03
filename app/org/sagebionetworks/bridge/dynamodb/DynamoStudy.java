@@ -6,13 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -21,6 +14,13 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 @DynamoDBTable(tableName = "Study")
 @BridgeTypeName("Study")
@@ -52,6 +52,7 @@ public final class DynamoStudy implements Study {
     private boolean externalIdRequiredOnSignup;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
+    private boolean disableExport;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
@@ -356,6 +357,14 @@ public final class DynamoStudy implements Study {
     @Override
     public void setPushNotificationARNs(Map<String,String> map) {
         this.pushNotificationARNs = (map == null) ? new HashMap<>() : map;
+    }
+
+    @Override public boolean getDisableExport() {
+        return this.disableExport;
+    }
+
+    @Override public void setDisableExport(boolean disable) {
+        this.disableExport = disable;
     }
 
     @Override

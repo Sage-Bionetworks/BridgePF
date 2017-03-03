@@ -18,10 +18,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.validation.Validator;
+import play.Application;
+import play.inject.guice.GuiceApplicationBuilder;
+import play.mvc.Http;
+import play.mvc.Result;
+import play.test.Helpers;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -46,8 +57,8 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -57,19 +68,6 @@ import org.sagebionetworks.bridge.play.modules.BridgeProductionSpringContextModu
 import org.sagebionetworks.bridge.play.modules.BridgeTestSpringContextModule;
 import org.sagebionetworks.bridge.runnable.FailableRunnable;
 import org.sagebionetworks.bridge.validators.Validate;
-
-import play.Application;
-import play.inject.guice.GuiceApplicationBuilder;
-import play.mvc.Http;
-import play.mvc.Result;
-import play.test.Helpers;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class TestUtils {
     
@@ -355,6 +353,7 @@ public class TestUtils {
         study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         study.setActive(true);
+        study.setDisableExport(false);
         study.setPushNotificationARNs(pushNotificationARNs);
         return study;
     }

@@ -440,6 +440,14 @@ public class StudyService {
 
         cacheProvider.removeStudy(identifier);
     }
+
+    public void disableExport(Study study, boolean disable) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+
+        study.setDisableExport(disable);
+
+        updateStudy(study, false);
+    }
     
     /**
      * Has an aspect of the study changed that must be saved as well in the Stormpath directory? This 

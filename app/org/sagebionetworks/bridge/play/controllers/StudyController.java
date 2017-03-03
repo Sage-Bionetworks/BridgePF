@@ -230,4 +230,17 @@ public class StudyController extends BaseController {
         return okResult(uploads);
     }
 
+    /**
+     * disable/enable exporting for current study
+     * @param disable
+     * @return
+     */
+    public Result disableExport(String disable) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        studyService.disableExport(study, Boolean.valueOf(disable));
+
+        return okResult("Study " + (Boolean.valueOf(disable)? "disabled" : "enabled"));
+    }
 }
