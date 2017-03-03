@@ -173,39 +173,6 @@ public class StudyControllerTest {
     }
 
     @Test
-    public void canDisableExportForDevAndResearcher() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
-
-        Result result = controller.disableExport("true");
-
-        // verify
-        verify(mockStudyService).getStudy(study.getStudyIdentifier());
-        verify(mockStudyService).disableExport(study, true);
-        assertEquals(200, result.status());
-        verifyNoMoreInteractions(mockStudyService);
-    }
-
-    @Test
-    public void canEnableExportForDevAndResearcher() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
-
-        Result result = controller.disableExport("false");
-
-        // verify
-        verify(mockStudyService).getStudy(study.getStudyIdentifier());
-        verify(mockStudyService).disableExport(study, false);
-        assertEquals(200, result.status());
-        verifyNoMoreInteractions(mockStudyService);
-    }
-
-    @Test (expected = NotAuthenticatedException.class)
-    public void cannotDisableExportForAdmin() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
-
-        controller.disableExport("true");
-    }
-
-    @Test
     public void canDeactivateForAdmin() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
 

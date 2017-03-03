@@ -458,14 +458,6 @@ public class StudyService {
 
         cacheProvider.removeStudy(identifier);
     }
-
-    public void disableExport(Study study, boolean disable) {
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-
-        study.setDisableExport(disable);
-
-        updateStudy(study, false);
-    }
     
     /**
      * The user cannot remove data groups already used by criteria, or task identifiers already used in schedules. If

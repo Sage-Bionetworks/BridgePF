@@ -728,10 +728,6 @@ public class StudyServiceMockTest {
         assertDirectoryUpdated(study -> study.setDisableExport(true));
     }
 
-    @Test (expected = NullPointerException.class)
-    public void disableExportWithNullStudy () {
-        service.disableExport(null, true);
-    }
 
     @Test
     public void newStudyVerifiesSupportEmail() {
