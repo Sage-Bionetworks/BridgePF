@@ -99,7 +99,7 @@ public class ScheduledActivityControllerTest {
         schActivity.setTimeZone(DateTimeZone.UTC);
         schActivity.setGuid(BridgeUtils.generateGuid());
         schActivity.setLocalScheduledOn(LocalDateTime.now().minusDays(1));
-        schActivity.setActivity(TestConstants.TEST_3_ACTIVITY);
+        schActivity.setActivity(TestUtils.getActivity3());
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
         String json = BridgeObjectMapper.get().writeValueAsString(list);

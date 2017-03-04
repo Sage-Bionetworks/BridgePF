@@ -9,7 +9,7 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -34,7 +34,7 @@ public class ScheduleValidatorTest {
     public void onTimeScheduleWithAdequateExpirationOK() {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setExpires(Period.parse("PT36H"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         Validate.entityThrowingException(validator, schedule);
     }
     
@@ -42,7 +42,7 @@ public class ScheduleValidatorTest {
     public void persistentScheduleDoesNotHaveDelay() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setDelay(Period.parse("P2D"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         try {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
@@ -56,7 +56,7 @@ public class ScheduleValidatorTest {
     public void persistentScheduleDoesNotHaveInterval() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setInterval(Period.parse("P2D"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         try {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
@@ -70,7 +70,7 @@ public class ScheduleValidatorTest {
     public void persistentScheduleDoesNotHaveCronExpression() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setCronTrigger("asdf");
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         try {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
@@ -84,7 +84,7 @@ public class ScheduleValidatorTest {
     public void persistentScheduleDoesNotHaveTimes() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.addTimes(LocalTime.parse("10:00"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         try {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
@@ -98,7 +98,7 @@ public class ScheduleValidatorTest {
     public void persistentScheduleDoesNotHaveExpiration() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setExpires(Period.parse("P1D"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         try {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
@@ -122,7 +122,7 @@ public class ScheduleValidatorTest {
     @Test
     public void datesMustBeChronologicallyOrdered() {
         // make it valid except for the dates....
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         schedule.setScheduleType(ScheduleType.ONCE);
 
         DateTime startsOn = DateUtils.getCurrentDateTime();
@@ -141,7 +141,7 @@ public class ScheduleValidatorTest {
     
     @Test
     public void surveyRelativePathIsTreatedAsTaskId() {
-        Activity activity = TestConstants.TEST_3_ACTIVITY;
+        Activity activity = TestUtils.getActivity3();
         schedule.addActivity(activity);
         schedule.setScheduleType(ScheduleType.ONCE);
         
@@ -207,7 +207,7 @@ public class ScheduleValidatorTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 12 1/1 * ? *");
-        Activity activity = TestConstants.TEST_3_ACTIVITY;
+        Activity activity = TestUtils.getActivity3();
         schedule.addActivity(activity);
         
         try {
@@ -345,7 +345,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setExpires("P1D");
         schedule.setCronTrigger("0 0 8 1/1 * ? *");
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         
         Validate.entityThrowingException(validator, schedule);
     }
@@ -357,7 +357,7 @@ public class ScheduleValidatorTest {
         schedule.setInterval("P1D");
         schedule.setExpires("P1D");
         schedule.addTimes("08:00");
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         
         Validate.entityThrowingException(validator, schedule);
         

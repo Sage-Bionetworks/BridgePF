@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.schedules;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -55,8 +54,8 @@ public class ActivityTest {
 
     @Test
     public void canSerializeTaskActivity() throws Exception {
-        Activity activity = new Activity.Builder().withLabel("Label")
-            .withLabelDetail("Label Detail").withTask("taskId").build();
+        Activity activity = new Activity.Builder().withGuid("actGuid").withLabel("Label")
+                .withLabelDetail("Label Detail").withTask("taskId").build();
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String json = mapper.writeValueAsString(activity);
@@ -66,7 +65,7 @@ public class ActivityTest {
         assertEquals("Label Detail", node.get("labelDetail").asText());
         assertEquals("task", node.get("activityType").asText());
         assertEquals("taskId", node.get("task").get("identifier").asText());
-        assertNotNull("guid", node.get("guid"));
+        assertEquals("actGuid", node.get("guid").asText());
         assertEquals("Activity", node.get("type").asText());
         
         JsonNode taskRef = node.get("task");
@@ -82,8 +81,9 @@ public class ActivityTest {
     
     @Test
     public void canSerializeSurveyActivity() throws Exception {
-        Activity activity = new Activity.Builder().withLabel("Label")
-            .withLabelDetail("Label Detail").withSurvey("identifier", "guid", DateTime.parse("2015-01-01T10:10:10Z")).build();
+        Activity activity = new Activity.Builder().withGuid("actGuid").withLabel("Label")
+                .withLabelDetail("Label Detail")
+                .withSurvey("identifier", "guid", DateTime.parse("2015-01-01T10:10:10Z")).build();
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String json = mapper.writeValueAsString(activity);
@@ -94,7 +94,7 @@ public class ActivityTest {
         assertEquals("survey", node.get("activityType").asText());
         String hrefString = node.get("survey").get("href").asText();
         assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/2015-01-01T10:10:10.000Z"));
-        assertNotNull("guid", node.get("guid"));
+        assertEquals("actGuid", node.get("guid").asText());
         assertEquals("Activity", node.get("type").asText());
         
         JsonNode ref = node.get("survey");
@@ -119,9 +119,9 @@ public class ActivityTest {
     
     @Test
     public void canSerializePublishedSurveyActivity() throws Exception {
-        Activity activity = new Activity.Builder().withLabel("Label")
-            .withLabelDetail("Label Detail").withPublishedSurvey("identifier", "guid").build();
-        
+        Activity activity = new Activity.Builder().withGuid("actGuid").withLabel("Label")
+                .withLabelDetail("Label Detail").withPublishedSurvey("identifier", "guid").build();
+
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String json = mapper.writeValueAsString(activity);
 
@@ -131,7 +131,7 @@ public class ActivityTest {
         assertEquals("survey", node.get("activityType").asText());
         String hrefString = node.get("survey").get("href").asText();
         assertTrue(hrefString.matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
-        assertNotNull("guid", node.get("guid"));
+        assertEquals("actGuid", node.get("guid").asText());
         assertEquals("Activity", node.get("type").asText());
         
         JsonNode ref = node.get("survey");
@@ -185,12 +185,6 @@ public class ActivityTest {
         Activity activity = new Activity.Builder().withSurvey("identifier", "guid", null).withLabel("Label").build();
         
         assertTrue(activity.getSurvey().getHref().matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
-    }
-    
-    @Test
-    public void createAGuidIfNoneIsSet() throws Exception {
-        Activity activity = new Activity.Builder().withTask("task").withLabel("Label").build();
-        assertNotNull(activity.getGuid());
     }
     
     @Test

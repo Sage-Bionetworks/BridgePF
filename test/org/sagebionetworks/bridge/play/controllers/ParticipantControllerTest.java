@@ -686,7 +686,7 @@ public class ParticipantControllerTest {
         List<ScheduledActivity> list = Lists.newArrayList();
         
         DynamoScheduledActivity activity = new DynamoScheduledActivity();
-        activity.setActivity(TestConstants.TEST_1_ACTIVITY);
+        activity.setActivity(TestUtils.getActivity1());
         activity.setHealthCode("healthCode");
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);

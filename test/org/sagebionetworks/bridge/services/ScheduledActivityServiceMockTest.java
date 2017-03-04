@@ -33,7 +33,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -607,7 +606,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void schedulerInterpretsEventToCorrectDate() {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setInterval("P1D");
         schedule.addTimes("23:00");
@@ -625,7 +624,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void schedulerInterpetsEventToRightLocalTime() {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay(Period.parse("PT1H"));
         
@@ -642,7 +641,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void localTimeZonesCorrectlyApplied() {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay(Period.parse("PT1H"));
         

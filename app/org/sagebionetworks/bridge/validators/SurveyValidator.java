@@ -40,8 +40,6 @@ import com.google.common.collect.Sets;
 @Component
 public class SurveyValidator implements Validator {
 
-    private static final Object[] EMPTY_OBJ_ARG = new Object[]{};
-
     @Override
     public boolean supports(Class<?> clazz) {
         return Survey.class.isAssignableFrom(clazz);
@@ -51,16 +49,16 @@ public class SurveyValidator implements Validator {
     public void validate(Object object, Errors errors) {
         Survey survey = (Survey)object;
         if (StringUtils.isBlank(survey.getName())) {
-            rejectField(errors, "name", "is required");
+            errors.rejectValue("name", "is required");
         }
         if (StringUtils.isBlank(survey.getIdentifier())) {
-            rejectField(errors, "identifier", "is required");
+            errors.rejectValue("identifier", "is required");
         }
         if (StringUtils.isBlank(survey.getStudyIdentifier())) {
-            rejectField(errors, "studyIdentifier", "is required");
+            errors.rejectValue("studyIdentifier", "is required");
         }
         if (StringUtils.isBlank(survey.getGuid())) {
-            rejectField(errors, "guid", "is required");
+            errors.rejectValue("guid", "is required");
         }
         
         // Validate that no identifier has been duplicated.
@@ -74,7 +72,7 @@ public class SurveyValidator implements Validator {
                 doValidateInfoScreen((SurveyInfoScreen)element, errors);
             }
             if (foundIdentifiers.contains(element.getIdentifier())) {
-                rejectField(errors, "identifier", "exists in an earlier survey element");
+                errors.rejectValue("identifier", "exists in an earlier survey element");
             }
             foundIdentifiers.add(element.getIdentifier());
             errors.popNestedPath();
@@ -88,19 +86,19 @@ public class SurveyValidator implements Validator {
     private void doValidateQuestion(SurveyQuestion question, Errors errors) {
         String questionId = question.getIdentifier();
         if (isBlank(questionId)) {
-            rejectField(errors, "identifier", "is required");
+            errors.rejectValue("identifier", "is required");
         } else if (!UploadUtil.isValidSchemaFieldName(questionId)) {
-            rejectField(errors, "identifier", String.format(UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE, questionId));
+            errors.rejectValue("identifier", String.format(UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE, questionId));
         }
 
         if (question.getUiHint() == null) {
-            rejectField(errors, "uiHint", "is required");
+            errors.rejectValue("uiHint", "is required");
         }
         if (isBlank(question.getPrompt())) {
-            rejectField(errors, "prompt", "is required");
+            errors.rejectValue("prompt", "is required");
         }
         if (question.getConstraints() == null) {
-            rejectField(errors, "constraints", "is required");
+            errors.rejectValue("constraints", "is required");
         } else {
             errors.pushNestedPath("constraints");
             doValidateConstraints(question, question.getConstraints(), errors);
@@ -109,27 +107,27 @@ public class SurveyValidator implements Validator {
     }
     private void doValidateInfoScreen(SurveyInfoScreen screen, Errors errors) {
         if (isBlank(screen.getIdentifier())) {
-            rejectField(errors, "identifier", "is required");
+            errors.rejectValue("identifier", "is required");
         }
         if (isBlank(screen.getTitle())) {
-            rejectField(errors, "title", "is required");
+            errors.rejectValue("title", "is required");
         }
         if (isBlank(screen.getPrompt())) {
-            rejectField(errors, "prompt", "is required");
+            errors.rejectValue("prompt", "is required");
         }
         if (screen.getImage() != null) {
             errors.pushNestedPath("image");
             Image image = screen.getImage();
             if (isBlank(image.getSource())) {
-                rejectField(errors, "source", "is required");
+                errors.rejectValue("source", "is required");
             } else if (!image.getSource().startsWith("http://") && !image.getSource().startsWith("https://")) {
-                rejectField(errors, "source", "must be a valid URL to an image");
+                errors.rejectValue("source", "must be a valid URL to an image");
             }
             if (image.getWidth() == 0) {
-                rejectField(errors, "width", "is required");
+                errors.rejectValue("width", "is required");
             }
             if (image.getHeight() == 0) {
-                rejectField(errors, "height", "is required");
+                errors.rejectValue("height", "is required");
             }
             errors.popNestedPath();
         }
@@ -144,15 +142,15 @@ public class SurveyValidator implements Validator {
                     errors.pushNestedPath("elements["+i+"]");
                     // Validate the rule either has a skipTo target, or an endSurvey = TRUE, but not both.
                     if (rule.getSkipToTarget() != null && rule.getEndSurvey() != null) {
-                        rejectField(errors, "rule", "cannot have a skipTo target and an endSurvey property");
+                        errors.rejectValue("rule", "cannot have a skipTo target and an endSurvey property");
                     } 
                     // But must have either a skipTo target or an endSurvey property
                     else if (rule.getSkipToTarget() == null && rule.getEndSurvey() == null) {
-                        rejectField(errors, "rule", "must have a skipTo target or an endSurvey property");
+                        errors.rejectValue("rule", "must have a skipTo target or an endSurvey property");
                     }
                     // Otherwise we can assume there's a skipToTarget, start checking that by looking for back references.
                     else if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                        rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());
+                        errors.rejectValue("rule", "back references question " + rule.getSkipToTarget());
                     }
                     errors.popNestedPath();
                 }
@@ -168,7 +166,7 @@ public class SurveyValidator implements Validator {
                     if (rule.getSkipToTarget() != null) {
                         if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
                             errors.pushNestedPath("elements["+i+"]");
-                            rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
+                            errors.rejectValue("rule", "has a skipTo identifier that doesn't exist: " + rule.getSkipToTarget());
                             errors.popNestedPath();
                         }
                     }
@@ -179,7 +177,7 @@ public class SurveyValidator implements Validator {
     }
     private void doValidateConstraints(SurveyQuestion question, Constraints con, Errors errors) {
         if (con.getDataType() == null) {
-            rejectField(errors, "dataType", "is required");
+            errors.rejectValue("dataType", "is required");
             return;
         }
         UIHint hint = question.getUiHint();
@@ -187,8 +185,8 @@ public class SurveyValidator implements Validator {
             return; // will have been validated above, skip this
         }
         if (!con.getSupportedHints().contains(hint)) {
-            rejectField(errors, "dataType", "'%s' doesn't match the UI hint of '%s'", con.getDataType().name()
-                    .toLowerCase(), hint.name().toLowerCase());
+            errors.rejectValue("dataType", String.format("'%s' doesn't match the UI hint of '%s'",
+                    con.getDataType().name().toLowerCase(), hint.name().toLowerCase()));
         } else if (con instanceof MultiValueConstraints) {
             doValidateConstraintsType(errors, hint, (MultiValueConstraints)con);
         } else if (con instanceof StringConstraints) {
@@ -206,19 +204,17 @@ public class SurveyValidator implements Validator {
         String hintName = hint.name().toLowerCase();
         
         if ((mcon.getAllowMultiple() || !mcon.getAllowOther()) && MultiValueConstraints.OTHER_ALWAYS_ALLOWED.contains(hint)) {
-            rejectField(errors, "uiHint", "'%s' is only valid when multiple = false and other = true", hintName);
+            errors.rejectValue("uiHint", "'"+hintName+"' is only valid when multiple = false and other = true");
         } else if (mcon.getAllowMultiple() && MultiValueConstraints.ONE_ONLY.contains(hint)) {
-            rejectField(errors, "uiHint",
-                    "allows multiples but the '%s' UI hint doesn't gather more than one answer", hintName);
+            errors.rejectValue("uiHint", "allows multiples but the '"+hintName+"' UI hint doesn't gather more than one answer");
         } else if (!mcon.getAllowMultiple() && MultiValueConstraints.MANY_ONLY.contains(hint)) {
-            rejectField(errors, "uiHint",
-                    "doesn't allow multiples but the '%s' UI hint gathers more than one answer", hintName);
+            errors.rejectValue("uiHint", "doesn't allow multiples but the '"+hintName+"' UI hint gathers more than one answer");
         }
 
         // must have an enumeration (list of question options)
         List<SurveyQuestionOption> optionList = mcon.getEnumeration();
         if (optionList == null || optionList.isEmpty()) {
-            rejectField(errors, "enumeration", "must have non-null, non-empty choices list");
+            errors.rejectValue("enumeration", "must have non-null, non-empty choices list");
         } else {
             // validate each option
             int numOptions = optionList.size();
@@ -230,12 +226,12 @@ public class SurveyValidator implements Validator {
                 // must have a label
                 SurveyQuestionOption oneOption = optionList.get(i);
                 if (StringUtils.isBlank(oneOption.getLabel())) {
-                    rejectField(errors, "label", "is required");
+                    errors.rejectValue("label", "is required");
                 }
 
                 String optionValue = oneOption.getValue();
                 if (!UploadUtil.isValidAnswerChoice(optionValue)) {
-                    rejectField(errors, "value",
+                    errors.rejectValue("value",
                             String.format(UploadUtil.INVALID_ANSWER_CHOICE_ERROR_MESSAGE, optionValue));
                 }
 
@@ -251,7 +247,7 @@ public class SurveyValidator implements Validator {
 
             // values must be unique
             if (!dupeSet.isEmpty()) {
-                rejectField(errors, "enumeration", "must have unique values");
+                errors.rejectValue("enumeration", "must have unique values");
             }
         }
     }
@@ -261,10 +257,10 @@ public class SurveyValidator implements Validator {
             try {
                 Pattern.compile(con.getPattern());
             } catch (PatternSyntaxException exception) {
-                rejectField(errors, "pattern", "is not a valid regular expression: %s", con.getPattern());
+                errors.rejectValue("pattern", "is not a valid regular expression: "+con.getPattern());
             }
             if (StringUtils.isBlank(con.getPatternErrorMessage())) {
-                rejectField(errors, "patternErrorMessage", "is required if pattern is defined");
+                errors.rejectValue("patternErrorMessage", "is required if pattern is defined");
             }
         }
         // It's okay to provide the error message without a pattern... it's not useful, but it's allowed
@@ -272,7 +268,7 @@ public class SurveyValidator implements Validator {
         Integer max = con.getMaxLength();
         if (min != null && max != null) {
             if (min > max) {
-                rejectField(errors, "minLength", "is longer than the maxLength");
+                errors.rejectValue("minLength", "is longer than the maxLength");
             }
         }
     }
@@ -282,7 +278,7 @@ public class SurveyValidator implements Validator {
         LocalDate latestDate = con.getLatestValue();
         if (earliestDate != null && latestDate != null) {
             if (latestDate.isBefore(earliestDate)) {
-                rejectField(errors, "earliestValue", "is after the latest value");
+                errors.rejectValue("earliestValue", "is after the latest value");
             }
         }
     }
@@ -292,7 +288,7 @@ public class SurveyValidator implements Validator {
         DateTime latestDate = con.getLatestValue();
         if (earliestDate != null && latestDate != null) {
             if (latestDate.isBefore(earliestDate)) {
-                rejectField(errors, "earliestValue", "is after the latest value");
+                errors.rejectValue("earliestValue", "is after the latest value");
             }
         }
     }
@@ -302,21 +298,12 @@ public class SurveyValidator implements Validator {
         Double max = con.getMaxValue();
         if (min != null && max != null) {
             if (max < min) {
-                rejectField(errors, "minValue", "is greater than the maxValue");
+                errors.rejectValue("minValue", "is greater than the maxValue");
             }
             double diff = max-min;
             if (con.getStep() != null && con.getStep() > diff) {
-                rejectField(errors, "step", "is larger than the range of allowable values");
+                errors.rejectValue("step", "is larger than the range of allowable values");
             }
-        }
-    }
-    
-    // This is more confusing than helpful.
-    private void rejectField(Errors errors, String field, String message, Object... args) {
-        if (args != null && args.length > 0) {
-            errors.rejectValue(field, field + " " + message, args, message);    
-        } else {
-            errors.rejectValue(field, field + " " + message, EMPTY_OBJ_ARG, null);
         }
     }
 }

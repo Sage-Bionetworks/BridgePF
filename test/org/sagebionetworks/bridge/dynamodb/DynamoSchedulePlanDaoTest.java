@@ -16,7 +16,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -176,7 +175,7 @@ public class DynamoSchedulePlanDaoTest {
         CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.addActivity(TestConstants.TEST_1_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity1());
         
         Criteria criteria = TestUtils.createCriteria(2, 8, null, null);
         ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
@@ -186,7 +185,7 @@ public class DynamoSchedulePlanDaoTest {
         
         schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.addActivity(TestConstants.TEST_2_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity2());
         scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         strategy.addCriteria(scheduleCriteria);
         
@@ -197,7 +196,7 @@ public class DynamoSchedulePlanDaoTest {
         
         schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         strategy.getScheduleCriteria().set(1, scheduleCriteria);
         

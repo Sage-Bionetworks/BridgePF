@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -51,12 +52,23 @@ public class SchedulePlanService {
         checkNotNull(study);
         checkNotNull(plan);
 
-        // Plan must always be in user's study
+        // Plan must always be in user's study, remove version and recreate guid for copies
         plan.setStudyKey(study.getIdentifier());
-
-        // Delete existing GUIDs so this is a new object (or recreate them)
+        plan.setVersion(null);
+        plan.setGuid(BridgeUtils.generateGuid());
+        
+        List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
+        for (Schedule schedule : schedules) {
+            for (int i=0; i < schedule.getActivities().size(); i++) {
+                Activity activity = schedule.getActivities().get(i);
+                
+                Activity activityWithGuid = new Activity.Builder().withActivity(activity)
+                        .withGuid(BridgeUtils.generateGuid()).build();
+                
+                schedule.getActivities().set(i, activityWithGuid);
+            }
+        }
         Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
-        updateGuids(plan);
 
         lookupSurveyReferenceIdentifiers(study.getStudyIdentifier(), plan);
         return schedulePlanDao.createSchedulePlan(study.getStudyIdentifier(), plan);
@@ -81,23 +93,6 @@ public class SchedulePlanService {
         checkNotNull(isNotBlank(guid));
         
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
-    }
-    
-    /**
-     * Saving a new plan that has GUIDs and is an existing plan? Clear them out so that we create a 
-     * new copy of the plan.
-     * @param plan
-     */
-    private void updateGuids(SchedulePlan plan) {
-        plan.setVersion(null);
-        plan.setGuid(BridgeUtils.generateGuid());
-        for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
-            for (int i=0; i < schedule.getActivities().size(); i++) {
-                Activity activity = schedule.getActivities().get(i);
-                schedule.getActivities().set(i, new Activity.Builder()
-                    .withActivity(activity).withGuid(BridgeUtils.generateGuid()).build());
-            }
-        }
     }
 
     /**
