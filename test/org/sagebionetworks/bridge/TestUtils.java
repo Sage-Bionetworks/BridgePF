@@ -311,7 +311,7 @@ public class TestUtils {
         schedule.setCronTrigger("0 0 8 ? * TUE *");
         schedule.addActivity(new Activity.Builder().withGuid(BridgeUtils.generateGuid()).withLabel("Do task CCC")
                 .withTask("CCC").build());
-        schedule.setExpires(Period.parse("PT60S"));
+        schedule.setExpires(Period.parse("PT1H"));
         schedule.setLabel("Test label for the user");
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();

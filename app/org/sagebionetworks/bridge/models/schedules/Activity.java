@@ -152,11 +152,6 @@ public final class Activity implements BridgeEntity {
             return this;
         }
         public Activity build() {
-            /*
-            if (guid == null) {
-                guid = BridgeUtils.generateGuid();
-            }
-            */
             ActivityType activityType = null;
             if (compoundActivity != null) {
                 activityType = COMPOUND;

@@ -19,6 +19,7 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -94,11 +95,13 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = createSchedulePlan();
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
+        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
         verify(mockSurveyService).getSurvey(any());
+        verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
         List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
@@ -116,6 +119,8 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = createSchedulePlan();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, activity);
         
+        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
+        
         // Verify that this was set.
         String identifier = plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().get(0)
                 .getSurvey().getIdentifier();
@@ -127,6 +132,7 @@ public class SchedulePlanServiceMockTest {
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
         verify(mockSurveyService).getSurvey(any());
+        verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
         // It was not used.
@@ -179,6 +185,7 @@ public class SchedulePlanServiceMockTest {
         DynamoStudy anotherStudy = getAnotherStudy();
         SchedulePlan plan = getSchedulePlan();
         // Just pass it back, the service should set the studyKey
+        when(mockSchedulePlanDao.getSchedulePlan(anotherStudy, plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
         plan = service.updateSchedulePlan(anotherStudy, plan);
@@ -202,6 +209,7 @@ public class SchedulePlanServiceMockTest {
     public void validatesOnUpdate() {
         // Check that 1) validation is called and 2) the study's enumerations are used in the validation
         SchedulePlan plan = createInvalidSchedulePlan();
+        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
         try {
             service.updateSchedulePlan(study, plan);
             fail("Should have thrown exception");
