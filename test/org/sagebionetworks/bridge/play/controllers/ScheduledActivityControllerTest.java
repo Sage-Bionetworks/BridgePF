@@ -287,4 +287,26 @@ public class ScheduledActivityControllerTest {
         assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());
     }
     
+    @Test
+    public void correctly() throws Exception {
+        DateTimeZone ZONE = DateTimeZone.forOffsetHours(2);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("BBB")
+                .withDataGroups(Sets.newHashSet("group1"))
+                .withLanguages(TestUtils.newLinkedHashSet("en","fr"))
+                .withTimeZone(ZONE)
+                .withCreatedOn(ACCOUNT_CREATED_ON)
+                .withId(ID).build();
+        session = new UserSession(participant);
+        session.setStudyIdentifier(TestConstants.TEST_STUDY);
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        controller.getScheduledActivities(null, "-07:00", "3", null);
+        
+        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        ScheduleContext context = contextCaptor.getValue();
+        assertEquals(ZONE, context.getInitialTimeZone());
+        assertEquals(DateTimeZone.forOffsetHours(-7), context.getRequestTimeZone());
+    }
+    
 }

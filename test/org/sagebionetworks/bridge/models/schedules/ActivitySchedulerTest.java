@@ -78,7 +78,7 @@ public class ActivitySchedulerTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withInitialTimeZone(PST)
+            .withRequestTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1))
             .withEvents(empty).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
@@ -86,7 +86,7 @@ public class ActivitySchedulerTest {
         
         context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withInitialTimeZone(PST)
+            .withRequestTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1)).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         assertEquals(0, scheduledActivities.size());
@@ -439,8 +439,8 @@ public class ActivitySchedulerTest {
     }
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .withInitialTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
+        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withRequestTimeZone(zone)
+                .withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
     }
     
 }

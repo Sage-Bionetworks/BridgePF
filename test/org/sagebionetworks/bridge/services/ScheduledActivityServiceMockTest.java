@@ -144,7 +144,7 @@ public class ScheduledActivityServiceMockTest {
         service.getScheduledActivities(new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
-            .withInitialTimeZone(DateTimeZone.UTC).withEndsOn(NOW.minusSeconds(1)).build());
+            .withRequestTimeZone(DateTimeZone.UTC).withEndsOn(NOW.minusSeconds(1)).build());
     }
     
     @Test(expected = BadRequestException.class)
@@ -152,7 +152,7 @@ public class ScheduledActivityServiceMockTest {
         service.getScheduledActivities(new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
-            .withInitialTimeZone(DateTimeZone.UTC)
+            .withRequestTimeZone(DateTimeZone.UTC)
             .withEndsOn(NOW.plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).plusSeconds(1)).build());
     }
 
@@ -178,7 +178,7 @@ public class ScheduledActivityServiceMockTest {
     public void missingEnrollmentEventIsSuppliedFromAccountCreatedOn() {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
-                .withInitialTimeZone(DateTimeZone.UTC)
+                .withRequestTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(endsOn)
                 .withHealthCode(HEALTH_CODE)
@@ -192,7 +192,7 @@ public class ScheduledActivityServiceMockTest {
     public void surveysAreResolved() {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
-                .withInitialTimeZone(DateTimeZone.UTC)
+                .withRequestTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(endsOn)
                 .withHealthCode(HEALTH_CODE)
@@ -533,8 +533,8 @@ public class ScheduledActivityServiceMockTest {
             .withClientInfo(info)
             .withStudyIdentifier("test-study")
             .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
-                .withEndsOn(now.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
-                .withInitialTimeZone(timeZone)
+            .withEndsOn(now.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
+            .withRequestTimeZone(timeZone)
             .withHealthCode("AAA")
             .withUserId(USER_ID)
             .withNow(now)
@@ -564,7 +564,7 @@ public class ScheduledActivityServiceMockTest {
         doReturn(survey).when(surveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
         
         ScheduleContext context = new ScheduleContext.Builder()
-                .withInitialTimeZone(DateTimeZone.UTC)
+                .withRequestTimeZone(DateTimeZone.UTC)
                 .withUserId("userId")
                 .withAccountCreatedOn(NOW.minusDays(3))
                 .withHealthCode("healthCode")
@@ -680,6 +680,7 @@ public class ScheduledActivityServiceMockTest {
                 .withNow(now)
                 .withAccountCreatedOn(enrollment)
                 .withInitialTimeZone(initialTimeZone)
+                .withRequestTimeZone(requestTimeZone)
                 .withEndsOn(now.plusDays(4).withZone(requestTimeZone))
                 .withHealthCode("healthCode").build();
         
@@ -735,10 +736,9 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(DateTimeZone.UTC)
-                .withNow(NOW)
-                .withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn).withHealthCode(HEALTH_CODE)
-                .withUserId(USER_ID).withEvents(events).build();
+        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withRequestTimeZone(DateTimeZone.UTC)
+                .withNow(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn)
+                .withHealthCode(HEALTH_CODE).withUserId(USER_ID).withEvents(events).build();
     }
     
 }

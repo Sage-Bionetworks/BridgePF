@@ -31,7 +31,7 @@ public class ScheduleContextValidator implements Validator {
     public void validate(Object object, Errors errors) {
         ScheduleContext context = (ScheduleContext)object;
         
-        if (context.getInitialTimeZone() == null) {
+        if (context.getRequestTimeZone() == null) {
             errors.rejectValue("offset", "must set a time zone offset in format '±HH:MM'");
         }
         if (context.getCriteriaContext().getHealthCode() == null) {

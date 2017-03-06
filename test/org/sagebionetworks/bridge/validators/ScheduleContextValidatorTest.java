@@ -21,7 +21,7 @@ public class ScheduleContextValidatorTest {
             .withStudyIdentifier("test-id")
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withEndsOn(DateTime.now().plusDays(2))
-            .withInitialTimeZone(DateTimeZone.forOffsetHours(-3))
+            .withRequestTimeZone(DateTimeZone.forOffsetHours(-3))
             .withAccountCreatedOn(DateTime.now())
             .withHealthCode("AAA")
             .withUserId("BBB")
@@ -49,7 +49,7 @@ public class ScheduleContextValidatorTest {
     public void endsOnAfterNow() {
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier("study-id")
-            .withInitialTimeZone(DateTimeZone.UTC)
+            .withRequestTimeZone(DateTimeZone.UTC)
             .withEndsOn(DateTime.now().minusHours(1)).withHealthCode("healthCode").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
@@ -64,7 +64,7 @@ public class ScheduleContextValidatorTest {
         // Setting this two days past the maximum. Will always fail.
         DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS+2);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier("study-id").withInitialTimeZone(DateTimeZone.UTC)
+            .withStudyIdentifier("study-id").withRequestTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn).withHealthCode("healthCode").build();
         try {
             Validate.nonEntityThrowingException(validator, context);

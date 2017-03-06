@@ -242,7 +242,7 @@ public class ScheduledActivityServiceDuplicateTest {
             .put("activity:bea8fd5d-7622-451f-a727-f9e37f00e1be:finished", new DateTime(1471742129501L, DateTimeZone.UTC)).build();
         doReturn(events).when(activityEventService).getActivityEventMap(HEALTH_CODE);
         contextBuilder.withAccountCreatedOn(enrollment.minusDays(3));
-        contextBuilder.withInitialTimeZone(zone);
+        contextBuilder.withRequestTimeZone(zone);
         return contextBuilder.build();
     }
     

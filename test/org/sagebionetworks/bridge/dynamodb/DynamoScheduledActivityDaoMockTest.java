@@ -131,7 +131,7 @@ public class DynamoScheduledActivityDaoMockTest {
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withInitialTimeZone(PACIFIC_TIME_ZONE)
+            .withRequestTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();

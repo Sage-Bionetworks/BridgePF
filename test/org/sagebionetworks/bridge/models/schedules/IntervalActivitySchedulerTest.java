@@ -70,18 +70,26 @@ public class IntervalActivitySchedulerTest {
         schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setExpires("P2M");
+        DateTimeZone requestTimeZone = DateTimeZone.forOffsetHours(-7);
         
+        // Change initial time zone from GMT and add as initial time zone to context
+        // 2015-03-23T07:00:00.000-03:00
+        DateTimeZone initialTimeZone = DateTimeZone.forOffsetHours(-3);
+        events.put("enrollment", ENROLLMENT.withZone(initialTimeZone));
+        
+        // NOW is fixed at 2015-04-06T10:10:10.000-07:00
         ScheduleContext context= new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
-                .withInitialTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withEndsOn(ENROLLMENT.plusDays(2)) // in UTC
+                .withInitialTimeZone(initialTimeZone)
+                .withRequestTimeZone(requestTimeZone)
+                .withDaysAhead(2)
                 .withHealthCode("AAA")
                 .withEvents(events).build();
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
         
-        // Date is expressed in local time UTC, because that's the endsOn time zone.
-        assertDates(scheduledActivities, DateTimeZone.UTC, "2015-03-23T03:00");
+        // Date is expressed in local time PST, because that's the endsOn time zone.
+        assertDates(scheduledActivities, requestTimeZone, "2015-03-23T07:00");
     }
     
     @Test
@@ -616,7 +624,7 @@ public class IntervalActivitySchedulerTest {
     private ScheduleContext getContext(DateTimeZone timeZone, DateTime endsOn) {
         return new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
-            .withInitialTimeZone(timeZone)
+            .withRequestTimeZone(timeZone)
             .withEndsOn(endsOn)
             .withHealthCode("AAA")
             .withEvents(events).build();

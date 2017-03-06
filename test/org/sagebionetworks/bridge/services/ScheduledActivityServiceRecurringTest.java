@@ -126,7 +126,7 @@ public class ScheduledActivityServiceRecurringTest {
         // Hi, I'm dave, I'm in Moscow, what am I supposed to do for the next two days?
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
         // 23rd, 24th and 25th
-        ScheduleContext context = getContextWith2DayWindow(now, MSK);
+        ScheduleContext context = getContext(now, EST, MSK, 2);
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         
         assertEquals(4, activities.size());
@@ -139,7 +139,7 @@ public class ScheduledActivityServiceRecurringTest {
         // (yesterday, today in Russia, tomorrow and the next day). One activity was created beyond
         // the window, over in Moscow... that is not returned because although it exists, we 
         // filter it out from the persisted activities retrieved from the db.
-        activities = service.getScheduledActivities(getContextWith2DayWindow(now, PST));
+        activities = service.getScheduledActivities(getContext(now, EST, PST, 2));
 
         assertEquals(4, activities.size());
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
@@ -152,7 +152,7 @@ public class ScheduledActivityServiceRecurringTest {
         
         // He hasn't finished any activities. The 22nd expires but it's too early in the day 
         // for the 23rd to expire (earlier than 10am), so, 4 activities, but with different dates.
-        activities = service.getScheduledActivities(getContextWith2DayWindow(now, MSK));
+        activities = service.getScheduledActivities(getContext(now, EST, MSK, 2));
         assertEquals(4, activities.size());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk2+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
@@ -165,7 +165,7 @@ public class ScheduledActivityServiceRecurringTest {
         service.updateScheduledActivities(testUser.getHealthCode(), activities);
         
         // This is easy, Dave has the later activities and that's it, at this point.
-        activities = service.getScheduledActivities(getContextWith2DayWindow(now, MSK));
+        activities = service.getScheduledActivities(getContext(now, EST, MSK, 2));
         
         assertEquals(2, activities.size()); //2
         assertEquals(msk3+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
@@ -179,32 +179,25 @@ public class ScheduledActivityServiceRecurringTest {
         // This was demonstrated above, but by only one activity... this is a more exaggerated test
         
         // Four days...
-        DateTime endsOn = NOW.plusDays(4);
-        ScheduleContext context = getContext(NOW, DateTimeZone.UTC, endsOn);
+        ScheduleContext context = getContext(NOW, DateTimeZone.UTC, EST, 4);
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         
         // Zero days... there are fewer activities
-        endsOn = NOW.plusDays(0);
-        context = getContext(NOW, DateTimeZone.UTC, endsOn);
+        context = getContext(NOW, DateTimeZone.UTC, EST, 0);
         List<ScheduledActivity> activities2 = service.getScheduledActivities(context);
         
         assertTrue(activities2.size() < activities.size());
     }
     
-    private ScheduleContext getContextWith2DayWindow(DateTime now, DateTimeZone requestZone) {
-        return getContext(now, EST, now.withZone(requestZone).plusDays(2));
-    }
-    
-    private ScheduleContext getContext(DateTime now, DateTimeZone persistedZone, DateTime endsOn) {
+    private ScheduleContext getContext(DateTime now, DateTimeZone initialTimeZone, DateTimeZone requestTimeZone, int daysAhead) {
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(study.getStudyIdentifier())
-            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withInitialTimeZone(persistedZone)
-            .withNow(now)
-            .withAccountCreatedOn(now)
-            // Setting the endsOn value to the end of the day, as we do in the controller.
-            .withEndsOn(endsOn.withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
-            .withHealthCode(testUser.getHealthCode())
-            .withUserId(testUser.getId()).build();
-    }
-}
+                .withStudyIdentifier(study.getStudyIdentifier())
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withInitialTimeZone(initialTimeZone)
+                .withRequestTimeZone(requestTimeZone)
+                .withNow(now.withZone(requestTimeZone))
+                .withAccountCreatedOn(now.withZone(requestTimeZone))
+                .withDaysAhead(daysAhead)
+                .withHealthCode(testUser.getHealthCode())
+                .withUserId(testUser.getId()).build();
+    }}

@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 public final class ScheduleContext {
     
     private final DateTimeZone initialTimeZone;
+    private final DateTimeZone requestTimeZone;
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
     private final DateTime now;
@@ -31,9 +32,11 @@ public final class ScheduleContext {
     private final int minimumPerSchedule;
     private final CriteriaContext criteriaContext;
     
-    private ScheduleContext(DateTimeZone initialTimeZone, DateTime endsOn, Map<String, DateTime> events, DateTime now,
-            int minimumPerSchedule, DateTime accountCreatedOn, CriteriaContext criteriaContext) {
+    private ScheduleContext(DateTimeZone initialTimeZone, DateTimeZone requestTimeZone, DateTime endsOn,
+            Map<String, DateTime> events, DateTime now, int minimumPerSchedule, DateTime accountCreatedOn,
+            CriteriaContext criteriaContext) {
         this.initialTimeZone = initialTimeZone;
+        this.requestTimeZone = requestTimeZone;
         this.endsOn = endsOn;
         this.events = events;
         this.now = now;
@@ -49,6 +52,16 @@ public final class ScheduleContext {
      */
     public DateTimeZone getInitialTimeZone() {
         return initialTimeZone;
+    }
+
+    /**
+     * The time zone of the current request, sent to the server as a UTC offset. This is the time zone that local 
+     * date and time schedules should use when returning timestamps. For example, a recurring activity at 02:00 PM,
+     * if requested for the time zone -05:00, will return a timestamp of "YYYY-MM-DDT14:00:00.000-05:00". In 
+     * effect this makes the timestamp a local date and time value.
+     */
+    public DateTimeZone getRequestTimeZone() {
+        return requestTimeZone;
     }
     
     /**
@@ -100,7 +113,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(initialTimeZone, endsOn, events, now, accountCreatedOn, minimumPerSchedule, criteriaContext);
+        return Objects.hash(initialTimeZone, requestTimeZone, endsOn, events, now, accountCreatedOn, minimumPerSchedule, criteriaContext);
     }
 
     @Override
@@ -110,8 +123,11 @@ public final class ScheduleContext {
         if (obj == null || getClass() != obj.getClass())
             return false;
         ScheduleContext other = (ScheduleContext) obj;
-        return (Objects.equals(endsOn, other.endsOn) && Objects.equals(initialTimeZone, other.initialTimeZone) &&
-                Objects.equals(events, other.events) && Objects.equals(now, other.now) &&
+        return (Objects.equals(endsOn, other.endsOn) && 
+                Objects.equals(initialTimeZone, other.initialTimeZone) &&
+                Objects.equals(requestTimeZone, other.requestTimeZone) &&
+                Objects.equals(events, other.events) && 
+                Objects.equals(now, other.now) &&
                 Objects.equals(minimumPerSchedule, other.minimumPerSchedule) &&
                 Objects.equals(accountCreatedOn, other.accountCreatedOn) && 
                 Objects.equals(criteriaContext, other.criteriaContext));
@@ -119,15 +135,18 @@ public final class ScheduleContext {
 
     @Override
     public String toString() {
-        return "ScheduleContext [initialTimeZone=" + initialTimeZone + ", endsOn=" + endsOn + ", events=" + events + ", now=" + now
-                + ", accountCreatedOn=" + accountCreatedOn + ", minimumPerSchedule=" + minimumPerSchedule 
-                + ", criteriaContext=" + criteriaContext + "]";
+        return "ScheduleContext [initialTimeZone=" + initialTimeZone + ", requestTimeZone=" + requestTimeZone
+                + ", endsOn=" + endsOn + ", events=" + events + ", now=" + now + ", accountCreatedOn="
+                + accountCreatedOn + ", minimumPerSchedule=" + minimumPerSchedule + ", criteriaContext="
+                + criteriaContext + "]";
     }
 
 
     public static class Builder {
         private DateTimeZone initialTimeZone;
+        private DateTimeZone requestTimeZone;
         private DateTime endsOn;
+        private int daysAhead;
         private Map<String,DateTime> events;
         private int minimumPerSchedule;
         private DateTime now;
@@ -162,6 +181,10 @@ public final class ScheduleContext {
             this.initialTimeZone = initialTimeZone;
             return this;
         }
+        public Builder withRequestTimeZone(DateTimeZone requestTimeZone) {
+            this.requestTimeZone = requestTimeZone;
+            return this;
+        }
         public Builder withEndsOn(DateTime endsOn) {
             this.endsOn = endsOn;
             return this;
@@ -188,8 +211,13 @@ public final class ScheduleContext {
             contextBuilder.withLanguages(languages);
             return this;
         }
+        public Builder withDaysAhead(int daysAhead) {
+            this.daysAhead = daysAhead;
+            return this;
+        }
         public Builder withContext(ScheduleContext context) {
             withInitialTimeZone(context.initialTimeZone);
+            withRequestTimeZone(context.requestTimeZone);
             withEndsOn(context.endsOn);
             withEvents(context.events);
             withNow(context.now);
@@ -200,13 +228,28 @@ public final class ScheduleContext {
         }
         
         public ScheduleContext build() {
-            // pretty much everything else is optional. I would like healthCode to be required, but it's not:
-            // we use these selection criteria to select subpopulations on sign up.
-            if (now == null) {
-                now = (initialTimeZone == null) ? DateTime.now() : DateTime.now(initialTimeZone);
+            // ScheduleContext is validated to have the correct values:
+            // - requestTimeZone is required (when validated)
+            // - now is advisable, but still not required
+            // - endsOn OR daysAhead needs to be supplied to calculate endsOn from now
+            if (initialTimeZone == null) {
+                initialTimeZone = requestTimeZone;
             }
-            return new ScheduleContext(initialTimeZone, endsOn, events, now, minimumPerSchedule, accountCreatedOn,
-                    contextBuilder.build());
+            if (requestTimeZone != null) {
+                if (now == null) {
+                    now = DateTime.now(requestTimeZone);
+                } else {
+                    now = now.withZone(requestTimeZone);    
+                }
+                if (endsOn == null) {
+                    endsOn = now.plusDays(daysAhead).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59)
+                            .withMillisOfSecond(999);
+                } else {
+                    endsOn = endsOn.withZone(requestTimeZone);
+                }
+            }
+            return new ScheduleContext(initialTimeZone, requestTimeZone, endsOn, events, now, minimumPerSchedule,
+                    accountCreatedOn, contextBuilder.build());
         }
     }
 }

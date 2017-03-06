@@ -101,7 +101,7 @@ public class DynamoScheduledActivityDaoTest {
             .withHealthCode(healthCode)
             .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withInitialTimeZone(MSK)
+            .withRequestTimeZone(MSK)
             .withEndsOn(endsOn)
             .withEvents(eventMap()).build();
         
@@ -145,7 +145,7 @@ public class DynamoScheduledActivityDaoTest {
             .withHealthCode(healthCode)
             .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withInitialTimeZone(MSK)
+            .withRequestTimeZone(MSK)
             .withEndsOn(endsOn)
             .withEvents(eventMap()).build();
         
