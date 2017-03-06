@@ -67,7 +67,6 @@ public class SchedulePlanService {
                 
                 Activity activityWithGuid = new Activity.Builder().withActivity(activity)
                         .withGuid(BridgeUtils.generateGuid()).build();
-                
                 schedule.getActivities().set(i, activityWithGuid);
             }
         }
