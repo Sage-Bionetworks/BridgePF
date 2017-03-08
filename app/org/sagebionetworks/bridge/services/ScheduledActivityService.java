@@ -255,7 +255,8 @@ public class ScheduledActivityService {
 
                     if (!resolvedSchemaRef.equals(schemaRef)) {
                         TaskReference resolvedTaskRef = new TaskReference(taskRef.getIdentifier(), resolvedSchemaRef);
-                        resolvedActivity = new Activity.Builder().withTask(resolvedTaskRef).build();
+                        resolvedActivity = new Activity.Builder().withActivity(activity).withTask(resolvedTaskRef)
+                                .build();
                     }
                 }
             }
