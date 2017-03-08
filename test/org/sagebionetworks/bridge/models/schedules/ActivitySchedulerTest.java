@@ -110,8 +110,12 @@ public class ActivitySchedulerTest {
         assertEquals("BBB", schActivity.getSchedulePlanGuid());
         assertNotNull(schActivity.getScheduledOn());
         assertNotNull(schActivity.getExpiresOn());
-        assertEquals("AAA", schActivity.getHealthCode());
+        assertEquals("healthCode", schActivity.getHealthCode());
         assertEquals(PST, schActivity.getTimeZone());
+        assertEquals((Long)1427104800000L, schActivity.getScheduledOnUTC());
+        assertEquals("healthCode:AAA", schActivity.getHealthCodeActivityGuid());
+        // The start time for a one-time task is the enrollment time
+        assertEquals((Long)ENROLLMENT.getMillis(), schActivity.getScheduledOnUTC());
     }
     
     /**
@@ -443,7 +447,7 @@ public class ActivitySchedulerTest {
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
         return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .withInitialTimeZone(zone).withEndsOn(endsOn).withHealthCode("AAA").withEvents(events).build();
+            .withInitialTimeZone(zone).withEndsOn(endsOn).withHealthCode("healthCode").withEvents(events).build();
     }
     
 }

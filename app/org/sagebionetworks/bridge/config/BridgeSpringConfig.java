@@ -88,15 +88,14 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
  * production-only Spring configs, see {@link BridgeProductionSpringConfig}. For test-only Spring configs, see
  * BridgeTestSpringConfig in tests.
  */
-@ComponentScan(basePackages = "org.sagebionetworks.bridge", excludeFilters = @ComponentScan.Filter(
-        type = FilterType.ANNOTATION, value = Configuration.class))
+@ComponentScan(basePackages = "org.sagebionetworks.bridge", excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Configuration.class))
 @Configuration
 public class BridgeSpringConfig {
     @Bean(name = "redisProviders")
     public List<String> redisProviders() {
         return Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
     }
-    
+
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
         return BridgeObjectMapper.get();
@@ -121,17 +120,15 @@ public class BridgeSpringConfig {
     @Bean(name = "awsCredentials")
     public BasicAWSCredentials awsCredentials() {
         BridgeConfig bridgeConfig = bridgeConfig();
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key"),
-                bridgeConfig.getProperty("aws.secret.key"));
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key"), bridgeConfig.getProperty("aws.secret.key"));
     }
 
     @Bean(name = "snsCredentials")
     public BasicAWSCredentials snsCredentials() {
         BridgeConfig bridgeConfig = bridgeConfig();
-        return new BasicAWSCredentials(bridgeConfig.getProperty("sns.key"),
-                bridgeConfig.getProperty("sns.secret.key"));
+        return new BasicAWSCredentials(bridgeConfig.getProperty("sns.key"), bridgeConfig.getProperty("sns.secret.key"));
     }
-    
+
     @Bean(name = "s3UploadCredentials")
     @Resource(name = "bridgeConfig")
     public BasicAWSCredentials s3UploadCredentials(BridgeConfig bridgeConfig) {
@@ -154,7 +151,7 @@ public class BridgeSpringConfig {
                 .withMaxErrorRetry(maxRetries);
         return new AmazonDynamoDBClient(awsCredentials(), awsClientConfig);
     }
-    
+
     @Bean(name = "snsClient")
     @Resource(name = "snsCredentials")
     public AmazonSNSClient snsClient() {
@@ -185,7 +182,7 @@ public class BridgeSpringConfig {
         return new AmazonS3Client(s3CmsCredentials);
     }
 
-    @Bean(name ="uploadTokenServiceClient")
+    @Bean(name = "uploadTokenServiceClient")
     @Resource(name = "s3UploadCredentials")
     public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
         return new AWSSecurityTokenServiceClient(s3UploadCredentials);
@@ -229,7 +226,7 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "sesClient")
-    @Resource(name="awsCredentials")
+    @Resource(name = "awsCredentials")
     public AmazonSimpleEmailServiceClient sesClient(BasicAWSCredentials awsCredentials) {
         return new AmazonSimpleEmailServiceClient(awsCredentials);
     }
@@ -287,13 +284,13 @@ public class BridgeSpringConfig {
     public DynamoDBMapper reportDataMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoReportData.class);
     }
-    
+
     @Bean(name = "reportIndexMapper")
     @Autowired
     public DynamoDBMapper reportIndexMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoReportIndex.class);
     }
-    
+
     @Bean(name = "healthDataDdbMapper")
     @Autowired
     public DynamoDBMapper healthDataDdbMapper(DynamoUtils dynamoUtils) {
@@ -317,7 +314,7 @@ public class BridgeSpringConfig {
     public DynamoDBMapper subpopulationDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoSubpopulation.class);
     }
-    
+
     @Bean(name = "surveyMapper")
     @Autowired
     public DynamoDBMapper surveyDdbMapper(DynamoUtils dynamoUtils) {
@@ -335,84 +332,93 @@ public class BridgeSpringConfig {
     public DynamoDBMapper criteriaMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoCriteria.class);
     }
-    
+
     @Bean(name = "schedulePlanMapper")
     @Autowired
     public DynamoDBMapper schedulePlanMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoSchedulePlan.class);
     }
-    
+
     @Bean(name = "notificationRegistrationMapper")
     @Autowired
     public DynamoDBMapper notificationRegistrationMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoNotificationRegistration.class);
     }
-    
+
     @Bean(name = "notificationTopicMapper")
     @Autowired
     public DynamoDBMapper notificationTopicMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoNotificationTopic.class);
     }
-    
+
     @Bean(name = "topicSubscriptionMapper")
     @Autowired
     public DynamoDBMapper topicSubscriptionMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoTopicSubscription.class);
     }
-    
+
     @Bean(name = "uploadHealthCodeRequestedOnIndex")
     @Autowired
-    public DynamoIndexHelper uploadHealthCodeRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
-            DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoUpload2.class, "healthCode-requestedOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+    public DynamoIndexHelper uploadHealthCodeRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient,
+            DynamoUtils dynamoUtils, DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoUpload2.class, "healthCode-requestedOn-index", dynamoDBClient,
+                dynamoNamingHelper, dynamoUtils);
     }
-    
+
+    @Bean(name = "healthCodeActivityGuidIndex")
+    @Autowired
+    public DynamoIndexHelper healthCodeActivityGuidIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoScheduledActivity.class, "healthCodeActivityGuid-scheduledOnUTC-index",
+                dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+    }
+
     @Bean(name = "uploadStudyIdRequestedOnIndex")
     @Autowired
     public DynamoIndexHelper uploadStudyIdRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
             DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoUpload2.class, "studyId-requestedOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+        return DynamoIndexHelper.create(DynamoUpload2.class, "studyId-requestedOn-index", dynamoDBClient,
+                dynamoNamingHelper, dynamoUtils);
     }
-    
+
     @Bean(name = "healthDataHealthCodeIndex")
     @Autowired
-    public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDBClient dynamoDBClient,
-                                                       DynamoUtils dynamoUtils,
-                                                       DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "healthCode-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+    public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "healthCode-index", dynamoDBClient,
+                dynamoNamingHelper, dynamoUtils);
     }
 
     @Bean(name = "healthDataHealthCodeCreatedOnIndex")
     @Autowired
     public DynamoIndexHelper healthDataHealthCodeCreatedOnIndex(AmazonDynamoDBClient dynamoDBClient,
-                                                       DynamoUtils dynamoUtils,
-                                                       DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "healthCode-createdOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+            DynamoUtils dynamoUtils, DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "healthCode-createdOn-index", dynamoDBClient,
+                dynamoNamingHelper, dynamoUtils);
     }
 
     @Bean(name = "healthDataUploadDateIndex")
     @Autowired
     public DynamoIndexHelper healthDataUploadDateIndexDynamoUtils(AmazonDynamoDBClient dynamoDBClient,
-                                                                  DynamoUtils dynamoUtils,
-                                                                  DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "uploadDate-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+            DynamoUtils dynamoUtils, DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "uploadDate-index", dynamoDBClient,
+                dynamoNamingHelper, dynamoUtils);
     }
 
     @Bean(name = "activitySchedulePlanGuidIndex")
     @Autowired
-    public DynamoIndexHelper activitySchedulePlanGuidIndex(AmazonDynamoDBClient dynamoDBClient,
-                                                           DynamoUtils dynamoUtils,
-                                                           DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper
-                .create(DynamoScheduledActivity.class, "schedulePlanGuid-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+    public DynamoIndexHelper activitySchedulePlanGuidIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoScheduledActivity.class, "schedulePlanGuid-index", dynamoDBClient,
+                dynamoNamingHelper, dynamoUtils);
     }
 
     @Bean(name = "uploadSchemaStudyIdIndex")
     @Autowired
-    public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDBClient dynamoDBClient,
-                                                      DynamoUtils dynamoUtils,
-                                                      DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoUploadSchema.class, "studyId-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+    public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoUploadSchema.class, "studyId-index", dynamoDBClient, dynamoNamingHelper,
+                dynamoUtils);
     }
 
     @Bean(name = "uploadDdbMapper")
@@ -425,19 +431,19 @@ public class BridgeSpringConfig {
     public DynamoDBMapper uploadDedupeDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoUploadDedupe.class);
     }
-    
+
     @Bean(name = "fphsExternalIdDdbMapper")
     @Autowired
     public DynamoDBMapper fphsExternalIdDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoFPHSExternalIdentifier.class);
     }
-    
+
     @Bean(name = "externalIdDdbMapper")
     @Autowired
     public DynamoDBMapper externalIdDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoExternalIdentifier.class);
     }
-    
+
     @Bean(name = "participantOptionsDbMapper")
     @Autowired
     public DynamoDBMapper participantOptionsDbMapper(DynamoUtils dynamoUtils) {
@@ -448,12 +454,10 @@ public class BridgeSpringConfig {
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
             DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
-            IosSchemaValidationHandler2 iosSchemaValidationHandler2,
-            StrictValidationHandler strictValidationHandler, TranscribeConsentHandler transcribeConsentHandler,
-            UploadArtifactsHandler uploadArtifactsHandler) {
+            IosSchemaValidationHandler2 iosSchemaValidationHandler2, StrictValidationHandler strictValidationHandler,
+            TranscribeConsentHandler transcribeConsentHandler, UploadArtifactsHandler uploadArtifactsHandler) {
         return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
-                iosSchemaValidationHandler2, strictValidationHandler, transcribeConsentHandler,
-                uploadArtifactsHandler);
+                iosSchemaValidationHandler2, strictValidationHandler, transcribeConsentHandler, uploadArtifactsHandler);
     }
 
     @Bean(name = "uploadSchemaDdbMapper")
@@ -472,12 +476,11 @@ public class BridgeSpringConfig {
     @Bean(name = "stormpathClient")
     @Autowired
     public Client getStormpathClient(BridgeConfig bridgeConfig) {
-        ApiKey apiKey = ApiKeys.builder()
-            .setId(bridgeConfig.getStormpathId())
-            .setSecret(bridgeConfig.getStormpathSecret()).build();
+        ApiKey apiKey = ApiKeys.builder().setId(bridgeConfig.getStormpathId())
+                .setSecret(bridgeConfig.getStormpathSecret()).build();
         ClientBuilder clientBuilder = Clients.builder().setApiKey(apiKey);
-        ((DefaultClientBuilder)clientBuilder).setBaseUrl("https://enterprise.stormpath.io/v1");
-        return clientBuilder.build();        
+        ((DefaultClientBuilder) clientBuilder).setBaseUrl("https://enterprise.stormpath.io/v1");
+        return clientBuilder.build();
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
@@ -486,13 +489,13 @@ public class BridgeSpringConfig {
     public Application getStormpathApplication(BridgeConfig bridgeConfig, Client stormpathClient) {
         return stormpathClient.getResource(bridgeConfig.getStormpathApplicationHref(), Application.class);
     }
-    
+
     @Bean(name = "sessionExpireInSeconds")
     public int getSessionExpireInSeconds() {
         return BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
     }
 
-    @Bean(name="bridgePFSynapseClient")
+    @Bean(name = "bridgePFSynapseClient")
     public SynapseClient synapseClient() throws IOException {
         SynapseClient synapseClient = new SynapseAdminClientImpl();
         synapseClient.setUserName(bridgeConfig().get("synapse.user"));
