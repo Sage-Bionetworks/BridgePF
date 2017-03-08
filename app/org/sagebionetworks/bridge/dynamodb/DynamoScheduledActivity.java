@@ -118,9 +118,9 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
      * The scheduled time without a time zone. This value is stored, but not returned in the JSON of the API. It is
      * localized using the caller's time zone.
      */
-    @JsonIgnore
     @DynamoDBAttribute
     @DynamoDBTypeConverted(converter = LocalDateTimeMarshaller.class)
+    @JsonIgnore
     public LocalDateTime getLocalScheduledOn() {
         return localScheduledOn;
     }

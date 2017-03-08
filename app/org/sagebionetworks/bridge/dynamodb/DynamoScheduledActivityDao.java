@@ -62,7 +62,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     private DynamoIndexHelper indexHelper;
     
     @Resource(name = "activityDdbMapper")
-    public final void setDdbMapper(DynamoDBMapper mapper) {
+    final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
     
