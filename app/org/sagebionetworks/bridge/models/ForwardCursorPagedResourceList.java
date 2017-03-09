@@ -62,6 +62,10 @@ public class ForwardCursorPagedResourceList<T> {
     public Long getOffsetBy() {
         return offsetBy;
     }
+    @JsonProperty("hasNext")
+    public boolean hasNext() {
+        return (offsetBy != null);
+    }
     public int getPageSize() {
         return pageSize;
     }

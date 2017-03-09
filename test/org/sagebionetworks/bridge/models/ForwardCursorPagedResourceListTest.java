@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
@@ -34,6 +36,7 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(2, node.get("offsetBy").asInt());
         assertEquals(100, node.get("pageSize").asInt());
         assertEquals("filterString", node.get("emailFilter").asText());
+        assertTrue(node.get("hasNext").asBoolean());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
         
         ArrayNode items = (ArrayNode)node.get("items");
@@ -53,6 +56,7 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(page.getOffsetBy(), serPage.getOffsetBy());
         assertEquals(page.getPageSize(), serPage.getPageSize());
         assertEquals(page.getFilters().get("emailFilter"), serPage.getFilters().get("emailFilter"));
+        assertEquals(page.hasNext(), serPage.hasNext());
         
         assertEquals(page.getItems(), serPage.getItems());
     }
@@ -68,7 +72,8 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(100, node.get("pageSize").asInt());
         assertEquals("filterString", node.get("emailFilter").asText());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
-        assertEquals(4, node.size());
+        assertFalse(node.get("hasNext").asBoolean());
+        assertEquals(5, node.size());
     }
     
     // This test was moved from another class that implemented PagedResourceList for
