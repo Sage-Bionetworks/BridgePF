@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
-import static org.sagebionetworks.bridge.TestConstants.TEST_3_ACTIVITY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
@@ -17,6 +16,8 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 
 import com.google.common.collect.Maps;
@@ -196,7 +197,7 @@ public class CronActivitySchedulerTest {
         Schedule schedule = new Schedule();
         // Wed. and Sat. at 9:15am
         schedule.setCronTrigger("0 15 9 ? * WED,SAT *");
-        schedule.getActivities().add(TEST_3_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity3());
         schedule.setScheduleType(type);
         return schedule;
     }

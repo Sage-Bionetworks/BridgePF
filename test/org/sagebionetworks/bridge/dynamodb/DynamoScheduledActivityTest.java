@@ -15,7 +15,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -39,13 +38,13 @@ public class DynamoScheduledActivityTest {
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
         activity1.setTimeZone(DateTimeZone.UTC);
         activity1.setLocalScheduledOn(LocalDateTime.parse("2010-10-10T01:01:01.000"));
-        activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
+        activity1.setActivity(TestUtils.getActivity3());
         
         // Definitely later
         DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
         activity2.setTimeZone(DateTimeZone.UTC);
         activity2.setLocalScheduledOn(LocalDateTime.parse("2011-10-10T01:01:01.000"));
-        activity2.setActivity(TestConstants.TEST_3_ACTIVITY);
+        activity2.setActivity(TestUtils.getActivity3());
         
         // The same as 2 in all respects but activity label comes earlier in alphabet
         DynamoScheduledActivity activity3 = new DynamoScheduledActivity();
@@ -66,12 +65,12 @@ public class DynamoScheduledActivityTest {
         // No time zone
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
         activity1.setLocalScheduledOn(LocalDateTime.parse("2010-10-10T01:01:01.000"));
-        activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
+        activity1.setActivity(TestUtils.getActivity3());
         
         // scheduledOn
         DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
         activity2.setTimeZone(DateTimeZone.UTC);
-        activity2.setActivity(TestConstants.TEST_3_ACTIVITY);
+        activity2.setActivity(TestUtils.getActivity3());
         
         // This one is okay
         DynamoScheduledActivity activity3 = new DynamoScheduledActivity();
@@ -99,7 +98,7 @@ public class DynamoScheduledActivityTest {
         
         DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
         schActivity.setTimeZone(DateTimeZone.UTC);
-        schActivity.setActivity(TestConstants.TEST_3_ACTIVITY);
+        schActivity.setActivity(TestUtils.getActivity3());
         schActivity.setLocalScheduledOn(scheduledOn);
         schActivity.setLocalExpiresOn(expiresOn);
         schActivity.setGuid("AAA-BBB-CCC");
@@ -236,7 +235,7 @@ public class DynamoScheduledActivityTest {
         act.setHealthCode("healthCode");
         act.setGuid("activityGuid");
         act.setSchedulePlanGuid("schedulePlanGuid");
-        act.setActivity(TestConstants.TEST_1_ACTIVITY);
+        act.setActivity(TestUtils.getActivity1());
         act.setStartedOn(DateTime.parse("2015-10-10T08:08:08.000Z").getMillis());
         act.setFinishedOn(DateTime.parse("2015-12-05T08:08:08.000Z").getMillis());
         act.setPersistent(true);

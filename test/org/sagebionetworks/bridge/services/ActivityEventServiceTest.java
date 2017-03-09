@@ -15,7 +15,7 @@ import org.joda.time.LocalDateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
@@ -158,7 +158,7 @@ public class ActivityEventServiceTest {
         
         ScheduledActivity schActivity = ScheduledActivity.create();
         schActivity.setGuid("AAA:"+DateTime.now().toLocalDateTime());
-        schActivity.setActivity(TestConstants.TEST_1_ACTIVITY);
+        schActivity.setActivity(TestUtils.getActivity1());
         schActivity.setLocalExpiresOn(LocalDateTime.now().plusDays(1));
         schActivity.setStartedOn(DateTime.now().getMillis());
         schActivity.setFinishedOn(finishedOn);

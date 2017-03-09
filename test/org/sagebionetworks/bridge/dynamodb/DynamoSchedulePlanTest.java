@@ -8,7 +8,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -30,7 +29,7 @@ public class DynamoSchedulePlanTest {
     public void canSerializeDynamoSchedulePlan() throws Exception {
         DateTime datetime = DateTime.now().withZone(DateTimeZone.UTC);
         
-        ScheduleStrategy strategy = TestUtils.getStrategy("P1D", TestConstants.TEST_1_ACTIVITY);
+        ScheduleStrategy strategy = TestUtils.getStrategy("P1D", TestUtils.getActivity1());
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("Label");

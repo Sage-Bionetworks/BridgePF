@@ -18,7 +18,7 @@ import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 
 import com.google.common.collect.Maps;
@@ -50,7 +50,7 @@ public class IntervalActivitySchedulerTest {
     @Test
     public void oneWeekAfterEnrollmentAt8amExpireAfter24hours() throws Exception {
         Schedule schedule = new Schedule();
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay("P1W");
         schedule.addTimes("08:00");
@@ -67,7 +67,7 @@ public class IntervalActivitySchedulerTest {
     @Test
     public void onceWithoutTimesUsesLocalTime() throws Exception {
         Schedule schedule = new Schedule();
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setExpires("P2M");
         
@@ -509,7 +509,7 @@ public class IntervalActivitySchedulerTest {
     @Test
     public void oneDayDelayWithTimesSchedulesTheNextDayAfterAnEvent() {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_3_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity3());
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P1D");
@@ -531,7 +531,7 @@ public class IntervalActivitySchedulerTest {
     @Test
     public void recurringWithWindowAndMinTasksWorks() {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setExpires("P5D");
         schedule.setInterval("P1W");
@@ -565,7 +565,7 @@ public class IntervalActivitySchedulerTest {
         events.put("enrollment", enrollment);
         
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setExpires("P1D");
         schedule.setInterval("P1D");
@@ -591,7 +591,7 @@ public class IntervalActivitySchedulerTest {
         events.put("enrollment", enrollment);
         
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setExpires("P1D");
         schedule.setInterval("P1D");
@@ -625,7 +625,7 @@ public class IntervalActivitySchedulerTest {
     private Schedule createScheduleWith(ScheduleType type) {
         Schedule schedule = new Schedule();
         schedule.addTimes("09:40", "13:40");
-        schedule.getActivities().add(TestConstants.TEST_3_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity3());
         schedule.setScheduleType(type);
         if (type == RECURRING) {
             schedule.setInterval("P2D");

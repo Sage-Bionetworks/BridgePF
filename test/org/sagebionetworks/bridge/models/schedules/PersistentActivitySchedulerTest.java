@@ -17,7 +17,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 
 import com.google.common.collect.Maps;
@@ -43,7 +43,7 @@ public class PersistentActivitySchedulerTest {
         
         schedule = new Schedule();
         schedule.setEventId("enrollment");
-        schedule.getActivities().add(TestConstants.TEST_3_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity3());
         schedule.setScheduleType(ScheduleType.PERSISTENT);
     }
     
@@ -113,13 +113,13 @@ public class PersistentActivitySchedulerTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         
         assertTrue(schedule.getPersistent());
-        assertTrue(TestConstants.TEST_3_ACTIVITY.isPersistentlyRescheduledBy(schedule));
+        assertTrue(TestUtils.getActivity3().isPersistentlyRescheduledBy(schedule));
         assertTrue(schedule.schedulesImmediatelyAfterEvent());
         
         schedule.setEventId("activity:BBB:finished,enrollment");
         schedule.setDelay("P1D");
         assertFalse(schedule.getPersistent());
-        assertFalse(TestConstants.TEST_3_ACTIVITY.isPersistentlyRescheduledBy(schedule));
+        assertFalse(TestUtils.getActivity3().isPersistentlyRescheduledBy(schedule));
         assertFalse(schedule.schedulesImmediatelyAfterEvent());
     }
     

@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -69,7 +68,7 @@ public class DynamoScheduledActivityDaoTest {
         schedule.setInterval("P1D");
         schedule.setExpires("PT6H");
         schedule.addTimes("10:00", "14:00");
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
@@ -205,22 +204,22 @@ public class DynamoScheduledActivityDaoTest {
         List<SchedulePlan> plans = Lists.newArrayList();
         SchedulePlan testPlan = new DynamoSchedulePlan();
         testPlan.setGuid(BridgeUtils.generateGuid());
-        testPlan.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withLabel("Activity4")
-                .withTask("tapTest").build()));
+        testPlan.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withGuid(BridgeUtils.generateGuid())
+                .withLabel("Activity4").withTask("tapTest").build()));
         testPlan.setStudyKey(TEST_STUDY.getIdentifier());
         plans.add(testPlan);
 
         SchedulePlan testPlan2 = new DynamoSchedulePlan();
         testPlan2.setGuid(BridgeUtils.generateGuid());
-        testPlan2.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withLabel("Activity5")
-                .withTask("anotherTapTest").build()));
+        testPlan2.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withGuid(BridgeUtils.generateGuid())
+                .withLabel("Activity5").withTask("anotherTapTest").build()));
         testPlan2.setStudyKey(TEST_STUDY.getIdentifier());
         plans.add(testPlan2);
         
         SchedulePlan testPlan3 = new DynamoSchedulePlan();
         testPlan3.setGuid(BridgeUtils.generateGuid());
-        testPlan3.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withLabel("Activity6")
-                .withTask("yetAnotherTapTest").build()));
+        testPlan3.setStrategy(TestUtils.getStrategy("P2D", new Activity.Builder().withGuid(BridgeUtils.generateGuid())
+                .withLabel("Activity6").withTask("yetAnotherTapTest").build()));
         testPlan3.setStudyKey(TEST_STUDY.getIdentifier());
         plans.add(testPlan3);
         
