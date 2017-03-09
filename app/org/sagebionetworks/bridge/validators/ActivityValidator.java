@@ -69,8 +69,6 @@ public class ActivityValidator implements Validator {
         String taskIdentifier = compoundActivity.getTaskIdentifier();
         if (isBlank(taskIdentifier)) {
             errors.rejectValue("taskIdentifier", CANNOT_BE_BLANK);
-        } else if (!taskIdentifiers.contains(taskIdentifier)) {
-            errors.rejectValue("taskIdentifier", getTaskIdentifierMessage(taskIdentifier));
         }
 
         errors.popNestedPath();

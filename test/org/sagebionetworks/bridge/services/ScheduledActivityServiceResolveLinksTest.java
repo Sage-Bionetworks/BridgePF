@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 public class ScheduledActivityServiceResolveLinksTest {
+    private static final String ACTIVITY_LABEL_PREFIX = "test-activity-";
     private static final String COMPOUND_ACTIVITY_REF_TASK_ID = "compound-activity-ref";
     private static final String SCHEMA_ID = "test-schema";
     private static final int SCHEMA_REV = 42;
@@ -106,15 +107,21 @@ public class ScheduledActivityServiceResolveLinksTest {
         // we need to fulfill to fully set this up.
         SchedulePlan plan = SchedulePlan.create();
 
+        // Add a label to the activity. This serves 2 purposes: (1) it tests that we're copying activity attributes
+        // correctly and (2) it allows us to distinguish this activity from other activities.
+        Activity activityCopy1 = new Activity.Builder().withActivity(activity).withLabel(ACTIVITY_LABEL_PREFIX + "1")
+                .build();
+
         // To test caching, the schedule plan service will return a list with two identical activities.
-        Activity activityCopy = new Activity.Builder().withActivity(activity).build();
+        Activity activityCopy2 = new Activity.Builder().withActivity(activity).withLabel(ACTIVITY_LABEL_PREFIX + "2")
+                .build();
 
         // We need to wrap activities in scheduled activities.
         ScheduledActivity scheduledActivity = ScheduledActivity.create();
-        scheduledActivity.setActivity(activity);
+        scheduledActivity.setActivity(activityCopy1);
 
         ScheduledActivity scheduledActivityCopy = ScheduledActivity.create();
-        scheduledActivityCopy.setActivity(activityCopy);
+        scheduledActivityCopy.setActivity(activityCopy2);
 
         List<ScheduledActivity> scheduledActivityList = ImmutableList.of(scheduledActivity, scheduledActivityCopy);
 
@@ -204,8 +211,7 @@ public class ScheduledActivityServiceResolveLinksTest {
     }
 
     private static void verifyCompoundActivities(List<ScheduledActivity> scheduledActivityList) {
-        assertEquals(2, scheduledActivityList.size());
-
+        verifyActivityListSizeAndLabels(scheduledActivityList);
         for (ScheduledActivity oneScheduledActivity : scheduledActivityList) {
             CompoundActivity compoundActivity = oneScheduledActivity.getActivity().getCompoundActivity();
             assertEquals(COMPOUND_ACTIVITY_REF_TASK_ID, compoundActivity.getTaskIdentifier());
@@ -262,8 +268,7 @@ public class ScheduledActivityServiceResolveLinksTest {
     }
 
     private static void verifySurveys(List<ScheduledActivity> scheduledActivityList) {
-        assertEquals(2, scheduledActivityList.size());
-
+        verifyActivityListSizeAndLabels(scheduledActivityList);
         for (ScheduledActivity oneScheduledActivity : scheduledActivityList) {
             SurveyReference surveyRef = oneScheduledActivity.getActivity().getSurvey();
             assertEquals(SURVEY_ID, surveyRef.getIdentifier());
@@ -315,8 +320,7 @@ public class ScheduledActivityServiceResolveLinksTest {
     }
 
     private static void verifySchemas(List<ScheduledActivity> scheduledActivityList) {
-        assertEquals(2, scheduledActivityList.size());
-
+        verifyActivityListSizeAndLabels(scheduledActivityList);
         for (ScheduledActivity oneScheduledActivity : scheduledActivityList) {
             SchemaReference schemaRef = oneScheduledActivity.getActivity().getTask().getSchema();
             assertEquals(SCHEMA_ID, schemaRef.getId());
@@ -336,7 +340,7 @@ public class ScheduledActivityServiceResolveLinksTest {
                 SCHEDULE_CONTEXT);
 
         // Our setup creates 2 copies of the task, even though it doesn't matter for tasks w/o schemas.
-        assertEquals(scheduledActivityList.size(), 2);
+        verifyActivityListSizeAndLabels(scheduledActivityList);
         for (ScheduledActivity oneScheduledActivity : scheduledActivityList) {
             TaskReference taskRef = oneScheduledActivity.getActivity().getTask();
             assertEquals(TASK_ID, taskRef.getIdentifier());
@@ -347,5 +351,11 @@ public class ScheduledActivityServiceResolveLinksTest {
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
         verify(mockSchemaService, never()).getLatestUploadSchemaRevisionForAppVersion(any(), any(), any());
         verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
+    }
+
+    private static void verifyActivityListSizeAndLabels(List<ScheduledActivity> scheduledActivityList) {
+        assertEquals(2, scheduledActivityList.size());
+        assertEquals(ACTIVITY_LABEL_PREFIX + "1", scheduledActivityList.get(0).getActivity().getLabel());
+        assertEquals(ACTIVITY_LABEL_PREFIX + "2", scheduledActivityList.get(1).getActivity().getLabel());
     }
 }
