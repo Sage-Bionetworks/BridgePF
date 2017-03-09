@@ -63,13 +63,6 @@ public class ActivityValidatorTest {
     }
 
     @Test
-    public void compoundActivityWithInvaludTaskIdentifier() {
-        CompoundActivity compoundActivity = new CompoundActivity.Builder().withTaskIdentifier("bad-activity").build();
-        Activity activity = new Activity.Builder().withLabel("Label").withCompoundActivity(compoundActivity).build();
-        assertValidatorMessage(VALIDATOR_WITH_TASKS, activity, "compoundActivity.taskIdentifier", "'bad-activity' is not in enumeration: combo-activity");
-    }
-
-    @Test
     public void surveyWithoutIdentifierIsOk() {
         Activity activity = new Activity.Builder().withGuid("guid").withLabel("Label").withSurvey(null, "BBB", null).build();
         Validate.entityThrowingException(new ActivityValidator(EMPTY_TASKS), activity);
