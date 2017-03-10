@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -23,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -119,6 +121,7 @@ public class DynamoScheduledActivityDaoTest {
                 .collect(toSet());
         
         history = activityDao.getActivityHistory(context.getCriteriaContext().getHealthCode(), history.getOffsetKey(), 10);
+        
         assertTrue(history.getTotal() > 30);
         assertEquals(10, history.getItems().size());
 
@@ -131,6 +134,54 @@ public class DynamoScheduledActivityDaoTest {
         // Should be 20 (that is, two entirely separate pages of GUIDs)
         assertEquals(20, allTaskGuids.size());
         activityDao.deleteActivitiesForUser(healthCode);
+    }
+    
+    @Test
+    public void getScheduledActivityHistoryV2() throws Exception {
+        // Let's use an interesting time zone so we can verify it is being used.
+        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+        // Make a lot of tasks (30 days worth), enough to create a page
+        DateTime endsOn = DateTime.now(MSK).plus(Period.parse("P30D"));
+        DateTime startDateTime = DateTime.now().minusDays(20);
+        DateTime endDateTime = DateTime.now().plusDays(20);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withHealthCode(healthCode)
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+            .withInitialTimeZone(MSK)
+            .withEndsOn(endsOn)
+            .withEvents(eventMap()).build();
+        
+        Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
+        List<ScheduledActivity> activitiesToSchedule = schedule.getScheduler().getScheduledActivities(plan, context);
+        activityDao.saveActivities(activitiesToSchedule);
+        
+        String activityGuid = extractActivityGuid();
+        
+        // Get the first page of 10 records
+        ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV2(
+                healthCode, startDateTime, endDateTime, activityGuid, null, 10);
+        assertEquals(10, history.getItems().size());
+        
+        Set<String> allTaskGuids = history.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet());
+
+        // Get second page of records
+        history = activityDao.getActivityHistoryV2(
+                healthCode, startDateTime, endDateTime, activityGuid, history.getOffsetBy(), 10);
+        assertEquals(10, history.getItems().size());
+
+        // Now add the GUIDS of the next ten records to the set
+        allTaskGuids.addAll(history.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet()));
+
+        // Should be 20 items in the set (that is, two entirely separate pages of GUIDs)
+        assertEquals(20, allTaskGuids.size());
+        
+        // Query for a time range that will produce no records
+        history = activityDao.getActivityHistoryV2(
+                healthCode, startDateTime, startDateTime, activityGuid, null, 10);
+        assertEquals(0, history.getItems().size());
+        assertNull(history.getOffsetBy());
     }
     
     @Test
@@ -225,5 +276,9 @@ public class DynamoScheduledActivityDaoTest {
         
         return plans;
     }
-    
+
+    private String extractActivityGuid() {
+        SimpleScheduleStrategy strategy = (SimpleScheduleStrategy) plan.getStrategy();
+        return strategy.getAllPossibleSchedules().get(0).getActivities().get(0).getGuid();
+    }
 }

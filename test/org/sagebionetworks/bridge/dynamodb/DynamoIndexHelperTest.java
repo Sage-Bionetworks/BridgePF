@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import javax.annotation.Nonnull;
@@ -12,10 +13,16 @@ import java.util.List;
 import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.Page;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -63,6 +70,20 @@ public class DynamoIndexHelperTest {
             assertEquals(expectedValue, indexKeyValue);
             assertEquals(expectedRangeKeyCondition, rangeKeyCondition);
             return itemIterable;
+        }
+    }
+    
+    private static class TestPage<T,R> extends Page<T,R> {
+        public TestPage(List<T> content, R lowLevelResult) {
+            super(content, lowLevelResult);
+        }
+        @Override
+        public boolean hasNextPage() {
+            return false;
+        }
+        @Override
+        public Page<T, R> nextPage() {
+            return null;
         }
     }
     
@@ -124,6 +145,30 @@ public class DynamoIndexHelperTest {
         int count = helper.queryKeyCount("test key", "test value", null);
         // There are two lists of two items each
         assertEquals(4, count);
+    }
+    
+    @Test
+    public void testQuery() {
+        helper = new TestDynamoIndexHelper("test key", "test value", null, null);
+        QuerySpec spec = new QuerySpec();
+        
+        Index mockIndex = mock(Index.class);
+        helper.setIndex(mockIndex);
+        
+        ItemCollection mockItemCollection = mock(ItemCollection.class);
+        when(mockIndex.query(spec)).thenReturn(mockItemCollection);
+
+        QueryOutcome mockQueryOutcome = mock(QueryOutcome.class);
+        
+        List<Item> items = Lists.newArrayList(mock(Item.class));
+        Page<Item,QueryOutcome> mockPage = new TestPage<Item,QueryOutcome>(items, mockQueryOutcome);
+        
+        when(mockItemCollection.firstPage()).thenReturn(mockPage);
+        
+        QueryOutcome result = helper.query(spec);
+        
+        assertEquals(result, mockQueryOutcome);
+        verify(mockIndex).query(spec);
     }
 
     private static void validateKeyObjects(List<Thing> keyList) {

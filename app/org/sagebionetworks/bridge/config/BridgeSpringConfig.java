@@ -367,6 +367,13 @@ public class BridgeSpringConfig {
         return DynamoIndexHelper.create(DynamoUpload2.class, "healthCode-requestedOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
     
+    @Bean(name = "healthCodeActivityGuidIndex")
+    @Autowired
+    public DynamoIndexHelper healthCodeActivityGuidIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoScheduledActivity.class, "healthCodeActivityGuid-scheduledOnUTC-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+    }
+    
     @Bean(name = "uploadStudyIdRequestedOnIndex")
     @Autowired
     public DynamoIndexHelper uploadStudyIdRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,15 +16,23 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.QueryResult;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
@@ -34,6 +43,14 @@ import com.google.common.collect.Lists;
 @Component
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
+    private static final String SCHEDULED_ON_OR_BEFORE = "scheduledOnOrBefore";
+
+    private static final String SCHEDULED_ON_OR_AFTER = "scheduledOnOrAfter";
+
+    private static final String SCHEDULED_ON_UTC = "scheduledOnUTC";
+
+    private static final String HEALTH_CODE_ACTIVITY_GUID = "healthCodeActivityGuid";
+
     private static final String HEALTH_CODE = "healthCode";
 
     private static final String GUID = "guid";
@@ -42,9 +59,16 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     private DynamoDBMapper mapper;
     
+    private DynamoIndexHelper indexHelper;
+    
     @Resource(name = "activityDdbMapper")
-    public final void setDdbMapper(DynamoDBMapper mapper) {
+    final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+    
+    @Resource(name = "healthCodeActivityGuidIndex")
+    final void setHealthCodeActivityGuidIndex(DynamoIndexHelper healthCodeActivityGuidIndex) {
+        this.indexHelper = healthCodeActivityGuidIndex;
     }
     
     @Override
@@ -67,6 +91,62 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
             activity.setTimeZone(DateTimeZone.UTC);
         }
         return resourceList;
+    }
+    
+    @Override
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
+            DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, String activityGuid, Long offsetBy,
+            int pageSize) {
+        checkNotNull(healthCode);
+        checkNotNull(scheduledOnOrAfter);
+        checkNotNull(scheduledOnOrBefore);
+        checkNotNull(activityGuid);
+        
+        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+        String healthCodeActivityGuid = healthCode + ":" + activityGuid;
+        
+        // The range is exclusive, so bump the timestamps back/forward by one millisecond
+        long startTimestamp = scheduledOnOrAfter.minusMillis(1).getMillis();
+        long endTimestamp = scheduledOnOrBefore.plusMillis(1).getMillis();
+        RangeKeyCondition dateRangeCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).between(startTimestamp,endTimestamp);
+
+        QuerySpec spec = new QuerySpec()
+                .withHashKey(new KeyAttribute(HEALTH_CODE_ACTIVITY_GUID, healthCodeActivityGuid))
+                .withMaxPageSize(pageSize)
+                .withScanIndexForward(false)
+                .withRangeKeyCondition(dateRangeCondition);
+
+        // It does not appear it is possible to use an exclusive start key with a GSI (though that's not definitive):
+        // https://forums.aws.amazon.com/thread.jspa?threadID=146102&tstart=0. I could not get it to work, so using 
+        // a range key condition instead.
+        if (offsetBy != null) {
+            RangeKeyCondition cursorPosCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).gt(offsetBy);
+            spec.withRangeKeyCondition(cursorPosCondition);
+        }
+        
+        QueryOutcome queryOutcome = indexHelper.query(spec);
+        List<Item> items = queryOutcome.getItems();
+        QueryResult queryResult = queryOutcome.getQueryResult();
+        
+        // Index only includes keys. Load the items.
+        List<ScheduledActivity> results = new ArrayList<>(items.size());
+        for (Item item : items) {
+            ScheduledActivity activity = getActivity(healthCode, item.getString(GUID));
+            results.add(activity);
+        }
+        
+        // There's no total count with a DynamoDB record set, but if there's an offset, there is a further
+        // page of records.
+        Long nextPageOffsetBy = null;
+        if (queryResult.getLastEvaluatedKey() != null) {
+            nextPageOffsetBy = Long.parseLong(queryResult.getLastEvaluatedKey().get(SCHEDULED_ON_UTC).getN());
+        }
+        
+        return new ForwardCursorPagedResourceList<ScheduledActivity>(results, nextPageOffsetBy, pageSize)
+                .withFilter(SCHEDULED_ON_OR_AFTER, scheduledOnOrAfter)
+                .withFilter(SCHEDULED_ON_OR_BEFORE, scheduledOnOrBefore);
     }
 
     /**
