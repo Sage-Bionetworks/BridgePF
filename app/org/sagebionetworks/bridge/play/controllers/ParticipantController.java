@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.getLongOrDefault;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
@@ -21,6 +23,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -180,6 +183,22 @@ public class ParticipantController extends BaseController {
         PagedResourceList<? extends ScheduledActivity> history = participantService.getActivityHistory(study, userId, offsetKey, pageSize);
         
         return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(history));
+    }
+
+    public Result getActivityHistoryV2(String userId, String activityGuid, String scheduledOnOrAfterString,
+            String scheduledOnOrBeforeString, String offsetByString, String pageSizeString) throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        DateTime scheduledOnOrAfter = getDateTimeOrDefault(scheduledOnOrAfterString, null);
+        DateTime scheduledOnOrBefore = getDateTimeOrDefault(scheduledOnOrBeforeString, null);
+        Long offsetBy = getLongOrDefault(offsetByString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
+                study, activityGuid, userId, scheduledOnOrAfter, scheduledOnOrBefore, offsetBy, pageSize);
+        
+        return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
     }
     
     public Result deleteActivities(String userId) throws Exception {

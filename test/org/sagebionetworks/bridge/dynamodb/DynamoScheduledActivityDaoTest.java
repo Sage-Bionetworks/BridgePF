@@ -161,14 +161,14 @@ public class DynamoScheduledActivityDaoTest {
         
         // Get the first page of 10 records
         ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV2(
-                healthCode, startDateTime, endDateTime, activityGuid, null, 10);
+                activityGuid, healthCode, startDateTime, endDateTime, null, 10);
         assertEquals(10, history.getItems().size());
         
         Set<String> allTaskGuids = history.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet());
 
         // Get second page of records
         history = activityDao.getActivityHistoryV2(
-                healthCode, startDateTime, endDateTime, activityGuid, history.getOffsetBy(), 10);
+                activityGuid, healthCode, startDateTime, endDateTime, history.getOffsetBy(), 10);
         assertEquals(10, history.getItems().size());
 
         // Now add the GUIDS of the next ten records to the set
@@ -179,7 +179,7 @@ public class DynamoScheduledActivityDaoTest {
         
         // Query for a time range that will produce no records
         history = activityDao.getActivityHistoryV2(
-                healthCode, startDateTime, startDateTime, activityGuid, null, 10);
+                activityGuid, healthCode, startDateTime, startDateTime, null, 10);
         assertEquals(0, history.getItems().size());
         assertNull(history.getOffsetBy());
     }

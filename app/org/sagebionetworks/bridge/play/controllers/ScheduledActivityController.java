@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.getLongOrDefault;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,9 +11,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -49,6 +53,21 @@ public class ScheduledActivityController extends BaseController {
         return okResultAsTasks(scheduledActivities);
     }
 
+    public Result getActivityHistory(String activityGuid, String scheduledOnOrAfterString,
+            String scheduledOnOrBeforeString, String offsetByString, String pageSizeString) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        DateTime scheduledOnOrAfter = getDateTimeOrDefault(scheduledOnOrAfterString, null);
+        DateTime scheduledOnOrBefore = getDateTimeOrDefault(scheduledOnOrBeforeString, null);
+        Long offsetBy = getLongOrDefault(offsetByString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = scheduledActivityService.getActivityHistory(
+                activityGuid, session.getHealthCode(), scheduledOnOrAfter, scheduledOnOrBefore, offsetBy, pageSize);
+        
+        return okResult(page);
+    }
+    
     public Result getScheduledActivities(String untilString, String offset, String daysAhead, String minimumPerScheduleString)
             throws Exception {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead, minimumPerScheduleString);

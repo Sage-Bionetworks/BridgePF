@@ -54,6 +54,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -78,6 +79,9 @@ public class ParticipantControllerTest {
 
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     
+    private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF = new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {
+    };
+    
     private static final TypeReference<PagedResourceList<ScheduledActivity>> PAGED_ACTIVITIES_REF = new TypeReference<PagedResourceList<ScheduledActivity>>() {};
 
     private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
@@ -89,7 +93,13 @@ public class ParticipantControllerTest {
     private static final String ID = "ASDF";
 
     private static final String EMAIL = "email@email.com";
+    
+    private static final String ACTIVITY_GUID = "activityGuid";
 
+    private static final DateTime ENDS_ON = DateTime.now();
+    
+    private static final DateTime STARTS_ON = ENDS_ON.minusWeeks(1);
+    
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email", "id",
             DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
     
@@ -125,6 +135,12 @@ public class ParticipantControllerTest {
     
     @Captor
     private ArgumentCaptor<NotificationMessage> messageCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DateTime> startsOnCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DateTime> endsOnCaptor;
     
     private UserSession session;
     
@@ -578,6 +594,51 @@ public class ParticipantControllerTest {
     }
     
     @Test
+    public void canGetActivityHistoryV2() throws Exception {
+        doReturn(createActivityResultsV2()).when(mockParticipantService).getActivityHistory(eq(study), eq(ACTIVITY_GUID), eq(ID),
+                any(), any(), eq(200L), eq(77));
+        
+        Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, STARTS_ON.toString(), ENDS_ON.toString(),
+                "200", "77");
+        assertEquals(200, result.status());
+        ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
+                FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        
+        ScheduledActivity activity = page.getItems().iterator().next();
+        assertEquals("schedulePlanGuid", activity.getSchedulePlanGuid());
+        assertNull(activity.getHealthCode());
+        
+        assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
+        assertEquals(1, page.getPageSize());
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ACTIVITY_GUID), eq(ID),
+                startsOnCaptor.capture(), endsOnCaptor.capture(), eq(200L), eq(77));
+        assertTrue(STARTS_ON.isEqual(startsOnCaptor.getValue()));
+        assertTrue(ENDS_ON.isEqual(endsOnCaptor.getValue()));
+    }
+
+    @Test
+    public void canGetActivityV2WithNullValues() throws Exception {
+        doReturn(createActivityResultsV2()).when(mockParticipantService).getActivityHistory(eq(study), eq(ACTIVITY_GUID), eq(ID),
+                any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
+        
+        Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, null, null, null, null);
+        assertEquals(200, result.status());
+        ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
+                FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        
+        ScheduledActivity activity = page.getItems().iterator().next();
+        assertEquals("schedulePlanGuid", activity.getSchedulePlanGuid());
+        assertNull(activity.getHealthCode());
+        
+        assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
+        assertEquals(1, page.getPageSize());
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ACTIVITY_GUID), eq(ID), eq(null), eq(null),
+                eq(null), eq(API_DEFAULT_PAGE_SIZE));
+    }
+
+    @Test
     public void deleteActivities() throws Exception {
         Result result = controller.deleteActivities(ID);
         assertResult(result, 200, "Scheduled activities deleted.");
@@ -692,6 +753,18 @@ public class ParticipantControllerTest {
         list.add(activity);
         
         return new PagedResourceList<>(list, null, 25, 100);
+    }
+    
+    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2() {
+        List<ScheduledActivity> list = Lists.newArrayList();
+        
+        DynamoScheduledActivity activity = new DynamoScheduledActivity();
+        activity.setActivity(TestUtils.getActivity1());
+        activity.setHealthCode("healthCode");
+        activity.setSchedulePlanGuid("schedulePlanGuid");
+        list.add(activity);
+        
+        return new ForwardCursorPagedResourceList<>(list, null, list.size());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {

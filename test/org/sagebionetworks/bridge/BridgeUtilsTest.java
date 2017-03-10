@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
+
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -263,6 +265,31 @@ public class BridgeUtilsTest {
         assertEquals("not 333", map.get("CCC"));
     }
 
+    @Test
+    public void testGetLongOrDefault() {
+        assertNull(BridgeUtils.getLongOrDefault(null, null));
+        assertEquals(new Long(10), BridgeUtils.getLongOrDefault(null, 10L));
+        assertEquals(new Long(20), BridgeUtils.getLongOrDefault("20", null));
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void testGetLongWithNonLongValue() {
+        BridgeUtils.getLongOrDefault("asdf20", 10L);
+    }
+    
+    @Test
+    public void testGetDateTimeOrDefault() {
+        DateTime dateTime = DateTime.now();
+        assertNull(BridgeUtils.getDateTimeOrDefault(null, null));
+        assertEquals(dateTime, BridgeUtils.getDateTimeOrDefault(null, dateTime));
+        assertTrue(dateTime.isEqual(BridgeUtils.getDateTimeOrDefault(dateTime.toString(), null)));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testGetDateTimeWithInvalidDateTime() {
+        BridgeUtils.getDateTimeOrDefault("asdf", null);
+    }
+    
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(first.size(), second.size());
