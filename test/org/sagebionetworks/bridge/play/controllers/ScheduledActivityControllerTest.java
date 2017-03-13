@@ -313,7 +313,7 @@ public class ScheduledActivityControllerTest {
     }
     
     @Test
-    public void activityHistoryWithDefaults() {
+    public void activityHistoryWithDefaults() throws Exception {
         doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
                 eq(ACTIVITY_GUID), any(null), any(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         
@@ -322,6 +322,10 @@ public class ScheduledActivityControllerTest {
 
         verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), eq(null),
                 eq(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> list = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
+                new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>(){});
+        assertNull(list.getItems().get(0).getHealthCode());
     }
     
     @Test
