@@ -63,7 +63,7 @@ public class ScheduledActivityController extends BaseController {
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = scheduledActivityService.getActivityHistory(
-                activityGuid, session.getHealthCode(), scheduledOnOrAfter, scheduledOnOrBefore, offsetBy, pageSize);
+                session.getHealthCode(), activityGuid, scheduledOnOrAfter, scheduledOnOrBefore, offsetBy, pageSize);
         
         return okResult(page);
     }

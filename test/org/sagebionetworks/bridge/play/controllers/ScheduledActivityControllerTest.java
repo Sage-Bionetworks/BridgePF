@@ -314,20 +314,20 @@ public class ScheduledActivityControllerTest {
     
     @Test
     public void activityHistoryWithDefaults() {
-        doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(ACTIVITY_GUID),
-                eq(HEALTH_CODE), any(null), any(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
+        doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
+                eq(ACTIVITY_GUID), any(null), any(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         
         Result result = controller.getActivityHistory(ACTIVITY_GUID, null, null, null, null);
         assertEquals(200, result.status());
 
-        verify(scheduledActivityService).getActivityHistory(eq(ACTIVITY_GUID), eq(HEALTH_CODE), eq(null),
+        verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), eq(null),
                 eq(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
     }
     
     @Test
     public void activityHistoryWithAllValues() throws Exception {
-        doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(ACTIVITY_GUID),
-                eq(HEALTH_CODE), any(), any(), eq(2000L), eq(77));
+        doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
+                eq(ACTIVITY_GUID), any(), any(), eq(2000L), eq(77));
         
         Result result = controller.getActivityHistory(ACTIVITY_GUID, STARTS_ON.toString(),
                 ENDS_ON.toString(), OFFSET_BY, PAGE_SIZE);
@@ -340,7 +340,7 @@ public class ScheduledActivityControllerTest {
         assertEquals((Long)777L, page.getOffsetBy());
         assertEquals(77, page.getPageSize());
 
-        verify(scheduledActivityService).getActivityHistory(eq(ACTIVITY_GUID), eq(HEALTH_CODE), startsOnCaptor.capture(),
+        verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), startsOnCaptor.capture(),
                 endsOnCaptor.capture(), eq(2000L), eq(77));
         assertTrue(STARTS_ON.isEqual(startsOnCaptor.getValue()));
         assertTrue(ENDS_ON.isEqual(endsOnCaptor.getValue()));

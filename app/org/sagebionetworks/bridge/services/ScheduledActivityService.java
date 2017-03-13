@@ -101,8 +101,8 @@ public class ScheduledActivityService {
         this.surveyService = surveyService;
     }
     
-    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String activityGuid,
-            String healthCode, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy,
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode,
+            String activityGuid, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
         

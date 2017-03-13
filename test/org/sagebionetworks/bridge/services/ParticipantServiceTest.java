@@ -741,7 +741,7 @@ public class ParticipantServiceTest {
         
         participantService.getActivityHistory(STUDY, ACTIVITY_GUID, ID, START_DATE, END_DATE, PAGED_BY, PAGE_SIZE);
 
-        verify(scheduledActivityService).getActivityHistory(ACTIVITY_GUID, HEALTH_CODE, START_DATE, END_DATE, PAGED_BY,
+        verify(scheduledActivityService).getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, START_DATE, END_DATE, PAGED_BY,
                 PAGE_SIZE);
     }
     
@@ -751,7 +751,7 @@ public class ParticipantServiceTest {
         
         participantService.getActivityHistory(STUDY, ACTIVITY_GUID, ID, null, null, null, PAGE_SIZE);
 
-        verify(scheduledActivityService).getActivityHistory(ACTIVITY_GUID, HEALTH_CODE, null, null, null, PAGE_SIZE);
+        verify(scheduledActivityService).getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, PAGE_SIZE);
     }
     
     @Test(expected = EntityNotFoundException.class)

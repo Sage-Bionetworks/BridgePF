@@ -319,7 +319,7 @@ public class ParticipantService {
 
         Account account = getAccountThrowingException(study, userId);
 
-        return scheduledActivityService.getActivityHistory(activityGuid, account.getHealthCode(), scheduledOnOrAfter,
+        return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityGuid, scheduledOnOrAfter,
                 scheduledOnOrBefore, offsetBy, pageSize);
     }
 

@@ -146,29 +146,29 @@ public class ScheduledActivityServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void activityHistoryEnforcesMinPageSize() {
-        service.getActivityHistory(ACTIVITY_GUID, HEALTH_CODE, STARTS_ON, ENDS_ON, null, 2);
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON, ENDS_ON, null, 2);
     }
     
     @Test(expected = BadRequestException.class)
     public void activityHistoryEnforcesMaxPageSize() {
-        service.getActivityHistory(ACTIVITY_GUID, HEALTH_CODE, STARTS_ON, ENDS_ON, null, 200);
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON, ENDS_ON, null, 200);
     }
     
     @Test(expected = BadRequestException.class)
     public void activityHistoryEnforcesFullDateRangeWhenNoStart() {
-        service.getActivityHistory(ACTIVITY_GUID, HEALTH_CODE, null, ENDS_ON, null, 40);
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, ENDS_ON, null, 40);
     }
     
     @Test(expected = BadRequestException.class)
     public void activityHistoryEnforcesFullDateRangeWhenNoEnd() {
-        service.getActivityHistory(ACTIVITY_GUID, HEALTH_CODE, STARTS_ON, null, null, 40);
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON, null, null, 40);
     }
     
     @Test
     public void activityHistoryDefaultsDateRange() {
         DateTimeUtils.setCurrentMillisFixed(STARTS_ON.getMillis());
         
-        service.getActivityHistory(ACTIVITY_GUID, HEALTH_CODE, null, null, null, 40);
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
         verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(10), STARTS_ON.plusDays(4), null, 40);
         
         DateTimeUtils.setCurrentMillisSystem();
@@ -176,7 +176,7 @@ public class ScheduledActivityServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void activityHistoryEnforcesDateRangeEndAfterStart() {
-        service.getActivityHistory(ACTIVITY_GUID, HEALTH_CODE, ENDS_ON, STARTS_ON, null, 200);
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, ENDS_ON, STARTS_ON, null, 200);
     }
 
     @Test(expected = BadRequestException.class)
