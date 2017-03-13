@@ -311,8 +311,8 @@ public class ParticipantService {
         return activityDao.getActivityHistory(account.getHealthCode(), offsetKey, pageSize);
     }
 
-    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String activityGuid,
-            String userId, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy, int pageSize) {
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
+            String activityGuid, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy, int pageSize) {
         checkNotNull(study);
         checkArgument(isNotBlank(activityGuid));
         checkArgument(isNotBlank(userId));

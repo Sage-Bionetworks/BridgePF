@@ -196,7 +196,7 @@ public class ParticipantController extends BaseController {
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
-                study, activityGuid, userId, scheduledOnOrAfter, scheduledOnOrBefore, offsetBy, pageSize);
+                study, userId, activityGuid, scheduledOnOrAfter, scheduledOnOrBefore, offsetBy, pageSize);
         
         return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
     }

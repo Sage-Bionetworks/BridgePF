@@ -739,7 +739,7 @@ public class ParticipantServiceTest {
     public void canGetActivityHistoryV2WithAllValues() {
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.getActivityHistory(STUDY, ACTIVITY_GUID, ID, START_DATE, END_DATE, PAGED_BY, PAGE_SIZE);
+        participantService.getActivityHistory(STUDY, ID, ACTIVITY_GUID, START_DATE, END_DATE, PAGED_BY, PAGE_SIZE);
 
         verify(scheduledActivityService).getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, START_DATE, END_DATE, PAGED_BY,
                 PAGE_SIZE);
@@ -749,14 +749,14 @@ public class ParticipantServiceTest {
     public void canGetActivityHistoryV2WithDefaults() {
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.getActivityHistory(STUDY, ACTIVITY_GUID, ID, null, null, null, PAGE_SIZE);
+        participantService.getActivityHistory(STUDY, ID, ACTIVITY_GUID, null, null, null, PAGE_SIZE);
 
         verify(scheduledActivityService).getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, PAGE_SIZE);
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void getActivityHistoryV2NoUserThrowsCorrectException() {
-        participantService.getActivityHistory(STUDY, ACTIVITY_GUID, ID, null, null, null, PAGE_SIZE);
+        participantService.getActivityHistory(STUDY, ID, ACTIVITY_GUID, null, null, null, PAGE_SIZE);
     }
     
     @Test
