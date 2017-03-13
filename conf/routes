@@ -31,7 +31,7 @@ GET    /v3/participants/:userId/uploads                      @org.sagebionetwork
 GET    /v3/participants/:userId/requestInfo                  @org.sagebionetworks.bridge.play.controllers.ParticipantController.getRequestInfo(userId: String)
 GET    /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistory(userId: String, offsetKey: String ?= null, pageSize: String ?= null)
 DELETE /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteActivities(userId: String)
-GET    /v3/participants/:userId/activities/:activityGuid     @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistoryV2(userId: String, activityGuid: String, scheduledOnOrAfterString: String ?= null, scheduledOnOrBeforeString: String ?= null, offsetByString: String ?= null, pageSizeString: String ?= null)
+GET    /v3/participants/:userId/activities/:activityGuid     @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistoryV2(userId: String, activityGuid: String, scheduledOnOrAfter: String ?= null, scheduledOnOrBefore: String ?= null, offsetBy: String ?= null, pageSize: String ?= null)
 GET    /v3/participants/:userId/notifications                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getNotificationRegistrations(userId: String)
 POST   /v3/participants/:userId/sendNotification             @org.sagebionetworks.bridge.play.controllers.ParticipantController.sendNotification(userId: String)
 POST   /v3/participants/:userId/signOut                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.signOut(userId: String)

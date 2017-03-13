@@ -111,15 +111,15 @@ public class ScheduledActivityService {
         }
         // If nothing is provided, we will default to two weeks.
         if (scheduledOnOrAfter == null && scheduledOnOrBefore == null) {
-            scheduledOnOrBefore = DateTime.now();
-            scheduledOnOrAfter = scheduledOnOrBefore.minusWeeks(2);
+            scheduledOnOrBefore = DateTime.now().plusDays(4);
+            scheduledOnOrAfter = scheduledOnOrBefore.minusDays(14);
         }
         // But if only one was provided... we don't know what to do with this. Return bad request exception
         if (scheduledOnOrAfter == null || scheduledOnOrBefore == null) {
             throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
         }
 
-        return activityDao.getActivityHistoryV2(activityGuid, healthCode, scheduledOnOrAfter, scheduledOnOrBefore,
+        return activityDao.getActivityHistoryV2(healthCode, activityGuid, scheduledOnOrAfter, scheduledOnOrBefore,
                 offsetBy, pageSize);
     }
     

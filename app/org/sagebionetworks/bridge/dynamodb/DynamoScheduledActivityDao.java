@@ -94,8 +94,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     }
     
     @Override
-    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String activityGuid,
-            String healthCode, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy,
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
+            String activityGuid, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy,
             int pageSize) {
         checkNotNull(healthCode);
         checkNotNull(scheduledOnOrAfter);
@@ -114,6 +114,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
 
         QuerySpec spec = new QuerySpec()
                 .withHashKey(new KeyAttribute(HEALTH_CODE_ACTIVITY_GUID, healthCodeActivityGuid))
+                .withMaxResultSize(100000)
                 .withMaxPageSize(pageSize)
                 .withScanIndexForward(false)
                 .withRangeKeyCondition(dateRangeCondition);
@@ -122,7 +123,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         // https://forums.aws.amazon.com/thread.jspa?threadID=146102&tstart=0. I could not get it to work, so using 
         // a range key condition instead.
         if (offsetBy != null) {
-            RangeKeyCondition cursorPosCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).gt(offsetBy);
+            RangeKeyCondition cursorPosCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).lt(offsetBy);
             spec.withRangeKeyCondition(cursorPosCondition);
         }
         
@@ -134,6 +135,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         List<ScheduledActivity> results = new ArrayList<>(items.size());
         for (Item item : items) {
             ScheduledActivity activity = getActivity(healthCode, item.getString(GUID));
+            activity.setTimeZone(DateTimeZone.UTC);
             results.add(activity);
         }
         
