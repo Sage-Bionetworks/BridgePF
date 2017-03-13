@@ -43,9 +43,9 @@ import com.google.common.collect.Lists;
 @Component
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
-    private static final String SCHEDULED_ON_OR_AFTER = "scheduledOnStart";
+    private static final String SCHEDULED_ON_START = "scheduledOnStart";
 
-    private static final String SCHEDULED_ON_OR_BEFORE = "scheduledOnEnd";
+    private static final String SCHEDULED_ON_END = "scheduledOnEnd";
 
     private static final String SCHEDULED_ON_UTC = "scheduledOnUTC";
 
@@ -147,8 +147,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         }
         
         return new ForwardCursorPagedResourceList<ScheduledActivity>(results, nextPageOffsetBy, pageSize)
-                .withFilter(SCHEDULED_ON_OR_AFTER, scheduledOnStart)
-                .withFilter(SCHEDULED_ON_OR_BEFORE, scheduledOnEnd);
+                .withFilter(SCHEDULED_ON_START, scheduledOnStart)
+                .withFilter(SCHEDULED_ON_END, scheduledOnEnd);
     }
 
     /**
