@@ -43,9 +43,9 @@ import com.google.common.collect.Lists;
 @Component
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
-    private static final String SCHEDULED_ON_OR_BEFORE = "scheduledOnOrBefore";
+    private static final String SCHEDULED_ON_OR_AFTER = "scheduledOnStart";
 
-    private static final String SCHEDULED_ON_OR_AFTER = "scheduledOnOrAfter";
+    private static final String SCHEDULED_ON_OR_BEFORE = "scheduledOnEnd";
 
     private static final String SCHEDULED_ON_UTC = "scheduledOnUTC";
 
@@ -95,11 +95,11 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     @Override
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
-            String activityGuid, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy,
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, Long offsetBy,
             int pageSize) {
         checkNotNull(healthCode);
-        checkNotNull(scheduledOnOrAfter);
-        checkNotNull(scheduledOnOrBefore);
+        checkNotNull(scheduledOnStart);
+        checkNotNull(scheduledOnEnd);
         checkNotNull(activityGuid);
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -108,8 +108,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         String healthCodeActivityGuid = healthCode + ":" + activityGuid;
         
         // The range is exclusive, so bump the timestamps back/forward by one millisecond
-        long startTimestamp = scheduledOnOrAfter.minusMillis(1).getMillis();
-        long endTimestamp = scheduledOnOrBefore.plusMillis(1).getMillis();
+        long startTimestamp = scheduledOnStart.minusMillis(1).getMillis();
+        long endTimestamp = scheduledOnEnd.plusMillis(1).getMillis();
         RangeKeyCondition dateRangeCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).between(startTimestamp,endTimestamp);
 
         QuerySpec spec = new QuerySpec()
@@ -147,8 +147,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         }
         
         return new ForwardCursorPagedResourceList<ScheduledActivity>(results, nextPageOffsetBy, pageSize)
-                .withFilter(SCHEDULED_ON_OR_AFTER, scheduledOnOrAfter)
-                .withFilter(SCHEDULED_ON_OR_BEFORE, scheduledOnOrBefore);
+                .withFilter(SCHEDULED_ON_OR_AFTER, scheduledOnStart)
+                .withFilter(SCHEDULED_ON_OR_BEFORE, scheduledOnEnd);
     }
 
     /**

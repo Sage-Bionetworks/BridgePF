@@ -185,18 +185,18 @@ public class ParticipantController extends BaseController {
         return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(history));
     }
 
-    public Result getActivityHistoryV2(String userId, String activityGuid, String scheduledOnOrAfterString,
-            String scheduledOnOrBeforeString, String offsetByString, String pageSizeString) throws Exception {
+    public Result getActivityHistoryV2(String userId, String activityGuid, String scheduledOnStartString,
+            String scheduledOnEndString, String offsetByString, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        DateTime scheduledOnOrAfter = getDateTimeOrDefault(scheduledOnOrAfterString, null);
-        DateTime scheduledOnOrBefore = getDateTimeOrDefault(scheduledOnOrBeforeString, null);
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
         Long offsetBy = getLongOrDefault(offsetByString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
-                study, userId, activityGuid, scheduledOnOrAfter, scheduledOnOrBefore, offsetBy, pageSize);
+                study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
         
         return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
     }

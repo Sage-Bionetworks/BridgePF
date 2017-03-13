@@ -49,7 +49,7 @@ public class ScheduledActivityService {
     private static final String PAGE_SIZE_ERROR = "pageSize must be from " + API_MINIMUM_PAGE_SIZE + "-"
             + API_MAXIMUM_PAGE_SIZE + " records";
     
-    private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both scheduledOnOrAfter and scheduledOnOrBefore required)";
+    private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both scheduledOnStart and scheduledOnEnd required)";
     
     private static final String ENROLLMENT = "enrollment";
 
@@ -102,7 +102,7 @@ public class ScheduledActivityService {
     }
     
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode,
-            String activityGuid, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy,
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, Long offsetBy,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
         
@@ -110,17 +110,17 @@ public class ScheduledActivityService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         // If nothing is provided, we will default to two weeks.
-        if (scheduledOnOrAfter == null && scheduledOnOrBefore == null) {
-            scheduledOnOrBefore = DateTime.now().plusDays(4);
-            scheduledOnOrAfter = scheduledOnOrBefore.minusDays(14);
+        if (scheduledOnStart == null && scheduledOnEnd == null) {
+            scheduledOnEnd = DateTime.now().plusDays(4);
+            scheduledOnStart = scheduledOnEnd.minusDays(14);
         }
         // But if only one was provided... we don't know what to do with this. Return bad request exception
-        if (scheduledOnOrAfter == null || scheduledOnOrBefore == null) {
+        if (scheduledOnStart == null || scheduledOnEnd == null) {
             throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
         }
 
-        return activityDao.getActivityHistoryV2(healthCode, activityGuid, scheduledOnOrAfter, scheduledOnOrBefore,
-                offsetBy, pageSize);
+        return activityDao.getActivityHistoryV2(
+                healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
     }
     
     public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {

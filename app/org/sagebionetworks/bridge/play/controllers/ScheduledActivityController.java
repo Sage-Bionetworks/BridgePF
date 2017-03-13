@@ -53,17 +53,17 @@ public class ScheduledActivityController extends BaseController {
         return okResultAsTasks(scheduledActivities);
     }
 
-    public Result getActivityHistory(String activityGuid, String scheduledOnOrAfterString,
-            String scheduledOnOrBeforeString, String offsetByString, String pageSizeString) throws Exception {
+    public Result getActivityHistory(String activityGuid, String scheduledOnStartString,
+            String scheduledOnEndString, String offsetByString, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        DateTime scheduledOnOrAfter = getDateTimeOrDefault(scheduledOnOrAfterString, null);
-        DateTime scheduledOnOrBefore = getDateTimeOrDefault(scheduledOnOrBeforeString, null);
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
         Long offsetBy = getLongOrDefault(offsetByString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = scheduledActivityService.getActivityHistory(
-                session.getHealthCode(), activityGuid, scheduledOnOrAfter, scheduledOnOrBefore, offsetBy, pageSize);
+                session.getHealthCode(), activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
         
         return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
     }

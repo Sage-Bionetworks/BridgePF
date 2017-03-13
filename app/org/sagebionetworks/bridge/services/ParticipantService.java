@@ -312,15 +312,15 @@ public class ParticipantService {
     }
 
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
-            String activityGuid, DateTime scheduledOnOrAfter, DateTime scheduledOnOrBefore, Long offsetBy, int pageSize) {
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, Long offsetBy, int pageSize) {
         checkNotNull(study);
         checkArgument(isNotBlank(activityGuid));
         checkArgument(isNotBlank(userId));
 
         Account account = getAccountThrowingException(study, userId);
 
-        return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityGuid, scheduledOnOrAfter,
-                scheduledOnOrBefore, offsetBy, pageSize);
+        return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityGuid, scheduledOnStart,
+                scheduledOnEnd, offsetBy, pageSize);
     }
 
     public void deleteActivities(Study study, String userId) {
