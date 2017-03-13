@@ -12,7 +12,6 @@ import com.google.common.collect.ImmutableList;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
@@ -20,7 +19,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 public class UploadFieldDefinitionTest {
     @Test
     public void testBuilder() {
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("test-field")
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("test-field")
                 .withType(UploadFieldType.ATTACHMENT_BLOB).build();
         assertEquals("test-field", fieldDef.getName());
         assertTrue(fieldDef.isRequired());
@@ -29,7 +28,7 @@ public class UploadFieldDefinitionTest {
 
     @Test
     public void testRequiredTrue() {
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("test-field")
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("test-field")
                 .withRequired(true).withType(UploadFieldType.ATTACHMENT_BLOB).build();
         assertEquals("test-field", fieldDef.getName());
         assertTrue(fieldDef.isRequired());
@@ -38,7 +37,7 @@ public class UploadFieldDefinitionTest {
 
     @Test
     public void testRequiredFalse() {
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("test-field")
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("test-field")
                 .withRequired(false).withType(UploadFieldType.ATTACHMENT_BLOB).build();
         assertEquals("test-field", fieldDef.getName());
         assertFalse(fieldDef.isRequired());
@@ -54,7 +53,7 @@ public class UploadFieldDefinitionTest {
 
         // build and validate
         List<String> expectedAnswerList = ImmutableList.of("first", "second");
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("multi-choice-field")
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("multi-choice-field")
                 .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList(originalAnswerList).build();
         assertEquals(expectedAnswerList, fieldDef.getMultiChoiceAnswerList());
 
@@ -65,7 +64,7 @@ public class UploadFieldDefinitionTest {
 
     @Test
     public void testMultiChoiceAnswerVarargs() {
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("multi-choice-field")
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("multi-choice-field")
                 .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("aa", "bb", "cc").build();
         assertEquals(ImmutableList.of("aa", "bb", "cc"), fieldDef.getMultiChoiceAnswerList());
     }
@@ -74,7 +73,7 @@ public class UploadFieldDefinitionTest {
     public void testOptionalFields() {
         List<String> multiChoiceAnswerList = ImmutableList.of("foo", "bar", "baz");
 
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withAllowOtherChoices(true)
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withAllowOtherChoices(true)
                 .withFileExtension(".test").withMimeType("text/plain")
                 .withMaxLength(128).withMultiChoiceAnswerList(multiChoiceAnswerList).withName("optional-stuff")
                 .withRequired(false).withType(UploadFieldType.STRING).withUnboundedText(true).build();
@@ -89,7 +88,7 @@ public class UploadFieldDefinitionTest {
         assertTrue(fieldDef.isUnboundedText());
 
         // Also test copy constructor.
-        UploadFieldDefinition copy = new DynamoUploadFieldDefinition.Builder().copyOf(fieldDef).build();
+        UploadFieldDefinition copy = new UploadFieldDefinition.Builder().copyOf(fieldDef).build();
         assertEquals(fieldDef, copy);
     }
 
@@ -140,6 +139,6 @@ public class UploadFieldDefinitionTest {
 
     @Test
     public void equalsVerifier() {
-        EqualsVerifier.forClass(DynamoUploadFieldDefinition.class).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(UploadFieldDefinition.class).allFieldsShouldBeUsed().verify();
     }
 }

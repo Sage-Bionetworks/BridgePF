@@ -66,7 +66,6 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     // is slightly incompatible with Schemas, most notably around multi-choice and single-choice questions.
     private static final Map<DataType, UploadFieldType> SURVEY_TO_SCHEMA_TYPE =
             ImmutableMap.<DataType, UploadFieldType>builder()
-                    // TODO is Duration necessary? Or can we just replace with Integer?
                     .put(DataType.DURATION, UploadFieldType.INT)
                     .put(DataType.STRING, UploadFieldType.STRING)
                     .put(DataType.INTEGER, UploadFieldType.INT)
@@ -256,7 +255,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // Init field def builder with basic fields. Note that all survey questions are skippable, so mark the field as
         // optional (not required).
         String fieldName = question.getIdentifier();
-        DynamoUploadFieldDefinition.Builder fieldDefBuilder = new DynamoUploadFieldDefinition.Builder()
+        UploadFieldDefinition.Builder fieldDefBuilder = new UploadFieldDefinition.Builder()
                 .withName(fieldName).withRequired(false);
 
         UploadFieldType uploadFieldType;
@@ -320,7 +319,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // NumericalConstraints (integer, decimal, duration) have units. We want to write the unit into Synapse in case
         // (a) the survey question changes the units or (b) we add support for app-specified units.
         if (constraints instanceof NumericalConstraints) {
-            UploadFieldDefinition unitFieldDef = new DynamoUploadFieldDefinition.Builder()
+            UploadFieldDefinition unitFieldDef = new UploadFieldDefinition.Builder()
                     .withName(fieldName + UploadUtil.UNIT_FIELD_SUFFIX).withType(UploadFieldType.STRING)
                     .withRequired(false).withMaxLength(Unit.MAX_STRING_LENGTH).build();
             fieldDefList.add(unitFieldDef);
@@ -358,7 +357,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
                 break;
             } else {
                 // There are some common use cases where can "massage" the new field def to be compatible with the old.
-                DynamoUploadFieldDefinition.Builder modifiedFieldDefBuilder = new DynamoUploadFieldDefinition.Builder()
+                UploadFieldDefinition.Builder modifiedFieldDefBuilder = new UploadFieldDefinition.Builder()
                         .copyOf(oneNewFieldDef);
 
                 // If the old field allowed other choices, make the new field also allow other choices.

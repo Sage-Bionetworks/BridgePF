@@ -24,7 +24,6 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -347,32 +346,32 @@ public class UploadUtilTest {
         // { old, new, expected }
         Object[][] testCases = {
                 {
-                        new DynamoUploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.INT)
+                        new UploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.INT)
                                 .build(),
-                        new DynamoUploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.INT)
+                        new UploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.INT)
                                 .build(),
                         true
                 },
                 {
-                        new DynamoUploadFieldDefinition.Builder().withName("field")
+                        new UploadFieldDefinition.Builder().withName("field")
                                 .withType(UploadFieldType.ATTACHMENT_V2).withFileExtension(".txt")
                                 .withMimeType("text/plain").build(),
-                        new DynamoUploadFieldDefinition.Builder().withName("field")
+                        new UploadFieldDefinition.Builder().withName("field")
                                 .withType(UploadFieldType.ATTACHMENT_V2).withFileExtension(".json")
                                 .withMimeType("text/json").build(),
                         true
                 },
                 {
-                        new DynamoUploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.INT)
+                        new UploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.INT)
                                 .build(),
-                        new DynamoUploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.BOOLEAN)
+                        new UploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.BOOLEAN)
                                 .build(),
                         false
                 },
                 {
-                        new DynamoUploadFieldDefinition.Builder().withName("foo-field").withType(UploadFieldType.INT)
+                        new UploadFieldDefinition.Builder().withName("foo-field").withType(UploadFieldType.INT)
                                 .build(),
-                        new DynamoUploadFieldDefinition.Builder().withName("bar-field").withType(UploadFieldType.INT)
+                        new UploadFieldDefinition.Builder().withName("bar-field").withType(UploadFieldType.INT)
                                 .build(),
                         false
                 },
@@ -402,10 +401,10 @@ public class UploadUtilTest {
         for (Boolean[] oneTestCase : testCases) {
             // allowOther
             {
-                UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+                UploadFieldDefinition oldFieldDef = new UploadFieldDefinition.Builder().withName("field")
                         .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("foo", "bar", "baz")
                         .withAllowOtherChoices(oneTestCase[0]).build();
-                UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+                UploadFieldDefinition newFieldDef = new UploadFieldDefinition.Builder().withName("field")
                         .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("foo", "bar", "baz")
                         .withAllowOtherChoices(oneTestCase[1]).build();
                 assertEquals(oneTestCase[2], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
@@ -413,9 +412,9 @@ public class UploadUtilTest {
 
             // unboundedText
             {
-                UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+                UploadFieldDefinition oldFieldDef = new UploadFieldDefinition.Builder().withName("field")
                         .withType(UploadFieldType.STRING).withUnboundedText(oneTestCase[0]).build();
-                UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+                UploadFieldDefinition newFieldDef = new UploadFieldDefinition.Builder().withName("field")
                         .withType(UploadFieldType.STRING).withUnboundedText(oneTestCase[1]).build();
                 assertEquals(oneTestCase[3], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
             }
@@ -435,9 +434,9 @@ public class UploadUtilTest {
         };
 
         for (Object[] oneTestCase : testCases) {
-            UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+            UploadFieldDefinition oldFieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.STRING).withMaxLength((Integer) oneTestCase[0]).build();
-            UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+            UploadFieldDefinition newFieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.STRING).withMaxLength((Integer) oneTestCase[1]).build();
             assertEquals(oneTestCase[2], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
         }
@@ -457,10 +456,10 @@ public class UploadUtilTest {
         };
 
         for (Object[] oneTestCase : testCases) {
-            UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+            UploadFieldDefinition oldFieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList((List<String>) oneTestCase[0])
                     .build();
-            UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+            UploadFieldDefinition newFieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList((List<String>) oneTestCase[1])
                     .build();
             assertEquals(oneTestCase[2], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
@@ -479,9 +478,9 @@ public class UploadUtilTest {
         };
 
         for (Object[] oneTestCase : testCases) {
-            UploadFieldDefinition oldFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+            UploadFieldDefinition oldFieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.INT).withRequired((boolean) oneTestCase[0]).build();
-            UploadFieldDefinition newFieldDef = new DynamoUploadFieldDefinition.Builder().withName("field")
+            UploadFieldDefinition newFieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.INT).withRequired((boolean) oneTestCase[1]).build();
             assertEquals(oneTestCase[2], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
         }

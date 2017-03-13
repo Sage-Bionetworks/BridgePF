@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoUploadSchemaDaoDdbTest {
-    private static final UploadFieldDefinition FIELD_DEF = new DynamoUploadFieldDefinition.Builder().withName("field")
+    private static final UploadFieldDefinition FIELD_DEF = new UploadFieldDefinition.Builder().withName("field")
             .withType(UploadFieldType.STRING).build();
     private static final List<UploadFieldDefinition> FIELD_DEF_LIST = ImmutableList.of(FIELD_DEF);
     private static final int SCHEMA_REV = 7;
@@ -71,7 +71,7 @@ public class DynamoUploadSchemaDaoDdbTest {
         schema.setSurveyCreatedOn(1337L);
         schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
 
-        UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("test-field")
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("test-field")
                 .withType(UploadFieldType.STRING).build();
         schema.setFieldDefinitions(ImmutableList.of(fieldDef));
 

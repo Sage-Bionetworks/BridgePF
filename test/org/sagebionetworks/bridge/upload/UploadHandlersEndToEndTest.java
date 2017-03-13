@@ -40,8 +40,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -260,14 +258,14 @@ public class UploadHandlersEndToEndTest {
 
         // set up schema
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("AAA").withType(UploadFieldType.SINGLE_CHOICE)
+                new UploadFieldDefinition.Builder().withName("AAA").withType(UploadFieldType.SINGLE_CHOICE)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("BBB").withType(UploadFieldType.MULTI_CHOICE)
+                new UploadFieldDefinition.Builder().withName("BBB").withType(UploadFieldType.MULTI_CHOICE)
                         .withMultiChoiceAnswerList("fencing", "football", "running", "swimming", "3").build(),
-                new DynamoUploadFieldDefinition.Builder().withName("delicious").withType(UploadFieldType.MULTI_CHOICE)
+                new UploadFieldDefinition.Builder().withName("delicious").withType(UploadFieldType.MULTI_CHOICE)
                         .withMultiChoiceAnswerList("Yes", "No").withAllowOtherChoices(true).build());
 
-        DynamoUploadSchema schema = new DynamoUploadSchema();
+        UploadSchema schema = UploadSchema.create();
         schema.setFieldDefinitions(fieldDefList);
         schema.setName("Survey Schema");
         schema.setRevision(2);
@@ -374,40 +372,40 @@ public class UploadHandlersEndToEndTest {
     public void nonSurvey() throws Exception {
         // set up schema
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("CCC.txt").withType(UploadFieldType.ATTACHMENT_BLOB)
+                new UploadFieldDefinition.Builder().withName("CCC.txt").withType(UploadFieldType.ATTACHMENT_BLOB)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("DDD.csv").withType(UploadFieldType.ATTACHMENT_CSV)
+                new UploadFieldDefinition.Builder().withName("DDD.csv").withType(UploadFieldType.ATTACHMENT_CSV)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("EEE.json")
+                new UploadFieldDefinition.Builder().withName("EEE.json")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("FFF.json")
+                new UploadFieldDefinition.Builder().withName("FFF.json")
                         .withType(UploadFieldType.ATTACHMENT_JSON_TABLE).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("GGG.txt").withType(UploadFieldType.ATTACHMENT_V2)
+                new UploadFieldDefinition.Builder().withName("GGG.txt").withType(UploadFieldType.ATTACHMENT_V2)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.HHH")
+                new UploadFieldDefinition.Builder().withName("record.json.HHH")
                         .withType(UploadFieldType.ATTACHMENT_V2).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.III").withType(UploadFieldType.BOOLEAN)
+                new UploadFieldDefinition.Builder().withName("record.json.III").withType(UploadFieldType.BOOLEAN)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.JJJ")
+                new UploadFieldDefinition.Builder().withName("record.json.JJJ")
                         .withType(UploadFieldType.CALENDAR_DATE).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.LLL")
+                new UploadFieldDefinition.Builder().withName("record.json.LLL")
                         .withType(UploadFieldType.DURATION_V2).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.MMM").withType(UploadFieldType.FLOAT)
+                new UploadFieldDefinition.Builder().withName("record.json.MMM").withType(UploadFieldType.FLOAT)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.NNN")
+                new UploadFieldDefinition.Builder().withName("record.json.NNN")
                         .withType(UploadFieldType.INLINE_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.OOO").withType(UploadFieldType.INT)
+                new UploadFieldDefinition.Builder().withName("record.json.OOO").withType(UploadFieldType.INT)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.PPP").withType(UploadFieldType.STRING)
+                new UploadFieldDefinition.Builder().withName("record.json.PPP").withType(UploadFieldType.STRING)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.QQQ").withType(UploadFieldType.TIME_V2)
+                new UploadFieldDefinition.Builder().withName("record.json.QQQ").withType(UploadFieldType.TIME_V2)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("record.json.arrr")
+                new UploadFieldDefinition.Builder().withName("record.json.arrr")
                         .withType(UploadFieldType.TIMESTAMP).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("empty_attachment")
+                new UploadFieldDefinition.Builder().withName("empty_attachment")
                         .withType(UploadFieldType.ATTACHMENT_V2).withRequired(false).build());
 
-        DynamoUploadSchema schema = new DynamoUploadSchema();
+        UploadSchema schema = UploadSchema.create();
         schema.setFieldDefinitions(fieldDefList);
         schema.setName("Non-Survey Schema");
         schema.setRevision(2);
