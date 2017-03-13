@@ -24,8 +24,6 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
@@ -33,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
@@ -70,122 +69,122 @@ public class IosSchemaValidationHandler2Test {
         context.setUpload(upload);
 
         // set up test schemas
-        DynamoUploadSchema surveySchema = new DynamoUploadSchema();
+        UploadSchema surveySchema = UploadSchema.create();
         surveySchema.setStudyId(TEST_STUDY_ID);
         surveySchema.setSchemaId("test-survey");
         surveySchema.setRevision(1);
         surveySchema.setName("iOS Survey");
         surveySchema.setSchemaType(UploadSchemaType.IOS_SURVEY);
-        surveySchema.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("foo").withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("bar").withType(UploadFieldType.INT).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("bar_unit").withType(UploadFieldType.STRING)
+        surveySchema.setFieldDefinitions(ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("foo").withType(UploadFieldType.STRING).build(),
+                new UploadFieldDefinition.Builder().withName("bar").withType(UploadFieldType.INT).build(),
+                new UploadFieldDefinition.Builder().withName("bar_unit").withType(UploadFieldType.STRING)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("baz")
+                new UploadFieldDefinition.Builder().withName("baz")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("calendar-date")
+                new UploadFieldDefinition.Builder().withName("calendar-date")
                         .withType(UploadFieldType.CALENDAR_DATE).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("time-without-date")
+                new UploadFieldDefinition.Builder().withName("time-without-date")
                         .withType(UploadFieldType.TIME_V2).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("legacy-date-time")
+                new UploadFieldDefinition.Builder().withName("legacy-date-time")
                         .withType(UploadFieldType.TIMESTAMP).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("new-date-time")
+                new UploadFieldDefinition.Builder().withName("new-date-time")
                         .withType(UploadFieldType.TIMESTAMP).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
-        DynamoUploadSchema jsonDataSchema = new DynamoUploadSchema();
+        UploadSchema jsonDataSchema = UploadSchema.create();
         jsonDataSchema.setStudyId(TEST_STUDY_ID);
         jsonDataSchema.setSchemaId("json-data");
         jsonDataSchema.setRevision(1);
         jsonDataSchema.setName("JSON Data");
         jsonDataSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        jsonDataSchema.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("string.json.string")
+        jsonDataSchema.setFieldDefinitions(ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("string.json.string")
                         .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("string.json.intAsString")
+                new UploadFieldDefinition.Builder().withName("string.json.intAsString")
                         .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("blob.json.blob")
+                new UploadFieldDefinition.Builder().withName("blob.json.blob")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("date.json.date")
+                new UploadFieldDefinition.Builder().withName("date.json.date")
                         .withType(UploadFieldType.CALENDAR_DATE).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("date.json.timestampAsDate")
+                new UploadFieldDefinition.Builder().withName("date.json.timestampAsDate")
                         .withType(UploadFieldType.CALENDAR_DATE).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
-        DynamoUploadSchema nonJsonDataSchema = new DynamoUploadSchema();
+        UploadSchema nonJsonDataSchema = UploadSchema.create();
         nonJsonDataSchema.setStudyId(TEST_STUDY_ID);
         nonJsonDataSchema.setSchemaId("non-json-data");
         nonJsonDataSchema.setRevision(1);
         nonJsonDataSchema.setName("Non-JSON Data");
         nonJsonDataSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        nonJsonDataSchema.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("nonJsonFile.txt")
+        nonJsonDataSchema.setFieldDefinitions(ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("nonJsonFile.txt")
                         .withType(UploadFieldType.ATTACHMENT_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("jsonFile.json")
+                new UploadFieldDefinition.Builder().withName("jsonFile.json")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("empty_attachment").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("empty_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_V2).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
-        DynamoUploadSchema mixedSchema = new DynamoUploadSchema();
+        UploadSchema mixedSchema = UploadSchema.create();
         mixedSchema.setStudyId(TEST_STUDY_ID);
         mixedSchema.setSchemaId("mixed-data");
         mixedSchema.setRevision(1);
         mixedSchema.setName("Mixed Data");
         mixedSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        mixedSchema.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("nonJsonFile.txt")
+        mixedSchema.setFieldDefinitions(ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("nonJsonFile.txt")
                         .withType(UploadFieldType.ATTACHMENT_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("attachment.json")
+                new UploadFieldDefinition.Builder().withName("attachment.json")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("inline.json")
+                new UploadFieldDefinition.Builder().withName("inline.json")
                         .withType(UploadFieldType.INLINE_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("field.json.attachment")
+                new UploadFieldDefinition.Builder().withName("field.json.attachment")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("field.json.string")
+                new UploadFieldDefinition.Builder().withName("field.json.string")
                         .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
+                new UploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
-        DynamoUploadSchema schemaRevTest2 = new DynamoUploadSchema();
+        UploadSchema schemaRevTest2 = UploadSchema.create();
         schemaRevTest2.setStudyId(TEST_STUDY_ID);
         schemaRevTest2.setSchemaId("schema-rev-test");
         schemaRevTest2.setRevision(2);
         schemaRevTest2.setName("Schema Rev Test 2: Electric Buggaloo");
         schemaRevTest2.setSchemaType(UploadSchemaType.IOS_DATA);
-        schemaRevTest2.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
+        schemaRevTest2.setFieldDefinitions(ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
                         .build()));
 
-        DynamoUploadSchema schemaRevTest3 = new DynamoUploadSchema();
+        UploadSchema schemaRevTest3 = UploadSchema.create();
         schemaRevTest3.setStudyId(TEST_STUDY_ID);
         schemaRevTest3.setSchemaId("schema-rev-test");
         schemaRevTest3.setRevision(3);
         schemaRevTest3.setName("Schema Rev Test 3: The Quickening");
         schemaRevTest3.setSchemaType(UploadSchemaType.IOS_DATA);
-        schemaRevTest3.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
+        schemaRevTest3.setFieldDefinitions(ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
                         .build()));
 
-        DynamoUploadSchema simpleAttachmentSchema = new DynamoUploadSchema();
+        UploadSchema simpleAttachmentSchema = UploadSchema.create();
         simpleAttachmentSchema.setStudyId(TEST_STUDY_ID);
         simpleAttachmentSchema.setSchemaId("simple-attachment-schema");
         simpleAttachmentSchema.setRevision(1);
         simpleAttachmentSchema.setName("Simple Attachment Schema");
         simpleAttachmentSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        simpleAttachmentSchema.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("attachment")
+        simpleAttachmentSchema.setFieldDefinitions(ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("attachment")
                         .withType(UploadFieldType.ATTACHMENT_V2).withMimeType("text/plain").build()));
 
         // mock upload schema service

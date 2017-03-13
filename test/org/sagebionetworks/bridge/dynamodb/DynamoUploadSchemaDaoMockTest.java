@@ -472,10 +472,10 @@ public class DynamoUploadSchemaDaoMockTest {
     private static DynamoUploadSchema makeSchemaForSurveyTests() {
         // 2 simple fields, one multi-choice, one bool
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("multi-choice-q")
+                new UploadFieldDefinition.Builder().withName("multi-choice-q")
                         .withType(UploadFieldType.MULTI_CHOICE).withRequired(false)
                         .withMultiChoiceAnswerList("always", "remove-me-choice").withAllowOtherChoices(true).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("remove-me-q").withType(UploadFieldType.BOOLEAN)
+                new UploadFieldDefinition.Builder().withName("remove-me-q").withType(UploadFieldType.BOOLEAN)
                         .withRequired(false).build());
 
         // For these tests, we don't need all fields, just the field def list, type, ddb version, and revision.
@@ -812,7 +812,7 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // same field in both
         {
-            UploadFieldDefinition field = new DynamoUploadFieldDefinition.Builder().withName("same")
+            UploadFieldDefinition field = new UploadFieldDefinition.Builder().withName("same")
                     .withType(UploadFieldType.BOOLEAN).withRequired(false).build();
             oldFieldDefList.add(field);
             newFieldDefList.add(field);
@@ -820,7 +820,7 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // added field
         {
-            UploadFieldDefinition field = new DynamoUploadFieldDefinition.Builder().withName("added")
+            UploadFieldDefinition field = new UploadFieldDefinition.Builder().withName("added")
                     .withType(UploadFieldType.BOOLEAN).withRequired(false).build();
             // not added to old
             newFieldDefList.add(field);
@@ -828,7 +828,7 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // removed field
         {
-            UploadFieldDefinition field = new DynamoUploadFieldDefinition.Builder().withName("removed")
+            UploadFieldDefinition field = new UploadFieldDefinition.Builder().withName("removed")
                     .withType(UploadFieldType.BOOLEAN).withRequired(false).build();
             oldFieldDefList.add(field);
             // not added to new
@@ -836,12 +836,12 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // multi-choice
         {
-            UploadFieldDefinition oldField = new DynamoUploadFieldDefinition.Builder().withName("multi-choice")
+            UploadFieldDefinition oldField = new UploadFieldDefinition.Builder().withName("multi-choice")
                     .withType(UploadFieldType.MULTI_CHOICE).withRequired(false)
                     .withMultiChoiceAnswerList("same", "removed").withAllowOtherChoices(true).build();
             oldFieldDefList.add(oldField);
 
-            UploadFieldDefinition newField = new DynamoUploadFieldDefinition.Builder().withName("multi-choice")
+            UploadFieldDefinition newField = new UploadFieldDefinition.Builder().withName("multi-choice")
                     .withType(UploadFieldType.MULTI_CHOICE).withRequired(false)
                     .withMultiChoiceAnswerList("same", "added").withAllowOtherChoices(false).build();
             newFieldDefList.add(newField);
@@ -849,22 +849,22 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // string, maxLength reduced
         {
-            UploadFieldDefinition oldField = new DynamoUploadFieldDefinition.Builder().withName("string-with-length")
+            UploadFieldDefinition oldField = new UploadFieldDefinition.Builder().withName("string-with-length")
                     .withType(UploadFieldType.STRING).withRequired(false).withMaxLength(128).build();
             oldFieldDefList.add(oldField);
 
-            UploadFieldDefinition newField = new DynamoUploadFieldDefinition.Builder().withName("string-with-length")
+            UploadFieldDefinition newField = new UploadFieldDefinition.Builder().withName("string-with-length")
                     .withType(UploadFieldType.STRING).withRequired(false).withMaxLength(24).build();
             newFieldDefList.add(newField);
         }
 
         // string, bounded to unbounded
         {
-            UploadFieldDefinition oldField = new DynamoUploadFieldDefinition.Builder().withName("unbounded-string")
+            UploadFieldDefinition oldField = new UploadFieldDefinition.Builder().withName("unbounded-string")
                     .withType(UploadFieldType.STRING).withRequired(false).withUnboundedText(true).build();
             oldFieldDefList.add(oldField);
 
-            UploadFieldDefinition newField = new DynamoUploadFieldDefinition.Builder().withName("unbounded-string")
+            UploadFieldDefinition newField = new UploadFieldDefinition.Builder().withName("unbounded-string")
                     .withType(UploadFieldType.STRING).withRequired(false).withMaxLength(128).build();
             newFieldDefList.add(newField);
         }
@@ -909,9 +909,9 @@ public class DynamoUploadSchemaDaoMockTest {
     @Test
     public void mergeSurveySchemaFieldsNotCompatible() {
         // incompatible field, like changing a short string to an unbounded string
-        List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
+        List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("field").withType(UploadFieldType.STRING).withMaxLength(24).build());
-        List<UploadFieldDefinition> newFieldDefList = ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
+        List<UploadFieldDefinition> newFieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("field").withType(UploadFieldType.STRING).withUnboundedText(true).build());
 
         // execute and validate
@@ -925,9 +925,9 @@ public class DynamoUploadSchemaDaoMockTest {
     @Test
     public void mergeSurveySchemaFieldsDifferentType() {
         // changing the field type will cause things to break.
-        List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
+        List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("field").withType(UploadFieldType.STRING).withMaxLength(24).build());
-        List<UploadFieldDefinition> newFieldDefList = ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
+        List<UploadFieldDefinition> newFieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("field").withType(UploadFieldType.BOOLEAN).build());
 
         // execute and validate
@@ -1231,14 +1231,14 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // Make old schema - Only field def list and schema type matter for this test.
         List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("delete-me-1").withType(UploadFieldType.BOOLEAN)
+                new UploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
+                new UploadFieldDefinition.Builder().withName("delete-me-1").withType(UploadFieldType.BOOLEAN)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("delete-me-2").withType(UploadFieldType.INT)
+                new UploadFieldDefinition.Builder().withName("delete-me-2").withType(UploadFieldType.INT)
                         .build(),
-                new DynamoUploadFieldDefinition.Builder().withName("modify-me-1").withType(UploadFieldType.STRING)
+                new UploadFieldDefinition.Builder().withName("modify-me-1").withType(UploadFieldType.STRING)
                         .withUnboundedText(true).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("modify-me-2").withType(UploadFieldType.STRING)
+                new UploadFieldDefinition.Builder().withName("modify-me-2").withType(UploadFieldType.STRING)
                         .withUnboundedText(true).build());
 
         DynamoUploadSchema oldSchema = new DynamoUploadSchema();
@@ -1247,14 +1247,14 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // Make new schema
         List<UploadFieldDefinition> newFieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("modify-me-1").withType(UploadFieldType.STRING)
+                new UploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
+                new UploadFieldDefinition.Builder().withName("modify-me-1").withType(UploadFieldType.STRING)
                         .withMaxLength(24).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("modify-me-2").withType(UploadFieldType.FLOAT)
+                new UploadFieldDefinition.Builder().withName("modify-me-2").withType(UploadFieldType.FLOAT)
                         .withMaxLength(24).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("add-me-1").withType(UploadFieldType.BOOLEAN)
+                new UploadFieldDefinition.Builder().withName("add-me-1").withType(UploadFieldType.BOOLEAN)
                         .withRequired(true).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("add-me-2").withType(UploadFieldType.BOOLEAN)
+                new UploadFieldDefinition.Builder().withName("add-me-2").withType(UploadFieldType.BOOLEAN)
                         .withRequired(true).build());
 
         DynamoUploadSchema newSchema = new DynamoUploadSchema();
@@ -1302,8 +1302,8 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // Make old schema - Only field def list and schema type matter for this test.
         List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("modify-me").withType(UploadFieldType.MULTI_CHOICE)
+                new UploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
+                new UploadFieldDefinition.Builder().withName("modify-me").withType(UploadFieldType.MULTI_CHOICE)
                         .withMultiChoiceAnswerList("foo", "bar").withAllowOtherChoices(false).build());
 
         DynamoUploadSchema oldSchema = new DynamoUploadSchema();
@@ -1312,10 +1312,10 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // Make new schema
         List<UploadFieldDefinition> newFieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("modify-me").withType(UploadFieldType.MULTI_CHOICE)
+                new UploadFieldDefinition.Builder().withName("always").withType(UploadFieldType.BOOLEAN).build(),
+                new UploadFieldDefinition.Builder().withName("modify-me").withType(UploadFieldType.MULTI_CHOICE)
                         .withMultiChoiceAnswerList("foo", "bar", "baz").withAllowOtherChoices(true).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("added-optional-field")
+                new UploadFieldDefinition.Builder().withName("added-optional-field")
                         .withType(UploadFieldType.BOOLEAN).withRequired(false).build());
 
         DynamoUploadSchema newSchema = new DynamoUploadSchema();

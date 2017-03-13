@@ -15,7 +15,6 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -43,7 +42,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
                 .thenReturn(survey);
 
         // mock upload schema service
-        UploadSchema dummySchema = new DynamoUploadSchema();
+        UploadSchema dummySchema = UploadSchema.create();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
         when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "test-survey", 4)).thenReturn(
                 dummySchema);
@@ -119,7 +118,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
     @Test
     public void itemWithDefaultRev() throws Exception {
         // mock upload schema service
-        UploadSchema dummySchema = new DynamoUploadSchema();
+        UploadSchema dummySchema = UploadSchema.create();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
         when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "test-schema", 1)).thenReturn(
                 dummySchema);
@@ -141,7 +140,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
     @Test
     public void itemWithLegacyMapRev() throws Exception {
         // mock upload schema service
-        UploadSchema dummySchema = new DynamoUploadSchema();
+        UploadSchema dummySchema = UploadSchema.create();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
         when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "schema-rev-test", 2)).thenReturn(
                 dummySchema);
@@ -163,7 +162,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
     @Test
     public void itemWithRev() throws Exception {
         // mock upload schema service
-        UploadSchema dummySchema = new DynamoUploadSchema();
+        UploadSchema dummySchema = UploadSchema.create();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
         when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "schema-rev-test", 3)).thenReturn(
                 dummySchema);
@@ -186,7 +185,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
     @Test
     public void fallbackToIdentifier() throws Exception {
         // mock upload schema service
-        UploadSchema dummySchema = new DynamoUploadSchema();
+        UploadSchema dummySchema = UploadSchema.create();
         UploadSchemaService mockSchemaSvc = mock(UploadSchemaService.class);
         when(mockSchemaSvc.getUploadSchemaByIdAndRev(TEST_STUDY, "test-schema", 1)).thenReturn(
                 dummySchema);

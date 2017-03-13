@@ -25,12 +25,11 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -56,11 +55,11 @@ public class StrictValidationHandlerTest {
     private void test(List<UploadFieldDefinition> additionalFieldDefList, Map<String, byte[]> additionalAttachmentMap,
             JsonNode additionalJsonNode, List<String> expectedErrorList, boolean shouldThrow) throws Exception {
         // Basic schema with a basic attachment, basic field, and additional fields.
-        DynamoUploadSchema testSchema = new DynamoUploadSchema();
+        UploadSchema testSchema = UploadSchema.create();
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("attachment blob")
+        fieldDefList.add(new UploadFieldDefinition.Builder().withName("attachment blob")
                 .withType(UploadFieldType.ATTACHMENT_BLOB).build());
-        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("string")
+        fieldDefList.add(new UploadFieldDefinition.Builder().withName("string")
                 .withType(UploadFieldType.STRING).build());
         if (additionalFieldDefList != null) {
             fieldDefList.addAll(additionalFieldDefList);
@@ -141,43 +140,43 @@ public class StrictValidationHandlerTest {
     public void happyCase() throws Exception {
         // additional field defs
         // Test one of each type.
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("attachment csv")
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("attachment csv")
                         .withType(UploadFieldType.ATTACHMENT_CSV).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("attachment json blob")
+                new UploadFieldDefinition.Builder().withName("attachment json blob")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("attachment json table")
+                new UploadFieldDefinition.Builder().withName("attachment json table")
                         .withType(UploadFieldType.ATTACHMENT_JSON_TABLE).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("boolean")
+                new UploadFieldDefinition.Builder().withName("boolean")
                         .withType(UploadFieldType.BOOLEAN).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("calendar date")
+                new UploadFieldDefinition.Builder().withName("calendar date")
                         .withType(UploadFieldType.CALENDAR_DATE).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("float")
+                new UploadFieldDefinition.Builder().withName("float")
                         .withType(UploadFieldType.FLOAT).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("float with int value")
+                new UploadFieldDefinition.Builder().withName("float with int value")
                         .withType(UploadFieldType.FLOAT).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("inline json blob")
+                new UploadFieldDefinition.Builder().withName("inline json blob")
                         .withType(UploadFieldType.INLINE_JSON_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("int")
+                new UploadFieldDefinition.Builder().withName("int")
                         .withType(UploadFieldType.INT).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("int with float value")
+                new UploadFieldDefinition.Builder().withName("int with float value")
                         .withType(UploadFieldType.INT).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("multi-choice")
+                new UploadFieldDefinition.Builder().withName("multi-choice")
                         .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("foo", "bar", "baz").build(),
-                new DynamoUploadFieldDefinition.Builder().withName("delicious")
+                new UploadFieldDefinition.Builder().withName("delicious")
                         .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("Yes", "No")
                         .withAllowOtherChoices(true).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("string timestamp")
+                new UploadFieldDefinition.Builder().withName("string timestamp")
                         .withType(UploadFieldType.TIMESTAMP).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("long timestamp")
+                new UploadFieldDefinition.Builder().withName("long timestamp")
                         .withType(UploadFieldType.TIMESTAMP).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("missing optional attachment")
+                new UploadFieldDefinition.Builder().withName("missing optional attachment")
                         .withType(UploadFieldType.ATTACHMENT_BLOB).withRequired(false).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("present optional attachment")
+                new UploadFieldDefinition.Builder().withName("present optional attachment")
                         .withType(UploadFieldType.ATTACHMENT_BLOB).withRequired(false).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("missing optional json")
+                new UploadFieldDefinition.Builder().withName("missing optional json")
                         .withType(UploadFieldType.STRING).withRequired(false).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("present optional json")
+                new UploadFieldDefinition.Builder().withName("present optional json")
                         .withType(UploadFieldType.STRING).withRequired(false).build());
 
         // additional attachments map
@@ -212,7 +211,7 @@ public class StrictValidationHandlerTest {
     public void canonicalizedValue() throws Exception {
         // additional field defs
         List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("canonicalized int").withType(UploadFieldType.INT)
+                new UploadFieldDefinition.Builder().withName("canonicalized int").withType(UploadFieldType.INT)
                         .build());
 
         // additional JSON data
@@ -235,7 +234,7 @@ public class StrictValidationHandlerTest {
     public void invalidValue() throws Exception {
         // additional field defs
         List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("invalid int").withType(UploadFieldType.INT)
+                new UploadFieldDefinition.Builder().withName("invalid int").withType(UploadFieldType.INT)
                         .build());
 
         // additional JSON data
@@ -255,7 +254,7 @@ public class StrictValidationHandlerTest {
     public void invalidMultiChoice() throws Exception {
         // additional field defs
         List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
-                new DynamoUploadFieldDefinition.Builder().withName("invalid multi-choice")
+                new UploadFieldDefinition.Builder().withName("invalid multi-choice")
                         .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("good1", "good2").build());
 
         // additional JSON data
@@ -276,8 +275,8 @@ public class StrictValidationHandlerTest {
     @Test
     public void missingRequiredAttachment() throws Exception {
         // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("missing required attachment")
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("missing required attachment")
                         .withType(UploadFieldType.ATTACHMENT_BLOB).build());
 
         // expected errors
@@ -290,8 +289,8 @@ public class StrictValidationHandlerTest {
     @Test
     public void missingRequiredField() throws Exception {
         // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("missing required field")
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("missing required field")
                         .withType(UploadFieldType.STRING).build());
 
         // expected errors
@@ -304,8 +303,8 @@ public class StrictValidationHandlerTest {
     @Test
     public void optionalFieldStillGetsValidated() throws Exception {
         // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("optional int")
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("optional int")
                         .withType(UploadFieldType.INT).withRequired(false).build());
 
         // additional JSON data
@@ -324,8 +323,8 @@ public class StrictValidationHandlerTest {
     @Test
     public void jsonNullRequiredField() throws Exception {
         // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("null required field")
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("null required field")
                         .withType(UploadFieldType.INLINE_JSON_BLOB).build());
 
         // additional JSON data
@@ -344,10 +343,10 @@ public class StrictValidationHandlerTest {
     @Test
     public void multipleValidationErrors() throws Exception {
         // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("missing required attachment")
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("missing required attachment")
                         .withType(UploadFieldType.ATTACHMENT_BLOB).build(),
-                new DynamoUploadFieldDefinition.Builder().withName("invalid int")
+                new UploadFieldDefinition.Builder().withName("invalid int")
                         .withType(UploadFieldType.INT).build());
 
         // additional JSON data
@@ -366,8 +365,8 @@ public class StrictValidationHandlerTest {
     @Test
     public void studyConfiguredToNotThrow() throws Exception {
         // additional field defs
-        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.<UploadFieldDefinition>of(
-                new DynamoUploadFieldDefinition.Builder().withName("missing required field")
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("missing required field")
                         .withType(UploadFieldType.STRING).build());
 
         // expected errors
