@@ -114,7 +114,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
 
         QuerySpec spec = new QuerySpec()
                 .withHashKey(new KeyAttribute(HEALTH_CODE_ACTIVITY_GUID, healthCodeActivityGuid))
-                .withMaxResultSize(100000)
+                .withMaxResultSize(pageSize)
                 .withMaxPageSize(pageSize)
                 .withScanIndexForward(false)
                 .withRangeKeyCondition(dateRangeCondition);

@@ -8,6 +8,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
+import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX_EXPIRES_ON_DAYS;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -68,11 +69,11 @@ public class ScheduledActivityService {
     private SurveyService surveyService;
     
     @Autowired
-    public final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
+    final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
         this.activityDao = activityDao;
     }
     @Autowired
-    public final void setActivityEventService(ActivityEventService activityEventService) {
+    final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
 
@@ -80,24 +81,24 @@ public class ScheduledActivityService {
      * Compound Activity Definition service, used to resolve compound activities (references) in activity schedules.
      */
     @Autowired
-    public final void setCompoundActivityDefinitionService(
+    final void setCompoundActivityDefinitionService(
             CompoundActivityDefinitionService compoundActivityDefinitionService) {
         this.compoundActivityDefinitionService = compoundActivityDefinitionService;
     }
 
     @Autowired
-    public final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
+    final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
     }
 
     /** Schema service, used to resolve schema revision numbers for schema references in activities. */
     @Autowired
-    public final void setSchemaService(UploadSchemaService schemaService) {
+    final void setSchemaService(UploadSchemaService schemaService) {
         this.schemaService = schemaService;
     }
 
     @Autowired
-    public final void setSurveyService(SurveyService surveyService) {
+    final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
     }
     
@@ -109,10 +110,10 @@ public class ScheduledActivityService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        // If nothing is provided, we will default to two weeks.
+        // If nothing is provided, we will default to two weeks, going max days into future.
         if (scheduledOnStart == null && scheduledOnEnd == null) {
-            scheduledOnEnd = DateTime.now().plusDays(4);
-            scheduledOnStart = scheduledOnEnd.minusDays(14);
+            scheduledOnEnd = DateTime.now().plusDays(MAX_EXPIRES_ON_DAYS);
+            scheduledOnStart = scheduledOnEnd.minusWeeks(2);
         }
         // But if only one was provided... we don't know what to do with this. Return bad request exception
         if (scheduledOnStart == null || scheduledOnEnd == null) {
