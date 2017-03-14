@@ -119,12 +119,14 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
                 .withScanIndexForward(false)
                 .withRangeKeyCondition(dateRangeCondition);
 
-        // It does not appear it is possible to use an exclusive start key with a GSI (though that's not definitive):
-        // https://forums.aws.amazon.com/thread.jspa?threadID=146102&tstart=0. I could not get it to work, so using 
-        // a range key condition instead.
         if (offsetBy != null) {
-            RangeKeyCondition cursorPosCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).lt(offsetBy);
-            spec.withRangeKeyCondition(cursorPosCondition);
+            // You need to include the primary hash/range key as well as the GSI keys in order for 
+            // the exclusive start key to work on a GSI.
+            spec.withExclusiveStartKey(
+                new KeyAttribute(HEALTH_CODE_ACTIVITY_GUID,healthCodeActivityGuid),
+                new KeyAttribute(SCHEDULED_ON_UTC,offsetBy),
+                new KeyAttribute(HEALTH_CODE, healthCode),
+                new KeyAttribute(GUID, activityGuid));
         }
         
         QueryOutcome queryOutcome = indexHelper.query(spec);
