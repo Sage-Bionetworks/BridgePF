@@ -106,6 +106,7 @@ public class ScheduledActivityService {
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, Long offsetBy,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
+        checkArgument(isNotBlank(activityGuid));
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
