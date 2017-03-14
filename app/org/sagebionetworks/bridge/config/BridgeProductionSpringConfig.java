@@ -69,7 +69,7 @@ public class BridgeProductionSpringConfig {
                 return System.getenv(provider);
             }
         }
-        LOG.info("Using Redis Provider: redis.url);
+        LOG.info("Using Redis Provider: redis.url");
         return bridgeConfig.getProperty("redis.url");
     }
 
