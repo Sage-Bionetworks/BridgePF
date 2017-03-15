@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -167,19 +166,11 @@ public class DynamoScheduledActivityDaoTest {
         assertEquals(10, history.getItems().size());
         
         Set<String> allTaskGuids = history.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet());
-        for (String taskGuid : allTaskGuids) {
-            System.out.println(taskGuid);
-        }
-        System.out.println("------------------------");
         
         // Get second page of records
         history = activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, startDateTime, endDateTime, history.getOffsetBy(), 10);
         assertEquals(10, history.getItems().size());
-        for (ScheduledActivity act : history.getItems()) {
-            System.out.println(allTaskGuids.contains(act.getGuid()) + ": " + act.getGuid());
-        }
-        System.out.println("------------------------");
 
         // Now add the GUIDS of the next ten records to the set
         allTaskGuids.addAll(history.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet()));
@@ -238,8 +229,7 @@ public class DynamoScheduledActivityDaoTest {
         assertEquals(reducedSet, intersection);
         
         // Finish and delete
-        JsonNode clientData = BridgeObjectMapper.get()
-                .readTree(TestUtils.createJson("{'booleanFlag':true,'stringValue':'testUser','intValue':4}"));
+        JsonNode clientData = TestUtils.getClientData();
         
         // Finish one of the activities, and save some data with it too.
         ScheduledActivity activity = savedActivities.get(1);
@@ -255,7 +245,7 @@ public class DynamoScheduledActivityDaoTest {
         ScheduledActivity activityWithClienData = newActivities.stream()
                 .filter(act -> act.getClientData() != null).findFirst().get();
         assertTrue(activityWithClienData.getClientData().get("booleanFlag").asBoolean());
-        assertEquals("testUser", activityWithClienData.getClientData().get("stringValue").asText());
+        assertEquals("testString", activityWithClienData.getClientData().get("stringValue").asText());
         assertEquals(4, activityWithClienData.getClientData().get("intValue").asInt());
         
         // This is a physical delete, and the activities will be gone.
