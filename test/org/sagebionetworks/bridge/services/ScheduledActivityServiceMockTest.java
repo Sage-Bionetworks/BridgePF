@@ -169,7 +169,7 @@ public class ScheduledActivityServiceMockTest {
         DateTimeUtils.setCurrentMillisFixed(STARTS_ON.getMillis());
         
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
-        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(10), STARTS_ON.plusDays(4), null, 40);
+        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(9), STARTS_ON.plusDays(5), null, 40);
         
         DateTimeUtils.setCurrentMillisSystem();
     }
