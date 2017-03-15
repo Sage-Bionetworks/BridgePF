@@ -23,16 +23,30 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 public class DynamoScheduledActivityTest {
 
     @Test
-    public void equalsHashCode() {
+    public void equalsHashCode() throws Exception {
         EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
-                .verify();
+                .withPrefabValues(JsonNode.class, getClientData(), getOtherClientData()).verify();
     }
 
+    private JsonNode getClientData() throws Exception {
+        String json = TestUtils.createJson("{'booleanFlag':true,'stringValue':'testUser','intValue':4}"); 
+        JsonNode clientData = BridgeObjectMapper.get().readTree(json);
+        return clientData;
+    }
+    
+    private JsonNode getOtherClientData() throws Exception {
+        JsonNode clientData = getClientData();
+        ((ObjectNode)clientData).put("newField", "newValue");
+        return clientData;
+    }
+    
+    
     @Test
     public void testComparator() {
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
@@ -106,6 +120,7 @@ public class DynamoScheduledActivityTest {
         schActivity.setPersistent(true);
         schActivity.setHealthCodeActivityGuid("FFF-GGG-HHH:AAA-BBB-CCC");
         schActivity.setScheduledOnUTC(scheduledOn.toDateTime(DateTimeZone.UTC).getMillis());
+        schActivity.setClientData(getClientData());
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(schActivity);
@@ -118,7 +133,8 @@ public class DynamoScheduledActivityTest {
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertTrue(node.get("persistent").asBoolean());
         assertNull(node.get("schedule"));
-        assertEquals(7, node.size());
+        assertEquals(8, node.size());
+        assertEquals(getClientData(), node.get("clientData"));
         
         JsonNode activityNode = node.get("activity");
         assertEquals("Activity3", activityNode.get("label").asText());

@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -100,6 +101,10 @@ public interface ScheduledActivity extends BridgeEntity {
     Long getScheduledOnUTC();
 
     void setScheduledOnUTC(Long scheduledOnUTC);
+    
+    JsonNode getClientData();
+    
+    void setClientData(JsonNode clientData);
     
     DateTime getExpiresOn();
 
