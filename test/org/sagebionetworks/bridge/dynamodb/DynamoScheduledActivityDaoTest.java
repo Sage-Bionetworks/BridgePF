@@ -166,7 +166,7 @@ public class DynamoScheduledActivityDaoTest {
         assertEquals(10, history.getItems().size());
         
         Set<String> allTaskGuids = history.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet());
-        
+
         // Get second page of records
         history = activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, startDateTime, endDateTime, history.getOffsetBy(), 10);
