@@ -4,7 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -26,6 +27,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -37,6 +39,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -51,6 +54,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import play.mvc.Result;
 import play.test.Helpers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
@@ -58,10 +62,25 @@ import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ScheduledActivityControllerTest {
+    
+    private static final String ACTIVITY_GUID = "activityGuid";
+
+    private static final DateTime ENDS_ON = DateTime.now();
+    
+    private static final DateTime STARTS_ON = ENDS_ON.minusWeeks(1);
+    
+    private static final String OFFSET_BY = "2000";
+    
+    private static final String PAGE_SIZE = "77";
+
+    private static final String HEALTH_CODE = "BBB";
 
     private static final DateTime ACCOUNT_CREATED_ON = DateTime.now();
     
     private static final String ID = "id";
+    
+    private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF = new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {
+    };
     
     private ScheduledActivityController controller;
     
@@ -91,6 +110,12 @@ public class ScheduledActivityControllerTest {
     @Captor
     ArgumentCaptor<RequestInfo> requestInfoCaptor;
     
+    @Captor
+    private ArgumentCaptor<DateTime> startsOnCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DateTime> endsOnCaptor;
+    
     UserSession session;
     
     @Before
@@ -106,7 +131,7 @@ public class ScheduledActivityControllerTest {
         TestUtils.mockPlayContextWithJson(json);
         
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode("BBB")
+                .withHealthCode(HEALTH_CODE)
                 .withDataGroups(Sets.newHashSet("group1"))
                 .withLanguages(TestUtils.newLinkedHashSet("en","fr"))
                 .withCreatedOn(ACCOUNT_CREATED_ON)
@@ -186,7 +211,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(5, context.getMinimumPerSchedule());
         
         CriteriaContext critContext = context.getCriteriaContext();
-        assertEquals("BBB", critContext.getHealthCode());
+        assertEquals(HEALTH_CODE, critContext.getHealthCode());
         assertEquals(TestUtils.newLinkedHashSet("en","fr"), critContext.getLanguages());
         assertEquals("api", critContext.getStudyIdentifier().getIdentifier());
         assertEquals(clientInfo, critContext.getClientInfo());
@@ -287,4 +312,53 @@ public class ScheduledActivityControllerTest {
         assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());
     }
     
+    @Test
+    public void activityHistoryWithDefaults() throws Exception {
+        doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
+                eq(ACTIVITY_GUID), any(null), any(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
+        
+        Result result = controller.getActivityHistory(ACTIVITY_GUID, null, null, null, null);
+        assertEquals(200, result.status());
+
+        verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), eq(null),
+                eq(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> list = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
+                new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>(){});
+        assertNull(list.getItems().get(0).getHealthCode());
+    }
+    
+    @Test
+    public void activityHistoryWithAllValues() throws Exception {
+        doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
+                eq(ACTIVITY_GUID), any(), any(), eq(2000L), eq(77));
+        
+        Result result = controller.getActivityHistory(ACTIVITY_GUID, STARTS_ON.toString(),
+                ENDS_ON.toString(), OFFSET_BY, PAGE_SIZE);
+        assertEquals(200, result.status());
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        
+        assertEquals(1, page.getItems().size());
+        assertEquals((Long)777L, page.getOffsetBy());
+        assertEquals(77, page.getPageSize());
+
+        verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), startsOnCaptor.capture(),
+                endsOnCaptor.capture(), eq(2000L), eq(77));
+        assertTrue(STARTS_ON.isEqual(startsOnCaptor.getValue()));
+        assertTrue(ENDS_ON.isEqual(endsOnCaptor.getValue()));
+    }
+    
+    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(int pageSize) {
+        List<ScheduledActivity> list = Lists.newArrayList();
+        
+        DynamoScheduledActivity activity = new DynamoScheduledActivity();
+        activity.setActivity(TestUtils.getActivity1());
+        activity.setHealthCode("healthCode");
+        activity.setSchedulePlanGuid("schedulePlanGuid");
+        list.add(activity);
+        
+        return new ForwardCursorPagedResourceList<>(list, 777L, pageSize);
+    }
 }
